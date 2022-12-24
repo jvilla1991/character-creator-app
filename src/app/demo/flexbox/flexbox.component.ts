@@ -11,5 +11,4 @@ export class FlexboxComponent implements OnInit {
 
   ngOnInit(): void {
   }
-
 }
