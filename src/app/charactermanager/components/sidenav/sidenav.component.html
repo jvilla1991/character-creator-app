@@ -1,2 +1,24 @@
-<app-toolbar></app-toolbar>
-<router-outlet></router-outlet>
+<mat-sidenav-container class="app-sidenav-container">
+  <mat-sidenav #sidenav mode="side" class="app-sidenav" [(opened)]="opened" (opened)="events.push('open!')"
+    (closed)="events.push('close!')">
+    <mat-toolbar color="primary">
+      <span>Characters</span>
+    </mat-toolbar>
+    <mat-list>
+      <mat-list-item>Tibbles</mat-list-item>
+      <mat-list-item>Dexon</mat-list-item>
+      <mat-list-item>Ozwaroth</mat-list-item>
+     </mat-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="app-sidenav-content">
+    <app-toolbar></app-toolbar>
+    <router-outlet></router-outlet>
+    <p><button mat-button (click)="sidenav.toggle()">Open Sidenav</button></p>
+
+    <p>Events:</p>
+    <div class="example-events">
+      <div *ngFor="let e of events">{{e}}</div>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
