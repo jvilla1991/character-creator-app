@@ -8,8 +8,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
 const routes: Routes =[
-  { path: 'demo', loadChildren: () => import('./demo/demo.module').then(m => m.DemoModule) },
-  { path: '**', redirectTo: 'demo'}
+  { path: 'charactermanager', loadChildren: () => import('./charactermanager/charactermanager.module').then(m => m.CharactermanagerModule) },
+  { path: '**', redirectTo: 'charactermanager'}
 ];
 
 @NgModule({
