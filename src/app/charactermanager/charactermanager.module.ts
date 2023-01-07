@@ -10,6 +10,8 @@ import { SidenavComponent } from './components/sidenav/sidenav.component';
 import { MaterialModule } from '../shared/material.module';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule } from '@angular/forms';
+import { UserService } from './services/user.service';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 
 const routes: Routes = [
@@ -34,9 +36,13 @@ const routes: Routes = [
   imports: [
     CommonModule,
     MaterialModule,
+    HttpClientModule,
     FlexLayoutModule,
     FormsModule,
     RouterModule.forChild(routes)
+  ],
+  providers: [
+    UserService
   ]
 })
 export class CharactermanagerModule { }

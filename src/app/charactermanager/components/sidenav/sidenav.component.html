@@ -3,11 +3,9 @@
     <mat-toolbar color="primary">
       <span>Characters</span>
     </mat-toolbar>
-    <mat-list>
-      <mat-list-item>Tibbles</mat-list-item>
-      <mat-list-item>Dexon</mat-list-item>
-      <mat-list-item>Ozwaroth</mat-list-item>
-     </mat-list>
+    <mat-list *ngFor="let pc of PCs">
+      <mat-list-item>{{ pc.name }}</mat-list-item>
+    </mat-list>
   </mat-sidenav>
 
   <mat-sidenav-content class="app-sidenav-content">
