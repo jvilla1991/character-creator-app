@@ -1,4 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
+import { PC } from '../../models/pc';
+import { PCService } from '../../services/pc.service';
 
 @Component({
   selector: 'app-main-content',
@@ -7,9 +11,15 @@ import { Component, OnInit } from '@angular/core';
 })
 export class MainContentComponent implements OnInit {
 
-  constructor() { }
+  pc!: Observable<PC>;
+  constructor(private route: ActivatedRoute,
+    private service: PCService) { }
 
   ngOnInit(): void {
+    this.route.params.subscribe(params =>
+      { const id =  params['id'];
+      this.pc = this.service.PCById(id);
+      }
+    );
   }
-
 }

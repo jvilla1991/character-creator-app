@@ -18,6 +18,7 @@ const routes: Routes = [
   {
     path: '', component: CharactermanagerAppComponent,
     children: [
+      { path: ':id', component: MainContentComponent },
       { path: '', component: MainContentComponent }
     ]
   },

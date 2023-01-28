@@ -3,9 +3,12 @@
     <mat-toolbar color="primary">
       <span>Characters</span>
     </mat-toolbar>
-    <mat-list *ngFor="let pc of PCs">
-      <mat-list-item>{{ pc.name }}</mat-list-item>
-    </mat-list>
+    <mat-nav-list>
+      <mat-list-item *ngFor="let pc of PCs">
+         <a matListItemTitle [routerLink]="['charactermanager', pc.id]">{{ pc.name }}</a>
+      </mat-list-item>
+    </mat-nav-list>
+
   </mat-sidenav>
 
   <mat-sidenav-content class="app-sidenav-content">
