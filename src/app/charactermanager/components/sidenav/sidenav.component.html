@@ -4,9 +4,11 @@
       <span>Characters</span>
     </mat-toolbar>
     <mat-nav-list>
-      <mat-list-item *ngFor="let pc of PCs">
-         <a matListItemTitle [routerLink]="['charactermanager', pc.id]">{{ pc.name }}</a>
-      </mat-list-item>
+      <ng-container *ngIf="pcs">
+        <mat-list-item *ngFor="let pc of pcs">
+          <a matListItemTitle ngDefaultControl [(ngModel)]="pc.id">{{ pc.name }}</a>
+       </mat-list-item>
+      </ng-container>
     </mat-nav-list>
 
   </mat-sidenav>

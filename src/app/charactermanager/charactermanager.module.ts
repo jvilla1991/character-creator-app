@@ -12,6 +12,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule } from '@angular/forms';
 import { UserService } from './services/user.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { PCService } from './services/pc.service';
 
 
 const routes: Routes = [
@@ -43,7 +44,8 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ],
   providers: [
-    UserService
+    UserService,
+    PCService
   ]
 })
 export class CharactermanagerModule { }
