@@ -12,11 +12,12 @@ import { PCService } from '../../services/pc.service';
 export class MainContentComponent {
   pc: PC | undefined;
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute, private service: PCService) { }
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      this.pc = JSON.parse(params['pc']);
+      const id = params['id'];
+      this.pc = this.service.PCByNumberId(id);
     });
   }
 }

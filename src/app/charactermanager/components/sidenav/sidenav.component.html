@@ -6,7 +6,7 @@
     <mat-nav-list>
       <ng-container *ngIf="pcs">
         <mat-list-item *ngFor="let pc of pcs">
-          <a matListItemTitle ngDefaultControl [(ngModel)]="pc.id">{{ pc.name }}</a>
+          <a matListItemTitle ngDefaultControl [routerLink]="['/charactermanager', pc.id]">{{ pc.name }}</a>
        </mat-list-item>
       </ng-container>
     </mat-nav-list>

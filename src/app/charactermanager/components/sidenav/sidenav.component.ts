@@ -7,6 +7,7 @@ import { PC } from '../../models/pc';
 import { User } from '../../models/user';
 import { PCService } from '../../services/pc.service';
 import { UserService } from '../../services/user.service';
+import { DataSource } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-sidenav',
@@ -17,7 +18,7 @@ export class SidenavComponent {
   pc: PC | undefined;
   @Input() user!: any;
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   events: string[] = [];
   opened?: boolean = true;
@@ -26,9 +27,10 @@ export class SidenavComponent {
   pcId!: number;
 
   ngAfterContentInit(): void {
-    console.log('OUTPUT: ');
-    console.log(this.user);
     this.pcs = this.user.pcs;
+
+    // This is going to display the first character is there is one available
+    // if (this.pcs.length > 0) this.router.navigate(['/charactermanager', this.pcs[0].id]);
   }
 
   // sendPC() {
