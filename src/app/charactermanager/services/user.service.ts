@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
 import { User } from '../models/user';
 
 @Injectable({
@@ -11,7 +10,6 @@ export class UserService {
   constructor(private http: HttpClient) {
   }
 
- private user: User | undefined;
  readonly userUrl = 'http://localhost:8080/api/v1/user/';
 
   getUser() {

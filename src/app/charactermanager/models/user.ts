@@ -1,9 +1,9 @@
-import { Pc } from "./pc";
+import { PC } from "./pc";
 
-export class User {
-  uuid!: string;
-  name!: string;
-  password?: string;
-  email!: string;
-  pcs: Pc[] = [];
+export interface User {
+  uuid: string;
+  name: string;
+  password: string;
+  email: string;
+  pcs: PC[];
 }
