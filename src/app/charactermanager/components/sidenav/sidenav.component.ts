@@ -18,7 +18,7 @@ export class SidenavComponent {
   pc: PC | undefined;
   @Input() user!: any;
 
-  constructor(private router: Router) {}
+  constructor(private pcService: PCService) {}
 
   events: string[] = [];
   opened?: boolean = true;
@@ -33,16 +33,9 @@ export class SidenavComponent {
     // if (this.pcs.length > 0) this.router.navigate(['/charactermanager', this.pcs[0].id]);
   }
 
-  // sendPC() {
-  //   this.pc = this.PCs.find(pc => pc.id === this.pcId)
+  setActivePC(id: number) {
+    this.pcService.activePCUpdatedEvent.emit(id);
+    console.log('Selecting new Character with id: ' + id);
+  }
 
-  //   this.router.navigate(['/MainContentComponent',
-  //   { pc: JSON.stringify(this.pc) }]);
-  // }
-
-  // sendPc() {
-  //   this.pc = this.PCs.find(pc => pc.id === this.pcId)
-
-  //   this.pcEvent.emit(this.pc);
-  // }
 }

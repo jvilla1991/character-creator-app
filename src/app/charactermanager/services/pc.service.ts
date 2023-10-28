@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { PC } from '../models/pc';
 
 @Injectable({
@@ -10,6 +10,8 @@ export class PCService {
 
   constructor(private http: HttpClient) {
   }
+
+  activePCUpdatedEvent = new EventEmitter<number>;
 
   readonly pcUrl = 'http://localhost:8080/api/v1/pc/';
 
@@ -25,7 +27,7 @@ export class PCService {
     return this.http.get<PC>(this.pcUrl + "find/", { params });
   }
 
-  PCByNumberId(id: number) {
+  getPCById(id: number) {
     return this.PCs.find(x => x.id == id);
   }
 
