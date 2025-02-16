@@ -9,10 +9,9 @@ import { SidenavComponent } from './components/sidenav/sidenav.component';
 
 import { MaterialModule } from '../shared/material.module';
 import { FlexLayoutModule } from '@angular/flex-layout';
-import { FormsModule } from '@angular/forms';
-import { UserService } from './services/user.service';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
 import { PCService } from './services/pc.service';
+import { AuthService } from './services/auth.service';
 
 
 const routes: Routes = [
@@ -26,8 +25,6 @@ const routes: Routes = [
   { path: '**', redirectTo: '' }
 ];
 
-
-
 @NgModule({
   declarations: [
     CharactermanagerAppComponent,
@@ -40,12 +37,11 @@ const routes: Routes = [
     MaterialModule,
     HttpClientModule,
     FlexLayoutModule,
-    FormsModule,
     RouterModule.forChild(routes)
   ],
   providers: [
-    UserService,
-    PCService
+    PCService,
+    AuthService
   ]
 })
 export class CharactermanagerModule { }
