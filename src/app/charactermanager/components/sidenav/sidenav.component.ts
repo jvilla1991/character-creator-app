@@ -1,34 +1,30 @@
-import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Pc } from '../../models/pc';
-import { User } from '../../models/user';
-import { UserService } from '../../services/user.service';
+import { Component, Input } from '@angular/core';
+import { PC } from '../../models/pc';
+import { PCService } from '../../services/pc.service';
 
 @Component({
   selector: 'app-sidenav',
   templateUrl: './sidenav.component.html',
   styleUrls: ['./sidenav.component.scss']
 })
-export class SidenavComponent implements OnInit {
-  constructor(private breakpointObserver: BreakpointObserver,
-    private userService: UserService) { }
+export class SidenavComponent {
+  pc: PC | undefined;
+  @Input() pcs!: any;
+
+  constructor(private pcService: PCService) {}
 
   events: string[] = [];
   opened?: boolean = true;
   public isScreenSmall!: boolean;
-  PCs: Pc[] = [];
 
-  ngOnInit(): void {
-    // this.breakpointObserver
-    // .observe([ '(max-width: $(SMALL_WIDTH_BREAKPOINT)px' ])
-    // .subscribe((state: BreakpointState) => {
-    //   this.isScreenSmall = state.matches;
-    // });
+  ngAfterContentInit(): void {
 
-    //this.user = this.userService.getUser();
-    this.userService.getUser().subscribe(data =>
-      { this.PCs = data.pcs }
-    );
+    // This is going to display the first character is there is one available
+    // if (this.pcs.length > 0) this.router.navigate(['/charactermanager', this.pcs[0].id]);
   }
+
+  setActivePC(pc: PC) {
+    this.pcService.setActivePC(pc);
+  }
+
 }
