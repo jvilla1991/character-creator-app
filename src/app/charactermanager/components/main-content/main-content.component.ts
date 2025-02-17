@@ -10,14 +10,13 @@ import { PCService } from '../../services/pc.service';
   styleUrls: ['./main-content.component.scss']
 })
 export class MainContentComponent {
-  pc: PC | undefined;
+  pc: PC | null = null;
 
-  constructor(private route: ActivatedRoute, private service: PCService) { }
+  constructor(private route: ActivatedRoute, private pcService: PCService) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-      const id = params['id'];
-      this.pc = this.service.PCByNumberId(id);
+    this.pcService.getActivePC().subscribe((pc) => {
+      this.pc = pc;
     });
   }
 }
