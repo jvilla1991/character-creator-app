@@ -12,6 +12,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { HttpClientModule } from '@angular/common/http';
 import { PCService } from './services/pc.service';
 import { AuthService } from './services/auth.service';
+import { FormsModule } from '@angular/forms';
 
 
 const routes: Routes = [
@@ -19,7 +20,8 @@ const routes: Routes = [
     path: '', component: CharactermanagerAppComponent,
     children: [
       { path: ':id', component: MainContentComponent },
-      { path: '', component: MainContentComponent }
+      { path: '', component: MainContentComponent },
+      { path: 'create', component: MainContentComponent },
     ]
   },
   { path: '**', redirectTo: '' }
@@ -37,6 +39,7 @@ const routes: Routes = [
     MaterialModule,
     HttpClientModule,
     FlexLayoutModule,
+    FormsModule,
     RouterModule.forChild(routes)
   ],
   providers: [

@@ -12,6 +12,12 @@
       </ng-container>
     </mat-nav-list>
 
+    <div class="add-character-container">
+      <button mat-mini-fab color="accent" [routerLink]="['/charactermanager/create']" class="add-character-btn" matTooltip="Add Character">
+        <mat-icon class="extra-small-icon">add</mat-icon>
+      </button>
+    </div>
+    
   </mat-sidenav>
 
   <mat-sidenav-content class="app-sidenav-content">
