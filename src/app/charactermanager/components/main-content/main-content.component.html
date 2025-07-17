@@ -37,8 +37,9 @@
           </mat-tab-group>
         </mat-card-content>
         <mat-card-actions>
-          <button mat-button>LIKE</button>
-          <button mat-button>SHARE</button>
+          <button mat-button color="primary" class="green-button" disabled>PLAY</button>
+          <button mat-button disabled>EDIT</button>
+          <button mat-button mat-button color="warn" (click)="openDeleteModal()">DELETE</button>
         </mat-card-actions>
       </mat-card>
   </div>

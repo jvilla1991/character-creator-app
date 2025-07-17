@@ -7,7 +7,7 @@
       <ng-container *ngIf="pcs">
         <mat-list-item *ngFor="let pc of pcs">
           <!-- <a matListItemTitle [routerLink]="['/charactermanager', pc.id]">{{ pc.name }}</a> -->
-          <a matListItemTitle (click)="setActivePC(pc.id)">{{ pc.name }}</a>
+          <a matListItemTitle (click)="setActivePC(pc)">{{ pc.name }}</a>
        </mat-list-item>
       </ng-container>
     </mat-nav-list>
