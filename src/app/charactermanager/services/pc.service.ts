@@ -40,7 +40,7 @@ export class PCService {
     return this.PCs.find((x) => x.id == id);
   }
 
-  setActivePC(pc: PC): void {
+   setActivePC(pc: PC): void {
     this.activePCSubject.next(pc);
   }
 
@@ -55,4 +55,5 @@ export class PCService {
   deletePC(id: number) {
     return this.http.delete<PC[]>(this.pcUrl + 'delete/' + id);
   }
+
 }
