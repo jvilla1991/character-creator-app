@@ -40,7 +40,7 @@ export class PCService {
     return this.PCs.find((x) => x.id == id);
   }
 
-   setActivePC(pc: PC): void {
+  setActivePC(pc: PC): void {
     this.activePCSubject.next(pc);
   }
 
@@ -57,6 +57,17 @@ export class PCService {
     });
 
     return this.http.post<PC>(this.pcUrl + 'add', newPC, { headers });
+  }
+
+  deletePC(id: number){
+    const token = this.authService.getToken();
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+    
+    return this.http.delete<PC[]>(this.pcUrl + 'delete/' + id, { headers });
   }
 
 }
