@@ -15,9 +15,10 @@ export class LoginComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   login(): void {
+    this.errorMessage = ''; // Clear any previous error messages
     this.authService.login(this.userName, this.password).subscribe({
       next: (response) => {
-        if (response) {
+        if (response && response.success) {
           this.router.navigate(['/charactermanager']);
         } else {
           this.errorMessage = 'Invalid username or password';

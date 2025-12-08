@@ -1,16 +1,38 @@
-<p>login works!</p>
-<div class="login-container">
+<div class="login-wrapper">
+  <div class="login-container">
     <h2>Login</h2>
     <form #loginForm="ngForm" (ngSubmit)="login()">
-      <div>
-        <label>Username:</label>
-        <input type="text" [(ngModel)]="userName" name="username" required>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          [(ngModel)]="userName"
+          name="username"
+          required
+          placeholder="Enter your username"
+          autocomplete="username">
       </div>
-      <div>
-        <label>Password:</label>
-        <input type="password" [(ngModel)]="password" name="password" required>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          required
+          placeholder="Enter your password"
+          autocomplete="current-password">
       </div>
-      <button type="submit" [disabled]="loginForm.invalid">Login</button>
-      <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+      <button
+        type="submit"
+        [disabled]="loginForm.invalid"
+        class="login-button">
+        Login
+      </button>
     </form>
   </div>
+</div>
