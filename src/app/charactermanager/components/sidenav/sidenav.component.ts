@@ -18,12 +18,11 @@ export class SidenavComponent {
   opened?: boolean = true;
   public isScreenSmall!: boolean;
 
-  setActivePC(pc: PC) {
+  setActivePC(pc: PC): void {
     this.pcService.setActivePC(pc);
   }
 
-  addCharacter() {
-    this.createPCEvent.emit()
+  addCharacter(): void {
+    this.createPCEvent.emit();
   }
-
 }
