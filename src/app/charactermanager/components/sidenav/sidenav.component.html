@@ -5,9 +5,8 @@
     </mat-toolbar>
     <mat-nav-list>
       <ng-container *ngIf="pcs">
-        <mat-list-item *ngFor="let pc of pcs">
-          <!-- <a matListItemTitle [routerLink]="['/charactermanager', pc.id]">{{ pc.name }}</a> -->
-          <a matListItemTitle (click)="setActivePC(pc)">{{ pc.name }}</a>
+        <mat-list-item *ngFor="let pc of pcs" (click)="setActivePC(pc)">
+          <span matListItemTitle>{{ pc.name }}</span>
        </mat-list-item>
       </ng-container>
     </mat-nav-list>
@@ -17,7 +16,7 @@
         <mat-icon class="extra-small-icon">add</mat-icon>
       </button>
     </div>
-    
+
   </mat-sidenav>
 
   <mat-sidenav-content class="app-sidenav-content">
