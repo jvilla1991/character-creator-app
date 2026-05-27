@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { PC } from './models/pc';
 import { PCService } from './services/pc.service';
 
@@ -9,31 +10,36 @@ import { PCService } from './services/pc.service';
   template: `
     <app-sidenav [pcs]="pcs" *ngIf="pcs" ></app-sidenav>
   `,
-  styles: [
-  ]
+  styles: []
 })
-export class CharactermanagerAppComponent implements OnInit {
-  pcs!: PC[];
+export class CharactermanagerAppComponent implements OnInit, OnDestroy {
+  pcs: PC[] = [];
 
-  constructor(private pcService: PCService, private router: Router) {
-    this.loadPCs();
-    
+  private pcsSub!: Subscription;
+
+  constructor(private pcService: PCService, private router: Router) {}
+
+  ngOnInit(): void {
+    // Drive sidenav from the shared reactive stream so any service call
+    // (delete, add, refresh) automatically updates the list without navigation
+    this.pcsSub = this.pcService.pcs$.subscribe(pcs => {
+      this.pcs = pcs;
+    });
+
+    // Initial load
+    this.pcService.refreshPCs();
+
+    // Reload when navigating back into the character manager (e.g. after create)
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
         if (this.router.url.includes('/charactermanager')) {
-          this.loadPCs();
+          this.pcService.refreshPCs();
         }
       });
   }
 
-  ngOnInit(): void {
-  }
-
-  private loadPCs(): void {
-    this.pcService.getPCs().subscribe(data => {
-      this.pcs = data;
-      this.pcService.setPCs(this.pcs);
-    });
+  ngOnDestroy(): void {
+    this.pcsSub.unsubscribe();
   }
 }
