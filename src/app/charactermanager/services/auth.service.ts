@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, Observable, of, tap } from 'rxjs';
+import { catchError, delay, Observable, of, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,15 @@ export class AuthService {
   constructor(private router: Router, private http: HttpClient) {}
 
   login(userName: string, password: string): Observable<any> {
+    if (environment.demoMode) {
+      const mockResponse = {
+        success: true,
+        token: 'demo-token-' + Date.now()
+      };
+      localStorage.setItem('token', mockResponse.token);
+      return of(mockResponse);
+    }
+
     return this.http.post<any>(this.authUrl + '/authenticate', { userName, password }).pipe(
       tap(response => {
         console.log(response);

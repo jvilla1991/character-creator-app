@@ -25,6 +25,14 @@ export class PCService {
   }
 
   PCById(params: HttpParams) {
+    if (environment.demoMode) {
+      const idParam = params.get('id');
+      if (idParam) {
+        const pc = this.PCs.find(p => p.id === parseInt(idParam, 10));
+        return of(pc || {} as PC).pipe(delay(300));
+      }
+      return of({} as PC).pipe(delay(300));
+    }
     return this.http.get<PC>(this.pcUrl + 'find/', { params });
   }
 
