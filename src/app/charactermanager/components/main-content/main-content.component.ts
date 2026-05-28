@@ -1,6 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
@@ -12,21 +11,26 @@ import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/de
   templateUrl: './main-content.component.html',
   styleUrls: ['./main-content.component.scss']
 })
-export class MainContentComponent {
+export class MainContentComponent implements OnInit {
   pc: PC | null = null;
   isCreatingCharacter = false;
   characterClasses: string[] = [];
   newPC: PC = {} as PC;
 
-  constructor(private route: ActivatedRoute, private router: Router, private pcService: PCService,
-    private dndResourceService: DndResourcesService, private modal: MatDialog) { }
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private pcService: PCService,
+    private dndResourceService: DndResourcesService,
+    private modal: MatDialog
+  ) {}
 
   ngOnInit() {
     this.pcService.getActivePC().subscribe((pc) => {
       this.pc = pc;
     });
 
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe(() => {
       this.isCreatingCharacter = this.router.url.includes('create');
     });
 
@@ -67,14 +71,18 @@ export class MainContentComponent {
         this.pcService.deletePC(this.pc.id).subscribe({
           complete: () => {
             console.log("Character deleted successfully.");
-            this.router.navigate(['/charactermanager']);
+            // Clear the view and refresh the sidenav list without navigating,
+            // avoiding the same-URL no-op problem with router.navigate
+            this.pcService.clearActivePC();
+            this.pcService.refreshPCs();
           },
           error: (error) => console.error("Error deleting character:", error)
         });
       }
     });
   }
+
   stopCharacterCreation() {
-    return null;
+    this.router.navigate(['/charactermanager']);
   }
 }
