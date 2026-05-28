@@ -1,53 +1,234 @@
 <router-outlet></router-outlet>
 
 <div class="content-area">
+
+  <!-- ════════════════════════════════════════════════════════════
+       CHARACTER CREATION WIZARD
+       ════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="isCreatingCharacter; else viewCharacter">
-    <h2>Create a New Character</h2>
 
-    <label>Character Name:
-      <input type="text" [(ngModel)]="newPC.name">
-    </label>
+    <h2>Create a New Character <small style="font-size:0.6em;color:#888">(D&amp;D 2024)</small></h2>
 
-    <label>Character Class:
-      <select [(ngModel)]="newPC.clazz">
-        <option *ngFor="let clazz of characterClasses" [value]="clazz">
-          {{ clazz }}
-        </option>
-      </select>
-    </label>
+    <mat-stepper orientation="horizontal" #stepper>
 
-    <button (click)="submitPC()">Create Character</button>
-    <button (click)="stopCharacterCreation()">Cancel</button>
+      <!-- ── Step 1: Name ─────────────────────────────────────── -->
+      <mat-step label="Name" [completed]="!!newPC.name">
+        <div class="wizard-step">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Character Name</mat-label>
+            <input matInput [(ngModel)]="newPC.name" name="charName" placeholder="e.g. Lyra Moonwhisper" required>
+          </mat-form-field>
+        </div>
+        <div class="step-actions">
+          <button mat-button (click)="stopCharacterCreation()">Cancel</button>
+          <button mat-button matStepperNext color="primary" [disabled]="!newPC.name">Next</button>
+        </div>
+      </mat-step>
+
+      <!-- ── Step 2: Species ──────────────────────────────────── -->
+      <mat-step label="Species" [completed]="!!newPC.race">
+        <div class="wizard-step">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Species</mat-label>
+            <mat-select [(ngModel)]="newPC.race" name="charRace" required>
+              <mat-option *ngFor="let s of speciesList" [value]="s">{{ s }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <p class="hint" *ngIf="newPC.race">
+            Species from the <strong>D&amp;D 2024</strong> ruleset.
+          </p>
+        </div>
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button matStepperNext color="primary" [disabled]="!newPC.race">Next</button>
+        </div>
+      </mat-step>
+
+      <!-- ── Step 3: Class ────────────────────────────────────── -->
+      <mat-step label="Class" [completed]="!!newPC.clazz">
+        <div class="wizard-step">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Class</mat-label>
+            <mat-select [(ngModel)]="newPC.clazz" name="charClass"
+                        (ngModelChange)="onClassSelected($event)" required>
+              <mat-option *ngFor="let c of characterClasses" [value]="c">{{ c }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="class-detail" *ngIf="selectedClassDetail">
+            <mat-chip-listbox>
+              <mat-chip>Hit Die: d{{ selectedClassDetail.hit_die }}</mat-chip>
+              <mat-chip *ngFor="let s of selectedClassDetail.saving_throws">
+                {{ s.name }} save
+              </mat-chip>
+            </mat-chip-listbox>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button matStepperNext color="primary" [disabled]="!newPC.clazz">Next</button>
+        </div>
+      </mat-step>
+
+      <!-- ── Step 4: Background ───────────────────────────────── -->
+      <mat-step label="Background" [completed]="!!newPC.background">
+        <div class="wizard-step">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Background</mat-label>
+            <mat-select [(ngModel)]="newPC.background" name="charBackground"
+                        (ngModelChange)="onBackgroundSelected($event)" required>
+              <mat-option *ngFor="let b of backgroundList" [value]="b">{{ b }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div *ngIf="selectedBackgroundDetail">
+            <p class="hint">
+              This background lets you place <strong>+2</strong> and <strong>+1</strong>
+              bonuses across:
+              <strong>{{ selectedBackgroundDetail.ability_scores | json | slice:1:-1 | slice:0 }}</strong>
+            </p>
+            <mat-chip-listbox>
+              <mat-chip *ngFor="let a of selectedBackgroundDetail.ability_scores">
+                {{ a.name }}
+              </mat-chip>
+            </mat-chip-listbox>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-button matStepperNext color="primary" [disabled]="!newPC.background">Next</button>
+        </div>
+      </mat-step>
+
+      <!-- ── Step 5: Ability Scores ───────────────────────────── -->
+      <mat-step label="Ability Scores" [completed]="isStep5Complete()">
+        <div class="wizard-step">
+          <p class="hint">
+            Assign each value from the <strong>Standard Array</strong>
+            [{{ standardArray.join(', ') }}] to one ability.
+            Then choose your background's +2 and +1 bonuses.
+          </p>
+
+          <!-- Standard Array assignment -->
+          <table class="ability-table">
+            <thead>
+              <tr>
+                <th>Ability</th>
+                <th>Base Value</th>
+                <th *ngIf="selectedBackgroundDetail">Bonus</th>
+                <th>Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ability of abilities">
+                <td><strong>{{ ability }}</strong></td>
+                <td>
+                  <mat-form-field appearance="outline" class="ability-select">
+                    <mat-select [(ngModel)]="abilityAssignments[ability]"
+                                [name]="'ability_' + ability">
+                      <mat-option [value]="null">—</mat-option>
+                      <mat-option *ngFor="let v of availableValuesFor(ability)" [value]="v">
+                        {{ v }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </td>
+                <td *ngIf="selectedBackgroundDetail">
+                  <span [class.bonus-active]="getBonusFor(ability) > 0">
+                    {{ getBonusFor(ability) > 0 ? '+' + getBonusFor(ability) : '—' }}
+                  </span>
+                </td>
+                <td class="final-stat">
+                  {{ abilityAssignments[ability] !== null ? getFinalStat(ability) : '—' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Background bonus assignment -->
+          <div *ngIf="selectedBackgroundDetail" class="bonus-section">
+            <h4>Background Bonus ({{ newPC.background }})</h4>
+            <mat-form-field appearance="outline">
+              <mat-label>+2 bonus to</mat-label>
+              <mat-select [(ngModel)]="backgroundBonuses.plus2" name="bgPlus2"
+                          (ngModelChange)="backgroundBonuses.plus1 = null">
+                <mat-option [value]="null">—</mat-option>
+                <mat-option *ngFor="let a of selectedBackgroundDetail.ability_scores"
+                            [value]="a.name">{{ a.name }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>+1 bonus to</mat-label>
+              <mat-select [(ngModel)]="backgroundBonuses.plus1" name="bgPlus1"
+                          [disabled]="!backgroundBonuses.plus2">
+                <mat-option [value]="null">—</mat-option>
+                <mat-option *ngFor="let a of eligibleForPlus1" [value]="a">{{ a }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <!-- Review summary -->
+          <mat-divider style="margin: 16px 0"></mat-divider>
+          <div *ngIf="isStep5Complete()" class="review-summary">
+            <h4>Summary</h4>
+            <p>
+              <strong>{{ newPC.name }}</strong> &mdash;
+              {{ newPC.race }} {{ newPC.clazz }}
+              ({{ newPC.background }})
+            </p>
+            <p>Hit Points: <strong>{{ getMaxHp() }}</strong>
+              (d{{ selectedClassDetail?.hit_die ?? 8 }} + CON mod)</p>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-raised-button color="primary"
+                  [disabled]="!isStep5Complete()"
+                  (click)="submitPC()">
+            Create Character
+          </button>
+        </div>
+      </mat-step>
+
+    </mat-stepper>
   </ng-container>
 
+  <!-- ════════════════════════════════════════════════════════════
+       CHARACTER VIEW
+       ════════════════════════════════════════════════════════════ -->
   <ng-template #viewCharacter>
-    <div *ngIf="pc">
+    <div *ngIf="pc; else noCharacterSelected">
       <mat-card class="example-card">
         <mat-card-header>
-          <!-- <mat-icon mat-card-avatar svgIcon="{{pc.avatar}}"></mat-icon> -->
           <mat-card-title>{{ pc.name }}</mat-card-title>
-          <mat-card-subtitle>{{ pc.clazz }} {{ pc.level }}</mat-card-subtitle>
+          <mat-card-subtitle>
+            {{ pc.race ? pc.race + ' · ' : '' }}{{ pc.clazz }} · Level {{ pc.level }}
+          </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <mat-tab-group>
-            <mat-tab label="Ability Scores"> Ability Scores </mat-tab>
-              <p>This card indeterminates progress bar.</p>
-            <mat-tab label="Equipment"> Equipment </mat-tab>
-            <mat-tab label="Spells"> Spells </mat-tab>
+            <mat-tab label="Ability Scores">Ability Scores</mat-tab>
+            <mat-tab label="Equipment">Equipment</mat-tab>
+            <mat-tab label="Spells">Spells</mat-tab>
           </mat-tab-group>
         </mat-card-content>
         <mat-card-actions>
-          <button mat-button color="primary" class="green-button" disabled>PLAY</button>
+          <button mat-button color="primary" disabled>PLAY</button>
           <button mat-button disabled>EDIT</button>
-          <button mat-button mat-button color="warn" (click)="openDeleteModal()">DELETE</button>
+          <button mat-button color="warn" (click)="openDeleteModal()">DELETE</button>
         </mat-card-actions>
       </mat-card>
-  </div>
+    </div>
 
     <ng-template #noCharacterSelected>
-      <h2>No Character Selected</h2>
-      <p>Select or create a character to begin.</p>
-        <mat-spinner></mat-spinner>
+      <div style="padding: 24px; text-align: center; color: #888;">
+        <mat-icon style="font-size: 48px; height: 48px; width: 48px;">person_search</mat-icon>
+        <h3>No Character Selected</h3>
+        <p>Select a character from the list or click <strong>+</strong> to create one.</p>
+      </div>
     </ng-template>
   </ng-template>
+
 </div>
