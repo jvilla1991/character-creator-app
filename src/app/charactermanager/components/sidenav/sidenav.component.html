@@ -1,29 +1,110 @@
-<mat-sidenav-container class="app-sidenav-container">
-  <mat-sidenav #sidenav class="app-sidenav mat-elevation-z3" [opened]="!isScreenSmall" [mode]="isScreenSmall ? 'over': 'side'">
-    <mat-toolbar color="primary">
-      <span>Characters</span>
-    </mat-toolbar>
-    <mat-nav-list>
-      <ng-container *ngIf="pcs">
-        <mat-list-item *ngFor="let pc of pcs">
-          <!-- <a matListItemTitle [routerLink]="['/charactermanager', pc.id]">{{ pc.name }}</a> -->
-          <a matListItemTitle (click)="setActivePC(pc)">{{ pc.name }}</a>
-       </mat-list-item>
-      </ng-container>
-    </mat-nav-list>
+<div class="app">
 
-    <div class="add-character-container">
-      <button mat-mini-fab color="accent" [routerLink]="['/charactermanager/create']" class="add-character-btn" matTooltip="Add Character">
-        <mat-icon class="extra-small-icon">add</mat-icon>
+  <!-- ═══════════════════════════════════════════════
+       SIDEBAR ROSTER
+       ═══════════════════════════════════════════════ -->
+  <aside class="sidebar">
+
+    <!-- Brand block -->
+    <div class="brand">
+      <div class="brand-mark">
+        <!-- SigilBrand — two concentric circles + 10-point star + center dot -->
+        <svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2">
+          <circle cx="24" cy="24" r="22" opacity="0.35"/>
+          <circle cx="24" cy="24" r="14"/>
+          <polygon points="24,6 28,20 42,22 30,30 34,44 24,36 14,44 18,30 6,22 20,20" stroke-linejoin="round"/>
+          <circle cx="24" cy="24" r="3" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">TABLE MIMIC</div>
+        <div class="brand-sub">a chronicle of heroes &amp; hauntings</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search">
+      <svg class="search-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="7" cy="7" r="5"/>
+        <path d="M11 11l4 4"/>
+      </svg>
+      <input
+        [(ngModel)]="query"
+        placeholder="Search heroes, players, classes…"
+        autocomplete="off"
+      >
+    </div>
+
+    <!-- Party groups (scrollable) -->
+    <div style="overflow-y: auto; flex: 1;">
+
+      <p *ngIf="filteredByParty.length === 0"
+         style="padding: 20px; color: var(--text-dim); font-style: italic; text-align: center; font-size: 13px; margin: 0;">
+        No heroes match that name.
+      </p>
+
+      <div class="party-section" *ngFor="let group of filteredByParty">
+
+        <!-- Party header (collapsible) -->
+        <div
+          class="party-header"
+          [class.collapsed]="collapsedParties.has(group.party)"
+          (click)="toggleCollapse(group.party)"
+        >
+          <svg class="party-chevron" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 4l3 3 3-3"/>
+          </svg>
+          <span class="party-name">{{ group.party }}</span>
+          <span class="party-count">{{ padCount(group.members.length) }}</span>
+        </div>
+
+        <!-- Roster items -->
+        <div class="roster-items" *ngIf="!collapsedParties.has(group.party)">
+          <div
+            class="roster-item"
+            [class.active]="(activePC$ | async)?.id === pc.id"
+            *ngFor="let pc of group.members"
+            (click)="setActivePC(pc)"
+          >
+            <!-- Portrait circle -->
+            <div class="portrait" [style.background]="tintFor(pc)">
+              {{ initialsFor(pc) }}
+            </div>
+
+            <!-- Name + meta -->
+            <div style="min-width: 0;">
+              <div class="roster-name">{{ pc.name }}</div>
+              <div class="roster-meta">{{ pc.race }} {{ pc.clazz }}</div>
+            </div>
+
+            <!-- Level pill -->
+            <div class="roster-level">L{{ pc.level }}</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer CTA -->
+    <div class="sidebar-footer">
+      <button class="btn primary" (click)="forgeHero()">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
+             style="margin-right: 8px; vertical-align: -2px;">
+          <path d="M8 3v10M3 8h10"/>
+        </svg>
+        Forge Hero
       </button>
     </div>
 
-  </mat-sidenav>
+  </aside>
 
-  <mat-sidenav-content class="app-sidenav-content">
-    <app-toolbar (toggleSidenav)="sidenav.toggle()"></app-toolbar>
-    <div class="wrapper">
+  <!-- ═══════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════ -->
+  <main class="main">
+    <div class="main-inner">
       <router-outlet></router-outlet>
     </div>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </main>
+
+</div>

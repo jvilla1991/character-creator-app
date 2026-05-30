@@ -1,0 +1,193 @@
+<div class="modal wizard">
+
+  <!-- Step indicator -->
+  <div class="wizard-steps">
+    <div *ngFor="let n of [1,2,3,4,5]"
+         class="step-dot"
+         [class.active]="step === n"
+         [class.done]="step > n">
+      <span *ngIf="step <= n">{{ n }}</span>
+      <span *ngIf="step > n">✓</span>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
+  <ng-container *ngIf="step === 1">
+    <div class="modal-title">Forge a New Hero</div>
+    <div class="modal-sub">Every legend begins with a name written in ink, and most end the same way.</div>
+
+    <div class="field">
+      <label>Hero's Name</label>
+      <input [(ngModel)]="name"
+             placeholder="e.g. Seraphina Goldveil"
+             autofocus
+             (keydown.enter)="next()"
+             (keydown.escape)="cancel()">
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label>Player</label>
+        <input [(ngModel)]="player" placeholder="who plays them">
+      </div>
+      <div class="field">
+        <label>Party</label>
+        <select [(ngModel)]="party">
+          <option *ngFor="let p of partyList" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
+  <ng-container *ngIf="step === 2">
+    <div class="modal-title">Choose a Species</div>
+    <div class="modal-sub">Your species shapes your heritage, size, and innate traits.</div>
+
+    <div *ngIf="loadingSpecies" class="loading">Loading species…</div>
+    <div *ngIf="!loadingSpecies" class="class-picker">
+      <button *ngFor="let s of speciesList; trackBy: trackByName"
+              class="class-pick"
+              [class.active]="species === s"
+              type="button"
+              (click)="species = s">{{ s }}</button>
+    </div>
+  </ng-container>
+
+  <!-- ── Step 3: Class ───────────────────────────────────────────────── -->
+  <ng-container *ngIf="step === 3">
+    <div class="modal-title">Choose a Class</div>
+    <div class="modal-sub">Your class sets your hit points, fighting style, and saving throw proficiencies.</div>
+
+    <div *ngIf="loadingClassList" class="loading">Loading classes…</div>
+    <div *ngIf="!loadingClassList" class="class-picker">
+      <button *ngFor="let c of classList"
+              class="class-pick"
+              [class.active]="clazz === c"
+              type="button"
+              (click)="clazz = c; onClassChange()">{{ c }}</button>
+    </div>
+
+    <div *ngIf="classDetail" class="detail-card" [class.updating]="loadingClassDetail">
+      <div class="detail-row">
+        <span class="detail-label">Hit Die</span>
+        <span class="detail-value">d{{ classDetail.hit_die }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Saving Throws</span>
+        <span class="detail-value">{{ classSavingThrows }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Step 4: Background ──────────────────────────────────────────── -->
+  <ng-container *ngIf="step === 4">
+    <div class="modal-title">Choose a Background</div>
+    <div class="modal-sub">Your background grants skill proficiencies, a feat, and ability score bonuses.</div>
+
+    <div class="source-filters">
+      <label *ngFor="let group of backgroundGroups; trackBy: trackBySource"
+             class="source-toggle"
+             [class.disabled]="!enabledSources[group.source]">
+        <input type="checkbox"
+               [checked]="enabledSources[group.source]"
+               (change)="toggleSource(group.source)">
+        {{ group.source }}
+      </label>
+    </div>
+
+    <div *ngFor="let group of activeBackgroundGroups; trackBy: trackBySource" class="background-group">
+      <div class="background-group-label">{{ group.source }}</div>
+      <div class="class-picker">
+        <button *ngFor="let b of group.backgrounds; trackBy: trackByName"
+                class="class-pick"
+                [class.active]="background === b"
+                type="button"
+                (click)="background = b; onBackgroundChange()">{{ b }}</button>
+      </div>
+    </div>
+
+    <div *ngIf="loadingBackgroundDetail" class="loading">Loading background details…</div>
+    <div *ngIf="backgroundDetail && !loadingBackgroundDetail" class="detail-card">
+      <div class="detail-row">
+        <span class="detail-label">Ability Bonuses</span>
+        <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames }}</span>
+      </div>
+      <div *ngIf="backgroundDetail.proficiencies?.length" class="detail-row">
+        <span class="detail-label">Proficiencies</span>
+        <span class="detail-value">{{ backgroundProficiencyNames }}</span>
+      </div>
+      <div *ngIf="backgroundDetail.feat" class="detail-row">
+        <span class="detail-label">Feat</span>
+        <span class="detail-value">{{ backgroundDetail.feat!.name }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Step 5: Ability Scores ──────────────────────────────────────── -->
+  <ng-container *ngIf="step === 5">
+    <div class="modal-title">Assign Ability Scores</div>
+    <div class="modal-sub">
+      Distribute the Standard Array [15, 14, 13, 12, 10, 8] across your six abilities,
+      then apply your background's +2/+1 bonus.
+    </div>
+
+    <!-- Standard Array assignment -->
+    <div class="ability-grid">
+      <div *ngFor="let ability of abilities" class="ability-row">
+        <span class="ability-label">{{ ability }}</span>
+        <select class="ability-select" [(ngModel)]="assignments[ability]">
+          <option [ngValue]="null">—</option>
+          <option *ngFor="let v of availableFor(ability)" [ngValue]="v">{{ v }}</option>
+        </select>
+        <span class="ability-bonus">
+          <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
+          <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+        </span>
+        <span class="ability-final" *ngIf="assignments[ability] !== null">
+          = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+        </span>
+      </div>
+    </div>
+
+    <!-- Background bonus selectors -->
+    <div *ngIf="backgroundDetail && bonusAbilities.length" class="bonus-selectors">
+      <div class="field">
+        <label>{{ background }} +2 bonus</label>
+        <select [(ngModel)]="bonusPlus2">
+          <option value="">— choose ability —</option>
+          <option *ngFor="let a of bonusAbilities"
+                  [value]="a"
+                  [disabled]="bonusPlus1 === a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>{{ background }} +1 bonus</label>
+        <select [(ngModel)]="bonusPlus1">
+          <option value="">— choose ability —</option>
+          <option *ngFor="let a of bonusAbilities"
+                  [value]="a"
+                  [disabled]="bonusPlus2 === a">{{ a }}</option>
+        </select>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Actions ─────────────────────────────────────────────────────── -->
+  <div class="modal-actions">
+    <button class="btn" type="button" (click)="step > 1 ? back() : cancel()">
+      {{ step > 1 ? 'Back' : 'Cancel' }}
+    </button>
+    <button *ngIf="step < totalSteps"
+            class="btn primary"
+            type="button"
+            [disabled]="!canAdvance"
+            (click)="next()">Next →</button>
+    <button *ngIf="step === totalSteps"
+            class="btn primary"
+            type="button"
+            [disabled]="!canAdvance"
+            (click)="submit()">Inscribe</button>
+  </div>
+
+</div>

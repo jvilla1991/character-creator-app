@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  demoMode: true  // Set to true to run without APIs/databases
+  demoMode: false
 };
 
 /*

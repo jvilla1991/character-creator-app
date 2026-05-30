@@ -1,88 +1,55 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
-import { DndResourcesService } from '../../services/dnd-resources.service';
-import { MatDialog } from '@angular/material/dialog';
-import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
+import { CharacterModalService } from '../../services/character-modal.service';
 
 @Component({
   selector: 'app-main-content',
   templateUrl: './main-content.component.html',
   styleUrls: ['./main-content.component.scss']
 })
-export class MainContentComponent implements OnInit {
+export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
-  isCreatingCharacter = false;
-  characterClasses: string[] = [];
-  newPC: PC = {} as PC;
+  isDeleteModalOpen = false;
+
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
     private pcService: PCService,
-    private dndResourceService: DndResourcesService,
-    private modal: MatDialog
+    private characterModal: CharacterModalService,
   ) {}
 
-  ngOnInit() {
-    this.pcService.getActivePC().subscribe((pc) => {
-      this.pc = pc;
-    });
-
-    this.route.paramMap.subscribe(() => {
-      this.isCreatingCharacter = this.router.url.includes('create');
-    });
-
-    if (this.isCreatingCharacter) {
-      this.dndResourceService.getClassNames().subscribe(
-        (data) => {
-          this.characterClasses = data;
-          console.log('Fetched classes:', this.characterClasses);
-        },
-        (error) => console.error('Error fetching classes', error)
-      );
-    }
+  ngOnInit(): void {
+    this.pcService.getActivePC()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(pc => { this.pc = pc; });
   }
 
-  submitPC() {
-    if (!this.newPC.name || !this.newPC.clazz) {
-      alert("Please enter a character name and select a class.");
-      return;
-    }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-    this.pcService.addPC(this.newPC).subscribe(
-      (response) => {
-        console.log("Character Created Successfully:", response);
-        this.router.navigate(['/charactermanager']);
+  // ── Create modal ─────────────────────────────────────────────────────────
+
+  openCreateModal(): void { this.characterModal.openCreateModal(); }
+
+  // ── Delete modal ─────────────────────────────────────────────────────────
+
+  openDeleteModal(): void  { this.isDeleteModalOpen = true;  }
+  closeDeleteModal(): void { this.isDeleteModalOpen = false; }
+
+  onDeleteConfirm(): void {
+    if (!this.pc) return;
+    this.pcService.deletePC(this.pc.id).subscribe({
+      complete: () => {
+        this.closeDeleteModal();
+        this.pcService.clearActivePC();
+        this.pcService.refreshPCs();
       },
-      (error) => {
-        console.error("Error creating character", error);
-        alert("Failed to create character. Please try again.");
-      }
-    );
-  }
-
-  openDeleteModal() {
-    const dialogRef = this.modal.open(DeleteConfirmationModalComponent);
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result && this.pc) {
-        this.pcService.deletePC(this.pc.id).subscribe({
-          complete: () => {
-            console.log("Character deleted successfully.");
-            // Clear the view and refresh the sidenav list without navigating,
-            // avoiding the same-URL no-op problem with router.navigate
-            this.pcService.clearActivePC();
-            this.pcService.refreshPCs();
-          },
-          error: (error) => console.error("Error deleting character:", error)
-        });
-      }
+      error: err => console.error('Error deleting character:', err)
     });
-  }
-
-  stopCharacterCreation() {
-    this.router.navigate(['/charactermanager']);
   }
 }
