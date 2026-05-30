@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { PC } from '../../models/pc';
 import { DndBackground, DndClass } from '../../models/dnd-api.types';
 import { DndResourcesService } from '../../services/dnd-resources.service';
+import { fmtMod, modFromScore } from '../../utils/character-math';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -53,10 +53,10 @@ export class CreateCharacterModalComponent implements OnInit {
   bonusPlus2: Ability | '' = '';
   bonusPlus1: Ability | '' = '';
 
-  constructor(
-    public dialogRef: MatDialogRef<CreateCharacterModalComponent>,
-    private dndResources: DndResourcesService,
-  ) {}
+  @Output() confirm = new EventEmitter<Partial<PC>>();
+  @Output() close   = new EventEmitter<void>();
+
+  constructor(private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
     this.dndResources.getPartyNames().subscribe(list => {
@@ -190,14 +190,9 @@ export class CreateCharacterModalComponent implements OnInit {
     return base + bonus;
   }
 
-  modifier(score: number): string {
-    const mod = Math.floor((score - 10) / 2);
-    return mod >= 0 ? `+${mod}` : `${mod}`;
-  }
+  modifier(score: number): string { return fmtMod(modFromScore(score)); }
 
-  private modNum(score: number): number {
-    return Math.floor((score - 10) / 2);
-  }
+  private modNum(score: number): number { return modFromScore(score); }
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -229,9 +224,11 @@ export class CreateCharacterModalComponent implements OnInit {
     const saves = (this.classDetail?.saving_throws ?? [])
       .map(s => s.name) as Array<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'>;
 
+    const displayPlayer = this.player.trim() || '—';
     const draft: Partial<PC> = {
       name:             trimmedName,
-      player:           this.player.trim() || '—',
+      playerName:       displayPlayer,   // required by PC interface (backend compat)
+      player:           displayPlayer,   // display field used by new UI
       party:            this.party,
       race:             this.species,
       clazz:            this.clazz,
@@ -255,8 +252,8 @@ export class CreateCharacterModalComponent implements OnInit {
       spellSlots:       {},
     };
 
-    this.dialogRef.close(draft);
+    this.confirm.emit(draft);
   }
 
-  cancel(): void { this.dialogRef.close(null); }
+  cancel(): void { this.close.emit(); }
 }
