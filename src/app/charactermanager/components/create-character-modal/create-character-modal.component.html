@@ -86,13 +86,15 @@
     <div class="modal-title">Choose a Background</div>
     <div class="modal-sub">Your background grants skill proficiencies, a feat, and ability score bonuses.</div>
 
-    <div *ngIf="loadingBackgroundList" class="loading">Loading backgrounds…</div>
-    <div *ngIf="!loadingBackgroundList" class="class-picker">
-      <button *ngFor="let b of backgroundList"
-              class="class-pick"
-              [class.active]="background === b"
-              type="button"
-              (click)="background = b; onBackgroundChange()">{{ b }}</button>
+    <div *ngFor="let group of backgroundGroups" class="background-group">
+      <div class="background-group-label">{{ group.source }}</div>
+      <div class="class-picker">
+        <button *ngFor="let b of group.backgrounds"
+                class="class-pick"
+                [class.active]="background === b"
+                type="button"
+                (click)="background = b; onBackgroundChange()">{{ b }}</button>
+      </div>
     </div>
 
     <div *ngIf="loadingBackgroundDetail" class="loading">Loading background details…</div>

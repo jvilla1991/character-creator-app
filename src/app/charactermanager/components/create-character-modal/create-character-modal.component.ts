@@ -1,6 +1,8 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Subject } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { PC } from '../../models/pc';
-import { DndBackground, DndClass } from '../../models/dnd-api.types';
+import { BackgroundGroup, DndBackground, DndClass } from '../../models/dnd-api.types';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
@@ -13,7 +15,7 @@ type Ability = typeof ABILITIES[number];
   templateUrl: './create-character-modal.component.html',
   styleUrls: ['./create-character-modal.component.scss']
 })
-export class CreateCharacterModalComponent implements OnInit {
+export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Wizard state ─────────────────────────────────────────────────────────
   step = 1;
@@ -36,13 +38,18 @@ export class CreateCharacterModalComponent implements OnInit {
   classDetail:  DndClass | null = null;
   loadingClassList   = true;
   loadingClassDetail = false;
+  // switchMap subject — cancels in-flight requests when class changes
+  private classTrigger$ = new Subject<string>();
 
   // ── Step 4: Background ───────────────────────────────────────────────────
-  backgroundList:   string[]      = [];
+  backgroundGroups: BackgroundGroup[] = [];
   background        = '';
   backgroundDetail: DndBackground | null = null;
-  loadingBackgroundList   = true;
   loadingBackgroundDetail = false;
+  // switchMap subject — cancels in-flight requests when background changes
+  private backgroundTrigger$ = new Subject<string>();
+
+  private destroy$ = new Subject<void>();
 
   // ── Step 5: Ability Scores ───────────────────────────────────────────────
   readonly abilities     = ABILITIES;
@@ -59,32 +66,59 @@ export class CreateCharacterModalComponent implements OnInit {
   constructor(private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
+    // ── switchMap pipelines — automatically cancels stale requests ──────────
+    this.classTrigger$.pipe(
+      switchMap(name => {
+        this.loadingClassDetail = true;
+        return this.dndResources.getClassDetail(name);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(detail => {
+      this.classDetail        = detail;
+      this.loadingClassDetail = false;
+    });
+
+    this.backgroundTrigger$.pipe(
+      switchMap(name => {
+        this.loadingBackgroundDetail = true;
+        return this.dndResources.getBackgroundDetail(name);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(detail => {
+      this.backgroundDetail        = detail;
+      this.loadingBackgroundDetail = false;
+    });
+
+    // ── Load lists ───────────────────────────────────────────────────────────
     this.dndResources.getPartyNames().subscribe(list => {
       this.partyList = list;
       this.party     = list[0] ?? '';
     });
 
-    this.dndResources.getSpeciesList().subscribe(list => {
-      this.speciesList   = list;
-      this.species       = list[0] ?? '';
+    this.dndResources.getSpeciesList().pipe(takeUntil(this.destroy$)).subscribe(list => {
+      this.speciesList    = list;
+      this.species        = list[0] ?? '';
       this.loadingSpecies = false;
     });
 
-    this.dndResources.getClassNames2024().subscribe(list => {
-      this.classList       = list;
-      this.clazz           = list[0] ?? '';
+    this.dndResources.getClassNames2024().pipe(takeUntil(this.destroy$)).subscribe(list => {
+      this.classList        = list;
+      this.clazz            = list[0] ?? '';
       this.loadingClassList = false;
-      // Pre-fetch detail for the default selection so step 3 loads instantly
-      this.fetchClassDetail(this.clazz);
+      if (this.clazz) this.classTrigger$.next(this.clazz);
     });
 
-    this.dndResources.getBackgroundList().subscribe(list => {
-      this.backgroundList       = list;
-      this.background           = list[0] ?? '';
-      this.loadingBackgroundList = false;
-      // Pre-fetch detail for the default selection so step 4 loads instantly
-      this.fetchBackgroundDetail(this.background);
+    this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
+      this.backgroundGroups = groups;
+      const first = groups[0]?.backgrounds[0] ?? '';
+      this.background = first;
+      if (first) this.backgroundTrigger$.next(first);
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -106,9 +140,9 @@ export class CreateCharacterModalComponent implements OnInit {
   next(): void {
     if (!this.canAdvance) return;
     this.step++;
-    // Safety: ensure detail is fetched if not yet loaded when entering a step
-    if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail)      this.fetchClassDetail(this.clazz);
-    if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail) this.fetchBackgroundDetail(this.background);
+    // Safety: fire triggers if detail not yet loaded when entering a step
+    if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
+    if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
   }
 
   back(): void { if (this.step > 1) this.step--; }
@@ -117,16 +151,7 @@ export class CreateCharacterModalComponent implements OnInit {
 
   onClassChange(): void {
     this.classDetail = null;
-    this.fetchClassDetail(this.clazz);
-  }
-
-  private fetchClassDetail(name: string): void {
-    if (!name) return;
-    this.loadingClassDetail = true;
-    this.dndResources.getClassDetail(name).subscribe(detail => {
-      this.classDetail        = detail;
-      this.loadingClassDetail = false;
-    });
+    if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 
   get classSavingThrows(): string {
@@ -139,16 +164,7 @@ export class CreateCharacterModalComponent implements OnInit {
     this.backgroundDetail = null;
     this.bonusPlus2 = '';
     this.bonusPlus1 = '';
-    this.fetchBackgroundDetail(this.background);
-  }
-
-  private fetchBackgroundDetail(name: string): void {
-    if (!name) return;
-    this.loadingBackgroundDetail = true;
-    this.dndResources.getBackgroundDetail(name).subscribe(detail => {
-      this.backgroundDetail        = detail;
-      this.loadingBackgroundDetail = false;
-    });
+    if (this.background) this.backgroundTrigger$.next(this.background);
   }
 
   get backgroundAbilityNames(): string {

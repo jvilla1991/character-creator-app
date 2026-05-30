@@ -47,4 +47,12 @@ export interface DndBackground {
   ability_scores: DndResource[];
   proficiencies: DndResource[];
   feat?: DndResource;
+  /** Source book — Player's Handbook, Heroes of Faerun, Forge of the Artificer */
+  source?: string;
+}
+
+/** Backgrounds grouped by source book for display in the wizard */
+export interface BackgroundGroup {
+  source: string;
+  backgrounds: string[];
 }

@@ -158,6 +158,24 @@
   }
 }
 
+// ── Background source groups ──────────────────────────────────────────────
+
+.background-group {
+  margin-bottom: 12px;
+}
+
+.background-group-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
 // ── Background bonus selectors ───────────────────────────────────────────
 
 .bonus-selectors {
