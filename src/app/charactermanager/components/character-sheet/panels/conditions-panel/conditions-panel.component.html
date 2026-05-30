@@ -1,0 +1,14 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Conditions</span>
+  </div>
+  <div class="conditions">
+    <button
+      *ngFor="let c of conditions"
+      class="condition"
+      [class.active]="isActive(c)"
+      [class.exhaustion]="c === 'exhaustion'"
+      (click)="conditionToggled.emit(c)"
+    >{{ c }}</button>
+  </div>
+</div>

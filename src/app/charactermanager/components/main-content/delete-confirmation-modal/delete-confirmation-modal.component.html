@@ -1,11 +1,19 @@
-<h2>Confirm Deletion</h2>
-<p>Type "<strong>delete</strong>" below to confirm:</p>
+<div class="modal" style="border-color: var(--crimson);">
 
-<mat-form-field>
-  <input matInput [(ngModel)]="userInput" placeholder="Type 'delete' to confirm">
-</mat-form-field>
+  <div class="modal-title" style="color: var(--crimson);">Strike From The Record</div>
 
-<div mat-dialog-actions>
-  <button mat-button (click)="cancel()">Cancel</button>
-  <button mat-button color="warn" [disabled]="userInput.toLowerCase() !== 'delete'" (click)="confirmDelete()">Confirm</button>
+  <div class="modal-sub">
+    You are about to remove
+    <em style="color: var(--text); font-style: normal;">{{ pc.name }}</em>,
+    {{ pc.race }} {{ pc.clazz }} of level {{ pc.level }},
+    from the chronicle.
+    Their tale will not be remembered, nor their bones recovered.
+    This cannot be undone.
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn" type="button" (click)="cancel()">Reconsider</button>
+    <button class="btn danger" type="button" (click)="confirmDelete()">Erase Forever</button>
+  </div>
+
 </div>

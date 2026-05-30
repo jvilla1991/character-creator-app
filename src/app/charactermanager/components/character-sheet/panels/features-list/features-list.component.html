@@ -1,0 +1,16 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Class Features</span>
+  </div>
+  <div *ngFor="let f of pc.features" class="feature">
+    <div class="feature-head">
+      <span class="feature-name">{{ f.name }}</span>
+      <span class="feature-source">{{ f.source }}</span>
+    </div>
+    <div class="feature-desc">{{ f.desc }}</div>
+  </div>
+  <div *ngIf="!pc.features || pc.features.length === 0"
+       style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+    No features recorded.
+  </div>
+</div>

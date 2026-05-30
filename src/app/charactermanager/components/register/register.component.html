@@ -1,0 +1,103 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <!-- Brand -->
+    <div class="login-brand">
+      <div class="login-brand-mark">
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="40" cy="40" r="14" stroke="currentColor" stroke-width="0.8"/>
+          <circle cx="40" cy="40" r="26" stroke="currentColor" stroke-width="0.5" opacity="0.6"/>
+          <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="0.4" opacity="0.3"/>
+          <path d="M40 4v72M4 40h72M12 12l56 56M68 12L12 68" stroke="currentColor" stroke-width="0.6" opacity="0.7"/>
+          <polygon points="40,22 44,36 58,36 47,45 51,59 40,50 29,59 33,45 22,36 36,36"
+                   stroke="currentColor" stroke-width="0.6" fill="none" opacity="0.8"/>
+        </svg>
+      </div>
+      <div class="login-brand-name">Join the Compendium</div>
+      <div class="login-brand-sub">Bind your name to the arcane record</div>
+    </div>
+
+    <div class="login-divider"></div>
+
+    <form (ngSubmit)="register()" #registerForm="ngForm">
+
+      <!-- Name row -->
+      <div class="two-col">
+        <div class="field">
+          <label>First Name</label>
+          <input type="text" [(ngModel)]="firstName" name="firstName" required
+                 placeholder="First name" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label>Last Name</label>
+          <input type="text" [(ngModel)]="lastName" name="lastName" required
+                 placeholder="Last name" autocomplete="family-name">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="email" name="email" required
+               placeholder="your@email.com" autocomplete="email">
+      </div>
+
+      <div class="field">
+        <label>Username</label>
+        <input type="text" [(ngModel)]="userName" name="userName" required
+               placeholder="Choose a username" autocomplete="username">
+      </div>
+
+      <!-- Password row -->
+      <div class="two-col">
+        <div class="field">
+          <label>Password</label>
+          <div class="input-reveal">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   [(ngModel)]="password" name="password" required
+                   placeholder="Min. 6 characters" autocomplete="new-password">
+            <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
+                    [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Confirm</label>
+          <div class="input-reveal">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   [(ngModel)]="confirmPassword" name="confirmPassword"
+                   placeholder="Repeat password" autocomplete="new-password"
+                   [class.input-error]="passwordMismatch">
+            <!-- no separate toggle — showPassword controls both fields together -->
+          </div>
+        </div>
+      </div>
+
+      <div class="login-error" *ngIf="passwordMismatch">
+        Passwords do not match.
+      </div>
+      <div class="login-error" *ngIf="errorMessage && !passwordMismatch">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="btn primary login-submit"
+              [disabled]="!formValid || loading">
+        {{ loading ? 'Inscribing…' : 'Inscribe Your Name' }}
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account?
+      <a routerLink="/login" class="auth-link">Sign in</a>
+    </div>
+
+  </div>
+</div>

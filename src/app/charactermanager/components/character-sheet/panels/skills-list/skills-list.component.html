@@ -1,0 +1,18 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Skills</span>
+  </div>
+  <div class="skills-list">
+    <div
+      *ngFor="let row of skillRows"
+      class="skill"
+      [class.prof]="row.profLevel === 'prof' || row.profLevel === 'expert'"
+      [class.expert]="row.profLevel === 'expert'"
+    >
+      <span class="skill-dot"></span>
+      <span class="skill-name">{{ row.name }}</span>
+      <span class="skill-ability">{{ row.abil }}</span>
+      <span class="skill-mod numeric">{{ row.modStr }}</span>
+    </div>
+  </div>
+</div>

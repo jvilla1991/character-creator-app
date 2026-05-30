@@ -1,0 +1,29 @@
+<div class="empty">
+
+  <!-- Arcane sigil -->
+  <div class="empty-sigil">
+    <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="currentColor" stroke-width="0.7">
+      <circle cx="60" cy="60" r="56" opacity="0.4"/>
+      <circle cx="60" cy="60" r="42"/>
+      <circle cx="60" cy="60" r="28"/>
+      <polygon points="60,12 72,46 108,46 78,68 90,104 60,82 30,104 42,68 12,46 48,46"/>
+      <path d="M60 4v112M4 60h112M19 19l82 82M101 19L19 101" opacity="0.4"/>
+    </svg>
+  </div>
+
+  <!-- Copy -->
+  <div>
+    <div class="empty-title">No Hero Selected</div>
+    <div class="empty-sub">Choose a name from the chronicle, or inscribe a new soul to begin.</div>
+  </div>
+
+  <!-- CTA -->
+  <button class="btn primary" style="flex: none" (click)="forgeHero.emit()">
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
+         style="margin-right: 8px; vertical-align: -2px;">
+      <path d="M8 3v10M3 8h10"/>
+    </svg>
+    Forge a Hero
+  </button>
+
+</div>

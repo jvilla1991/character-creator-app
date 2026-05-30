@@ -1,6 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
-import { PCService } from 'src/app/charactermanager/services/pc.service';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { PC } from '../../../models/pc';
 
 @Component({
   selector: 'app-delete-confirmation-modal',
@@ -8,17 +7,10 @@ import { PCService } from 'src/app/charactermanager/services/pc.service';
   styleUrls: ['./delete-confirmation-modal.component.scss']
 })
 export class DeleteConfirmationModalComponent {
-  userInput: string = '';
+  @Input()  pc!: PC;
+  @Output() confirm = new EventEmitter<void>();
+  @Output() close   = new EventEmitter<void>();
 
-  constructor(public dialogRef: MatDialogRef<DeleteConfirmationModalComponent>, private pcService: PCService ) {}
-
-  confirmDelete() {
-    if (this.userInput.toLowerCase() === 'delete') {
-      this.dialogRef.close(true);
-    }
-  }
-
-  cancel() {
-    this.dialogRef.close(false);
-  }
+  confirmDelete(): void { this.confirm.emit(); }
+  cancel(): void        { this.close.emit();   }
 }
