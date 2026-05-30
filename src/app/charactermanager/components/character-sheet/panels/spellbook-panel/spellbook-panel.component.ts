@@ -48,4 +48,12 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   trackByLvl(_: number, row: SpellLevel): number { return row.lvl; }
+
+  // ── Expand/collapse spell detail ─────────────────────────────────────────
+  expandedSpells: Record<string, boolean> = {};
+
+  toggleExpand(name: string): void {
+    // New object reference required for OnPush change detection
+    this.expandedSpells = { ...this.expandedSpells, [name]: !this.expandedSpells[name] };
+  }
 }

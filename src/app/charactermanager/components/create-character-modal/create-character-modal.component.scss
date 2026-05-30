@@ -210,6 +210,131 @@
   }
 }
 
+// ── Spell step ───────────────────────────────────────────────────────────
+
+.spell-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.spell-level-tab {
+  padding: 4px 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+    color: #a78bfa;
+  }
+}
+
+.spell-search {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  font-family: 'EB Garamond', serif;
+  font-size: 13px;
+  border-radius: 2px;
+  outline: none;
+
+  &:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
+}
+
+.spell-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+  margin-bottom: 10px;
+}
+
+.spell-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+  }
+
+  &.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.spell-pick-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.spell-pick-meta {
+  font-family: 'EB Garamond', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.spell-pick-badge {
+  display: inline-block;
+  font-style: normal;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.5);
+  color: #a78bfa;
+  vertical-align: middle;
+}
+
+.spell-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+
+  span.complete { color: #a78bfa; }
+}
+
+.spell-counter-sep { opacity: 0.4; }
+
 // ── Background source groups ──────────────────────────────────────────────
 
 .background-group {

@@ -1,9 +1,9 @@
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subject } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
-import { PC } from '../../models/pc';
-import { BackgroundGroup, DndBackground, DndClass } from '../../models/dnd-api.types';
-import { DndResourcesService } from '../../services/dnd-resources.service';
+import { PC, PcSpell } from '../../models/pc';
+import { BackgroundGroup, DndBackground, DndClass, DndSpell } from '../../models/dnd-api.types';
+import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES } from '../../services/dnd-resources.service';
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
@@ -19,7 +19,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Wizard state ─────────────────────────────────────────────────────────
   step = 1;
-  readonly totalSteps = 5;
+
+  get isSpellcastingClass(): boolean {
+    return SPELLCASTING_CLASSES.has(this.clazz.toLowerCase());
+  }
+
+  get totalSteps(): number {
+    return this.isSpellcastingClass ? 6 : 5;
+  }
+
+  get stepRange(): number[] {
+    return Array.from({ length: this.totalSteps }, (_, i) => i + 1);
+  }
 
   // ── Step 1: Identity ─────────────────────────────────────────────────────
   name   = '';
@@ -56,6 +67,45 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Step 5: Ability Scores ───────────────────────────────────────────────
   readonly abilities     = ABILITIES;
   readonly standardArray = [...STANDARD_ARRAY] as number[];
+
+  // ── Step 6: Spells (spellcasting classes only) ───────────────────────────
+  spellList:      DndSpell[] = [];
+  loadingSpells   = false;
+  selectedSpells: DndSpell[] = [];
+  spellLevelFilter: number | 'all' = 'all';
+  spellSearch     = '';
+
+  get maxCantrips(): number   { return SPELL_COUNTS[this.clazz.toLowerCase()]?.cantrips ?? 0; }
+  get maxKnownSpells(): number { return SPELL_COUNTS[this.clazz.toLowerCase()]?.spells ?? 0; }
+
+  get selectedCantrips(): number  { return this.selectedSpells.filter(s => s.level === 0).length; }
+  get selectedLeveled(): number   { return this.selectedSpells.filter(s => s.level > 0).length; }
+
+  get filteredSpellList(): DndSpell[] {
+    return this.spellList.filter(s => {
+      const levelOk = this.spellLevelFilter === 'all'
+        ? s.level <= 1
+        : s.level === this.spellLevelFilter;
+      const searchOk = !this.spellSearch ||
+        s.name.toLowerCase().includes(this.spellSearch.toLowerCase());
+      return levelOk && searchOk;
+    });
+  }
+
+  isSpellSelected(spell: DndSpell): boolean {
+    return this.selectedSpells.some(s => s.name === spell.name);
+  }
+
+  toggleSpell(spell: DndSpell): void {
+    if (this.isSpellSelected(spell)) {
+      this.selectedSpells = this.selectedSpells.filter(s => s.name !== spell.name);
+      return;
+    }
+    const isCantrip = spell.level === 0;
+    if (isCantrip && this.selectedCantrips >= this.maxCantrips) return;
+    if (!isCantrip && this.selectedLeveled >= this.maxKnownSpells) return;
+    this.selectedSpells = [...this.selectedSpells, spell];
+  }
   assignments: Record<Ability, number | null> = {
     STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null,
   };
@@ -139,6 +189,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                   && !!this.bonusPlus2
                   && !!this.bonusPlus1
                   && this.bonusPlus2 !== this.bonusPlus1;
+      case 6: return true; // spell selection is optional
       default: return false;
     }
   }
@@ -149,6 +200,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // Safety: fire triggers if detail not yet loaded when entering a step
     if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
     if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
+    // Load spells when entering step 6
+    if (this.step === 6 && this.isSpellcastingClass && !this.spellList.length) {
+      this.loadingSpells = true;
+      this.dndResources.getSpellsForClass(this.clazz)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(spells => {
+          this.spellList    = spells;
+          this.loadingSpells = false;
+        });
+    }
   }
 
   back(): void { if (this.step > 1) this.step--; }
@@ -159,6 +220,22 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   trackByName(_: number, name: string): string { return name; }
   trackBySource(_: number, group: BackgroundGroup): string { return group.source; }
+  trackBySpellName(_: number, spell: DndSpell): string { return spell.name; }
+
+  // ── Starting spell slots (level 1) ───────────────────────────────────────
+
+  private buildStartingSlots(clazz: string): { [level: number]: { max: number; used: number } } {
+    const key = clazz.toLowerCase();
+    const slotMap: Record<string, { [level: number]: { max: number; used: number } }> = {
+      bard:     { 1: { max: 2, used: 0 } },
+      cleric:   { 1: { max: 2, used: 0 } },
+      druid:    { 1: { max: 2, used: 0 } },
+      sorcerer: { 1: { max: 2, used: 0 } },
+      warlock:  { 1: { max: 1, used: 0 } },
+      wizard:   { 1: { max: 2, used: 0 } },
+    };
+    return slotMap[key] ?? {};
+  }
 
   // ── Source filter (step 4) ────────────────────────────────────────────────
 
@@ -297,8 +374,22 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       weapons:          [],
       gear:             [],
       features:         [],
-      spells:           [],
-      spellSlots:       {},
+      spells: this.selectedSpells.map((s): PcSpell => ({
+        lvl:            s.level,
+        name:           s.name,
+        school:         s.school,
+        time:           s.actionType,
+        prepared:       true,
+        concentration:  s.concentration,
+        ritual:         s.ritual,
+        range:          s.range,
+        components:     s.components,
+        duration:       s.duration,
+        description:    s.description,
+        material:       s.material,
+        higherLevelSlot: s.higherLevelSlot,
+      })),
+      spellSlots: this.buildStartingSlots(this.clazz),
     };
 
     this.confirm.emit(draft);

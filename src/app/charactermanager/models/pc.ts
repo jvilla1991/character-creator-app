@@ -1,3 +1,21 @@
+/** A spell as stored on a character — lean subset of DndSpell plus enrichment fields */
+export interface PcSpell {
+  lvl: number;
+  name: string;
+  school: string;
+  time: string;
+  prepared: boolean;
+  // Enrichment fields (optional — populated from DndSpell at selection time)
+  concentration?: boolean;
+  ritual?: boolean;
+  range?: string;
+  components?: string[];
+  duration?: string;
+  description?: string;
+  material?: string;
+  higherLevelSlot?: string;
+}
+
 export interface PC {
   // --- Core (backend-persisted) ---
   id: number;
@@ -32,7 +50,7 @@ export interface PC {
 
   // Spells
   spellSlots?: { [level: number]: { max: number; used: number } };
-  spells?: Array<{ lvl: number; name: string; school: string; time: string; prepared: boolean }>;
+  spells?: PcSpell[];
 
   // Inventory
   weapons?: Array<{ name: string; magic?: boolean; dmg: string; notes?: string }>;

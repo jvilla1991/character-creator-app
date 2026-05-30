@@ -226,8 +226,9 @@ export class PCService {
     }
     this.http.get<PC[]>(this.pcUrl + 'all').subscribe({
       next: (pcs) => {
-        this.pcs = pcs;
-        this.pcsSubject.next(pcs);
+        const parsed = pcs.map(pc => this.parseSpells(pc));
+        this.pcs = parsed;
+        this.pcsSubject.next(parsed);
       },
       error: (err) => console.error('Failed to load PCs', err)
     });
@@ -237,7 +238,9 @@ export class PCService {
     if (environment.demoMode) {
       return of(this.pcs).pipe(delay(300));
     }
-    return this.http.get<PC[]>(this.pcUrl + 'all');
+    return this.http.get<PC[]>(this.pcUrl + 'all').pipe(
+      map(pcs => pcs.map(pc => this.parseSpells(pc)))
+    );
   }
 
   PCById(params: HttpParams) {
@@ -304,7 +307,8 @@ export class PCService {
       this.pcsSubject.next(this.pcs);
       return of(mockPC).pipe(delay(300));
     }
-    // Map the frontend's nested stats object to individual backend columns
+    // Map the frontend's nested stats object to individual backend columns.
+    // Spells are serialized to a JSON string so the TEXT column accepts them.
     const payload = {
       ...newPC,
       abilityStr: newPC.stats?.STR ?? null,
@@ -313,8 +317,23 @@ export class PCService {
       abilityInt: newPC.stats?.INT ?? null,
       abilityWis: newPC.stats?.WIS ?? null,
       abilityCha: newPC.stats?.CHA ?? null,
+      spells: JSON.stringify(newPC.spells ?? []),
     };
-    return this.http.post<PC>(this.pcUrl + 'add', payload);
+    return this.http.post<PC>(this.pcUrl + 'add', payload).pipe(
+      map(pc => this.parseSpells(pc))
+    );
+  }
+
+  /** Deserialize spells TEXT column back to array (backend stores JSON string). */
+  private parseSpells(pc: PC): PC {
+    if (typeof (pc.spells as unknown) === 'string') {
+      try {
+        return { ...pc, spells: JSON.parse(pc.spells as unknown as string) };
+      } catch {
+        return { ...pc, spells: [] };
+      }
+    }
+    return { ...pc, spells: pc.spells ?? [] };
   }
 
   deletePC(id: number) {

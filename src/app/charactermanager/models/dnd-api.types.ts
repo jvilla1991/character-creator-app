@@ -56,3 +56,31 @@ export interface BackgroundGroup {
   source: string;
   backgrounds: string[];
 }
+
+// ── Spell reference data (SRD 5.2 asset) ─────────────────────────────────────
+
+export type SpellSchool =
+  'abjuration' | 'conjuration' | 'divination' | 'enchantment' |
+  'evocation'  | 'illusion'   | 'necromancy' | 'transmutation';
+
+export type SpellComponent = 'v' | 's' | 'm';
+
+/** Full spell record as it appears in srd-5.2-spells.json */
+export interface DndSpell {
+  name: string;
+  level: number;
+  school: SpellSchool;
+  classes: string[];          // lowercase: 'bard', 'cleric', etc.
+  actionType: string;         // 'action' | 'bonus action' | 'reaction'
+  concentration: boolean;
+  ritual: boolean;
+  range: string;
+  components: SpellComponent[];
+  duration: string;
+  description: string;
+  material?: string;          // text of material component
+  castingTime?: string;       // for multi-action casts (e.g. "1 hour")
+  castingTrigger?: string;    // reaction trigger condition
+  cantripUpgrade?: string;    // cantrip damage scaling text
+  higherLevelSlot?: string;   // upcast description
+}

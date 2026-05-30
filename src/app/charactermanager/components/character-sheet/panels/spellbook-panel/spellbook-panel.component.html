@@ -28,10 +28,24 @@
         </div>
       </div>
 
-      <div *ngFor="let s of level.spells" class="spell-row">
-        <span class="spell-name" [class.prepared]="s.prepared">{{ s.name }}</span>
-        <span class="spell-school">{{ s.school }}</span>
-        <span class="spell-time">{{ s.time }}</span>
+      <div *ngFor="let s of level.spells">
+        <div class="spell-row" (click)="toggleExpand(s.name)" style="cursor:pointer">
+          <span class="spell-name" [class.prepared]="s.prepared">{{ s.name }}</span>
+          <span class="spell-badge conc"   *ngIf="s.concentration" title="Concentration">C</span>
+          <span class="spell-badge ritual" *ngIf="s.ritual"        title="Ritual">R</span>
+          <span class="spell-school">{{ s.school }}</span>
+          <span class="spell-time">{{ s.time }}</span>
+          <span class="spell-range" *ngIf="s.range">{{ s.range }}</span>
+        </div>
+        <div class="spell-expand" *ngIf="expandedSpells[s.name]">
+          <p class="spell-desc"     *ngIf="s.description">{{ s.description }}</p>
+          <p class="spell-higher"   *ngIf="s.higherLevelSlot"><em>At higher levels:</em> {{ s.higherLevelSlot }}</p>
+          <p class="spell-material" *ngIf="s.material"><em>Materials:</em> {{ s.material }}</p>
+          <div class="spell-expand-meta" *ngIf="s.components?.length || s.duration">
+            <span *ngIf="s.components?.length">{{ s.components?.join(', ')?.toUpperCase() }}</span>
+            <span *ngIf="s.duration">{{ s.duration }}</span>
+          </div>
+        </div>
       </div>
 
     </div>

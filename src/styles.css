@@ -778,18 +778,31 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
 .spell-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 10px;
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto auto;
+  gap: 8px;
+  align-items: center;
   padding: 5px 0;
   font-size: 14px;
+  transition: opacity 0.15s;
 }
+.spell-row:hover { opacity: 0.85; }
 .spell-name, .equip-item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spell-name { color: var(--text); }
 .spell-name.prepared::before {
   content: '◆ ';
   color: var(--gold);
 }
+.spell-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 1px 4px;
+  border-radius: 100px;
+  line-height: 1.6;
+}
+.spell-badge.conc   { color: #7dd3fc; border: 1px solid rgba(125,211,252,0.4); }
+.spell-badge.ritual { color: var(--gold); border: 1px solid rgba(212,175,55,0.4); }
 .spell-school {
   font-family: 'EB Garamond', serif;
   font-style: italic;
@@ -800,6 +813,33 @@ app-root { display: block; height: 100vh; width: 100vw; }
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--text-dim);
+}
+.spell-range {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.spell-expand {
+  padding: 6px 4px 10px 14px;
+  border-left: 2px solid var(--border-soft);
+  margin: 0 0 6px;
+}
+.spell-desc, .spell-higher, .spell-material {
+  font-family: 'EB Garamond', serif;
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  margin: 0 0 5px;
+  line-height: 1.5;
+}
+.spell-higher em, .spell-material em { color: var(--text-dim); font-style: italic; }
+.spell-expand-meta {
+  display: flex;
+  gap: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
 }
 
 /* === CONDITIONS === */

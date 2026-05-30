@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, shareReplay } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BackgroundGroup, DndBackground, DndClass, DndListResponse, DndResource } from '../models/dnd-api.types';
+import { BackgroundGroup, DndBackground, DndClass, DndListResponse, DndResource, DndSpell } from '../models/dnd-api.types';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -96,12 +96,31 @@ const PARTY_LIST = [
   'Unassigned',
 ];
 
+// ── Spell constants ───────────────────────────────────────────────────────────
+
+/** Classes that have a full spell list at character creation */
+export const SPELLCASTING_CLASSES = new Set([
+  'bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'
+]);
+
+/** Starting cantrips known + spells prepared/known at level 1, per class */
+export const SPELL_COUNTS: Record<string, { cantrips: number; spells: number }> = {
+  bard:     { cantrips: 2, spells: 4 },
+  cleric:   { cantrips: 3, spells: 4 },
+  druid:    { cantrips: 2, spells: 4 },
+  sorcerer: { cantrips: 4, spells: 2 },
+  warlock:  { cantrips: 2, spells: 2 },
+  wizard:   { cantrips: 3, spells: 6 },
+};
+
 @Injectable({ providedIn: 'root' })
 export class DndResourcesService {
   /** 2014 ruleset — kept for backward compatibility */
   private dndResourceUrl = 'https://www.dnd5eapi.co/api/2014/';
   /** 2024 ruleset — used for class detail lookups */
   private dnd2024Url     = 'https://www.dnd5eapi.co/api/2024/';
+
+  private spells$: Observable<DndSpell[]> | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -153,5 +172,25 @@ export class DndResourcesService {
     if (bg) return of(bg);
     // Graceful fallback: return a minimal shell so the UI doesn't break
     return of({ index: name.toLowerCase(), name, ability_scores: [], proficiencies: [] });
+  }
+
+  // ── Spell methods — loaded lazily from asset, cached for the session ────────
+
+  /** All 339 SRD 5.2 spells. Fetched once on first call; cached via shareReplay. */
+  getSpells(): Observable<DndSpell[]> {
+    if (!this.spells$) {
+      this.spells$ = this.http
+        .get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json')
+        .pipe(shareReplay(1));
+    }
+    return this.spells$;
+  }
+
+  /** Spells available to a specific class (case-insensitive). */
+  getSpellsForClass(className: string): Observable<DndSpell[]> {
+    const key = className.toLowerCase();
+    return this.getSpells().pipe(
+      map(spells => spells.filter(s => s.classes.includes(key)))
+    );
   }
 }
