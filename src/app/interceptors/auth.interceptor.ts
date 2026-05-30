@@ -10,7 +10,12 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.authService.getToken();
 
-    if (token) {
+    // A valid JWT always contains exactly two '.' characters (header.payload.signature).
+    // Guard against stale non-JWT values (e.g. old demo-mode tokens) so we never
+    // send a malformed Authorization header to the backend.
+    const isJwt = token && token.split('.').length === 3;
+
+    if (isJwt) {
       const authRequest = request.clone({
         setHeaders: { Authorization: `Bearer ${token}` }
       });
