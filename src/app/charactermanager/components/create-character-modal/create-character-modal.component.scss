@@ -75,6 +75,17 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
+  transition: opacity 0.15s;
+
+  &.updating {
+    opacity: 0.45;
+    animation: pulse-opacity 0.8s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes pulse-opacity {
+  from { opacity: 0.45; }
+  to   { opacity: 0.25; }
 }
 
 .detail-row {
@@ -155,6 +166,47 @@
     font-size: 12px;
     color: rgba(255, 255, 255, 0.4);
     margin-left: 4px;
+  }
+}
+
+// ── Source filter checkboxes ─────────────────────────────────────────────
+
+.source-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.source-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(138, 92, 246, 0.35);
+  background: rgba(138, 92, 246, 0.1);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  input[type="checkbox"] {
+    accent-color: #8a5cf6;
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+  }
+
+  &.disabled {
+    color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
   }
 }
 

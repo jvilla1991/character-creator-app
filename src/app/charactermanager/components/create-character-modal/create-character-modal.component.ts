@@ -43,6 +43,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Step 4: Background ───────────────────────────────────────────────────
   backgroundGroups: BackgroundGroup[] = [];
+  /** Which source books are currently enabled (all on by default) */
+  enabledSources: Record<string, boolean> = {};
   background        = '';
   backgroundDetail: DndBackground | null = null;
   loadingBackgroundDetail = false;
@@ -110,6 +112,10 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
     this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
       this.backgroundGroups = groups;
+      // Enable all sources by default
+      this.enabledSources = Object.fromEntries(
+        groups.map(g => [g.source, g.source === "Player's Handbook"])
+      );
       const first = groups[0]?.backgrounds[0] ?? '';
       this.background = first;
       if (first) this.backgroundTrigger$.next(first);
@@ -149,8 +155,35 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Class detail ─────────────────────────────────────────────────────────
 
+  // ── trackBy helpers (prevents full *ngFor DOM reconstruction) ───────────
+
+  trackByName(_: number, name: string): string { return name; }
+  trackBySource(_: number, group: BackgroundGroup): string { return group.source; }
+
+  // ── Source filter (step 4) ────────────────────────────────────────────────
+
+  /** Only the groups whose source is currently ticked */
+  get activeBackgroundGroups(): BackgroundGroup[] {
+    return this.backgroundGroups.filter(g => this.enabledSources[g.source]);
+  }
+
+  toggleSource(source: string): void {
+    this.enabledSources = { ...this.enabledSources, [source]: !this.enabledSources[source] };
+
+    // If the selected background just became hidden, auto-pick the first visible one
+    const selectedStillVisible = this.activeBackgroundGroups
+      .some(g => g.backgrounds.includes(this.background));
+
+    if (!selectedStillVisible) {
+      const first = this.activeBackgroundGroups[0]?.backgrounds[0] ?? '';
+      this.background = first;
+      if (first) this.onBackgroundChange();
+    }
+  }
+
+  // ── Class detail ─────────────────────────────────────────────────────────
+
   onClassChange(): void {
-    this.classDetail = null;
     if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 

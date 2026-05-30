@@ -46,14 +46,40 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('token');
+    this.router.navigate(['/login']);
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    // For demo tokens (non-JWT) treat as always valid
+    if (token.split('.').length !== 3) return true;
+    const exp = this.getTokenExpiry(token);
+    return exp === null || exp > Date.now();
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    // Evict expired tokens eagerly so nothing else has to check
+    if (token && token.split('.').length === 3) {
+      const exp = this.getTokenExpiry(token);
+      if (exp !== null && exp <= Date.now()) {
+        localStorage.removeItem('token');
+        return null;
+      }
+    }
+    return token;
+  }
+
+  private getTokenExpiry(token: string): number | null {
+    try {
+      // JWT uses base64url — replace chars that atob doesn't handle
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
   }
 
 }

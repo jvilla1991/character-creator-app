@@ -1008,6 +1008,31 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-color: var(--gold);
   box-shadow: var(--glow-gold);
 }
+.input-reveal {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-reveal input {
+  padding-right: 38px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+.reveal-toggle {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.reveal-toggle:hover { color: var(--text); }
+.reveal-toggle svg { width: 16px; height: 16px; }
+
 .class-picker {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 // ---------------------------------------------------------------------------
@@ -186,7 +186,8 @@ const DEMO_PCS: PC[] = [
   providedIn: 'root',
 })
 export class PCService {
-  PCs: PC[] = environment.demoMode ? [...DEMO_PCS] : [];
+  /** @internal Use pcs$ or service methods; direct mutation breaks reactivity. */
+  private pcs: PC[] = environment.demoMode ? [...DEMO_PCS] : [];
 
   private pcsSubject = new BehaviorSubject<PC[]>(environment.demoMode ? [...DEMO_PCS] : []);
   pcs$ = this.pcsSubject.asObservable();
@@ -213,19 +214,19 @@ export class PCService {
 
   // Pushes a known list into the reactive stream (used by external loaders)
   setPCs(pcs: PC[]) {
-    this.PCs = pcs;
+    this.pcs = pcs;
     this.pcsSubject.next(pcs);
   }
 
   // Fetches PCs from the backend and pushes the result into pcs$
   refreshPCs(): void {
     if (environment.demoMode) {
-      this.pcsSubject.next(this.PCs);
+      this.pcsSubject.next(this.pcs);
       return;
     }
     this.http.get<PC[]>(this.pcUrl + 'all').subscribe({
       next: (pcs) => {
-        this.PCs = pcs;
+        this.pcs = pcs;
         this.pcsSubject.next(pcs);
       },
       error: (err) => console.error('Failed to load PCs', err)
@@ -234,7 +235,7 @@ export class PCService {
 
   getPCs() {
     if (environment.demoMode) {
-      return of(this.PCs).pipe(delay(300));
+      return of(this.pcs).pipe(delay(300));
     }
     return this.http.get<PC[]>(this.pcUrl + 'all');
   }
@@ -243,7 +244,7 @@ export class PCService {
     if (environment.demoMode) {
       const idParam = params.get('id');
       if (idParam) {
-        const pc = this.PCs.find(p => p.id === parseInt(idParam, 10));
+        const pc = this.pcs.find(p => p.id === parseInt(idParam, 10));
         return of(pc || {} as PC).pipe(delay(300));
       }
       return of({} as PC).pipe(delay(300));
@@ -252,7 +253,7 @@ export class PCService {
   }
 
   getPCById(id: number) {
-    return this.PCs.find((x) => x.id == id);
+    return this.pcs.find((x) => x.id == id);
   }
 
   setActivePC(pc: PC): void {
@@ -273,8 +274,8 @@ export class PCService {
    */
   updatePC(pc: PC): Observable<PC> {
     if (environment.demoMode) {
-      this.PCs = this.PCs.map(p => p.id === pc.id ? pc : p);
-      this.pcsSubject.next(this.PCs);
+      this.pcs = this.pcs.map(p => p.id === pc.id ? pc : p);
+      this.pcsSubject.next(this.pcs);
       // If this PC is currently active, refresh the active stream too
       const active = this.activePCSubject.getValue();
       if (active && active.id === pc.id) {
@@ -282,14 +283,25 @@ export class PCService {
       }
       return of(pc).pipe(delay(50));
     }
-    return this.http.put<PC>(this.pcUrl + pc.id, pc);
+    // Non-demo: persist to backend, then mirror the same optimistic update locally
+    // so activePC$ and pcs$ stay in sync without a full refresh.
+    return this.http.put<PC>(this.pcUrl + pc.id, pc).pipe(
+      tap(updated => {
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      })
+    );
   }
 
   addPC(newPC: PC) {
     if (environment.demoMode) {
       const mockPC: PC = { ...newPC, id: Date.now(), level: newPC.level ?? 1 };
-      this.PCs = [...this.PCs, mockPC];
-      this.pcsSubject.next(this.PCs);
+      this.pcs = [...this.pcs, mockPC];
+      this.pcsSubject.next(this.pcs);
       return of(mockPC).pipe(delay(300));
     }
     // Map the frontend's nested stats object to individual backend columns
@@ -307,8 +319,8 @@ export class PCService {
 
   deletePC(id: number) {
     if (environment.demoMode) {
-      this.PCs = this.PCs.filter(p => p.id !== id);
-      this.pcsSubject.next(this.PCs);
+      this.pcs = this.pcs.filter(p => p.id !== id);
+      this.pcsSubject.next(this.pcs);
       return of([] as PC[]).pipe(delay(300));
     }
     return this.http.delete<PC[]>(this.pcUrl + 'delete/' + id);

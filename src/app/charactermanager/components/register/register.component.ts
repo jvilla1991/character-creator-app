@@ -8,12 +8,13 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent {
-  firstName      = '';
-  lastName       = '';
-  email          = '';
-  userName       = '';
-  password       = '';
+  firstName       = '';
+  lastName        = '';
+  email           = '';
+  userName        = '';
+  password        = '';
   confirmPassword = '';
+  showPassword    = false;
 
   errorMessage = '';
   loading      = false;

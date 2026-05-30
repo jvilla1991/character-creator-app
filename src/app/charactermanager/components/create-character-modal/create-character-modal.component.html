@@ -46,7 +46,7 @@
 
     <div *ngIf="loadingSpecies" class="loading">Loading species…</div>
     <div *ngIf="!loadingSpecies" class="class-picker">
-      <button *ngFor="let s of speciesList"
+      <button *ngFor="let s of speciesList; trackBy: trackByName"
               class="class-pick"
               [class.active]="species === s"
               type="button"
@@ -68,8 +68,7 @@
               (click)="clazz = c; onClassChange()">{{ c }}</button>
     </div>
 
-    <div *ngIf="loadingClassDetail" class="loading">Loading class details…</div>
-    <div *ngIf="classDetail && !loadingClassDetail" class="detail-card">
+    <div *ngIf="classDetail" class="detail-card" [class.updating]="loadingClassDetail">
       <div class="detail-row">
         <span class="detail-label">Hit Die</span>
         <span class="detail-value">d{{ classDetail.hit_die }}</span>
@@ -86,10 +85,21 @@
     <div class="modal-title">Choose a Background</div>
     <div class="modal-sub">Your background grants skill proficiencies, a feat, and ability score bonuses.</div>
 
-    <div *ngFor="let group of backgroundGroups" class="background-group">
+    <div class="source-filters">
+      <label *ngFor="let group of backgroundGroups; trackBy: trackBySource"
+             class="source-toggle"
+             [class.disabled]="!enabledSources[group.source]">
+        <input type="checkbox"
+               [checked]="enabledSources[group.source]"
+               (change)="toggleSource(group.source)">
+        {{ group.source }}
+      </label>
+    </div>
+
+    <div *ngFor="let group of activeBackgroundGroups; trackBy: trackBySource" class="background-group">
       <div class="background-group-label">{{ group.source }}</div>
       <div class="class-picker">
-        <button *ngFor="let b of group.backgrounds"
+        <button *ngFor="let b of group.backgrounds; trackBy: trackByName"
                 class="class-pick"
                 [class.active]="background === b"
                 type="button"
