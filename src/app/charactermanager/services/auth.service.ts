@@ -33,6 +33,17 @@ export class AuthService {
     );
   }
 
+  register(firstName: string, lastName: string, email: string, userName: string, password: string): Observable<any> {
+    return this.http.post<any>(this.authUrl + '/register', { firstName, lastName, email, userName, password }).pipe(
+      tap(response => {
+        if (response?.success) {
+          localStorage.setItem('token', response.token);
+        }
+      }),
+      catchError(err => of({ success: false, error: err }))
+    );
+  }
+
   logout(): void {
     localStorage.removeItem('token');
   }
