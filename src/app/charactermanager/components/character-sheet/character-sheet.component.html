@@ -1,0 +1,98 @@
+<div class="fade-in">
+
+  <!-- ═══════════════════════════════════════════════
+       SHEET HEADER: portrait · identity · actions
+       ═══════════════════════════════════════════════ -->
+  <header class="sheet-header">
+
+    <!-- XL portrait circle -->
+    <div class="portrait xl" [style.background]="tintFor(pc)">
+      {{ initialsFor(pc) }}
+    </div>
+
+    <!-- Identity column -->
+    <div class="sheet-id">
+      <div class="eyebrow">{{ pc.party }} · played by {{ pc.player || pc.playerName }}</div>
+
+      <!-- Editable hero name -->
+      <input
+        *ngIf="editingName"
+        class="sheet-name sheet-name-edit"
+        [(ngModel)]="nameDraft"
+        (blur)="commitName()"
+        (keydown.enter)="commitName()"
+        (keydown.escape)="cancelNameEdit()"
+        autofocus
+      >
+      <h1
+        *ngIf="!editingName"
+        class="sheet-name"
+        (dblclick)="startNameEdit()"
+        title="Double-click to rename"
+      >{{ pc.name }}</h1>
+
+      <div class="sheet-subtitle">
+        {{ pc.race }}
+        <span class="dot">✦</span>
+        {{ pc.clazz }} <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
+        <span class="dot">✦</span>
+        Level {{ pc.level }}
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="sheet-actions">
+      <button class="btn" title="Roll dice">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/>
+          <path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
+        </svg>
+        Roll
+      </button>
+      <button class="btn" title="Take a long rest">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M2 3a1 1 0 011-1h4a1 1 0 011 1v11M8 3a1 1 0 011-1h4a1 1 0 011 1v11M2 14h12"/>
+        </svg>
+        Long Rest
+      </button>
+      <button class="btn danger icon" (click)="deleteRequested.emit()" title="Delete character">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
+        </svg>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       VITALS STRIP
+       ═══════════════════════════════════════════════ -->
+  <app-vitals-strip [pc]="pc" (hpChange)="updateHP($event)"></app-vitals-strip>
+
+  <!-- ═══════════════════════════════════════════════
+       SHEET GRID
+       ═══════════════════════════════════════════════ -->
+  <div class="sheet-grid">
+    <div class="col-left">
+      <app-ability-scores [pc]="pc"></app-ability-scores>
+      <app-skills-list    [pc]="pc"></app-skills-list>
+    </div>
+    <div class="col-right">
+      <app-conditions-panel
+        [pc]="pc"
+        (conditionToggled)="onConditionToggle($event)">
+      </app-conditions-panel>
+      <app-equipment-panel  [pc]="pc"></app-equipment-panel>
+      <app-spellbook-panel
+        [pc]="pc"
+        (slotToggled)="onSlotToggle($event.level, $event.index)">
+      </app-spellbook-panel>
+      <app-features-list    [pc]="pc"></app-features-list>
+      <app-coin-purse       [pc]="pc"></app-coin-purse>
+      <app-background-story [pc]="pc"></app-background-story>
+    </div>
+  </div>
+
+</div>

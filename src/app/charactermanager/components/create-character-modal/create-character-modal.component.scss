@@ -1,0 +1,363 @@
+// ── Wizard step indicator ─────────────────────────────────────────────────
+
+.wizard-steps {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.35);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  position: relative;
+
+  &.done {
+    background: rgba(138, 92, 246, 0.18);
+    border-color: rgba(138, 92, 246, 0.4);
+    color: rgba(138, 92, 246, 0.8);
+  }
+
+  &.active {
+    background: #8a5cf6;
+    border-color: #8a5cf6;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(138, 92, 246, 0.5);
+  }
+}
+
+// connector line between dots
+.step-dot + .step-dot::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 10px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+}
+
+// ── Layout helpers ────────────────────────────────────────────────────────
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+// ── Loading state ─────────────────────────────────────────────────────────
+
+.loading {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+// ── Detail card (class / background info) ────────────────────────────────
+
+.detail-card {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: opacity 0.15s;
+
+  &.updating {
+    opacity: 0.45;
+    animation: pulse-opacity 0.8s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes pulse-opacity {
+  from { opacity: 0.45; }
+  to   { opacity: 0.25; }
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+
+  & + & {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 6px;
+    padding-top: 10px;
+  }
+}
+
+.detail-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+.detail-value {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  text-align: right;
+}
+
+// ── Ability Score grid ───────────────────────────────────────────────────
+
+.ability-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.ability-row {
+  display: grid;
+  grid-template-columns: 44px 72px 28px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.ability-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+}
+
+.ability-select {
+  // inherits global select styles; override width
+  width: 100%;
+  font-size: 13px;
+}
+
+.ability-bonus {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a5cf6;
+  text-align: center;
+  min-width: 28px;
+}
+
+.ability-final {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+
+  em {
+    font-style: normal;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 4px;
+  }
+}
+
+// ── Source filter checkboxes ─────────────────────────────────────────────
+
+.source-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.source-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(138, 92, 246, 0.35);
+  background: rgba(138, 92, 246, 0.1);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  input[type="checkbox"] {
+    accent-color: #8a5cf6;
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+  }
+
+  &.disabled {
+    color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
+  }
+}
+
+// ── Spell step ───────────────────────────────────────────────────────────
+
+.spell-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.spell-level-tab {
+  padding: 4px 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+    color: #a78bfa;
+  }
+}
+
+.spell-search {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  font-family: 'EB Garamond', serif;
+  font-size: 13px;
+  border-radius: 2px;
+  outline: none;
+
+  &:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
+}
+
+.spell-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+  margin-bottom: 10px;
+}
+
+.spell-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+  }
+
+  &.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.spell-pick-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.spell-pick-meta {
+  font-family: 'EB Garamond', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.spell-pick-badge {
+  display: inline-block;
+  font-style: normal;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.5);
+  color: #a78bfa;
+  vertical-align: middle;
+}
+
+.spell-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+
+  span.complete { color: #a78bfa; }
+}
+
+.spell-counter-sep { opacity: 0.4; }
+
+// ── Background source groups ──────────────────────────────────────────────
+
+.background-group {
+  margin-bottom: 12px;
+}
+
+.background-group-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+// ── Background bonus selectors ───────────────────────────────────────────
+
+.bonus-selectors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}

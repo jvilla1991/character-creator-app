@@ -1,0 +1,17 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Ability Scores</span>
+  </div>
+  <div class="abilities">
+    <div
+      *ngFor="let row of rows"
+      class="ability"
+      [class.prof]="row.isSaveProf"
+    >
+      <div class="ability-save">save</div>
+      <div class="ability-name">{{ row.label }}</div>
+      <div class="ability-mod">{{ row.mod }}</div>
+      <div class="ability-score">{{ row.score }}</div>
+    </div>
+  </div>
+</div>

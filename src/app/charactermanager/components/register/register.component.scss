@@ -1,0 +1,33 @@
+// Reuses the login page layout — same midnight-fantasy card chrome.
+// The .login-page, .login-card, .login-brand*, .login-divider, .login-error,
+// .login-submit, .btn, .field globals are defined in login.component.scss
+// and styles.css respectively; we only add register-specific overrides here.
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.input-error {
+  border-color: var(--crimson) !important;
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--crimson) 20%, transparent) !important;
+}
+
+.auth-footer {
+  margin-top: 18px;
+  text-align: center;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.auth-link {
+  color: var(--gold);
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.15s;
+
+  &:hover { color: var(--gold-2); }
+}
