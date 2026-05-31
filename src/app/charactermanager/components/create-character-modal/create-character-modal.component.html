@@ -117,15 +117,85 @@
         <span class="detail-label">Proficiencies</span>
         <span class="detail-value">{{ backgroundProficiencyNames }}</span>
       </div>
-      <div *ngIf="backgroundDetail.feat" class="detail-row">
-        <span class="detail-label">Feat</span>
-        <span class="detail-value">{{ backgroundDetail.feat!.name }}</span>
+    </div>
+
+    <!-- Origin Feat card (always fixed per background — display only) -->
+    <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
+      <div class="feat-card-eyebrow">Origin Feat</div>
+      <div class="feat-card-name">{{ backgroundFeatName }}</div>
+      <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
+        {{ backgroundFeatDescription }}
+      </div>
+      <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
+        See the 2024 Player's Handbook for full details.
       </div>
     </div>
   </ng-container>
 
-  <!-- ── Step 5: Ability Scores ──────────────────────────────────────── -->
+  <!-- ── Step 5: Proficiencies & Languages ──────────────────────────────── -->
   <ng-container *ngIf="step === 5">
+    <div class="modal-title">Proficiencies &amp; Languages</div>
+    <div class="modal-sub">
+      Choose {{ classSkillConfig.choose }} skill{{ classSkillConfig.choose !== 1 ? 's' : '' }}
+      from your class list. Background skills and tools are already granted.
+    </div>
+
+    <!-- Class skill selection -->
+    <div class="prof-section">
+      <div class="prof-section-header">
+        <span class="eyebrow">{{ clazz }} Skills</span>
+        <span class="prof-counter" [class.complete]="classSkillsFull">
+          {{ selectedSkills.length }}/{{ classSkillConfig.choose }} chosen
+        </span>
+      </div>
+      <div class="skill-chips">
+        <button *ngFor="let skill of classSkillConfig.from; trackBy: trackByName"
+                type="button"
+                class="class-pick"
+                [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
+                [class.locked]="isSkillLocked(skill)"
+                [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
+                [disabled]="isSkillLocked(skill)"
+                (click)="toggleSkillProf(skill)">{{ skill }}</button>
+      </div>
+    </div>
+
+    <!-- Background proficiencies (read-only) -->
+    <div *ngIf="backgroundDetail" class="prof-section">
+      <div class="prof-section-header">
+        <span class="eyebrow">{{ background }} Proficiencies</span>
+      </div>
+      <div *ngIf="backgroundSkillProfs.length" class="skill-chips">
+        <span *ngFor="let skill of backgroundSkillProfs"
+              class="class-pick locked"
+              title="Granted by background">{{ skill }}</span>
+      </div>
+      <div *ngIf="backgroundToolProfs.length" class="prof-tool-list">
+        <span class="detail-label">Tools &amp; Equipment</span>
+        <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
+      </div>
+    </div>
+
+    <!-- Language selection -->
+    <div class="prof-section">
+      <div class="prof-section-header">
+        <span class="eyebrow">Languages</span>
+      </div>
+      <div class="language-row">
+        <span class="lang-chip locked">Common</span>
+        <div class="field lang-field">
+          <label>Additional Language</label>
+          <select [(ngModel)]="languageChoice" name="languageChoice">
+            <option value="">— choose a language —</option>
+            <option *ngFor="let lang of standardLanguages" [value]="lang">{{ lang }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Step 6: Ability Scores ──────────────────────────────────────── -->
+  <ng-container *ngIf="step === 6">
     <div class="modal-title">Assign Ability Scores</div>
     <div class="modal-sub">
       Distribute the Standard Array [15, 14, 13, 12, 10, 8] across your six abilities,
@@ -173,8 +243,8 @@
     </div>
   </ng-container>
 
-  <!-- ── Step 6: Spells ─────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 6">
+  <!-- ── Step 7: Spells ─────────────────────────────────────────────── -->
+  <ng-container *ngIf="step === 7">
     <div class="modal-title">Choose Your Spells</div>
     <div class="modal-sub">
       Select {{ maxCantrips }} cantrip{{ maxCantrips !== 1 ? 's' : '' }} and

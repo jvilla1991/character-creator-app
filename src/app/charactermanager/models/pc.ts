@@ -61,4 +61,9 @@ export interface PC {
   traits?: { Personality: string; Ideals: string; Bonds: string; Flaws: string };
   bio?: string;
   notes?: string; // DM-only notes
+
+  // Proficiencies / origin (populated in later wizard steps)
+  languages?: string[];
+  toolProfs?: string[];
+  feat?: string; // origin feat name
 }

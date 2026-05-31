@@ -113,6 +113,69 @@ export const SPELL_COUNTS: Record<string, { cantrips: number; spells: number }> 
   wizard:   { cantrips: 3, spells: 6 },
 };
 
+// ── Proficiency constants (2024 PHB) ──────────────────────────────────────────
+
+/** All 18 skill names, matching SKILL_DEFS canonical names in character-math.ts */
+export const ALL_SKILLS: string[] = [
+  'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception',
+  'History', 'Insight', 'Intimidation', 'Investigation', 'Medicine',
+  'Nature', 'Perception', 'Performance', 'Persuasion', 'Religion',
+  'Sleight', 'Stealth', 'Survival',
+];
+
+/** Class skill proficiency choices per 2024 PHB (choose N from the listed skills) */
+export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[] }> = {
+  barbarian: { choose: 2, from: ['Animal Handling', 'Athletics', 'Intimidation', 'Nature', 'Perception', 'Survival'] },
+  bard:      { choose: 3, from: ALL_SKILLS },
+  cleric:    { choose: 2, from: ['History', 'Insight', 'Medicine', 'Persuasion', 'Religion'] },
+  druid:     { choose: 2, from: ['Arcana', 'Animal Handling', 'Insight', 'Medicine', 'Nature', 'Perception', 'Religion', 'Survival'] },
+  fighter:   { choose: 2, from: ['Acrobatics', 'Animal Handling', 'Athletics', 'History', 'Insight', 'Intimidation', 'Perception', 'Survival'] },
+  monk:      { choose: 2, from: ['Acrobatics', 'Athletics', 'History', 'Insight', 'Religion', 'Stealth'] },
+  paladin:   { choose: 2, from: ['Athletics', 'Insight', 'Intimidation', 'Medicine', 'Persuasion', 'Religion'] },
+  ranger:    { choose: 3, from: ['Animal Handling', 'Athletics', 'Insight', 'Investigation', 'Nature', 'Perception', 'Stealth', 'Survival'] },
+  rogue:     { choose: 4, from: ['Acrobatics', 'Athletics', 'Deception', 'Insight', 'Intimidation', 'Investigation', 'Perception', 'Performance', 'Persuasion', 'Sleight', 'Stealth'] },
+  sorcerer:  { choose: 2, from: ['Arcana', 'Deception', 'Insight', 'Intimidation', 'Persuasion', 'Religion'] },
+  warlock:   { choose: 2, from: ['Arcana', 'Deception', 'History', 'Intimidation', 'Investigation', 'Nature', 'Religion'] },
+  wizard:    { choose: 2, from: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'] },
+};
+
+/**
+ * Short descriptions for the 2024 PHB Origin feats.
+ * Expansion-specific feats are not listed here and will render without a description.
+ */
+export const FEAT_DESCRIPTIONS: Record<string, string> = {
+  'Alert':
+    'You gain +2 to Initiative. You cannot be Surprised, and hidden creatures have no advantage on attack rolls against you.',
+  'Crafter':
+    'You gain proficiency with three Artisan\'s Tools. You can craft nonmagical items in half the normal time and buy goods at a 20% discount.',
+  'Healer':
+    'You can use a Healer\'s Kit to restore 1d6 + 4 HP to a creature (plus its max HD). You also learn Healing Word, usable once per Short or Long Rest without a spell slot.',
+  'Lucky':
+    'You have 3 Luck Points (refreshed on a Long Rest). Before any d20 Test, you can spend a point to roll twice and choose either result.',
+  'Magic Initiate (Cleric)':
+    'You learn two Cleric cantrips and one 1st-level Cleric spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Druid)':
+    'You learn two Druid cantrips and one 1st-level Druid spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Wizard)':
+    'You learn two Wizard cantrips and one 1st-level Wizard spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Musician':
+    'You gain proficiency with three Musical Instruments. Once per Long Rest you can perform for 1 minute to grant Bardic Inspiration dice to nearby friendly creatures.',
+  'Savage Attacker':
+    'Once per turn when you hit with a melee weapon attack, you may reroll the weapon\'s damage dice and use either result.',
+  'Skilled':
+    'You gain proficiency in any combination of three skills or tools of your choice.',
+  'Tavern Brawler':
+    'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
+  'Tough':
+    'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+};
+
+/** Standard languages available for the background language bonus */
+export const STANDARD_LANGUAGES: string[] = [
+  'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish',
+  'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc', 'Primordial',
+];
+
 @Injectable({ providedIn: 'root' })
 export class DndResourcesService {
   /** 2014 ruleset — kept for backward compatibility */
@@ -184,6 +247,16 @@ export class DndResourcesService {
         .pipe(shareReplay(1));
     }
     return this.spells$;
+  }
+
+  /** Short description for an Origin feat, or empty string if unknown. */
+  getFeatDescription(featName: string): string {
+    return FEAT_DESCRIPTIONS[featName] ?? '';
+  }
+
+  /** Class skill proficiency choices for step 5 of the wizard. */
+  getClassSkillChoices(className: string): { choose: number; from: string[] } {
+    return CLASS_SKILL_CHOICES[className.toLowerCase()] ?? { choose: 2, from: [] };
   }
 
   /** Spells available to a specific class (case-insensitive). */

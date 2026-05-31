@@ -226,7 +226,7 @@ export class PCService {
     }
     this.http.get<PC[]>(this.pcUrl + 'all').subscribe({
       next: (pcs) => {
-        const parsed = pcs.map(pc => this.parseSpells(pc));
+        const parsed = pcs.map(raw => this.deserializePC(raw));
         this.pcs = parsed;
         this.pcsSubject.next(parsed);
       },
@@ -239,7 +239,7 @@ export class PCService {
       return of(this.pcs).pipe(delay(300));
     }
     return this.http.get<PC[]>(this.pcUrl + 'all').pipe(
-      map(pcs => pcs.map(pc => this.parseSpells(pc)))
+      map(pcs => pcs.map(raw => this.deserializePC(raw)))
     );
   }
 
@@ -252,7 +252,10 @@ export class PCService {
       }
       return of({} as PC).pipe(delay(300));
     }
-    return this.http.get<PC>(this.pcUrl + 'find/', { params });
+    const id = params.get('id');
+    return this.http.get<PC>(this.pcUrl + 'find/' + id).pipe(
+      map(raw => this.deserializePC(raw))
+    );
   }
 
   getPCById(id: number) {
@@ -288,7 +291,8 @@ export class PCService {
     }
     // Non-demo: persist to backend, then mirror the same optimistic update locally
     // so activePC$ and pcs$ stay in sync without a full refresh.
-    return this.http.put<PC>(this.pcUrl + pc.id, pc).pipe(
+    return this.http.put<PC>(this.pcUrl + pc.id, this.serializePC(pc)).pipe(
+      map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
         this.pcsSubject.next(this.pcs);
@@ -307,33 +311,91 @@ export class PCService {
       this.pcsSubject.next(this.pcs);
       return of(mockPC).pipe(delay(300));
     }
-    // Map the frontend's nested stats object to individual backend columns.
-    // Spells are serialized to a JSON string so the TEXT column accepts them.
-    const payload = {
-      ...newPC,
-      abilityStr: newPC.stats?.STR ?? null,
-      abilityDex: newPC.stats?.DEX ?? null,
-      abilityCon: newPC.stats?.CON ?? null,
-      abilityInt: newPC.stats?.INT ?? null,
-      abilityWis: newPC.stats?.WIS ?? null,
-      abilityCha: newPC.stats?.CHA ?? null,
-      spells: JSON.stringify(newPC.spells ?? []),
-    };
-    return this.http.post<PC>(this.pcUrl + 'add', payload).pipe(
-      map(pc => this.parseSpells(pc))
+    return this.http.post<PC>(this.pcUrl + 'add', this.serializePC(newPC)).pipe(
+      map(pc => this.deserializePC(pc))
     );
   }
 
-  /** Deserialize spells TEXT column back to array (backend stores JSON string). */
-  private parseSpells(pc: PC): PC {
-    if (typeof (pc.spells as unknown) === 'string') {
-      try {
-        return { ...pc, spells: JSON.parse(pc.spells as unknown as string) };
-      } catch {
-        return { ...pc, spells: [] };
-      }
+  /**
+   * Flatten the PC's nested objects into the flat shape the backend entity expects.
+   * Complex arrays/objects are JSON-stringified for TEXT column storage.
+   */
+  private serializePC(pc: PC): Record<string, unknown> {
+    return {
+      ...pc,
+      // Flatten nested stats → individual ability score columns
+      abilityStr: pc.stats?.STR ?? null,
+      abilityDex: pc.stats?.DEX ?? null,
+      abilityCon: pc.stats?.CON ?? null,
+      abilityInt: pc.stats?.INT ?? null,
+      abilityWis: pc.stats?.WIS ?? null,
+      abilityCha: pc.stats?.CHA ?? null,
+      // Flatten nested hp → individual HP columns
+      hpMax: pc.hp?.max ?? null,
+      hpCurrent: pc.hp?.cur ?? null,
+      hpTemp: pc.hp?.temp ?? null,
+      // Map frontend field names to backend column names
+      species: pc.race ?? null,
+      initiative: pc.init ?? null,
+      profBonus: pc.prof ?? null,
+      // JSON-stringify all arrays and objects stored as TEXT
+      spells: JSON.stringify(pc.spells ?? []),
+      spellSlots: JSON.stringify(pc.spellSlots ?? {}),
+      saves: JSON.stringify(pc.saves ?? []),
+      skills: JSON.stringify(pc.skills ?? {}),
+      conditions: JSON.stringify(pc.conditions ?? []),
+      coins: JSON.stringify(pc.coins ?? {}),
+      weapons: JSON.stringify(pc.weapons ?? []),
+      gear: JSON.stringify(pc.gear ?? []),
+      features: JSON.stringify(pc.features ?? []),
+      traits: JSON.stringify(pc.traits ?? {}),
+      languages: JSON.stringify(pc.languages ?? []),
+      toolProfs: JSON.stringify(pc.toolProfs ?? []),
+    };
+  }
+
+  /** Reconstruct a full PC from the flat backend representation. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private deserializePC(raw: any): PC {
+    const pc = raw as any;
+    return {
+      ...pc,
+      race: (pc['species'] as string) ?? pc.race,
+      init: (pc['initiative'] as number) ?? pc.init,
+      prof: (pc['profBonus'] as number) ?? pc.prof,
+      stats: {
+        STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
+        DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,
+        CON: (pc['abilityCon'] as number) ?? pc.stats?.CON ?? 10,
+        INT: (pc['abilityInt'] as number) ?? pc.stats?.INT ?? 10,
+        WIS: (pc['abilityWis'] as number) ?? pc.stats?.WIS ?? 10,
+        CHA: (pc['abilityCha'] as number) ?? pc.stats?.CHA ?? 10,
+      },
+      hp: {
+        cur: (pc['hpCurrent'] as number) ?? pc.hp?.cur ?? 0,
+        max: (pc['hpMax'] as number) ?? pc.hp?.max ?? 0,
+        temp: (pc['hpTemp'] as number) ?? pc.hp?.temp ?? 0,
+      },
+      spells: this.parseJsonField(pc['spells'], []),
+      spellSlots: this.parseJsonField(pc['spellSlots'], {}),
+      saves: this.parseJsonField(pc['saves'], []),
+      skills: this.parseJsonField(pc['skills'], {}),
+      conditions: this.parseJsonField(pc['conditions'], []),
+      coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
+      weapons: this.parseJsonField(pc['weapons'], []),
+      gear: this.parseJsonField(pc['gear'], []),
+      features: this.parseJsonField(pc['features'], []),
+      traits: this.parseJsonField(pc['traits'], undefined),
+      languages: this.parseJsonField(pc['languages'], []),
+      toolProfs: this.parseJsonField(pc['toolProfs'], []),
+    } as PC;
+  }
+
+  private parseJsonField<T>(value: unknown, defaultValue: T): T {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value) as T; } catch { return defaultValue; }
     }
-    return { ...pc, spells: pc.spells ?? [] };
+    return (value as T) ?? defaultValue;
   }
 
   deletePC(id: number) {
