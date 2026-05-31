@@ -117,9 +117,17 @@
         <span class="detail-label">Proficiencies</span>
         <span class="detail-value">{{ backgroundProficiencyNames }}</span>
       </div>
-      <div *ngIf="backgroundDetail.feat" class="detail-row">
-        <span class="detail-label">Feat</span>
-        <span class="detail-value">{{ backgroundDetail.feat!.name }}</span>
+    </div>
+
+    <!-- Origin Feat card (always fixed per background — display only) -->
+    <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
+      <div class="feat-card-eyebrow">Origin Feat</div>
+      <div class="feat-card-name">{{ backgroundFeatName }}</div>
+      <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
+        {{ backgroundFeatDescription }}
+      </div>
+      <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
+        See the 2024 Player's Handbook for full details.
       </div>
     </div>
   </ng-container>

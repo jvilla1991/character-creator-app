@@ -139,6 +139,37 @@ export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[
   wizard:    { choose: 2, from: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'] },
 };
 
+/**
+ * Short descriptions for the 2024 PHB Origin feats.
+ * Expansion-specific feats are not listed here and will render without a description.
+ */
+export const FEAT_DESCRIPTIONS: Record<string, string> = {
+  'Alert':
+    'You gain +2 to Initiative. You cannot be Surprised, and hidden creatures have no advantage on attack rolls against you.',
+  'Crafter':
+    'You gain proficiency with three Artisan\'s Tools. You can craft nonmagical items in half the normal time and buy goods at a 20% discount.',
+  'Healer':
+    'You can use a Healer\'s Kit to restore 1d6 + 4 HP to a creature (plus its max HD). You also learn Healing Word, usable once per Short or Long Rest without a spell slot.',
+  'Lucky':
+    'You have 3 Luck Points (refreshed on a Long Rest). Before any d20 Test, you can spend a point to roll twice and choose either result.',
+  'Magic Initiate (Cleric)':
+    'You learn two Cleric cantrips and one 1st-level Cleric spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Druid)':
+    'You learn two Druid cantrips and one 1st-level Druid spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Wizard)':
+    'You learn two Wizard cantrips and one 1st-level Wizard spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Musician':
+    'You gain proficiency with three Musical Instruments. Once per Long Rest you can perform for 1 minute to grant Bardic Inspiration dice to nearby friendly creatures.',
+  'Savage Attacker':
+    'Once per turn when you hit with a melee weapon attack, you may reroll the weapon\'s damage dice and use either result.',
+  'Skilled':
+    'You gain proficiency in any combination of three skills or tools of your choice.',
+  'Tavern Brawler':
+    'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
+  'Tough':
+    'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+};
+
 /** Standard languages available for the background language bonus */
 export const STANDARD_LANGUAGES: string[] = [
   'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish',
@@ -226,6 +257,11 @@ export class DndResourcesService {
         .pipe(shareReplay(1));
     }
     return this.spells$;
+  }
+
+  /** Short description for an Origin feat, or empty string if unknown. */
+  getFeatDescription(featName: string): string {
+    return FEAT_DESCRIPTIONS[featName] ?? '';
   }
 
   /** Class skill proficiency choices for step 5 of the wizard. */
