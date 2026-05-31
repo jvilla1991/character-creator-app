@@ -113,6 +113,38 @@ export const SPELL_COUNTS: Record<string, { cantrips: number; spells: number }> 
   wizard:   { cantrips: 3, spells: 6 },
 };
 
+// ── Proficiency constants (2024 PHB) ──────────────────────────────────────────
+
+/** All 18 skill names, matching SKILL_DEFS canonical names in character-math.ts */
+export const ALL_SKILLS: string[] = [
+  'Acrobatics', 'Animal Handling', 'Arcana', 'Athletics', 'Deception',
+  'History', 'Insight', 'Intimidation', 'Investigation', 'Medicine',
+  'Nature', 'Perception', 'Performance', 'Persuasion', 'Religion',
+  'Sleight', 'Stealth', 'Survival',
+];
+
+/** Class skill proficiency choices per 2024 PHB (choose N from the listed skills) */
+export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[] }> = {
+  barbarian: { choose: 2, from: ['Animal Handling', 'Athletics', 'Intimidation', 'Nature', 'Perception', 'Survival'] },
+  bard:      { choose: 3, from: ALL_SKILLS },
+  cleric:    { choose: 2, from: ['History', 'Insight', 'Medicine', 'Persuasion', 'Religion'] },
+  druid:     { choose: 2, from: ['Arcana', 'Animal Handling', 'Insight', 'Medicine', 'Nature', 'Perception', 'Religion', 'Survival'] },
+  fighter:   { choose: 2, from: ['Acrobatics', 'Animal Handling', 'Athletics', 'History', 'Insight', 'Intimidation', 'Perception', 'Survival'] },
+  monk:      { choose: 2, from: ['Acrobatics', 'Athletics', 'History', 'Insight', 'Religion', 'Stealth'] },
+  paladin:   { choose: 2, from: ['Athletics', 'Insight', 'Intimidation', 'Medicine', 'Persuasion', 'Religion'] },
+  ranger:    { choose: 3, from: ['Animal Handling', 'Athletics', 'Insight', 'Investigation', 'Nature', 'Perception', 'Stealth', 'Survival'] },
+  rogue:     { choose: 4, from: ['Acrobatics', 'Athletics', 'Deception', 'Insight', 'Intimidation', 'Investigation', 'Perception', 'Performance', 'Persuasion', 'Sleight', 'Stealth'] },
+  sorcerer:  { choose: 2, from: ['Arcana', 'Deception', 'Insight', 'Intimidation', 'Persuasion', 'Religion'] },
+  warlock:   { choose: 2, from: ['Arcana', 'Deception', 'History', 'Intimidation', 'Investigation', 'Nature', 'Religion'] },
+  wizard:    { choose: 2, from: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'] },
+};
+
+/** Standard languages available for the background language bonus */
+export const STANDARD_LANGUAGES: string[] = [
+  'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish',
+  'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc', 'Primordial',
+];
+
 @Injectable({ providedIn: 'root' })
 export class DndResourcesService {
   /** 2014 ruleset — kept for backward compatibility */
@@ -184,6 +216,11 @@ export class DndResourcesService {
         .pipe(shareReplay(1));
     }
     return this.spells$;
+  }
+
+  /** Class skill proficiency choices for step 5 of the wizard. */
+  getClassSkillChoices(className: string): { choose: number; from: string[] } {
+    return CLASS_SKILL_CHOICES[className.toLowerCase()] ?? { choose: 2, from: [] };
   }
 
   /** Spells available to a specific class (case-insensitive). */
