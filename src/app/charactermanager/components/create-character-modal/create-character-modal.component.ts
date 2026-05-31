@@ -2,8 +2,9 @@ import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/cor
 import { Subject } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
 import { PC, PcSpell } from '../../models/pc';
-import { BackgroundGroup, DndBackground, DndClass, DndSpell } from '../../models/dnd-api.types';
+import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell } from '../../models/dnd-api.types';
 import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
+// FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
@@ -25,7 +26,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   get totalSteps(): number {
-    return this.isSpellcastingClass ? 7 : 6;
+    return this.isSpellcastingClass ? 8 : 7;
+  }
+
+  /** The step number for equipment — always the last step. */
+  get equipmentStep(): number {
+    return this.isSpellcastingClass ? 8 : 7;
   }
 
   get stepRange(): number[] {
@@ -161,6 +167,19 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   bonusPlus2: Ability | '' = '';
   bonusPlus1: Ability | '' = '';
 
+  // ── Step 7/8: Starting Equipment ─────────────────────────────────────────
+  equipmentChoice: 'A' | 'B' | '' = '';
+  classEquipmentData: Record<string, ClassEquipment> | null = null;
+  loadingEquipment = false;
+
+  get currentClassEquipment(): ClassEquipment | null {
+    return this.classEquipmentData?.[this.clazz.toLowerCase()] ?? null;
+  }
+
+  get backgroundStartingGold(): number {
+    return this.dndResources.getBackgroundGold(this.background);
+  }
+
   @Output() confirm = new EventEmitter<Partial<PC>>();
   @Output() close   = new EventEmitter<void>();
 
@@ -229,6 +248,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Navigation ───────────────────────────────────────────────────────────
 
   get canAdvance(): boolean {
+    // Equipment is always the final step regardless of class
+    if (this.step === this.equipmentStep) return !!this.equipmentChoice;
+
     switch (this.step) {
       case 1: return this.name.trim().length > 0;
       case 2: return !!this.species;
@@ -239,7 +261,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                   && !!this.bonusPlus2
                   && !!this.bonusPlus1
                   && this.bonusPlus2 !== this.bonusPlus1;
-      case 7: return true; // spell selection is optional
+      case 7: return true; // spells — optional for casters (non-casters never reach here via switch)
       default: return false;
     }
   }
@@ -250,7 +272,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // Safety: fire triggers if detail not yet loaded when entering a step
     if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
     if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
-    // Load spells when entering step 7
+    // Load spells when entering step 7 (casters only)
     if (this.step === 7 && this.isSpellcastingClass && !this.spellList.length) {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
@@ -258,6 +280,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         .subscribe(spells => {
           this.spellList    = spells;
           this.loadingSpells = false;
+        });
+    }
+    // Load equipment data when entering the equipment step
+    if (this.step === this.equipmentStep && !this.classEquipmentData) {
+      this.loadingEquipment = true;
+      this.dndResources.getClassEquipment()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(data => {
+          this.classEquipmentData = data;
+          this.loadingEquipment   = false;
         });
     }
   }
@@ -271,6 +303,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   trackByName(_: number, name: string): string { return name; }
   trackBySource(_: number, group: BackgroundGroup): string { return group.source; }
   trackBySpellName(_: number, spell: DndSpell): string { return spell.name; }
+
+  // ── Starting coins ───────────────────────────────────────────────────────
+
+  private buildStartingCoins(): { cp: number; sp: number; ep: number; gp: number; pp: number } {
+    const bgGold = this.backgroundStartingGold;
+    const classGold = this.equipmentChoice === 'A'
+      ? (this.currentClassEquipment?.optionA.gp ?? 0)
+      : (this.currentClassEquipment?.optionB.gp ?? 0);
+    return { cp: 0, sp: 0, ep: 0, gp: bgGold + classGold, pp: 0 };
+  }
 
   // ── Starting spell slots (level 1) ───────────────────────────────────────
 
@@ -335,6 +377,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   get backgroundProficiencyNames(): string {
     return this.backgroundDetail?.proficiencies.map(s => s.name).join(', ') ?? '';
+  }
+
+  get backgroundFeatName(): string {
+    return this.backgroundDetail?.feat?.name ?? '';
+  }
+
+  get backgroundFeatDescription(): string {
+    return this.dndResources.getFeatDescription(this.backgroundFeatName);
   }
 
   // ── Standard Array helpers ───────────────────────────────────────────────
@@ -422,12 +472,17 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       stats,
       saves,
       conditions:       [],
+      feat:             this.backgroundFeatName || undefined,
       skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
       languages:        ['Common', ...(this.languageChoice ? [this.languageChoice] : [])],
-      coins:            { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
-      weapons:          [],
-      gear:             [],
+      coins:            this.buildStartingCoins(),
+      weapons:          this.equipmentChoice === 'A'
+                          ? (this.currentClassEquipment?.optionA.weapons ?? [])
+                          : [],
+      gear:             this.equipmentChoice === 'A'
+                          ? (this.currentClassEquipment?.optionA.gear ?? [])
+                          : [],
       features:         [],
       spells: this.selectedSpells.map((s): PcSpell => ({
         lvl:            s.level,
