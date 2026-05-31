@@ -3,7 +3,7 @@ import { Subject } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, DndBackground, DndClass, DndSpell } from '../../models/dnd-api.types';
-import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES } from '../../services/dnd-resources.service';
+import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
@@ -25,7 +25,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   get totalSteps(): number {
-    return this.isSpellcastingClass ? 6 : 5;
+    return this.isSpellcastingClass ? 7 : 6;
   }
 
   get stepRange(): number[] {
@@ -64,7 +64,56 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  // ── Step 5: Ability Scores ───────────────────────────────────────────────
+  // ── Step 5: Proficiencies & Languages ───────────────────────────────────
+  /** Skills chosen by the player from the class list (excludes locked background skills) */
+  selectedSkills: string[] = [];
+  languageChoice = '';
+  readonly standardLanguages = STANDARD_LANGUAGES;
+
+  get classSkillConfig(): { choose: number; from: string[] } {
+    return this.dndResources.getClassSkillChoices(this.clazz);
+  }
+
+  /** Background-granted skills (normalized to canonical SKILL_DEFS names) */
+  get backgroundSkillProfs(): string[] {
+    const skillSet = new Set(ALL_SKILLS);
+    return (this.backgroundDetail?.proficiencies ?? [])
+      .map(p => p.name === 'Sleight of Hand' ? 'Sleight' : p.name)
+      .filter(n => skillSet.has(n));
+  }
+
+  /** Background-granted tool proficiencies (non-skill entries) */
+  get backgroundToolProfs(): string[] {
+    const skillSet = new Set([...ALL_SKILLS, 'Sleight of Hand']);
+    return (this.backgroundDetail?.proficiencies ?? [])
+      .map(p => p.name)
+      .filter(n => !skillSet.has(n));
+  }
+
+  /** True when the player has chosen all the class skills they're entitled to */
+  get classSkillsFull(): boolean {
+    return this.selectedSkills.length >= this.classSkillConfig.choose;
+  }
+
+  isSkillChosen(skill: string): boolean {
+    return this.selectedSkills.includes(skill) || this.backgroundSkillProfs.includes(skill);
+  }
+
+  isSkillLocked(skill: string): boolean {
+    return this.backgroundSkillProfs.includes(skill);
+  }
+
+  toggleSkillProf(skill: string): void {
+    if (this.isSkillLocked(skill)) return;
+    if (this.selectedSkills.includes(skill)) {
+      this.selectedSkills = this.selectedSkills.filter(s => s !== skill);
+    } else {
+      if (this.classSkillsFull) return;
+      this.selectedSkills = [...this.selectedSkills, skill];
+    }
+  }
+
+  // ── Step 6: Ability Scores ───────────────────────────────────────────────
   readonly abilities     = ABILITIES;
   readonly standardArray = [...STANDARD_ARRAY] as number[];
 
@@ -185,11 +234,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       case 2: return !!this.species;
       case 3: return !!this.clazz;
       case 4: return !!this.background;
-      case 5: return this.isArrayComplete
+      case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
+      case 6: return this.isArrayComplete
                   && !!this.bonusPlus2
                   && !!this.bonusPlus1
                   && this.bonusPlus2 !== this.bonusPlus1;
-      case 6: return true; // spell selection is optional
+      case 7: return true; // spell selection is optional
       default: return false;
     }
   }
@@ -200,8 +250,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // Safety: fire triggers if detail not yet loaded when entering a step
     if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
     if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
-    // Load spells when entering step 6
-    if (this.step === 6 && this.isSpellcastingClass && !this.spellList.length) {
+    // Load spells when entering step 7
+    if (this.step === 7 && this.isSpellcastingClass && !this.spellList.length) {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
         .pipe(takeUntil(this.destroy$))
@@ -261,6 +311,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Class detail ─────────────────────────────────────────────────────────
 
   onClassChange(): void {
+    this.selectedSkills = [];
     if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 
@@ -274,6 +325,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.backgroundDetail = null;
     this.bonusPlus2 = '';
     this.bonusPlus1 = '';
+    this.selectedSkills = [];
     if (this.background) this.backgroundTrigger$.next(this.background);
   }
 
@@ -370,6 +422,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       stats,
       saves,
       conditions:       [],
+      skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
+                          .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
+      languages:        ['Common', ...(this.languageChoice ? [this.languageChoice] : [])],
       coins:            { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
       weapons:          [],
       gear:             [],
