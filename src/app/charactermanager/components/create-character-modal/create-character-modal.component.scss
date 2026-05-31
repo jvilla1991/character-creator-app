@@ -362,6 +362,48 @@
   margin-top: 8px;
 }
 
+// ── Origin Feat card (step 4) ─────────────────────────────────────────────
+
+.feat-card {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(212, 176, 106, 0.35);   // --gold with low alpha
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+
+  .feat-card-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+    opacity: 0.75;
+  }
+
+  .feat-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .feat-card-desc {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.75);
+
+    &--unknown {
+      font-style: italic;
+      opacity: 0.55;
+    }
+  }
+}
+
 // ── Step 5: Proficiency & Language styles ────────────────────────────────
 
 .prof-section {
