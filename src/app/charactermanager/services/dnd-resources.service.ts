@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, shareReplay } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BackgroundGroup, DndBackground, DndClass, DndListResponse, DndResource, DndSpell } from '../models/dnd-api.types';
+import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell } from '../models/dnd-api.types';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -145,6 +145,15 @@ export const STANDARD_LANGUAGES: string[] = [
   'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc', 'Primordial',
 ];
 
+/** Starting gold granted by each PHB background (2024 PHB values) */
+export const BACKGROUND_GOLD: Record<string, number> = {
+  // Player's Handbook
+  'Acolyte': 15,    'Artisan': 25,   'Charlatan': 15, 'Criminal': 15,
+  'Entertainer': 15,'Farmer': 15,    'Guard': 10,     'Guide': 10,
+  'Hermit': 5,      'Merchant': 25,  'Noble': 25,     'Sage': 15,
+  'Sailor': 10,     'Scribe': 10,    'Soldier': 10,   'Wayfarer': 15,
+};
+
 @Injectable({ providedIn: 'root' })
 export class DndResourcesService {
   /** 2014 ruleset — kept for backward compatibility */
@@ -153,6 +162,7 @@ export class DndResourcesService {
   private dnd2024Url     = 'https://www.dnd5eapi.co/api/2024/';
 
   private spells$: Observable<DndSpell[]> | null = null;
+  private classEquipment$: Observable<Record<string, ClassEquipment>> | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -229,5 +239,23 @@ export class DndResourcesService {
     return this.getSpells().pipe(
       map(spells => spells.filter(s => s.classes.includes(key)))
     );
+  }
+
+  /** Starting equipment packages for all 12 classes. Fetched once, cached. */
+  getClassEquipment(): Observable<Record<string, ClassEquipment>> {
+    if (!this.classEquipment$) {
+      this.classEquipment$ = this.http
+        .get<Record<string, ClassEquipment>>('/assets/data/equipment/class-equipment-2024.json')
+        .pipe(shareReplay(1));
+    }
+    return this.classEquipment$;
+  }
+
+  /**
+   * Background starting gold per 2024 PHB.
+   * Returns 15 gp as a safe default for backgrounds not in the map.
+   */
+  getBackgroundGold(backgroundName: string): number {
+    return BACKGROUND_GOLD[backgroundName] ?? 15;
   }
 }
