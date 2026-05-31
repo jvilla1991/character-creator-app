@@ -1,0 +1,180 @@
+{
+  "barbarian": {
+    "optionA": {
+      "weapons": [
+        { "name": "Greataxe", "dmg": "1d12 slashing" },
+        { "name": "Handaxe", "dmg": "1d6 slashing", "notes": "×4" }
+      ],
+      "gear": [
+        { "name": "Explorer's Pack" },
+        { "name": "Shield" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 75 }
+  },
+  "bard": {
+    "optionA": {
+      "weapons": [
+        { "name": "Dagger", "dmg": "1d4 piercing", "notes": "×2" }
+      ],
+      "gear": [
+        { "name": "Leather Armor", "equipped": true },
+        { "name": "Musical Instrument (your choice)" },
+        { "name": "Entertainer's Pack" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 100 }
+  },
+  "cleric": {
+    "optionA": {
+      "weapons": [
+        { "name": "Mace", "dmg": "1d6 bludgeoning" }
+      ],
+      "gear": [
+        { "name": "Chain Mail", "equipped": true },
+        { "name": "Shield" },
+        { "name": "Holy Symbol" },
+        { "name": "Priest's Pack" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 110 }
+  },
+  "druid": {
+    "optionA": {
+      "weapons": [
+        { "name": "Quarterstaff", "dmg": "1d6 bludgeoning" }
+      ],
+      "gear": [
+        { "name": "Leather Armor", "equipped": true },
+        { "name": "Shield" },
+        { "name": "Druidic Focus (Wooden Staff)" },
+        { "name": "Herbalism Kit" },
+        { "name": "Explorer's Pack" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 50 }
+  },
+  "fighter": {
+    "optionA": {
+      "weapons": [
+        { "name": "Longsword", "dmg": "1d8 slashing" },
+        { "name": "Light Crossbow", "dmg": "1d8 piercing", "notes": "80/320 ft" }
+      ],
+      "gear": [
+        { "name": "Chain Mail", "equipped": true },
+        { "name": "Shield" },
+        { "name": "Crossbow Bolts (20)" },
+        { "name": "Dungeoneer's Pack" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 175 }
+  },
+  "monk": {
+    "optionA": {
+      "weapons": [
+        { "name": "Shortsword", "dmg": "1d6 piercing" }
+      ],
+      "gear": [
+        { "name": "Dungeoneer's Pack" },
+        { "name": "Artisan's Tools (your choice)" }
+      ],
+      "gp": 11
+    },
+    "optionB": { "gp": 50 }
+  },
+  "paladin": {
+    "optionA": {
+      "weapons": [
+        { "name": "Longsword", "dmg": "1d8 slashing" }
+      ],
+      "gear": [
+        { "name": "Chain Mail", "equipped": true },
+        { "name": "Shield" },
+        { "name": "Holy Symbol" },
+        { "name": "Priest's Pack" }
+      ],
+      "gp": 9
+    },
+    "optionB": { "gp": 150 }
+  },
+  "ranger": {
+    "optionA": {
+      "weapons": [
+        { "name": "Shortsword", "dmg": "1d6 piercing", "notes": "×2" },
+        { "name": "Longbow", "dmg": "1d8 piercing", "notes": "150/600 ft" }
+      ],
+      "gear": [
+        { "name": "Leather Armor", "equipped": true },
+        { "name": "Arrows (20)" },
+        { "name": "Dungeoneer's Pack" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 150 }
+  },
+  "rogue": {
+    "optionA": {
+      "weapons": [
+        { "name": "Shortsword", "dmg": "1d6 piercing" },
+        { "name": "Shortbow", "dmg": "1d6 piercing", "notes": "80/320 ft" },
+        { "name": "Dagger", "dmg": "1d4 piercing", "notes": "×2" }
+      ],
+      "gear": [
+        { "name": "Leather Armor", "equipped": true },
+        { "name": "Arrows (20)" },
+        { "name": "Burglar's Pack" },
+        { "name": "Thieves' Tools" }
+      ],
+      "gp": 0
+    },
+    "optionB": { "gp": 100 }
+  },
+  "sorcerer": {
+    "optionA": {
+      "weapons": [
+        { "name": "Dagger", "dmg": "1d4 piercing", "notes": "×2" },
+        { "name": "Light Crossbow", "dmg": "1d8 piercing", "notes": "80/320 ft" }
+      ],
+      "gear": [
+        { "name": "Arcane Focus (Crystal)" },
+        { "name": "Crossbow Bolts (20)" },
+        { "name": "Dungeoneer's Pack" }
+      ],
+      "gp": 50
+    },
+    "optionB": { "gp": 50 }
+  },
+  "warlock": {
+    "optionA": {
+      "weapons": [
+        { "name": "Dagger", "dmg": "1d4 piercing", "notes": "×2" }
+      ],
+      "gear": [
+        { "name": "Leather Armor", "equipped": true },
+        { "name": "Arcane Focus (Orb)" },
+        { "name": "Scholar's Pack" }
+      ],
+      "gp": 15
+    },
+    "optionB": { "gp": 100 }
+  },
+  "wizard": {
+    "optionA": {
+      "weapons": [
+        { "name": "Dagger", "dmg": "1d4 piercing", "notes": "×2" }
+      ],
+      "gear": [
+        { "name": "Spellbook" },
+        { "name": "Arcane Focus (Quarterstaff)" },
+        { "name": "Scholar's Pack" }
+      ],
+      "gp": 5
+    },
+    "optionB": { "gp": 50 }
+  }
+}

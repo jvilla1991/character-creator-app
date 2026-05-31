@@ -84,3 +84,30 @@ export interface DndSpell {
   cantripUpgrade?: string;    // cantrip damage scaling text
   higherLevelSlot?: string;   // upcast description
 }
+
+// ── Starting equipment types ──────────────────────────────────────────────────
+
+export interface WeaponEntry {
+  name: string;
+  dmg: string;
+  notes?: string;
+  magic?: boolean;
+}
+
+export interface GearEntry {
+  name: string;
+  notes?: string;
+  equipped?: boolean;
+  magic?: boolean;
+}
+
+export interface EquipmentOptionA {
+  weapons: WeaponEntry[];
+  gear: GearEntry[];
+  gp: number;
+}
+
+export interface ClassEquipment {
+  optionA: EquipmentOptionA;
+  optionB: { gp: number };
+}
