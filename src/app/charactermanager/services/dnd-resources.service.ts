@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, shareReplay } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell } from '../models/dnd-api.types';
+import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -176,6 +176,91 @@ export const STANDARD_LANGUAGES: string[] = [
   'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc', 'Primordial',
 ];
 
+/**
+ * Short descriptions for common 2024 PHB species traits.
+ * Trait names match those returned by the D&D 5e 2024 API.
+ */
+export const SPECIES_TRAIT_DESCRIPTIONS: Record<string, string> = {
+  // Shared traits
+  'Darkvision':            'You see in dim light as if it were bright light, and in darkness as if it were dim light (up to 60 ft.). You discern colors in that darkness only as shades of gray.',
+  'Superior Darkvision':   'You have Darkvision with a range of 120 feet.',
+  // Elf
+  'Keen Senses':           'You have proficiency in the Perception skill.',
+  'Fey Ancestry':          'You have Advantage on saving throws to avoid or end the Charmed condition, and magic can\'t put you to sleep.',
+  'Trance':                'You don\'t need to sleep. You can finish a Long Rest in 4 hours by meditating.',
+  'Elf Weapon Training':   'You have proficiency with Longswords, Shortswords, Shortbows, and Longbows.',
+  // Halfling
+  'Brave':                 'You have Advantage on saving throws to avoid or end the Frightened condition.',
+  'Lucky':                 'When you roll a 1 on a d20 for a d20 Test, you can reroll the die, and you must use the new roll.',
+  'Halfling Nimbleness':   'You can move through the space of any creature of Size Large or bigger.',
+  'Naturally Stealthy':    'You can attempt to Hide when you are obscured by a creature of Size Large or bigger.',
+  // Dwarf
+  'Dwarven Resilience':    'You have Advantage on saving throws against poison and Resistance to Poison damage.',
+  'Stonecunning':          'As a Bonus Action, you gain Tremorsense with a range of 60 ft. for 10 minutes. You can use this a number of times equal to your Proficiency Bonus per Long Rest.',
+  'Dwarven Toughness':     'Your Hit Point maximum increases by 1, and it increases by 1 again each time you gain a level.',
+  // Gnome
+  'Gnomish Cunning':       'You have Advantage on Intelligence, Wisdom, and Charisma saving throws.',
+  'Gnomish Lineage':       'You have a gnomish lineage that grants you additional traits.',
+  // Dragonborn
+  'Draconic Ancestry':     'You have draconic ancestry. Choose a dragon type to determine your Breath Weapon damage type and Damage Resistance.',
+  'Breath Weapon':         'When you take the Attack action, you can replace one of your attacks with a Breath Weapon. Each creature in the area makes a Dexterity saving throw (DC = 8 + CON mod + Proficiency Bonus), taking 1d10 damage on a failed save.',
+  'Damage Resistance':     'You have Resistance to the damage type associated with your Draconic Ancestry.',
+  'Darkvision (60 ft.)':   'You have Darkvision with a range of 60 feet.',
+  // Tiefling
+  'Hellish Resistance':    'You have Resistance to Fire damage.',
+  'Infernal Legacy':       'You know the Thaumaturgy cantrip. Starting at 3rd level, you can cast Hellish Rebuke as a 2nd-level spell once per Long Rest. At 5th level, you can cast Darkness once per Long Rest.',
+  'Tiefling Lineage':      'You descend from a specific infernal bloodline, granting additional spells.',
+  // Goliath
+  'Giant Ancestry':        'Choose a giant type. Your ancestry grants you a special ability (e.g., Stone\'s Endurance from Stone Giants, or Frost\'s Endurance from Frost Giants).',
+  'Natural Athlete':       'You have proficiency in the Athletics skill.',
+  'Powerful Build':        'You count as one size larger when determining your carrying capacity and the weight you can push or drag.',
+  'Mountain Born':         'You\'re acclimated to high altitude, including elevations above 20,000 feet. You\'re also naturally adapted to cold climates.',
+  // Orc
+  'Adrenaline Rush':       'You can take the Dash action as a Bonus Action. When you do, you gain a number of Temporary Hit Points equal to your Proficiency Bonus. You can use this a number of times equal to your Proficiency Bonus, and you regain all expended uses when you finish a Short or Long Rest.',
+  'Relentless Endurance':  'When you are reduced to 0 HP but not killed outright, you can drop to 1 HP instead. Once per Long Rest.',
+  // Human
+  'Resourceful':           'You gain Heroic Inspiration whenever you finish a Long Rest.',
+  'Skilled':               'You have proficiency in any combination of three skills or tools of your choice.',
+  'Versatile':             'You gain the Skilled feat or another feat of your choice for which you qualify.',
+  // Aasimar
+  'Celestial Resistance':  'You have Resistance to Necrotic and Radiant damage.',
+  'Darkvision (60 ft)':    'You have Darkvision with a range of 60 feet.',
+  'Healing Hands':         'As a Magic action, you touch a creature and restore a number of HP equal to your Proficiency Bonus. You can use this a number of times equal to your Proficiency Bonus per Long Rest.',
+  'Light Bearer':          'You know the Light cantrip. Charisma is your spellcasting ability for it.',
+  'Celestial Revelation':  'Starting at 3rd level, you can temporarily transform. Choose Heavenly Wings, Inner Radiance, or Necrotic Shroud.',
+};
+
+/**
+ * Short descriptions for the 2024 PHB Origin feats.
+ * Expansion-specific feats are not listed here — they render name-only.
+ */
+export const FEAT_DESCRIPTIONS: Record<string, string> = {
+  'Alert':
+    'You gain +2 to Initiative. You cannot be Surprised, and hidden creatures gain no advantage on attack rolls against you.',
+  'Crafter':
+    'You gain proficiency with three Artisan\'s Tools. You can craft nonmagical items in half the normal time and buy goods at a 20% discount.',
+  'Healer':
+    'You can use a Healer\'s Kit to restore 1d6 + 4 HP to a creature (plus its max HD). You also learn Healing Word, usable once per Short or Long Rest without a spell slot.',
+  'Lucky':
+    'You have 3 Luck Points (refreshed on a Long Rest). Before any d20 Test, you can spend a point to roll twice and choose either result.',
+  'Magic Initiate (Cleric)':
+    'You learn two Cleric cantrips and one 1st-level Cleric spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Druid)':
+    'You learn two Druid cantrips and one 1st-level Druid spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Wizard)':
+    'You learn two Wizard cantrips and one 1st-level Wizard spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Musician':
+    'You gain proficiency with three Musical Instruments. Once per Long Rest you can perform for 1 minute to grant Bardic Inspiration dice to nearby friendly creatures.',
+  'Savage Attacker':
+    'Once per turn when you hit with a melee weapon attack, you may reroll the weapon\'s damage dice and use either result.',
+  'Skilled':
+    'You gain proficiency in any combination of three skills or tools of your choice.',
+  'Tavern Brawler':
+    'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
+  'Tough':
+    'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+};
+
 /** Starting gold granted by each PHB background (2024 PHB values) */
 export const BACKGROUND_GOLD: Record<string, number> = {
   // Player's Handbook
@@ -225,6 +310,17 @@ export class DndResourcesService {
     return this.http
       .get<DndListResponse<DndResource>>(this.dnd2024Url + 'species')
       .pipe(map(r => r.results.map(i => i.name)));
+  }
+
+  /** Full species detail for the traits card. */
+  getSpeciesDetail(name: string): Observable<DndSpecies> {
+    const index = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    return this.http.get<DndSpecies>(this.dnd2024Url + `species/${index}`);
+  }
+
+  /** Short description for a species trait, or empty string if not in the local map. */
+  getTraitDescription(traitName: string): string {
+    return SPECIES_TRAIT_DESCRIPTIONS[traitName] ?? '';
   }
 
   // ── Background methods — always from static data ──────────────────────────
@@ -293,5 +389,10 @@ export class DndResourcesService {
    */
   getBackgroundGold(backgroundName: string): number {
     return BACKGROUND_GOLD[backgroundName] ?? 15;
+  }
+
+  /** Short description for an Origin feat, or empty string if unknown. */
+  getFeatDescription(featName: string): string {
+    return FEAT_DESCRIPTIONS[featName] ?? '';
   }
 }

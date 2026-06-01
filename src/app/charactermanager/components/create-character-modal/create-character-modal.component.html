@@ -50,7 +50,44 @@
               class="class-pick"
               [class.active]="species === s"
               type="button"
-              (click)="species = s">{{ s }}</button>
+              (click)="species = s; onSpeciesChange()">{{ s }}</button>
+    </div>
+
+    <!-- Species detail card -->
+    <div *ngIf="loadingSpeciesDetail" class="loading">Loading traits…</div>
+    <div *ngIf="speciesDetail && !loadingSpeciesDetail" class="detail-card species-detail">
+      <div class="detail-row">
+        <span class="detail-label">Size</span>
+        <span class="detail-value">{{ speciesDetail.size }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Speed</span>
+        <span class="detail-value">{{ speciesDetail.speed }} ft.</span>
+      </div>
+      <div *ngIf="speciesDetail.subspecies?.length" class="detail-row">
+        <span class="detail-label">Lineages</span>
+        <span class="detail-value">{{ speciesSubspeciesNames }}</span>
+      </div>
+      <div *ngIf="speciesDetail.traits?.length" class="species-traits">
+        <div class="species-traits-header">Traits</div>
+        <div *ngFor="let trait of speciesDetail.traits" class="trait-item">
+          <span class="trait-name">{{ trait.name }}</span>
+          <span *ngIf="getTraitDescription(trait.name)" class="trait-desc">
+            {{ getTraitDescription(trait.name) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
+    <div *ngIf="!loadingSpeciesDetail && !speciesDetail && species" class="detail-card">
+      <div class="detail-row">
+        <span class="detail-label">2024 PHB Note</span>
+        <span class="detail-value">
+          This species is not distinct in the 2024 PHB.
+          Choose Elf or Orc and discuss mixed heritage with your DM.
+        </span>
+      </div>
     </div>
   </ng-container>
 

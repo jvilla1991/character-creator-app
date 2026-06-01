@@ -16,4 +16,18 @@ export class BackgroundStoryComponent {
     if (!this.pc.traits) return [];
     return Object.entries(this.pc.traits).map(([key, value]) => ({ key, value }));
   }
+
+  /** Languages the character knows (e.g. ['Common', 'Elvish']) */
+  get languages(): string[] {
+    return this.pc.languages ?? [];
+  }
+
+  /** Tool proficiencies from background and class (e.g. ["Thieves' Tools"]) */
+  get toolProficiencies(): string[] {
+    return this.pc.toolProfs ?? [];
+  }
+
+  get hasProficiencies(): boolean {
+    return this.languages.length > 0 || this.toolProficiencies.length > 0;
+  }
 }

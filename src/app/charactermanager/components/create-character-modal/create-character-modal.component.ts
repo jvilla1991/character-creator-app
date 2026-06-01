@@ -1,8 +1,9 @@
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subject } from 'rxjs';
-import { switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, switchMap, takeUntil } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
-import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell } from '../../models/dnd-api.types';
+import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
 import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
@@ -48,6 +49,22 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   speciesList: string[] = [];
   species     = '';
   loadingSpecies = true;
+  speciesDetail: DndSpecies | null = null;
+  loadingSpeciesDetail = false;
+  private speciesTrigger$ = new Subject<string>();
+
+  get speciesSubspeciesNames(): string {
+    return (this.speciesDetail?.subspecies ?? []).map(s => s.name).join(', ');
+  }
+
+  getTraitDescription(traitName: string): string {
+    return this.dndResources.getTraitDescription(traitName);
+  }
+
+  onSpeciesChange(): void {
+    this.speciesDetail = null;
+    if (this.species) this.speciesTrigger$.next(this.species);
+  }
 
   // ── Step 3: Class ────────────────────────────────────────────────────────
   classList:    string[]   = [];
@@ -187,6 +204,19 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // ── switchMap pipelines — automatically cancels stale requests ──────────
+    this.speciesTrigger$.pipe(
+      switchMap(name => {
+        this.loadingSpeciesDetail = true;
+        return this.dndResources.getSpeciesDetail(name).pipe(
+          catchError(() => of(null))  // graceful 404 fallback (e.g. legacy species)
+        );
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(detail => {
+      this.speciesDetail        = detail;
+      this.loadingSpeciesDetail = false;
+    });
+
     this.classTrigger$.pipe(
       switchMap(name => {
         this.loadingClassDetail = true;
@@ -219,6 +249,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.speciesList    = list;
       this.species        = list[0] ?? '';
       this.loadingSpecies = false;
+      if (this.species) this.speciesTrigger$.next(this.species);
     });
 
     this.dndResources.getClassNames2024().pipe(takeUntil(this.destroy$)).subscribe(list => {
@@ -483,7 +514,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       gear:             this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.gear ?? [])
                           : [],
-      features:         [],
+      features:         this.backgroundFeatName
+                          ? [{
+                              name:   this.backgroundFeatName,
+                              source: `${this.background} · Origin Feat`,
+                              desc:   this.backgroundFeatDescription
+                                        || 'See the 2024 Player\'s Handbook for full details.',
+                            }]
+                          : [],
       spells: this.selectedSpells.map((s): PcSpell => ({
         lvl:            s.level,
         name:           s.name,
