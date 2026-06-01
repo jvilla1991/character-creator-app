@@ -1,3 +1,51 @@
+// ── Ruleset bar (top of modal) ────────────────────────────────────────────
+
+.ruleset-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+  cursor: default;
+}
+
+.ruleset-active {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.ruleset-toggle {
+  opacity: 0.3;
+  pointer-events: none;   // belt-and-suspenders on top of [disabled]
+
+  // Override Material's label font to match the design system
+  ::ng-deep .mdc-label {
+    font-family: 'EB Garamond', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: not-allowed;
+  }
+}
+
+.ruleset-coming-soon {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 100px;
+  padding: 2px 7px;
+}
+
 // ── Wizard step indicator ─────────────────────────────────────────────────
 
 .wizard-steps {
