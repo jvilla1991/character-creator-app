@@ -115,6 +115,24 @@
         <span class="detail-value">{{ classSavingThrows }}</span>
       </div>
     </div>
+
+    <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
+    <ng-container *ngIf="requiresLevel1Subclass && classDetail && !loadingClassDetail">
+      <div class="subclass-header">
+        <span class="eyebrow">Choose a Subclass</span>
+        <span class="subclass-note">Required at level 1 for {{ clazz }}</span>
+      </div>
+      <div class="subclass-list">
+        <button *ngFor="let sub of availableSubclasses"
+                type="button"
+                class="subclass-card"
+                [class.active]="selectedSubclass === sub.name"
+                (click)="selectedSubclass = sub.name">
+          <span class="subclass-name">{{ sub.name }}</span>
+          <span class="subclass-desc">{{ sub.desc }}</span>
+        </button>
+      </div>
+    </ng-container>
   </ng-container>
 
   <!-- ── Step 4: Background ──────────────────────────────────────────── -->
