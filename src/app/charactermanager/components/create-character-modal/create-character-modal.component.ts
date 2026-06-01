@@ -72,8 +72,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   classDetail:  DndClass | null = null;
   loadingClassList   = true;
   loadingClassDetail = false;
+  selectedSubclass = '';
   // switchMap subject — cancels in-flight requests when class changes
   private classTrigger$ = new Subject<string>();
+
+  /** True if the chosen class receives its subclass at level 1 (2024 PHB). */
+  get requiresLevel1Subclass(): boolean {
+    return ['sorcerer', 'warlock'].includes(this.clazz.toLowerCase());
+  }
+
+  get availableSubclasses(): { name: string; desc: string }[] {
+    return this.dndResources.getSubclassesForClass(this.clazz);
+  }
 
   // ── Step 4: Background ───────────────────────────────────────────────────
   backgroundGroups: BackgroundGroup[] = [];
@@ -285,7 +295,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     switch (this.step) {
       case 1: return this.name.trim().length > 0;
       case 2: return !!this.species;
-      case 3: return !!this.clazz;
+      case 3: return !!this.clazz
+                  && (!this.requiresLevel1Subclass || !!this.selectedSubclass);
       case 4: return !!this.background;
       case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
       case 6: return this.isArrayComplete
@@ -384,7 +395,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Class detail ─────────────────────────────────────────────────────────
 
   onClassChange(): void {
-    this.selectedSkills = [];
+    this.selectedSkills  = [];
+    this.selectedSubclass = '';
     if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 
@@ -491,6 +503,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       party:            this.party,
       race:             this.species,
       clazz:            this.clazz,
+      subclass:         this.selectedSubclass || undefined,
       background:       this.background,
       level:            1,
       prof:             2,
