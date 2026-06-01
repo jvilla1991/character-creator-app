@@ -409,6 +409,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.backgroundDetail?.proficiencies.map(s => s.name).join(', ') ?? '';
   }
 
+  get backgroundFeatName(): string {
+    return this.backgroundDetail?.feat?.name ?? '';
+  }
+
+  get backgroundFeatDescription(): string {
+    return this.dndResources.getFeatDescription(this.backgroundFeatName);
+  }
+
   // ── Standard Array helpers ───────────────────────────────────────────────
 
   /** Values from the Standard Array not yet assigned to another ability */
@@ -504,7 +512,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       gear:             this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.gear ?? [])
                           : [],
-      features:         [],
+      features:         this.backgroundFeatName
+                          ? [{
+                              name:   this.backgroundFeatName,
+                              source: `${this.background} · Origin Feat`,
+                              desc:   this.backgroundFeatDescription
+                                        || 'See the 2024 Player\'s Handbook for full details.',
+                            }]
+                          : [],
       spells: this.selectedSpells.map((s): PcSpell => ({
         lvl:            s.level,
         name:           s.name,

@@ -1,1 +1,37 @@
 /* Rules in global styles.css */
+
+// ── Languages & Tool Proficiencies block ────────────────────────────────────
+
+.story-proficiencies {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.story-prof-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.story-prof-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.story-prof-value {
+  font-family: 'EB Garamond', serif;
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.4;
+}
