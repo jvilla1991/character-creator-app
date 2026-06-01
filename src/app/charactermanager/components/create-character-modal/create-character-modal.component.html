@@ -268,29 +268,81 @@
   <ng-container *ngIf="step === 6">
     <div class="modal-title">Assign Ability Scores</div>
     <div class="modal-sub">
-      Distribute the Standard Array [15, 14, 13, 12, 10, 8] across your six abilities,
-      then apply your background's +2/+1 bonus.
+      Choose a method, assign your scores, then apply your background's +2/+1 bonus.
     </div>
 
-    <!-- Standard Array assignment -->
-    <div class="ability-grid">
-      <div *ngFor="let ability of abilities" class="ability-row">
-        <span class="ability-label">{{ ability }}</span>
-        <select class="ability-select" [(ngModel)]="assignments[ability]">
-          <option [ngValue]="null">—</option>
-          <option *ngFor="let v of availableFor(ability)" [ngValue]="v">{{ v }}</option>
-        </select>
-        <span class="ability-bonus">
-          <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
-          <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+    <!-- Method selector -->
+    <div class="score-method-tabs">
+      <button type="button" class="score-method-tab"
+              [class.active]="abilityMethod === 'standard'"
+              (click)="abilityMethod = 'standard'">Standard Array</button>
+      <button type="button" class="score-method-tab"
+              [class.active]="abilityMethod === 'point-buy'"
+              (click)="abilityMethod = 'point-buy'">Point Buy</button>
+      <span class="score-method-tab score-method-tab--disabled"
+            title="Dice rolling will be available in a future update.">
+        Roll Dice
+        <span class="score-method-soon">Soon</span>
+      </span>
+    </div>
+
+    <!-- ── Standard Array ───────────────────────────────────────────────── -->
+    <ng-container *ngIf="abilityMethod === 'standard'">
+      <div class="ability-grid">
+        <div *ngFor="let ability of abilities" class="ability-row">
+          <span class="ability-label">{{ ability }}</span>
+          <select class="ability-select" [(ngModel)]="assignments[ability]">
+            <option [ngValue]="null">—</option>
+            <option *ngFor="let v of availableFor(ability)" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="ability-bonus">
+            <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
+            <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+          </span>
+          <span class="ability-final" *ngIf="assignments[ability] !== null">
+            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+          </span>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── Point Buy ────────────────────────────────────────────────────── -->
+    <ng-container *ngIf="abilityMethod === 'point-buy'">
+      <div class="pb-budget">
+        <span class="pb-budget-spent"
+              [class.pb-budget-full]="pointBuyRemaining === 0">
+          {{ pointBuySpent }}&thinsp;/&thinsp;{{ POINT_BUY_BUDGET }} points spent
         </span>
-        <span class="ability-final" *ngIf="assignments[ability] !== null">
-          = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+        <span class="pb-budget-remaining"
+              [class.pb-budget-low]="pointBuyRemaining <= 3 && pointBuyRemaining > 0">
+          {{ pointBuyRemaining }} remaining
         </span>
       </div>
-    </div>
 
-    <!-- Background bonus selectors -->
+      <div class="ability-grid">
+        <div *ngFor="let ability of abilities" class="ability-row ability-row--pb">
+          <span class="ability-label">{{ ability }}</span>
+          <div class="pb-stepper">
+            <button type="button" class="pb-btn"
+                    [disabled]="!canDecreaseScore(ability)"
+                    (click)="decreaseScore(ability)">−</button>
+            <span class="pb-value">{{ pointBuyScores[ability] }}</span>
+            <button type="button" class="pb-btn"
+                    [disabled]="!canIncreaseScore(ability)"
+                    (click)="increaseScore(ability)">+</button>
+          </div>
+          <span class="ability-bonus">
+            <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
+            <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+          </span>
+          <span class="ability-final">
+            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+          </span>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Background bonus selectors (shared by both methods) -->
     <div *ngIf="backgroundDetail && bonusAbilities.length" class="bonus-selectors">
       <div class="field">
         <label>{{ background }} +2 bonus</label>

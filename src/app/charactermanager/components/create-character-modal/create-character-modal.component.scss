@@ -217,6 +217,135 @@
   }
 }
 
+// ── Ability score method tabs ────────────────────────────────────────────
+
+.score-method-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.score-method-tab {
+  padding: 5px 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+
+  &.active {
+    background: rgba(212, 176, 106, 0.12);
+    border-color: rgba(212, 176, 106, 0.5);
+    color: var(--gold);
+  }
+
+  &:hover:not(.active):not(.score-method-tab--disabled) {
+    border-color: rgba(212, 176, 106, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &--disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+}
+
+.score-method-soon {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 1px 4px;
+  border: 1px solid currentColor;
+  border-radius: 100px;
+  opacity: 0.8;
+}
+
+// ── Point Buy controls ────────────────────────────────────────────────────
+
+.pb-budget {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.pb-budget-spent {
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: color 0.2s;
+
+  &.pb-budget-full { color: #a78bfa; } // violet when fully spent
+}
+
+.pb-budget-remaining {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+
+  &.pb-budget-low { color: var(--gold); } // gold warning when ≤3 points left
+}
+
+// Override the ability-row grid for Point Buy (stepper replaces the select)
+.ability-row--pb {
+  grid-template-columns: 44px auto 28px 1fr;
+}
+
+.pb-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover:not(:disabled) {
+    background: rgba(212, 176, 106, 0.15);
+    border-color: rgba(212, 176, 106, 0.5);
+    color: var(--gold);
+  }
+
+  &:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+}
+
+.pb-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 22px;
+  text-align: center;
+}
+
 // ── Source filter checkboxes ─────────────────────────────────────────────
 
 .source-filters {
