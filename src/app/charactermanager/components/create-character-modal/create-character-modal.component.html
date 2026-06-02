@@ -1,5 +1,20 @@
 <div class="modal wizard">
 
+  <!-- Ruleset selector — 2014 option is planned but not yet available -->
+  <div class="ruleset-bar"
+       matTooltip="2014 5e rules support is planned for a future update."
+       matTooltipPosition="below">
+    <span class="ruleset-active">2024 PHB</span>
+    <mat-slide-toggle
+      [disabled]="true"
+      [checked]="false"
+      class="ruleset-toggle"
+      aria-label="2014 5e rules (Coming Soon)">
+      2014 5e
+    </mat-slide-toggle>
+    <span class="ruleset-coming-soon">Coming Soon</span>
+  </div>
+
   <!-- Step indicator -->
   <div class="wizard-steps">
     <div *ngFor="let n of stepRange"

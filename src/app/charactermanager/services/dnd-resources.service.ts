@@ -230,6 +230,49 @@ export const SPECIES_TRAIT_DESCRIPTIONS: Record<string, string> = {
   'Celestial Revelation':  'Starting at 3rd level, you can temporarily transform. Choose Heavenly Wings, Inner Radiance, or Necrotic Shroud.',
 };
 
+/**
+ * Subclasses available at level 1 per the 2024 PHB.
+ * Only Sorcerer and Warlock receive their subclass at level 1.
+ */
+export const LEVEL1_SUBCLASSES: Record<string, { name: string; desc: string }[]> = {
+  sorcerer: [
+    {
+      name: 'Draconic Sorcery',
+      desc: 'Draconic blood flows through your lineage. You gain Elemental Affinity and a natural AC bonus of 13 + DEX modifier when not wearing armor.',
+    },
+    {
+      name: 'Wild Magic Sorcery',
+      desc: 'Surges of untamed magic fuel your power. After you cast a spell of 1st level or higher, the DM may trigger a Wild Magic Surge from the surge table.',
+    },
+    {
+      name: 'Clockwork Sorcery',
+      desc: 'Order and cosmic structure shape your spells. You gain Restore Balance and access to Abjuration and Transmutation spells not normally on the Sorcerer list.',
+    },
+    {
+      name: 'Aberrant Sorcery',
+      desc: 'Your magic has been touched by Far Realm mutations. You gain Psionic Spells and can manifest a Telepathic Speech ability.',
+    },
+  ],
+  warlock: [
+    {
+      name: 'Fiend Patron',
+      desc: 'A powerful fiend from the Lower Planes granted you your powers. You gain Fiend spells and Dark One\'s Blessing, regaining HP whenever you reduce a creature to 0 HP.',
+    },
+    {
+      name: 'Great Old One Patron',
+      desc: 'An alien entity of incomprehensible power is your master. You gain Great Old One spells and Awakened Mind, letting you communicate telepathically.',
+    },
+    {
+      name: 'Archfey Patron',
+      desc: 'A powerful fey creature granted you your power. You gain Archfey spells and Steps of the Fey, letting you teleport as a Bonus Action.',
+    },
+    {
+      name: 'Celestial Patron',
+      desc: 'A radiant being of the Upper Planes granted you power. You gain Celestial spells and Healing Light, a pool of d6s you can use to restore HP.',
+    },
+  ],
+};
+
 /** Starting gold granted by each PHB background (2024 PHB values) */
 export const BACKGROUND_GOLD: Record<string, number> = {
   // Player's Handbook
@@ -358,11 +401,6 @@ export class DndResourcesService {
    */
   getBackgroundGold(backgroundName: string): number {
     return BACKGROUND_GOLD[backgroundName] ?? 15;
-  }
-
-  /** Short description for an Origin feat, or empty string if unknown. */
-  getFeatDescription(featName: string): string {
-    return FEAT_DESCRIPTIONS[featName] ?? '';
   }
 
   /**
