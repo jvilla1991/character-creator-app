@@ -891,3 +891,170 @@
   min-width: 160px;
   margin-bottom: 0;
 }
+
+// ── Review step ───────────────────────────────────────────────────────────
+
+.review-stat-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.review-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.review-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.review-stat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.review-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding-right: 4px;
+}
+
+.review-section {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:last-child { border-bottom: none; }
+}
+
+.review-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.review-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.8;
+}
+
+.review-edit-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: transparent;
+
+  &:hover {
+    color: var(--gold);
+    border-color: rgba(212, 176, 106, 0.4);
+    background: rgba(212, 176, 106, 0.06);
+  }
+}
+
+.review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 2px 0;
+  font-size: 13px;
+}
+
+.review-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.review-value {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  text-align: right;
+
+  &--wrap {
+    text-align: right;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  &--muted {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    font-size: 12px;
+  }
+}
+
+.review-ability-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.review-ability {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+}
+
+.review-ability-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+}
+
+.review-ability-score {
+  font-family: 'Cinzel', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1;
+}
+
+.review-ability-mod {
+  font-family: 'EB Garamond', serif;
+  font-size: 12px;
+  color: #a78bfa;
+  font-style: italic;
+}

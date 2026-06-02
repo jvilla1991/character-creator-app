@@ -75,15 +75,22 @@ describe('CreateCharacterModalComponent — logic', () => {
 
   // ── Step count ────────────────────────────────────────────────────────────
 
-  describe('totalSteps', () => {
-    it('is 7 for a non-spellcasting class (Fighter)', () => {
+  describe('totalSteps / reviewStep / equipmentStep', () => {
+    it('totalSteps is 8 for a non-spellcasting class (Fighter)', () => {
       component.clazz = 'Fighter';
-      expect(component.totalSteps).toBe(7);
+      expect(component.totalSteps).toBe(8);
     });
 
-    it('is 8 for a spellcasting class (Wizard)', () => {
+    it('totalSteps is 9 for a spellcasting class (Wizard)', () => {
       component.clazz = 'Wizard';
-      expect(component.totalSteps).toBe(8);
+      expect(component.totalSteps).toBe(9);
+    });
+
+    it('reviewStep is the last step (equals totalSteps)', () => {
+      component.clazz = 'Fighter';
+      expect(component.reviewStep).toBe(component.totalSteps);
+      component.clazz = 'Wizard';
+      expect(component.reviewStep).toBe(component.totalSteps);
     });
 
     it('equipmentStep is 7 for non-casters', () => {
@@ -589,6 +596,103 @@ describe('CreateCharacterModalComponent — logic', () => {
       });
 
       component.submit();
+    });
+  });
+
+  // ── Review step ───────────────────────────────────────────────────────────
+
+  describe('canAdvance at review step', () => {
+    it('is always true at the review step', () => {
+      component.clazz = 'Fighter';
+      component.step = component.reviewStep;
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('is always true at the review step for casters', () => {
+      component.clazz = 'Wizard';
+      component.step = component.reviewStep;
+      expect(component.canAdvance).toBeTrue();
+    });
+  });
+
+  describe('goToStep', () => {
+    it('sets step to the given value', () => {
+      component.step = component.reviewStep;
+      component.goToStep(3);
+      expect(component.step).toBe(3);
+    });
+
+    it('can jump back to step 1 from review', () => {
+      component.step = component.reviewStep;
+      component.goToStep(1);
+      expect(component.step).toBe(1);
+    });
+  });
+
+  describe('review computed properties', () => {
+    beforeEach(() => {
+      component.abilityMethod = 'standard';
+      component.assignments = { STR: 8, DEX: 12, CON: 13, INT: 15, WIS: 14, CHA: 10 };
+      component.bonusPlus2 = 'INT';
+      component.bonusPlus1 = 'WIS';
+      (component as any).classDetail = { hit_die: 6, saving_throws: [{ name: 'INT' }, { name: 'WIS' }] };
+    });
+
+    it('reviewHp = hit die + CON modifier', () => {
+      // d6 + CON mod(13) = 6 + 1 = 7
+      expect(component.reviewHp).toBe(7);
+    });
+
+    it('reviewAc = 10 + DEX modifier', () => {
+      // 10 + mod(12) = 10 + 1 = 11
+      expect(component.reviewAc).toBe(11);
+    });
+
+    it('reviewInitiative matches formatted DEX modifier', () => {
+      expect(component.reviewInitiative).toBe('+1'); // DEX 12 → +1
+    });
+
+    it('reviewAllSkills deduplicates background and class skills', () => {
+      // Background mock grants Arcana and History; selected also includes them
+      component.selectedSkills = ['Arcana', 'History'];
+      const skills = component.reviewAllSkills;
+      const arcanaCount = skills.filter(s => s === 'Arcana').length;
+      expect(arcanaCount).toBe(1);
+    });
+
+    it('reviewAllSkills combines background and extra class skills', () => {
+      component.selectedSkills = ['Insight', 'Investigation'];
+      const skills = component.reviewAllSkills;
+      expect(skills).toContain('Arcana');    // from background
+      expect(skills).toContain('History');   // from background
+      expect(skills).toContain('Insight');   // class pick
+      expect(skills).toContain('Investigation'); // class pick
+    });
+
+    it('reviewCantripNames lists only cantrip names', () => {
+      component.selectedSpells = [
+        { level: 0, name: 'Prestidigitation', school: 'transmutation', actionType: '1 action', classes: [], concentration: false, ritual: false, range: '', components: [], duration: '', description: '', material: '' },
+        { level: 1, name: 'Magic Missile',    school: 'evocation',     actionType: '1 action', classes: [], concentration: false, ritual: false, range: '', components: [], duration: '', description: '', material: '' },
+      ];
+      expect(component.reviewCantripNames).toBe('Prestidigitation');
+    });
+
+    it('reviewLeveledSpellNames lists only leveled spell names', () => {
+      component.selectedSpells = [
+        { level: 0, name: 'Prestidigitation', school: 'transmutation', actionType: '1 action', classes: [], concentration: false, ritual: false, range: '', components: [], duration: '', description: '', material: '' },
+        { level: 1, name: 'Magic Missile',    school: 'evocation',     actionType: '1 action', classes: [], concentration: false, ritual: false, range: '', components: [], duration: '', description: '', material: '' },
+      ];
+      expect(component.reviewLeveledSpellNames).toBe('Magic Missile');
+    });
+
+    it('reviewStartingGp totals background gold + class gold (Option B)', () => {
+      component.clazz = 'Wizard';
+      component.equipmentChoice = 'B';
+      component.classEquipmentData = {
+        wizard: { optionA: { weapons: [], gear: [], gp: 0 }, optionB: { gp: 25 } }
+      };
+      // Background gold mock = 15, class option B = 25
+      expect(component.reviewStartingGp).toBe(40);
     });
   });
 });
