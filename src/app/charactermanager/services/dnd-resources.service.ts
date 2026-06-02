@@ -437,13 +437,6 @@ export class DndResourcesService {
   /** Short description for an Origin feat, or empty string if unknown. */
   getFeatDescription(featName: string): string {
     return FEAT_DESCRIPTIONS[featName] ?? '';
-  /**
-   * Subclasses available at level 1 for a class, per the 2024 PHB.
-   * Returns an empty array for classes that don't pick a subclass at level 1.
-   */
-  getSubclassesForClass(className: string): { name: string; desc: string }[] {
-    return LEVEL1_SUBCLASSES[className.toLowerCase()] ?? [];
-  }
 
   /**
    * Subclasses available at level 1 for a class, per the 2024 PHB.
