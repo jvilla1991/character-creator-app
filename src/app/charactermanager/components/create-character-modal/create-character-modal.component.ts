@@ -27,12 +27,17 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   get totalSteps(): number {
+    return this.isSpellcastingClass ? 9 : 8;
+  }
+
+  /** The step number for equipment — one before the review step. */
+  get equipmentStep(): number {
     return this.isSpellcastingClass ? 8 : 7;
   }
 
-  /** The step number for equipment — always the last step. */
-  get equipmentStep(): number {
-    return this.isSpellcastingClass ? 8 : 7;
+  /** The final review step — always the last step. */
+  get reviewStep(): number {
+    return this.isSpellcastingClass ? 9 : 8;
   }
 
   get stepRange(): number[] {
@@ -335,7 +340,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Navigation ───────────────────────────────────────────────────────────
 
   get canAdvance(): boolean {
-    // Equipment is always the final step regardless of class
+    // Review step: Inscribe is always available once you reach it
+    if (this.step === this.reviewStep) return true;
+    // Equipment step gate
     if (this.step === this.equipmentStep) return !!this.equipmentChoice;
 
     switch (this.step) {
@@ -386,6 +393,61 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   back(): void { if (this.step > 1) this.step--; }
+
+  /** Jump directly to any step — used by Edit buttons in the review step. */
+  goToStep(n: number): void { this.step = n; }
+
+  // ── Review step computed properties ──────────────────────────────────────
+
+  get reviewHp(): number {
+    const hitDie = this.classDetail?.hit_die ?? 8;
+    return hitDie + this.modNum(this.finalScore('CON'));
+  }
+
+  get reviewAc(): number {
+    return 10 + this.modNum(this.finalScore('DEX'));
+  }
+
+  get reviewInitiative(): string {
+    return this.modifier(this.finalScore('DEX'));
+  }
+
+  /** Combined skill proficiencies: background (locked) + class choices */
+  get reviewAllSkills(): string[] {
+    const seen = new Set<string>();
+    return [...this.backgroundSkillProfs, ...this.selectedSkills].filter(s => {
+      if (seen.has(s)) return false;
+      seen.add(s);
+      return true;
+    });
+  }
+
+  get reviewSpeciesTraitNames(): string {
+    return (this.speciesDetail?.traits ?? []).map(t => t.name).join(', ');
+  }
+
+  get reviewCantripNames(): string {
+    return this.selectedSpells.filter(s => s.level === 0).map(s => s.name).join(', ');
+  }
+
+  get reviewLeveledSpellNames(): string {
+    return this.selectedSpells.filter(s => s.level > 0).map(s => s.name).join(', ');
+  }
+
+  get reviewWeaponNames(): string {
+    return (this.currentClassEquipment?.optionA.weapons ?? []).map(w => w.name).join(', ');
+  }
+
+  get reviewGearNames(): string {
+    return (this.currentClassEquipment?.optionA.gear ?? []).map(g => g.name).join(', ');
+  }
+
+  get reviewStartingGp(): number {
+    return this.backgroundStartingGold
+      + (this.equipmentChoice === 'A'
+          ? (this.currentClassEquipment?.optionA.gp ?? 0)
+          : (this.currentClassEquipment?.optionB.gp ?? 0));
+  }
 
   // ── Class detail ─────────────────────────────────────────────────────────
 

@@ -478,6 +478,206 @@
     </div>
   </ng-container>
 
+  <!-- ── Review Step ────────────────────────────────────────────────── -->
+  <ng-container *ngIf="step === reviewStep">
+    <div class="modal-title">Review Your Hero</div>
+    <div class="modal-sub">Everything looks right? Click Inscribe to bring your hero to life.</div>
+
+    <!-- Combat stats banner -->
+    <div class="review-stat-bar">
+      <div class="review-stat">
+        <span class="review-stat-label">HP</span>
+        <span class="review-stat-value">{{ reviewHp }}</span>
+      </div>
+      <div class="review-stat">
+        <span class="review-stat-label">AC</span>
+        <span class="review-stat-value">{{ reviewAc }}</span>
+      </div>
+      <div class="review-stat">
+        <span class="review-stat-label">Initiative</span>
+        <span class="review-stat-value">{{ reviewInitiative }}</span>
+      </div>
+      <div class="review-stat">
+        <span class="review-stat-label">Speed</span>
+        <span class="review-stat-value">30 ft</span>
+      </div>
+      <div class="review-stat">
+        <span class="review-stat-label">Prof Bonus</span>
+        <span class="review-stat-value">+2</span>
+      </div>
+    </div>
+
+    <div class="review-scroll">
+
+      <!-- Identity -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Identity</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(1)">Edit</button>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Name</span>
+          <span class="review-value">{{ name }}</span>
+        </div>
+        <div *ngIf="player" class="review-row">
+          <span class="review-label">Player</span>
+          <span class="review-value">{{ player }}</span>
+        </div>
+        <div *ngIf="party" class="review-row">
+          <span class="review-label">Party</span>
+          <span class="review-value">{{ party }}</span>
+        </div>
+      </div>
+
+      <!-- Species -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Species</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(2)">Edit</button>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Species</span>
+          <span class="review-value">{{ species }}</span>
+        </div>
+        <div *ngIf="speciesDetail" class="review-row">
+          <span class="review-label">Size / Speed</span>
+          <span class="review-value">{{ speciesDetail.size }}, {{ speciesDetail.speed }} ft.</span>
+        </div>
+        <div *ngIf="reviewSpeciesTraitNames" class="review-row">
+          <span class="review-label">Traits</span>
+          <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames }}</span>
+        </div>
+      </div>
+
+      <!-- Class -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Class</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(3)">Edit</button>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Class</span>
+          <span class="review-value">{{ clazz }}</span>
+        </div>
+        <div *ngIf="selectedSubclass" class="review-row">
+          <span class="review-label">Subclass</span>
+          <span class="review-value">{{ selectedSubclass }}</span>
+        </div>
+        <div *ngIf="classDetail" class="review-row">
+          <span class="review-label">Hit Die</span>
+          <span class="review-value">d{{ classDetail.hit_die }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Saving Throws</span>
+          <span class="review-value">{{ classSavingThrows }}</span>
+        </div>
+      </div>
+
+      <!-- Background -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Background</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(4)">Edit</button>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Background</span>
+          <span class="review-value">{{ background }}</span>
+        </div>
+        <div *ngIf="backgroundFeatName" class="review-row">
+          <span class="review-label">Origin Feat</span>
+          <span class="review-value">{{ backgroundFeatName }}</span>
+        </div>
+        <div *ngIf="bonusPlus2 && bonusPlus1" class="review-row">
+          <span class="review-label">Ability Bonuses</span>
+          <span class="review-value">+2 {{ bonusPlus2 }}, +1 {{ bonusPlus1 }}</span>
+        </div>
+      </div>
+
+      <!-- Proficiencies & Languages -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Proficiencies &amp; Languages</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(5)">Edit</button>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Skills</span>
+          <span class="review-value review-value--wrap">{{ reviewAllSkills.join(', ') || '—' }}</span>
+        </div>
+        <div *ngIf="backgroundToolProfs.length" class="review-row">
+          <span class="review-label">Tools</span>
+          <span class="review-value review-value--wrap">{{ backgroundToolProfs.join(', ') }}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Languages</span>
+          <span class="review-value">Common{{ languageChoice ? ', ' + languageChoice : '' }}</span>
+        </div>
+      </div>
+
+      <!-- Ability Scores -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Ability Scores</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(6)">Edit</button>
+        </div>
+        <div class="review-ability-grid">
+          <div *ngFor="let ability of abilities" class="review-ability">
+            <span class="review-ability-label">{{ ability }}</span>
+            <span class="review-ability-score">{{ finalScore(ability) }}</span>
+            <span class="review-ability-mod">{{ modifier(finalScore(ability)) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spells (casters only) -->
+      <div *ngIf="isSpellcastingClass" class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Spells</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(7)">Edit</button>
+        </div>
+        <ng-container *ngIf="selectedSpells.length === 0">
+          <div class="review-row">
+            <span class="review-value review-value--muted">No spells selected yet</span>
+          </div>
+        </ng-container>
+        <div *ngIf="reviewCantripNames" class="review-row">
+          <span class="review-label">Cantrips</span>
+          <span class="review-value review-value--wrap">{{ reviewCantripNames }}</span>
+        </div>
+        <div *ngIf="reviewLeveledSpellNames" class="review-row">
+          <span class="review-label">1st Level</span>
+          <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames }}</span>
+        </div>
+      </div>
+
+      <!-- Starting Equipment -->
+      <div class="review-section">
+        <div class="review-section-header">
+          <span class="review-section-title">Starting Equipment</span>
+          <button type="button" class="btn review-edit-btn" (click)="goToStep(equipmentStep)">Edit</button>
+        </div>
+        <ng-container *ngIf="equipmentChoice === 'A' && currentClassEquipment">
+          <div *ngIf="reviewWeaponNames" class="review-row">
+            <span class="review-label">Weapons</span>
+            <span class="review-value review-value--wrap">{{ reviewWeaponNames }}</span>
+          </div>
+          <div *ngIf="reviewGearNames" class="review-row">
+            <span class="review-label">Gear</span>
+            <span class="review-value review-value--wrap">{{ reviewGearNames }}</span>
+          </div>
+        </ng-container>
+        <div *ngIf="equipmentChoice === 'B'" class="review-row">
+          <span class="review-label">Gold Budget</span>
+          <span class="review-value">{{ currentClassEquipment?.optionB?.gp ?? 0 }} gp to spend</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Starting Gold</span>
+          <span class="review-value">{{ reviewStartingGp }} gp total</span>
+        </div>
+      </div>
+
+    </div><!-- end .review-scroll -->
+  </ng-container>
+
   <!-- ── Actions ─────────────────────────────────────────────────────── -->
   <div class="modal-actions">
     <button class="btn" type="button" (click)="step > 1 ? back() : cancel()">
