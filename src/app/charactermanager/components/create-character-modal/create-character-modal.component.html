@@ -115,6 +115,24 @@
         <span class="detail-value">{{ classSavingThrows }}</span>
       </div>
     </div>
+
+    <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
+    <ng-container *ngIf="requiresLevel1Subclass && classDetail && !loadingClassDetail">
+      <div class="subclass-header">
+        <span class="eyebrow">Choose a Subclass</span>
+        <span class="subclass-note">Required at level 1 for {{ clazz }}</span>
+      </div>
+      <div class="subclass-list">
+        <button *ngFor="let sub of availableSubclasses"
+                type="button"
+                class="subclass-card"
+                [class.active]="selectedSubclass === sub.name"
+                (click)="selectedSubclass = sub.name">
+          <span class="subclass-name">{{ sub.name }}</span>
+          <span class="subclass-desc">{{ sub.desc }}</span>
+        </button>
+      </div>
+    </ng-container>
   </ng-container>
 
   <!-- ── Step 4: Background ──────────────────────────────────────────── -->
@@ -154,9 +172,17 @@
         <span class="detail-label">Proficiencies</span>
         <span class="detail-value">{{ backgroundProficiencyNames }}</span>
       </div>
-      <div *ngIf="backgroundDetail.feat" class="detail-row">
-        <span class="detail-label">Feat</span>
-        <span class="detail-value">{{ backgroundDetail.feat!.name }}</span>
+    </div>
+
+    <!-- Origin Feat card (always fixed per background — display only) -->
+    <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
+      <div class="feat-card-eyebrow">Origin Feat</div>
+      <div class="feat-card-name">{{ backgroundFeatName }}</div>
+      <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
+        {{ backgroundFeatDescription }}
+      </div>
+      <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
+        See the 2024 Player's Handbook for full details.
       </div>
     </div>
   </ng-container>
