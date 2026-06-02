@@ -150,6 +150,52 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   readonly abilities     = ABILITIES;
   readonly standardArray = [...STANDARD_ARRAY] as number[];
 
+  // Method selector — 'standard' | 'point-buy' ('dice' is disabled / coming soon)
+  abilityMethod: 'standard' | 'point-buy' = 'standard';
+
+  // ── Point Buy constants (2024 PHB) ───────────────────────────────────────
+  readonly POINT_BUY_BUDGET = 27;
+  readonly POINT_BUY_MIN    = 8;
+  readonly POINT_BUY_MAX    = 15;
+  /** Cumulative point cost to reach each score from 8. */
+  readonly POINT_BUY_COSTS: Record<number, number> = {
+    8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9,
+  };
+
+  pointBuyScores: Record<Ability, number> = {
+    STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8,
+  };
+
+  get pointBuySpent(): number {
+    return (Object.values(this.pointBuyScores) as number[])
+      .reduce((sum, s) => sum + (this.POINT_BUY_COSTS[s] ?? 0), 0);
+  }
+
+  get pointBuyRemaining(): number {
+    return this.POINT_BUY_BUDGET - this.pointBuySpent;
+  }
+
+  canIncreaseScore(ability: Ability): boolean {
+    const cur      = this.pointBuyScores[ability];
+    const nextCost = (this.POINT_BUY_COSTS[cur + 1] ?? 99)
+                   - (this.POINT_BUY_COSTS[cur]     ?? 0);
+    return cur < this.POINT_BUY_MAX && this.pointBuyRemaining >= nextCost;
+  }
+
+  canDecreaseScore(ability: Ability): boolean {
+    return this.pointBuyScores[ability] > this.POINT_BUY_MIN;
+  }
+
+  increaseScore(ability: Ability): void {
+    if (!this.canIncreaseScore(ability)) return;
+    this.pointBuyScores = { ...this.pointBuyScores, [ability]: this.pointBuyScores[ability] + 1 };
+  }
+
+  decreaseScore(ability: Ability): void {
+    if (!this.canDecreaseScore(ability)) return;
+    this.pointBuyScores = { ...this.pointBuyScores, [ability]: this.pointBuyScores[ability] - 1 };
+  }
+
   // ── Step 6: Spells (spellcasting classes only) ───────────────────────────
   spellList:      DndSpell[] = [];
   loadingSpells   = false;
@@ -299,10 +345,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                   && (!this.requiresLevel1Subclass || !!this.selectedSubclass);
       case 4: return !!this.background;
       case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
-      case 6: return this.isArrayComplete
-                  && !!this.bonusPlus2
-                  && !!this.bonusPlus1
-                  && this.bonusPlus2 !== this.bonusPlus1;
+      case 6: {
+        const bonusesOk = !!this.bonusPlus2
+                       && !!this.bonusPlus1
+                       && this.bonusPlus2 !== this.bonusPlus1;
+        if (this.abilityMethod === 'point-buy') return bonusesOk;
+        return this.isArrayComplete && bonusesOk;
+      }
       case 7: return true; // spells — optional for casters (non-casters never reach here via switch)
       default: return false;
     }
@@ -455,7 +504,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Derived stats ────────────────────────────────────────────────────────
 
   finalScore(ability: Ability): number {
-    const base  = this.assignments[ability] ?? 0;
+    const base  = this.abilityMethod === 'point-buy'
+                    ? this.pointBuyScores[ability]
+                    : (this.assignments[ability] ?? 0);
     const bonus = (this.bonusPlus2 === ability ? 2 : 0)
                 + (this.bonusPlus1 === ability ? 1 : 0);
     return base + bonus;
