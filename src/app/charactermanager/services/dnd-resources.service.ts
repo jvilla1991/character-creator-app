@@ -231,46 +231,34 @@ export const SPECIES_TRAIT_DESCRIPTIONS: Record<string, string> = {
 };
 
 /**
- * Subclasses available at level 1 per the 2024 PHB.
- * Only Sorcerer and Warlock receive their subclass at level 1.
+ * Short descriptions for the 2024 PHB Origin feats.
+ * Expansion-specific feats are not listed here — they render name-only.
  */
-export const LEVEL1_SUBCLASSES: Record<string, { name: string; desc: string }[]> = {
-  sorcerer: [
-    {
-      name: 'Draconic Sorcery',
-      desc: 'Draconic blood flows through your lineage. You gain Elemental Affinity and a natural AC bonus of 13 + DEX modifier when not wearing armor.',
-    },
-    {
-      name: 'Wild Magic Sorcery',
-      desc: 'Surges of untamed magic fuel your power. After you cast a spell of 1st level or higher, the DM may trigger a Wild Magic Surge from the surge table.',
-    },
-    {
-      name: 'Clockwork Sorcery',
-      desc: 'Order and cosmic structure shape your spells. You gain Restore Balance and access to Abjuration and Transmutation spells not normally on the Sorcerer list.',
-    },
-    {
-      name: 'Aberrant Sorcery',
-      desc: 'Your magic has been touched by Far Realm mutations. You gain Psionic Spells and can manifest a Telepathic Speech ability.',
-    },
-  ],
-  warlock: [
-    {
-      name: 'Fiend Patron',
-      desc: 'A powerful fiend from the Lower Planes granted you your powers. You gain Fiend spells and Dark One\'s Blessing, regaining HP whenever you reduce a creature to 0 HP.',
-    },
-    {
-      name: 'Great Old One Patron',
-      desc: 'An alien entity of incomprehensible power is your master. You gain Great Old One spells and Awakened Mind, letting you communicate telepathically.',
-    },
-    {
-      name: 'Archfey Patron',
-      desc: 'A powerful fey creature granted you your power. You gain Archfey spells and Steps of the Fey, letting you teleport as a Bonus Action.',
-    },
-    {
-      name: 'Celestial Patron',
-      desc: 'A radiant being of the Upper Planes granted you power. You gain Celestial spells and Healing Light, a pool of d6s you can use to restore HP.',
-    },
-  ],
+export const FEAT_DESCRIPTIONS: Record<string, string> = {
+  'Alert':
+    'You gain +2 to Initiative. You cannot be Surprised, and hidden creatures gain no advantage on attack rolls against you.',
+  'Crafter':
+    'You gain proficiency with three Artisan\'s Tools. You can craft nonmagical items in half the normal time and buy goods at a 20% discount.',
+  'Healer':
+    'You can use a Healer\'s Kit to restore 1d6 + 4 HP to a creature (plus its max HD). You also learn Healing Word, usable once per Short or Long Rest without a spell slot.',
+  'Lucky':
+    'You have 3 Luck Points (refreshed on a Long Rest). Before any d20 Test, you can spend a point to roll twice and choose either result.',
+  'Magic Initiate (Cleric)':
+    'You learn two Cleric cantrips and one 1st-level Cleric spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Druid)':
+    'You learn two Druid cantrips and one 1st-level Druid spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Magic Initiate (Wizard)':
+    'You learn two Wizard cantrips and one 1st-level Wizard spell. You can cast the 1st-level spell once per Long Rest without expending a spell slot.',
+  'Musician':
+    'You gain proficiency with three Musical Instruments. Once per Long Rest you can perform for 1 minute to grant Bardic Inspiration dice to nearby friendly creatures.',
+  'Savage Attacker':
+    'Once per turn when you hit with a melee weapon attack, you may reroll the weapon\'s damage dice and use either result.',
+  'Skilled':
+    'You gain proficiency in any combination of three skills or tools of your choice.',
+  'Tavern Brawler':
+    'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
+  'Tough':
+    'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
 };
 
 /** Starting gold granted by each PHB background (2024 PHB values) */
@@ -403,6 +391,9 @@ export class DndResourcesService {
     return BACKGROUND_GOLD[backgroundName] ?? 15;
   }
 
+  /** Short description for an Origin feat, or empty string if unknown. */
+  getFeatDescription(featName: string): string {
+    return FEAT_DESCRIPTIONS[featName] ?? '';
   /**
    * Subclasses available at level 1 for a class, per the 2024 PHB.
    * Returns an empty array for classes that don't pick a subclass at level 1.
