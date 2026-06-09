@@ -4,7 +4,9 @@
 
 export const environment = {
   production: false,
-  demoMode: false
+  demoMode: false,
+  authApiUrl: 'http://localhost:8085',
+  characterApiUrl: 'http://localhost:8080'
 };
 
 /*
