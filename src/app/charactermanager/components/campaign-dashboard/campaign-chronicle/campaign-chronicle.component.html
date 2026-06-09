@@ -1,0 +1,23 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Campaign Chronicle</span>
+    <span style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      {{ campaign.arc }}
+    </span>
+  </div>
+
+  <p class="prose"><span class="drop">{{ dropCap }}</span>{{ rest }}</p>
+
+  <div style="margin-top: 18px;" *ngIf="campaign.threads.length">
+    <span class="eyebrow" style="display: block; margin-bottom: 4px;">Open Threads</span>
+    <div class="thread" *ngFor="let t of campaign.threads">
+      <span class="thread-mark">✦</span>
+      <span>{{ t }}</span>
+    </div>
+  </div>
+
+  <div class="secrets-box" *ngIf="campaign.secrets">
+    <span class="eyebrow">DM Secrets · hidden from players</span>
+    <p>{{ campaign.secrets }}</p>
+  </div>
+</div>

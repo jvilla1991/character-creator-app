@@ -5,6 +5,9 @@ import { Subscription } from 'rxjs';
 import { PC } from './models/pc';
 import { PCService } from './services/pc.service';
 import { CharacterModalService } from './services/character-modal.service';
+import { CampaignModalService } from './services/campaign-modal.service';
+import { UiStateService } from './services/ui-state.service';
+import { CampaignDraft } from './models/campaign';
 
 @Component({
   selector: 'app-charactermanager-app',
@@ -21,18 +24,35 @@ import { CharacterModalService } from './services/character-modal.service';
         (close)="closeCreate()">
       </app-create-character-modal>
     </div>
+
+    <!-- Create-campaign overlay (DM mode) -->
+    <div *ngIf="isCampaignModalOpen"
+         class="modal-backdrop"
+         (click)="closeCampaign()">
+      <app-create-campaign-modal
+        (confirm)="onCreateCampaign($event)"
+        (close)="closeCampaign()">
+      </app-create-campaign-modal>
+    </div>
+
+    <!-- Settings slide-over (its own fixed backdrop + panel) -->
+    <app-settings-panel *ngIf="isSettingsOpen"></app-settings-panel>
   `,
   styles: []
 })
 export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   pcs: PC[] = [];
   isCreateModalOpen = false;
+  isCampaignModalOpen = false;
+  isSettingsOpen = false;
 
   private subs: Subscription[] = [];
 
   constructor(
     private pcService: PCService,
     private characterModal: CharacterModalService,
+    private campaignModal: CampaignModalService,
+    private uiState: UiStateService,
     private router: Router,
   ) {}
 
@@ -41,6 +61,8 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
       this.pcService.pcs$.subscribe(pcs => { this.pcs = pcs; }),
 
       this.characterModal.isOpen$.subscribe(open => { this.isCreateModalOpen = open; }),
+      this.campaignModal.isOpen$.subscribe(open => { this.isCampaignModalOpen = open; }),
+      this.uiState.settingsOpen$.subscribe(open => { this.isSettingsOpen = open; }),
 
       this.router.events
         .pipe(filter(e => e instanceof NavigationEnd))
@@ -60,4 +82,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
 
   closeCreate(): void  { this.characterModal.closeCreateModal(); }
   onCreate(draft: Partial<PC>): void { this.characterModal.onCreated(draft); }
+
+  closeCampaign(): void { this.campaignModal.closeCreateModal(); }
+  onCreateCampaign(draft: CampaignDraft): void { this.campaignModal.onCreated(draft); }
 }

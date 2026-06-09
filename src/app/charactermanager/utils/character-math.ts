@@ -57,3 +57,33 @@ export const CONDITIONS_LIST: string[] = [
   'prone', 'restrained', 'stunned', 'unconscious',
   'raging', 'concentration', 'inspired',
 ];
+
+// ── Passive stats (DM dashboard) ────────────────────────────────────────────
+// passive = 10 + abilityMod + (expert ? 2×prof : prof ? prof : 0)
+// Perception and Insight both key off WIS. Mirrors prototype/data.js.
+
+type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+
+/** Proficiency level for a skill, tolerating "Animal Handling" → "Animal". */
+export function skillLevel(pc: PC, name: string): 'prof' | 'expert' | null {
+  const skills = pc.skills ?? {};
+  return skills[name] ?? skills[name.split(' ')[0]] ?? null;
+}
+
+export function passiveScore(pc: PC, skill: string, ability: Ability): number {
+  const score = pc.stats?.[ability] ?? 10;
+  const prof = pc.prof ?? 0;
+  const mod = modFromScore(score);
+  const lvl = skillLevel(pc, skill);
+  const bonus = lvl === 'expert' ? prof * 2 : lvl === 'prof' ? prof : 0;
+  return 10 + mod + bonus;
+}
+
+// ── Coin value ──────────────────────────────────────────────────────────────
+// Total wealth expressed in gold pieces.
+
+export function goldValue(coins: PC['coins']): number {
+  if (!coins) return 0;
+  const { cp = 0, sp = 0, ep = 0, gp = 0, pp = 0 } = coins;
+  return cp / 100 + sp / 10 + ep / 2 + gp + pp * 10;
+}
