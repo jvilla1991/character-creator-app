@@ -1,0 +1,37 @@
+<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+  <div class="modal-title" style="color: var(--celestial-2);">Open a New Campaign</div>
+  <div class="modal-sub">Every table begins with an empty map and a promise of trouble.</div>
+
+  <div class="field">
+    <label>Campaign Name</label>
+    <input [(ngModel)]="name" autocomplete="off" placeholder="e.g. The Ashfall Accord" autofocus>
+  </div>
+
+  <div class="field">
+    <label>Setting</label>
+    <input [(ngModel)]="setting" autocomplete="off" placeholder="where the tale unfolds">
+  </div>
+
+  <div class="field">
+    <label>Next Session</label>
+    <input [(ngModel)]="next" autocomplete="off" placeholder="e.g. Fri · Jun 20">
+  </div>
+
+  <div class="field">
+    <label>Banner Hue</label>
+    <div class="class-picker" style="grid-template-columns: repeat(5, 1fr);">
+      <button
+        *ngFor="let c of tints"
+        class="class-pick"
+        [class.active]="tint === c"
+        style="text-transform: capitalize;"
+        (click)="tint = c"
+      >{{ c }}</button>
+    </div>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn" (click)="cancel()">Cancel</button>
+    <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>
+  </div>
+</div>

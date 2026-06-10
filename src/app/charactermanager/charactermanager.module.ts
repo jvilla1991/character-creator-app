@@ -19,6 +19,16 @@ import { BackgroundStoryComponent } from './components/character-sheet/panels/ba
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 
+// ── DM mode ──────────────────────────────────────────────────────────────
+import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
+import { RoleSwitchComponent } from './components/settings-panel/role-switch/role-switch.component';
+import { CampaignSidebarComponent } from './components/campaign-sidebar/campaign-sidebar.component';
+import { CampaignDashboardComponent } from './components/campaign-dashboard/campaign-dashboard.component';
+import { PartyBoardComponent } from './components/campaign-dashboard/party-board/party-board.component';
+import { CampaignChronicleComponent } from './components/campaign-dashboard/campaign-chronicle/campaign-chronicle.component';
+import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
+import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
+
 import { MaterialModule } from '../shared/material.module';
 import { HttpClientModule } from '@angular/common/http';
 import { PCService } from './services/pc.service';
@@ -56,6 +66,14 @@ const routes: Routes = [
     FeaturesListComponent,
     CoinPurseComponent,
     BackgroundStoryComponent,
+    SettingsPanelComponent,
+    RoleSwitchComponent,
+    CampaignSidebarComponent,
+    CampaignDashboardComponent,
+    PartyBoardComponent,
+    CampaignChronicleComponent,
+    PartyTreasuryComponent,
+    CreateCampaignModalComponent,
   ],
   imports: [
     CommonModule,
