@@ -1,0 +1,106 @@
+<div class="slideover-backdrop" (click)="close()"></div>
+
+<aside class="slideover" (click)="$event.stopPropagation()">
+
+  <!-- Header: portrait + identity + close -->
+  <div class="slideover-header">
+    <div class="portrait lg" [style.background]="userTint">{{ user.initials }}</div>
+    <div style="min-width: 0;">
+      <div class="profile-name">{{ user.name }}</div>
+      <div class="profile-email">{{ user.email }}</div>
+      <div class="profile-title" *ngIf="user.title">{{ user.title }} · since {{ user.member_since }}</div>
+    </div>
+    <button class="slideover-close" (click)="close()" aria-label="Close">✕</button>
+  </div>
+
+  <div class="slideover-body">
+
+    <!-- View As -->
+    <div class="slideover-section">
+      <span class="panel-title">View As</span>
+      <app-role-switch></app-role-switch>
+      <div class="pref-sub" style="margin-top: 8px;">
+        Switch between your player and Dungeon&nbsp;Master dashboards.
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="slideover-section">
+      <span class="panel-title">Account</span>
+      <div class="field">
+        <label>Display Name</label>
+        <input [value]="user.name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input [value]="user.email" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Default Theme -->
+    <div class="slideover-section">
+      <span class="panel-title">Default Theme</span>
+      <div class="theme-swatches" *ngIf="theme$ | async as theme">
+        <button
+          *ngFor="let t of themes"
+          class="theme-swatch"
+          [class.active]="theme === t.id"
+          (click)="setTheme(t.id)"
+        >
+          <div class="theme-swatch-preview" [style.background]="t.bg">
+            <span class="bar" [style.background]="t.gold" style="width: 60%; left: 8px; top: 14px;"></span>
+            <span class="bar" [style.background]="t.accent" style="width: 38%; left: 8px; top: 24px;"></span>
+          </div>
+          <div class="theme-swatch-label">{{ t.label }}</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dice & Rolling -->
+    <div class="slideover-section" *ngIf="dice$ | async as dice">
+      <span class="panel-title">Dice &amp; Rolling</span>
+
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Roll style</div>
+          <div class="pref-sub">how the dice are cast</div>
+        </div>
+        <div class="seg-mini">
+          <button [class.active]="dice.style === 'digital'" (click)="setDiceStyle('digital')">digital</button>
+          <button [class.active]="dice.style === 'manual'" (click)="setDiceStyle('manual')">manual</button>
+        </div>
+      </div>
+
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Show modifiers</div>
+          <div class="pref-sub">break down each roll's math</div>
+        </div>
+        <button class="toggle" [class.on]="dice.showMods" (click)="toggleDice('showMods')"
+                [attr.aria-pressed]="dice.showMods"></button>
+      </div>
+
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Advantage prompt</div>
+          <div class="pref-sub">ask adv/disadv before rolling</div>
+        </div>
+        <button class="toggle" [class.on]="dice.advPrompt" (click)="toggleDice('advPrompt')"
+                [attr.aria-pressed]="dice.advPrompt"></button>
+      </div>
+
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Critical fanfare</div>
+          <div class="pref-sub">celebrate natural 20s</div>
+        </div>
+        <button class="toggle" [class.on]="dice.critFx" (click)="toggleDice('critFx')"
+                [attr.aria-pressed]="dice.critFx"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="slideover-footer">
+    <button class="btn danger" (click)="signOut()">Sign Out</button>
+  </div>
+</aside>
