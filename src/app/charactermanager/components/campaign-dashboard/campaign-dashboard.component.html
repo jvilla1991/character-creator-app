@@ -11,19 +11,19 @@
         </div>
       </div>
       <div class="sheet-actions">
+        <button class="btn" (click)="openManageParty()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <circle cx="8" cy="5" r="2.6"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+          </svg>
+          Manage Party
+        </button>
         <button class="btn">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
                style="margin-right: 6px; vertical-align: -2px;">
             <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/><path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
           </svg>
           Roll Initiative
-        </button>
-        <button class="btn">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M2 3a1 1 0 011-1h4a1 1 0 011 1v11M8 3a1 1 0 011-1h4a1 1 0 011 1v11M2 14h12"/>
-          </svg>
-          New Session
         </button>
       </div>
     </header>
@@ -64,6 +64,44 @@
     <div class="dm-cols" style="margin-top: 20px;">
       <app-campaign-chronicle [campaign]="vm.campaign"></app-campaign-chronicle>
       <app-party-treasury [members]="vm.members"></app-party-treasury>
+    </div>
+  </div>
+
+  <!-- Manage Party — bind/unbind your characters to this campaign -->
+  <div *ngIf="managePartyOpen" class="modal-backdrop" (click)="closeManageParty()">
+    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+      <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
+      <div class="modal-sub">
+        Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em>.
+        Toggle a hero on to seat them at this table.
+      </div>
+
+      <div class="manage-list">
+        <div class="manage-row" *ngFor="let pc of allPcs$ | async">
+          <div class="manage-hero">
+            <div class="portrait" [style.background]="boundTint(pc)">{{ initialsFor(pc) }}</div>
+            <div style="min-width: 0;">
+              <div class="board-hero-name">{{ pc.name }}</div>
+              <div class="board-hero-sub">{{ pc.race }} {{ pc.clazz }} {{ pc.level }}</div>
+            </div>
+          </div>
+          <button
+            class="toggle"
+            [class.on]="isBound(pc, vm.campaign)"
+            (click)="toggleMembership(pc, vm.campaign)"
+            [attr.aria-pressed]="isBound(pc, vm.campaign)"
+            [attr.aria-label]="'Toggle ' + pc.name"
+          ></button>
+        </div>
+        <div *ngIf="(allPcs$ | async)?.length === 0"
+             style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+          You have no characters to assign yet.
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn primary" style="flex: none;" (click)="closeManageParty()">Done</button>
+      </div>
     </div>
   </div>
 </ng-container>
