@@ -6,7 +6,7 @@ import { PC } from '../../models/pc';
 import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
-import { passiveScore } from '../../utils/character-math';
+import { passiveScore, tintFor } from '../../utils/character-math';
 
 interface DashboardVm {
   campaign: Campaign;
@@ -46,6 +46,10 @@ export class CampaignDashboardComponent {
     })
   );
 
+  /** All of the current user's characters — the bind pool for Manage Party. */
+  allPcs$ = this.pcService.pcs$;
+  managePartyOpen = false;
+
   constructor(
     private campaignService: CampaignService,
     private pcService: PCService,
@@ -56,5 +60,29 @@ export class CampaignDashboardComponent {
   openHero(pc: PC): void {
     this.pcService.setActivePC(pc);
     this.uiState.setRole('player');
+  }
+
+  // --- Manage Party (bind/unbind characters) -------------------------------
+
+  openManageParty(): void { this.managePartyOpen = true; }
+  closeManageParty(): void { this.managePartyOpen = false; }
+
+  boundTint(pc: PC): string { return tintFor(pc); }
+
+  initialsFor(pc: PC): string {
+    return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();
+  }
+
+  /** True if the PC is explicitly bound to this campaign. */
+  isBound(pc: PC, campaign: Campaign): boolean {
+    return pc.campaignId != null && String(pc.campaignId) === campaign.id;
+  }
+
+  /** Bind (or unbind) a character to the campaign and persist via PCService. */
+  toggleMembership(pc: PC, campaign: Campaign): void {
+    const campaignId = this.isBound(pc, campaign) ? null : campaign.id;
+    this.pcService.updatePC({ ...pc, campaignId }).subscribe({
+      error: err => console.error('Failed to update campaign binding', err),
+    });
   }
 }

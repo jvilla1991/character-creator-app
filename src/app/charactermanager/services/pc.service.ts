@@ -338,6 +338,10 @@ export class PCService {
       species: pc.race ?? null,
       initiative: pc.init ?? null,
       profBonus: pc.prof ?? null,
+      // Campaign binding — backend expects a numeric FK (or null to unbind)
+      campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
+        ? Number(pc.campaignId)
+        : null,
       // JSON-stringify all arrays and objects stored as TEXT
       spells: JSON.stringify(pc.spells ?? []),
       spellSlots: JSON.stringify(pc.spellSlots ?? {}),
