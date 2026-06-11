@@ -18,7 +18,9 @@ import { CoinPurseComponent } from './components/character-sheet/panels/coin-pur
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
+import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
 import { HttpClientModule } from '@angular/common/http';
 import { PCService } from './services/pc.service';
@@ -45,6 +47,7 @@ const routes: Routes = [
     SidenavComponent,
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
+    DiceRollerModalComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
     EmptyStateComponent,
@@ -60,6 +63,7 @@ const routes: Routes = [
   imports: [
     CommonModule,
     MaterialModule,
+    DragDropModule,
     HttpClientModule,
     FormsModule,
     MatDialogModule,

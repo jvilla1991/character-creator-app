@@ -1,0 +1,393 @@
+// ── Dice roller modal ────────────────────────────────────────────────────────
+// Visuals lean on the global theme tokens (--gold, --celestial, --crimson, …)
+// defined in styles.css so the modal matches whichever theme is active.
+
+:host {
+  // Per-die-type accent colours. Shared by the palette and the arena dice.
+  --d4-color:  #c8504f;
+  --d6-color:  #d4b06a;
+  --d8-color:  #8fb4ff;
+  --d10-color: #5bbf8a;
+  --d12-color: #b487e0;
+  --d20-color: #e8c98a;
+  --d100-color: #4fb6b0;
+}
+
+.dice-modal {
+  width: min(600px, 94vw);
+  display: flex;
+  flex-direction: column;
+  padding: 26px 28px 22px;
+}
+
+.dice-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all .15s;
+
+  &:hover { color: var(--crimson); border-color: var(--crimson); }
+}
+
+// ── Die shapes (reused by palette + arena) ───────────────────────────────────
+
+.die-shape {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: #10131f;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  background: var(--die, var(--gold));
+  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.4),
+              inset 0 -3px 6px rgba(0, 0, 0, 0.35);
+
+  &[data-die='d4']   { --die: var(--d4-color);   clip-path: polygon(50% 4%, 96% 92%, 4% 92%); }
+  &[data-die='d6']   { --die: var(--d6-color);   border-radius: 8px; }
+  &[data-die='d8']   { --die: var(--d8-color);   clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%); }
+  &[data-die='d10']  { --die: var(--d10-color);  clip-path: polygon(50% 0, 92% 35%, 74% 100%, 26% 100%, 8% 35%); }
+  &[data-die='d12']  { --die: var(--d12-color);  clip-path: polygon(25% 4%, 75% 4%, 98% 50%, 75% 96%, 25% 96%, 2% 50%); }
+  &[data-die='d20']  { --die: var(--d20-color);  clip-path: polygon(50% 2%, 93% 26%, 93% 74%, 50% 98%, 7% 74%, 7% 26%); }
+  &[data-die='d100'] { --die: var(--d100-color); clip-path: polygon(50% 2%, 93% 26%, 93% 74%, 50% 98%, 7% 74%, 7% 26%); }
+}
+
+.die-label,
+.die-face {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  // nudge text off the pointed tops so it sits in the body of the shape
+  transform: translateY(2px);
+}
+.die-face { font-size: 16px; }
+
+// ── Palette ──────────────────────────────────────────────────────────────────
+
+.dice-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 14px 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.palette-die {
+  position: relative;
+  padding: 4px;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  transition: transform .12s;
+
+  &:hover { transform: translateY(-3px); }
+  &:active { cursor: grabbing; }
+
+  .die-label { font-size: 11px; }
+}
+
+.die-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--gold);
+  border-radius: 9px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+// CDK drag preview / placeholder
+.cdk-drag-preview .die-shape { transform: scale(1.1); }
+.cdk-drag-placeholder { opacity: 0.35; }
+.cdk-drag-animating { transition: transform .2s cubic-bezier(0, 0, 0.2, 1); }
+
+// ── Arena ────────────────────────────────────────────────────────────────────
+
+.dice-arena {
+  position: relative;
+  height: 340px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% -10%, color-mix(in oklch, var(--celestial) 16%, transparent), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, color-mix(in oklch, var(--gold) 12%, transparent), transparent 55%),
+    color-mix(in oklch, var(--bg) 70%, #000);
+
+  &.cdk-drop-list-receiving,
+  &.cdk-drop-list-dragging {
+    border-color: var(--gold);
+    box-shadow: inset 0 0 24px color-mix(in oklch, var(--gold) 25%, transparent);
+  }
+}
+
+.arena-ceiling {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+
+.arena-hint {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  text-align: center;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.dice-shelf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.arena-die {
+  cursor: pointer;
+  will-change: transform;
+
+  &.flying {
+    animation: diceFlight 1.15s cubic-bezier(0.45, 0, 0.3, 1) both;
+    animation-delay: var(--delay, 0ms);
+    cursor: default;
+  }
+
+  &.landed {
+    cursor: default;
+    .die-shape { box-shadow: inset 0 2px 5px rgba(255,255,255,0.4),
+                             inset 0 -3px 6px rgba(0,0,0,0.35),
+                             0 0 14px color-mix(in oklch, var(--gold) 45%, transparent); }
+  }
+
+  &:not(.flying):not(.landed):hover .die-shape {
+    outline: 2px solid color-mix(in oklch, var(--crimson) 60%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+// Launch up, smack the ceiling, tumble, settle mid-field showing the number.
+@keyframes diceFlight {
+  0%   { transform: translate(0, 0) rotate(0); }
+  30%  { transform: translate(calc(var(--dx) * 0.45), var(--peak)) rotate(calc(var(--spin) * 0.55)); }
+  // ceiling bounce — dip back down a touch
+  40%  { transform: translate(calc(var(--dx) * 0.6), calc(var(--peak) + 26px)) rotate(calc(var(--spin) * 0.68)); }
+  70%  { transform: translate(calc(var(--dx) * 0.9), calc(var(--rest) - 18px)) rotate(calc(var(--spin) * 0.92)); }
+  85%  { transform: translate(var(--dx), calc(var(--rest) + 6px)) rotate(var(--spin)); }
+  100% { transform: translate(var(--dx), var(--rest)) rotate(var(--spin)); }
+}
+
+// ── Result readout ───────────────────────────────────────────────────────────
+
+.dice-result {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--gold) 8%, transparent);
+  animation: fadein .25s ease-out;
+}
+
+.result-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 18px;
+  border-right: 1px solid var(--border-soft);
+}
+.result-total-num {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 38px;
+  line-height: 1;
+  color: var(--gold);
+}
+.result-total-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.result-breakdown {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.breakdown-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'EB Garamond', serif;
+  font-size: 14px;
+}
+.breakdown-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--celestial);
+  min-width: 48px;
+}
+.breakdown-rolls { flex: 1; color: var(--text-2); }
+.breakdown-sub   { color: var(--gold); font-weight: 600; }
+
+// ── Throw bar / pokéball orb ─────────────────────────────────────────────────
+
+.dice-throwbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.orb-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+
+.power-gauge {
+  width: 8px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--bg) 60%, #000);
+  opacity: 0.35;
+  transition: opacity .15s;
+
+  &.active { opacity: 1; }
+}
+.power-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(180deg, var(--crimson), var(--gold));
+  transition: height .05s linear;
+}
+// keep the fill anchored inside the gauge box
+.power-gauge { position: relative; }
+
+.throw-orb {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: grab;
+  transform: translateY(var(--lift, 0));
+  transition: transform .08s linear, filter .15s;
+  touch-action: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &.charging { cursor: grabbing; filter: drop-shadow(0 6px 16px color-mix(in oklch, var(--crimson) 70%, transparent)); }
+  &.spent { animation: orbToss .5s ease-in forwards; }
+
+  // top red hemisphere
+  .orb-top {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, #ff7a6e, #d63b30 60%, #9e241c);
+    clip-path: inset(0 0 50% 0);
+  }
+  // bottom white hemisphere
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 78%, #ffffff, #d4d6dc 62%, #9a9ca6);
+    clip-path: inset(50% 0 0 0);
+  }
+  // black equator band
+  .orb-band {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    transform: translateY(-50%);
+    background: #14151b;
+  }
+  // center button
+  .orb-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fff, #c9cbd2 65%, #8a8c95);
+    border: 3px solid #14151b;
+    z-index: 1;
+  }
+  &.charging .orb-button {
+    background: radial-gradient(circle at 40% 35%, #fff6c9, var(--gold) 65%, var(--gold-deep));
+    box-shadow: 0 0 10px var(--gold);
+  }
+}
+
+@keyframes orbToss {
+  0%   { transform: translateY(var(--lift, 0)) scale(1); opacity: 1; }
+  40%  { transform: translateY(-120px) scale(0.7); opacity: 1; }
+  60%  { transform: translateY(-180px) scale(0.4); opacity: 0.6; }
+  100% { transform: translateY(-220px) scale(0.2); opacity: 0; }
+}
+
+// ── Reduced motion: keep it usable, skip the acrobatics ──────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .arena-die.flying { animation: none; }
+  .throw-orb.spent { animation: none; }
+}

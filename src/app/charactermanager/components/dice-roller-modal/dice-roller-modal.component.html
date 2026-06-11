@@ -1,0 +1,124 @@
+<div class="modal dice-modal" [class.is-rolling]="phase === 'rolling'">
+
+  <button class="dice-close" type="button" title="Close" (click)="cancel()">&times;</button>
+
+  <div class="modal-title">Cast The Bones</div>
+  <div class="modal-sub">
+    Drag dice into the field, then wind up the orb and let them fly.
+  </div>
+
+  <!-- ── Palette: pick die types from the top ─────────────────────────────── -->
+  <div
+    class="dice-palette"
+    cdkDropList
+    #palette="cdkDropList"
+    [cdkDropListConnectedTo]="[arena]"
+    [cdkDropListSortingDisabled]="true">
+    <button
+      *ngFor="let sides of dieTypes"
+      type="button"
+      class="palette-die"
+      [attr.data-die]="'d' + sides"
+      cdkDrag
+      [cdkDragData]="sides"
+      (click)="addDie(sides)"
+      title="Add a d{{ sides }} (or drag it down into the field)">
+      <span class="die-shape" [attr.data-die]="'d' + sides">
+        <span class="die-label">d{{ sides }}</span>
+      </span>
+      <span class="die-count" *ngIf="countOf(sides) as n">{{ n }}</span>
+    </button>
+  </div>
+
+  <!-- ── Arena: the rolling field (drop target) ───────────────────────────── -->
+  <div
+    class="dice-arena"
+    #arenaEl
+    cdkDropList
+    #arena="cdkDropList"
+    (cdkDropListDropped)="onDrop($event)">
+    <span class="arena-ceiling"></span>
+
+    <p class="arena-hint" *ngIf="staged.length === 0">
+      Your dice field is empty — drag dice here.
+    </p>
+
+    <!-- Resting / flying dice live on the shelf at the bottom of the arena -->
+    <div class="dice-shelf">
+      <span
+        *ngFor="let d of staged; trackBy: trackById"
+        class="arena-die"
+        [class.flying]="phase === 'rolling'"
+        [class.landed]="phase === 'result'"
+        [attr.data-die]="'d' + d.sides"
+        [style.--dx.px]="d.dx"
+        [style.--peak.px]="d.peak"
+        [style.--rest.px]="d.rest"
+        [style.--spin.deg]="d.spin"
+        [style.--delay.ms]="d.delay"
+        (click)="removeDie(d.id)"
+        title="{{ phase === 'staging' ? 'Click to remove' : 'd' + d.sides }}">
+        <span class="die-shape" [attr.data-die]="'d' + d.sides">
+          <span class="die-face">{{ d.display }}</span>
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Result readout ───────────────────────────────────────────────────── -->
+  <div class="dice-result" *ngIf="phase === 'result'">
+    <div class="result-total">
+      <span class="result-total-num">{{ grandTotal }}</span>
+      <span class="result-total-label">Total</span>
+    </div>
+    <div class="result-breakdown">
+      <div class="breakdown-row" *ngFor="let row of breakdown">
+        <span class="breakdown-label">{{ row.label }}</span>
+        <span class="breakdown-rolls">{{ row.rolls.join(', ') }}</span>
+        <span class="breakdown-sub">{{ row.subtotal }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Throw bar: the pokéball-style orb ────────────────────────────────── -->
+  <div class="dice-throwbar">
+    <button
+      type="button"
+      class="btn sm"
+      [disabled]="staged.length === 0 || phase === 'rolling'"
+      (click)="clear()">
+      Clear
+    </button>
+
+    <div class="orb-stage">
+      <div class="power-gauge" [class.active]="charging">
+        <div class="power-fill" [style.height.%]="power * 100"></div>
+      </div>
+
+      <button
+        type="button"
+        class="throw-orb"
+        [class.charging]="charging"
+        [class.spent]="phase === 'rolling'"
+        [style.--lift.px]="-(charging ? power * 40 : 0)"
+        [disabled]="!canThrow"
+        (pointerdown)="onBallDown($event)"
+        (keydown.enter)="throwButton()"
+        (keydown.space)="throwButton()"
+        title="Hold and flick upward to throw — or press Enter">
+        <span class="orb-top"></span>
+        <span class="orb-band"></span>
+        <span class="orb-button"></span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="btn sm"
+      [disabled]="!canThrow"
+      (click)="throwButton()">
+      Throw
+    </button>
+  </div>
+
+</div>
