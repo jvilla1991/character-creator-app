@@ -210,7 +210,7 @@ export class PCService {
 
   constructor(private http: HttpClient) {}
 
-  readonly pcUrl = 'http://localhost:8080/api/v1/pc/';
+  readonly pcUrl = `${environment.characterApiUrl}/api/v1/pc/`;
 
   // Pushes a known list into the reactive stream (used by external loaders)
   setPCs(pcs: PC[]) {
