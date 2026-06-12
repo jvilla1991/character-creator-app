@@ -165,21 +165,46 @@ export class DiceRollerModalComponent implements OnDestroy {
     if (!this.canThrow) return;
     this.cancelTimers();
 
-    const arenaWidth = this.arenaRef?.nativeElement.clientWidth ?? 480;
-    const arenaHeight = this.arenaRef?.nativeElement.clientHeight ?? 340;
+    const arenaEl = this.arenaRef?.nativeElement;
+    const arenaRect = arenaEl?.getBoundingClientRect();
+    const arenaWidth = arenaEl?.clientWidth ?? 480;
+    const arenaHeight = arenaEl?.clientHeight ?? 340;
     const spread = arenaWidth * 0.34;
 
+    // Measure each resting die so its flight can be clamped inside the arena.
+    const dieEls = arenaEl
+      ? Array.from(arenaEl.querySelectorAll<HTMLElement>('.arena-die'))
+      : [];
+    // Spinning dice poke a few px past their box corners — keep a margin so nothing clips an edge.
+    const EDGE = 14;
+    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
     // Roll the real numbers up front; the animation just reveals them.
-    this.staged = this.staged.map((d, i) => ({
-      ...d,
-      value: this.randomFace(d.sides),
-      dx: Math.round((Math.random() * 2 - 1) * spread),
-      // Higher power -> dice slam harder into the ceiling before tumbling back.
-      peak: -Math.round(arenaHeight * (0.62 + power * 0.22 + Math.random() * 0.06)),
-      rest: -Math.round(arenaHeight * (0.26 + Math.random() * 0.18)),
-      spin: Math.round((Math.random() < 0.5 ? -1 : 1) * (540 + Math.random() * 720)),
-      delay: i * 70,
-    }));
+    this.staged = this.staged.map((d, i) => {
+      const rect = dieEls[i]?.getBoundingClientRect();
+
+      // How far this die may travel before its edge would leave the arena.
+      let dxMin = -spread;
+      let dxMax = spread;
+      let upMax = arenaHeight * 0.84; // available headroom toward the ceiling
+      if (rect && arenaRect) {
+        dxMax = Math.max(0, arenaRect.right - rect.right - EDGE);
+        dxMin = Math.min(0, arenaRect.left - rect.left + EDGE);
+        upMax = Math.max(0, rect.top - arenaRect.top - EDGE);
+      }
+
+      return {
+        ...d,
+        value: this.randomFace(d.sides),
+        dx: Math.round(clamp((Math.random() * 2 - 1) * spread, dxMin, dxMax)),
+        // Strike near the ceiling (harder with more power) but never past it.
+        peak: -Math.round(upMax * Math.min(1, 0.7 + power * 0.3)),
+        // Settle partway up, always below the ceiling strike.
+        rest: -Math.round(Math.min(upMax * 0.55, arenaHeight * (0.26 + Math.random() * 0.18))),
+        spin: Math.round((Math.random() < 0.5 ? -1 : 1) * (540 + Math.random() * 720)),
+        delay: i * 70,
+      };
+    });
     this.power = power;
     this.phase = 'rolling';
 
