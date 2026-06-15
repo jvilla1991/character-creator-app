@@ -13,6 +13,7 @@ import { CharacterModalService } from '../../services/character-modal.service';
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   isDeleteModalOpen = false;
+  isRollModalOpen = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -40,6 +41,11 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   openDeleteModal(): void  { this.isDeleteModalOpen = true;  }
   closeDeleteModal(): void { this.isDeleteModalOpen = false; }
+
+  // ── Dice roller modal ──────────────────────────────────────────────────────
+
+  openRollModal(): void  { this.isRollModalOpen = true;  }
+  closeRollModal(): void { this.isRollModalOpen = false; }
 
   onDeleteConfirm(): void {
     if (!this.pc) return;

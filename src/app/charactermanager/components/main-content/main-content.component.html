@@ -3,7 +3,8 @@
 <app-character-sheet
   *ngIf="pc"
   [pc]="pc"
-  (deleteRequested)="openDeleteModal()">
+  (deleteRequested)="openDeleteModal()"
+  (rollRequested)="openRollModal()">
 </app-character-sheet>
 
 <app-empty-state
@@ -21,4 +22,15 @@
     (confirm)="onDeleteConfirm()"
     (close)="closeDeleteModal()">
   </app-delete-confirmation-modal>
+</div>
+
+<!-- Dice roller overlay -->
+<div *ngIf="isRollModalOpen"
+     class="modal-backdrop"
+     (click)="closeRollModal()">
+  <app-dice-roller-modal
+    [pc]="pc"
+    (click)="$event.stopPropagation()"
+    (close)="closeRollModal()">
+  </app-dice-roller-modal>
 </div>
