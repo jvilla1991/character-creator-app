@@ -20,7 +20,9 @@ export class CampaignModalService {
 
   onCreated(draft: CampaignDraft): void {
     this.closeCreateModal();
-    const campaign = this.campaignService.createCampaign(draft);
-    this.uiState.setActiveCampaign(campaign.id);
+    this.campaignService.createCampaign(draft).subscribe({
+      next: campaign => this.uiState.setActiveCampaign(campaign.id),
+      error: err => console.error('Failed to create campaign', err),
+    });
   }
 }

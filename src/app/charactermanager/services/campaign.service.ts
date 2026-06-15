@@ -1,14 +1,15 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
+import { delay, map, tap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 import { Campaign, CampaignDraft } from '../models/campaign';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
 
 // ---------------------------------------------------------------------------
 // Demo seed campaigns. `party` links to PC.party (see prototype/data.js).
-// Phase 2 replaces this with a backend; the localStorage layer below is the
-// stand-in store until then.
+// Used only in demo mode; real mode talks to the backend.
 // ---------------------------------------------------------------------------
 const DEMO_CAMPAIGNS: Campaign[] = [
   {
@@ -55,18 +56,42 @@ const STORAGE_KEY = 'tm_campaigns';
 
 @Injectable({ providedIn: 'root' })
 export class CampaignService {
-  private campaignsSubject = new BehaviorSubject<Campaign[]>(this.loadCampaigns());
+  private campaignsSubject = new BehaviorSubject<Campaign[]>(
+    environment.demoMode ? this.loadDemoCampaigns() : []
+  );
   campaigns$ = this.campaignsSubject.asObservable();
 
-  constructor(private pcService: PCService) {}
+  readonly campaignUrl = `${environment.characterApiUrl}/api/v1/campaign`;
 
-  /** Members of a campaign = PCs whose party matches the campaign's party key. */
-  membersOf(campaign: Campaign | null, pcs: PC[]): PC[] {
-    if (!campaign) return [];
-    return pcs.filter(p => p.party === campaign.party);
+  constructor(private http: HttpClient, private pcService: PCService) {
+    if (!environment.demoMode) this.refreshCampaigns();
   }
 
-  /** Reactive members stream for a campaign id, recomputed as PCs change. */
+  /** Fetch the DM's campaigns from the backend into campaigns$. */
+  refreshCampaigns(): void {
+    if (environment.demoMode) {
+      this.campaignsSubject.next(this.campaignsSubject.getValue());
+      return;
+    }
+    this.http.get<unknown[]>(`${this.campaignUrl}/mine`).subscribe({
+      next: raw => this.campaignsSubject.next(raw.map(r => this.deserialize(r))),
+      error: err => console.error('Failed to load campaigns', err),
+    });
+  }
+
+  /**
+   * Members of a campaign. An explicit binding (PC.campaignId) wins; an unbound
+   * PC falls back to matching the campaign's party key (keeps demo seeds working).
+   */
+  membersOf(campaign: Campaign | null, pcs: PC[]): PC[] {
+    if (!campaign) return [];
+    return pcs.filter(p =>
+      p.campaignId != null
+        ? String(p.campaignId) === campaign.id
+        : p.party === campaign.party
+    );
+  }
+
   members$(campaignId: string | null): Observable<PC[]> {
     return combineLatest([this.campaigns$, this.pcService.pcs$]).pipe(
       map(([campaigns, pcs]) => {
@@ -80,12 +105,12 @@ export class CampaignService {
     return this.campaignsSubject.getValue().find(c => c.id === id);
   }
 
-  createCampaign(draft: CampaignDraft): Campaign {
-    const campaign: Campaign = {
-      id: 'c-' + Date.now(),
+  /** Create a campaign. Returns an Observable so callers can react to the saved row. */
+  createCampaign(draft: CampaignDraft): Observable<Campaign> {
+    const base: Omit<Campaign, 'id'> = {
       name: draft.name,
-      // Phase 1: a fresh campaign's party key is its own name; players join by
-      // setting their PC's party to match. Phase 2 swaps this for a real FK.
+      // A fresh campaign's party key defaults to its own name (Phase 1
+      // compatibility); real membership is the PC.campaignId FK.
       party: draft.name,
       setting: draft.setting || 'An unwritten realm',
       session: 1,
@@ -96,21 +121,75 @@ export class CampaignService {
       secrets: '',
       threads: [],
     };
-    const next = [...this.campaignsSubject.getValue(), campaign];
-    this.persist(next);
-    return campaign;
+
+    if (environment.demoMode) {
+      const campaign: Campaign = { ...base, id: 'c-' + Date.now() };
+      this.persistDemo([...this.campaignsSubject.getValue(), campaign]);
+      return of(campaign).pipe(delay(50));
+    }
+
+    return this.http.post<unknown>(`${this.campaignUrl}/add`, this.serialize(base)).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(campaign => this.campaignsSubject.next([...this.campaignsSubject.getValue(), campaign]))
+    );
   }
 
-  private persist(campaigns: Campaign[]): void {
+  // --- serialization (mirrors PCService) -----------------------------------
+
+  /** Frontend Campaign → backend shape (threads JSON, next→nextSession). */
+  private serialize(c: Omit<Campaign, 'id'> | Campaign): Record<string, unknown> {
+    return {
+      name: c.name,
+      party: c.party,
+      setting: c.setting,
+      session: c.session,
+      nextSession: c.next,
+      arc: c.arc,
+      tint: c.tint,
+      chronicle: c.chronicle,
+      secrets: c.secrets,
+      threads: JSON.stringify(c.threads ?? []),
+    };
+  }
+
+  /** Backend row → frontend Campaign (id→string, nextSession→next, threads parse). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private deserialize(raw: any): Campaign {
+    return {
+      id: String(raw.id),
+      name: raw.name,
+      party: raw.party ?? raw.name,
+      setting: raw.setting ?? '',
+      session: raw.session ?? 1,
+      next: raw.nextSession ?? 'Unscheduled',
+      arc: raw.arc ?? '',
+      tint: raw.tint ?? 'celestial',
+      chronicle: raw.chronicle ?? '',
+      secrets: raw.secrets ?? '',
+      threads: this.parseThreads(raw.threads),
+    };
+  }
+
+  private parseThreads(value: unknown): string[] {
+    if (Array.isArray(value)) return value as string[];
+    if (typeof value === 'string') {
+      try { return JSON.parse(value) as string[]; } catch { return []; }
+    }
+    return [];
+  }
+
+  // --- demo persistence -----------------------------------------------------
+
+  private persistDemo(campaigns: Campaign[]): void {
     this.campaignsSubject.next(campaigns);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(campaigns));
     } catch {
-      // Storage unavailable (private mode / quota) — keep in-memory only.
+      // Storage unavailable — keep in-memory only.
     }
   }
 
-  private loadCampaigns(): Campaign[] {
+  private loadDemoCampaigns(): Campaign[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw) as Campaign[];
