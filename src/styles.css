@@ -1728,3 +1728,23 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-top: 1px solid var(--border-soft);
 }
 .slideover-footer .btn { width: 100%; }
+
+/* === MANAGE PARTY (bind characters to a campaign) === */
+.manage-list { display: flex; flex-direction: column; margin: 4px 0 6px; max-height: 50vh; overflow-y: auto; }
+.manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px dotted var(--border-soft);
+}
+.manage-row:last-child { border-bottom: none; }
+.manage-hero {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+.manage-hero .portrait { width: 36px; height: 36px; font-size: 12px; }

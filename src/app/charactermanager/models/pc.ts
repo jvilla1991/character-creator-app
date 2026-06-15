@@ -27,6 +27,9 @@ export interface PC {
   // --- Rich fields (client-side for now; migrate backend after Phase 1) ---
   player?: string;
   party?: string;
+  // Campaign this PC is bound to. Backend stores a numeric FK; the value is
+  // compared as a string against Campaign.id (see CampaignService.membersOf).
+  campaignId?: number | string | null;
   race?: string;
   subclass?: string;
   background?: string;
