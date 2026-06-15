@@ -18,6 +18,7 @@ import { CoinPurseComponent } from './components/character-sheet/panels/coin-pur
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
+import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -55,6 +56,7 @@ const routes: Routes = [
     SidenavComponent,
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
+    DiceRollerModalComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
     EmptyStateComponent,
@@ -78,6 +80,7 @@ const routes: Routes = [
   imports: [
     CommonModule,
     MaterialModule,
+    DragDropModule,
     HttpClientModule,
     FormsModule,
     MatDialogModule,
