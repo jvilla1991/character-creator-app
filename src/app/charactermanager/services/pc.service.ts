@@ -358,6 +358,15 @@ export class PCService {
     };
   }
 
+  /**
+   * Public hook so other services (e.g. CampaignService member projections)
+   * can reuse the flat backend → nested PC mapping.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deserialize(raw: any): PC {
+    return this.deserializePC(raw);
+  }
+
   /** Reconstruct a full PC from the flat backend representation. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private deserializePC(raw: any): PC {

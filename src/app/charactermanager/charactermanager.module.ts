@@ -29,6 +29,7 @@ import { PartyBoardComponent } from './components/campaign-dashboard/party-board
 import { CampaignChronicleComponent } from './components/campaign-dashboard/campaign-chronicle/campaign-chronicle.component';
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
+import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
@@ -77,6 +78,7 @@ const routes: Routes = [
     CampaignChronicleComponent,
     PartyTreasuryComponent,
     CreateCampaignModalComponent,
+    JoinCampaignModalComponent,
   ],
   imports: [
     CommonModule,
