@@ -3,6 +3,9 @@ import { Subscription } from 'rxjs';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
+import { CampaignModalService } from '../../services/campaign-modal.service';
+import { UiStateService } from '../../services/ui-state.service';
+import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
 
 interface PartyGroup {
@@ -23,11 +26,19 @@ export class SidenavComponent implements OnInit, OnDestroy {
   query = '';
   collapsedParties = new Set<string>();
   activePC$ = this.pcService.activePC$;
+  role$ = this.uiState.role$;
+  user = this.currentUser.getUser();
 
   private allGroups: PartyGroup[] = [];
   private sub!: Subscription;
 
-  constructor(private pcService: PCService, private characterModal: CharacterModalService) {}
+  constructor(
+    private pcService: PCService,
+    private characterModal: CharacterModalService,
+    private campaignModal: CampaignModalService,
+    private uiState: UiStateService,
+    private currentUser: CurrentUserService,
+  ) {}
 
   ngOnInit(): void {
     this.sub = this.pcService.pcsByParty$.subscribe(groupMap => {
@@ -80,4 +91,11 @@ export class SidenavComponent implements OnInit, OnDestroy {
   }
 
   forgeHero(): void { this.characterModal.openCreateModal(); }
+
+  newCampaign(): void { this.campaignModal.openCreateModal(); }
+
+  /** Account-row tint, reusing the shared portrait util. */
+  get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
+
+  openSettings(): void { this.uiState.openSettings(); }
 }

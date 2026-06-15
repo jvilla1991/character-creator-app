@@ -1,0 +1,88 @@
+<ng-container *ngIf="vm$ | async as vm; else empty">
+  <div class="fade-in">
+
+    <!-- Header -->
+    <header class="sheet-header" style="grid-template-columns: 1fr auto;">
+      <div class="sheet-id">
+        <div class="eyebrow">Campaign · Session {{ vm.campaign.session }} · {{ vm.members.length }} heroes</div>
+        <h1 class="sheet-name">{{ vm.campaign.name }}</h1>
+        <div class="sheet-subtitle">
+          {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/><path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
+          </svg>
+          Roll Initiative
+        </button>
+        <button class="btn">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M2 3a1 1 0 011-1h4a1 1 0 011 1v11M8 3a1 1 0 011-1h4a1 1 0 011 1v11M2 14h12"/>
+          </svg>
+          New Session
+        </button>
+      </div>
+    </header>
+
+    <!-- Aggregate vitals strip -->
+    <div class="vitals" style="grid-template-columns: repeat(5, minmax(0, 1fr));">
+      <div class="vital">
+        <span class="eyebrow">Heroes</span>
+        <div class="vital-value numeric">{{ vm.members.length }}</div>
+        <div class="vital-caption">at the table</div>
+      </div>
+      <div class="vital">
+        <span class="eyebrow">Avg Level</span>
+        <div class="vital-value numeric">{{ vm.avgLevel }}</div>
+        <div class="vital-caption">party tier</div>
+      </div>
+      <div class="vital">
+        <span class="eyebrow">Top Pass. Perc</span>
+        <div class="vital-value numeric">{{ vm.topPassivePerception }}</div>
+        <div class="vital-caption">set your DCs</div>
+      </div>
+      <div class="vital">
+        <span class="eyebrow">Conditions</span>
+        <div class="vital-value numeric" [style.color]="vm.activeConditions ? 'var(--crimson)' : 'var(--text)'">
+          {{ vm.activeConditions }}
+        </div>
+        <div class="vital-caption">active now</div>
+      </div>
+      <div class="vital">
+        <span class="eyebrow">Next Session</span>
+        <div class="vital-value" style="font-size: 20px;">{{ vm.campaign.next }}</div>
+        <div class="vital-caption">be prepared</div>
+      </div>
+    </div>
+
+    <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
+
+    <div class="dm-cols" style="margin-top: 20px;">
+      <app-campaign-chronicle [campaign]="vm.campaign"></app-campaign-chronicle>
+      <app-party-treasury [members]="vm.members"></app-party-treasury>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #empty>
+  <div class="empty">
+    <div class="empty-sigil">
+      <!-- SigilEmpty -->
+      <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="currentColor" stroke-width="0.7">
+        <circle cx="60" cy="60" r="56" opacity="0.4"/>
+        <circle cx="60" cy="60" r="42"/>
+        <circle cx="60" cy="60" r="28"/>
+        <polygon points="60,12 72,46 108,46 78,68 90,104 60,82 30,104 42,68 12,46 48,46"/>
+        <path d="M60 4v112M4 60h112M19 19l82 82M101 19L19 101" opacity="0.4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="empty-title">No Campaign Chosen</div>
+      <div class="empty-sub">Select a campaign from the chronicle to survey your table.</div>
+    </div>
+  </div>
+</ng-template>

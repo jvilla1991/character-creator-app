@@ -1,0 +1,62 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Party Vitals Board</span>
+    <span style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      click a hero to open their sheet
+    </span>
+  </div>
+
+  <div class="board">
+    <div class="board-row head">
+      <span>Hero</span>
+      <span>Hit Points</span>
+      <span class="num">AC</span>
+      <span class="num">Pass. Perc</span>
+      <span class="num">Pass. Ins</span>
+      <span>Conditions</span>
+      <span></span>
+    </div>
+
+    <div *ngIf="members.length === 0"
+         style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
+      No heroes assigned to this campaign yet.
+    </div>
+
+    <div
+      *ngFor="let pc of members"
+      class="board-row member"
+      (click)="openHero.emit(pc)"
+    >
+      <div class="board-hero">
+        <div class="portrait" [style.background]="tintFor(pc)">{{ initialsFor(pc) }}</div>
+        <div style="min-width: 0;">
+          <div class="board-hero-name">{{ pc.name }}</div>
+          <div class="board-hero-sub">{{ pc.clazz }} {{ pc.level }}</div>
+        </div>
+      </div>
+
+      <div class="board-hp" [class.bloodied]="bloodied(pc)">
+        <div class="hp-text">
+          <span>{{ pc.hp?.cur }}/{{ pc.hp?.max }}<ng-container *ngIf="pc.hp?.temp"> +{{ pc.hp?.temp }}</ng-container></span>
+          <span>{{ hpPct(pc) | number:'1.0-0' }}%</span>
+        </div>
+        <div class="vital-bar"><span [style.width.%]="hpPct(pc)"></span></div>
+      </div>
+
+      <div class="board-num lit">{{ pc.ac }}</div>
+      <div class="board-num">{{ passivePerception(pc) }}</div>
+      <div class="board-num">{{ passiveInsight(pc) }}</div>
+
+      <div class="board-conditions">
+        <span *ngIf="!pc.conditions?.length" class="board-cond calm">steady</span>
+        <span *ngFor="let c of pc.conditions" class="board-cond">{{ c }}</span>
+      </div>
+
+      <!-- IconChevron rotated -->
+      <svg class="board-chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"
+           style="transform: rotate(-90deg);">
+        <path d="M2 4l3 3 3-3"/>
+      </svg>
+    </div>
+  </div>
+</div>

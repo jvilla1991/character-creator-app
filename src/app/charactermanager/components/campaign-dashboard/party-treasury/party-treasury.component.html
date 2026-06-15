@@ -1,0 +1,18 @@
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">Party Treasury</span></div>
+
+  <div class="treasury-list">
+    <div class="treasury-row" *ngFor="let row of rows">
+      <span class="treasury-name">{{ row.name }}</span>
+      <span class="treasury-amt">{{ row.gp | number:'1.0-0' }} gp</span>
+    </div>
+    <div *ngIf="rows.length === 0" style="color: var(--text-dim); font-style: italic; font-size: 13px;">
+      Empty coffers.
+    </div>
+  </div>
+
+  <div class="treasury-total">
+    <span class="label">Table Total</span>
+    <span class="big numeric">{{ total | number:'1.0-0' }} gp</span>
+  </div>
+</div>
