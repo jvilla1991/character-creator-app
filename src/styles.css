@@ -1748,3 +1748,22 @@ app-root { display: block; height: 100vh; width: 100vw; }
   min-width: 0;
 }
 .manage-hero .portrait { width: 36px; height: 36px; font-size: 12px; }
+
+/* === INVITE CODE CHIP (DM dashboard header) === */
+.invite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in oklch, var(--celestial) 40%, transparent);
+  background: color-mix(in oklch, var(--celestial) 12%, var(--bg-2));
+  border-radius: 100px;
+}
+.invite-chip .eyebrow { margin: 0; }
+.invite-code {
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  color: var(--celestial-2);
+  font-weight: 600;
+}

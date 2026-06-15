@@ -4,6 +4,7 @@ import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
 import { CampaignModalService } from '../../services/campaign-modal.service';
+import { JoinModalService } from '../../services/join-modal.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
@@ -36,6 +37,7 @@ export class SidenavComponent implements OnInit, OnDestroy {
     private pcService: PCService,
     private characterModal: CharacterModalService,
     private campaignModal: CampaignModalService,
+    private joinModal: JoinModalService,
     private uiState: UiStateService,
     private currentUser: CurrentUserService,
   ) {}
@@ -93,6 +95,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
   forgeHero(): void { this.characterModal.openCreateModal(); }
 
   newCampaign(): void { this.campaignModal.openCreateModal(); }
+
+  joinCampaign(): void { this.joinModal.open(); }
 
   /** Account-row tint, reusing the shared portrait util. */
   get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }

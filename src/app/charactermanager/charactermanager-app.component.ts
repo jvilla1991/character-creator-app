@@ -6,6 +6,7 @@ import { PC } from './models/pc';
 import { PCService } from './services/pc.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { CampaignModalService } from './services/campaign-modal.service';
+import { JoinModalService, JoinRequest } from './services/join-modal.service';
 import { UiStateService } from './services/ui-state.service';
 import { CampaignDraft } from './models/campaign';
 
@@ -35,6 +36,16 @@ import { CampaignDraft } from './models/campaign';
       </app-create-campaign-modal>
     </div>
 
+    <!-- Join-campaign overlay (player mode) -->
+    <div *ngIf="isJoinModalOpen"
+         class="modal-backdrop"
+         (click)="closeJoin()">
+      <app-join-campaign-modal
+        (confirm)="onJoin($event)"
+        (close)="closeJoin()">
+      </app-join-campaign-modal>
+    </div>
+
     <!-- Settings slide-over (its own fixed backdrop + panel) -->
     <app-settings-panel *ngIf="isSettingsOpen"></app-settings-panel>
   `,
@@ -44,6 +55,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   pcs: PC[] = [];
   isCreateModalOpen = false;
   isCampaignModalOpen = false;
+  isJoinModalOpen = false;
   isSettingsOpen = false;
 
   private subs: Subscription[] = [];
@@ -52,6 +64,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
     private pcService: PCService,
     private characterModal: CharacterModalService,
     private campaignModal: CampaignModalService,
+    private joinModal: JoinModalService,
     private uiState: UiStateService,
     private router: Router,
   ) {}
@@ -62,6 +75,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
 
       this.characterModal.isOpen$.subscribe(open => { this.isCreateModalOpen = open; }),
       this.campaignModal.isOpen$.subscribe(open => { this.isCampaignModalOpen = open; }),
+      this.joinModal.isOpen$.subscribe(open => { this.isJoinModalOpen = open; }),
       this.uiState.settingsOpen$.subscribe(open => { this.isSettingsOpen = open; }),
 
       this.router.events
@@ -85,4 +99,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
 
   closeCampaign(): void { this.campaignModal.closeCreateModal(); }
   onCreateCampaign(draft: CampaignDraft): void { this.campaignModal.onCreated(draft); }
+
+  closeJoin(): void { this.joinModal.close(); }
+  onJoin(req: JoinRequest): void { this.joinModal.onJoin(req); }
 }

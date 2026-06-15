@@ -105,6 +105,13 @@
         </svg>
         Forge Hero
       </button>
+      <button *ngIf="(role$ | async) === 'player'" class="btn" (click)="joinCampaign()">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3"
+             style="margin-right: 8px; vertical-align: -2px;">
+          <path d="M6 3h12v15l-6-3.5L6 18V3z" stroke-linejoin="round" transform="scale(0.66) translate(2,1)"/>
+        </svg>
+        Join Campaign
+      </button>
       <button *ngIf="(role$ | async) === 'dm'" class="btn primary" (click)="newCampaign()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
              style="margin-right: 8px; vertical-align: -2px;">

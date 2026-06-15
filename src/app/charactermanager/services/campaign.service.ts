@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
-import { delay, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
+import { delay, map, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Campaign, CampaignDraft } from '../models/campaign';
 import { PC } from '../models/pc';
@@ -30,6 +30,7 @@ const DEMO_CAMPAIGNS: Campaign[] = [
       "Aldric's letter from the orphanage — unopened for 4 sessions",
       "Vex's patron wants the Crown of the Hollow Court back",
     ],
+    inviteCode: 'VEIL23',
   },
   {
     id: 'tomb',
@@ -49,6 +50,7 @@ const DEMO_CAMPAIGNS: Campaign[] = [
       'The bronze dragon below the Third Seal — ancestor or warden?',
       "Three cities want Pip's head; one will follow him here",
     ],
+    inviteCode: 'TOMB45',
   },
 ];
 
@@ -103,6 +105,42 @@ export class CampaignService {
 
   getById(id: string | null): Campaign | undefined {
     return this.campaignsSubject.getValue().find(c => c.id === id);
+  }
+
+  /**
+   * Campaign members for the dashboard. In real mode this hits the DM-scoped
+   * member projection (so the DM sees other players' bound characters too,
+   * without their private narrative). In demo mode it derives locally.
+   */
+  getMembers(campaignId: string): Observable<PC[]> {
+    if (environment.demoMode) {
+      const campaign = this.getById(campaignId) ?? null;
+      return this.pcService.pcs$.pipe(
+        take(1),
+        map(pcs => this.membersOf(campaign, pcs)),
+      );
+    }
+    return this.http.get<unknown[]>(`${this.campaignUrl}/${campaignId}/members`).pipe(
+      map(rows => rows.map(r => this.pcService.deserialize(r))),
+    );
+  }
+
+  /** A player binds one of their own characters to a campaign via its invite code. */
+  join(code: string, pcId: number): Observable<PC> {
+    const trimmed = code.trim().toUpperCase();
+    if (environment.demoMode) {
+      const campaign = this.campaignsSubject.getValue().find(c => c.inviteCode === trimmed);
+      if (!campaign) {
+        return throwError(() => new Error('No campaign found for that invite code'));
+      }
+      const pc = this.pcService.getPCById(pcId);
+      if (!pc) return throwError(() => new Error('Character not found'));
+      return this.pcService.updatePC({ ...pc, campaignId: campaign.id });
+    }
+    return this.http.post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId }).pipe(
+      map(r => this.pcService.deserialize(r)),
+      tap(updated => this.pcService.refreshPCs()),
+    );
   }
 
   /** Create a campaign. Returns an Observable so callers can react to the saved row. */
@@ -167,6 +205,7 @@ export class CampaignService {
       chronicle: raw.chronicle ?? '',
       secrets: raw.secrets ?? '',
       threads: this.parseThreads(raw.threads),
+      inviteCode: raw.inviteCode ?? undefined,
     };
   }
 
