@@ -17,6 +17,7 @@ export interface Campaign {
   chronicle: string;    // prose recap (DM-facing)
   secrets: string;      // DM-only, never shown to players
   threads: string[];    // open plot threads
+  inviteCode?: string;  // players join by entering this (Phase 3)
 }
 
 export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emerald';

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { combineLatest, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
 import { PC } from '../../models/pc';
 import { CampaignService } from '../../services/campaign.service';
@@ -20,29 +20,29 @@ interface DashboardVm {
  * DM dashboard shell: header + aggregate vitals strip + party board + the
  * two-column chronicle/treasury row. Shows an empty state until a campaign is
  * selected in the campaign sidebar.
+ *
+ * Members come from CampaignService.getMembers — in real mode this is the
+ * DM-scoped projection, so the board includes other players' bound characters.
  */
 @Component({
   selector: 'app-campaign-dashboard',
   templateUrl: './campaign-dashboard.component.html',
 })
 export class CampaignDashboardComponent {
+  // Bump to re-pull the member projection (after a bind/unbind).
+  private membersRefresh$ = new BehaviorSubject<void>(undefined);
+
   vm$: Observable<DashboardVm | null> = combineLatest([
     this.uiState.activeCampaignId$,
     this.campaignService.campaigns$,
-    this.pcService.pcs$,
+    this.membersRefresh$,
   ]).pipe(
-    map(([activeId, campaigns, pcs]) => {
+    switchMap(([activeId, campaigns]) => {
       const campaign = campaigns.find(c => c.id === activeId) ?? null;
-      if (!campaign) return null;
-      const members = this.campaignService.membersOf(campaign, pcs);
-      const avgLevel = members.length
-        ? (members.reduce((s, m) => s + m.level, 0) / members.length).toFixed(1)
-        : '—';
-      const topPassivePerception = members.length
-        ? Math.max(...members.map(m => passiveScore(m, 'Perception', 'WIS')))
-        : '—';
-      const activeConditions = members.reduce((s, m) => s + (m.conditions?.length ?? 0), 0);
-      return { campaign, members, avgLevel, topPassivePerception, activeConditions };
+      if (!campaign) return of(null);
+      return this.campaignService.getMembers(campaign.id).pipe(
+        map(members => this.buildVm(campaign, members)),
+      );
     })
   );
 
@@ -56,16 +56,32 @@ export class CampaignDashboardComponent {
     private uiState: UiStateService,
   ) {}
 
-  /** Cross-link: open the clicked hero's full sheet in Player mode. */
+  private buildVm(campaign: Campaign, members: PC[]): DashboardVm {
+    const avgLevel = members.length
+      ? (members.reduce((s, m) => s + m.level, 0) / members.length).toFixed(1)
+      : '—';
+    const topPassivePerception = members.length
+      ? Math.max(...members.map(m => passiveScore(m, 'Perception', 'WIS')))
+      : '—';
+    const activeConditions = members.reduce((s, m) => s + (m.conditions?.length ?? 0), 0);
+    return { campaign, members, avgLevel, topPassivePerception, activeConditions };
+  }
+
+  /**
+   * Cross-link: open the clicked hero's full sheet in Player mode. For the DM's
+   * own characters we have the full PC locally; for other players' members we
+   * only hold the (privacy-limited) projection, which is all the DM may see.
+   */
   openHero(pc: PC): void {
-    this.pcService.setActivePC(pc);
+    const full = this.pcService.getPCById(pc.id) ?? pc;
+    this.pcService.setActivePC(full);
     this.uiState.setRole('player');
   }
 
   // --- Manage Party (bind/unbind characters) -------------------------------
 
   openManageParty(): void { this.managePartyOpen = true; }
-  closeManageParty(): void { this.managePartyOpen = false; }
+  closeManageParty(): void { this.managePartyOpen = false; this.membersRefresh$.next(); }
 
   boundTint(pc: PC): string { return tintFor(pc); }
 
@@ -82,6 +98,7 @@ export class CampaignDashboardComponent {
   toggleMembership(pc: PC, campaign: Campaign): void {
     const campaignId = this.isBound(pc, campaign) ? null : campaign.id;
     this.pcService.updatePC({ ...pc, campaignId }).subscribe({
+      next: () => this.membersRefresh$.next(),
       error: err => console.error('Failed to update campaign binding', err),
     });
   }

@@ -9,6 +9,10 @@
         <div class="sheet-subtitle">
           {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
         </div>
+        <div class="invite-chip" *ngIf="vm.campaign.inviteCode" title="Share this code so players can seat their characters">
+          <span class="eyebrow">Invite</span>
+          <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
+        </div>
       </div>
       <div class="sheet-actions">
         <button class="btn" (click)="openManageParty()">
