@@ -14,4 +14,8 @@ export interface LevelUpPreview {
   newHpMax: number;
   currentProfBonus: number;
   newProfBonus: number;
+  // Spell slots before/after the level, keyed by spell level (1-9) → max slots.
+  // Empty for non-casters. Server-computed (Phase 2); the SPA only renders them.
+  currentSpellSlots: { [spellLevel: number]: number };
+  newSpellSlots: { [spellLevel: number]: number };
 }

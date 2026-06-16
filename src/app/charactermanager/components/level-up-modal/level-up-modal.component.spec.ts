@@ -18,6 +18,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
   return {
     currentLevel: 4, newLevel: 5, hitDie: 12, conModifier: 1,
     hpGained: 8, newHpMax: 92, currentProfBonus: 2, newProfBonus: 3,
+    currentSpellSlots: {}, newSpellSlots: {},
     ...overrides,
   };
 }
@@ -64,6 +65,28 @@ describe('LevelUpModalComponent', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview({ currentProfBonus: 2, newProfBonus: 2 })));
     component.ngOnInit();
     expect(component.profChanged).toBeFalse();
+  });
+
+  it('builds sorted spell-slot rows and flags gained slots (caster)', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentSpellSlots: { 1: 4, 2: 3, 3: 3, 4: 1 },
+      newSpellSlots: { 1: 4, 2: 3, 3: 3, 4: 2 }, // bard 7 -> 8: +1 level-4 slot
+    })));
+    component.ngOnInit();
+
+    expect(component.slotRows.map(r => r.level)).toEqual([1, 2, 3, 4]);
+    expect(component.hasSlotChanges).toBeTrue();
+    const lvl4 = component.slotRows.find(r => r.level === 4)!;
+    expect(lvl4.current).toBe(1);
+    expect(lvl4.next).toBe(2);
+    expect(lvl4.gained).toBeTrue();
+  });
+
+  it('has no slot rows for a non-caster', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellSlots: {}, newSpellSlots: {} })));
+    component.ngOnInit();
+    expect(component.slotRows.length).toBe(0);
+    expect(component.hasSlotChanges).toBeFalse();
   });
 
   it('commits the level-up and emits close on success', () => {

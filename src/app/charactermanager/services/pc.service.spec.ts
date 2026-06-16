@@ -199,6 +199,7 @@ describe('PCService', () => {
         expect(preview.newLevel).toBe(5);
         expect(preview.hpGained).toBe(7);
         expect(preview.newProfBonus).toBe(3);
+        expect(preview.newSpellSlots[3]).toBe(2);
         done();
       });
 
@@ -207,6 +208,7 @@ describe('PCService', () => {
       req.flush({
         currentLevel: 4, newLevel: 5, hitDie: 8, conModifier: 2,
         hpGained: 7, newHpMax: 39, currentProfBonus: 2, newProfBonus: 3,
+        currentSpellSlots: { 1: 4, 2: 3 }, newSpellSlots: { 1: 4, 2: 3, 3: 2 },
       });
     });
   });
