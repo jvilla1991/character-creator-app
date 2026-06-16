@@ -52,6 +52,25 @@ export class LevelUpModalComponent implements OnInit {
     return !!this.preview && this.preview.newProfBonus !== this.preview.currentProfBonus;
   }
 
+  /** Per-spell-level slot picture for casters: { level, current, next, gained }. Empty otherwise. */
+  get slotRows(): { level: number; current: number; next: number; gained: boolean }[] {
+    const p = this.preview;
+    if (!p || !p.newSpellSlots) return [];
+    return Object.keys(p.newSpellSlots)
+      .map(k => Number(k))
+      .sort((a, b) => a - b)
+      .map(level => {
+        const next = p.newSpellSlots[level] ?? 0;
+        const current = p.currentSpellSlots?.[level] ?? 0;
+        return { level, current, next, gained: next > current };
+      });
+  }
+
+  /** True when this level grants new or additional spell slots (shows the slots row). */
+  get hasSlotChanges(): boolean {
+    return this.slotRows.some(r => r.gained);
+  }
+
   confirm(): void {
     if (!this.preview || this.submitting) return;
     this.submitting = true;
