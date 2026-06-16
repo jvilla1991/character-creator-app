@@ -14,6 +14,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
+  isLevelUpModalOpen = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -46,6 +47,13 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   openRollModal(): void  { this.isRollModalOpen = true;  }
   closeRollModal(): void { this.isRollModalOpen = false; }
+
+  // ── Level-up modal ─────────────────────────────────────────────────────────
+  // The modal owns the preview→confirm→commit flow; PCService pushes the updated PC
+  // into activePC$, so the sheet refreshes itself. Here we only toggle visibility.
+
+  openLevelUpModal(): void  { this.isLevelUpModalOpen = true;  }
+  closeLevelUpModal(): void { this.isLevelUpModalOpen = false; }
 
   onDeleteConfirm(): void {
     if (!this.pc) return;

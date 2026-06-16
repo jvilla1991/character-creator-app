@@ -1,0 +1,48 @@
+// Level-specific gain list. The .modal / .modal-title / .modal-sub / .modal-actions
+// / .btn classes are global (shared with the other modals); only the delta rows are
+// styled here.
+
+.lvl-gains {
+  list-style: none;
+  margin: 18px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lvl-gain {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+
+  &.is-bump {
+    border-color: var(--celestial);
+  }
+}
+
+.lvl-gain-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.lvl-gain-value {
+  font-weight: 600;
+  color: var(--text, #fff);
+  text-align: right;
+}
+
+.lvl-gain-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

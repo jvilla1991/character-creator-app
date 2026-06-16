@@ -4,7 +4,8 @@
   *ngIf="pc"
   [pc]="pc"
   (deleteRequested)="openDeleteModal()"
-  (rollRequested)="openRollModal()">
+  (rollRequested)="openRollModal()"
+  (levelUpRequested)="openLevelUpModal()">
 </app-character-sheet>
 
 <app-empty-state
@@ -33,4 +34,15 @@
     (click)="$event.stopPropagation()"
     (close)="closeRollModal()">
   </app-dice-roller-modal>
+</div>
+
+<!-- Level-up overlay -->
+<div *ngIf="isLevelUpModalOpen && pc"
+     class="modal-backdrop"
+     (click)="closeLevelUpModal()">
+  <app-level-up-modal
+    [pc]="pc"
+    (click)="$event.stopPropagation()"
+    (close)="closeLevelUpModal()">
+  </app-level-up-modal>
 </div>

@@ -1,9 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
+import { LevelUpPreview } from '../models/level-up';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { hitDieFor, modFromScore } from '../utils/character-math';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs covering both parties.
@@ -302,6 +304,90 @@ export class PCService {
         }
       })
     );
+  }
+
+  // ── Level-up (server-authoritative) ────────────────────────────────────────
+  // The D&D rules engine lives in the backend (manager-service LevelUpService). These
+  // methods are a thin client: preview fetches the computed deltas to show before the
+  // user commits; levelUp commits and mirrors the returned PC into the reactive streams.
+
+  /** Fetch the server-computed gains of advancing this PC one level (no mutation). */
+  levelUpPreview(id: number): Observable<LevelUpPreview> {
+    if (environment.demoMode) {
+      return of(this.computeDemoPreview(id)).pipe(delay(200));
+    }
+    return this.http.get<LevelUpPreview>(`${this.pcUrl}${id}/level-up/preview`);
+  }
+
+  /** Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$. */
+  levelUp(id: number): Observable<PC> {
+    if (environment.demoMode) {
+      return this.applyDemoLevelUp(id).pipe(delay(150));
+    }
+    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, {}).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => {
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      })
+    );
+  }
+
+  // --- Demo-mode level-up shim -------------------------------------------------
+  // UI-only mock so the modal can be exercised without a backend. This is NOT the
+  // rules engine — the authoritative D&D math lives server-side. It mirrors just
+  // enough (fixed-average HP + proficiency bonus) to render a believable demo, and
+  // reuses the existing display-math helpers rather than holding its own tables.
+
+  private demoProfBonus(level: number): number {
+    return Math.floor((level - 1) / 4) + 2;
+  }
+
+  private demoLevelUpFields(pc: PC) {
+    const current = pc.level ?? 1;
+    const hitDie = hitDieFor(pc.clazz);
+    const conMod = modFromScore(pc.stats?.CON ?? 10);
+    const hpGained = Math.max(1, Math.floor(hitDie / 2) + 1 + conMod);
+    return { current, newLevel: current + 1, hitDie, conMod, hpGained };
+  }
+
+  private computeDemoPreview(id: number): LevelUpPreview {
+    const pc = this.pcs.find(p => p.id === id)!;
+    const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
+    return {
+      currentLevel: current,
+      newLevel,
+      hitDie,
+      conModifier: conMod,
+      hpGained,
+      newHpMax: (pc.hp?.max ?? 0) + hpGained,
+      currentProfBonus: this.demoProfBonus(current),
+      newProfBonus: this.demoProfBonus(newLevel),
+    };
+  }
+
+  private applyDemoLevelUp(id: number): Observable<PC> {
+    const existing = this.pcs.find(p => p.id === id)!;
+    const { newLevel, hpGained } = this.demoLevelUpFields(existing);
+    const updated: PC = {
+      ...existing,
+      level: newLevel,
+      prof: this.demoProfBonus(newLevel),
+      hp: existing.hp
+        ? { ...existing.hp, max: existing.hp.max + hpGained, cur: existing.hp.cur + hpGained }
+        : { max: hpGained, cur: hpGained, temp: 0 },
+    };
+    this.pcs = this.pcs.map(p => p.id === id ? updated : p);
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (active && active.id === id) {
+      this.activePCSubject.next(updated);
+    }
+    return of(updated);
   }
 
   addPC(newPC: PC) {

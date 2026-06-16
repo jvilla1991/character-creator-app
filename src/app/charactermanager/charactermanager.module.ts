@@ -19,6 +19,7 @@ import { BackgroundStoryComponent } from './components/character-sheet/panels/ba
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
+import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -59,6 +60,7 @@ const routes: Routes = [
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
     DiceRollerModalComponent,
+    LevelUpModalComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
     EmptyStateComponent,
