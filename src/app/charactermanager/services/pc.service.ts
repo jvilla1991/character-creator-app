@@ -355,6 +355,41 @@ export class PCService {
     return { current, newLevel: current + 1, hitDie, conMod, hpGained };
   }
 
+  // DEMO-ONLY mirror of the server's ClassProgression spell-slot tables. Lives here purely so
+  // the modal can show slot growth without a backend; production never reads it (the real tables
+  // are server-side). Keep in sync with ClassProgression if you rely on the demo for slot checks.
+  private static readonly DEMO_FULL_CASTERS = new Set(['bard', 'cleric', 'druid', 'sorcerer', 'wizard']);
+  private static readonly DEMO_FULL_CASTER_SLOTS: number[][] = [
+    [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2],
+    [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1],
+    [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1],
+    [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1],
+    [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
+  ];
+  private static readonly DEMO_PACT_SLOTS: [number, number][] = [
+    [1, 1], [1, 2], [2, 2], [2, 2], [3, 2], [3, 2], [4, 2], [4, 2], [5, 2], [5, 2],
+    [5, 3], [5, 3], [5, 3], [5, 3], [5, 3], [5, 3], [5, 4], [5, 4], [5, 4], [5, 4],
+  ];
+
+  private demoSlotsFor(clazz: string, level: number): { [lvl: number]: number } {
+    const key = (clazz ?? '').trim().toLowerCase();
+    const idx = Math.min(Math.max(level, 1), 20) - 1;
+    const out: { [lvl: number]: number } = {};
+    if (PCService.DEMO_FULL_CASTERS.has(key)) {
+      PCService.DEMO_FULL_CASTER_SLOTS[idx].forEach((max, i) => { if (max > 0) out[i + 1] = max; });
+    } else if (key === 'warlock') {
+      const [slotLevel, count] = PCService.DEMO_PACT_SLOTS[idx];
+      out[slotLevel] = count;
+    }
+    return out;
+  }
+
+  private demoCurrentMaxSlots(pc: PC): { [lvl: number]: number } {
+    const out: { [lvl: number]: number } = {};
+    Object.entries(pc.spellSlots ?? {}).forEach(([lvl, slot]) => { out[Number(lvl)] = slot.max; });
+    return out;
+  }
+
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
@@ -367,12 +402,25 @@ export class PCService {
       newHpMax: (pc.hp?.max ?? 0) + hpGained,
       currentProfBonus: this.demoProfBonus(current),
       newProfBonus: this.demoProfBonus(newLevel),
+      currentSpellSlots: this.demoCurrentMaxSlots(pc),
+      newSpellSlots: this.demoSlotsFor(pc.clazz, newLevel),
     };
   }
 
   private applyDemoLevelUp(id: number): Observable<PC> {
     const existing = this.pcs.find(p => p.id === id)!;
     const { newLevel, hpGained } = this.demoLevelUpFields(existing);
+    // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
+    const targetSlots = this.demoSlotsFor(existing.clazz, newLevel);
+    let spellSlots = existing.spellSlots;
+    if (Object.keys(targetSlots).length > 0) {
+      spellSlots = {};
+      for (const [lvlStr, max] of Object.entries(targetSlots)) {
+        const lvl = Number(lvlStr);
+        const priorUsed = existing.spellSlots?.[lvl]?.used ?? 0;
+        spellSlots[lvl] = { max, used: Math.min(priorUsed, max) };
+      }
+    }
     const updated: PC = {
       ...existing,
       level: newLevel,
@@ -380,6 +428,7 @@ export class PCService {
       hp: existing.hp
         ? { ...existing.hp, max: existing.hp.max + hpGained, cur: existing.hp.cur + hpGained }
         : { max: hpGained, cur: hpGained, temp: 0 },
+      spellSlots,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);

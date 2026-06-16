@@ -46,3 +46,45 @@
   font-weight: 400;
   color: var(--text-dim, rgba(255, 255, 255, 0.6));
 }
+
+// ── Spell-slot pips ───────────────────────────────────────────────────────────
+
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.slot-pip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 34px;
+  padding: 3px 6px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  line-height: 1.2;
+
+  &.slot-up {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+}
+
+.slot-lvl {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.slot-up .slot-lvl {
+  color: inherit;
+}
+
+.slot-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+}

@@ -37,6 +37,21 @@
           <span class="lvl-gain-note" *ngIf="!profChanged">(unchanged)</span>
         </span>
       </li>
+
+      <li class="lvl-gain" *ngIf="slotRows.length" [class.is-bump]="hasSlotChanges">
+        <span class="lvl-gain-label">Spell Slots</span>
+        <span class="lvl-gain-value">
+          <span class="slot-grid">
+            <span class="slot-pip" *ngFor="let s of slotRows" [class.slot-up]="s.gained">
+              <span class="slot-lvl">L{{ s.level }}</span>
+              <span class="slot-count">
+                <ng-container *ngIf="s.gained">{{ s.current }}→</ng-container>{{ s.next }}
+              </span>
+            </span>
+          </span>
+          <span class="lvl-gain-note" *ngIf="!hasSlotChanges">(unchanged)</span>
+        </span>
+      </li>
     </ul>
 
     <!-- A commit-time failure (e.g. raced to max level) -->
