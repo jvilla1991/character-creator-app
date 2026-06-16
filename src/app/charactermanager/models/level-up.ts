@@ -18,4 +18,9 @@ export interface LevelUpPreview {
   // Empty for non-casters. Server-computed (Phase 2); the SPA only renders them.
   currentSpellSlots: { [spellLevel: number]: number };
   newSpellSlots: { [spellLevel: number]: number };
+  // Phase 3: whether a subclass choice is due at the new level, and the selectable names.
+  // subclassOptions is empty until catalog content is authored server-side, so the SPA
+  // shows the picker only when there is something to choose.
+  subclassDue: boolean;
+  subclassOptions: string[];
 }

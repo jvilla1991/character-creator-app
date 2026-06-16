@@ -27,6 +27,7 @@ export class LevelUpModalComponent implements OnInit {
   loading = true;
   submitting = false;
   error: string | null = null;
+  selectedSubclass: string | null = null;
 
   constructor(private pcService: PCService) {}
 
@@ -71,11 +72,21 @@ export class LevelUpModalComponent implements OnInit {
     return this.slotRows.some(r => r.gained);
   }
 
+  /** Whether to show the subclass picker: a choice is due AND the server offered options. */
+  get needsSubclass(): boolean {
+    return !!this.preview?.subclassDue && (this.preview?.subclassOptions?.length ?? 0) > 0;
+  }
+
+  /** Confirm is blocked until a subclass is chosen when one is required. */
+  get canConfirm(): boolean {
+    return !this.needsSubclass || !!this.selectedSubclass;
+  }
+
   confirm(): void {
-    if (!this.preview || this.submitting) return;
+    if (!this.preview || this.submitting || !this.canConfirm) return;
     this.submitting = true;
     this.error = null;
-    this.pcService.levelUp(this.pc.id).subscribe({
+    this.pcService.levelUp(this.pc.id, this.selectedSubclass ?? undefined).subscribe({
       next: () => this.close.emit(),
       error: err => {
         this.error = this.messageFrom(err, 'Level-up failed. Please try again.');

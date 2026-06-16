@@ -54,6 +54,16 @@
       </li>
     </ul>
 
+    <!-- Subclass selection (shown only when a choice is due and options exist) -->
+    <div *ngIf="needsSubclass" class="subclass-pick">
+      <div class="subclass-label">Choose your subclass</div>
+      <label class="subclass-option" *ngFor="let option of p.subclassOptions"
+             [class.is-selected]="selectedSubclass === option">
+        <input type="radio" name="subclass" [value]="option" [(ngModel)]="selectedSubclass">
+        <span>{{ option }}</span>
+      </label>
+    </div>
+
     <!-- A commit-time failure (e.g. raced to max level) -->
     <div *ngIf="error && preview" class="modal-sub" style="color: var(--crimson);">
       {{ error }}
@@ -61,7 +71,7 @@
 
     <div class="modal-actions">
       <button class="btn" type="button" (click)="cancel()" [disabled]="submitting">Not Yet</button>
-      <button class="btn" type="button" (click)="confirm()" [disabled]="submitting"
+      <button class="btn" type="button" (click)="confirm()" [disabled]="submitting || !canConfirm"
               style="border-color: var(--celestial); color: var(--celestial);">
         {{ submitting ? 'Ascending…' : 'Level Up' }}
       </button>

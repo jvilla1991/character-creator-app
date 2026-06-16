@@ -88,3 +88,36 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+// ── Subclass picker ───────────────────────────────────────────────────────────
+
+.subclass-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subclass-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.subclass-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  cursor: pointer;
+  color: var(--text, #fff);
+
+  &.is-selected {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+}

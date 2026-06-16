@@ -319,12 +319,16 @@ export class PCService {
     return this.http.get<LevelUpPreview>(`${this.pcUrl}${id}/level-up/preview`);
   }
 
-  /** Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$. */
-  levelUp(id: number): Observable<PC> {
+  /**
+   * Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$.
+   * Pass `subclass` when the level grants a subclass choice (the only client-supplied input).
+   */
+  levelUp(id: number, subclass?: string): Observable<PC> {
     if (environment.demoMode) {
-      return this.applyDemoLevelUp(id).pipe(delay(150));
+      return this.applyDemoLevelUp(id, subclass).pipe(delay(150));
     }
-    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, {}).pipe(
+    const body = subclass ? { subclass } : {};
+    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
@@ -390,6 +394,13 @@ export class PCService {
     return out;
   }
 
+  // DEMO-ONLY mirror of the server subclass grant levels (sorcerer/warlock = 1, else = 3).
+  // The subclass catalog is empty server-side (mechanism only), so the demo offers no options
+  // either — the picker never shows. Kept for parity if catalog content is added later.
+  private demoSubclassLevel(clazz: string): number {
+    return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
+  }
+
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
@@ -404,10 +415,12 @@ export class PCService {
       newProfBonus: this.demoProfBonus(newLevel),
       currentSpellSlots: this.demoCurrentMaxSlots(pc),
       newSpellSlots: this.demoSlotsFor(pc.clazz, newLevel),
+      subclassDue: newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass,
+      subclassOptions: [], // no catalog content (mechanism only)
     };
   }
 
-  private applyDemoLevelUp(id: number): Observable<PC> {
+  private applyDemoLevelUp(id: number, subclass?: string): Observable<PC> {
     const existing = this.pcs.find(p => p.id === id)!;
     const { newLevel, hpGained } = this.demoLevelUpFields(existing);
     // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
@@ -429,6 +442,7 @@ export class PCService {
         ? { ...existing.hp, max: existing.hp.max + hpGained, cur: existing.hp.cur + hpGained }
         : { max: hpGained, cur: hpGained, temp: 0 },
       spellSlots,
+      subclass: subclass || existing.subclass,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);
