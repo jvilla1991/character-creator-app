@@ -12,6 +12,7 @@ export class CharacterSheetComponent implements OnChanges {
   @Input() pc!: PC;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
+  @Output() levelUpRequested = new EventEmitter<void>();
 
   editingName = false;
   nameDraft = '';

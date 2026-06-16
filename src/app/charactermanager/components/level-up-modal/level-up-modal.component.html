@@ -1,0 +1,61 @@
+<div class="modal" style="border-color: var(--celestial);">
+
+  <div class="modal-title" style="color: var(--celestial);">Ascend a Level</div>
+
+  <!-- Loading the server-computed preview -->
+  <div *ngIf="loading" class="modal-sub">Consulting the chronicle…</div>
+
+  <!-- Could not compute (e.g. already max level) -->
+  <div *ngIf="!loading && error && !preview" class="modal-sub" style="color: var(--crimson);">
+    {{ error }}
+  </div>
+
+  <!-- The gains for this level -->
+  <ng-container *ngIf="preview as p">
+    <div class="modal-sub">
+      <em style="color: var(--text); font-style: normal;">{{ pc.name }}</em>
+      advances from level {{ p.currentLevel }} to
+      <em style="color: var(--text); font-style: normal;">level {{ p.newLevel }}</em>.
+    </div>
+
+    <ul class="lvl-gains">
+      <li class="lvl-gain">
+        <span class="lvl-gain-label">Hit Points</span>
+        <span class="lvl-gain-value">
+          +{{ p.hpGained }}
+          <span class="lvl-gain-note">
+            (d{{ p.hitDie }} avg {{ fmtMod(p.conModifier) }} CON) → max {{ p.newHpMax }}
+          </span>
+        </span>
+      </li>
+
+      <li class="lvl-gain" [class.is-bump]="profChanged">
+        <span class="lvl-gain-label">Proficiency Bonus</span>
+        <span class="lvl-gain-value">
+          {{ fmtMod(p.currentProfBonus) }}
+          <ng-container *ngIf="profChanged">→ {{ fmtMod(p.newProfBonus) }}</ng-container>
+          <span class="lvl-gain-note" *ngIf="!profChanged">(unchanged)</span>
+        </span>
+      </li>
+    </ul>
+
+    <!-- A commit-time failure (e.g. raced to max level) -->
+    <div *ngIf="error && preview" class="modal-sub" style="color: var(--crimson);">
+      {{ error }}
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" type="button" (click)="cancel()" [disabled]="submitting">Not Yet</button>
+      <button class="btn" type="button" (click)="confirm()" [disabled]="submitting"
+              style="border-color: var(--celestial); color: var(--celestial);">
+        {{ submitting ? 'Ascending…' : 'Level Up' }}
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- Preview failed entirely: only offer a way out -->
+  <div *ngIf="!loading && !preview" class="modal-actions">
+    <button class="btn" type="button" (click)="cancel()">Close</button>
+  </div>
+
+</div>
