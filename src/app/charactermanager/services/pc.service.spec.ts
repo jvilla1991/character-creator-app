@@ -191,6 +191,68 @@ describe('PCService', () => {
     });
   });
 
+  // ── level-up (server-authoritative) ─────────────────────────────────────────
+
+  describe('levelUpPreview', () => {
+    it('GETs the preview endpoint and returns the server deltas', (done) => {
+      service.levelUpPreview(42).subscribe(preview => {
+        expect(preview.newLevel).toBe(5);
+        expect(preview.hpGained).toBe(7);
+        expect(preview.newProfBonus).toBe(3);
+        done();
+      });
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up/preview');
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        currentLevel: 4, newLevel: 5, hitDie: 8, conModifier: 2,
+        hpGained: 7, newHpMax: 39, currentProfBonus: 2, newProfBonus: 3,
+      });
+    });
+  });
+
+  describe('levelUp', () => {
+    it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {
+      service.levelUp(42).subscribe(updated => {
+        expect(updated.level).toBe(5);
+        expect(updated.hp?.max).toBe(39);
+        expect(updated.prof).toBe(3);
+        done();
+      });
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.method).toBe('POST');
+      req.flush({
+        id: 42, name: 'Aelindra', clazz: 'Wizard', level: 5,
+        hpMax: 39, hpCurrent: 39, hpTemp: 0, profBonus: 3,
+        abilityStr: 8, abilityDex: 12, abilityCon: 14,
+        abilityInt: 16, abilityWis: 14, abilityCha: 10,
+        spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+        conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+        features: '[]', languages: '[]', toolProfs: '[]',
+      });
+    });
+
+    it('pushes the updated PC into the active stream when it is the active PC', (done) => {
+      service.setActivePC(makePC({ id: 42, level: 4 }));
+
+      service.levelUp(42).subscribe(() => {
+        service.activePC$.subscribe(active => {
+          expect(active?.level).toBe(5);
+          done();
+        });
+      });
+
+      httpMock.expectOne(service.pcUrl + '42/level-up').flush({
+        id: 42, name: 'Aelindra', clazz: 'Wizard', level: 5,
+        hpMax: 39, hpCurrent: 39, hpTemp: 0, profBonus: 3,
+        spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+        conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+        features: '[]', languages: '[]', toolProfs: '[]',
+      });
+    });
+  });
+
   // ── deletePC ────────────────────────────────────────────────────────────────
 
   describe('deletePC', () => {
