@@ -121,3 +121,93 @@
     color: var(--celestial);
   }
 }
+
+// ── Ability Score Improvement allocator ───────────────────────────────────────
+
+.asi-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asi-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.asi-remaining {
+  font-size: 0.72rem;
+  color: var(--celestial);
+}
+
+.asi-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+
+  &.is-raised {
+    border-color: var(--celestial);
+  }
+}
+
+.asi-ability {
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.is-raised .asi-ability {
+  color: var(--celestial);
+}
+
+.asi-score {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.asi-steppers {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asi-step {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text, #fff);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.asi-alloc {
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.asi-note {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

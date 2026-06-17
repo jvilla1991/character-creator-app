@@ -216,12 +216,20 @@ describe('PCService', () => {
 
   describe('levelUp', () => {
     it('sends the chosen subclass in the POST body when provided', () => {
-      service.levelUp(42, 'Life Domain').subscribe();
+      service.levelUp(42, { subclass: 'Life Domain' }).subscribe();
 
       const req = httpMock.expectOne(service.pcUrl + '42/level-up');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({ subclass: 'Life Domain' });
       req.flush({ id: 42, name: 'Aelindra', clazz: 'Cleric', level: 3, subclass: 'Life Domain' });
+    });
+
+    it('sends the ASI allocation in the POST body when provided', () => {
+      service.levelUp(42, { abilityIncreases: { STR: 1, DEX: 1 } }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ abilityIncreases: { STR: 1, DEX: 1 } });
+      req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
     });
 
     it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {

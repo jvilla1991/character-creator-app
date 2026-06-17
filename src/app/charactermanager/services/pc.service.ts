@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
-import { LevelUpPreview } from '../models/level-up';
+import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -321,13 +321,16 @@ export class PCService {
 
   /**
    * Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$.
-   * Pass `subclass` when the level grants a subclass choice (the only client-supplied input).
+   * `choices` carries the only client-supplied inputs (subclass, ASI allocation); the server
+   * computes and validates everything else.
    */
-  levelUp(id: number, subclass?: string): Observable<PC> {
+  levelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
     if (environment.demoMode) {
-      return this.applyDemoLevelUp(id, subclass).pipe(delay(150));
+      return this.applyDemoLevelUp(id, choices).pipe(delay(150));
     }
-    const body = subclass ? { subclass } : {};
+    const body: LevelUpChoices = {};
+    if (choices?.subclass) body.subclass = choices.subclass;
+    if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
@@ -401,6 +404,15 @@ export class PCService {
     return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
   }
 
+  // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
+  private demoIsAsiLevel(clazz: string, level: number): boolean {
+    const key = (clazz ?? '').trim().toLowerCase();
+    const levels = key === 'fighter' ? [4, 6, 8, 12, 14, 16, 19]
+      : key === 'rogue' ? [4, 8, 10, 12, 16, 19]
+        : [4, 8, 12, 16, 19];
+    return levels.includes(level);
+  }
+
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
@@ -417,12 +429,31 @@ export class PCService {
       newSpellSlots: this.demoSlotsFor(pc.clazz, newLevel),
       subclassDue: newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass,
       subclassOptions: [], // no catalog content (mechanism only)
+      asiDue: this.demoIsAsiLevel(pc.clazz, newLevel),
     };
   }
 
-  private applyDemoLevelUp(id: number, subclass?: string): Observable<PC> {
+  private applyDemoLevelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
     const existing = this.pcs.find(p => p.id === id)!;
-    const { newLevel, hpGained } = this.demoLevelUpFields(existing);
+    const current = existing.level ?? 1;
+    const newLevel = current + 1;
+    const hitDie = hitDieFor(existing.clazz);
+
+    // Apply the ASI to a copy of the ability scores, then recompute HP with the new CON and
+    // grant retroactive HP for prior levels when CON's modifier rises (mirrors the server).
+    const stats: { [k: string]: number } = {
+      STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...(existing.stats ?? {}),
+    };
+    const oldConMod = modFromScore(stats['CON']);
+    if (choices?.abilityIncreases) {
+      for (const [ability, pts] of Object.entries(choices.abilityIncreases)) {
+        stats[ability] = Math.min(20, (stats[ability] ?? 10) + pts);
+      }
+    }
+    const newConMod = modFromScore(stats['CON']);
+    const hpGained = Math.max(1, Math.floor(hitDie / 2) + 1 + newConMod);
+    const hpDelta = hpGained + (newLevel - 1) * (newConMod - oldConMod);
+
     // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
     const targetSlots = this.demoSlotsFor(existing.clazz, newLevel);
     let spellSlots = existing.spellSlots;
@@ -438,11 +469,12 @@ export class PCService {
       ...existing,
       level: newLevel,
       prof: this.demoProfBonus(newLevel),
+      stats: stats as PC['stats'],
       hp: existing.hp
-        ? { ...existing.hp, max: existing.hp.max + hpGained, cur: existing.hp.cur + hpGained }
-        : { max: hpGained, cur: hpGained, temp: 0 },
+        ? { ...existing.hp, max: existing.hp.max + hpDelta, cur: existing.hp.cur + hpDelta }
+        : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
-      subclass: subclass || existing.subclass,
+      subclass: choices?.subclass || existing.subclass,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);
