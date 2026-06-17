@@ -19,6 +19,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     currentLevel: 4, newLevel: 5, hitDie: 12, conModifier: 1,
     hpGained: 8, newHpMax: 92, currentProfBonus: 2, newProfBonus: 3,
     currentSpellSlots: {}, newSpellSlots: {},
+    subclassDue: false, subclassOptions: [],
     ...overrides,
   };
 }
@@ -98,8 +99,45 @@ describe('LevelUpModalComponent', () => {
     component.ngOnInit();
     component.confirm();
 
-    expect(pcService.levelUp).toHaveBeenCalledWith(7);
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, undefined);
     expect(closeSpy).toHaveBeenCalled();
+  });
+
+  // --- subclass picker (Phase 3) ---
+
+  it('does not show the subclass picker when options are empty (mechanism dormant)', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ subclassDue: true, subclassOptions: [] })));
+    component.ngOnInit();
+    expect(component.needsSubclass).toBeFalse();
+    expect(component.canConfirm).toBeTrue();
+  });
+
+  it('requires a subclass choice when options are offered', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      subclassDue: true, subclassOptions: ['Life Domain', 'War Domain'],
+    })));
+    component.ngOnInit();
+
+    expect(component.needsSubclass).toBeTrue();
+    expect(component.canConfirm).toBeFalse(); // nothing picked yet
+
+    component.selectedSubclass = 'War Domain';
+    expect(component.canConfirm).toBeTrue();
+  });
+
+  it('blocks confirm until a required subclass is chosen, then sends it', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      subclassDue: true, subclassOptions: ['Life Domain', 'War Domain'],
+    })));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+    component.ngOnInit();
+
+    component.confirm(); // no selection -> blocked
+    expect(pcService.levelUp).not.toHaveBeenCalled();
+
+    component.selectedSubclass = 'Life Domain';
+    component.confirm();
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, 'Life Domain');
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {
