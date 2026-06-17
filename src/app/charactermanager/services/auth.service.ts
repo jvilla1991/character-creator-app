@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, delay, Observable, of, tap } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment, DEMO_MODE_KEY } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -44,8 +44,28 @@ export class AuthService {
     );
   }
 
+  /**
+   * Opt this browser into demo mode (used by the login screen's "Explore the
+   * Demo" button). The app then runs on in-memory seed data with no backend.
+   * A fake non-JWT token keeps the route guard / interceptor happy. logout()
+   * clears both, so leaving the demo restores normal backend-backed behaviour.
+   */
+  enterDemoMode(): void {
+    localStorage.setItem(DEMO_MODE_KEY, 'true');
+    localStorage.setItem('token', 'demo-token-' + Date.now());
+  }
+
   logout(): void {
+    const wasDemo = localStorage.getItem(DEMO_MODE_KEY) === 'true';
     localStorage.removeItem('token');
+    localStorage.removeItem(DEMO_MODE_KEY);
+    // Demo-seeded singletons (PCService, CampaignService) read demoMode once at
+    // construction. A full reload tears them down so a later real login starts
+    // from a clean, backend-backed state instead of leftover demo data.
+    if (wasDemo) {
+      window.location.assign('/login');
+      return;
+    }
     this.router.navigate(['/login']);
   }
 
