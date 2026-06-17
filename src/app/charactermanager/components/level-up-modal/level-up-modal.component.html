@@ -54,25 +54,44 @@
       </li>
     </ul>
 
-    <!-- Ability Score Improvement (shown only when an ASI is due this level) -->
+    <!-- Milestone choice: Ability Score Improvement OR a feat (shown at ASI levels) -->
     <div *ngIf="needsAsi" class="asi-pick">
-      <div class="asi-label">
-        Ability Score Improvement
-        <span class="asi-remaining">{{ asiRemaining }} point{{ asiRemaining === 1 ? '' : 's' }} left</span>
+      <div class="milestone-toggle">
+        <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'asi'"
+                (click)="milestoneMode = 'asi'">Ability Scores</button>
+        <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'feat'"
+                (click)="milestoneMode = 'feat'">Feat</button>
       </div>
-      <div class="asi-row" *ngFor="let ability of abilities" [class.is-raised]="asiAllocation[ability] > 0">
-        <span class="asi-ability">{{ ability }}</span>
-        <span class="asi-score">
-          {{ currentScore(ability) }}
-          <ng-container *ngIf="asiAllocation[ability] > 0">→ {{ newScore(ability) }}</ng-container>
-        </span>
-        <span class="asi-steppers">
-          <button type="button" class="asi-step" (click)="decAsi(ability)" [disabled]="!canDec(ability)">−</button>
-          <span class="asi-alloc">+{{ asiAllocation[ability] }}</span>
-          <button type="button" class="asi-step" (click)="incAsi(ability)" [disabled]="!canInc(ability)">+</button>
-        </span>
-      </div>
-      <div class="asi-note" *ngIf="asiRaisesCon">Raising Constitution will increase your hit points further.</div>
+
+      <ng-container *ngIf="milestoneMode === 'asi'">
+        <div class="asi-label">
+          <span class="asi-remaining">{{ asiRemaining }} point{{ asiRemaining === 1 ? '' : 's' }} left</span>
+        </div>
+        <div class="asi-row" *ngFor="let ability of abilities" [class.is-raised]="asiAllocation[ability] > 0">
+          <span class="asi-ability">{{ ability }}</span>
+          <span class="asi-score">
+            {{ currentScore(ability) }}
+            <ng-container *ngIf="asiAllocation[ability] > 0">→ {{ newScore(ability) }}</ng-container>
+          </span>
+          <span class="asi-steppers">
+            <button type="button" class="asi-step" (click)="decAsi(ability)" [disabled]="!canDec(ability)">−</button>
+            <span class="asi-alloc">+{{ asiAllocation[ability] }}</span>
+            <button type="button" class="asi-step" (click)="incAsi(ability)" [disabled]="!canInc(ability)">+</button>
+          </span>
+        </div>
+        <div class="asi-note" *ngIf="asiRaisesCon">Raising Constitution will increase your hit points further.</div>
+      </ng-container>
+
+      <ng-container *ngIf="milestoneMode === 'feat'">
+        <label class="subclass-option" *ngFor="let option of featOptions"
+               [class.is-selected]="selectedFeat === option">
+          <input type="radio" name="feat" [value]="option" [(ngModel)]="selectedFeat">
+          <span class="feat-text">
+            <span class="feat-name">{{ option }}</span>
+            <span class="feat-desc">{{ featDescription(option) }}</span>
+          </span>
+        </label>
+      </ng-container>
     </div>
 
     <!-- Subclass selection (shown only when a choice is due and options exist) -->

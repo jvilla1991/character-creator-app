@@ -232,6 +232,14 @@ describe('PCService', () => {
       req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
     });
 
+    it('sends the chosen feat in the POST body when provided', () => {
+      service.levelUp(42, { feat: 'Sentinel' }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ feat: 'Sentinel' });
+      req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
+    });
+
     it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {
       service.levelUp(42).subscribe(updated => {
         expect(updated.level).toBe(5);

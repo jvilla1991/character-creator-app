@@ -168,6 +168,28 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
   'Tough':
     'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+  // ── General feats (level 4+; the alternative to an ASI). Names are validated
+  //    server-side; these descriptions are for display only. ───────────────────
+  'Great Weapon Master':
+    'On a melee weapon attack, you can take a -5 penalty to hit for +10 damage. Scoring a critical hit or downing a creature lets you make another melee attack as a Bonus Action.',
+  'Sharpshooter':
+    'Your ranged attacks ignore half and three-quarters cover, and you can take a -5 to hit for +10 damage. Long range does not impose disadvantage.',
+  'Sentinel':
+    'When you hit a creature with an Opportunity Attack, its speed becomes 0 for the turn. Creatures provoke Opportunity Attacks even when they Disengage, and you can react when an ally nearby is attacked.',
+  'War Caster':
+    'You have advantage on Concentration saves, can perform somatic components while wielding weapons or a shield, and can cast a spell as an Opportunity Attack.',
+  'Resilient':
+    'Increase one ability score by 1 (max 20) and gain proficiency in saving throws using that ability.',
+  'Speedy':
+    'Your Speed increases by 10 feet, Difficult Terrain no longer slows your Dash, and Opportunity Attacks have disadvantage against you.',
+  'Mage Slayer':
+    'When a creature within 5 feet casts a spell you can react to attack it. You impose disadvantage on Concentration saves of creatures you damage, and gain advantage on saves against their spells.',
+  'Polearm Master':
+    'When you attack with a glaive, halberd, quarterstaff, or spear you can make a Bonus Action strike with the butt end (1d4). Creatures entering your reach provoke an Opportunity Attack.',
+  'Inspiring Leader':
+    'Spend 10 minutes to bolster allies, granting each a number of Temporary Hit Points equal to your level + your Charisma modifier.',
+  'Skill Expert':
+    'Increase one ability score by 1 (max 20), gain proficiency in one skill, and gain Expertise in one skill you are proficient with.',
 };
 
 /** Standard languages available for the background language bonus */

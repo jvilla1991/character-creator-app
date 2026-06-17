@@ -26,10 +26,15 @@ export interface LevelUpPreview {
   // Phase 4: whether an Ability Score Improvement is due at the new level (4/8/12/16/19,
   // plus Fighter 6/14 and Rogue 10). The SPA builds the +2/+1+1 allocator from pc.stats.
   asiDue: boolean;
+  // Feats: selectable General feat names (the ASI alternative). Server-authoritative;
+  // non-empty only at an ASI level. Descriptions are looked up locally for display.
+  featOptions: string[];
 }
 
-/** Player choices sent when committing a level-up (all optional). */
+/** Player choices sent when committing a level-up (all optional). At an ASI level, exactly
+ *  one of abilityIncreases / feat is sent. */
 export interface LevelUpChoices {
   subclass?: string;
   abilityIncreases?: { [ability: string]: number };
+  feat?: string;
 }
