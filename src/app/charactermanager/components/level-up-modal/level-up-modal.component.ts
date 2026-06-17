@@ -2,6 +2,7 @@ import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@a
 import { PC } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices } from '../../models/level-up';
 import { PCService } from '../../services/pc.service';
+import { DndResourcesService } from '../../services/dnd-resources.service';
 import { fmtMod } from '../../utils/character-math';
 
 /**
@@ -33,7 +34,11 @@ export class LevelUpModalComponent implements OnInit {
   /** Points allocated this ASI per ability (0/1/2); total must reach 2 to confirm. */
   asiAllocation: { [ability: string]: number } = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
 
-  constructor(private pcService: PCService) {}
+  /** At an ASI level, whether the player is taking an ASI or a feat. */
+  milestoneMode: 'asi' | 'feat' = 'asi';
+  selectedFeat: string | null = null;
+
+  constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
     this.pcService.levelUpPreview(this.pc.id).subscribe({
@@ -131,9 +136,25 @@ export class LevelUpModalComponent implements OnInit {
     if (this.canDec(ability)) this.asiAllocation[ability]--;
   }
 
-  /** Confirm is blocked until any required subclass and ASI choices are made. */
+  // ── Feat option (the ASI alternative) ───────────────────────────────────────
+
+  get featOptions(): string[] {
+    return this.preview?.featOptions ?? [];
+  }
+
+  featDescription(name: string): string {
+    return this.dndResources.getFeatDescription(name);
+  }
+
+  /** Whether the milestone choice (ASI or feat) is satisfied. */
+  get milestoneSatisfied(): boolean {
+    if (!this.needsAsi) return true;
+    return this.milestoneMode === 'asi' ? this.asiValid : !!this.selectedFeat;
+  }
+
+  /** Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made. */
   get canConfirm(): boolean {
-    return (!this.needsSubclass || !!this.selectedSubclass) && (!this.needsAsi || this.asiValid);
+    return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied;
   }
 
   confirm(): void {
@@ -143,8 +164,14 @@ export class LevelUpModalComponent implements OnInit {
 
     const choices: LevelUpChoices = {};
     if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
-    const increases = this.allocatedAbilities();
-    if (Object.keys(increases).length) choices.abilityIncreases = increases;
+    if (this.needsAsi) {
+      if (this.milestoneMode === 'asi') {
+        const increases = this.allocatedAbilities();
+        if (Object.keys(increases).length) choices.abilityIncreases = increases;
+      } else if (this.selectedFeat) {
+        choices.feat = this.selectedFeat;
+      }
+    }
 
     this.pcService.levelUp(this.pc.id, choices).subscribe({
       next: () => this.close.emit(),

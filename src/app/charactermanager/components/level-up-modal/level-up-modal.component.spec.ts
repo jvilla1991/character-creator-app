@@ -2,6 +2,7 @@ import { of, throwError } from 'rxjs';
 
 import { LevelUpModalComponent } from './level-up-modal.component';
 import { PCService } from '../../services/pc.service';
+import { DndResourcesService } from '../../services/dnd-resources.service';
 import { PC } from '../../models/pc';
 import { LevelUpPreview } from '../../models/level-up';
 
@@ -20,7 +21,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     hpGained: 8, newHpMax: 92, currentProfBonus: 2, newProfBonus: 3,
     currentSpellSlots: {}, newSpellSlots: {},
     subclassDue: false, subclassOptions: [],
-    asiDue: false,
+    asiDue: false, featOptions: [],
     ...overrides,
   };
 }
@@ -28,10 +29,13 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
 describe('LevelUpModalComponent', () => {
   let component: LevelUpModalComponent;
   let pcService: jasmine.SpyObj<PCService>;
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
 
   beforeEach(() => {
     pcService = makePcServiceSpy();
-    component = new LevelUpModalComponent(pcService);
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getFeatDescription']);
+    dndResources.getFeatDescription.and.returnValue('A mighty feat.');
+    component = new LevelUpModalComponent(pcService, dndResources);
     component.pc = makePC();
   });
 
@@ -196,6 +200,44 @@ describe('LevelUpModalComponent', () => {
     component.confirm();
 
     expect(pcService.levelUp).toHaveBeenCalledWith(7, { abilityIncreases: { STR: 1, DEX: 1 } });
+  });
+
+  // --- Feat as the ASI alternative ---
+
+  it('can switch to feat mode and confirm requires a feat selection', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      asiDue: true, featOptions: ['Sentinel', 'Sharpshooter'],
+    })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+
+    component.milestoneMode = 'feat';
+    expect(component.canConfirm).toBeFalse();   // no feat picked
+    component.selectedFeat = 'Sentinel';
+    expect(component.canConfirm).toBeTrue();
+  });
+
+  it('sends the chosen feat (and no ASI) when in feat mode', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      asiDue: true, featOptions: ['Sentinel', 'Sharpshooter'],
+    })));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 4 })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+
+    component.milestoneMode = 'feat';
+    component.selectedFeat = 'Sharpshooter';
+    component.confirm();
+
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, { feat: 'Sharpshooter' });
+  });
+
+  it('exposes featOptions from the preview', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true, featOptions: ['Sentinel'] })));
+    component.ngOnInit();
+    expect(component.featOptions).toEqual(['Sentinel']);
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {
