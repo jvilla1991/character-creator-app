@@ -251,3 +251,40 @@
   font-size: 0.74rem;
   color: var(--text-dim, rgba(255, 255, 255, 0.6));
 }
+
+// ── Auto-granted class features ───────────────────────────────────────────────
+
+.features-gained {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.features-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-left: 2px solid var(--celestial);
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.feature-name {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.feature-desc {
+  font-size: 0.76rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

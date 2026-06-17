@@ -438,6 +438,8 @@ export class PCService {
       subclassOptions: [], // no catalog content (mechanism only)
       asiDue: this.demoIsAsiLevel(pc.clazz, newLevel),
       featOptions: this.demoIsAsiLevel(pc.clazz, newLevel) ? [...PCService.DEMO_GENERAL_FEATS] : [],
+      // Class-feature content is server-owned; the demo shim doesn't mirror it.
+      featuresGained: [],
     };
   }
 

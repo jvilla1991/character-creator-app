@@ -104,6 +104,15 @@
       </label>
     </div>
 
+    <!-- Class features automatically gained this level (read-only) -->
+    <div *ngIf="featuresGained.length" class="features-gained">
+      <div class="features-label">New Features</div>
+      <div class="feature-item" *ngFor="let f of featuresGained">
+        <span class="feature-name">{{ f.name }}</span>
+        <span class="feature-desc">{{ f.desc }}</span>
+      </div>
+    </div>
+
     <!-- A commit-time failure (e.g. raced to max level) -->
     <div *ngIf="error && preview" class="modal-sub" style="color: var(--crimson);">
       {{ error }}
