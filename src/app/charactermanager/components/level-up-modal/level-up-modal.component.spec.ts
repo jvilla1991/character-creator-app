@@ -20,6 +20,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     hpGained: 8, newHpMax: 92, currentProfBonus: 2, newProfBonus: 3,
     currentSpellSlots: {}, newSpellSlots: {},
     subclassDue: false, subclassOptions: [],
+    asiDue: false,
     ...overrides,
   };
 }
@@ -99,7 +100,7 @@ describe('LevelUpModalComponent', () => {
     component.ngOnInit();
     component.confirm();
 
-    expect(pcService.levelUp).toHaveBeenCalledWith(7, undefined);
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
     expect(closeSpy).toHaveBeenCalled();
   });
 
@@ -137,7 +138,64 @@ describe('LevelUpModalComponent', () => {
 
     component.selectedSubclass = 'Life Domain';
     component.confirm();
-    expect(pcService.levelUp).toHaveBeenCalledWith(7, 'Life Domain');
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Life Domain' });
+  });
+
+  // --- ASI allocator (Phase 4) ---
+
+  it('does not show the ASI allocator when none is due', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: false })));
+    component.ngOnInit();
+    expect(component.needsAsi).toBeFalse();
+    expect(component.canConfirm).toBeTrue();
+  });
+
+  it('requires exactly 2 ASI points before confirm when an ASI is due', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+
+    expect(component.needsAsi).toBeTrue();
+    expect(component.canConfirm).toBeFalse();
+
+    component.incAsi('STR');         // +1 -> not enough
+    expect(component.canConfirm).toBeFalse();
+    component.incAsi('STR');         // +2 -> valid
+    expect(component.canConfirm).toBeTrue();
+    expect(component.newScore('STR')).toBe(18);
+  });
+
+  it('caps a single ability at +2 and the total at 2 points', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+
+    component.incAsi('STR'); component.incAsi('STR');
+    expect(component.canInc('STR')).toBeFalse(); // per-ability cap of +2
+    expect(component.canInc('DEX')).toBeFalse(); // no points left
+  });
+
+  it('does not let an ability exceed 20', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 20, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+    expect(component.canInc('STR')).toBeFalse();
+  });
+
+  it('sends the ASI allocation in the choices', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true })));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 4 })));
+    component.pc = { id: 7, name: 'Throk', clazz: 'Fighter', level: 3, playerName: 'Ben',
+                     stats: { STR: 16, DEX: 13, CON: 14, INT: 10, WIS: 11, CHA: 8 } };
+    component.ngOnInit();
+
+    component.incAsi('STR'); component.incAsi('DEX');
+    component.confirm();
+
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, { abilityIncreases: { STR: 1, DEX: 1 } });
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {

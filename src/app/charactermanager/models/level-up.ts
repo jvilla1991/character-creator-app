@@ -23,4 +23,13 @@ export interface LevelUpPreview {
   // shows the picker only when there is something to choose.
   subclassDue: boolean;
   subclassOptions: string[];
+  // Phase 4: whether an Ability Score Improvement is due at the new level (4/8/12/16/19,
+  // plus Fighter 6/14 and Rogue 10). The SPA builds the +2/+1+1 allocator from pc.stats.
+  asiDue: boolean;
+}
+
+/** Player choices sent when committing a level-up (all optional). */
+export interface LevelUpChoices {
+  subclass?: string;
+  abilityIncreases?: { [ability: string]: number };
 }
