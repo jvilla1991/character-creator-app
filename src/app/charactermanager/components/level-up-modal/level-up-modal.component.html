@@ -54,6 +54,27 @@
       </li>
     </ul>
 
+    <!-- Ability Score Improvement (shown only when an ASI is due this level) -->
+    <div *ngIf="needsAsi" class="asi-pick">
+      <div class="asi-label">
+        Ability Score Improvement
+        <span class="asi-remaining">{{ asiRemaining }} point{{ asiRemaining === 1 ? '' : 's' }} left</span>
+      </div>
+      <div class="asi-row" *ngFor="let ability of abilities" [class.is-raised]="asiAllocation[ability] > 0">
+        <span class="asi-ability">{{ ability }}</span>
+        <span class="asi-score">
+          {{ currentScore(ability) }}
+          <ng-container *ngIf="asiAllocation[ability] > 0">→ {{ newScore(ability) }}</ng-container>
+        </span>
+        <span class="asi-steppers">
+          <button type="button" class="asi-step" (click)="decAsi(ability)" [disabled]="!canDec(ability)">−</button>
+          <span class="asi-alloc">+{{ asiAllocation[ability] }}</span>
+          <button type="button" class="asi-step" (click)="incAsi(ability)" [disabled]="!canInc(ability)">+</button>
+        </span>
+      </div>
+      <div class="asi-note" *ngIf="asiRaisesCon">Raising Constitution will increase your hit points further.</div>
+    </div>
+
     <!-- Subclass selection (shown only when a choice is due and options exist) -->
     <div *ngIf="needsSubclass" class="subclass-pick">
       <div class="subclass-label">Choose your subclass</div>

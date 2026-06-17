@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { PC } from '../../models/pc';
-import { LevelUpPreview } from '../../models/level-up';
+import { LevelUpPreview, LevelUpChoices } from '../../models/level-up';
 import { PCService } from '../../services/pc.service';
 import { fmtMod } from '../../utils/character-math';
 
@@ -28,6 +28,10 @@ export class LevelUpModalComponent implements OnInit {
   submitting = false;
   error: string | null = null;
   selectedSubclass: string | null = null;
+
+  readonly abilities = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+  /** Points allocated this ASI per ability (0/1/2); total must reach 2 to confirm. */
+  asiAllocation: { [ability: string]: number } = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
 
   constructor(private pcService: PCService) {}
 
@@ -77,22 +81,86 @@ export class LevelUpModalComponent implements OnInit {
     return !!this.preview?.subclassDue && (this.preview?.subclassOptions?.length ?? 0) > 0;
   }
 
-  /** Confirm is blocked until a subclass is chosen when one is required. */
+  // ── Ability Score Improvement allocator ─────────────────────────────────────
+
+  /** Whether an ASI is due this level (server-decided). */
+  get needsAsi(): boolean {
+    return !!this.preview?.asiDue;
+  }
+
+  /** Points spent so far (0–2). */
+  get asiUsed(): number {
+    return this.abilities.reduce((sum, a) => sum + this.asiAllocation[a], 0);
+  }
+
+  get asiRemaining(): number {
+    return 2 - this.asiUsed;
+  }
+
+  /** A valid ASI spends exactly 2 points (= +2 to one ability or +1 to two). */
+  get asiValid(): boolean {
+    return this.asiUsed === 2;
+  }
+
+  /** Whether the pending ASI raises Constitution (HP will increase further on confirm). */
+  get asiRaisesCon(): boolean {
+    return this.asiAllocation['CON'] > 0;
+  }
+
+  currentScore(ability: string): number {
+    return (this.pc.stats as Record<string, number> | undefined)?.[ability] ?? 10;
+  }
+
+  newScore(ability: string): number {
+    return this.currentScore(ability) + this.asiAllocation[ability];
+  }
+
+  canInc(ability: string): boolean {
+    return this.asiRemaining > 0 && this.asiAllocation[ability] < 2 && this.newScore(ability) < 20;
+  }
+
+  canDec(ability: string): boolean {
+    return this.asiAllocation[ability] > 0;
+  }
+
+  incAsi(ability: string): void {
+    if (this.canInc(ability)) this.asiAllocation[ability]++;
+  }
+
+  decAsi(ability: string): void {
+    if (this.canDec(ability)) this.asiAllocation[ability]--;
+  }
+
+  /** Confirm is blocked until any required subclass and ASI choices are made. */
   get canConfirm(): boolean {
-    return !this.needsSubclass || !!this.selectedSubclass;
+    return (!this.needsSubclass || !!this.selectedSubclass) && (!this.needsAsi || this.asiValid);
   }
 
   confirm(): void {
     if (!this.preview || this.submitting || !this.canConfirm) return;
     this.submitting = true;
     this.error = null;
-    this.pcService.levelUp(this.pc.id, this.selectedSubclass ?? undefined).subscribe({
+
+    const choices: LevelUpChoices = {};
+    if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
+    const increases = this.allocatedAbilities();
+    if (Object.keys(increases).length) choices.abilityIncreases = increases;
+
+    this.pcService.levelUp(this.pc.id, choices).subscribe({
       next: () => this.close.emit(),
       error: err => {
         this.error = this.messageFrom(err, 'Level-up failed. Please try again.');
         this.submitting = false;
       },
     });
+  }
+
+  private allocatedAbilities(): { [ability: string]: number } {
+    const out: { [ability: string]: number } = {};
+    for (const a of this.abilities) {
+      if (this.asiAllocation[a] > 0) out[a] = this.asiAllocation[a];
+    }
+    return out;
   }
 
   cancel(): void {
