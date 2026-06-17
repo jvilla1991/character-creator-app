@@ -211,3 +211,43 @@
   font-size: 0.74rem;
   color: var(--text-dim, rgba(255, 255, 255, 0.6));
 }
+
+// ── ASI / Feat toggle ─────────────────────────────────────────────────────────
+
+.milestone-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.milestone-tab {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+
+  &.is-active {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+}
+
+.feat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feat-name {
+  font-weight: 600;
+}
+
+.feat-desc {
+  font-size: 0.74rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

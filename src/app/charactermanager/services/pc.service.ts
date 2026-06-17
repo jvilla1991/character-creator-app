@@ -331,6 +331,7 @@ export class PCService {
     const body: LevelUpChoices = {};
     if (choices?.subclass) body.subclass = choices.subclass;
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
+    if (choices?.feat) body.feat = choices.feat;
     return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
@@ -413,6 +414,12 @@ export class PCService {
     return levels.includes(level);
   }
 
+  // DEMO-ONLY mirror of the server general-feat catalog (FeatCatalog), sorted.
+  private static readonly DEMO_GENERAL_FEATS = [
+    'Great Weapon Master', 'Inspiring Leader', 'Mage Slayer', 'Polearm Master', 'Resilient',
+    'Sentinel', 'Sharpshooter', 'Skill Expert', 'Speedy', 'War Caster',
+  ];
+
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
@@ -430,6 +437,7 @@ export class PCService {
       subclassDue: newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass,
       subclassOptions: [], // no catalog content (mechanism only)
       asiDue: this.demoIsAsiLevel(pc.clazz, newLevel),
+      featOptions: this.demoIsAsiLevel(pc.clazz, newLevel) ? [...PCService.DEMO_GENERAL_FEATS] : [],
     };
   }
 
@@ -465,6 +473,12 @@ export class PCService {
         spellSlots[lvl] = { max, used: Math.min(priorUsed, max) };
       }
     }
+    // A chosen feat is recorded among the character's features (matches the server).
+    let features = existing.features;
+    if (choices?.feat) {
+      features = [...(existing.features ?? []),
+        { name: choices.feat, source: `Feat (Level ${newLevel})`, desc: '' }];
+    }
     const updated: PC = {
       ...existing,
       level: newLevel,
@@ -475,6 +489,7 @@ export class PCService {
         : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
       subclass: choices?.subclass || existing.subclass,
+      features,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);
