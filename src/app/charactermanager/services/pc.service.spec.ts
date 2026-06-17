@@ -209,11 +209,21 @@ describe('PCService', () => {
         currentLevel: 4, newLevel: 5, hitDie: 8, conModifier: 2,
         hpGained: 7, newHpMax: 39, currentProfBonus: 2, newProfBonus: 3,
         currentSpellSlots: { 1: 4, 2: 3 }, newSpellSlots: { 1: 4, 2: 3, 3: 2 },
+        subclassDue: false, subclassOptions: [],
       });
     });
   });
 
   describe('levelUp', () => {
+    it('sends the chosen subclass in the POST body when provided', () => {
+      service.levelUp(42, 'Life Domain').subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ subclass: 'Life Domain' });
+      req.flush({ id: 42, name: 'Aelindra', clazz: 'Cleric', level: 3, subclass: 'Life Domain' });
+    });
+
     it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {
       service.levelUp(42).subscribe(updated => {
         expect(updated.level).toBe(5);
