@@ -23,6 +23,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     subclassDue: false, subclassOptions: [],
     asiDue: false, featOptions: [],
     featuresGained: [],
+    currentCantripsKnown: 0, newCantripsKnown: 0,
     ...overrides,
   };
 }
@@ -254,6 +255,21 @@ describe('LevelUpModalComponent', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview({ featuresGained: [] })));
     component.ngOnInit();
     expect(component.featuresGained.length).toBe(0);
+  });
+
+  // --- cantrips known ---
+
+  it('shows a cantrips-known increase for casters', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentCantripsKnown: 3, newCantripsKnown: 4 })));
+    component.ngOnInit();
+    expect(component.showCantrips).toBeTrue();
+    expect(component.cantripsChanged).toBeTrue();
+  });
+
+  it('hides the cantrips row for non-casters', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentCantripsKnown: 0, newCantripsKnown: 0 })));
+    component.ngOnInit();
+    expect(component.showCantrips).toBeFalse();
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {

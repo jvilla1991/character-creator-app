@@ -32,6 +32,9 @@ export interface LevelUpPreview {
   // Class features automatically gained at the new level (name + server-owned description).
   // Empty when the class/level has no seeded features. Read-only — no choice involved.
   featuresGained: { name: string; desc: string }[];
+  // Cantrips known before/after the level (caster classes; 0 for non-casters). Informational.
+  currentCantripsKnown: number;
+  newCantripsKnown: number;
 }
 
 /** Player choices sent when committing a level-up (all optional). At an ASI level, exactly

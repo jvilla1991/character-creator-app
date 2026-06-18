@@ -81,6 +81,16 @@ export class LevelUpModalComponent implements OnInit {
     return this.slotRows.some(r => r.gained);
   }
 
+  /** Whether to show the cantrips-known row (caster). */
+  get showCantrips(): boolean {
+    return (this.preview?.newCantripsKnown ?? 0) > 0;
+  }
+
+  /** Whether cantrips known increases this level. */
+  get cantripsChanged(): boolean {
+    return !!this.preview && this.preview.newCantripsKnown > this.preview.currentCantripsKnown;
+  }
+
   /** Whether to show the subclass picker: a choice is due AND the server offered options. */
   get needsSubclass(): boolean {
     return !!this.preview?.subclassDue && (this.preview?.subclassOptions?.length ?? 0) > 0;
