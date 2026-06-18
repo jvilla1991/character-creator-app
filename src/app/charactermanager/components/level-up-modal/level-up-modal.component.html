@@ -38,6 +38,15 @@
         </span>
       </li>
 
+      <li class="lvl-gain" *ngIf="showCantrips" [class.is-bump]="cantripsChanged">
+        <span class="lvl-gain-label">Cantrips Known</span>
+        <span class="lvl-gain-value">
+          {{ p.currentCantripsKnown }}
+          <ng-container *ngIf="cantripsChanged">→ {{ p.newCantripsKnown }}</ng-container>
+          <span class="lvl-gain-note" *ngIf="!cantripsChanged">(unchanged)</span>
+        </span>
+      </li>
+
       <li class="lvl-gain" *ngIf="slotRows.length" [class.is-bump]="hasSlotChanges">
         <span class="lvl-gain-label">Spell Slots</span>
         <span class="lvl-gain-value">

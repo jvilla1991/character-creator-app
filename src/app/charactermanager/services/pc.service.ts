@@ -440,7 +440,19 @@ export class PCService {
       featOptions: this.demoIsAsiLevel(pc.clazz, newLevel) ? [...PCService.DEMO_GENERAL_FEATS] : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
+      currentCantripsKnown: this.demoCantripsKnown(pc.clazz, current),
+      newCantripsKnown: this.demoCantripsKnown(pc.clazz, newLevel),
     };
+  }
+
+  // DEMO-ONLY mirror of the server cantrips-known formula (base +1 at L4 +1 at L10).
+  private demoCantripsKnown(clazz: string, level: number): number {
+    const base: { [k: string]: number } = {
+      bard: 2, cleric: 3, druid: 2, sorcerer: 4, warlock: 2, wizard: 3,
+    };
+    const b = base[(clazz ?? '').trim().toLowerCase()];
+    if (b === undefined || level < 1) return 0;
+    return b + (level >= 4 ? 1 : 0) + (level >= 10 ? 1 : 0);
   }
 
   private applyDemoLevelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
