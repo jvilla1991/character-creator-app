@@ -288,3 +288,81 @@
   font-size: 0.76rem;
   color: var(--text-dim, rgba(255, 255, 255, 0.6));
 }
+
+// ── Spell picker ──────────────────────────────────────────────────────────────
+
+.spell-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spell-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.spell-counts {
+  font-size: 0.72rem;
+  color: var(--celestial);
+}
+
+.spell-search {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 7px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  color: var(--text, #fff);
+  font-size: 0.85rem;
+}
+
+.spell-loading {
+  font-size: 0.78rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.spell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.spell-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 7px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  cursor: pointer;
+
+  &.is-selected {
+    border-color: var(--celestial);
+  }
+}
+
+.spell-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.spell-name {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.spell-meta {
+  font-size: 0.72rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

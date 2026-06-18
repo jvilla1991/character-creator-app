@@ -332,6 +332,7 @@ export class PCService {
     if (choices?.subclass) body.subclass = choices.subclass;
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     if (choices?.feat) body.feat = choices.feat;
+    if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
     return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
@@ -442,6 +443,8 @@ export class PCService {
       featuresGained: [],
       currentCantripsKnown: this.demoCantripsKnown(pc.clazz, current),
       newCantripsKnown: this.demoCantripsKnown(pc.clazz, newLevel),
+      currentSpellsKnown: this.demoPreparedSpells(pc.clazz, current),
+      newSpellsKnown: this.demoPreparedSpells(pc.clazz, newLevel),
     };
   }
 
@@ -453,6 +456,21 @@ export class PCService {
     const b = base[(clazz ?? '').trim().toLowerCase()];
     if (b === undefined || level < 1) return 0;
     return b + (level >= 4 ? 1 : 0) + (level >= 10 ? 1 : 0);
+  }
+
+  // DEMO-ONLY mirror of the server prepared/known-spell tables (full-caster vs warlock pact).
+  private static readonly DEMO_FULL_PREPARED =
+    [4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22];
+  private static readonly DEMO_PACT_PREPARED =
+    [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15];
+
+  private demoPreparedSpells(clazz: string, level: number): number {
+    const key = (clazz ?? '').trim().toLowerCase();
+    if (level < 1) return 0;
+    const idx = Math.min(level, 20) - 1;
+    if (['bard', 'cleric', 'druid', 'sorcerer', 'wizard'].includes(key)) return PCService.DEMO_FULL_PREPARED[idx];
+    if (key === 'warlock') return PCService.DEMO_PACT_PREPARED[idx];
+    return 0;
   }
 
   private applyDemoLevelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
@@ -493,6 +511,10 @@ export class PCService {
       features = [...(existing.features ?? []),
         { name: choices.feat, source: `Feat (Level ${newLevel})`, desc: '' }];
     }
+    // Newly-learned spells are appended to the character's spell list.
+    const spells = choices?.newSpells?.length
+      ? [...(existing.spells ?? []), ...choices.newSpells]
+      : existing.spells;
     const updated: PC = {
       ...existing,
       level: newLevel,
@@ -504,6 +526,7 @@ export class PCService {
       spellSlots,
       subclass: choices?.subclass || existing.subclass,
       features,
+      spells,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);

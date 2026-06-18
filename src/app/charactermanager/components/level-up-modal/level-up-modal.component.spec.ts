@@ -24,6 +24,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     asiDue: false, featOptions: [],
     featuresGained: [],
     currentCantripsKnown: 0, newCantripsKnown: 0,
+    currentSpellsKnown: 0, newSpellsKnown: 0,
     ...overrides,
   };
 }
@@ -35,8 +36,10 @@ describe('LevelUpModalComponent', () => {
 
   beforeEach(() => {
     pcService = makePcServiceSpy();
-    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getFeatDescription']);
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService',
+      ['getFeatDescription', 'getSpellsForClass']);
     dndResources.getFeatDescription.and.returnValue('A mighty feat.');
+    dndResources.getSpellsForClass.and.returnValue(of([]));
     component = new LevelUpModalComponent(pcService, dndResources);
     component.pc = makePC();
   });
@@ -294,5 +297,69 @@ describe('LevelUpModalComponent', () => {
     component.confirm();
 
     expect(pcService.levelUp).not.toHaveBeenCalled();
+  });
+
+  // --- spell selection ---
+
+  function dndSpell(level: number, name: string): any {
+    return { level, name, school: 'Evocation', actionType: '1 action', classes: ['bard'] };
+  }
+
+  it('shows the picker and loads spells when the level grants new spells', () => {
+    dndResources.getSpellsForClass.and.returnValue(of(
+      [dndSpell(0, 'Light'), dndSpell(1, 'Heroism'), dndSpell(2, 'Invisibility')] as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentCantripsKnown: 2, newCantripsKnown: 2,   // cantrip delta 0
+      currentSpellsKnown: 7, newSpellsKnown: 9,        // spell delta 2
+    })));
+    component.pc = makePC({ clazz: 'Bard', spells: [] });
+    component.ngOnInit();
+
+    expect(component.showSpellPicker).toBeTrue();
+    expect(component.cantripDelta).toBe(0);
+    expect(component.spellDelta).toBe(2);
+    expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Bard');
+    // cantrips hidden (delta 0), leveled spells shown
+    expect(component.filteredSpells.map(s => s.name)).toEqual(['Heroism', 'Invisibility']);
+  });
+
+  it('caps spell selection at the allowed delta', () => {
+    const spells = [dndSpell(1, 'A'), dndSpell(1, 'B'), dndSpell(1, 'C')];
+    dndResources.getSpellsForClass.and.returnValue(of(spells as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
+    component.pc = makePC({ clazz: 'Bard', spells: [] });
+    component.ngOnInit();
+
+    component.toggleSpell(spells[0]);
+    component.toggleSpell(spells[1]);
+    component.toggleSpell(spells[2]); // exceeds delta of 2 -> ignored
+    expect(component.selectedSpellCount).toBe(2);
+  });
+
+  it('excludes already-known spells from the list', () => {
+    const spells = [dndSpell(1, 'Hold Person'), dndSpell(1, 'Heroism')];
+    dndResources.getSpellsForClass.and.returnValue(of(spells as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
+    component.pc = makePC({ clazz: 'Bard',
+      spells: [{ lvl: 1, name: 'Heroism', school: 'Ench', time: '1 action', prepared: true }] });
+    component.ngOnInit();
+
+    expect(component.spellList.map(s => s.name)).toEqual(['Hold Person']);
+  });
+
+  it('sends selected spells as newSpells mapped to PcSpell', () => {
+    const spells = [dndSpell(1, 'Hold Person')];
+    dndResources.getSpellsForClass.and.returnValue(of(spells as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+    component.pc = makePC({ clazz: 'Bard', spells: [] });
+    component.ngOnInit();
+
+    component.toggleSpell(spells[0]);
+    component.confirm();
+
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+      newSpells: [jasmine.objectContaining({ lvl: 1, name: 'Hold Person', prepared: true })],
+    });
   });
 });
