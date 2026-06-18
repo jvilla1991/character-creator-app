@@ -29,6 +29,9 @@ export interface LevelUpPreview {
   // Feats: selectable General feat names (the ASI alternative). Server-authoritative;
   // non-empty only at an ASI level. Descriptions are looked up locally for display.
   featOptions: string[];
+  // Class features automatically gained at the new level (name + server-owned description).
+  // Empty when the class/level has no seeded features. Read-only — no choice involved.
+  featuresGained: { name: string; desc: string }[];
 }
 
 /** Player choices sent when committing a level-up (all optional). At an ASI level, exactly

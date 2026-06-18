@@ -22,6 +22,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     currentSpellSlots: {}, newSpellSlots: {},
     subclassDue: false, subclassOptions: [],
     asiDue: false, featOptions: [],
+    featuresGained: [],
     ...overrides,
   };
 }
@@ -238,6 +239,21 @@ describe('LevelUpModalComponent', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview({ asiDue: true, featOptions: ['Sentinel'] })));
     component.ngOnInit();
     expect(component.featOptions).toEqual(['Sentinel']);
+  });
+
+  // --- auto-granted class features ---
+
+  it('exposes auto-granted class features from the preview', () => {
+    const feats = [{ name: 'Reckless Attack', desc: 'Attack with advantage.' }];
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ featuresGained: feats })));
+    component.ngOnInit();
+    expect(component.featuresGained).toEqual(feats);
+  });
+
+  it('has no class features when none are granted', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({ featuresGained: [] })));
+    component.ngOnInit();
+    expect(component.featuresGained.length).toBe(0);
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {
