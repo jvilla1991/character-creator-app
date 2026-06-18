@@ -1,3 +1,5 @@
+import { PcSpell } from './pc';
+
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
  *
@@ -35,6 +37,10 @@ export interface LevelUpPreview {
   // Cantrips known before/after the level (caster classes; 0 for non-casters). Informational.
   currentCantripsKnown: number;
   newCantripsKnown: number;
+  // Prepared/known spells before/after the level (caster classes; 0 for non-casters). The
+  // level-up delta is how many new spells the player may add.
+  currentSpellsKnown: number;
+  newSpellsKnown: number;
 }
 
 /** Player choices sent when committing a level-up (all optional). At an ASI level, exactly
@@ -43,4 +49,5 @@ export interface LevelUpChoices {
   subclass?: string;
   abilityIncreases?: { [ability: string]: number };
   feat?: string;
+  newSpells?: PcSpell[];
 }
