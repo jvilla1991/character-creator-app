@@ -142,6 +142,11 @@ export class LevelUpModalComponent implements OnInit {
     return this.preview?.featOptions ?? [];
   }
 
+  /** Class features automatically granted at this level (read-only). */
+  get featuresGained(): { name: string; desc: string }[] {
+    return this.preview?.featuresGained ?? [];
+  }
+
   featDescription(name: string): string {
     return this.dndResources.getFeatDescription(name);
   }
