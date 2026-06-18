@@ -113,6 +113,29 @@
       </label>
     </div>
 
+    <!-- Learn new cantrips/spells (casters who gain them this level) -->
+    <div *ngIf="showSpellPicker" class="spell-pick">
+      <div class="spell-label">
+        Learn Spells
+        <span class="spell-counts">
+          <ng-container *ngIf="cantripDelta">Cantrips {{ selectedCantripCount }}/{{ cantripDelta }}</ng-container>
+          <ng-container *ngIf="cantripDelta && spellDelta"> · </ng-container>
+          <ng-container *ngIf="spellDelta">Spells {{ selectedSpellCount }}/{{ spellDelta }}</ng-container>
+        </span>
+      </div>
+      <input class="spell-search" type="text" [(ngModel)]="spellSearch" placeholder="Search spells…">
+      <div *ngIf="loadingSpells" class="spell-loading">Consulting the grimoire…</div>
+      <div class="spell-list" *ngIf="!loadingSpells">
+        <label class="spell-option" *ngFor="let s of filteredSpells" [class.is-selected]="isSpellSelected(s)">
+          <input type="checkbox" [checked]="isSpellSelected(s)" (change)="toggleSpell(s)">
+          <span class="spell-row">
+            <span class="spell-name">{{ s.name }}</span>
+            <span class="spell-meta">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school }}</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
     <!-- Class features automatically gained this level (read-only) -->
     <div *ngIf="featuresGained.length" class="features-gained">
       <div class="features-label">New Features</div>

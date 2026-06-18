@@ -1,6 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
-import { PC } from '../../models/pc';
+import { PC, PcSpell } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices } from '../../models/level-up';
+import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { fmtMod } from '../../utils/character-math';
@@ -38,6 +39,12 @@ export class LevelUpModalComponent implements OnInit {
   milestoneMode: 'asi' | 'feat' = 'asi';
   selectedFeat: string | null = null;
 
+  /** Spell selection (casters who gain cantrips/spells this level). */
+  spellList: DndSpell[] = [];
+  selectedSpells: DndSpell[] = [];
+  loadingSpells = false;
+  spellSearch = '';
+
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
@@ -45,12 +52,73 @@ export class LevelUpModalComponent implements OnInit {
       next: preview => {
         this.preview = preview;
         this.loading = false;
+        if (this.cantripDelta > 0 || this.spellDelta > 0) this.loadSpells();
       },
       error: err => {
         this.error = this.messageFrom(err, 'Could not work out this level-up.');
         this.loading = false;
       },
     });
+  }
+
+  // ── Spell selection (learning new cantrips/spells) ──────────────────────────
+
+  private loadSpells(): void {
+    this.loadingSpells = true;
+    const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    this.dndResources.getSpellsForClass(this.pc.clazz).subscribe({
+      next: spells => {
+        this.spellList = spells.filter(s => !known.has(s.name.toLowerCase()));
+        this.loadingSpells = false;
+      },
+      error: () => { this.loadingSpells = false; },
+    });
+  }
+
+  /** How many new cantrips / leveled spells the player may learn this level. */
+  get cantripDelta(): number {
+    return this.preview ? Math.max(0, this.preview.newCantripsKnown - this.preview.currentCantripsKnown) : 0;
+  }
+
+  get spellDelta(): number {
+    return this.preview ? Math.max(0, this.preview.newSpellsKnown - this.preview.currentSpellsKnown) : 0;
+  }
+
+  /** Show the spell picker when this level grants any new cantrips or spells. */
+  get showSpellPicker(): boolean {
+    return this.cantripDelta > 0 || this.spellDelta > 0;
+  }
+
+  get selectedCantripCount(): number {
+    return this.selectedSpells.filter(s => s.level === 0).length;
+  }
+
+  get selectedSpellCount(): number {
+    return this.selectedSpells.filter(s => s.level > 0).length;
+  }
+
+  /** Available spells, filtered by search and limited to the kinds this level allows. */
+  get filteredSpells(): DndSpell[] {
+    const q = this.spellSearch.trim().toLowerCase();
+    return this.spellList.filter(s => {
+      if (s.level === 0 && this.cantripDelta === 0) return false;
+      if (s.level > 0 && this.spellDelta === 0) return false;
+      return !q || s.name.toLowerCase().includes(q);
+    });
+  }
+
+  isSpellSelected(spell: DndSpell): boolean {
+    return this.selectedSpells.some(s => s.name === spell.name);
+  }
+
+  toggleSpell(spell: DndSpell): void {
+    if (this.isSpellSelected(spell)) {
+      this.selectedSpells = this.selectedSpells.filter(s => s.name !== spell.name);
+      return;
+    }
+    if (spell.level === 0 && this.selectedCantripCount >= this.cantripDelta) return;
+    if (spell.level > 0 && this.selectedSpellCount >= this.spellDelta) return;
+    this.selectedSpells = [...this.selectedSpells, spell];
   }
 
   fmtMod(value: number): string {
@@ -186,6 +254,23 @@ export class LevelUpModalComponent implements OnInit {
       } else if (this.selectedFeat) {
         choices.feat = this.selectedFeat;
       }
+    }
+    if (this.selectedSpells.length) {
+      choices.newSpells = this.selectedSpells.map((s): PcSpell => ({
+        lvl: s.level,
+        name: s.name,
+        school: s.school,
+        time: s.actionType,
+        prepared: true,
+        concentration: s.concentration,
+        ritual: s.ritual,
+        range: s.range,
+        components: s.components,
+        duration: s.duration,
+        description: s.description,
+        material: s.material,
+        higherLevelSlot: s.higherLevelSlot,
+      }));
     }
 
     this.pcService.levelUp(this.pc.id, choices).subscribe({

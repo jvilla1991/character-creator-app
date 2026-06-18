@@ -240,6 +240,15 @@ describe('PCService', () => {
       req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
     });
 
+    it('sends newly-learned spells in the POST body when provided', () => {
+      const newSpells = [{ lvl: 1, name: 'Hold Person', school: 'Ench', time: '1 action', prepared: true }];
+      service.levelUp(42, { newSpells }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ newSpells });
+      req.flush({ id: 42, name: 'Aelindra', clazz: 'Bard', level: 5 });
+    });
+
     it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {
       service.levelUp(42).subscribe(updated => {
         expect(updated.level).toBe(5);
