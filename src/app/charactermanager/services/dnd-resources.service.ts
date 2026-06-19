@@ -90,12 +90,6 @@ const RACE_LIST = [
   'Tiefling','Dragonborn','Gnome',
 ];
 
-const PARTY_LIST = [
-  'The Veiled Compass',
-  'Tomb of the Sleeping Crown',
-  'Unassigned',
-];
-
 // ── Spell constants ───────────────────────────────────────────────────────────
 
 /** Classes that have a full spell list at character creation */
@@ -387,7 +381,6 @@ export class DndResourcesService {
   }
 
   getRaceNames(): Observable<string[]> { return of(RACE_LIST); }
-  getPartyNames(): Observable<string[]> { return of(PARTY_LIST); }
 
   // ── 2024 class methods ────────────────────────────────────────────────────
 

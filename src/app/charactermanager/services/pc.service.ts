@@ -8,7 +8,7 @@ import { environment } from 'src/environments/environment';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 
 // ---------------------------------------------------------------------------
-// Demo seed data — 3 fully-detailed PCs covering both parties.
+// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 const DEMO_PCS: PC[] = [
@@ -17,7 +17,7 @@ const DEMO_PCS: PC[] = [
     name: 'Lyra Moonwhisper',
     playerName: 'Alice',
     player: 'Alice',
-    party: 'The Veiled Compass',
+    campaignId: 'veiled',
     race: 'Half-Elf',
     clazz: 'Bard',
     subclass: 'College of Whispers',
@@ -81,7 +81,7 @@ const DEMO_PCS: PC[] = [
     name: 'Throk Ironjaw',
     playerName: 'Ben',
     player: 'Ben',
-    party: 'The Veiled Compass',
+    campaignId: 'veiled',
     race: 'Half-Orc',
     clazz: 'Barbarian',
     subclass: 'Path of the Totem (Bear)',
@@ -130,7 +130,7 @@ const DEMO_PCS: PC[] = [
     name: 'Pip Underfoot',
     playerName: 'Eve',
     player: 'Eve',
-    party: 'Tomb of the Sleeping Crown',
+    campaignId: 'tomb',
     race: 'Halfling (Lightfoot)',
     clazz: 'Rogue',
     subclass: 'Arcane Trickster',
@@ -196,19 +196,6 @@ export class PCService {
 
   private activePCSubject = new BehaviorSubject<PC | null>(null);
   activePC$ = this.activePCSubject.asObservable();
-
-  /** PCs grouped by party name, derived from pcs$ */
-  pcsByParty$ = this.pcs$.pipe(
-    map(pcs => {
-      const groups = new Map<string, PC[]>();
-      for (const pc of pcs) {
-        const party = pc.party ?? 'Unassigned';
-        if (!groups.has(party)) groups.set(party, []);
-        groups.get(party)!.push(pc);
-      }
-      return groups;
-    })
-  );
 
   constructor(private http: HttpClient) {}
 

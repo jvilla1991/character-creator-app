@@ -14,7 +14,6 @@ function makePC(overrides: Partial<PC> = {}): PC {
     playerName: 'Alice',
     race: 'Elf',
     background: 'Sage',
-    party: 'The Veiled Compass',
     hp: { cur: 7, max: 7, temp: 0 },
     ac: 11,
     init: 1,
@@ -345,32 +344,4 @@ describe('PCService', () => {
     });
   });
 
-  // ── pcsByParty$ grouping ────────────────────────────────────────────────────
-
-  describe('pcsByParty$', () => {
-    it('groups PCs by party name', (done) => {
-      const pcs: PC[] = [
-        makePC({ id: 1, party: 'Alpha' }),
-        makePC({ id: 2, party: 'Alpha' }),
-        makePC({ id: 3, party: 'Beta'  }),
-      ];
-      service.setPCs(pcs);
-
-      service.pcsByParty$.subscribe(groups => {
-        expect(groups.get('Alpha')?.length).toBe(2);
-        expect(groups.get('Beta')?.length).toBe(1);
-        done();
-      });
-    });
-
-    it('assigns PCs without a party to Unassigned', (done) => {
-      const pcs: PC[] = [makePC({ id: 1, party: undefined })];
-      service.setPCs(pcs);
-
-      service.pcsByParty$.subscribe(groups => {
-        expect(groups.get('Unassigned')?.length).toBe(1);
-        done();
-      });
-    });
-  });
 });

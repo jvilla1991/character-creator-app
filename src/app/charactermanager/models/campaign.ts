@@ -1,13 +1,11 @@
 /**
- * A campaign a Dungeon Master runs. In Phase 1 the link to characters is the
- * free-text `party` key (members = PCs whose `party` === campaign.party),
- * mirroring the existing roster grouping. Phase 2 introduces a persisted
- * `campaign_id` FK on the PC; this model stays the source of truth for the
- * DM-facing fields.
+ * A campaign a Dungeon Master runs. Membership is the persisted `campaign_id`
+ * FK on the PC (see PC.campaignId); this model is the source of truth for the
+ * DM-facing fields. `party` is a legacy display label kept for backend compat.
  */
 export interface Campaign {
   id: string;
-  party: string;        // links to PC.party — members are PCs whose party === this
+  party: string;        // legacy display label (defaults to the campaign name)
   name: string;
   setting: string;
   session: number;

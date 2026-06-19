@@ -9,11 +9,6 @@ import { UiStateService } from '../../services/ui-state.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
 
-interface PartyGroup {
-  party: string;
-  members: PC[];
-}
-
 @Component({
   selector: 'app-sidenav',
   templateUrl: './sidenav.component.html',
@@ -25,14 +20,13 @@ export class SidenavComponent implements OnInit, OnDestroy {
   @Input() pcs!: PC[];
 
   query = '';
-  collapsedParties = new Set<string>();
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
   activePC$ = this.pcService.activePC$;
   role$ = this.uiState.role$;
   user = this.currentUser.getUser();
 
-  private allGroups: PartyGroup[] = [];
+  private allPcs: PC[] = [];
   private sub!: Subscription;
 
   constructor(
@@ -45,8 +39,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.sub = this.pcService.pcsByParty$.subscribe(groupMap => {
-      this.allGroups = Array.from(groupMap.entries()).map(([party, members]) => ({ party, members }));
+    this.sub = this.pcService.pcs$.subscribe(pcs => {
+      this.allPcs = pcs;
     });
   }
 
@@ -54,21 +48,16 @@ export class SidenavComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
   }
 
-  /** Party groups filtered by the current search query. */
-  get filteredByParty(): PartyGroup[] {
+  /** The full roster, filtered by the current search query. */
+  get filteredPcs(): PC[] {
     const q = this.query.trim().toLowerCase();
-    if (!q) return this.allGroups;
+    if (!q) return this.allPcs;
 
-    return this.allGroups
-      .map(({ party, members }) => ({
-        party,
-        members: members.filter(pc =>
-          pc.name.toLowerCase().includes(q) ||
-          (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
-          pc.clazz.toLowerCase().includes(q)
-        )
-      }))
-      .filter(g => g.members.length > 0);
+    return this.allPcs.filter(pc =>
+      pc.name.toLowerCase().includes(q) ||
+      (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
+      pc.clazz.toLowerCase().includes(q)
+    );
   }
 
   /** Mobile drawer controls — no-ops visually at desktop widths (drawer CSS only applies <=820px). */
@@ -81,19 +70,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
     this.closeDrawer();
   }
 
-  toggleCollapse(party: string): void {
-    this.collapsedParties.has(party)
-      ? this.collapsedParties.delete(party)
-      : this.collapsedParties.add(party);
-  }
-
   /** Maps portraitTint to a CSS background value. Delegates to shared utility. */
   tintFor(pc: PC): string { return tintFor(pc); }
-
-  /** Zero-pad a member count to 2 digits, matching the prototype's display. */
-  padCount(n: number): string {
-    return n.toString().padStart(2, '0');
-  }
 
   /** Initials for the portrait circle — uses portraitInitials if set, else first two letters of name. */
   initialsFor(pc: PC): string {
