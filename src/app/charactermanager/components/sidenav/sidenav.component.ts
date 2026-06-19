@@ -26,6 +26,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
 
   query = '';
   collapsedParties = new Set<string>();
+  /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
+  drawerOpen = false;
   activePC$ = this.pcService.activePC$;
   role$ = this.uiState.role$;
   user = this.currentUser.getUser();
@@ -69,8 +71,14 @@ export class SidenavComponent implements OnInit, OnDestroy {
       .filter(g => g.members.length > 0);
   }
 
+  /** Mobile drawer controls — no-ops visually at desktop widths (drawer CSS only applies <=820px). */
+  toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; }
+  closeDrawer(): void { this.drawerOpen = false; }
+
   setActivePC(pc: PC): void {
     this.pcService.setActivePC(pc);
+    // On mobile, picking a hero should reveal their sheet, so dismiss the drawer.
+    this.closeDrawer();
   }
 
   toggleCollapse(party: string): void {
@@ -92,14 +100,14 @@ export class SidenavComponent implements OnInit, OnDestroy {
     return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();
   }
 
-  forgeHero(): void { this.characterModal.openCreateModal(); }
+  forgeHero(): void { this.closeDrawer(); this.characterModal.openCreateModal(); }
 
-  newCampaign(): void { this.campaignModal.openCreateModal(); }
+  newCampaign(): void { this.closeDrawer(); this.campaignModal.openCreateModal(); }
 
-  joinCampaign(): void { this.joinModal.open(); }
+  joinCampaign(): void { this.closeDrawer(); this.joinModal.open(); }
 
   /** Account-row tint, reusing the shared portrait util. */
   get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
 
-  openSettings(): void { this.uiState.openSettings(); }
+  openSettings(): void { this.closeDrawer(); this.uiState.openSettings(); }
 }
