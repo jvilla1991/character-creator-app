@@ -43,11 +43,20 @@ export interface LevelUpPreview {
   newSpellsKnown: number;
 }
 
+/**
+ * How this level's hit points are determined. Mirrors the backend `HpMode` enum — the JSON value
+ * must be the enum name ('AVERAGE' | 'ROLL'). In ROLL mode the *server* rolls the hit die; the
+ * client only chooses the mode, never the result. 'AVERAGE' is the default everywhere.
+ */
+export type HpMode = 'AVERAGE' | 'ROLL';
+
 /** Player choices sent when committing a level-up (all optional). At an ASI level, exactly
- *  one of abilityIncreases / feat is sent. */
+ *  one of abilityIncreases / feat is sent. hpMode is only sent when the player picks 'ROLL'
+ *  (omitting it lets the server default to 'AVERAGE'). */
 export interface LevelUpChoices {
   subclass?: string;
   abilityIncreases?: { [ability: string]: number };
   feat?: string;
   newSpells?: PcSpell[];
+  hpMode?: HpMode;
 }
