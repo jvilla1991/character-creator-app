@@ -26,6 +26,10 @@
     </div>
   </div>
 
+  <!-- Scrollable step body (on mobile this scrolls between the sticky step
+       header and the sticky action bar; on desktop it's a plain wrapper). -->
+  <div class="wizard-body">
+
   <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
   <ng-container *ngIf="step === 1">
     <div class="modal-title">Forge a New Hero</div>
@@ -677,6 +681,8 @@
 
     </div><!-- end .review-scroll -->
   </ng-container>
+
+  </div><!-- end .wizard-body -->
 
   <!-- ── Actions ─────────────────────────────────────────────────────── -->
   <div class="modal-actions">
