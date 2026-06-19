@@ -237,6 +237,17 @@
   }
 }
 
+// Compact variant of the toggle when it sits inside an HP-gain value cell.
+.hp-mode-toggle {
+  display: inline-flex;
+  margin-bottom: 0;
+
+  .milestone-tab {
+    flex: 0 0 auto;
+    padding: 4px 12px;
+  }
+}
+
 .feat-text {
   display: flex;
   flex-direction: column;

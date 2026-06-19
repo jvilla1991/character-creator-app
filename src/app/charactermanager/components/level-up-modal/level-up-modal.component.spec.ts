@@ -113,6 +113,45 @@ describe('LevelUpModalComponent', () => {
     expect(closeSpy).toHaveBeenCalled();
   });
 
+  // --- HP mode toggle (average vs roll) ---
+
+  it('defaults to AVERAGE HP mode and omits it from the choices', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview()));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+    component.ngOnInit();
+
+    expect(component.hpMode).toBe('AVERAGE');
+
+    component.confirm();
+    // AVERAGE is implied — nothing extra is sent (server defaults to it).
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+  });
+
+  it('sends hpMode ROLL when the player picks Roll', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview()));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+    component.ngOnInit();
+
+    component.hpMode = 'ROLL';
+    component.confirm();
+
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, { hpMode: 'ROLL' });
+  });
+
+  it('combines the ROLL mode with other choices', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      subclassDue: true, subclassOptions: ['Life Domain', 'War Domain'],
+    })));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+    component.ngOnInit();
+
+    component.selectedSubclass = 'War Domain';
+    component.hpMode = 'ROLL';
+    component.confirm();
+
+    expect(pcService.levelUp).toHaveBeenCalledWith(7, { hpMode: 'ROLL', subclass: 'War Domain' });
+  });
+
   // --- subclass picker (Phase 3) ---
 
   it('does not show the subclass picker when options are empty (mechanism dormant)', () => {

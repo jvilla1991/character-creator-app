@@ -333,6 +333,8 @@ export class PCService {
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     if (choices?.feat) body.feat = choices.feat;
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
+    // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
+    if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
     return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
@@ -510,7 +512,12 @@ export class PCService {
       }
     }
     const newConMod = modFromScore(stats['CON']);
-    const hpGained = Math.max(1, Math.floor(hitDie / 2) + 1 + newConMod);
+    // DEMO-ONLY: in ROLL mode roll the die client-side so the mock HP varies. Production never
+    // rolls here — the server is the rules authority and performs the roll. Average otherwise.
+    const dieValue = choices?.hpMode === 'ROLL'
+      ? Math.floor(Math.random() * hitDie) + 1
+      : Math.floor(hitDie / 2) + 1;
+    const hpGained = Math.max(1, dieValue + newConMod);
     const hpDelta = hpGained + (newLevel - 1) * (newConMod - oldConMod);
 
     // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
