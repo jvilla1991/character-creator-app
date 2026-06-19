@@ -406,6 +406,24 @@ export class PCService {
     return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
   }
 
+  // DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names).
+  private static readonly DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
+    barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
+    bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
+    cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'War Domain'],
+    druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
+    fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
+    monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
+    paladin: ['Oath of Devotion', 'Oath of Glory', 'Oath of the Ancients', 'Oath of Vengeance'],
+    ranger: ['Beast Master', 'Fey Wanderer', 'Gloom Stalker', 'Hunter'],
+    rogue: ['Arcane Trickster', 'Assassin', 'Soulknife', 'Thief'],
+    wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
+  };
+
+  private demoSubclassOptions(clazz: string): string[] {
+    return PCService.DEMO_SUBCLASSES[(clazz ?? '').trim().toLowerCase()] ?? [];
+  }
+
   // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
   private demoIsAsiLevel(clazz: string, level: number): boolean {
     const key = (clazz ?? '').trim().toLowerCase();
@@ -436,7 +454,8 @@ export class PCService {
       currentSpellSlots: this.demoCurrentMaxSlots(pc),
       newSpellSlots: this.demoSlotsFor(pc.clazz, newLevel),
       subclassDue: newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass,
-      subclassOptions: [], // no catalog content (mechanism only)
+      subclassOptions: (newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass)
+        ? this.demoSubclassOptions(pc.clazz) : [],
       asiDue: this.demoIsAsiLevel(pc.clazz, newLevel),
       featOptions: this.demoIsAsiLevel(pc.clazz, newLevel) ? [...PCService.DEMO_GENERAL_FEATS] : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
