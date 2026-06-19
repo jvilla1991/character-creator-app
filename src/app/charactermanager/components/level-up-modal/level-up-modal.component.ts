@@ -1,6 +1,6 @@
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { PC, PcSpell } from '../../models/pc';
-import { LevelUpPreview, LevelUpChoices } from '../../models/level-up';
+import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
@@ -30,6 +30,13 @@ export class LevelUpModalComponent implements OnInit {
   submitting = false;
   error: string | null = null;
   selectedSubclass: string | null = null;
+
+  /**
+   * HP mode for this level: take the fixed average (default) or roll the hit die. In 'ROLL' the
+   * server does the rolling on confirm — the preview keeps showing the average, so the displayed
+   * "+HP" is an estimate until committed. Only sent to the server when 'ROLL' (AVERAGE is implied).
+   */
+  hpMode: HpMode = 'AVERAGE';
 
   readonly abilities = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
   /** Points allocated this ASI per ability (0/1/2); total must reach 2 to confirm. */
@@ -246,6 +253,8 @@ export class LevelUpModalComponent implements OnInit {
     this.error = null;
 
     const choices: LevelUpChoices = {};
+    // Only send the mode when rolling — omitting it lets the server default to AVERAGE.
+    if (this.hpMode === 'ROLL') choices.hpMode = 'ROLL';
     if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
     if (this.needsAsi) {
       if (this.milestoneMode === 'asi') {
