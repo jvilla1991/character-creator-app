@@ -33,7 +33,7 @@
     </header>
 
     <!-- Aggregate vitals strip -->
-    <div class="vitals" style="grid-template-columns: repeat(5, minmax(0, 1fr));">
+    <div class="vitals" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
       <div class="vital">
         <span class="eyebrow">Heroes</span>
         <div class="vital-value numeric">{{ vm.members.length }}</div>
@@ -55,11 +55,6 @@
           {{ vm.activeConditions }}
         </div>
         <div class="vital-caption">active now</div>
-      </div>
-      <div class="vital">
-        <span class="eyebrow">Next Session</span>
-        <div class="vital-value" style="font-size: 20px;">{{ vm.campaign.next }}</div>
-        <div class="vital-caption">be prepared</div>
       </div>
     </div>
 

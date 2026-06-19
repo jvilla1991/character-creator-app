@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
 import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
+import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
@@ -46,9 +47,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Step 1: Identity ─────────────────────────────────────────────────────
   name   = '';
+  // The player is always the signed-in user — sourced from their username, not editable.
   player = '';
-  party  = '';
-  partyList: string[] = [];
 
   // ── Step 2: Species ──────────────────────────────────────────────────────
   speciesList: string[] = [];
@@ -261,9 +261,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   @Output() confirm = new EventEmitter<Partial<PC>>();
   @Output() close   = new EventEmitter<void>();
 
-  constructor(private dndResources: DndResourcesService) {}
+  constructor(private dndResources: DndResourcesService, private auth: AuthService) {}
 
   ngOnInit(): void {
+    // The character's player is the signed-in user; display their username.
+    this.player = this.auth.getUsername() ?? '';
+
     // ── switchMap pipelines — automatically cancels stale requests ──────────
     this.speciesTrigger$.pipe(
       switchMap(name => {
@@ -301,11 +304,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     });
 
     // ── Load lists ───────────────────────────────────────────────────────────
-    this.dndResources.getPartyNames().subscribe(list => {
-      this.partyList = list;
-      this.party     = list[0] ?? '';
-    });
-
     this.dndResources.getSpeciesList().pipe(takeUntil(this.destroy$)).subscribe(list => {
       this.speciesList    = list;
       this.species        = list[0] ?? '';
@@ -613,7 +611,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       name:             trimmedName,
       playerName:       displayPlayer,   // required by PC interface (backend compat)
       player:           displayPlayer,   // display field used by new UI
-      party:            this.party,
       race:             this.species,
       clazz:            this.clazz,
       subclass:         this.selectedSubclass || undefined,
