@@ -38,53 +38,35 @@
         >
       </div>
 
-      <!-- Party groups (scrollable) -->
+      <!-- Roster (scrollable) -->
       <div style="overflow-y: auto; flex: 1;">
 
-        <p *ngIf="filteredByParty.length === 0"
+        <p *ngIf="filteredPcs.length === 0"
            style="padding: 20px; color: var(--text-dim); font-style: italic; text-align: center; font-size: 13px; margin: 0;">
           No heroes match that name.
         </p>
 
-        <div class="party-section" *ngFor="let group of filteredByParty">
-
-          <!-- Party header (collapsible) -->
+        <div class="roster-items">
           <div
-            class="party-header"
-            [class.collapsed]="collapsedParties.has(group.party)"
-            (click)="toggleCollapse(group.party)"
+            class="roster-item"
+            [class.active]="(activePC$ | async)?.id === pc.id"
+            *ngFor="let pc of filteredPcs"
+            (click)="setActivePC(pc)"
           >
-            <svg class="party-chevron" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M2 4l3 3 3-3"/>
-            </svg>
-            <span class="party-name">{{ group.party }}</span>
-            <span class="party-count">{{ padCount(group.members.length) }}</span>
-          </div>
-
-          <!-- Roster items -->
-          <div class="roster-items" *ngIf="!collapsedParties.has(group.party)">
-            <div
-              class="roster-item"
-              [class.active]="(activePC$ | async)?.id === pc.id"
-              *ngFor="let pc of group.members"
-              (click)="setActivePC(pc)"
-            >
-              <!-- Portrait circle -->
-              <div class="portrait" [style.background]="tintFor(pc)">
-                {{ initialsFor(pc) }}
-              </div>
-
-              <!-- Name + meta -->
-              <div style="min-width: 0;">
-                <div class="roster-name">{{ pc.name }}</div>
-                <div class="roster-meta">{{ pc.race }} {{ pc.clazz }}</div>
-              </div>
-
-              <!-- Level pill -->
-              <div class="roster-level">L{{ pc.level }}</div>
+            <!-- Portrait circle -->
+            <div class="portrait" [style.background]="tintFor(pc)">
+              {{ initialsFor(pc) }}
             </div>
-          </div>
 
+            <!-- Name + meta -->
+            <div style="min-width: 0;">
+              <div class="roster-name">{{ pc.name }}</div>
+              <div class="roster-meta">{{ pc.race }} {{ pc.clazz }}</div>
+            </div>
+
+            <!-- Level pill -->
+            <div class="roster-level">L{{ pc.level }}</div>
+          </div>
         </div>
       </div>
     </ng-container>

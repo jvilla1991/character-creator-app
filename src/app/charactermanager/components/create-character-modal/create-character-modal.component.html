@@ -44,17 +44,10 @@
              (keydown.escape)="cancel()">
     </div>
 
-    <div class="two-col">
-      <div class="field">
-        <label>Player</label>
-        <input [(ngModel)]="player" placeholder="who plays them">
-      </div>
-      <div class="field">
-        <label>Party</label>
-        <select [(ngModel)]="party">
-          <option *ngFor="let p of partyList" [value]="p">{{ p }}</option>
-        </select>
-      </div>
+    <div class="field">
+      <label>Player</label>
+      <input [value]="player" disabled
+             title="Your characters are listed under your username">
     </div>
   </ng-container>
 
@@ -526,10 +519,6 @@
         <div *ngIf="player" class="review-row">
           <span class="review-label">Player</span>
           <span class="review-value">{{ player }}</span>
-        </div>
-        <div *ngIf="party" class="review-row">
-          <span class="review-label">Party</span>
-          <span class="review-value">{{ party }}</span>
         </div>
       </div>
 
