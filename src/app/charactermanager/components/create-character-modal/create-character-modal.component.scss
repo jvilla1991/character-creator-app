@@ -1058,3 +1058,85 @@
   color: #a78bfa;
   font-style: italic;
 }
+
+// ── Mobile: full-screen, TurboTax-style step sheet ────────────────────────
+// On phones the centered modal becomes a full-screen flow: a pinned progress
+// header, a scrolling body, and a sticky action bar so Back/Next are always
+// thumb-reachable (they used to get pushed off-screen on tall steps).
+// Scoped to this component, so it overrides the global .modal rules from
+// styles.css without editing that shared file.
+@media (max-width: 820px) {
+
+  :host ::ng-deep .modal.wizard {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    animation: wizard-slide-up 0.22s ease-out;
+
+    // The decorative inset border assumes padding that no longer exists.
+    &::before { display: none; }
+  }
+
+  // Pinned progress header.
+  .wizard-steps {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .ruleset-bar {
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--surface);
+  }
+
+  // Scrolling step body between the two sticky bars.
+  .wizard-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px 16px;
+  }
+
+  // Sticky bottom action bar with full-width, finger-sized buttons.
+  :host ::ng-deep .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+
+    .btn {
+      flex: 1;
+      min-height: 48px;
+      font-size: 13px;
+    }
+  }
+
+  // Bigger tap targets for the in-wizard choices.
+  :host ::ng-deep .step-dot {
+    width: 34px;
+    height: 34px;
+  }
+  :host ::ng-deep .class-pick {
+    min-height: 46px;
+    font-size: 12px;
+  }
+}
+
+@keyframes wizard-slide-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
