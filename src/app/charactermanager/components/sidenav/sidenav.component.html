@@ -147,11 +147,18 @@
     </div>
 
     <div class="main-inner">
-      <ng-container *ngIf="(role$ | async) === 'player'; else dmMain">
-        <router-outlet></router-outlet>
+      <!-- Session Mode overlays both Player and DM views while a session is live -->
+      <ng-container *ngIf="(activeSessionId$ | async) as sessionId; else normalView">
+        <app-session-mode [sessionId]="sessionId"></app-session-mode>
       </ng-container>
-      <ng-template #dmMain>
-        <app-campaign-dashboard></app-campaign-dashboard>
+      <ng-template #normalView>
+        <ng-container *ngIf="(role$ | async) === 'player'; else dmMain">
+          <app-session-live-banner></app-session-live-banner>
+          <router-outlet></router-outlet>
+        </ng-container>
+        <ng-template #dmMain>
+          <app-campaign-dashboard></app-campaign-dashboard>
+        </ng-template>
       </ng-template>
     </div>
   </main>

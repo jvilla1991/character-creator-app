@@ -32,6 +32,11 @@ import { PartyTreasuryComponent } from './components/campaign-dashboard/party-tr
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
+// ── Session Mode ───────────────────────────────────────────────────────────
+import { SessionModeComponent } from './components/session-mode/session-mode.component';
+import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
+import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
+
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
 import { HttpClientModule } from '@angular/common/http';
@@ -81,6 +86,9 @@ const routes: Routes = [
     PartyTreasuryComponent,
     CreateCampaignModalComponent,
     JoinCampaignModalComponent,
+    SessionModeComponent,
+    InitiativePanelComponent,
+    SessionLiveBannerComponent,
   ],
   imports: [
     CommonModule,
