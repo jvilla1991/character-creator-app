@@ -11,6 +11,17 @@
         </div>
       </div>
       <div class="sheet-actions">
+        <button
+          *ngIf="!state.dm && myParticipantId(state) != null"
+          class="btn"
+          (click)="leave(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6"/>
+          </svg>
+          Leave
+        </button>
         <button class="btn" (click)="close()">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
                style="margin-right: 6px; vertical-align: -2px;">

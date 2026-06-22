@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, of, timer } from 'rxjs';
-import { filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ParticipantView, SessionState } from '../models/session';
 import { PC } from '../models/pc';
@@ -84,6 +84,39 @@ export class SessionService {
   clear(): void {
     this.stopPolling();
     this.stateSubject.next(null);
+  }
+
+  /**
+   * The campaign's current live session, or null if none — used to show players a
+   * "session live — join" prompt. Demo mode has no multi-client discovery, so it
+   * returns null (the screen is reachable from the DM's Roll Initiative instead).
+   */
+  getActiveForCampaign(campaignId: string): Observable<SessionState | null> {
+    if (environment.demoMode) return of(null);
+    return this.http.get<unknown>(`${this.campaignBase}/${campaignId}/session`).pipe(
+      map(raw => (raw ? this.deserialize(raw) : null)),
+      catchError(() => of(null)),
+    );
+  }
+
+  /** Seat one of the player's PCs in a live session; stores the resulting state. */
+  joinSession(sessionId: number | string, pcId: number): Observable<SessionState> {
+    if (environment.demoMode) return this.getState(sessionId).pipe(take(1));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/join`, { pcId }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.stateSubject.next(state)),
+    );
+  }
+
+  /** Remove a participant — a player leaving their own PC, or the DM removing one. */
+  leave(sessionId: number | string, participantId: number): Observable<SessionState> {
+    if (environment.demoMode) return this.getState(sessionId).pipe(take(1));
+    return this.http.delete<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}`,
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.stateSubject.next(state)),
+    );
   }
 
   // --- demo helpers ---------------------------------------------------------

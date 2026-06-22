@@ -1,4 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { SessionState } from '../../models/session';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 
@@ -37,5 +38,24 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   close(): void {
     this.sessionService.clear();
     this.uiState.closeSession();
+  }
+
+  /** The requesting player's own participant id in this session, if any. */
+  myParticipantId(state: SessionState): number | null {
+    const mine = state.participants.find(p => p.ownedByMe);
+    return mine ? mine.participantId : null;
+  }
+
+  /** A player removes their own PC from the session, then exits the screen. */
+  leave(state: SessionState): void {
+    const id = this.myParticipantId(state);
+    if (id == null) {
+      this.close();
+      return;
+    }
+    this.sessionService.leave(state.sessionId, id).subscribe({
+      next: () => this.close(),
+      error: () => this.close(),
+    });
   }
 }
