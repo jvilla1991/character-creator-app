@@ -32,7 +32,11 @@
       </div>
     </header>
 
-    <app-initiative-panel [participants]="state.participants"></app-initiative-panel>
+    <app-initiative-panel
+      [participants]="state.participants"
+      [sessionId]="state.sessionId"
+      [dm]="state.dm"
+    ></app-initiative-panel>
   </div>
 </ng-container>
 

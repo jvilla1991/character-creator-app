@@ -119,7 +119,63 @@ export class SessionService {
     );
   }
 
+  /** DM enters a combatant's initiative; the server (or demo) re-sorts the order. */
+  setInitiative(sessionId: number | string, participantId: number, value: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoSetInitiative(participantId, value));
+    return this.http.put<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/initiative`, { value },
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.stateSubject.next(state)),
+    );
+  }
+
+  /** DM damages (positive) or heals (negative) a combatant; PC HP writes through. */
+  applyDamage(sessionId: number | string, participantId: number, amount: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoDamage(participantId, amount));
+    return this.http.post<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/damage`, { amount },
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.stateSubject.next(state)),
+    );
+  }
+
   // --- demo helpers ---------------------------------------------------------
+
+  /** Demo: set a participant's initiative and re-sort the order locally. */
+  private demoSetInitiative(participantId: number, value: number): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants
+      .map(p => (p.participantId === participantId ? { ...p, initiative: value, initRolled: true } : p))
+      .sort((a, b) => (b.initiative ?? -99) - (a.initiative ?? -99));
+    participants.forEach((p, i) => (p.orderIndex = i));
+    const next = { ...state, participants, version: state.version + 1 };
+    this.stateSubject.next(next);
+    return next;
+  }
+
+  /** Demo: apply an HP delta to a participant locally (temp absorbs, floor 0, heal caps at max). */
+  private demoDamage(participantId: number, amount: number): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants.map(p => {
+      if (p.participantId !== participantId) return p;
+      let cur = p.hpCurrent ?? 0;
+      let temp = p.hpTemp ?? 0;
+      if (amount > 0) {
+        const absorbed = Math.min(temp, amount);
+        temp -= absorbed;
+        cur = Math.max(0, cur - (amount - absorbed));
+      } else if (amount < 0) {
+        cur += -amount;
+        if (p.hpMax != null) cur = Math.min(cur, p.hpMax);
+      }
+      return { ...p, hpCurrent: cur, hpTemp: temp };
+    });
+    const next = { ...state, participants, version: state.version + 1 };
+    this.stateSubject.next(next);
+    return next;
+  }
 
   private demoState(campaignId: string, members: PC[]): SessionState {
     const participants = members

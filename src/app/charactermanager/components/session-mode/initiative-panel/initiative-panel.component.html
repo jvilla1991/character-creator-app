@@ -13,6 +13,7 @@
       <span>Hit Points</span>
       <span class="num">AC</span>
       <span>Conditions</span>
+      <span *ngIf="dm" class="num">Adjust</span>
     </div>
 
     <div *ngIf="participants.length === 0"
@@ -27,7 +28,17 @@
       [style.grid-template-columns]="columns"
       style="cursor: default;"
     >
-      <div class="board-num lit numeric">{{ p.initRolled ? p.initiative : '—' }}</div>
+      <div class="board-num lit numeric">
+        <input
+          *ngIf="dm; else initRead"
+          type="number"
+          class="init-input"
+          [ngModel]="p.initiative"
+          (change)="onInitiative(p, $any($event.target).value)"
+          aria-label="Initiative"
+        />
+        <ng-template #initRead>{{ p.initRolled ? p.initiative : '—' }}</ng-template>
+      </div>
 
       <div class="board-hero">
         <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
@@ -53,6 +64,19 @@
       <div class="board-conditions">
         <span *ngIf="!p.conditions?.length" class="board-cond calm">steady</span>
         <span *ngFor="let c of p.conditions" class="board-cond">{{ c }}</span>
+      </div>
+
+      <div *ngIf="dm" class="dm-adjust" (click)="$event.stopPropagation()">
+        <input
+          type="number"
+          class="dmg-input"
+          min="0"
+          placeholder="0"
+          [(ngModel)]="amounts[p.participantId]"
+          aria-label="Amount"
+        />
+        <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
+        <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
       </div>
     </div>
   </div>
