@@ -5,6 +5,7 @@ import { Campaign } from '../../models/campaign';
 import { PC } from '../../models/pc';
 import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
+import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { passiveScore, tintFor } from '../../utils/character-math';
 
@@ -53,8 +54,21 @@ export class CampaignDashboardComponent {
   constructor(
     private campaignService: CampaignService,
     private pcService: PCService,
+    private sessionService: SessionService,
     private uiState: UiStateService,
   ) {}
+
+  /**
+   * Open a live Session Mode lobby for this campaign and switch the main view to
+   * the initiative tracker. The session is server-authoritative; we just store
+   * its id so the sidenav overlay takes over.
+   */
+  rollInitiative(campaign: Campaign): void {
+    this.sessionService.createSession(campaign.id).subscribe({
+      next: state => this.uiState.openSession(String(state.sessionId)),
+      error: err => console.error('Failed to start session', err),
+    });
+  }
 
   private buildVm(campaign: Campaign, members: PC[]): DashboardVm {
     const avgLevel = members.length

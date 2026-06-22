@@ -22,6 +22,11 @@ export class UiStateService {
   private settingsOpenSubject = new BehaviorSubject<boolean>(false);
   settingsOpen$ = this.settingsOpenSubject.asObservable();
 
+  // The live session currently open as a full-screen overlay (null = none).
+  // Drives Session Mode, which layers over both the Player and DM views.
+  private activeSessionIdSubject = new BehaviorSubject<string | null>(null);
+  activeSessionId$ = this.activeSessionIdSubject.asObservable();
+
   get role(): Role { return this.roleSubject.getValue(); }
 
   setRole(role: Role): void { this.roleSubject.next(role); }
@@ -30,4 +35,7 @@ export class UiStateService {
 
   openSettings(): void  { this.settingsOpenSubject.next(true); }
   closeSettings(): void { this.settingsOpenSubject.next(false); }
+
+  openSession(sessionId: string): void { this.activeSessionIdSubject.next(sessionId); }
+  closeSession(): void { this.activeSessionIdSubject.next(null); }
 }

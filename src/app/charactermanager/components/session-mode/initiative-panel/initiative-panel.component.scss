@@ -1,0 +1,5 @@
+// Highlight the combatant whose turn it is. Uses the global celestial accent.
+.board-row.current-turn {
+  background: rgba(120, 170, 255, 0.10);
+  box-shadow: inset 3px 0 0 var(--celestial);
+}
