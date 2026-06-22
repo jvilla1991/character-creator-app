@@ -24,6 +24,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
   drawerOpen = false;
   activePC$ = this.pcService.activePC$;
   role$ = this.uiState.role$;
+  // When set, Session Mode takes over the main content area for everyone.
+  activeSessionId$ = this.uiState.activeSessionId$;
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];

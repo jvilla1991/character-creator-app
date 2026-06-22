@@ -1,0 +1,59 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Initiative Order</span>
+    <span style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      turn order is set by the table
+    </span>
+  </div>
+
+  <div class="board">
+    <div class="board-row head" [style.grid-template-columns]="columns">
+      <span class="num">Init</span>
+      <span>Combatant</span>
+      <span>Hit Points</span>
+      <span class="num">AC</span>
+      <span>Conditions</span>
+    </div>
+
+    <div *ngIf="participants.length === 0"
+         style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
+      No combatants yet — players join to take their place in the order.
+    </div>
+
+    <div
+      *ngFor="let p of participants; trackBy: trackByParticipant"
+      class="board-row member"
+      [class.current-turn]="p.currentTurn"
+      [style.grid-template-columns]="columns"
+      style="cursor: default;"
+    >
+      <div class="board-num lit numeric">{{ p.initRolled ? p.initiative : '—' }}</div>
+
+      <div class="board-hero">
+        <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
+        <div style="min-width: 0;">
+          <div class="board-hero-name">{{ p.name }}</div>
+          <div class="board-hero-sub">
+            <ng-container *ngIf="!p.npc; else npcTag">{{ p.clazz }} {{ p.level }}</ng-container>
+            <ng-template #npcTag>NPC</ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="board-hp" [class.bloodied]="bloodied(p)">
+        <div class="hp-text">
+          <span>{{ p.hpCurrent }}/{{ p.hpMax }}<ng-container *ngIf="p.hpTemp"> +{{ p.hpTemp }}</ng-container></span>
+          <span>{{ hpPct(p) | number:'1.0-0' }}%</span>
+        </div>
+        <div class="vital-bar"><span [style.width.%]="hpPct(p)"></span></div>
+      </div>
+
+      <div class="board-num lit">{{ p.ac }}</div>
+
+      <div class="board-conditions">
+        <span *ngIf="!p.conditions?.length" class="board-cond calm">steady</span>
+        <span *ngFor="let c of p.conditions" class="board-cond">{{ c }}</span>
+      </div>
+    </div>
+  </div>
+</div>
