@@ -153,6 +153,7 @@
       </ng-container>
       <ng-template #normalView>
         <ng-container *ngIf="(role$ | async) === 'player'; else dmMain">
+          <app-session-live-banner></app-session-live-banner>
           <router-outlet></router-outlet>
         </ng-container>
         <ng-template #dmMain>

@@ -1,0 +1,48 @@
+// Live-session call-to-action bar. Colors come from the global design system.
+.session-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid var(--celestial, #6f8cff);
+  border-radius: 12px;
+  background: rgba(120, 170, 255, 0.08);
+
+  .session-banner-glyph {
+    flex: none;
+    color: var(--celestial-2, #9db4ff);
+  }
+
+  .session-banner-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .session-banner-title {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .session-banner-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .btn {
+    flex: none;
+  }
+}
+
+// Mobile: stack the text above a full-width button.
+@media (max-width: 560px) {
+  .session-banner {
+    flex-wrap: wrap;
+
+    .btn {
+      flex: 1 0 100%;
+    }
+  }
+}
