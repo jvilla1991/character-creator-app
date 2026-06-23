@@ -1140,3 +1140,64 @@
   from { transform: translateY(24px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+// ── Desktop: cap height and scroll the body ───────────────────────────────
+// The global .modal has no height cap, so tall steps overflowed the viewport
+// with no way to scroll. Cap the wizard and let the body scroll between the
+// fixed step header and action bar (mobile gets the full-screen flow above).
+@media (min-width: 821px) {
+  :host ::ng-deep .modal.wizard {
+    display: flex;
+    flex-direction: column;
+    max-height: 88vh;
+  }
+
+  .wizard-body {
+    flex: 1 1 auto;
+    min-height: 0;            // let the flex child shrink so overflow engages
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-right: 6px;       // breathing room for the scrollbar
+  }
+}
+
+// ── Collapsible pickers (species / class / background) ────────────────────
+// Each option is a full-width row; selecting one reveals its details directly
+// beneath it (accordion — the selected option is the open one).
+.picker-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.accordion-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.accordion-chev {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+
+  &.open { transform: rotate(180deg); }
+}
+
+.accordion-body {
+  padding: 0 2px 4px;
+
+  // The detail/feat cards already style themselves; just tighten the gap now
+  // that they sit inside the open row instead of at the foot of the step.
+  .detail-card,
+  .feat-card { margin-top: 6px; }
+}
