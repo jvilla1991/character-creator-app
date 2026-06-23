@@ -33,7 +33,8 @@
           *ngIf="dm; else initRead"
           type="number"
           class="init-input"
-          [ngModel]="p.initiative"
+          placeholder="0"
+          [ngModel]="p.initRolled ? p.initiative : null"
           (change)="onInitiative(p, $any($event.target).value)"
           aria-label="Initiative"
         />

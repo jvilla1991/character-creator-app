@@ -1,7 +1,10 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { SessionState } from '../../models/session';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { PCService } from '../../services/pc.service';
+import { NotificationService } from '../../services/notification.service';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -21,17 +24,46 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   state$ = this.sessionService.state$;
 
+  private stateSub?: Subscription;
+  private handledEnd = false;
+
   constructor(
     private sessionService: SessionService,
     private uiState: UiStateService,
+    private pcService: PCService,
+    private notifications: NotificationService,
   ) {}
 
   ngOnInit(): void {
     this.sessionService.startPolling(this.sessionId);
+    // The DM may end the session from another device; a poll then reports ENDED.
+    this.stateSub = this.sessionService.state$.subscribe(state => {
+      if (state && state.status === 'ENDED') this.onSessionEnded(state);
+    });
   }
 
   ngOnDestroy(): void {
+    this.stateSub?.unsubscribe();
     this.sessionService.stopPolling();
+  }
+
+  /**
+   * The session ended. Players are told and routed back to their own character
+   * sheet; the DM (who ended it) just exits. Guarded so it runs once.
+   */
+  private onSessionEnded(state: SessionState): void {
+    if (this.handledEnd) return;
+    this.handledEnd = true;
+
+    if (!state.dm) {
+      const mine = state.participants.find(p => p.ownedByMe);
+      if (mine?.pcId != null) {
+        const pc = this.pcService.getPCById(mine.pcId);
+        if (pc) this.pcService.setActivePC(pc);
+      }
+      this.notifications.notify('The DM ended the session.');
+    }
+    this.close();
   }
 
   /** Leave the session screen (does not end the session server-side). */

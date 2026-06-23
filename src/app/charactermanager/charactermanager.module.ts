@@ -36,6 +36,7 @@ import { JoinCampaignModalComponent } from './components/join-campaign-modal/joi
 import { SessionModeComponent } from './components/session-mode/session-mode.component';
 import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
+import { ToastComponent } from './components/toast/toast.component';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
@@ -89,6 +90,7 @@ const routes: Routes = [
     SessionModeComponent,
     InitiativePanelComponent,
     SessionLiveBannerComponent,
+    ToastComponent,
   ],
   imports: [
     CommonModule,

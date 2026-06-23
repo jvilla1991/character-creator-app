@@ -16,6 +16,20 @@
   border-radius: 6px;
 }
 
+// No up/down spinner — DMs just type a number (mobile still gets a numeric keypad).
+.init-input::-webkit-inner-spin-button,
+.init-input::-webkit-outer-spin-button,
+.dmg-input::-webkit-inner-spin-button,
+.dmg-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.init-input,
+.dmg-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .dm-adjust {
   display: flex;
   align-items: center;
