@@ -62,7 +62,7 @@
         <button class="class-pick accordion-head"
                 [class.active]="species === s"
                 type="button"
-                (click)="species = s; onSpeciesChange()">
+                (click)="toggleSpecies(s)">
           <span>{{ s }}</span>
           <svg class="accordion-chev" [class.open]="species === s" viewBox="0 0 10 10" aria-hidden="true">
             <path d="M2 4l3 3 3-3"/>
@@ -123,7 +123,7 @@
         <button class="class-pick accordion-head"
                 [class.active]="clazz === c"
                 type="button"
-                (click)="clazz = c; onClassChange()">
+                (click)="toggleClass(c)">
           <span>{{ c }}</span>
           <svg class="accordion-chev" [class.open]="clazz === c" viewBox="0 0 10 10" aria-hidden="true">
             <path d="M2 4l3 3 3-3"/>
@@ -189,7 +189,7 @@
           <button class="class-pick accordion-head"
                   [class.active]="background === b"
                   type="button"
-                  (click)="background = b; onBackgroundChange()">
+                  (click)="toggleBackground(b)">
             <span>{{ b }}</span>
             <svg class="accordion-chev" [class.open]="background === b" viewBox="0 0 10 10" aria-hidden="true">
               <path d="M2 4l3 3 3-3"/>
