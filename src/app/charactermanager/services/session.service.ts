@@ -119,6 +119,22 @@ export class SessionService {
     );
   }
 
+  /** DM ends the session (HP/conditions are already persisted on the PCs). */
+  end(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) {
+      const current = this.stateSubject.getValue();
+      const ended: SessionState = current
+        ? { ...current, status: 'ENDED' }
+        : { ...this.emptyState(sessionId), status: 'ENDED' };
+      this.stateSubject.next(ended);
+      return of(ended);
+    }
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/end`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.stateSubject.next(state)),
+    );
+  }
+
   /** DM enters a combatant's initiative; the server (or demo) re-sorts the order. */
   setInitiative(sessionId: number | string, participantId: number, value: number): Observable<SessionState> {
     if (environment.demoMode) return of(this.demoSetInitiative(participantId, value));
