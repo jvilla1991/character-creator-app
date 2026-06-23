@@ -61,9 +61,10 @@ export class CampaignDashboardComponent {
   /**
    * Open a live Session Mode lobby for this campaign and switch the main view to
    * the initiative tracker. The session is server-authoritative; we just store
-   * its id so the sidenav overlay takes over.
+   * its id so the sidenav overlay takes over. (Initiative is then entered inside
+   * the session via the DM controls.)
    */
-  rollInitiative(campaign: Campaign): void {
+  startSession(campaign: Campaign): void {
     this.sessionService.createSession(campaign.id).subscribe({
       next: state => this.uiState.openSession(String(state.sessionId)),
       error: err => console.error('Failed to start session', err),

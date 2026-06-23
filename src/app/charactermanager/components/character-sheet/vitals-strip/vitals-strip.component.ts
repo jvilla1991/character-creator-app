@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { hitDieFor, fmtMod } from '../../../utils/character-math';
 
@@ -9,8 +9,6 @@ import { hitDieFor, fmtMod } from '../../../utils/character-math';
 })
 export class VitalsStripComponent {
   @Input() pc!: PC;
-  /** Emits a signed HP delta (+1, -1, +5, -5). Parent clamps and persists. */
-  @Output() hpChange = new EventEmitter<number>();
 
   get hpPct(): number {
     if (!this.pc.hp) return 0;

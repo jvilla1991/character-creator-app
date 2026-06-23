@@ -13,6 +13,13 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
+  /** Player asks to connect to their campaign's live session. */
+  @Output() connectRequested = new EventEmitter<void>();
+
+  /** Only show the session-connect button when this PC belongs to a campaign. */
+  get inCampaign(): boolean {
+    return this.pc?.campaignId != null;
+  }
 
   editingName = false;
   nameDraft = '';
@@ -56,14 +63,6 @@ export class CharacterSheetComponent implements OnChanges {
   cancelNameEdit(): void {
     this.editingName = false;
     this.nameDraft = this.pc.name;
-  }
-
-  // ── HP ───────────────────────────────────────────────────────────────────────
-
-  updateHP(delta: number): void {
-    if (!this.pc.hp) return;
-    const cur = Math.max(0, Math.min(this.pc.hp.max, this.pc.hp.cur + delta));
-    this.pcService.updatePC({ ...this.pc, hp: { ...this.pc.hp, cur } }).subscribe();
   }
 
   // ── Conditions (wired fully in Phase 5) ─────────────────────────────────────
