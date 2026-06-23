@@ -68,7 +68,7 @@ describe('CreateCharacterModalComponent — logic', () => {
   beforeEach(() => {
     dndResources = makeMockDndResources();
     auth = jasmine.createSpyObj<AuthService>('AuthService', ['getUsername']);
-    auth.getUsername.and.returnValue('quill');
+    auth.getUsername.and.returnValue('tester');
     component = new CreateCharacterModalComponent(dndResources, auth);
     component.ngOnInit();
   });

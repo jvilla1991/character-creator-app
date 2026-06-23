@@ -8,6 +8,7 @@ import { CharacterModalService } from './services/character-modal.service';
 import { CampaignModalService } from './services/campaign-modal.service';
 import { JoinModalService, JoinRequest } from './services/join-modal.service';
 import { UiStateService } from './services/ui-state.service';
+import { CurrentUserService } from './services/current-user.service';
 import { CampaignDraft } from './models/campaign';
 
 @Component({
@@ -69,10 +70,14 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
     private campaignModal: CampaignModalService,
     private joinModal: JoinModalService,
     private uiState: UiStateService,
+    private currentUser: CurrentUserService,
     private router: Router,
   ) {}
 
   ngOnInit(): void {
+    // Reflect the signed-in user (handles re-login without a full reload).
+    this.currentUser.refresh();
+
     this.subs.push(
       this.pcService.pcs$.subscribe(pcs => { this.pcs = pcs; }),
 
