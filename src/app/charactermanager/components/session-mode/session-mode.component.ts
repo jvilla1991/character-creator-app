@@ -46,6 +46,14 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     return mine ? mine.participantId : null;
   }
 
+  /** The DM ends the session for everyone, then exits the screen. */
+  endSession(state: SessionState): void {
+    this.sessionService.end(state.sessionId).subscribe({
+      next: () => this.close(),
+      error: () => this.close(),
+    });
+  }
+
   /** A player removes their own PC from the session, then exits the screen. */
   leave(state: SessionState): void {
     const id = this.myParticipantId(state);

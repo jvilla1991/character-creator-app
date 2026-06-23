@@ -12,6 +12,17 @@
       </div>
       <div class="sheet-actions">
         <button
+          *ngIf="state.dm"
+          class="btn danger"
+          (click)="endSession(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <rect x="3" y="3" width="10" height="10" rx="1"/>
+          </svg>
+          End Session
+        </button>
+        <button
           *ngIf="!state.dm && myParticipantId(state) != null"
           class="btn"
           (click)="leave(state)"
