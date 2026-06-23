@@ -48,6 +48,9 @@ import { CampaignDraft } from './models/campaign';
 
     <!-- Settings slide-over (its own fixed backdrop + panel) -->
     <app-settings-panel *ngIf="isSettingsOpen"></app-settings-panel>
+
+    <!-- App-wide transient notifications (e.g. the DM ended the session) -->
+    <app-toast></app-toast>
   `,
   styles: []
 })
