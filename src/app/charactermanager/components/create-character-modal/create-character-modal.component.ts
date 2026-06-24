@@ -245,6 +245,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (!isCantrip && this.selectedLeveled >= this.maxKnownSpells) return;
     this.selectedSpells = [...this.selectedSpells, spell];
   }
+
+  // Which spell's description is expanded (one at a time). Independent of
+  // selection, so a player can read a spell before adding it.
+  expandedSpellName: string | null = null;
+
+  toggleSpellDesc(spell: DndSpell): void {
+    this.expandedSpellName = this.expandedSpellName === spell.name ? null : spell.name;
+  }
+
+  isSpellDescOpen(spell: DndSpell): boolean {
+    return this.expandedSpellName === spell.name;
+  }
   assignments: Record<Ability, number | null> = {
     STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null,
   };

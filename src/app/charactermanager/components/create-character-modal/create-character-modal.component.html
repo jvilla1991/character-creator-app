@@ -418,20 +418,47 @@
 
     <!-- Spell tile list -->
     <div *ngIf="!loadingSpells" class="spell-scroll">
-      <button *ngFor="let s of filteredSpellList; trackBy: trackBySpellName"
-              type="button"
-              class="spell-pick"
-              [class.active]="isSpellSelected(s)"
-              [class.disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
-              (click)="toggleSpell(s)">
-        <span class="spell-pick-name">{{ s.name }}</span>
-        <span class="spell-pick-meta">
-          {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
-          · {{ s.school }} · {{ s.actionType }}
-          <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
-          <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
-        </span>
-      </button>
+      <div *ngFor="let s of filteredSpellList; trackBy: trackBySpellName" class="spell-row">
+        <div class="spell-pick-head">
+          <button type="button"
+                  class="spell-pick"
+                  [class.active]="isSpellSelected(s)"
+                  [class.disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
+                  (click)="toggleSpell(s)">
+            <span class="spell-pick-name">{{ s.name }}</span>
+            <span class="spell-pick-meta">
+              {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
+              · {{ s.school }} · {{ s.actionType }}
+              <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
+              <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
+            </span>
+          </button>
+          <button type="button"
+                  class="spell-desc-toggle"
+                  (click)="toggleSpellDesc(s)"
+                  [attr.aria-label]="isSpellDescOpen(s) ? 'Hide description' : 'Show description'">
+            <svg class="accordion-chev" [class.open]="isSpellDescOpen(s)" viewBox="0 0 10 10" aria-hidden="true">
+              <path d="M2 4l3 3 3-3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Collapsible spell description -->
+        <div *ngIf="isSpellDescOpen(s)" class="spell-desc">
+          <p class="spell-desc-text">{{ s.description || 'No description available.' }}</p>
+          <div class="spell-desc-props">
+            <span *ngIf="s.range"><strong>Range</strong> {{ s.range }}</span>
+            <span *ngIf="s.duration"><strong>Duration</strong> {{ s.duration }}</span>
+            <span *ngIf="s.material"><strong>Material</strong> {{ s.material }}</span>
+          </div>
+          <p *ngIf="s.higherLevelSlot" class="spell-desc-upcast">
+            <strong>At Higher Levels</strong> {{ s.higherLevelSlot }}
+          </p>
+          <p *ngIf="s.cantripUpgrade" class="spell-desc-upcast">
+            <strong>Cantrip Upgrade</strong> {{ s.cantripUpgrade }}
+          </p>
+        </div>
+      </div>
       <div *ngIf="filteredSpellList.length === 0" class="loading">No spells match your search.</div>
     </div>
 
