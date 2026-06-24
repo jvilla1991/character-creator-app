@@ -7,6 +7,7 @@ import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
 
 interface DashboardVm {
@@ -15,6 +16,7 @@ interface DashboardVm {
   avgLevel: string;
   topPassivePerception: number | string;
   activeConditions: number;
+  liveSession: SessionState | null;
 }
 
 /**
@@ -41,8 +43,11 @@ export class CampaignDashboardComponent {
     switchMap(([activeId, campaigns]) => {
       const campaign = campaigns.find(c => c.id === activeId) ?? null;
       if (!campaign) return of(null);
-      return this.campaignService.getMembers(campaign.id).pipe(
-        map(members => this.buildVm(campaign, members)),
+      return combineLatest([
+        this.campaignService.getMembers(campaign.id),
+        this.sessionService.getActiveForCampaign(campaign.id),
+      ]).pipe(
+        map(([members, liveSession]) => this.buildVm(campaign, members, liveSession)),
       );
     })
   );
@@ -61,16 +66,28 @@ export class CampaignDashboardComponent {
   /**
    * Open a live Session Mode lobby for this campaign and switch the main view to
    * the initiative tracker. The session is server-authoritative; we just store
-   * its id so the sidenav overlay takes over.
+   * its id so the sidenav overlay takes over. (Initiative is then entered inside
+   * the session via the DM controls.)
    */
-  rollInitiative(campaign: Campaign): void {
+  startSession(campaign: Campaign): void {
     this.sessionService.createSession(campaign.id).subscribe({
       next: state => this.uiState.openSession(String(state.sessionId)),
-      error: err => console.error('Failed to start session', err),
+      error: err => {
+        // Lost a race with an existing live session — just resume it.
+        if (err?.status === 409) { this.resumeSession(campaign); return; }
+        console.error('Failed to start session', err);
+      },
     });
   }
 
-  private buildVm(campaign: Campaign, members: PC[]): DashboardVm {
+  /** Re-enter the campaign's existing live session. */
+  resumeSession(campaign: Campaign): void {
+    this.sessionService.getActiveForCampaign(campaign.id).subscribe(session => {
+      if (session) this.uiState.openSession(String(session.sessionId));
+    });
+  }
+
+  private buildVm(campaign: Campaign, members: PC[], liveSession: SessionState | null): DashboardVm {
     const avgLevel = members.length
       ? (members.reduce((s, m) => s + m.level, 0) / members.length).toFixed(1)
       : '—';
@@ -78,7 +95,7 @@ export class CampaignDashboardComponent {
       ? Math.max(...members.map(m => passiveScore(m, 'Perception', 'WIS')))
       : '—';
     const activeConditions = members.reduce((s, m) => s + (m.conditions?.length ?? 0), 0);
-    return { campaign, members, avgLevel, topPassivePerception, activeConditions };
+    return { campaign, members, avgLevel, topPassivePerception, activeConditions, liveSession };
   }
 
   /**
@@ -89,7 +106,7 @@ export class CampaignDashboardComponent {
   openHero(pc: PC): void {
     const full = this.pcService.getPCById(pc.id) ?? pc;
     this.pcService.setActivePC(full);
-    this.uiState.setRole('player');
+    this.uiState.viewHeroAsDm();
   }
 
   // --- Manage Party (bind/unbind characters) -------------------------------

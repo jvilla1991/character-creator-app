@@ -4,6 +4,8 @@ import { takeUntil } from 'rxjs/operators';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
+import { SessionService } from '../../services/session.service';
+import { UiStateService } from '../../services/ui-state.service';
 
 @Component({
   selector: 'app-main-content',
@@ -21,7 +23,26 @@ export class MainContentComponent implements OnInit, OnDestroy {
   constructor(
     private pcService: PCService,
     private characterModal: CharacterModalService,
+    private sessionService: SessionService,
+    private uiState: UiStateService,
   ) {}
+
+  // ── Session connect ────────────────────────────────────────────────────────
+  // Join this character's campaign session if the DM has one live, then open the
+  // session screen. No-op when the PC isn't in a campaign or none is running yet.
+
+  connectToSession(): void {
+    if (!this.pc || this.pc.campaignId == null) return;
+    const campaignId = String(this.pc.campaignId);
+    const pcId = this.pc.id;
+    this.sessionService.getActiveForCampaign(campaignId).subscribe(session => {
+      if (!session) return;
+      this.sessionService.joinSession(session.sessionId, pcId).subscribe({
+        next: joined => this.uiState.openSession(String(joined.sessionId)),
+        error: err => console.error('Failed to join session', err),
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.pcService.getActivePC()

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, shareReplay } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, shareReplay, throwError } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -441,7 +441,14 @@ export class DndResourcesService {
     if (!this.spells$) {
       this.spells$ = this.http
         .get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json')
-        .pipe(shareReplay(1));
+        .pipe(
+          retry(1),
+          // Don't let a transient failure (e.g. a dev-server blip) poison the
+          // cache — drop it so the next request re-fetches instead of replaying
+          // the error forever.
+          catchError(err => { this.spells$ = null; return throwError(() => err); }),
+          shareReplay(1),
+        );
     }
     return this.spells$;
   }

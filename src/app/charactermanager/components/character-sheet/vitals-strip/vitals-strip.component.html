@@ -8,12 +8,6 @@
       <span *ngIf="pc.hp?.temp && pc.hp!.temp > 0" class="sub" style="color: var(--celestial)"> +{{ pc.hp!.temp }}</span>
     </div>
     <div class="vital-bar"><span [style.width.%]="hpPct"></span></div>
-    <div class="hp-controls">
-      <button class="hp-btn dmg" (click)="hpChange.emit(-1)" title="Take 1 damage">−</button>
-      <button class="hp-btn"     (click)="hpChange.emit(+1)" title="Heal 1">+</button>
-      <button class="hp-btn dmg" (click)="hpChange.emit(-5)" title="Take 5 damage">−5</button>
-      <button class="hp-btn"     (click)="hpChange.emit(+5)" title="Heal 5">+5</button>
-    </div>
   </div>
 
   <!-- AC -->

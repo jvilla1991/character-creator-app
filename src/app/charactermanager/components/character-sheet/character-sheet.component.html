@@ -42,6 +42,25 @@
 
     <!-- Action buttons -->
     <div class="sheet-actions">
+      <!-- Connect: enabled for campaign members; disabled with a hint otherwise -->
+      <div class="connect-wrap">
+        <span *ngIf="!inCampaign" class="connect-hint" [class.show]="connectHintPinned">
+          This character is not part of a campaign yet
+        </span>
+        <button
+          class="btn play"
+          [class.is-disabled]="!inCampaign"
+          [attr.aria-disabled]="!inCampaign"
+          [title]="inCampaign ? 'Connect to your campaign session' : 'This character is not part of a campaign yet'"
+          (click)="onConnectClick()"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M4 2.5v11l9-5.5z"/>
+          </svg>
+          Connect
+        </button>
+      </div>
       <button class="btn" title="Roll dice" (click)="rollRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
@@ -76,7 +95,7 @@
   <!-- ═══════════════════════════════════════════════
        VITALS STRIP
        ═══════════════════════════════════════════════ -->
-  <app-vitals-strip [pc]="pc" (hpChange)="updateHP($event)"></app-vitals-strip>
+  <app-vitals-strip [pc]="pc"></app-vitals-strip>
 
   <!-- ═══════════════════════════════════════════════
        SHEET GRID
