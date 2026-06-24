@@ -26,7 +26,7 @@
 
   // Override Material's label font to match the design system
   ::ng-deep .mdc-label {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 12px;
     font-style: italic;
     color: rgba(255, 255, 255, 0.55);
@@ -425,7 +425,7 @@
   border: 1px solid var(--border);
   color: var(--text);
   padding: 5px 10px;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 13px;
   border-radius: 2px;
   outline: none;
@@ -477,7 +477,7 @@
 }
 
 .spell-pick-meta {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 11px;
   color: var(--text-dim);
   font-style: italic;
@@ -581,7 +581,7 @@
 }
 
 .trait-desc {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.5);
@@ -618,7 +618,7 @@
   }
 
   .feat-card-desc {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 13px;
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.75);
@@ -640,7 +640,7 @@
 }
 
 .subclass-note {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   font-style: italic;
   color: var(--text-dim);
@@ -686,7 +686,7 @@
 }
 
 .subclass-desc {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.5);
@@ -742,7 +742,7 @@
 }
 
 .equip-card-tag {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
   font-style: italic;
@@ -757,7 +757,7 @@
   gap: 3px;
 
   li {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.8);
     display: flex;
@@ -782,7 +782,7 @@
 }
 
 .equip-gold-note {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
   font-style: italic;
@@ -1053,7 +1053,7 @@
 }
 
 .review-ability-mod {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   color: #a78bfa;
   font-style: italic;
