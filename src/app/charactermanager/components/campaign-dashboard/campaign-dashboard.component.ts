@@ -106,7 +106,7 @@ export class CampaignDashboardComponent {
   openHero(pc: PC): void {
     const full = this.pcService.getPCById(pc.id) ?? pc;
     this.pcService.setActivePC(full);
-    this.uiState.setRole('player');
+    this.uiState.viewHeroAsDm();
   }
 
   // --- Manage Party (bind/unbind characters) -------------------------------

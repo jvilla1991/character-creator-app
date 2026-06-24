@@ -27,9 +27,18 @@ export class UiStateService {
   private activeSessionIdSubject = new BehaviorSubject<string | null>(null);
   activeSessionId$ = this.activeSessionIdSubject.asObservable();
 
+  // True while a DM is viewing one of their campaign members' sheets (reached by
+  // clicking a hero on the campaign dashboard). Drives the "back to campaign" bar.
+  private dmReturnSubject = new BehaviorSubject<boolean>(false);
+  dmReturn$ = this.dmReturnSubject.asObservable();
+
   get role(): Role { return this.roleSubject.getValue(); }
 
-  setRole(role: Role): void { this.roleSubject.next(role); }
+  setRole(role: Role): void {
+    // A manual role switch ends any campaign cross-link.
+    this.dmReturnSubject.next(false);
+    this.roleSubject.next(role);
+  }
 
   setActiveCampaign(id: string | null): void { this.activeCampaignIdSubject.next(id); }
 
@@ -38,4 +47,16 @@ export class UiStateService {
 
   openSession(sessionId: string): void { this.activeSessionIdSubject.next(sessionId); }
   closeSession(): void { this.activeSessionIdSubject.next(null); }
+
+  /** DM opens a campaign member's sheet; remembers to offer a way back. */
+  viewHeroAsDm(): void {
+    this.dmReturnSubject.next(true);
+    this.roleSubject.next('player');
+  }
+
+  /** Return from a cross-linked hero sheet to the DM campaign dashboard. */
+  returnToCampaign(): void {
+    this.dmReturnSubject.next(false);
+    this.roleSubject.next('dm');
+  }
 }
