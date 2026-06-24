@@ -26,6 +26,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
   role$ = this.uiState.role$;
   // When set, Session Mode takes over the main content area for everyone.
   activeSessionId$ = this.uiState.activeSessionId$;
+  // True while a DM is viewing a campaign member's sheet — shows the back bar.
+  dmReturn$ = this.uiState.dmReturn$;
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];
@@ -90,4 +92,7 @@ export class SidenavComponent implements OnInit, OnDestroy {
   get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
 
   openSettings(): void { this.closeDrawer(); this.uiState.openSettings(); }
+
+  /** Return a cross-linked DM from a member's sheet to the campaign dashboard. */
+  backToCampaign(): void { this.closeDrawer(); this.uiState.returnToCampaign(); }
 }
