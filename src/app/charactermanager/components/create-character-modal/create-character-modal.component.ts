@@ -387,9 +387,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
         .pipe(takeUntil(this.destroy$))
-        .subscribe(spells => {
-          this.spellList    = spells;
-          this.loadingSpells = false;
+        .subscribe({
+          next: spells => { this.spellList = spells; this.loadingSpells = false; },
+          error: () => { this.loadingSpells = false; },
         });
     }
     // Load equipment data when entering the equipment step
