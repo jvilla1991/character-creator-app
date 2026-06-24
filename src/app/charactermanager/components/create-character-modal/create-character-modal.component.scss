@@ -433,19 +433,17 @@
   &:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
 }
 
+// The list grows with its content and the wizard body scrolls, so there's no
+// fixed-height box leaving dead space above the action bar.
 .spell-scroll {
-  max-height: 220px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-right: 4px;
   margin-bottom: 10px;
 }
 
 .spell-pick {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -463,9 +461,11 @@
     border-color: rgba(138, 92, 246, 0.5);
   }
 
-  &.disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+  // Currently expanded for reading — join it visually to the description below.
+  &.open {
+    border-color: rgba(138, 92, 246, 0.5);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
 }
 
@@ -521,42 +521,34 @@
   width: 100%;
 }
 
-.spell-pick-head {
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-  width: 100%;
-
-  .spell-pick {
-    flex: 1 1 auto;
-    min-width: 0;   // fill the row regardless of spell-name length
-  }
+.spell-selected-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.6);
+  color: #a78bfa;
+  vertical-align: middle;
 }
 
-.spell-desc-toggle {
-  flex: none;
-  width: 34px;
+.spell-desc-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-
-  &:hover { color: var(--gold); border-color: var(--gold); }
-
-  .accordion-chev { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .spell-desc {
-  margin: 3px 0 2px;
+  margin: 0 0 4px;
   padding: 9px 11px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-soft);
-  border-radius: 2px;
+  border-top: none;
+  border-radius: 0 0 2px 2px;
 }
 
 .spell-desc-text {
