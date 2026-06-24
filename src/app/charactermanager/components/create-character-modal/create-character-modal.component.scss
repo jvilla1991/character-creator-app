@@ -513,17 +513,24 @@
 .spell-counter-sep { opacity: 0.4; }
 
 // ── Collapsible spell description ─────────────────────────────────────────
+// Rows are uniform full-width (like the species/class/background picks); the
+// spell button fills the row and never sizes to its text length.
 .spell-row {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .spell-pick-head {
   display: flex;
   align-items: stretch;
   gap: 6px;
+  width: 100%;
 
-  .spell-pick { flex: 1; }
+  .spell-pick {
+    flex: 1 1 auto;
+    min-width: 0;   // fill the row regardless of spell-name length
+  }
 }
 
 .spell-desc-toggle {
