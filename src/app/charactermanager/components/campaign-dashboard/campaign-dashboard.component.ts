@@ -106,7 +106,6 @@ export class CampaignDashboardComponent {
   openHero(pc: PC): void {
     const full = this.pcService.getPCById(pc.id) ?? pc;
     this.pcService.setActivePC(full);
-    // Records a history entry so browser Back returns to this dashboard.
     this.uiState.viewHeroAsDm();
   }
 

@@ -16,9 +16,21 @@ export class CharacterSheetComponent implements OnChanges {
   /** Player asks to connect to their campaign's live session. */
   @Output() connectRequested = new EventEmitter<void>();
 
-  /** Only show the session-connect button when this PC belongs to a campaign. */
+  /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
     return this.pc?.campaignId != null;
+  }
+
+  /** Briefly shows the "not in a campaign" hint after a click (hover shows it via CSS). */
+  connectHintPinned = false;
+
+  onConnectClick(): void {
+    if (this.inCampaign) {
+      this.connectRequested.emit();
+      return;
+    }
+    this.connectHintPinned = true;
+    setTimeout(() => (this.connectHintPinned = false), 2500);
   }
 
   editingName = false;

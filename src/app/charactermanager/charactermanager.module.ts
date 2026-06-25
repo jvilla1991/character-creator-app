@@ -41,7 +41,6 @@ import { ToastComponent } from './components/toast/toast.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
 import { HttpClientModule } from '@angular/common/http';
-import { PCService } from './services/pc.service';
 import { AuthService } from './services/auth.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { FormsModule } from '@angular/forms';
@@ -102,7 +101,6 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ],
   providers: [
-    // PCService omitted — it uses providedIn: 'root' and should not be double-provided
     AuthService,
     CharacterModalService,
   ]
