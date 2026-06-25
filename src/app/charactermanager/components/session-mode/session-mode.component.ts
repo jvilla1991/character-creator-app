@@ -44,6 +44,28 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe();
+    // clear() (not just stopPolling) so closing via browser Back tears the
+    // session down exactly like the in-app Close button does.
+    this.sessionService.clear();
+  }
+
+  /**
+   * The session ended. Players are told and routed back to their own character
+   * sheet; the DM (who ended it) just exits. Guarded so it runs once.
+   */
+  private onSessionEnded(state: SessionState): void {
+    if (this.handledEnd) return;
+    this.handledEnd = true;
+
+    if (!state.dm) {
+      const mine = state.participants.find(p => p.ownedByMe);
+      if (mine?.pcId != null) {
+        const pc = this.pcService.getPCById(mine.pcId);
+        if (pc) this.pcService.setActivePC(pc);
+      }
+      this.notifications.notify('The DM ended the session.');
+    }
+    this.close();
     this.sessionService.stopPolling();
   }
 
