@@ -57,7 +57,9 @@ export class SettingsPanelComponent {
   }
 
   signOut(): void {
-    this.close();
+    // Leaving the app entirely — drop any open overlays without juggling history
+    // (the redirect to /login discards the pushed entries anyway).
+    this.uiState.resetOverlays();
     this.auth.logout();
   }
 }

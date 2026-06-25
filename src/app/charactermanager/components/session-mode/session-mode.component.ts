@@ -44,7 +44,9 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe();
-    this.sessionService.stopPolling();
+    // clear() (not just stopPolling) so closing via browser Back tears the
+    // session down exactly like the in-app Close button does.
+    this.sessionService.clear();
   }
 
   /**
