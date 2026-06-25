@@ -66,26 +66,6 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       this.notifications.notify('The DM ended the session.');
     }
     this.close();
-    this.sessionService.stopPolling();
-  }
-
-  /**
-   * The session ended. Players are told and routed back to their own character
-   * sheet; the DM (who ended it) just exits. Guarded so it runs once.
-   */
-  private onSessionEnded(state: SessionState): void {
-    if (this.handledEnd) return;
-    this.handledEnd = true;
-
-    if (!state.dm) {
-      const mine = state.participants.find(p => p.ownedByMe);
-      if (mine?.pcId != null) {
-        const pc = this.pcService.getPCById(mine.pcId);
-        if (pc) this.pcService.setActivePC(pc);
-      }
-      this.notifications.notify('The DM ended the session.');
-    }
-    this.close();
   }
 
   /** Leave the session screen (does not end the session server-side). */
