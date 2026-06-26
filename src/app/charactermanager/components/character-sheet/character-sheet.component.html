@@ -36,7 +36,14 @@
         <span class="dot">✦</span>
         {{ pc.clazz }} <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
         <span class="dot">✦</span>
-        Level {{ pc.level }}
+        Level
+        <app-editable-number
+          [value]="pc.level"
+          [editable]="editable"
+          [min]="1" [max]="20"
+          label="level"
+          (committed)="onLevelCommit($event)"
+        >{{ pc.level }}</app-editable-number>
       </div>
     </div>
 
@@ -95,14 +102,22 @@
   <!-- ═══════════════════════════════════════════════
        VITALS STRIP
        ═══════════════════════════════════════════════ -->
-  <app-vitals-strip [pc]="pc"></app-vitals-strip>
+  <app-vitals-strip
+    [pc]="pc"
+    [editable]="editable"
+    (pcChange)="onPcChange($event)">
+  </app-vitals-strip>
 
   <!-- ═══════════════════════════════════════════════
        SHEET GRID
        ═══════════════════════════════════════════════ -->
   <div class="sheet-grid">
     <div class="col-left">
-      <app-ability-scores [pc]="pc"></app-ability-scores>
+      <app-ability-scores
+        [pc]="pc"
+        [editable]="editable"
+        (pcChange)="onPcChange($event)">
+      </app-ability-scores>
       <app-skills-list    [pc]="pc"></app-skills-list>
     </div>
     <div class="col-right">
@@ -113,10 +128,16 @@
       <app-equipment-panel  [pc]="pc"></app-equipment-panel>
       <app-spellbook-panel
         [pc]="pc"
-        (slotToggled)="onSlotToggle($event.level, $event.index)">
+        [editable]="editable"
+        (slotToggled)="onSlotToggle($event.level, $event.index)"
+        (pcChange)="onPcChange($event)">
       </app-spellbook-panel>
       <app-features-list    [pc]="pc"></app-features-list>
-      <app-coin-purse       [pc]="pc"></app-coin-purse>
+      <app-coin-purse
+        [pc]="pc"
+        [editable]="editable"
+        (pcChange)="onPcChange($event)">
+      </app-coin-purse>
       <app-background-story [pc]="pc"></app-background-story>
     </div>
   </div>

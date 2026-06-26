@@ -11,7 +11,10 @@
       <div class="ability-save">save</div>
       <div class="ability-name">{{ row.label }}</div>
       <div class="ability-mod">{{ row.mod }}</div>
-      <div class="ability-score">{{ row.score }}</div>
+      <div class="ability-score"><app-editable-number
+        [value]="row.score" [editable]="editable" [min]="1" [max]="30"
+        [label]="row.label + ' score'" (committed)="setScore(row.key, $event)"
+      >{{ row.score }}</app-editable-number></div>
     </div>
   </div>
 </div>

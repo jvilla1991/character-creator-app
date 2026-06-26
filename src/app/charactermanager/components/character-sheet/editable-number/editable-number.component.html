@@ -1,0 +1,26 @@
+<!-- One projection outlet only — multiple <ng-content> would leave the display
+     empty in whichever branch isn't the projection target. The input replaces
+     the value only while actively editing. -->
+<input
+  *ngIf="editable && editing"
+  #input
+  type="number"
+  class="num-edit"
+  [min]="min"
+  [max]="max"
+  [attr.aria-label]="label"
+  [(ngModel)]="draft"
+  (blur)="commit()"
+  (keydown.enter)="commit()"
+  (keydown.escape)="cancel()"
+>
+<span
+  *ngIf="!(editable && editing)"
+  [class.num-editable]="editable"
+  [attr.role]="editable ? 'button' : null"
+  [attr.tabindex]="editable ? 0 : null"
+  [attr.aria-label]="editable ? ('Edit ' + label) : null"
+  [attr.title]="editable ? ('Click to edit ' + label) : null"
+  (click)="start()"
+  (keydown.enter)="start()"
+><ng-content></ng-content></span>
