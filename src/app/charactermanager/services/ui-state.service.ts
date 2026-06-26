@@ -100,10 +100,22 @@ export class UiStateService {
    * campaign dashboard rather than leaving the app.
    */
   viewHeroAsDm(): void {
+    this.dmReturnSubject.next(true);     // show the in-app "back to campaign" bar
     this.roleSubject.next('player');
     if (this.overlayStack[this.overlayStack.length - 1] !== 'dmHero') {
-      this.pushOverlay('dmHero');
+      this.pushOverlay('dmHero');        // and let the browser Back button return too
     }
+  }
+
+  /**
+   * In-app "Back to campaign" button (the dm-return bar). Mirrors the browser-Back
+   * path in applyClose('dmHero'), but since we're initiating the close ourselves we
+   * also unwind the matching history entry so the browser stays in lock-step.
+   */
+  returnToCampaign(): void {
+    this.dmReturnSubject.next(false);
+    this.roleSubject.next('dm');
+    this.unwind('dmHero');
   }
 
   /**
@@ -166,22 +178,11 @@ export class UiStateService {
         this.activeSessionIdSubject.next(null);
         break;
       case 'dmHero':
-        // Back from a cross-linked hero sheet returns the DM to their dashboard.
+        // Back from a cross-linked hero sheet returns the DM to their dashboard
+        // and hides the in-app "back to campaign" bar.
+        this.dmReturnSubject.next(false);
         this.roleSubject.next('dm');
         break;
     }
-  openSession(sessionId: string): void { this.activeSessionIdSubject.next(sessionId); }
-  closeSession(): void { this.activeSessionIdSubject.next(null); }
-
-  /** DM opens a campaign member's sheet; remembers to offer a way back. */
-  viewHeroAsDm(): void {
-    this.dmReturnSubject.next(true);
-    this.roleSubject.next('player');
-  }
-
-  /** Return from a cross-linked hero sheet to the DM campaign dashboard. */
-  returnToCampaign(): void {
-    this.dmReturnSubject.next(false);
-    this.roleSubject.next('dm');
   }
 }
