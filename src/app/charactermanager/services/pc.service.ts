@@ -293,6 +293,45 @@ export class PCService {
     );
   }
 
+  /**
+   * Load a campaign member's full PC as the campaign's DM. The dashboard only
+   * holds the privacy-limited member projection for other players' characters;
+   * this fetches the complete sheet so a DM can edit it without losing the
+   * fields the projection omits (spells, gear, notes, …). Demo mode reads the
+   * local store (where the full PC is already present).
+   */
+  getPCByIdAsDm(id: number): Observable<PC> {
+    if (environment.demoMode) {
+      const pc = this.pcs.find(p => p.id === id);
+      return of((pc ?? {}) as PC).pipe(delay(150));
+    }
+    return this.http.get<PC>(`${this.pcUrl}${id}/as-dm`).pipe(
+      map(raw => this.deserializePC(raw))
+    );
+  }
+
+  /**
+   * Persist a DM's edit of a campaign member's PC. Same optimistic local mirror
+   * as {@link updatePC}, but hits the DM-authorized backend path (authorized by
+   * campaign-DM ownership, not PC ownership). Demo mode behaves like updatePC.
+   */
+  updatePCAsDm(pc: PC): Observable<PC> {
+    if (environment.demoMode) {
+      return this.updatePC(pc);
+    }
+    return this.http.put<PC>(`${this.pcUrl}${pc.id}/as-dm`, this.serializePC(pc)).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => {
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      })
+    );
+  }
+
   // ── Level-up (server-authoritative) ────────────────────────────────────────
   // The D&D rules engine lives in the backend (manager-service LevelUpService). These
   // methods are a thin client: preview fetches the computed deltas to show before the

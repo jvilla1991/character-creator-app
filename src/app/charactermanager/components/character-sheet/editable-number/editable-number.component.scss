@@ -1,0 +1,44 @@
+:host {
+  display: inline;
+}
+
+/* Subtle affordance so a DM can tell a number is editable, without shouting. */
+.num-editable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 2px;
+  border-bottom: 1px dashed color-mix(in oklch, var(--celestial) 55%, transparent);
+  transition: background 120ms ease;
+}
+
+.num-editable:hover,
+.num-editable:focus-visible {
+  background: color-mix(in oklch, var(--celestial) 16%, transparent);
+  outline: none;
+}
+
+/* Inline input inherits the surrounding font (size/weight/colour) so the value
+   doesn't visually jump between display and edit. Width tracks its content. */
+.num-edit {
+  font: inherit;
+  color: inherit;
+  width: 3.5ch;
+  max-width: 6ch;
+  text-align: center;
+  background: var(--surface-1, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--celestial);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+/* Trim the native number spinners — they crowd the inline value. */
+.num-edit::-webkit-outer-spin-button,
+.num-edit::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.num-edit {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
