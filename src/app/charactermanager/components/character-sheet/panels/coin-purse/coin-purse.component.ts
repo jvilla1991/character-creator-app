@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 
 @Component({
@@ -8,6 +8,9 @@ import { PC } from '../../../../models/pc';
 })
 export class CoinPurseComponent {
   @Input() pc!: PC;
+  /** DM cross-link: makes each coin amount click-to-edit. */
+  @Input() editable = false;
+  @Output() pcChange = new EventEmitter<PC>();
 
   readonly coinTypes = [
     { key: 'cp', label: 'Copper' },
@@ -25,5 +28,12 @@ export class CoinPurseComponent {
 
   coinAmt(key: string): number {
     return (this.pc.coins as any)?.[key] ?? 0;
+  }
+
+  /** Edit one coin denomination; the gp-equivalent recomputes on the refresh. */
+  setCoin(key: string, value: number): void {
+    const coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...(this.pc.coins ?? {}) };
+    (coins as any)[key] = value;
+    this.pcChange.emit({ ...this.pc, coins });
   }
 }

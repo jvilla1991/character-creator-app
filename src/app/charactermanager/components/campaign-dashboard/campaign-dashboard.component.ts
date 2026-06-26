@@ -99,14 +99,31 @@ export class CampaignDashboardComponent {
   }
 
   /**
-   * Cross-link: open the clicked hero's full sheet in Player mode. For the DM's
-   * own characters we have the full PC locally; for other players' members we
-   * only hold the (privacy-limited) projection, which is all the DM may see.
+   * Cross-link: open the clicked hero's full sheet in Player mode, where the DM
+   * can edit it inline. For the DM's own characters the full PC is already in the
+   * local store. For other players' members we only hold the privacy-limited
+   * projection, so we fetch the complete sheet via the DM-authorized path before
+   * opening (the dashboard only ever lists members the DM is allowed to edit).
    */
   openHero(pc: PC): void {
-    const full = this.pcService.getPCById(pc.id) ?? pc;
-    this.pcService.setActivePC(full);
-    this.uiState.viewHeroAsDm();
+    const owned = this.pcService.getPCById(pc.id);
+    if (owned) {
+      this.pcService.setActivePC(owned);
+      this.uiState.viewHeroAsDm();
+      return;
+    }
+    this.pcService.getPCByIdAsDm(pc.id).subscribe({
+      next: full => {
+        this.pcService.setActivePC(full?.id ? full : pc);
+        this.uiState.viewHeroAsDm();
+      },
+      error: err => {
+        // Fall back to the projection (read-only edits will 403) so the sheet still opens.
+        console.error('Failed to load full character for DM edit', err);
+        this.pcService.setActivePC(pc);
+        this.uiState.viewHeroAsDm();
+      },
+    });
   }
 
   // --- Manage Party (bind/unbind characters) -------------------------------

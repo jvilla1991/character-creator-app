@@ -14,6 +14,8 @@ import { UiStateService } from '../../services/ui-state.service';
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
+  /** True while a DM is viewing a campaign member's sheet → numbers are editable. */
+  editable = false;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
@@ -48,6 +50,10 @@ export class MainContentComponent implements OnInit, OnDestroy {
     this.pcService.getActivePC()
       .pipe(takeUntil(this.destroy$))
       .subscribe(pc => { this.pc = pc; });
+
+    this.uiState.dmReturn$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isDmViewing => { this.editable = isDmViewing; });
   }
 
   ngOnDestroy(): void {

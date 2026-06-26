@@ -7,6 +7,7 @@ import { MainContentComponent } from './components/main-content/main-content.com
 import { SidenavComponent } from './components/sidenav/sidenav.component';
 import { CharacterSheetComponent } from './components/character-sheet/character-sheet.component';
 import { VitalsStripComponent } from './components/character-sheet/vitals-strip/vitals-strip.component';
+import { EditableNumberComponent } from './components/character-sheet/editable-number/editable-number.component';
 import { EmptyStateComponent } from './components/character-sheet/empty-state/empty-state.component';
 import { AbilityScoresComponent } from './components/character-sheet/panels/ability-scores/ability-scores.component';
 import { SkillsListComponent } from './components/character-sheet/panels/skills-list/skills-list.component';
@@ -68,6 +69,7 @@ const routes: Routes = [
     LevelUpModalComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
+    EditableNumberComponent,
     EmptyStateComponent,
     AbilityScoresComponent,
     SkillsListComponent,

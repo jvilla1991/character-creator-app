@@ -3,6 +3,7 @@
 <app-character-sheet
   *ngIf="pc"
   [pc]="pc"
+  [editable]="editable"
   (deleteRequested)="openDeleteModal()"
   (rollRequested)="openRollModal()"
   (levelUpRequested)="openLevelUpModal()"
