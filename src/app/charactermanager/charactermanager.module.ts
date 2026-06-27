@@ -18,6 +18,7 @@ import { FeaturesListComponent } from './components/character-sheet/panels/featu
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
+import { IdentityStepComponent } from './components/create-character-modal/steps/identity-step/identity-step.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
@@ -65,6 +66,7 @@ const routes: Routes = [
     SidenavComponent,
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
+    IdentityStepComponent,
     DiceRollerModalComponent,
     LevelUpModalComponent,
     CharacterSheetComponent,

@@ -31,25 +31,12 @@
   <div class="wizard-body">
 
   <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 1">
-    <div class="modal-title">Forge a New Hero</div>
-    <div class="modal-sub">Every legend begins with a name written in ink, and most end the same way.</div>
-
-    <div class="field">
-      <label>Hero's Name</label>
-      <input [(ngModel)]="name"
-             placeholder="e.g. Seraphina Goldveil"
-             autofocus
-             (keydown.enter)="next()"
-             (keydown.escape)="cancel()">
-    </div>
-
-    <div class="field">
-      <label>Player</label>
-      <input [value]="player" disabled
-             title="Your characters are listed under your username">
-    </div>
-  </ng-container>
+  <app-identity-step *ngIf="step === 1"
+    [(name)]="name"
+    [player]="player"
+    (next)="next()"
+    (cancel)="cancel()">
+  </app-identity-step>
 
   <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
   <ng-container *ngIf="step === 2">
