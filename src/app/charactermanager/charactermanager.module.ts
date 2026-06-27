@@ -19,6 +19,9 @@ import { CoinPurseComponent } from './components/character-sheet/panels/coin-pur
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
 import { IdentityStepComponent } from './components/create-character-modal/steps/identity-step/identity-step.component';
+import { SpeciesStepComponent } from './components/create-character-modal/steps/species-step/species-step.component';
+import { ClassStepComponent } from './components/create-character-modal/steps/class-step/class-step.component';
+import { BackgroundStepComponent } from './components/create-character-modal/steps/background-step/background-step.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
@@ -67,6 +70,9 @@ const routes: Routes = [
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
     IdentityStepComponent,
+    SpeciesStepComponent,
+    ClassStepComponent,
+    BackgroundStepComponent,
     DiceRollerModalComponent,
     LevelUpModalComponent,
     CharacterSheetComponent,
