@@ -26,7 +26,7 @@
 
   // Override Material's label font to match the design system
   ::ng-deep .mdc-label {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 12px;
     font-style: italic;
     color: rgba(255, 255, 255, 0.55);
@@ -425,7 +425,7 @@
   border: 1px solid var(--border);
   color: var(--text);
   padding: 5px 10px;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 13px;
   border-radius: 2px;
   outline: none;
@@ -433,19 +433,17 @@
   &:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
 }
 
+// The list grows with its content and the wizard body scrolls, so there's no
+// fixed-height box leaving dead space above the action bar.
 .spell-scroll {
-  max-height: 220px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-right: 4px;
   margin-bottom: 10px;
 }
 
 .spell-pick {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -463,9 +461,11 @@
     border-color: rgba(138, 92, 246, 0.5);
   }
 
-  &.disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+  // Currently expanded for reading — join it visually to the description below.
+  &.open {
+    border-color: rgba(138, 92, 246, 0.5);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
 }
 
@@ -477,7 +477,7 @@
 }
 
 .spell-pick-meta {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 11px;
   color: var(--text-dim);
   font-style: italic;
@@ -511,6 +511,85 @@
 }
 
 .spell-counter-sep { opacity: 0.4; }
+
+// ── Collapsible spell description ─────────────────────────────────────────
+// Rows are uniform full-width (like the species/class/background picks); the
+// spell button fills the row and never sizes to its text length.
+.spell-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.spell-selected-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.6);
+  color: #a78bfa;
+  vertical-align: middle;
+}
+
+.spell-desc-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.spell-desc {
+  margin: 0 0 4px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-soft);
+  border-top: none;
+  border-radius: 0 0 2px 2px;
+}
+
+.spell-desc-text {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-line;   // SRD descriptions carry their own line breaks
+}
+
+.spell-desc-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 16px;
+  margin-top: 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.spell-desc-upcast {
+  margin: 8px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.spell-desc-props strong,
+.spell-desc-upcast strong {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--celestial);
+  margin-right: 4px;
+}
 
 // ── Background source groups ──────────────────────────────────────────────
 
@@ -581,7 +660,7 @@
 }
 
 .trait-desc {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.5);
@@ -618,7 +697,7 @@
   }
 
   .feat-card-desc {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 13px;
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.75);
@@ -640,7 +719,7 @@
 }
 
 .subclass-note {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   font-style: italic;
   color: var(--text-dim);
@@ -686,7 +765,7 @@
 }
 
 .subclass-desc {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.5);
@@ -742,7 +821,7 @@
 }
 
 .equip-card-tag {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
   font-style: italic;
@@ -757,7 +836,7 @@
   gap: 3px;
 
   li {
-    font-family: 'EB Garamond', serif;
+    font-family: 'Newsreader', serif;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.8);
     display: flex;
@@ -782,7 +861,7 @@
 }
 
 .equip-gold-note {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
   font-style: italic;
@@ -1053,8 +1132,151 @@
 }
 
 .review-ability-mod {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 12px;
   color: #a78bfa;
   font-style: italic;
+}
+
+// ── Mobile: full-screen, TurboTax-style step sheet ────────────────────────
+// On phones the centered modal becomes a full-screen flow: a pinned progress
+// header, a scrolling body, and a sticky action bar so Back/Next are always
+// thumb-reachable (they used to get pushed off-screen on tall steps).
+// Scoped to this component, so it overrides the global .modal rules from
+// styles.css without editing that shared file.
+@media (max-width: 820px) {
+
+  :host ::ng-deep .modal.wizard {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    animation: wizard-slide-up 0.22s ease-out;
+
+    // The decorative inset border assumes padding that no longer exists.
+    &::before { display: none; }
+  }
+
+  // Pinned progress header.
+  .wizard-steps {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .ruleset-bar {
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--surface);
+  }
+
+  // Scrolling step body between the two sticky bars.
+  .wizard-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px 16px;
+  }
+
+  // Sticky bottom action bar with full-width, finger-sized buttons.
+  :host ::ng-deep .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+
+    .btn {
+      flex: 1;
+      min-height: 48px;
+      font-size: 13px;
+    }
+  }
+
+  // Bigger tap targets for the in-wizard choices.
+  :host ::ng-deep .step-dot {
+    width: 34px;
+    height: 34px;
+  }
+  :host ::ng-deep .class-pick {
+    min-height: 46px;
+    font-size: 12px;
+  }
+}
+
+@keyframes wizard-slide-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+// ── Desktop: cap height and scroll the body ───────────────────────────────
+// The global .modal has no height cap, so tall steps overflowed the viewport
+// with no way to scroll. Cap the wizard and let the body scroll between the
+// fixed step header and action bar (mobile gets the full-screen flow above).
+@media (min-width: 821px) {
+  :host ::ng-deep .modal.wizard {
+    display: flex;
+    flex-direction: column;
+    max-height: 88vh;
+  }
+
+  .wizard-body {
+    flex: 1 1 auto;
+    min-height: 0;            // let the flex child shrink so overflow engages
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-right: 6px;       // breathing room for the scrollbar
+  }
+}
+
+// ── Collapsible pickers (species / class / background) ────────────────────
+// Each option is a full-width row; selecting one reveals its details directly
+// beneath it (accordion — the selected option is the open one).
+.picker-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.accordion-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.accordion-chev {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+
+  &.open { transform: rotate(180deg); }
+}
+
+.accordion-body {
+  padding: 0 2px 4px;
+
+  // The detail/feat cards already style themselves; just tighten the gap now
+  // that they sit inside the open row instead of at the foot of the step.
+  .detail-card,
+  .feat-card { margin-top: 6px; }
 }

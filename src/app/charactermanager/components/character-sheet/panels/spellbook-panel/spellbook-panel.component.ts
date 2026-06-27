@@ -17,7 +17,10 @@ export interface SpellLevel {
 })
 export class SpellbookPanelComponent implements OnChanges {
   @Input() pc!: PC;
+  /** DM cross-link: replaces the slot pips with editable used/max numbers. */
+  @Input() editable = false;
   @Output() slotToggled = new EventEmitter<{ level: number; index: number }>();
+  @Output() pcChange = new EventEmitter<PC>();
 
   hasSpells   = false;
   spellsByLevel: SpellLevel[] = [];
@@ -55,5 +58,17 @@ export class SpellbookPanelComponent implements OnChanges {
   toggleExpand(name: string): void {
     // New object reference required for OnPush change detection
     this.expandedSpells = { ...this.expandedSpells, [name]: !this.expandedSpells[name] };
+  }
+
+  // ── DM slot editing ──────────────────────────────────────────────────────
+  // Edit a spell level's used/max slot counts, keeping used within [0, max].
+
+  setSlot(level: number, field: 'used' | 'max', value: number): void {
+    const slots = { ...(this.pc.spellSlots ?? {}) };
+    const existing = slots[level] ?? { max: 0, used: 0 };
+    const next = { ...existing, [field]: value };
+    next.used = Math.max(0, Math.min(next.used, next.max));
+    slots[level] = next;
+    this.pcChange.emit({ ...this.pc, spellSlots: slots });
   }
 }

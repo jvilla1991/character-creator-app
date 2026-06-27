@@ -1,0 +1,61 @@
+<ng-container *ngIf="state$ | async as state; else loading">
+  <div class="fade-in">
+
+    <!-- Header -->
+    <header class="sheet-header" style="grid-template-columns: 1fr auto;">
+      <div class="sheet-id">
+        <div class="eyebrow">Live Session · {{ state.status | titlecase }} · Round {{ state.round }}</div>
+        <h1 class="sheet-name">Initiative</h1>
+        <div class="sheet-subtitle">
+          {{ state.participants.length }} {{ state.participants.length === 1 ? 'combatant' : 'combatants' }} at the table
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button
+          *ngIf="state.dm"
+          class="btn danger"
+          (click)="endSession(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <rect x="3" y="3" width="10" height="10" rx="1"/>
+          </svg>
+          End Session
+        </button>
+        <button
+          *ngIf="!state.dm && myParticipantId(state) != null"
+          class="btn"
+          (click)="leave(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6"/>
+          </svg>
+          Leave
+        </button>
+        <button class="btn" (click)="close()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M4 4l8 8M12 4l-8 8"/>
+          </svg>
+          Close
+        </button>
+      </div>
+    </header>
+
+    <app-initiative-panel
+      [participants]="state.participants"
+      [sessionId]="state.sessionId"
+      [dm]="state.dm"
+    ></app-initiative-panel>
+  </div>
+</ng-container>
+
+<ng-template #loading>
+  <div class="empty">
+    <div>
+      <div class="empty-title">Summoning the initiative order…</div>
+      <div class="empty-sub">Reaching the table.</div>
+    </div>
+  </div>
+</ng-template>

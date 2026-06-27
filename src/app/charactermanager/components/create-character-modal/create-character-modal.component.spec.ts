@@ -1,6 +1,7 @@
 import { of } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
 import { DndResourcesService } from '../../services/dnd-resources.service';
+import { AuthService } from '../../services/auth.service';
 
 /**
  * Tests exercise the TypeScript logic of the wizard component directly
@@ -10,7 +11,6 @@ import { DndResourcesService } from '../../services/dnd-resources.service';
 
 function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
   const spy = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', [
-    'getPartyNames',
     'getSpeciesList',
     'getClassNames2024',
     'getClassDetail',
@@ -27,7 +27,6 @@ function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
   ]);
 
   // Provide safe defaults for all calls made during ngOnInit
-  spy.getPartyNames.and.returnValue(of(['The Veiled Compass']));
   spy.getSpeciesList.and.returnValue(of(['Elf', 'Human', 'Dwarf']));
   spy.getClassNames2024.and.returnValue(of(['Barbarian', 'Bard', 'Wizard']));
   spy.getBackgroundGroups.and.returnValue(of([
@@ -64,10 +63,13 @@ function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
 describe('CreateCharacterModalComponent — logic', () => {
   let component: CreateCharacterModalComponent;
   let dndResources: jasmine.SpyObj<DndResourcesService>;
+  let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
     dndResources = makeMockDndResources();
-    component = new CreateCharacterModalComponent(dndResources);
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['getUsername']);
+    auth.getUsername.and.returnValue('tester');
+    component = new CreateCharacterModalComponent(dndResources, auth);
     component.ngOnInit();
   });
 

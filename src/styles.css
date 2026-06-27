@@ -13,7 +13,7 @@
   --border-soft:  #1f2548;
   --text:         #ece3cc;
   --text-2:       #b8b2a0;
-  --text-dim:     #6e7398;
+  --text-dim:     #9195af;
   --gold:         #d4b06a;
   --gold-2:       #e8c98a;
   --gold-deep:    #8a6a3a;
@@ -88,7 +88,7 @@ html, body { margin: 0; padding: 0; height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'EB Garamond', Georgia, serif;
+  font-family: 'Newsreader', Georgia, serif;
   font-size: 16px;
   line-height: 1.45;
   overflow: hidden;
@@ -107,7 +107,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .display    { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: 0.04em; }
 .eyebrow    { font-family: 'Cinzel', serif; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; font-size: 10px; color: var(--text-dim); }
 .numeric    { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
-.serif      { font-family: 'EB Garamond', Georgia, serif; }
+.serif      { font-family: 'Newsreader', Georgia, serif; }
 
 /* === LAYOUT === */
 .app {
@@ -163,7 +163,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   color: var(--text);
 }
 .brand-sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
@@ -181,7 +181,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border: 1px solid var(--border-soft);
   color: var(--text);
   padding: 9px 12px 9px 32px;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 14px;
   border-radius: 2px;
   outline: none;
@@ -307,7 +307,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   text-overflow: ellipsis;
 }
 .roster-meta {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
@@ -364,6 +364,8 @@ app-root { display: block; height: 100vh; width: 100vw; }
 }
 .btn.danger { color: var(--crimson); border-color: color-mix(in oklch, var(--crimson) 50%, transparent); }
 .btn.danger:hover { background: color-mix(in oklch, var(--crimson) 20%, transparent); border-color: var(--crimson); }
+.btn.play { color: var(--emerald); border-color: color-mix(in oklch, var(--emerald) 55%, transparent); }
+.btn.play:hover { background: color-mix(in oklch, var(--emerald) 22%, transparent); border-color: var(--emerald); color: var(--text); }
 .btn.sm { padding: 6px 10px; font-size: 9px; }
 .btn.icon {
   padding: 8px;
@@ -444,7 +446,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-bottom-color: var(--gold);
 }
 .sheet-subtitle {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 18px;
   color: var(--text-2);
@@ -494,7 +496,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   line-height: 1;
 }
 .vital-value .sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-weight: 400;
   font-size: 14px;
@@ -515,26 +517,6 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-radius: 2px;
   transition: width .25s ease-out;
 }
-.hp-controls {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  margin-top: 8px;
-}
-.hp-btn {
-  width: 22px; height: 22px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  border-radius: 2px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  line-height: 1;
-  padding: 0;
-}
-.hp-btn:hover { border-color: var(--gold); color: var(--gold); }
-.hp-btn.dmg:hover { border-color: var(--crimson); color: var(--crimson); }
 
 /* === GRID === */
 .sheet-grid {
@@ -805,7 +787,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .spell-badge.conc   { color: #7dd3fc; border: 1px solid rgba(125,211,252,0.4); }
 .spell-badge.ritual { color: var(--gold); border: 1px solid rgba(212,175,55,0.4); }
 .spell-school {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
@@ -827,7 +809,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   margin: 0 0 6px;
 }
 .spell-desc, .spell-higher, .spell-material {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 13px;
   color: rgba(255,255,255,0.7);
   margin: 0 0 5px;
@@ -911,7 +893,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 
 /* === BACKGROUND PROSE === */
 .prose {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 15.5px;
   line-height: 1.55;
   color: var(--text-2);
@@ -963,13 +945,13 @@ app-root { display: block; height: 100vh; width: 100vw; }
   letter-spacing: 0.04em;
 }
 .feature-source {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
 }
 .feature-desc {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 13.5px;
   color: var(--text-2);
   line-height: 1.45;
@@ -1016,7 +998,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   margin: 0 0 4px;
 }
 .modal-sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 14px;
   color: var(--text-2);
@@ -1040,7 +1022,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border: 1px solid var(--border);
   color: var(--text);
   padding: 9px 12px;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 15px;
   border-radius: 2px;
   outline: none;
@@ -1132,7 +1114,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   color: var(--text);
 }
 .empty-sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 16px;
   color: var(--text-dim);
@@ -1224,7 +1206,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   margin-bottom: 6px;
 }
 .login-brand-sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 13px;
   color: var(--text-dim);
@@ -1243,7 +1225,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border: 1px solid color-mix(in oklch, var(--crimson) 45%, transparent);
   border-radius: 2px;
   color: var(--crimson);
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 14px;
   text-align: center;
@@ -1259,7 +1241,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .auth-footer {
   margin-top: 18px;
   text-align: center;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 13px;
   color: var(--text-dim);
@@ -1399,7 +1381,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .campaign-meta {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
@@ -1466,7 +1448,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .board-hero-sub {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
@@ -1516,7 +1498,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   align-items: start;
   padding: 8px 0;
   border-bottom: 1px dotted var(--border-soft);
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-size: 14px;
   color: var(--text-2);
 }
@@ -1532,7 +1514,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .secrets-box .eyebrow { color: var(--violet); margin-bottom: 8px; display: block; }
 .secrets-box p {
   margin: 0;
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 13.5px;
   color: var(--text-2);
@@ -1550,7 +1532,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   font-size: 14px;
 }
 .treasury-row:last-child { border-bottom: none; }
-.treasury-name { color: var(--text-2); font-family: 'EB Garamond', serif; }
+.treasury-name { color: var(--text-2); font-family: 'Newsreader', serif; }
 .treasury-amt { font-family: 'JetBrains Mono', monospace; color: var(--gold); }
 .treasury-total {
   display: flex;
@@ -1636,7 +1618,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   margin-top: 2px;
 }
 .profile-title {
-  font-family: 'EB Garamond', serif;
+  font-family: 'Newsreader', serif;
   font-style: italic;
   font-size: 13px;
   color: var(--gold);
@@ -1683,8 +1665,8 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-bottom: 1px dotted var(--border-soft);
 }
 .pref-row:last-child { border-bottom: none; }
-.pref-label { font-family: 'EB Garamond', serif; font-size: 15px; color: var(--text); }
-.pref-sub { font-family: 'EB Garamond', serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+.pref-label { font-family: 'Newsreader', serif; font-size: 15px; color: var(--text); }
+.pref-sub { font-family: 'Newsreader', serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 .toggle {
   width: 42px; height: 24px;
   border-radius: 100px;
@@ -1766,4 +1748,33 @@ app-root { display: block; height: 100vh; width: 100vw; }
   letter-spacing: 0.22em;
   color: var(--celestial-2);
   font-weight: 600;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOBILE POLISH (<=820px)
+   Single appended block (keeps merge-conflict surface small). Pairs with the
+   slide-in drawer in sidenav.component.scss and the full-screen wizard in
+   create-character-modal.component.scss. Bumps interactive controls toward the
+   44px touch-target guideline and lets the sheet breathe full-width.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 820px) {
+
+  /* Generic buttons get a comfortable minimum height. */
+  .btn { min-height: 44px; }
+
+  /* Sheet header action buttons share the row evenly and grow finger-sized. */
+  .sheet-actions { gap: 8px; }
+  .sheet-actions .btn {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sheet-actions .btn.icon { flex: 0 0 auto; }
+
+  /* Roster rows in the drawer become easy tap targets. */
+  .roster-item { min-height: 48px; }
+
+  /* The account row at the drawer footer is also a tap target. */
+  .account-row { min-height: 48px; }
 }

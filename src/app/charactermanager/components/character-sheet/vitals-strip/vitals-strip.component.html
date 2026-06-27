@@ -4,43 +4,58 @@
   <div class="vital">
     <span class="eyebrow">Hit Points</span>
     <div class="vital-value numeric">
-      {{ pc.hp?.cur }}<span class="sub">/{{ pc.hp?.max }}</span>
-      <span *ngIf="pc.hp?.temp && pc.hp!.temp > 0" class="sub" style="color: var(--celestial)"> +{{ pc.hp!.temp }}</span>
+      <app-editable-number
+        [value]="pc.hp?.cur" [editable]="editable" [min]="0" [max]="pc.hp?.max ?? null"
+        label="current HP" (committed)="setHp('cur', $event)"
+      >{{ pc.hp?.cur }}</app-editable-number><span class="sub">/<app-editable-number
+        [value]="pc.hp?.max" [editable]="editable" [min]="0"
+        label="max HP" (committed)="setHp('max', $event)"
+      >{{ pc.hp?.max }}</app-editable-number></span>
+      <span *ngIf="editable || (pc.hp?.temp && pc.hp!.temp > 0)" class="sub" style="color: var(--celestial)"> +<app-editable-number
+        [value]="pc.hp?.temp" [editable]="editable" [min]="0"
+        label="temporary HP" (committed)="setHp('temp', $event)"
+      >{{ pc.hp?.temp ?? 0 }}</app-editable-number></span>
     </div>
     <div class="vital-bar"><span [style.width.%]="hpPct"></span></div>
-    <div class="hp-controls">
-      <button class="hp-btn dmg" (click)="hpChange.emit(-1)" title="Take 1 damage">−</button>
-      <button class="hp-btn"     (click)="hpChange.emit(+1)" title="Heal 1">+</button>
-      <button class="hp-btn dmg" (click)="hpChange.emit(-5)" title="Take 5 damage">−5</button>
-      <button class="hp-btn"     (click)="hpChange.emit(+5)" title="Heal 5">+5</button>
-    </div>
   </div>
 
   <!-- AC -->
   <div class="vital">
     <span class="eyebrow">Armor Class</span>
-    <div class="vital-value numeric">{{ pc.ac ?? '—' }}</div>
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.ac" [editable]="editable" [min]="0"
+      label="armor class" (committed)="setVital('ac', $event)"
+    >{{ pc.ac ?? '—' }}</app-editable-number></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">plate &amp; shield</div>
   </div>
 
   <!-- Initiative -->
   <div class="vital">
     <span class="eyebrow">Initiative</span>
-    <div class="vital-value numeric">{{ pc.init != null ? fmtMod(pc.init) : '—' }}</div>
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.init" [editable]="editable" [min]="null"
+      label="initiative" (committed)="setVital('init', $event)"
+    >{{ pc.init != null ? fmtMod(pc.init) : '—' }}</app-editable-number></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">d20 + mod</div>
   </div>
 
   <!-- Speed -->
   <div class="vital">
     <span class="eyebrow">Speed</span>
-    <div class="vital-value numeric">{{ pc.speed ?? '—' }}<span class="sub" *ngIf="pc.speed">ft</span></div>
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.speed" [editable]="editable" [min]="0"
+      label="speed" (committed)="setVital('speed', $event)"
+    >{{ pc.speed ?? '—' }}</app-editable-number><span class="sub" *ngIf="pc.speed">ft</span></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">per round</div>
   </div>
 
   <!-- Proficiency -->
   <div class="vital">
     <span class="eyebrow">Proficiency</span>
-    <div class="vital-value numeric">+{{ pc.prof ?? '—' }}</div>
+    <div class="vital-value numeric">+<app-editable-number
+      [value]="pc.prof" [editable]="editable" [min]="0"
+      label="proficiency bonus" (committed)="setVital('prof', $event)"
+    >{{ pc.prof ?? '—' }}</app-editable-number></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">level {{ pc.level }}</div>
   </div>
 

@@ -1,0 +1,6 @@
+<div class="toast" *ngIf="message$ | async as message" role="status" (click)="dismiss()" title="Dismiss">
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" style="flex: none;">
+    <circle cx="8" cy="8" r="6.5"/><path d="M8 4.8v3.6M8 11h.01"/>
+  </svg>
+  <span>{{ message }}</span>
+</div>

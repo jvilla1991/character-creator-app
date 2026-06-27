@@ -8,7 +8,7 @@ import { PC } from '../models/pc';
 import { PCService } from './pc.service';
 
 // ---------------------------------------------------------------------------
-// Demo seed campaigns. `party` links to PC.party (see prototype/data.js).
+// Demo seed campaigns. Members are the demo PCs bound via PC.campaignId.
 // Used only in demo mode; real mode talks to the backend.
 // ---------------------------------------------------------------------------
 const DEMO_CAMPAIGNS: Campaign[] = [
@@ -82,16 +82,11 @@ export class CampaignService {
   }
 
   /**
-   * Members of a campaign. An explicit binding (PC.campaignId) wins; an unbound
-   * PC falls back to matching the campaign's party key (keeps demo seeds working).
+   * Members of a campaign — the PCs explicitly bound to it via PC.campaignId.
    */
   membersOf(campaign: Campaign | null, pcs: PC[]): PC[] {
     if (!campaign) return [];
-    return pcs.filter(p =>
-      p.campaignId != null
-        ? String(p.campaignId) === campaign.id
-        : p.party === campaign.party
-    );
+    return pcs.filter(p => p.campaignId != null && String(p.campaignId) === campaign.id);
   }
 
   members$(campaignId: string | null): Observable<PC[]> {

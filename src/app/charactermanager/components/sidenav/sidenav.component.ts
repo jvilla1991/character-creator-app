@@ -9,11 +9,6 @@ import { UiStateService } from '../../services/ui-state.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
 
-interface PartyGroup {
-  party: string;
-  members: PC[];
-}
-
 @Component({
   selector: 'app-sidenav',
   templateUrl: './sidenav.component.html',
@@ -25,12 +20,17 @@ export class SidenavComponent implements OnInit, OnDestroy {
   @Input() pcs!: PC[];
 
   query = '';
-  collapsedParties = new Set<string>();
+  /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
+  drawerOpen = false;
   activePC$ = this.pcService.activePC$;
   role$ = this.uiState.role$;
+  // When set, Session Mode takes over the main content area for everyone.
+  activeSessionId$ = this.uiState.activeSessionId$;
+  // True while a DM is viewing a campaign member's sheet — shows the back bar.
+  dmReturn$ = this.uiState.dmReturn$;
   user = this.currentUser.getUser();
 
-  private allGroups: PartyGroup[] = [];
+  private allPcs: PC[] = [];
   private sub!: Subscription;
 
   constructor(
@@ -43,8 +43,8 @@ export class SidenavComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.sub = this.pcService.pcsByParty$.subscribe(groupMap => {
-      this.allGroups = Array.from(groupMap.entries()).map(([party, members]) => ({ party, members }));
+    this.sub = this.pcService.pcs$.subscribe(pcs => {
+      this.allPcs = pcs;
     });
   }
 
@@ -52,54 +52,47 @@ export class SidenavComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
   }
 
-  /** Party groups filtered by the current search query. */
-  get filteredByParty(): PartyGroup[] {
+  /** The full roster, filtered by the current search query. */
+  get filteredPcs(): PC[] {
     const q = this.query.trim().toLowerCase();
-    if (!q) return this.allGroups;
+    if (!q) return this.allPcs;
 
-    return this.allGroups
-      .map(({ party, members }) => ({
-        party,
-        members: members.filter(pc =>
-          pc.name.toLowerCase().includes(q) ||
-          (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
-          pc.clazz.toLowerCase().includes(q)
-        )
-      }))
-      .filter(g => g.members.length > 0);
+    return this.allPcs.filter(pc =>
+      pc.name.toLowerCase().includes(q) ||
+      (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
+      pc.clazz.toLowerCase().includes(q)
+    );
   }
+
+  /** Mobile drawer controls — no-ops visually at desktop widths (drawer CSS only applies <=820px). */
+  toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; }
+  closeDrawer(): void { this.drawerOpen = false; }
 
   setActivePC(pc: PC): void {
     this.pcService.setActivePC(pc);
-  }
-
-  toggleCollapse(party: string): void {
-    this.collapsedParties.has(party)
-      ? this.collapsedParties.delete(party)
-      : this.collapsedParties.add(party);
+    // On mobile, picking a hero should reveal their sheet, so dismiss the drawer.
+    this.closeDrawer();
   }
 
   /** Maps portraitTint to a CSS background value. Delegates to shared utility. */
   tintFor(pc: PC): string { return tintFor(pc); }
-
-  /** Zero-pad a member count to 2 digits, matching the prototype's display. */
-  padCount(n: number): string {
-    return n.toString().padStart(2, '0');
-  }
 
   /** Initials for the portrait circle — uses portraitInitials if set, else first two letters of name. */
   initialsFor(pc: PC): string {
     return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();
   }
 
-  forgeHero(): void { this.characterModal.openCreateModal(); }
+  forgeHero(): void { this.closeDrawer(); this.characterModal.openCreateModal(); }
 
-  newCampaign(): void { this.campaignModal.openCreateModal(); }
+  newCampaign(): void { this.closeDrawer(); this.campaignModal.openCreateModal(); }
 
-  joinCampaign(): void { this.joinModal.open(); }
+  joinCampaign(): void { this.closeDrawer(); this.joinModal.open(); }
 
   /** Account-row tint, reusing the shared portrait util. */
   get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
 
-  openSettings(): void { this.uiState.openSettings(); }
+  openSettings(): void { this.closeDrawer(); this.uiState.openSettings(); }
+
+  /** Return a cross-linked DM from a member's sheet to the campaign dashboard. */
+  backToCampaign(): void { this.closeDrawer(); this.uiState.returnToCampaign(); }
 }

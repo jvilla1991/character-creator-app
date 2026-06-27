@@ -26,6 +26,10 @@
     </div>
   </div>
 
+  <!-- Scrollable step body (on mobile this scrolls between the sticky step
+       header and the sticky action bar; on desktop it's a plain wrapper). -->
+  <div class="wizard-body">
+
   <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
   <ng-container *ngIf="step === 1">
     <div class="modal-title">Forge a New Hero</div>
@@ -40,17 +44,10 @@
              (keydown.escape)="cancel()">
     </div>
 
-    <div class="two-col">
-      <div class="field">
-        <label>Player</label>
-        <input [(ngModel)]="player" placeholder="who plays them">
-      </div>
-      <div class="field">
-        <label>Party</label>
-        <select [(ngModel)]="party">
-          <option *ngFor="let p of partyList" [value]="p">{{ p }}</option>
-        </select>
-      </div>
+    <div class="field">
+      <label>Player</label>
+      <input [value]="player" disabled
+             title="Your characters are listed under your username">
     </div>
   </ng-container>
 
@@ -60,49 +57,58 @@
     <div class="modal-sub">Your species shapes your heritage, size, and innate traits.</div>
 
     <div *ngIf="loadingSpecies" class="loading">Loading species…</div>
-    <div *ngIf="!loadingSpecies" class="class-picker">
-      <button *ngFor="let s of speciesList; trackBy: trackByName"
-              class="class-pick"
-              [class.active]="species === s"
-              type="button"
-              (click)="species = s; onSpeciesChange()">{{ s }}</button>
-    </div>
+    <div *ngIf="!loadingSpecies" class="picker-accordion">
+      <ng-container *ngFor="let s of speciesList; trackBy: trackByName">
+        <button class="class-pick accordion-head"
+                [class.active]="species === s"
+                type="button"
+                (click)="toggleSpecies(s)">
+          <span>{{ s }}</span>
+          <svg class="accordion-chev" [class.open]="species === s" viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M2 4l3 3 3-3"/>
+          </svg>
+        </button>
 
-    <!-- Species detail card -->
-    <div *ngIf="loadingSpeciesDetail" class="loading">Loading traits…</div>
-    <div *ngIf="speciesDetail && !loadingSpeciesDetail" class="detail-card species-detail">
-      <div class="detail-row">
-        <span class="detail-label">Size</span>
-        <span class="detail-value">{{ speciesDetail.size }}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Speed</span>
-        <span class="detail-value">{{ speciesDetail.speed }} ft.</span>
-      </div>
-      <div *ngIf="speciesDetail.subspecies?.length" class="detail-row">
-        <span class="detail-label">Lineages</span>
-        <span class="detail-value">{{ speciesSubspeciesNames }}</span>
-      </div>
-      <div *ngIf="speciesDetail.traits?.length" class="species-traits">
-        <div class="species-traits-header">Traits</div>
-        <div *ngFor="let trait of speciesDetail.traits" class="trait-item">
-          <span class="trait-name">{{ trait.name }}</span>
-          <span *ngIf="getTraitDescription(trait.name)" class="trait-desc">
-            {{ getTraitDescription(trait.name) }}
-          </span>
+        <!-- Selected species: details expand directly beneath it -->
+        <div *ngIf="species === s" class="accordion-body">
+          <div *ngIf="loadingSpeciesDetail" class="loading">Loading traits…</div>
+
+          <div *ngIf="speciesDetail && !loadingSpeciesDetail" class="detail-card species-detail">
+            <div class="detail-row">
+              <span class="detail-label">Size</span>
+              <span class="detail-value">{{ speciesDetail.size }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Speed</span>
+              <span class="detail-value">{{ speciesDetail.speed }} ft.</span>
+            </div>
+            <div *ngIf="speciesDetail.subspecies?.length" class="detail-row">
+              <span class="detail-label">Lineages</span>
+              <span class="detail-value">{{ speciesSubspeciesNames }}</span>
+            </div>
+            <div *ngIf="speciesDetail.traits?.length" class="species-traits">
+              <div class="species-traits-header">Traits</div>
+              <div *ngFor="let trait of speciesDetail.traits" class="trait-item">
+                <span class="trait-name">{{ trait.name }}</span>
+                <span *ngIf="getTraitDescription(trait.name)" class="trait-desc">
+                  {{ getTraitDescription(trait.name) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
+          <div *ngIf="!loadingSpeciesDetail && !speciesDetail" class="detail-card">
+            <div class="detail-row">
+              <span class="detail-label">2024 PHB Note</span>
+              <span class="detail-value">
+                This species is not distinct in the 2024 PHB.
+                Choose Elf or Orc and discuss mixed heritage with your DM.
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
-    <div *ngIf="!loadingSpeciesDetail && !speciesDetail && species" class="detail-card">
-      <div class="detail-row">
-        <span class="detail-label">2024 PHB Note</span>
-        <span class="detail-value">
-          This species is not distinct in the 2024 PHB.
-          Choose Elf or Orc and discuss mixed heritage with your DM.
-        </span>
-      </div>
+      </ng-container>
     </div>
   </ng-container>
 
@@ -112,42 +118,52 @@
     <div class="modal-sub">Your class sets your hit points, fighting style, and saving throw proficiencies.</div>
 
     <div *ngIf="loadingClassList" class="loading">Loading classes…</div>
-    <div *ngIf="!loadingClassList" class="class-picker">
-      <button *ngFor="let c of classList"
-              class="class-pick"
-              [class.active]="clazz === c"
-              type="button"
-              (click)="clazz = c; onClassChange()">{{ c }}</button>
-    </div>
-
-    <div *ngIf="classDetail" class="detail-card" [class.updating]="loadingClassDetail">
-      <div class="detail-row">
-        <span class="detail-label">Hit Die</span>
-        <span class="detail-value">d{{ classDetail.hit_die }}</span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-label">Saving Throws</span>
-        <span class="detail-value">{{ classSavingThrows }}</span>
-      </div>
-    </div>
-
-    <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
-    <ng-container *ngIf="requiresLevel1Subclass && classDetail && !loadingClassDetail">
-      <div class="subclass-header">
-        <span class="eyebrow">Choose a Subclass</span>
-        <span class="subclass-note">Required at level 1 for {{ clazz }}</span>
-      </div>
-      <div class="subclass-list">
-        <button *ngFor="let sub of availableSubclasses"
+    <div *ngIf="!loadingClassList" class="picker-accordion">
+      <ng-container *ngFor="let c of classList">
+        <button class="class-pick accordion-head"
+                [class.active]="clazz === c"
                 type="button"
-                class="subclass-card"
-                [class.active]="selectedSubclass === sub.name"
-                (click)="selectedSubclass = sub.name">
-          <span class="subclass-name">{{ sub.name }}</span>
-          <span class="subclass-desc">{{ sub.desc }}</span>
+                (click)="toggleClass(c)">
+          <span>{{ c }}</span>
+          <svg class="accordion-chev" [class.open]="clazz === c" viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M2 4l3 3 3-3"/>
+          </svg>
         </button>
-      </div>
-    </ng-container>
+
+        <!-- Selected class: hit die / saves (and subclass if required) below it -->
+        <div *ngIf="clazz === c" class="accordion-body">
+          <div *ngIf="!classDetail" class="loading">Loading class details…</div>
+          <div *ngIf="classDetail" class="detail-card" [class.updating]="loadingClassDetail">
+            <div class="detail-row">
+              <span class="detail-label">Hit Die</span>
+              <span class="detail-value">d{{ classDetail.hit_die }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Saving Throws</span>
+              <span class="detail-value">{{ classSavingThrows }}</span>
+            </div>
+          </div>
+
+          <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
+          <ng-container *ngIf="requiresLevel1Subclass && classDetail && !loadingClassDetail">
+            <div class="subclass-header">
+              <span class="eyebrow">Choose a Subclass</span>
+              <span class="subclass-note">Required at level 1 for {{ clazz }}</span>
+            </div>
+            <div class="subclass-list">
+              <button *ngFor="let sub of availableSubclasses"
+                      type="button"
+                      class="subclass-card"
+                      [class.active]="selectedSubclass === sub.name"
+                      (click)="selectedSubclass = sub.name">
+                <span class="subclass-name">{{ sub.name }}</span>
+                <span class="subclass-desc">{{ sub.desc }}</span>
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
   </ng-container>
 
   <!-- ── Step 4: Background ──────────────────────────────────────────── -->
@@ -168,36 +184,46 @@
 
     <div *ngFor="let group of activeBackgroundGroups; trackBy: trackBySource" class="background-group">
       <div class="background-group-label">{{ group.source }}</div>
-      <div class="class-picker">
-        <button *ngFor="let b of group.backgrounds; trackBy: trackByName"
-                class="class-pick"
-                [class.active]="background === b"
-                type="button"
-                (click)="background = b; onBackgroundChange()">{{ b }}</button>
-      </div>
-    </div>
+      <div class="picker-accordion">
+        <ng-container *ngFor="let b of group.backgrounds; trackBy: trackByName">
+          <button class="class-pick accordion-head"
+                  [class.active]="background === b"
+                  type="button"
+                  (click)="toggleBackground(b)">
+            <span>{{ b }}</span>
+            <svg class="accordion-chev" [class.open]="background === b" viewBox="0 0 10 10" aria-hidden="true">
+              <path d="M2 4l3 3 3-3"/>
+            </svg>
+          </button>
 
-    <div *ngIf="loadingBackgroundDetail" class="loading">Loading background details…</div>
-    <div *ngIf="backgroundDetail && !loadingBackgroundDetail" class="detail-card">
-      <div class="detail-row">
-        <span class="detail-label">Ability Bonuses</span>
-        <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames }}</span>
-      </div>
-      <div *ngIf="backgroundDetail.proficiencies?.length" class="detail-row">
-        <span class="detail-label">Proficiencies</span>
-        <span class="detail-value">{{ backgroundProficiencyNames }}</span>
-      </div>
-    </div>
+          <!-- Selected background: ability bonuses, proficiencies, origin feat below it -->
+          <div *ngIf="background === b" class="accordion-body">
+            <div *ngIf="loadingBackgroundDetail" class="loading">Loading background details…</div>
 
-    <!-- Origin Feat card (always fixed per background — display only) -->
-    <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
-      <div class="feat-card-eyebrow">Origin Feat</div>
-      <div class="feat-card-name">{{ backgroundFeatName }}</div>
-      <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
-        {{ backgroundFeatDescription }}
-      </div>
-      <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
-        See the 2024 Player's Handbook for full details.
+            <div *ngIf="backgroundDetail && !loadingBackgroundDetail" class="detail-card">
+              <div class="detail-row">
+                <span class="detail-label">Ability Bonuses</span>
+                <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames }}</span>
+              </div>
+              <div *ngIf="backgroundDetail.proficiencies?.length" class="detail-row">
+                <span class="detail-label">Proficiencies</span>
+                <span class="detail-value">{{ backgroundProficiencyNames }}</span>
+              </div>
+            </div>
+
+            <!-- Origin Feat card (always fixed per background — display only) -->
+            <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
+              <div class="feat-card-eyebrow">Origin Feat</div>
+              <div class="feat-card-name">{{ backgroundFeatName }}</div>
+              <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
+                {{ backgroundFeatDescription }}
+              </div>
+              <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
+                See the 2024 Player's Handbook for full details.
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </div>
     </div>
   </ng-container>
@@ -392,20 +418,50 @@
 
     <!-- Spell tile list -->
     <div *ngIf="!loadingSpells" class="spell-scroll">
-      <button *ngFor="let s of filteredSpellList; trackBy: trackBySpellName"
-              type="button"
-              class="spell-pick"
-              [class.active]="isSpellSelected(s)"
-              [class.disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
-              (click)="toggleSpell(s)">
-        <span class="spell-pick-name">{{ s.name }}</span>
-        <span class="spell-pick-meta">
-          {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
-          · {{ s.school }} · {{ s.actionType }}
-          <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
-          <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
-        </span>
-      </button>
+      <div *ngFor="let s of filteredSpellList; trackBy: trackBySpellName" class="spell-row">
+        <!-- Click the spell to expand/collapse its description -->
+        <button type="button"
+                class="spell-pick"
+                [class.active]="isSpellSelected(s)"
+                [class.open]="isSpellDescOpen(s)"
+                (click)="toggleSpellDesc(s)">
+          <span class="spell-pick-name">
+            {{ s.name }}
+            <span *ngIf="isSpellSelected(s)" class="spell-selected-badge">Selected</span>
+          </span>
+          <span class="spell-pick-meta">
+            {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
+            · {{ s.school }} · {{ s.actionType }}
+            <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
+            <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
+          </span>
+        </button>
+
+        <!-- Collapsible spell description, with the add/remove action -->
+        <div *ngIf="isSpellDescOpen(s)" class="spell-desc">
+          <p class="spell-desc-text">{{ s.description || 'No description available.' }}</p>
+          <div class="spell-desc-props">
+            <span *ngIf="s.range"><strong>Range</strong> {{ s.range }}</span>
+            <span *ngIf="s.duration"><strong>Duration</strong> {{ s.duration }}</span>
+            <span *ngIf="s.material"><strong>Material</strong> {{ s.material }}</span>
+          </div>
+          <p *ngIf="s.higherLevelSlot" class="spell-desc-upcast">
+            <strong>At Higher Levels</strong> {{ s.higherLevelSlot }}
+          </p>
+          <p *ngIf="s.cantripUpgrade" class="spell-desc-upcast">
+            <strong>Cantrip Upgrade</strong> {{ s.cantripUpgrade }}
+          </p>
+          <div class="spell-desc-actions">
+            <button type="button"
+                    class="btn sm"
+                    [class.primary]="!isSpellSelected(s)"
+                    [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
+                    (click)="toggleSpell(s)">
+              {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
+            </button>
+          </div>
+        </div>
+      </div>
       <div *ngIf="filteredSpellList.length === 0" class="loading">No spells match your search.</div>
     </div>
 
@@ -522,10 +578,6 @@
         <div *ngIf="player" class="review-row">
           <span class="review-label">Player</span>
           <span class="review-value">{{ player }}</span>
-        </div>
-        <div *ngIf="party" class="review-row">
-          <span class="review-label">Party</span>
-          <span class="review-value">{{ party }}</span>
         </div>
       </div>
 
@@ -677,6 +729,8 @@
 
     </div><!-- end .review-scroll -->
   </ng-container>
+
+  </div><!-- end .wizard-body -->
 
   <!-- ── Actions ─────────────────────────────────────────────────────── -->
   <div class="modal-actions">

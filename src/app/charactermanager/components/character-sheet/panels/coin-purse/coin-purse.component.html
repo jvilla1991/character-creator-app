@@ -1,13 +1,16 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Coin Purse</span>
-    <span style="font-family: 'EB Garamond', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
       ≈ {{ gpEquiv }} gp
     </span>
   </div>
   <div class="currency">
     <div *ngFor="let coin of coinTypes" class="coin {{ coin.key }}">
-      <div class="coin-amt numeric">{{ coinAmt(coin.key) }}</div>
+      <div class="coin-amt numeric"><app-editable-number
+        [value]="coinAmt(coin.key)" [editable]="editable" [min]="0"
+        [label]="coin.label + ' coins'" (committed)="setCoin(coin.key, $event)"
+      >{{ coinAmt(coin.key) }}</app-editable-number></div>
       <div class="coin-name">{{ coin.label }}</div>
     </div>
   </div>

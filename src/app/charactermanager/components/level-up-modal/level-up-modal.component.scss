@@ -88,3 +88,292 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+// ── Subclass picker ───────────────────────────────────────────────────────────
+
+.subclass-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subclass-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.subclass-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  cursor: pointer;
+  color: var(--text, #fff);
+
+  &.is-selected {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+}
+
+// ── Ability Score Improvement allocator ───────────────────────────────────────
+
+.asi-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asi-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.asi-remaining {
+  font-size: 0.72rem;
+  color: var(--celestial);
+}
+
+.asi-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+
+  &.is-raised {
+    border-color: var(--celestial);
+  }
+}
+
+.asi-ability {
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.is-raised .asi-ability {
+  color: var(--celestial);
+}
+
+.asi-score {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.asi-steppers {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asi-step {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text, #fff);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.asi-alloc {
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.asi-note {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+// ── ASI / Feat toggle ─────────────────────────────────────────────────────────
+
+.milestone-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.milestone-tab {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+
+  &.is-active {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+}
+
+// Compact variant of the toggle when it sits inside an HP-gain value cell.
+.hp-mode-toggle {
+  display: inline-flex;
+  margin-bottom: 0;
+
+  .milestone-tab {
+    flex: 0 0 auto;
+    padding: 4px 12px;
+  }
+}
+
+.feat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feat-name {
+  font-weight: 600;
+}
+
+.feat-desc {
+  font-size: 0.74rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+// ── Auto-granted class features ───────────────────────────────────────────────
+
+.features-gained {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.features-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-left: 2px solid var(--celestial);
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.feature-name {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.feature-desc {
+  font-size: 0.76rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+// ── Spell picker ──────────────────────────────────────────────────────────────
+
+.spell-pick {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spell-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.spell-counts {
+  font-size: 0.72rem;
+  color: var(--celestial);
+}
+
+.spell-search {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border-radius: 7px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  color: var(--text, #fff);
+  font-size: 0.85rem;
+}
+
+.spell-loading {
+  font-size: 0.78rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}
+
+.spell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.spell-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border-radius: 7px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  cursor: pointer;
+
+  &.is-selected {
+    border-color: var(--celestial);
+  }
+}
+
+.spell-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.spell-name {
+  font-weight: 600;
+  color: var(--text, #fff);
+}
+
+.spell-meta {
+  font-size: 0.72rem;
+  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+}

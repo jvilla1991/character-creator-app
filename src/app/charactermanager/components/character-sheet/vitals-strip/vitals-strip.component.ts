@@ -9,8 +9,10 @@ import { hitDieFor, fmtMod } from '../../../utils/character-math';
 })
 export class VitalsStripComponent {
   @Input() pc!: PC;
-  /** Emits a signed HP delta (+1, -1, +5, -5). Parent clamps and persists. */
-  @Output() hpChange = new EventEmitter<number>();
+  /** DM cross-link: turns the vitals into click-to-edit numbers. */
+  @Input() editable = false;
+  /** Emits the full updated PC for the parent to persist. */
+  @Output() pcChange = new EventEmitter<PC>();
 
   get hpPct(): number {
     if (!this.pc.hp) return 0;
@@ -20,4 +22,19 @@ export class VitalsStripComponent {
   get hitDie(): number { return hitDieFor(this.pc.clazz); }
 
   fmtMod(n: number): string { return fmtMod(n); }
+
+  /** Edit one of the HP fields, keeping current within [0, max]. */
+  setHp(field: 'cur' | 'max' | 'temp', value: number): void {
+    const hp = { cur: 0, max: 0, temp: 0, ...(this.pc.hp ?? {}) };
+    hp[field] = value;
+    if (field === 'max' || field === 'cur') {
+      hp.cur = Math.max(0, Math.min(hp.cur, hp.max));
+    }
+    this.pcChange.emit({ ...this.pc, hp });
+  }
+
+  /** Edit a flat numeric vital (AC, initiative, speed, proficiency bonus). */
+  setVital(field: 'ac' | 'init' | 'speed' | 'prof', value: number): void {
+    this.pcChange.emit({ ...this.pc, [field]: value });
+  }
 }

@@ -7,6 +7,7 @@ import { MainContentComponent } from './components/main-content/main-content.com
 import { SidenavComponent } from './components/sidenav/sidenav.component';
 import { CharacterSheetComponent } from './components/character-sheet/character-sheet.component';
 import { VitalsStripComponent } from './components/character-sheet/vitals-strip/vitals-strip.component';
+import { EditableNumberComponent } from './components/character-sheet/editable-number/editable-number.component';
 import { EmptyStateComponent } from './components/character-sheet/empty-state/empty-state.component';
 import { AbilityScoresComponent } from './components/character-sheet/panels/ability-scores/ability-scores.component';
 import { SkillsListComponent } from './components/character-sheet/panels/skills-list/skills-list.component';
@@ -32,10 +33,15 @@ import { PartyTreasuryComponent } from './components/campaign-dashboard/party-tr
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
+// ── Session Mode ───────────────────────────────────────────────────────────
+import { SessionModeComponent } from './components/session-mode/session-mode.component';
+import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
+import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
+import { ToastComponent } from './components/toast/toast.component';
+
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
 import { HttpClientModule } from '@angular/common/http';
-import { PCService } from './services/pc.service';
 import { AuthService } from './services/auth.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { FormsModule } from '@angular/forms';
@@ -63,6 +69,7 @@ const routes: Routes = [
     LevelUpModalComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
+    EditableNumberComponent,
     EmptyStateComponent,
     AbilityScoresComponent,
     SkillsListComponent,
@@ -81,6 +88,10 @@ const routes: Routes = [
     PartyTreasuryComponent,
     CreateCampaignModalComponent,
     JoinCampaignModalComponent,
+    SessionModeComponent,
+    InitiativePanelComponent,
+    SessionLiveBannerComponent,
+    ToastComponent,
   ],
   imports: [
     CommonModule,
@@ -92,7 +103,6 @@ const routes: Routes = [
     RouterModule.forChild(routes)
   ],
   providers: [
-    // PCService omitted — it uses providedIn: 'root' and should not be double-provided
     AuthService,
     CharacterModalService,
   ]

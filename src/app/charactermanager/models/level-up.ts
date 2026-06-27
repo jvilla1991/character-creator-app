@@ -1,3 +1,5 @@
+import { PcSpell } from './pc';
+
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
  *
@@ -18,4 +20,43 @@ export interface LevelUpPreview {
   // Empty for non-casters. Server-computed (Phase 2); the SPA only renders them.
   currentSpellSlots: { [spellLevel: number]: number };
   newSpellSlots: { [spellLevel: number]: number };
+  // Phase 3: whether a subclass choice is due at the new level, and the selectable names.
+  // subclassOptions is empty until catalog content is authored server-side, so the SPA
+  // shows the picker only when there is something to choose.
+  subclassDue: boolean;
+  subclassOptions: string[];
+  // Phase 4: whether an Ability Score Improvement is due at the new level (4/8/12/16/19,
+  // plus Fighter 6/14 and Rogue 10). The SPA builds the +2/+1+1 allocator from pc.stats.
+  asiDue: boolean;
+  // Feats: selectable General feat names (the ASI alternative). Server-authoritative;
+  // non-empty only at an ASI level. Descriptions are looked up locally for display.
+  featOptions: string[];
+  // Class features automatically gained at the new level (name + server-owned description).
+  // Empty when the class/level has no seeded features. Read-only — no choice involved.
+  featuresGained: { name: string; desc: string }[];
+  // Cantrips known before/after the level (caster classes; 0 for non-casters). Informational.
+  currentCantripsKnown: number;
+  newCantripsKnown: number;
+  // Prepared/known spells before/after the level (caster classes; 0 for non-casters). The
+  // level-up delta is how many new spells the player may add.
+  currentSpellsKnown: number;
+  newSpellsKnown: number;
+}
+
+/**
+ * How this level's hit points are determined. Mirrors the backend `HpMode` enum — the JSON value
+ * must be the enum name ('AVERAGE' | 'ROLL'). In ROLL mode the *server* rolls the hit die; the
+ * client only chooses the mode, never the result. 'AVERAGE' is the default everywhere.
+ */
+export type HpMode = 'AVERAGE' | 'ROLL';
+
+/** Player choices sent when committing a level-up (all optional). At an ASI level, exactly
+ *  one of abilityIncreases / feat is sent. hpMode is only sent when the player picks 'ROLL'
+ *  (omitting it lets the server default to 'AVERAGE'). */
+export interface LevelUpChoices {
+  subclass?: string;
+  abilityIncreases?: { [ability: string]: number };
+  feat?: string;
+  newSpells?: PcSpell[];
+  hpMode?: HpMode;
 }

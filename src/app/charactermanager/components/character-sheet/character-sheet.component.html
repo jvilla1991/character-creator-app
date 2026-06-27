@@ -12,7 +12,7 @@
 
     <!-- Identity column -->
     <div class="sheet-id">
-      <div class="eyebrow">{{ pc.party }} · played by {{ pc.player || pc.playerName }}</div>
+      <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
 
       <!-- Editable hero name -->
       <input
@@ -36,12 +36,38 @@
         <span class="dot">✦</span>
         {{ pc.clazz }} <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
         <span class="dot">✦</span>
-        Level {{ pc.level }}
+        Level
+        <app-editable-number
+          [value]="pc.level"
+          [editable]="editable"
+          [min]="1" [max]="20"
+          label="level"
+          (committed)="onLevelCommit($event)"
+        >{{ pc.level }}</app-editable-number>
       </div>
     </div>
 
     <!-- Action buttons -->
     <div class="sheet-actions">
+      <!-- Connect: enabled for campaign members; disabled with a hint otherwise -->
+      <div class="connect-wrap">
+        <span *ngIf="!inCampaign" class="connect-hint" [class.show]="connectHintPinned">
+          This character is not part of a campaign yet
+        </span>
+        <button
+          class="btn play"
+          [class.is-disabled]="!inCampaign"
+          [attr.aria-disabled]="!inCampaign"
+          [title]="inCampaign ? 'Connect to your campaign session' : 'This character is not part of a campaign yet'"
+          (click)="onConnectClick()"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M4 2.5v11l9-5.5z"/>
+          </svg>
+          Connect
+        </button>
+      </div>
       <button class="btn" title="Roll dice" (click)="rollRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
@@ -76,14 +102,22 @@
   <!-- ═══════════════════════════════════════════════
        VITALS STRIP
        ═══════════════════════════════════════════════ -->
-  <app-vitals-strip [pc]="pc" (hpChange)="updateHP($event)"></app-vitals-strip>
+  <app-vitals-strip
+    [pc]="pc"
+    [editable]="editable"
+    (pcChange)="onPcChange($event)">
+  </app-vitals-strip>
 
   <!-- ═══════════════════════════════════════════════
        SHEET GRID
        ═══════════════════════════════════════════════ -->
   <div class="sheet-grid">
     <div class="col-left">
-      <app-ability-scores [pc]="pc"></app-ability-scores>
+      <app-ability-scores
+        [pc]="pc"
+        [editable]="editable"
+        (pcChange)="onPcChange($event)">
+      </app-ability-scores>
       <app-skills-list    [pc]="pc"></app-skills-list>
     </div>
     <div class="col-right">
@@ -94,10 +128,16 @@
       <app-equipment-panel  [pc]="pc"></app-equipment-panel>
       <app-spellbook-panel
         [pc]="pc"
-        (slotToggled)="onSlotToggle($event.level, $event.index)">
+        [editable]="editable"
+        (slotToggled)="onSlotToggle($event.level, $event.index)"
+        (pcChange)="onPcChange($event)">
       </app-spellbook-panel>
       <app-features-list    [pc]="pc"></app-features-list>
-      <app-coin-purse       [pc]="pc"></app-coin-purse>
+      <app-coin-purse
+        [pc]="pc"
+        [editable]="editable"
+        (pcChange)="onPcChange($event)">
+      </app-coin-purse>
       <app-background-story [pc]="pc"></app-background-story>
     </div>
   </div>

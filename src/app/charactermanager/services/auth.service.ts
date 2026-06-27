@@ -19,6 +19,7 @@ export class AuthService {
         token: 'demo-token-' + Date.now()
       };
       localStorage.setItem('token', mockResponse.token);
+      localStorage.setItem('username', userName);
       return of(mockResponse);
     }
 
@@ -27,6 +28,7 @@ export class AuthService {
         console.log(response);
         if (response.success) {
           localStorage.setItem('token', response.token);
+          localStorage.setItem('username', userName);
         }
       }),
       catchError(() => of({ success: false }))
@@ -38,6 +40,7 @@ export class AuthService {
       tap(response => {
         if (response?.success) {
           localStorage.setItem('token', response.token);
+          localStorage.setItem('username', userName);
         }
       }),
       catchError(err => of({ success: false, error: err }))
@@ -66,7 +69,13 @@ export class AuthService {
       window.location.assign('/login');
       return;
     }
+    localStorage.removeItem('username');
     this.router.navigate(['/login']);
+  }
+
+  /** The signed-in user's username, captured at login/registration. */
+  getUsername(): string | null {
+    return localStorage.getItem('username');
   }
 
   isAuthenticated(): boolean {

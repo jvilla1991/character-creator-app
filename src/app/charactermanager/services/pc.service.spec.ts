@@ -14,7 +14,6 @@ function makePC(overrides: Partial<PC> = {}): PC {
     playerName: 'Alice',
     race: 'Elf',
     background: 'Sage',
-    party: 'The Veiled Compass',
     hp: { cur: 7, max: 7, temp: 0 },
     ac: 11,
     init: 1,
@@ -209,11 +208,46 @@ describe('PCService', () => {
         currentLevel: 4, newLevel: 5, hitDie: 8, conModifier: 2,
         hpGained: 7, newHpMax: 39, currentProfBonus: 2, newProfBonus: 3,
         currentSpellSlots: { 1: 4, 2: 3 }, newSpellSlots: { 1: 4, 2: 3, 3: 2 },
+        subclassDue: false, subclassOptions: [],
       });
     });
   });
 
   describe('levelUp', () => {
+    it('sends the chosen subclass in the POST body when provided', () => {
+      service.levelUp(42, { subclass: 'Life Domain' }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ subclass: 'Life Domain' });
+      req.flush({ id: 42, name: 'Aelindra', clazz: 'Cleric', level: 3, subclass: 'Life Domain' });
+    });
+
+    it('sends the ASI allocation in the POST body when provided', () => {
+      service.levelUp(42, { abilityIncreases: { STR: 1, DEX: 1 } }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ abilityIncreases: { STR: 1, DEX: 1 } });
+      req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
+    });
+
+    it('sends the chosen feat in the POST body when provided', () => {
+      service.levelUp(42, { feat: 'Sentinel' }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ feat: 'Sentinel' });
+      req.flush({ id: 42, name: 'Throk', clazz: 'Fighter', level: 4 });
+    });
+
+    it('sends newly-learned spells in the POST body when provided', () => {
+      const newSpells = [{ lvl: 1, name: 'Hold Person', school: 'Ench', time: '1 action', prepared: true }];
+      service.levelUp(42, { newSpells }).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(req.request.body).toEqual({ newSpells });
+      req.flush({ id: 42, name: 'Aelindra', clazz: 'Bard', level: 5 });
+    });
+
     it('POSTs to the level-up endpoint and deserializes the updated PC', (done) => {
       service.levelUp(42).subscribe(updated => {
         expect(updated.level).toBe(5);
@@ -310,32 +344,4 @@ describe('PCService', () => {
     });
   });
 
-  // ── pcsByParty$ grouping ────────────────────────────────────────────────────
-
-  describe('pcsByParty$', () => {
-    it('groups PCs by party name', (done) => {
-      const pcs: PC[] = [
-        makePC({ id: 1, party: 'Alpha' }),
-        makePC({ id: 2, party: 'Alpha' }),
-        makePC({ id: 3, party: 'Beta'  }),
-      ];
-      service.setPCs(pcs);
-
-      service.pcsByParty$.subscribe(groups => {
-        expect(groups.get('Alpha')?.length).toBe(2);
-        expect(groups.get('Beta')?.length).toBe(1);
-        done();
-      });
-    });
-
-    it('assigns PCs without a party to Unassigned', (done) => {
-      const pcs: PC[] = [makePC({ id: 1, party: undefined })];
-      service.setPCs(pcs);
-
-      service.pcsByParty$.subscribe(groups => {
-        expect(groups.get('Unassigned')?.length).toBe(1);
-        done();
-      });
-    });
-  });
 });

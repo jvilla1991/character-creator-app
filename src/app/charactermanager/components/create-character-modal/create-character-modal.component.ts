@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
 import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
+import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
 
@@ -46,9 +47,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Step 1: Identity ─────────────────────────────────────────────────────
   name   = '';
+  // The player is always the signed-in user — sourced from their username, not editable.
   player = '';
-  party  = '';
-  partyList: string[] = [];
 
   // ── Step 2: Species ──────────────────────────────────────────────────────
   speciesList: string[] = [];
@@ -69,6 +69,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   onSpeciesChange(): void {
     this.speciesDetail = null;
     if (this.species) this.speciesTrigger$.next(this.species);
+  }
+
+  /** Click a species to choose+expand it; click the chosen one again to clear it. */
+  toggleSpecies(s: string): void {
+    this.species = this.species === s ? '' : s;
+    this.onSpeciesChange();
   }
 
   // ── Step 3: Class ────────────────────────────────────────────────────────
@@ -239,6 +245,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (!isCantrip && this.selectedLeveled >= this.maxKnownSpells) return;
     this.selectedSpells = [...this.selectedSpells, spell];
   }
+
+  // Which spell's description is expanded (one at a time). Independent of
+  // selection, so a player can read a spell before adding it.
+  expandedSpellName: string | null = null;
+
+  toggleSpellDesc(spell: DndSpell): void {
+    this.expandedSpellName = this.expandedSpellName === spell.name ? null : spell.name;
+  }
+
+  isSpellDescOpen(spell: DndSpell): boolean {
+    return this.expandedSpellName === spell.name;
+  }
   assignments: Record<Ability, number | null> = {
     STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null,
   };
@@ -261,9 +279,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   @Output() confirm = new EventEmitter<Partial<PC>>();
   @Output() close   = new EventEmitter<void>();
 
-  constructor(private dndResources: DndResourcesService) {}
+  constructor(private dndResources: DndResourcesService, private auth: AuthService) {}
 
   ngOnInit(): void {
+    // The character's player is the signed-in user; display their username.
+    this.player = this.auth.getUsername() ?? '';
+
     // ── switchMap pipelines — automatically cancels stale requests ──────────
     this.speciesTrigger$.pipe(
       switchMap(name => {
@@ -301,34 +322,25 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     });
 
     // ── Load lists ───────────────────────────────────────────────────────────
-    this.dndResources.getPartyNames().subscribe(list => {
-      this.partyList = list;
-      this.party     = list[0] ?? '';
-    });
-
     this.dndResources.getSpeciesList().pipe(takeUntil(this.destroy$)).subscribe(list => {
       this.speciesList    = list;
-      this.species        = list[0] ?? '';
       this.loadingSpecies = false;
-      if (this.species) this.speciesTrigger$.next(this.species);
+      // No default — the player must choose a species (gates Next).
     });
 
     this.dndResources.getClassNames2024().pipe(takeUntil(this.destroy$)).subscribe(list => {
       this.classList        = list;
-      this.clazz            = list[0] ?? '';
       this.loadingClassList = false;
-      if (this.clazz) this.classTrigger$.next(this.clazz);
+      // No default — the player must choose a class (gates Next).
     });
 
     this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
       this.backgroundGroups = groups;
-      // Enable all sources by default
+      // Enable Player's Handbook by default
       this.enabledSources = Object.fromEntries(
         groups.map(g => [g.source, g.source === "Player's Handbook"])
       );
-      const first = groups[0]?.backgrounds[0] ?? '';
-      this.background = first;
-      if (first) this.backgroundTrigger$.next(first);
+      // No default — the player must choose a background (gates Next).
     });
   }
 
@@ -375,9 +387,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
         .pipe(takeUntil(this.destroy$))
-        .subscribe(spells => {
-          this.spellList    = spells;
-          this.loadingSpells = false;
+        .subscribe({
+          next: spells => { this.spellList = spells; this.loadingSpells = false; },
+          error: () => { this.loadingSpells = false; },
         });
     }
     // Load equipment data when entering the equipment step
@@ -492,14 +504,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   toggleSource(source: string): void {
     this.enabledSources = { ...this.enabledSources, [source]: !this.enabledSources[source] };
 
-    // If the selected background just became hidden, auto-pick the first visible one
-    const selectedStillVisible = this.activeBackgroundGroups
+    // If the chosen background just became hidden, clear it (no auto-pick — the
+    // player chooses).
+    const selectedStillVisible = !!this.background && this.activeBackgroundGroups
       .some(g => g.backgrounds.includes(this.background));
-
-    if (!selectedStillVisible) {
-      const first = this.activeBackgroundGroups[0]?.backgrounds[0] ?? '';
-      this.background = first;
-      if (first) this.onBackgroundChange();
+    if (this.background && !selectedStillVisible) {
+      this.background = '';
+      this.onBackgroundChange();
     }
   }
 
@@ -509,6 +520,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.selectedSkills  = [];
     this.selectedSubclass = '';
     if (this.clazz) this.classTrigger$.next(this.clazz);
+  }
+
+  /** Click a class to choose+expand it; click the chosen one again to clear it. */
+  toggleClass(c: string): void {
+    this.clazz = this.clazz === c ? '' : c;
+    this.classDetail = null;
+    this.onClassChange();
   }
 
   get classSavingThrows(): string {
@@ -523,6 +541,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.bonusPlus1 = '';
     this.selectedSkills = [];
     if (this.background) this.backgroundTrigger$.next(this.background);
+  }
+
+  /** Click a background to choose+expand it; click the chosen one again to clear it. */
+  toggleBackground(b: string): void {
+    this.background = this.background === b ? '' : b;
+    this.onBackgroundChange();
   }
 
   get backgroundAbilityNames(): string {
@@ -613,7 +637,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       name:             trimmedName,
       playerName:       displayPlayer,   // required by PC interface (backend compat)
       player:           displayPlayer,   // display field used by new UI
-      party:            this.party,
       race:             this.species,
       clazz:            this.clazz,
       subclass:         this.selectedSubclass || undefined,

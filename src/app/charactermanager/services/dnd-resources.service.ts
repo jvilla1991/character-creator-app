@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, shareReplay } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, shareReplay, throwError } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -90,12 +90,6 @@ const RACE_LIST = [
   'Tiefling','Dragonborn','Gnome',
 ];
 
-const PARTY_LIST = [
-  'The Veiled Compass',
-  'Tomb of the Sleeping Crown',
-  'Unassigned',
-];
-
 // ── Spell constants ───────────────────────────────────────────────────────────
 
 /** Classes that have a full spell list at character creation */
@@ -168,6 +162,92 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
   'Tough':
     'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+  // ── General feats (level 4+; the alternative to an ASI). Names are validated
+  //    server-side; these descriptions are for display only. ───────────────────
+  'Great Weapon Master':
+    'On a melee weapon attack, you can take a -5 penalty to hit for +10 damage. Scoring a critical hit or downing a creature lets you make another melee attack as a Bonus Action.',
+  'Sharpshooter':
+    'Your ranged attacks ignore half and three-quarters cover, and you can take a -5 to hit for +10 damage. Long range does not impose disadvantage.',
+  'Sentinel':
+    'When you hit a creature with an Opportunity Attack, its speed becomes 0 for the turn. Creatures provoke Opportunity Attacks even when they Disengage, and you can react when an ally nearby is attacked.',
+  'War Caster':
+    'You have advantage on Concentration saves, can perform somatic components while wielding weapons or a shield, and can cast a spell as an Opportunity Attack.',
+  'Resilient':
+    'Increase one ability score by 1 (max 20) and gain proficiency in saving throws using that ability.',
+  'Speedy':
+    'Your Speed increases by 10 feet, Difficult Terrain no longer slows your Dash, and Opportunity Attacks have disadvantage against you.',
+  'Mage Slayer':
+    'When a creature within 5 feet casts a spell you can react to attack it. You impose disadvantage on Concentration saves of creatures you damage, and gain advantage on saves against their spells.',
+  'Polearm Master':
+    'When you attack with a glaive, halberd, quarterstaff, or spear you can make a Bonus Action strike with the butt end (1d4). Creatures entering your reach provoke an Opportunity Attack.',
+  'Inspiring Leader':
+    'Spend 10 minutes to bolster allies, granting each a number of Temporary Hit Points equal to your level + your Charisma modifier.',
+  'Skill Expert':
+    'Increase one ability score by 1 (max 20), gain proficiency in one skill, and gain Expertise in one skill you are proficient with.',
+  'Actor':
+    'Increase Charisma by 1 (max 20). You have advantage on Deception and Performance checks to pass as someone else, and can mimic speech or sounds you have heard.',
+  'Athlete':
+    'Increase Strength or Dexterity by 1 (max 20). Climbing costs no extra movement, you stand from prone with only 5 feet, and you can run long/high jumps after moving only 5 feet.',
+  'Charger':
+    'After you take the Dash action, you can make one melee attack or shove as a Bonus Action, dealing extra damage or pushing the target.',
+  'Chef':
+    'Increase Constitution or Wisdom by 1 (max 20). During a rest you can cook food that grants Temporary Hit Points, and bake treats that restore Hit Points.',
+  'Crossbow Expert':
+    'You ignore the Loading property of crossbows, attacking in melee doesn\'t impose disadvantage on your ranged attacks, and you can fire a hand crossbow as a Bonus Action.',
+  'Crusher':
+    'Increase Strength or Constitution by 1 (max 20). Once per turn you can move a creature 5 feet on a bludgeoning hit, and a critical bludgeoning hit gives attackers advantage against it.',
+  'Defensive Duelist':
+    'Increase Dexterity by 1 (max 20). When hit by a melee attack while wielding a finesse weapon, you can use your reaction to add your proficiency bonus to your AC against that attack.',
+  'Dual Wielder':
+    'Increase Strength or Dexterity by 1 (max 20). You gain +1 AC while wielding two weapons, can draw or stow two at once, and can make your bonus-action attack with non-light weapons.',
+  'Durable':
+    'Increase Constitution by 1 (max 20). You regain extra Hit Points from spending Hit Dice, and have advantage on Death Saving Throws.',
+  'Elemental Adept':
+    'Spells you cast ignore resistance to a chosen damage type (acid, cold, fire, lightning, or thunder), and you treat 1s on those damage dice as 2s.',
+  'Fey Touched':
+    'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You learn Misty Step and one 1st-level Divination or Enchantment spell, casting each once per Long Rest for free.',
+  'Grappler':
+    'Increase Strength or Dexterity by 1 (max 20). You have advantage on attacks against creatures you are grappling and can move them more easily.',
+  'Heavily Armored':
+    'Increase Strength by 1 (max 20) and gain proficiency with Heavy armor.',
+  'Heavy Armor Master':
+    'Increase Strength by 1 (max 20). While wearing Heavy armor, reduce nonmagical bludgeoning, piercing, and slashing damage you take.',
+  'Keen Mind':
+    'Increase Intelligence by 1 (max 20). You always know which way is north and the hours until sunrise or sunset, and can take the Study action as a Bonus Action.',
+  'Lightly Armored':
+    'Increase Strength or Dexterity by 1 (max 20) and gain proficiency with Light armor.',
+  'Martial Weapon Training':
+    'Increase Strength or Dexterity by 1 (max 20) and gain proficiency with Martial weapons.',
+  'Medium Armor Master':
+    'Increase Strength or Dexterity by 1 (max 20). Medium armor doesn\'t impose disadvantage on Stealth and lets you add up to +3 Dexterity to your AC.',
+  'Moderately Armored':
+    'Increase Strength or Dexterity by 1 (max 20) and gain proficiency with Medium armor and Shields.',
+  'Mounted Combatant':
+    'Increase Strength, Dexterity, or Wisdom by 1 (max 20). You have advantage against unmounted creatures smaller than your mount and can redirect attacks aimed at your mount to yourself.',
+  'Observant':
+    'Increase Intelligence or Wisdom by 1 (max 20). You can read lips and take the Search action as a Bonus Action.',
+  'Piercer':
+    'Increase Strength or Dexterity by 1 (max 20). Once per turn you can reroll one piercing damage die, and a critical piercing hit deals an extra damage die.',
+  'Poisoner':
+    'Your weapon and unarmed strike damage ignores resistance to poison, and you can coat a weapon to deal extra poison damage and poison the target.',
+  'Ritual Caster':
+    'Increase Intelligence or Wisdom by 1 (max 20). You learn ritual spells from a chosen class and can cast them as rituals from your ritual book.',
+  'Shadow Touched':
+    'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You learn Invisibility and one 1st-level Illusion or Necromancy spell, casting each once per Long Rest for free.',
+  'Shield Master':
+    'You can shove with your shield as a Bonus Action, add your shield\'s AC to Dexterity saves against effects targeting only you, and use a reaction to take no damage on a successful Dexterity save.',
+  'Skulker':
+    'Increase Dexterity by 1 (max 20). You can Hide when only lightly obscured, missing with a ranged attack doesn\'t reveal your position, and dim light doesn\'t impose disadvantage on your Perception checks.',
+  'Slasher':
+    'Increase Strength or Dexterity by 1 (max 20). Once per turn you can reduce a creature\'s speed by 10 feet on a slashing hit, and a critical slashing hit imposes disadvantage on its attacks.',
+  'Spell Sniper':
+    'The range of your attack-roll spells doubles, those spells ignore half and three-quarters cover, and you learn one attack cantrip.',
+  'Telekinetic':
+    'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You learn Mage Hand and can telekinetically shove a creature 5 feet as a Bonus Action.',
+  'Telepathic':
+    'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You can speak telepathically to creatures within 60 feet and always have Detect Thoughts prepared, casting it once per Long Rest for free.',
+  'Weapon Master':
+    'Increase Strength or Dexterity by 1 (max 20). You gain the Weapon Mastery property of two kinds of weapons you are proficient with.',
 };
 
 /** Standard languages available for the background language bonus */
@@ -301,7 +381,6 @@ export class DndResourcesService {
   }
 
   getRaceNames(): Observable<string[]> { return of(RACE_LIST); }
-  getPartyNames(): Observable<string[]> { return of(PARTY_LIST); }
 
   // ── 2024 class methods ────────────────────────────────────────────────────
 
@@ -362,7 +441,14 @@ export class DndResourcesService {
     if (!this.spells$) {
       this.spells$ = this.http
         .get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json')
-        .pipe(shareReplay(1));
+        .pipe(
+          retry(1),
+          // Don't let a transient failure (e.g. a dev-server blip) poison the
+          // cache — drop it so the next request re-fetches instead of replaying
+          // the error forever.
+          catchError(err => { this.spells$ = null; return throwError(() => err); }),
+          shareReplay(1),
+        );
     }
     return this.spells$;
   }

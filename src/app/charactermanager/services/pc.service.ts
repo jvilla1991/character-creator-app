@@ -1,14 +1,14 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
-import { LevelUpPreview } from '../models/level-up';
+import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 
 // ---------------------------------------------------------------------------
-// Demo seed data — 3 fully-detailed PCs covering both parties.
+// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 const DEMO_PCS: PC[] = [
@@ -17,7 +17,7 @@ const DEMO_PCS: PC[] = [
     name: 'Lyra Moonwhisper',
     playerName: 'Alice',
     player: 'Alice',
-    party: 'The Veiled Compass',
+    campaignId: 'veiled',
     race: 'Half-Elf',
     clazz: 'Bard',
     subclass: 'College of Whispers',
@@ -81,7 +81,7 @@ const DEMO_PCS: PC[] = [
     name: 'Throk Ironjaw',
     playerName: 'Ben',
     player: 'Ben',
-    party: 'The Veiled Compass',
+    campaignId: 'veiled',
     race: 'Half-Orc',
     clazz: 'Barbarian',
     subclass: 'Path of the Totem (Bear)',
@@ -130,7 +130,7 @@ const DEMO_PCS: PC[] = [
     name: 'Pip Underfoot',
     playerName: 'Eve',
     player: 'Eve',
-    party: 'Tomb of the Sleeping Crown',
+    campaignId: 'tomb',
     race: 'Halfling (Lightfoot)',
     clazz: 'Rogue',
     subclass: 'Arcane Trickster',
@@ -196,19 +196,6 @@ export class PCService {
 
   private activePCSubject = new BehaviorSubject<PC | null>(null);
   activePC$ = this.activePCSubject.asObservable();
-
-  /** PCs grouped by party name, derived from pcs$ */
-  pcsByParty$ = this.pcs$.pipe(
-    map(pcs => {
-      const groups = new Map<string, PC[]>();
-      for (const pc of pcs) {
-        const party = pc.party ?? 'Unassigned';
-        if (!groups.has(party)) groups.set(party, []);
-        groups.get(party)!.push(pc);
-      }
-      return groups;
-    })
-  );
 
   constructor(private http: HttpClient) {}
 
@@ -306,6 +293,45 @@ export class PCService {
     );
   }
 
+  /**
+   * Load a campaign member's full PC as the campaign's DM. The dashboard only
+   * holds the privacy-limited member projection for other players' characters;
+   * this fetches the complete sheet so a DM can edit it without losing the
+   * fields the projection omits (spells, gear, notes, …). Demo mode reads the
+   * local store (where the full PC is already present).
+   */
+  getPCByIdAsDm(id: number): Observable<PC> {
+    if (environment.demoMode) {
+      const pc = this.pcs.find(p => p.id === id);
+      return of((pc ?? {}) as PC).pipe(delay(150));
+    }
+    return this.http.get<PC>(`${this.pcUrl}${id}/as-dm`).pipe(
+      map(raw => this.deserializePC(raw))
+    );
+  }
+
+  /**
+   * Persist a DM's edit of a campaign member's PC. Same optimistic local mirror
+   * as {@link updatePC}, but hits the DM-authorized backend path (authorized by
+   * campaign-DM ownership, not PC ownership). Demo mode behaves like updatePC.
+   */
+  updatePCAsDm(pc: PC): Observable<PC> {
+    if (environment.demoMode) {
+      return this.updatePC(pc);
+    }
+    return this.http.put<PC>(`${this.pcUrl}${pc.id}/as-dm`, this.serializePC(pc)).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => {
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      })
+    );
+  }
+
   // ── Level-up (server-authoritative) ────────────────────────────────────────
   // The D&D rules engine lives in the backend (manager-service LevelUpService). These
   // methods are a thin client: preview fetches the computed deltas to show before the
@@ -319,12 +345,23 @@ export class PCService {
     return this.http.get<LevelUpPreview>(`${this.pcUrl}${id}/level-up/preview`);
   }
 
-  /** Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$. */
-  levelUp(id: number): Observable<PC> {
+  /**
+   * Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$.
+   * `choices` carries the only client-supplied inputs (subclass, ASI allocation); the server
+   * computes and validates everything else.
+   */
+  levelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
     if (environment.demoMode) {
-      return this.applyDemoLevelUp(id).pipe(delay(150));
+      return this.applyDemoLevelUp(id, choices).pipe(delay(150));
     }
-    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, {}).pipe(
+    const body: LevelUpChoices = {};
+    if (choices?.subclass) body.subclass = choices.subclass;
+    if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
+    if (choices?.feat) body.feat = choices.feat;
+    if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
+    // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
+    if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
+    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
@@ -390,6 +427,46 @@ export class PCService {
     return out;
   }
 
+  // DEMO-ONLY mirror of the server subclass grant levels (sorcerer/warlock = 1, else = 3).
+  // The subclass catalog is empty server-side (mechanism only), so the demo offers no options
+  // either — the picker never shows. Kept for parity if catalog content is added later.
+  private demoSubclassLevel(clazz: string): number {
+    return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
+  }
+
+  // DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names).
+  private static readonly DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
+    barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
+    bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
+    cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'War Domain'],
+    druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
+    fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
+    monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
+    paladin: ['Oath of Devotion', 'Oath of Glory', 'Oath of the Ancients', 'Oath of Vengeance'],
+    ranger: ['Beast Master', 'Fey Wanderer', 'Gloom Stalker', 'Hunter'],
+    rogue: ['Arcane Trickster', 'Assassin', 'Soulknife', 'Thief'],
+    wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
+  };
+
+  private demoSubclassOptions(clazz: string): string[] {
+    return PCService.DEMO_SUBCLASSES[(clazz ?? '').trim().toLowerCase()] ?? [];
+  }
+
+  // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
+  private demoIsAsiLevel(clazz: string, level: number): boolean {
+    const key = (clazz ?? '').trim().toLowerCase();
+    const levels = key === 'fighter' ? [4, 6, 8, 12, 14, 16, 19]
+      : key === 'rogue' ? [4, 8, 10, 12, 16, 19]
+        : [4, 8, 12, 16, 19];
+    return levels.includes(level);
+  }
+
+  // DEMO-ONLY mirror of the server general-feat catalog (FeatCatalog), sorted.
+  private static readonly DEMO_GENERAL_FEATS = [
+    'Great Weapon Master', 'Inspiring Leader', 'Mage Slayer', 'Polearm Master', 'Resilient',
+    'Sentinel', 'Sharpshooter', 'Skill Expert', 'Speedy', 'War Caster',
+  ];
+
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = this.demoLevelUpFields(pc);
@@ -404,12 +481,71 @@ export class PCService {
       newProfBonus: this.demoProfBonus(newLevel),
       currentSpellSlots: this.demoCurrentMaxSlots(pc),
       newSpellSlots: this.demoSlotsFor(pc.clazz, newLevel),
+      subclassDue: newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass,
+      subclassOptions: (newLevel === this.demoSubclassLevel(pc.clazz) && !pc.subclass)
+        ? this.demoSubclassOptions(pc.clazz) : [],
+      asiDue: this.demoIsAsiLevel(pc.clazz, newLevel),
+      featOptions: this.demoIsAsiLevel(pc.clazz, newLevel) ? [...PCService.DEMO_GENERAL_FEATS] : [],
+      // Class-feature content is server-owned; the demo shim doesn't mirror it.
+      featuresGained: [],
+      currentCantripsKnown: this.demoCantripsKnown(pc.clazz, current),
+      newCantripsKnown: this.demoCantripsKnown(pc.clazz, newLevel),
+      currentSpellsKnown: this.demoPreparedSpells(pc.clazz, current),
+      newSpellsKnown: this.demoPreparedSpells(pc.clazz, newLevel),
     };
   }
 
-  private applyDemoLevelUp(id: number): Observable<PC> {
+  // DEMO-ONLY mirror of the server cantrips-known formula (base +1 at L4 +1 at L10).
+  private demoCantripsKnown(clazz: string, level: number): number {
+    const base: { [k: string]: number } = {
+      bard: 2, cleric: 3, druid: 2, sorcerer: 4, warlock: 2, wizard: 3,
+    };
+    const b = base[(clazz ?? '').trim().toLowerCase()];
+    if (b === undefined || level < 1) return 0;
+    return b + (level >= 4 ? 1 : 0) + (level >= 10 ? 1 : 0);
+  }
+
+  // DEMO-ONLY mirror of the server prepared/known-spell tables (full-caster vs warlock pact).
+  private static readonly DEMO_FULL_PREPARED =
+    [4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22];
+  private static readonly DEMO_PACT_PREPARED =
+    [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15];
+
+  private demoPreparedSpells(clazz: string, level: number): number {
+    const key = (clazz ?? '').trim().toLowerCase();
+    if (level < 1) return 0;
+    const idx = Math.min(level, 20) - 1;
+    if (['bard', 'cleric', 'druid', 'sorcerer', 'wizard'].includes(key)) return PCService.DEMO_FULL_PREPARED[idx];
+    if (key === 'warlock') return PCService.DEMO_PACT_PREPARED[idx];
+    return 0;
+  }
+
+  private applyDemoLevelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
     const existing = this.pcs.find(p => p.id === id)!;
-    const { newLevel, hpGained } = this.demoLevelUpFields(existing);
+    const current = existing.level ?? 1;
+    const newLevel = current + 1;
+    const hitDie = hitDieFor(existing.clazz);
+
+    // Apply the ASI to a copy of the ability scores, then recompute HP with the new CON and
+    // grant retroactive HP for prior levels when CON's modifier rises (mirrors the server).
+    const stats: { [k: string]: number } = {
+      STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...(existing.stats ?? {}),
+    };
+    const oldConMod = modFromScore(stats['CON']);
+    if (choices?.abilityIncreases) {
+      for (const [ability, pts] of Object.entries(choices.abilityIncreases)) {
+        stats[ability] = Math.min(20, (stats[ability] ?? 10) + pts);
+      }
+    }
+    const newConMod = modFromScore(stats['CON']);
+    // DEMO-ONLY: in ROLL mode roll the die client-side so the mock HP varies. Production never
+    // rolls here — the server is the rules authority and performs the roll. Average otherwise.
+    const dieValue = choices?.hpMode === 'ROLL'
+      ? Math.floor(Math.random() * hitDie) + 1
+      : Math.floor(hitDie / 2) + 1;
+    const hpGained = Math.max(1, dieValue + newConMod);
+    const hpDelta = hpGained + (newLevel - 1) * (newConMod - oldConMod);
+
     // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
     const targetSlots = this.demoSlotsFor(existing.clazz, newLevel);
     let spellSlots = existing.spellSlots;
@@ -421,14 +557,28 @@ export class PCService {
         spellSlots[lvl] = { max, used: Math.min(priorUsed, max) };
       }
     }
+    // A chosen feat is recorded among the character's features (matches the server).
+    let features = existing.features;
+    if (choices?.feat) {
+      features = [...(existing.features ?? []),
+        { name: choices.feat, source: `Feat (Level ${newLevel})`, desc: '' }];
+    }
+    // Newly-learned spells are appended to the character's spell list.
+    const spells = choices?.newSpells?.length
+      ? [...(existing.spells ?? []), ...choices.newSpells]
+      : existing.spells;
     const updated: PC = {
       ...existing,
       level: newLevel,
       prof: this.demoProfBonus(newLevel),
+      stats: stats as PC['stats'],
       hp: existing.hp
-        ? { ...existing.hp, max: existing.hp.max + hpGained, cur: existing.hp.cur + hpGained }
-        : { max: hpGained, cur: hpGained, temp: 0 },
+        ? { ...existing.hp, max: existing.hp.max + hpDelta, cur: existing.hp.cur + hpDelta }
+        : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
+      subclass: choices?.subclass || existing.subclass,
+      features,
+      spells,
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);
