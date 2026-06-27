@@ -31,704 +31,153 @@
   <div class="wizard-body">
 
   <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 1">
-    <div class="modal-title">Forge a New Hero</div>
-    <div class="modal-sub">Every legend begins with a name written in ink, and most end the same way.</div>
-
-    <div class="field">
-      <label>Hero's Name</label>
-      <input [(ngModel)]="name"
-             placeholder="e.g. Seraphina Goldveil"
-             autofocus
-             (keydown.enter)="next()"
-             (keydown.escape)="cancel()">
-    </div>
-
-    <div class="field">
-      <label>Player</label>
-      <input [value]="player" disabled
-             title="Your characters are listed under your username">
-    </div>
-  </ng-container>
+  <app-identity-step *ngIf="step === 1"
+    [(name)]="name"
+    [player]="player"
+    (next)="next()"
+    (cancel)="cancel()">
+  </app-identity-step>
 
   <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 2">
-    <div class="modal-title">Choose a Species</div>
-    <div class="modal-sub">Your species shapes your heritage, size, and innate traits.</div>
-
-    <div *ngIf="loadingSpecies" class="loading">Loading species…</div>
-    <div *ngIf="!loadingSpecies" class="picker-accordion">
-      <ng-container *ngFor="let s of speciesList; trackBy: trackByName">
-        <button class="class-pick accordion-head"
-                [class.active]="species === s"
-                type="button"
-                (click)="toggleSpecies(s)">
-          <span>{{ s }}</span>
-          <svg class="accordion-chev" [class.open]="species === s" viewBox="0 0 10 10" aria-hidden="true">
-            <path d="M2 4l3 3 3-3"/>
-          </svg>
-        </button>
-
-        <!-- Selected species: details expand directly beneath it -->
-        <div *ngIf="species === s" class="accordion-body">
-          <div *ngIf="loadingSpeciesDetail" class="loading">Loading traits…</div>
-
-          <div *ngIf="speciesDetail && !loadingSpeciesDetail" class="detail-card species-detail">
-            <div class="detail-row">
-              <span class="detail-label">Size</span>
-              <span class="detail-value">{{ speciesDetail.size }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Speed</span>
-              <span class="detail-value">{{ speciesDetail.speed }} ft.</span>
-            </div>
-            <div *ngIf="speciesDetail.subspecies?.length" class="detail-row">
-              <span class="detail-label">Lineages</span>
-              <span class="detail-value">{{ speciesSubspeciesNames }}</span>
-            </div>
-            <div *ngIf="speciesDetail.traits?.length" class="species-traits">
-              <div class="species-traits-header">Traits</div>
-              <div *ngFor="let trait of speciesDetail.traits" class="trait-item">
-                <span class="trait-name">{{ trait.name }}</span>
-                <span *ngIf="getTraitDescription(trait.name)" class="trait-desc">
-                  {{ getTraitDescription(trait.name) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
-          <div *ngIf="!loadingSpeciesDetail && !speciesDetail" class="detail-card">
-            <div class="detail-row">
-              <span class="detail-label">2024 PHB Note</span>
-              <span class="detail-value">
-                This species is not distinct in the 2024 PHB.
-                Choose Elf or Orc and discuss mixed heritage with your DM.
-              </span>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-    </div>
-  </ng-container>
+  <app-species-step *ngIf="step === 2"
+    [speciesList]="speciesList"
+    [species]="species"
+    [loadingSpecies]="loadingSpecies"
+    [loadingSpeciesDetail]="loadingSpeciesDetail"
+    [speciesDetail]="speciesDetail"
+    [speciesSubspeciesNames]="speciesSubspeciesNames"
+    (toggle)="toggleSpecies($event)">
+  </app-species-step>
 
   <!-- ── Step 3: Class ───────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 3">
-    <div class="modal-title">Choose a Class</div>
-    <div class="modal-sub">Your class sets your hit points, fighting style, and saving throw proficiencies.</div>
-
-    <div *ngIf="loadingClassList" class="loading">Loading classes…</div>
-    <div *ngIf="!loadingClassList" class="picker-accordion">
-      <ng-container *ngFor="let c of classList">
-        <button class="class-pick accordion-head"
-                [class.active]="clazz === c"
-                type="button"
-                (click)="toggleClass(c)">
-          <span>{{ c }}</span>
-          <svg class="accordion-chev" [class.open]="clazz === c" viewBox="0 0 10 10" aria-hidden="true">
-            <path d="M2 4l3 3 3-3"/>
-          </svg>
-        </button>
-
-        <!-- Selected class: hit die / saves (and subclass if required) below it -->
-        <div *ngIf="clazz === c" class="accordion-body">
-          <div *ngIf="!classDetail" class="loading">Loading class details…</div>
-          <div *ngIf="classDetail" class="detail-card" [class.updating]="loadingClassDetail">
-            <div class="detail-row">
-              <span class="detail-label">Hit Die</span>
-              <span class="detail-value">d{{ classDetail.hit_die }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Saving Throws</span>
-              <span class="detail-value">{{ classSavingThrows }}</span>
-            </div>
-          </div>
-
-          <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
-          <ng-container *ngIf="requiresLevel1Subclass && classDetail && !loadingClassDetail">
-            <div class="subclass-header">
-              <span class="eyebrow">Choose a Subclass</span>
-              <span class="subclass-note">Required at level 1 for {{ clazz }}</span>
-            </div>
-            <div class="subclass-list">
-              <button *ngFor="let sub of availableSubclasses"
-                      type="button"
-                      class="subclass-card"
-                      [class.active]="selectedSubclass === sub.name"
-                      (click)="selectedSubclass = sub.name">
-                <span class="subclass-name">{{ sub.name }}</span>
-                <span class="subclass-desc">{{ sub.desc }}</span>
-              </button>
-            </div>
-          </ng-container>
-        </div>
-      </ng-container>
-    </div>
-  </ng-container>
+  <app-class-step *ngIf="step === 3"
+    [classList]="classList"
+    [clazz]="clazz"
+    [classDetail]="classDetail"
+    [loadingClassList]="loadingClassList"
+    [loadingClassDetail]="loadingClassDetail"
+    [classSavingThrows]="classSavingThrows"
+    [requiresLevel1Subclass]="requiresLevel1Subclass"
+    [availableSubclasses]="availableSubclasses"
+    [(selectedSubclass)]="selectedSubclass"
+    (toggle)="toggleClass($event)">
+  </app-class-step>
 
   <!-- ── Step 4: Background ──────────────────────────────────────────── -->
-  <ng-container *ngIf="step === 4">
-    <div class="modal-title">Choose a Background</div>
-    <div class="modal-sub">Your background grants skill proficiencies, a feat, and ability score bonuses.</div>
-
-    <div class="source-filters">
-      <label *ngFor="let group of backgroundGroups; trackBy: trackBySource"
-             class="source-toggle"
-             [class.disabled]="!enabledSources[group.source]">
-        <input type="checkbox"
-               [checked]="enabledSources[group.source]"
-               (change)="toggleSource(group.source)">
-        {{ group.source }}
-      </label>
-    </div>
-
-    <div *ngFor="let group of activeBackgroundGroups; trackBy: trackBySource" class="background-group">
-      <div class="background-group-label">{{ group.source }}</div>
-      <div class="picker-accordion">
-        <ng-container *ngFor="let b of group.backgrounds; trackBy: trackByName">
-          <button class="class-pick accordion-head"
-                  [class.active]="background === b"
-                  type="button"
-                  (click)="toggleBackground(b)">
-            <span>{{ b }}</span>
-            <svg class="accordion-chev" [class.open]="background === b" viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M2 4l3 3 3-3"/>
-            </svg>
-          </button>
-
-          <!-- Selected background: ability bonuses, proficiencies, origin feat below it -->
-          <div *ngIf="background === b" class="accordion-body">
-            <div *ngIf="loadingBackgroundDetail" class="loading">Loading background details…</div>
-
-            <div *ngIf="backgroundDetail && !loadingBackgroundDetail" class="detail-card">
-              <div class="detail-row">
-                <span class="detail-label">Ability Bonuses</span>
-                <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames }}</span>
-              </div>
-              <div *ngIf="backgroundDetail.proficiencies?.length" class="detail-row">
-                <span class="detail-label">Proficiencies</span>
-                <span class="detail-value">{{ backgroundProficiencyNames }}</span>
-              </div>
-            </div>
-
-            <!-- Origin Feat card (always fixed per background — display only) -->
-            <div *ngIf="backgroundFeatName && !loadingBackgroundDetail" class="feat-card">
-              <div class="feat-card-eyebrow">Origin Feat</div>
-              <div class="feat-card-name">{{ backgroundFeatName }}</div>
-              <div *ngIf="backgroundFeatDescription" class="feat-card-desc">
-                {{ backgroundFeatDescription }}
-              </div>
-              <div *ngIf="!backgroundFeatDescription" class="feat-card-desc feat-card-desc--unknown">
-                See the 2024 Player's Handbook for full details.
-              </div>
-            </div>
-          </div>
-        </ng-container>
-      </div>
-    </div>
-  </ng-container>
+  <app-background-step *ngIf="step === 4"
+    [backgroundGroups]="backgroundGroups"
+    [enabledSources]="enabledSources"
+    [activeBackgroundGroups]="activeBackgroundGroups"
+    [background]="background"
+    [backgroundDetail]="backgroundDetail"
+    [loadingBackgroundDetail]="loadingBackgroundDetail"
+    [backgroundAbilityNames]="backgroundAbilityNames"
+    [backgroundProficiencyNames]="backgroundProficiencyNames"
+    [backgroundFeatName]="backgroundFeatName"
+    [backgroundFeatDescription]="backgroundFeatDescription"
+    (toggleSource)="toggleSource($event)"
+    (toggleBackground)="toggleBackground($event)">
+  </app-background-step>
 
   <!-- ── Step 5: Proficiencies & Languages ──────────────────────────────── -->
-  <ng-container *ngIf="step === 5">
-    <div class="modal-title">Proficiencies &amp; Languages</div>
-    <div class="modal-sub">
-      Choose {{ classSkillConfig.choose }} skill{{ classSkillConfig.choose !== 1 ? 's' : '' }}
-      from your class list. Background skills and tools are already granted.
-    </div>
-
-    <!-- Class skill selection -->
-    <div class="prof-section">
-      <div class="prof-section-header">
-        <span class="eyebrow">{{ clazz }} Skills</span>
-        <span class="prof-counter" [class.complete]="classSkillsFull">
-          {{ selectedSkills.length }}/{{ classSkillConfig.choose }} chosen
-        </span>
-      </div>
-      <div class="skill-chips">
-        <button *ngFor="let skill of classSkillConfig.from; trackBy: trackByName"
-                type="button"
-                class="class-pick"
-                [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
-                [class.locked]="isSkillLocked(skill)"
-                [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
-                [disabled]="isSkillLocked(skill)"
-                (click)="toggleSkillProf(skill)">{{ skill }}</button>
-      </div>
-    </div>
-
-    <!-- Background proficiencies (read-only) -->
-    <div *ngIf="backgroundDetail" class="prof-section">
-      <div class="prof-section-header">
-        <span class="eyebrow">{{ background }} Proficiencies</span>
-      </div>
-      <div *ngIf="backgroundSkillProfs.length" class="skill-chips">
-        <span *ngFor="let skill of backgroundSkillProfs"
-              class="class-pick locked"
-              title="Granted by background">{{ skill }}</span>
-      </div>
-      <div *ngIf="backgroundToolProfs.length" class="prof-tool-list">
-        <span class="detail-label">Tools &amp; Equipment</span>
-        <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
-      </div>
-    </div>
-
-    <!-- Language selection -->
-    <div class="prof-section">
-      <div class="prof-section-header">
-        <span class="eyebrow">Languages</span>
-      </div>
-      <div class="language-row">
-        <span class="lang-chip locked">Common</span>
-        <div class="field lang-field">
-          <label>Additional Language</label>
-          <select [(ngModel)]="languageChoice" name="languageChoice">
-            <option value="">— choose a language —</option>
-            <option *ngFor="let lang of standardLanguages" [value]="lang">{{ lang }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </ng-container>
+  <app-proficiencies-step *ngIf="step === 5"
+    [clazz]="clazz"
+    [classSkillConfig]="classSkillConfig"
+    [selectedSkills]="selectedSkills"
+    [classSkillsFull]="classSkillsFull"
+    [backgroundDetail]="backgroundDetail"
+    [background]="background"
+    [backgroundSkillProfs]="backgroundSkillProfs"
+    [backgroundToolProfs]="backgroundToolProfs"
+    [(languageChoice)]="languageChoice"
+    [standardLanguages]="standardLanguages"
+    (toggleSkill)="toggleSkillProf($event)">
+  </app-proficiencies-step>
 
   <!-- ── Step 6: Ability Scores ──────────────────────────────────────── -->
-  <ng-container *ngIf="step === 6">
-    <div class="modal-title">Assign Ability Scores</div>
-    <div class="modal-sub">
-      Choose a method, assign your scores, then apply your background's +2/+1 bonus.
-    </div>
-
-    <!-- Method selector -->
-    <div class="score-method-tabs">
-      <button type="button" class="score-method-tab"
-              [class.active]="abilityMethod === 'standard'"
-              (click)="abilityMethod = 'standard'">Standard Array</button>
-      <button type="button" class="score-method-tab"
-              [class.active]="abilityMethod === 'point-buy'"
-              (click)="abilityMethod = 'point-buy'">Point Buy</button>
-      <span class="score-method-tab score-method-tab--disabled"
-            title="Dice rolling will be available in a future update.">
-        Roll Dice
-        <span class="score-method-soon">Soon</span>
-      </span>
-    </div>
-
-    <!-- ── Standard Array ───────────────────────────────────────────────── -->
-    <ng-container *ngIf="abilityMethod === 'standard'">
-      <div class="ability-grid">
-        <div *ngFor="let ability of abilities" class="ability-row">
-          <span class="ability-label">{{ ability }}</span>
-          <select class="ability-select" [(ngModel)]="assignments[ability]">
-            <option [ngValue]="null">—</option>
-            <option *ngFor="let v of availableFor(ability)" [ngValue]="v">{{ v }}</option>
-          </select>
-          <span class="ability-bonus">
-            <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
-            <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
-          </span>
-          <span class="ability-final" *ngIf="assignments[ability] !== null">
-            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
-          </span>
-        </div>
-      </div>
-    </ng-container>
-
-    <!-- ── Point Buy ────────────────────────────────────────────────────── -->
-    <ng-container *ngIf="abilityMethod === 'point-buy'">
-      <div class="pb-budget">
-        <span class="pb-budget-spent"
-              [class.pb-budget-full]="pointBuyRemaining === 0">
-          {{ pointBuySpent }}&thinsp;/&thinsp;{{ POINT_BUY_BUDGET }} points spent
-        </span>
-        <span class="pb-budget-remaining"
-              [class.pb-budget-low]="pointBuyRemaining <= 3 && pointBuyRemaining > 0">
-          {{ pointBuyRemaining }} remaining
-        </span>
-      </div>
-
-      <div class="ability-grid">
-        <div *ngFor="let ability of abilities" class="ability-row ability-row--pb">
-          <span class="ability-label">{{ ability }}</span>
-          <div class="pb-stepper">
-            <button type="button" class="pb-btn"
-                    [disabled]="!canDecreaseScore(ability)"
-                    (click)="decreaseScore(ability)">−</button>
-            <span class="pb-value">{{ pointBuyScores[ability] }}</span>
-            <button type="button" class="pb-btn"
-                    [disabled]="!canIncreaseScore(ability)"
-                    (click)="increaseScore(ability)">+</button>
-          </div>
-          <span class="ability-bonus">
-            <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
-            <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
-          </span>
-          <span class="ability-final">
-            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
-          </span>
-        </div>
-      </div>
-    </ng-container>
-
-    <!-- Background bonus selectors (shared by both methods) -->
-    <div *ngIf="backgroundDetail && bonusAbilities.length" class="bonus-selectors">
-      <div class="field">
-        <label>{{ background }} +2 bonus</label>
-        <select [(ngModel)]="bonusPlus2">
-          <option value="">— choose ability —</option>
-          <option *ngFor="let a of bonusAbilities"
-                  [value]="a"
-                  [disabled]="bonusPlus1 === a">{{ a }}</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>{{ background }} +1 bonus</label>
-        <select [(ngModel)]="bonusPlus1">
-          <option value="">— choose ability —</option>
-          <option *ngFor="let a of bonusAbilities"
-                  [value]="a"
-                  [disabled]="bonusPlus2 === a">{{ a }}</option>
-        </select>
-      </div>
-    </div>
-  </ng-container>
+  <app-ability-scores-step *ngIf="step === 6"
+    [(abilityMethod)]="abilityMethod"
+    [abilities]="abilities"
+    [assignments]="assignments"
+    [pointBuyScores]="pointBuyScores"
+    [(bonusPlus2)]="bonusPlus2"
+    [(bonusPlus1)]="bonusPlus1"
+    [bonusAbilities]="bonusAbilities"
+    [backgroundDetail]="backgroundDetail"
+    [background]="background"
+    [pointBuyBudget]="POINT_BUY_BUDGET"
+    [pointBuySpent]="pointBuySpent"
+    [pointBuyRemaining]="pointBuyRemaining"
+    [finalScore]="finalScore"
+    [modifier]="modifier"
+    [availableFor]="availableFor"
+    [canIncreaseScore]="canIncreaseScore"
+    [canDecreaseScore]="canDecreaseScore"
+    (increase)="increaseScore($event)"
+    (decrease)="decreaseScore($event)">
+  </app-ability-scores-step>
 
   <!-- ── Step 7: Spells (spellcasting classes only) ────────────────── -->
-  <ng-container *ngIf="step === 7 && isSpellcastingClass">
-    <div class="modal-title">Choose Your Spells</div>
-    <div class="modal-sub">
-      Select {{ maxCantrips }} cantrip{{ maxCantrips !== 1 ? 's' : '' }} and
-      {{ maxKnownSpells }} spell{{ maxKnownSpells !== 1 ? 's' : '' }} to begin your arcane journey.
-    </div>
-
-    <!-- Filter bar -->
-    <div class="spell-filter-bar">
-      <button type="button" class="spell-level-tab"
-              [class.active]="spellLevelFilter === 'all'"
-              (click)="spellLevelFilter = 'all'">All</button>
-      <button type="button" class="spell-level-tab"
-              [class.active]="spellLevelFilter === 0"
-              (click)="spellLevelFilter = 0">Cantrip</button>
-      <button type="button" class="spell-level-tab"
-              [class.active]="spellLevelFilter === 1"
-              (click)="spellLevelFilter = 1">1st</button>
-      <input class="spell-search" type="text" placeholder="Search…"
-             [(ngModel)]="spellSearch" name="spellSearch">
-    </div>
-
-    <div *ngIf="loadingSpells" class="loading">Loading spells…</div>
-
-    <!-- Spell tile list -->
-    <div *ngIf="!loadingSpells" class="spell-scroll">
-      <div *ngFor="let s of filteredSpellList; trackBy: trackBySpellName" class="spell-row">
-        <!-- Click the spell to expand/collapse its description -->
-        <button type="button"
-                class="spell-pick"
-                [class.active]="isSpellSelected(s)"
-                [class.open]="isSpellDescOpen(s)"
-                (click)="toggleSpellDesc(s)">
-          <span class="spell-pick-name">
-            {{ s.name }}
-            <span *ngIf="isSpellSelected(s)" class="spell-selected-badge">Selected</span>
-          </span>
-          <span class="spell-pick-meta">
-            {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
-            · {{ s.school }} · {{ s.actionType }}
-            <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
-            <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
-          </span>
-        </button>
-
-        <!-- Collapsible spell description, with the add/remove action -->
-        <div *ngIf="isSpellDescOpen(s)" class="spell-desc">
-          <p class="spell-desc-text">{{ s.description || 'No description available.' }}</p>
-          <div class="spell-desc-props">
-            <span *ngIf="s.range"><strong>Range</strong> {{ s.range }}</span>
-            <span *ngIf="s.duration"><strong>Duration</strong> {{ s.duration }}</span>
-            <span *ngIf="s.material"><strong>Material</strong> {{ s.material }}</span>
-          </div>
-          <p *ngIf="s.higherLevelSlot" class="spell-desc-upcast">
-            <strong>At Higher Levels</strong> {{ s.higherLevelSlot }}
-          </p>
-          <p *ngIf="s.cantripUpgrade" class="spell-desc-upcast">
-            <strong>Cantrip Upgrade</strong> {{ s.cantripUpgrade }}
-          </p>
-          <div class="spell-desc-actions">
-            <button type="button"
-                    class="btn sm"
-                    [class.primary]="!isSpellSelected(s)"
-                    [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
-                    (click)="toggleSpell(s)">
-              {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div *ngIf="filteredSpellList.length === 0" class="loading">No spells match your search.</div>
-    </div>
-
-    <!-- Selection counter -->
-    <div class="spell-counter">
-      <span [class.complete]="selectedCantrips === maxCantrips">
-        {{ selectedCantrips }}/{{ maxCantrips }} cantrips
-      </span>
-      <span class="spell-counter-sep">·</span>
-      <span [class.complete]="selectedLeveled === maxKnownSpells">
-        {{ selectedLeveled }}/{{ maxKnownSpells }} spells
-      </span>
-    </div>
-  </ng-container>
+  <app-spells-step *ngIf="step === 7 && isSpellcastingClass"
+    [filteredSpellList]="filteredSpellList"
+    [loadingSpells]="loadingSpells"
+    [maxCantrips]="maxCantrips"
+    [maxKnownSpells]="maxKnownSpells"
+    [selectedCantrips]="selectedCantrips"
+    [selectedLeveled]="selectedLeveled"
+    [(spellLevelFilter)]="spellLevelFilter"
+    [(spellSearch)]="spellSearch"
+    [selectedSpells]="selectedSpells"
+    [expandedSpellName]="expandedSpellName"
+    (toggleDesc)="toggleSpellDesc($event)"
+    (toggleSpell)="toggleSpell($event)">
+  </app-spells-step>
 
   <!-- ── Step 7/8: Starting Equipment ──────────────────────────────── -->
-  <ng-container *ngIf="step === equipmentStep">
-    <div class="modal-title">Starting Equipment</div>
-    <div class="modal-sub">
-      Choose a ready-made kit or take gold and outfit yourself your own way.
-    </div>
-
-    <div *ngIf="loadingEquipment" class="loading">Loading equipment…</div>
-
-    <div *ngIf="!loadingEquipment && currentClassEquipment" class="equip-options">
-
-      <!-- Option A: Item kit -->
-      <button type="button"
-              class="equip-card"
-              [class.active]="equipmentChoice === 'A'"
-              (click)="equipmentChoice = 'A'">
-        <div class="equip-card-header">
-          <span class="equip-card-label">Option A</span>
-          <span class="equip-card-tag">Starter Kit</span>
-        </div>
-        <ul class="equip-list">
-          <li *ngFor="let w of currentClassEquipment!.optionA.weapons">
-            {{ w.name }}<span *ngIf="w.notes"> {{ w.notes }}</span>
-            <em class="equip-dmg">{{ w.dmg }}</em>
-          </li>
-          <li *ngFor="let g of currentClassEquipment!.optionA.gear">
-            {{ g.name }}
-          </li>
-          <li *ngIf="currentClassEquipment!.optionA.gp > 0">
-            {{ currentClassEquipment!.optionA.gp }} gp
-          </li>
-        </ul>
-      </button>
-
-      <!-- Option B: Gold -->
-      <button type="button"
-              class="equip-card"
-              [class.active]="equipmentChoice === 'B'"
-              (click)="equipmentChoice = 'B'">
-        <div class="equip-card-header">
-          <span class="equip-card-label">Option B</span>
-          <span class="equip-card-tag">Buy Your Own</span>
-        </div>
-        <div class="equip-gold-amount">
-          {{ currentClassEquipment!.optionB.gp }} gp
-        </div>
-        <div class="equip-gold-note">to spend at any shop</div>
-      </button>
-    </div>
-
-    <!-- Background gold (always granted) -->
-    <div *ngIf="!loadingEquipment && background" class="equip-bg-gold">
-      <span class="detail-label">Background Gold</span>
-      <span class="detail-value">+{{ backgroundStartingGold }} gp from {{ background }}</span>
-    </div>
-  </ng-container>
+  <app-equipment-step *ngIf="step === equipmentStep"
+    [loadingEquipment]="loadingEquipment"
+    [currentClassEquipment]="currentClassEquipment"
+    [(equipmentChoice)]="equipmentChoice"
+    [background]="background"
+    [backgroundStartingGold]="backgroundStartingGold">
+  </app-equipment-step>
 
   <!-- ── Review Step ────────────────────────────────────────────────── -->
-  <ng-container *ngIf="step === reviewStep">
-    <div class="modal-title">Review Your Hero</div>
-    <div class="modal-sub">Everything looks right? Click Inscribe to bring your hero to life.</div>
-
-    <!-- Combat stats banner -->
-    <div class="review-stat-bar">
-      <div class="review-stat">
-        <span class="review-stat-label">HP</span>
-        <span class="review-stat-value">{{ reviewHp }}</span>
-      </div>
-      <div class="review-stat">
-        <span class="review-stat-label">AC</span>
-        <span class="review-stat-value">{{ reviewAc }}</span>
-      </div>
-      <div class="review-stat">
-        <span class="review-stat-label">Initiative</span>
-        <span class="review-stat-value">{{ reviewInitiative }}</span>
-      </div>
-      <div class="review-stat">
-        <span class="review-stat-label">Speed</span>
-        <span class="review-stat-value">30 ft</span>
-      </div>
-      <div class="review-stat">
-        <span class="review-stat-label">Prof Bonus</span>
-        <span class="review-stat-value">+2</span>
-      </div>
-    </div>
-
-    <div class="review-scroll">
-
-      <!-- Identity -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Identity</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(1)">Edit</button>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Name</span>
-          <span class="review-value">{{ name }}</span>
-        </div>
-        <div *ngIf="player" class="review-row">
-          <span class="review-label">Player</span>
-          <span class="review-value">{{ player }}</span>
-        </div>
-      </div>
-
-      <!-- Species -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Species</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(2)">Edit</button>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Species</span>
-          <span class="review-value">{{ species }}</span>
-        </div>
-        <div *ngIf="speciesDetail" class="review-row">
-          <span class="review-label">Size / Speed</span>
-          <span class="review-value">{{ speciesDetail.size }}, {{ speciesDetail.speed }} ft.</span>
-        </div>
-        <div *ngIf="reviewSpeciesTraitNames" class="review-row">
-          <span class="review-label">Traits</span>
-          <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames }}</span>
-        </div>
-      </div>
-
-      <!-- Class -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Class</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(3)">Edit</button>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Class</span>
-          <span class="review-value">{{ clazz }}</span>
-        </div>
-        <div *ngIf="selectedSubclass" class="review-row">
-          <span class="review-label">Subclass</span>
-          <span class="review-value">{{ selectedSubclass }}</span>
-        </div>
-        <div *ngIf="classDetail" class="review-row">
-          <span class="review-label">Hit Die</span>
-          <span class="review-value">d{{ classDetail.hit_die }}</span>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Saving Throws</span>
-          <span class="review-value">{{ classSavingThrows }}</span>
-        </div>
-      </div>
-
-      <!-- Background -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Background</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(4)">Edit</button>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Background</span>
-          <span class="review-value">{{ background }}</span>
-        </div>
-        <div *ngIf="backgroundFeatName" class="review-row">
-          <span class="review-label">Origin Feat</span>
-          <span class="review-value">{{ backgroundFeatName }}</span>
-        </div>
-        <div *ngIf="bonusPlus2 && bonusPlus1" class="review-row">
-          <span class="review-label">Ability Bonuses</span>
-          <span class="review-value">+2 {{ bonusPlus2 }}, +1 {{ bonusPlus1 }}</span>
-        </div>
-      </div>
-
-      <!-- Proficiencies & Languages -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Proficiencies &amp; Languages</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(5)">Edit</button>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Skills</span>
-          <span class="review-value review-value--wrap">{{ reviewAllSkills.join(', ') || '—' }}</span>
-        </div>
-        <div *ngIf="backgroundToolProfs.length" class="review-row">
-          <span class="review-label">Tools</span>
-          <span class="review-value review-value--wrap">{{ backgroundToolProfs.join(', ') }}</span>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Languages</span>
-          <span class="review-value">Common{{ languageChoice ? ', ' + languageChoice : '' }}</span>
-        </div>
-      </div>
-
-      <!-- Ability Scores -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Ability Scores</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(6)">Edit</button>
-        </div>
-        <div class="review-ability-grid">
-          <div *ngFor="let ability of abilities" class="review-ability">
-            <span class="review-ability-label">{{ ability }}</span>
-            <span class="review-ability-score">{{ finalScore(ability) }}</span>
-            <span class="review-ability-mod">{{ modifier(finalScore(ability)) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Spells (casters only) -->
-      <div *ngIf="isSpellcastingClass" class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Spells</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(7)">Edit</button>
-        </div>
-        <ng-container *ngIf="selectedSpells.length === 0">
-          <div class="review-row">
-            <span class="review-value review-value--muted">No spells selected yet</span>
-          </div>
-        </ng-container>
-        <div *ngIf="reviewCantripNames" class="review-row">
-          <span class="review-label">Cantrips</span>
-          <span class="review-value review-value--wrap">{{ reviewCantripNames }}</span>
-        </div>
-        <div *ngIf="reviewLeveledSpellNames" class="review-row">
-          <span class="review-label">1st Level</span>
-          <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames }}</span>
-        </div>
-      </div>
-
-      <!-- Starting Equipment -->
-      <div class="review-section">
-        <div class="review-section-header">
-          <span class="review-section-title">Starting Equipment</span>
-          <button type="button" class="btn review-edit-btn" (click)="goToStep(equipmentStep)">Edit</button>
-        </div>
-        <ng-container *ngIf="equipmentChoice === 'A' && currentClassEquipment">
-          <div *ngIf="reviewWeaponNames" class="review-row">
-            <span class="review-label">Weapons</span>
-            <span class="review-value review-value--wrap">{{ reviewWeaponNames }}</span>
-          </div>
-          <div *ngIf="reviewGearNames" class="review-row">
-            <span class="review-label">Gear</span>
-            <span class="review-value review-value--wrap">{{ reviewGearNames }}</span>
-          </div>
-        </ng-container>
-        <div *ngIf="equipmentChoice === 'B'" class="review-row">
-          <span class="review-label">Gold Budget</span>
-          <span class="review-value">{{ currentClassEquipment?.optionB?.gp ?? 0 }} gp to spend</span>
-        </div>
-        <div class="review-row">
-          <span class="review-label">Starting Gold</span>
-          <span class="review-value">{{ reviewStartingGp }} gp total</span>
-        </div>
-      </div>
-
-    </div><!-- end .review-scroll -->
-  </ng-container>
+  <app-review-step *ngIf="step === reviewStep"
+    [reviewHp]="reviewHp"
+    [reviewAc]="reviewAc"
+    [reviewInitiative]="reviewInitiative"
+    [name]="name"
+    [player]="player"
+    [species]="species"
+    [speciesDetail]="speciesDetail"
+    [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
+    [clazz]="clazz"
+    [selectedSubclass]="selectedSubclass"
+    [classDetail]="classDetail"
+    [classSavingThrows]="classSavingThrows"
+    [background]="background"
+    [backgroundFeatName]="backgroundFeatName"
+    [bonusPlus2]="bonusPlus2"
+    [bonusPlus1]="bonusPlus1"
+    [reviewAllSkills]="reviewAllSkills"
+    [backgroundToolProfs]="backgroundToolProfs"
+    [languageChoice]="languageChoice"
+    [abilities]="abilities"
+    [finalScore]="finalScore"
+    [modifier]="modifier"
+    [isSpellcastingClass]="isSpellcastingClass"
+    [selectedSpells]="selectedSpells"
+    [reviewCantripNames]="reviewCantripNames"
+    [reviewLeveledSpellNames]="reviewLeveledSpellNames"
+    [equipmentChoice]="equipmentChoice"
+    [equipmentStep]="equipmentStep"
+    [currentClassEquipment]="currentClassEquipment"
+    [reviewWeaponNames]="reviewWeaponNames"
+    [reviewGearNames]="reviewGearNames"
+    [reviewStartingGp]="reviewStartingGp"
+    (edit)="goToStep($event)">
+  </app-review-step>
 
   </div><!-- end .wizard-body -->
 

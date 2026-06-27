@@ -18,6 +18,15 @@ import { FeaturesListComponent } from './components/character-sheet/panels/featu
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
+import { IdentityStepComponent } from './components/create-character-modal/steps/identity-step/identity-step.component';
+import { SpeciesStepComponent } from './components/create-character-modal/steps/species-step/species-step.component';
+import { ClassStepComponent } from './components/create-character-modal/steps/class-step/class-step.component';
+import { BackgroundStepComponent } from './components/create-character-modal/steps/background-step/background-step.component';
+import { ProficienciesStepComponent } from './components/create-character-modal/steps/proficiencies-step/proficiencies-step.component';
+import { AbilityScoresStepComponent } from './components/create-character-modal/steps/ability-scores-step/ability-scores-step.component';
+import { SpellsStepComponent } from './components/create-character-modal/steps/spells-step/spells-step.component';
+import { EquipmentStepComponent } from './components/create-character-modal/steps/equipment-step/equipment-step.component';
+import { ReviewStepComponent } from './components/create-character-modal/steps/review-step/review-step.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
@@ -65,6 +74,15 @@ const routes: Routes = [
     SidenavComponent,
     DeleteConfirmationModalComponent,
     CreateCharacterModalComponent,
+    IdentityStepComponent,
+    SpeciesStepComponent,
+    ClassStepComponent,
+    BackgroundStepComponent,
+    ProficienciesStepComponent,
+    AbilityScoresStepComponent,
+    SpellsStepComponent,
+    EquipmentStepComponent,
+    ReviewStepComponent,
     DiceRollerModalComponent,
     LevelUpModalComponent,
     CharacterSheetComponent,

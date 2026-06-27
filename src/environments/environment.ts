@@ -2,9 +2,21 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+// localStorage key holding a visitor's "Explore the Demo" opt-in. When set to
+// 'true', the app runs entirely on in-memory seed data with no backend calls.
+export const DEMO_MODE_KEY = 'demoMode';
+
 export const environment = {
   production: false,
-  demoMode: false,
+  // Runtime-driven, not baked at build time: a portfolio visitor opts into demo
+  // mode from the login screen, so this must be read live on every access.
+  get demoMode(): boolean {
+    try {
+      return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  },
   authApiUrl: 'http://localhost:8085',
   characterApiUrl: 'http://localhost:8080'
 };

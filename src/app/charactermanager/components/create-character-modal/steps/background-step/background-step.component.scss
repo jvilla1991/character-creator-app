@@ -1,0 +1,102 @@
+@use '../wizard-shared';
+
+// ── Source filter checkboxes ─────────────────────────────────────────────
+
+.source-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.source-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(138, 92, 246, 0.35);
+  background: rgba(138, 92, 246, 0.1);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  input[type="checkbox"] {
+    accent-color: #8a5cf6;
+    width: 13px;
+    height: 13px;
+    cursor: pointer;
+  }
+
+  &.disabled {
+    color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
+  }
+}
+
+// ── Background source groups ──────────────────────────────────────────────
+
+.background-group {
+  margin-bottom: 12px;
+}
+
+.background-group-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+// ── Origin Feat card ──────────────────────────────────────────────────────
+
+.feat-card {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(212, 176, 106, 0.35);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+
+  .feat-card-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+    opacity: 0.75;
+  }
+
+  .feat-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .feat-card-desc {
+    font-family: 'Newsreader', serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.75);
+
+    &--unknown {
+      font-style: italic;
+      opacity: 0.55;
+    }
+  }
+}

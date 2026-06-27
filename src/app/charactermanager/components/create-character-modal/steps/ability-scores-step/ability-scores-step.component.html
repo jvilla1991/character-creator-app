@@ -1,0 +1,97 @@
+<div class="modal-title">Assign Ability Scores</div>
+<div class="modal-sub">
+  Choose a method, assign your scores, then apply your background's +2/+1 bonus.
+</div>
+
+<!-- Method selector -->
+<div class="score-method-tabs">
+  <button type="button" class="score-method-tab"
+          [class.active]="abilityMethod === 'standard'"
+          (click)="abilityMethodChange.emit('standard')">Standard Array</button>
+  <button type="button" class="score-method-tab"
+          [class.active]="abilityMethod === 'point-buy'"
+          (click)="abilityMethodChange.emit('point-buy')">Point Buy</button>
+  <span class="score-method-tab score-method-tab--disabled"
+        title="Dice rolling will be available in a future update.">
+    Roll Dice
+    <span class="score-method-soon">Soon</span>
+  </span>
+</div>
+
+<!-- ── Standard Array ───────────────────────────────────────────────── -->
+<ng-container *ngIf="abilityMethod === 'standard'">
+  <div class="ability-grid">
+    <div *ngFor="let ability of abilities" class="ability-row">
+      <span class="ability-label">{{ ability }}</span>
+      <select class="ability-select" [(ngModel)]="assignments[ability]">
+        <option [ngValue]="null">—</option>
+        <option *ngFor="let v of availableFor(ability)" [ngValue]="v">{{ v }}</option>
+      </select>
+      <span class="ability-bonus">
+        <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
+        <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+      </span>
+      <span class="ability-final" *ngIf="assignments[ability] !== null">
+        = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+      </span>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ── Point Buy ────────────────────────────────────────────────────── -->
+<ng-container *ngIf="abilityMethod === 'point-buy'">
+  <div class="pb-budget">
+    <span class="pb-budget-spent"
+          [class.pb-budget-full]="pointBuyRemaining === 0">
+      {{ pointBuySpent }}&thinsp;/&thinsp;{{ pointBuyBudget }} points spent
+    </span>
+    <span class="pb-budget-remaining"
+          [class.pb-budget-low]="pointBuyRemaining <= 3 && pointBuyRemaining > 0">
+      {{ pointBuyRemaining }} remaining
+    </span>
+  </div>
+
+  <div class="ability-grid">
+    <div *ngFor="let ability of abilities" class="ability-row ability-row--pb">
+      <span class="ability-label">{{ ability }}</span>
+      <div class="pb-stepper">
+        <button type="button" class="pb-btn"
+                [disabled]="!canDecreaseScore(ability)"
+                (click)="decrease.emit(ability)">−</button>
+        <span class="pb-value">{{ pointBuyScores[ability] }}</span>
+        <button type="button" class="pb-btn"
+                [disabled]="!canIncreaseScore(ability)"
+                (click)="increase.emit(ability)">+</button>
+      </div>
+      <span class="ability-bonus">
+        <ng-container *ngIf="bonusPlus2 === ability">+2</ng-container>
+        <ng-container *ngIf="bonusPlus1 === ability">+1</ng-container>
+      </span>
+      <span class="ability-final">
+        = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+      </span>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Background bonus selectors (shared by both methods) -->
+<div *ngIf="backgroundDetail && bonusAbilities.length" class="bonus-selectors">
+  <div class="field">
+    <label>{{ background }} +2 bonus</label>
+    <select [ngModel]="bonusPlus2" (ngModelChange)="bonusPlus2Change.emit($event)">
+      <option value="">— choose ability —</option>
+      <option *ngFor="let a of bonusAbilities"
+              [value]="a"
+              [disabled]="bonusPlus1 === a">{{ a }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>{{ background }} +1 bonus</label>
+    <select [ngModel]="bonusPlus1" (ngModelChange)="bonusPlus1Change.emit($event)">
+      <option value="">— choose ability —</option>
+      <option *ngFor="let a of bonusAbilities"
+              [value]="a"
+              [disabled]="bonusPlus2 === a">{{ a }}</option>
+    </select>
+  </div>
+</div>

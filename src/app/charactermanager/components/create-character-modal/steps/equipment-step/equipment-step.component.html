@@ -1,0 +1,53 @@
+<div class="modal-title">Starting Equipment</div>
+<div class="modal-sub">
+  Choose a ready-made kit or take gold and outfit yourself your own way.
+</div>
+
+<div *ngIf="loadingEquipment" class="loading">Loading equipment…</div>
+
+<div *ngIf="!loadingEquipment && currentClassEquipment" class="equip-options">
+
+  <!-- Option A: Item kit -->
+  <button type="button"
+          class="equip-card"
+          [class.active]="equipmentChoice === 'A'"
+          (click)="equipmentChoiceChange.emit('A')">
+    <div class="equip-card-header">
+      <span class="equip-card-label">Option A</span>
+      <span class="equip-card-tag">Starter Kit</span>
+    </div>
+    <ul class="equip-list">
+      <li *ngFor="let w of currentClassEquipment!.optionA.weapons">
+        {{ w.name }}<span *ngIf="w.notes"> {{ w.notes }}</span>
+        <em class="equip-dmg">{{ w.dmg }}</em>
+      </li>
+      <li *ngFor="let g of currentClassEquipment!.optionA.gear">
+        {{ g.name }}
+      </li>
+      <li *ngIf="currentClassEquipment!.optionA.gp > 0">
+        {{ currentClassEquipment!.optionA.gp }} gp
+      </li>
+    </ul>
+  </button>
+
+  <!-- Option B: Gold -->
+  <button type="button"
+          class="equip-card"
+          [class.active]="equipmentChoice === 'B'"
+          (click)="equipmentChoiceChange.emit('B')">
+    <div class="equip-card-header">
+      <span class="equip-card-label">Option B</span>
+      <span class="equip-card-tag">Buy Your Own</span>
+    </div>
+    <div class="equip-gold-amount">
+      {{ currentClassEquipment!.optionB.gp }} gp
+    </div>
+    <div class="equip-gold-note">to spend at any shop</div>
+  </button>
+</div>
+
+<!-- Background gold (always granted) -->
+<div *ngIf="!loadingEquipment && background" class="equip-bg-gold">
+  <span class="detail-label">Background Gold</span>
+  <span class="detail-value">+{{ backgroundStartingGold }} gp from {{ background }}</span>
+</div>
