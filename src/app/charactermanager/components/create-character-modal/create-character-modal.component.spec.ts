@@ -9,6 +9,22 @@ import { AuthService } from '../../services/auth.service';
  * DOM/template behaviour is covered by manual verification and E2E tests.
  */
 
+/**
+ * Sage background detail, as the API would return it. In the running app this is
+ * loaded lazily via the `backgroundTrigger$` switchMap when a background is picked;
+ * tests that read background-derived getters assign it onto the component directly.
+ */
+const SAGE_BACKGROUND_DETAIL = {
+  index: 'sage', name: 'Sage',
+  source: "Player's Handbook",
+  ability_scores: [{ index: 'int', name: 'INT', url: '' }, { index: 'wis', name: 'WIS', url: '' }],
+  feat: { index: 'magic-initiate-wizard', name: 'Magic Initiate (Wizard)', url: '' },
+  proficiencies: [
+    { index: 'arcana', name: 'Arcana', url: '' },
+    { index: 'history', name: 'History', url: '' },
+  ],
+};
+
 function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
   const spy = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', [
     'getSpeciesList',
@@ -32,16 +48,7 @@ function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
   spy.getBackgroundGroups.and.returnValue(of([
     { source: "Player's Handbook", backgrounds: ['Sage', 'Criminal', 'Noble'] }
   ]));
-  spy.getBackgroundDetail.and.returnValue(of({
-    index: 'sage', name: 'Sage',
-    source: "Player's Handbook",
-    ability_scores: [{ index: 'int', name: 'INT', url: '' }, { index: 'wis', name: 'WIS', url: '' }],
-    feat: { index: 'magic-initiate-wizard', name: 'Magic Initiate (Wizard)', url: '' },
-    proficiencies: [
-      { index: 'arcana', name: 'Arcana', url: '' },
-      { index: 'history', name: 'History', url: '' },
-    ],
-  }));
+  spy.getBackgroundDetail.and.returnValue(of(SAGE_BACKGROUND_DETAIL as any));
   spy.getSubclassesForClass.and.returnValue([]);
   spy.getClassSkillChoices.and.returnValue({ choose: 2, from: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'] });
   spy.getFeatDescription.and.returnValue('You learn two Wizard cantrips and one 1st-level spell.');
@@ -370,6 +377,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('does not toggle a background-locked skill', () => {
       // backgroundDetail from mock grants Arcana and History as skill proficiencies
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
       const before = [...component.selectedSkills];
       component.toggleSkillProf('Arcana');
       expect(component.selectedSkills).toEqual(before);
@@ -466,6 +474,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
   describe('backgroundSkillProfs and backgroundToolProfs', () => {
     it('backgroundSkillProfs contains only skills from ALL_SKILLS', () => {
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
       const profs = component.backgroundSkillProfs;
       // Sage mock grants Arcana and History — both are valid skills
       expect(profs).toContain('Arcana');
@@ -504,6 +513,9 @@ describe('CreateCharacterModalComponent — logic', () => {
       };
       // classDetail needed for HP and saves
       (component as any).classDetail = { hit_die: 6, saving_throws: [{ name: 'INT' }, { name: 'WIS' }] };
+      // backgroundDetail is loaded lazily via the RxJS trigger in the real app;
+      // set it directly here so background-derived feat/skills resolve in submit().
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
     }
 
     it('emits a PC draft with required fields', (done) => {
@@ -663,6 +675,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     });
 
     it('reviewAllSkills combines background and extra class skills', () => {
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
       component.selectedSkills = ['Insight', 'Investigation'];
       const skills = component.reviewAllSkills;
       expect(skills).toContain('Arcana');    // from background
