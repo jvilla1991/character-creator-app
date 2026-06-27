@@ -1,2 +1,38 @@
 // Auth card chrome is defined globally in styles.css (.login-page, .login-card, etc.)
-// Nothing component-specific needed here.
+// Only the demo-mode opt-in below is component-specific.
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  margin: 18px 0;
+  color: var(--text-dim);
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 12px;
+}
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.auth-or span {
+  padding: 0 12px;
+}
+
+.demo-submit {
+  width: 100%;
+  padding: 12px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+}
+
+.demo-hint {
+  margin-top: 10px;
+  text-align: center;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-dim);
+}

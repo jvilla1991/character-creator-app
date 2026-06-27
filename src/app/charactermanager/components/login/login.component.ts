@@ -30,4 +30,10 @@ export class LoginComponent {
       }
     });
   }
+
+  /** Enter the no-account demo for portfolio visitors, then open the app. */
+  enterDemo(): void {
+    this.authService.enterDemoMode();
+    this.router.navigate(['/charactermanager']);
+  }
 }
