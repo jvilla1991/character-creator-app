@@ -1,0 +1,50 @@
+@use '../wizard-shared';
+
+// ── Species trait card (step 2) ───────────────────────────────────────────
+
+.species-detail {
+  // Slight scroll cap so the card doesn't overflow on species with many traits
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.species-traits {
+  margin-top: 10px;
+}
+
+.species-traits-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 6px;
+}
+
+.trait-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+  &:first-child { border-top: none; }
+}
+
+.trait-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.04em;
+}
+
+.trait-desc {
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}

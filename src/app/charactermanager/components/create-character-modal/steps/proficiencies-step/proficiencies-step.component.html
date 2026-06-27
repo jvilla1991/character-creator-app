@@ -1,0 +1,58 @@
+<div class="modal-title">Proficiencies &amp; Languages</div>
+<div class="modal-sub">
+  Choose {{ classSkillConfig.choose }} skill{{ classSkillConfig.choose !== 1 ? 's' : '' }}
+  from your class list. Background skills and tools are already granted.
+</div>
+
+<!-- Class skill selection -->
+<div class="prof-section">
+  <div class="prof-section-header">
+    <span class="eyebrow">{{ clazz }} Skills</span>
+    <span class="prof-counter" [class.complete]="classSkillsFull">
+      {{ selectedSkills.length }}/{{ classSkillConfig.choose }} chosen
+    </span>
+  </div>
+  <div class="skill-chips">
+    <button *ngFor="let skill of classSkillConfig.from; trackBy: trackByName"
+            type="button"
+            class="class-pick"
+            [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
+            [class.locked]="isSkillLocked(skill)"
+            [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
+            [disabled]="isSkillLocked(skill)"
+            (click)="toggleSkill.emit(skill)">{{ skill }}</button>
+  </div>
+</div>
+
+<!-- Background proficiencies (read-only) -->
+<div *ngIf="backgroundDetail" class="prof-section">
+  <div class="prof-section-header">
+    <span class="eyebrow">{{ background }} Proficiencies</span>
+  </div>
+  <div *ngIf="backgroundSkillProfs.length" class="skill-chips">
+    <span *ngFor="let skill of backgroundSkillProfs"
+          class="class-pick locked"
+          title="Granted by background">{{ skill }}</span>
+  </div>
+  <div *ngIf="backgroundToolProfs.length" class="prof-tool-list">
+    <span class="detail-label">Tools &amp; Equipment</span>
+    <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
+  </div>
+</div>
+
+<!-- Language selection -->
+<div class="prof-section">
+  <div class="prof-section-header">
+    <span class="eyebrow">Languages</span>
+  </div>
+  <div class="language-row">
+    <span class="lang-chip locked">Common</span>
+    <div class="field lang-field">
+      <label>Additional Language</label>
+      <select [ngModel]="languageChoice" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">
+        <option value="">— choose a language —</option>
+        <option *ngFor="let lang of standardLanguages" [value]="lang">{{ lang }}</option>
+      </select>
+    </div>
+  </div>
+</div>

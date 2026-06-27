@@ -1,0 +1,94 @@
+@use '../wizard-shared';
+
+// ── Step 5: Proficiency & Language styles ────────────────────────────────
+
+.prof-section {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+}
+
+.prof-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.prof-counter {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+
+  &.complete { color: #a78bfa; }
+}
+
+.skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+// Override global .class-pick for locked (background-granted) skills
+.class-pick.locked {
+  color: #a78bfa;
+  border-color: rgba(138, 92, 246, 0.45);
+  background: rgba(138, 92, 246, 0.1);
+  cursor: default;
+  opacity: 0.9;
+
+  &:hover {
+    color: #a78bfa;
+    border-color: rgba(138, 92, 246, 0.45);
+  }
+}
+
+.class-pick.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+
+  &:hover { color: var(--text-2); border-color: var(--border); }
+}
+
+.prof-tool-list {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.language-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lang-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+  border: 1px solid rgba(138, 92, 246, 0.45);
+  background: rgba(138, 92, 246, 0.1);
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.lang-field {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
