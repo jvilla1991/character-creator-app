@@ -186,16 +186,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.POINT_BUY_BUDGET - this.pointBuySpent;
   }
 
-  canIncreaseScore(ability: Ability): boolean {
+  // Arrow properties (not methods) so they can be passed to the ability-scores
+  // step child as bound function inputs without losing `this`.
+  canIncreaseScore = (ability: Ability): boolean => {
     const cur      = this.pointBuyScores[ability];
     const nextCost = (this.POINT_BUY_COSTS[cur + 1] ?? 99)
                    - (this.POINT_BUY_COSTS[cur]     ?? 0);
     return cur < this.POINT_BUY_MAX && this.pointBuyRemaining >= nextCost;
-  }
+  };
 
-  canDecreaseScore(ability: Ability): boolean {
+  canDecreaseScore = (ability: Ability): boolean => {
     return this.pointBuyScores[ability] > this.POINT_BUY_MIN;
-  }
+  };
 
   increaseScore(ability: Ability): void {
     if (!this.canIncreaseScore(ability)) return;
@@ -568,13 +570,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Standard Array helpers ───────────────────────────────────────────────
 
   /** Values from the Standard Array not yet assigned to another ability */
-  availableFor(ability: Ability): number[] {
+  availableFor = (ability: Ability): number[] => {
     return STANDARD_ARRAY.filter(v =>
       !Object.entries(this.assignments).some(
         ([ab, assigned]) => ab !== ability && assigned === v
       )
     ) as number[];
-  }
+  };
 
   get isArrayComplete(): boolean {
     return Object.values(this.assignments).every(v => v !== null);
@@ -589,16 +591,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Derived stats ────────────────────────────────────────────────────────
 
-  finalScore(ability: Ability): number {
+  finalScore = (ability: Ability): number => {
     const base  = this.abilityMethod === 'point-buy'
                     ? this.pointBuyScores[ability]
                     : (this.assignments[ability] ?? 0);
     const bonus = (this.bonusPlus2 === ability ? 2 : 0)
                 + (this.bonusPlus1 === ability ? 1 : 0);
     return base + bonus;
-  }
+  };
 
-  modifier(score: number): string { return fmtMod(modFromScore(score)); }
+  modifier = (score: number): string => fmtMod(modFromScore(score));
 
   private modNum(score: number): number { return modFromScore(score); }
 
