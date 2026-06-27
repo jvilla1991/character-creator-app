@@ -62,10 +62,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return (this.speciesDetail?.subspecies ?? []).map(s => s.name).join(', ');
   }
 
-  getTraitDescription(traitName: string): string {
-    return this.dndResources.getTraitDescription(traitName);
-  }
-
   onSpeciesChange(): void {
     this.speciesDetail = null;
     if (this.species) this.speciesTrigger$.next(this.species);
@@ -464,12 +460,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   // ── Class detail ─────────────────────────────────────────────────────────
-
-  // ── trackBy helpers (prevents full *ngFor DOM reconstruction) ───────────
-
-  trackByName(_: number, name: string): string { return name; }
-  trackBySource(_: number, group: BackgroundGroup): string { return group.source; }
-  trackBySpellName(_: number, spell: DndSpell): string { return spell.name; }
 
   // ── Starting coins ───────────────────────────────────────────────────────
 

@@ -1,0 +1,205 @@
+@use '../wizard-shared';
+
+// ── Spell step ───────────────────────────────────────────────────────────
+
+.spell-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.spell-level-tab {
+  padding: 4px 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+    color: #a78bfa;
+  }
+}
+
+.spell-search {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  border-radius: 2px;
+  outline: none;
+
+  &:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }
+}
+
+// The list grows with its content and the wizard body scrolls, so there's no
+// fixed-height box leaving dead space above the action bar.
+.spell-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.spell-pick {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &.active {
+    background: rgba(138, 92, 246, 0.15);
+    border-color: rgba(138, 92, 246, 0.5);
+  }
+
+  // Currently expanded for reading — join it visually to the description below.
+  &.open {
+    border-color: rgba(138, 92, 246, 0.5);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+.spell-pick-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.spell-pick-meta {
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.spell-pick-badge {
+  display: inline-block;
+  font-style: normal;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.5);
+  color: #a78bfa;
+  vertical-align: middle;
+}
+
+.spell-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+
+  span.complete { color: #a78bfa; }
+}
+
+.spell-counter-sep { opacity: 0.4; }
+
+// ── Collapsible spell description ─────────────────────────────────────────
+// Rows are uniform full-width (like the species/class/background picks); the
+// spell button fills the row and never sizes to its text length.
+.spell-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.spell-selected-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid rgba(138, 92, 246, 0.6);
+  color: #a78bfa;
+  vertical-align: middle;
+}
+
+.spell-desc-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.spell-desc {
+  margin: 0 0 4px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-soft);
+  border-top: none;
+  border-radius: 0 0 2px 2px;
+}
+
+.spell-desc-text {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-line;   // SRD descriptions carry their own line breaks
+}
+
+.spell-desc-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 16px;
+  margin-top: 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.spell-desc-upcast {
+  margin: 8px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.spell-desc-props strong,
+.spell-desc-upcast strong {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--celestial);
+  margin-right: 4px;
+}
