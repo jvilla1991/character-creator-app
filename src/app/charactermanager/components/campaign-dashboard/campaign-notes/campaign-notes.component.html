@@ -1,0 +1,32 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Session Notes</span>
+    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      {{ notes.length }} {{ notes.length === 1 ? 'entry' : 'entries' }}
+    </span>
+  </div>
+
+  <div class="note-compose">
+    <textarea
+      [(ngModel)]="draft"
+      rows="2"
+      placeholder="Jot a note — a ruling, a clue, a thread to pull next time…"
+      (keydown.control.enter)="add()"
+    ></textarea>
+    <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="add()">Add Note</button>
+  </div>
+
+  <div class="note-list" *ngIf="notes.length; else noNotes">
+    <div class="note" *ngFor="let n of notes; trackBy: trackById">
+      <p class="note-body">{{ n.body }}</p>
+      <div class="note-foot">
+        <span class="note-time">{{ n.createdAt | date:'MMM d, y · h:mm a' }}</span>
+        <button class="note-del" (click)="remove(n)" [attr.aria-label]="'Delete note'" title="Delete note">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noNotes>
+    <div class="note-empty">No notes yet. Capture the first ruling or revelation.</div>
+  </ng-template>
+</div>
