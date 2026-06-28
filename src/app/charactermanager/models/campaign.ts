@@ -24,7 +24,6 @@ export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emeral
 export interface CampaignDraft {
   name: string;
   setting: string;
-  next: string;
   tint: CampaignTint;
 }
 

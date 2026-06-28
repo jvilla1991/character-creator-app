@@ -206,6 +206,9 @@ export class SessionService {
       currentTurnIndex: 0,
       version: 0,
       dm: true,
+      shopOpen: false,
+      shopForMe: false,
+      shopCategory: null,
       participants,
     };
   }
@@ -213,7 +216,8 @@ export class SessionService {
   private emptyState(sessionId: number | string): SessionState {
     return {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
-      currentTurnIndex: 0, version: 0, dm: true, participants: [],
+      currentTurnIndex: 0, version: 0, dm: true,
+      shopOpen: false, shopForMe: false, shopCategory: null, participants: [],
     };
   }
 
@@ -253,6 +257,9 @@ export class SessionService {
       currentTurnIndex: raw.currentTurnIndex,
       version: raw.version,
       dm: !!raw.dm,
+      shopOpen: !!raw.shopOpen,
+      shopForMe: !!raw.shopForMe,
+      shopCategory: raw.shopCategory ?? null,
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }

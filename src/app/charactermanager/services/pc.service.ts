@@ -100,6 +100,26 @@ export class PCService {
   }
 
   /**
+   * Merge a partial update into a PC already in the local store and push to
+   * subscribers — no backend call. Used when the server has already persisted
+   * the change (e.g. a shop purchase returns the new coins/inventory), so a full
+   * PUT would be a redundant double-write.
+   */
+  patchLocalPC(pcId: number, patch: Partial<PC>): void {
+    let patched: PC | null = null;
+    this.pcs = this.pcs.map(p => {
+      if (p.id !== pcId) return p;
+      patched = { ...p, ...patch };
+      return patched;
+    });
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (patched && active && active.id === pcId) {
+      this.activePCSubject.next(patched);
+    }
+  }
+
+  /**
    * Optimistically update a PC in the local store and push to all subscribers.
    * In non-demo mode, also persists to the backend.
    */
@@ -359,6 +379,7 @@ export class PCService {
       coins: JSON.stringify(pc.coins ?? {}),
       weapons: JSON.stringify(pc.weapons ?? []),
       gear: JSON.stringify(pc.gear ?? []),
+      inventory: JSON.stringify(pc.inventory ?? []),
       features: JSON.stringify(pc.features ?? []),
       traits: JSON.stringify(pc.traits ?? {}),
       languages: JSON.stringify(pc.languages ?? []),
@@ -405,6 +426,7 @@ export class PCService {
       coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
       weapons: this.parseJsonField(pc['weapons'], []),
       gear: this.parseJsonField(pc['gear'], []),
+      inventory: this.parseJsonField(pc['inventory'], []),
       features: this.parseJsonField(pc['features'], []),
       traits: this.parseJsonField(pc['traits'], undefined),
       languages: this.parseJsonField(pc['languages'], []),

@@ -3,3 +3,42 @@
 :host {
   display: block;
 }
+
+// In-session DM note composer. Panel chrome is global; only the compose box
+// and confirmation line are styled here.
+.session-note {
+  margin-top: 20px;
+
+  .note-compose {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+
+    textarea {
+      flex: 1;
+      resize: vertical;
+      min-height: 44px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+      background: var(--bg-2, rgba(0, 0, 0, 0.2));
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.4;
+
+      &:focus {
+        outline: none;
+        border-color: var(--celestial);
+      }
+    }
+
+    .btn { flex: none; }
+  }
+
+  .note-saved {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--celestial-2, var(--celestial));
+  }
+}
