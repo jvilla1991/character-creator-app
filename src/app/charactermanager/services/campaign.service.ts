@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs
 import { delay, map, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Campaign, CampaignDraft } from '../models/campaign';
+import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
 
@@ -55,6 +56,33 @@ const DEMO_CAMPAIGNS: Campaign[] = [
 ];
 
 const STORAGE_KEY = 'tm_campaigns';
+
+// Demo session notes, keyed by campaign id. Mirrors the tm_campaigns demo store.
+const NOTES_KEY = 'tm_notes';
+const DEMO_NOTES: Record<string, SessionNote[]> = {
+  veiled: [
+    {
+      id: 'n-veiled-1',
+      body: "Throk voiced his suspicion about the Lantern's patron at the table — I let it simmer rather than confirm.",
+      createdAt: '2024-06-05T02:00:00.000Z',
+      sessionId: null,
+    },
+    {
+      id: 'n-veiled-2',
+      body: "The party still hasn't opened Aldric's orphanage letter. Dangle it again before the Lantern reveal.",
+      createdAt: '2024-06-08T02:00:00.000Z',
+      sessionId: null,
+    },
+  ],
+  tomb: [
+    {
+      id: 'n-tomb-1',
+      body: 'Pip nearly tripped the bronze ward; Zarev felt the blood-call again. The tomb knows his line.',
+      createdAt: '2024-06-10T02:00:00.000Z',
+      sessionId: null,
+    },
+  ],
+};
 
 @Injectable({ providedIn: 'root' })
 export class CampaignService {
@@ -231,5 +259,82 @@ export class CampaignService {
       // fall through to demo seed
     }
     return [...DEMO_CAMPAIGNS];
+  }
+
+  // --- DM session notes -----------------------------------------------------
+  // Campaign-scoped log the DM appends to from the campaign menu or in-session.
+  // Real mode hits the DM-only /campaign/{id}/notes endpoints; demo mode keeps a
+  // per-campaign list in localStorage (tm_notes), like tm_campaigns.
+
+  /** A campaign's notes, newest first. */
+  getNotes(campaignId: string): Observable<SessionNote[]> {
+    if (environment.demoMode) {
+      return of(this.loadDemoNotes()[campaignId] ?? []).pipe(delay(50));
+    }
+    return this.http.get<unknown[]>(`${this.campaignUrl}/${campaignId}/notes`).pipe(
+      map(rows => rows.map(r => this.deserializeNote(r))),
+    );
+  }
+
+  /** Append a note. `sessionId` is set when captured live during a session. */
+  addNote(campaignId: string, body: string, sessionId?: number | string | null): Observable<SessionNote> {
+    const trimmed = body.trim();
+    if (environment.demoMode) {
+      const note: SessionNote = {
+        id: 'n-' + Date.now(),
+        body: trimmed,
+        createdAt: new Date().toISOString(),
+        sessionId: sessionId ?? null,
+      };
+      const all = this.loadDemoNotes();
+      all[campaignId] = [note, ...(all[campaignId] ?? [])];
+      this.persistDemoNotes(all);
+      return of(note).pipe(delay(50));
+    }
+    const payload: Record<string, unknown> = { body: trimmed };
+    // Real session ids are numeric; the demo sentinel never reaches this branch.
+    if (sessionId != null) payload['sessionId'] = Number(sessionId);
+    return this.http.post<unknown>(`${this.campaignUrl}/${campaignId}/notes`, payload).pipe(
+      map(r => this.deserializeNote(r)),
+    );
+  }
+
+  /** Remove a note from a campaign. */
+  deleteNote(campaignId: string, noteId: number | string): Observable<void> {
+    if (environment.demoMode) {
+      const all = this.loadDemoNotes();
+      all[campaignId] = (all[campaignId] ?? []).filter(n => String(n.id) !== String(noteId));
+      this.persistDemoNotes(all);
+      return of(void 0).pipe(delay(50));
+    }
+    return this.http.delete<void>(`${this.campaignUrl}/${campaignId}/notes/${noteId}`);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private deserializeNote(raw: any): SessionNote {
+    return {
+      id: raw.id,
+      body: raw.body ?? '',
+      createdAt: raw.createdAt ?? new Date().toISOString(),
+      sessionId: raw.sessionId ?? null,
+    };
+  }
+
+  private loadDemoNotes(): Record<string, SessionNote[]> {
+    try {
+      const raw = localStorage.getItem(NOTES_KEY);
+      if (raw) return JSON.parse(raw) as Record<string, SessionNote[]>;
+    } catch {
+      // fall through to demo seed
+    }
+    return JSON.parse(JSON.stringify(DEMO_NOTES)) as Record<string, SessionNote[]>;
+  }
+
+  private persistDemoNotes(map: Record<string, SessionNote[]>): void {
+    try {
+      localStorage.setItem(NOTES_KEY, JSON.stringify(map));
+    } catch {
+      // Storage unavailable — keep in-memory only.
+    }
   }
 }

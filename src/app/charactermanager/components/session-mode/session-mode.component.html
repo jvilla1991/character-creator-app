@@ -48,6 +48,26 @@
       [sessionId]="state.sessionId"
       [dm]="state.dm"
     ></app-initiative-panel>
+
+    <!-- DM-only: capture a note to the campaign log without leaving the table -->
+    <div *ngIf="state.dm" class="panel session-note">
+      <div class="panel-header">
+        <span class="panel-title">Session Note</span>
+        <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+          saved to the campaign log
+        </span>
+      </div>
+      <div class="note-compose">
+        <textarea
+          [(ngModel)]="noteDraft"
+          rows="2"
+          placeholder="Log a ruling, a roll, or a moment from this session…"
+          (keydown.control.enter)="addNote(state)"
+        ></textarea>
+        <button class="btn primary" [disabled]="!noteDraft.trim() || savingNote" (click)="addNote(state)">Add Note</button>
+      </div>
+      <div *ngIf="noteSaved" class="note-saved">Saved to the campaign log.</div>
+    </div>
   </div>
 </ng-container>
 
