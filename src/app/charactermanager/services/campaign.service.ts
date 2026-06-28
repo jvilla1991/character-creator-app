@@ -147,7 +147,9 @@ export class CampaignService {
       party: draft.name,
       setting: draft.setting || 'An unwritten realm',
       session: 1,
-      next: draft.next || 'Unscheduled',
+      // Scheduling was removed from the UI; the backend column still exists, so
+      // seed a neutral placeholder for compatibility.
+      next: 'Unscheduled',
       arc: 'A new beginning',
       tint: draft.tint,
       chronicle: 'The chronicle is yet unwritten. Your first session will fill this page.',
