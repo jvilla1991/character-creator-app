@@ -26,6 +26,32 @@
   margin-bottom: 14px;
 }
 
+.seg {
+  display: inline-flex;
+  margin-bottom: 16px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seg-btn {
+  font: inherit;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  background: transparent;
+  border: 0;
+  padding: 7px 16px;
+  cursor: pointer;
+
+  & + .seg-btn {
+    border-left: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  }
+
+  &.active {
+    color: var(--text);
+    background: var(--celestial, rgba(120, 170, 255, 0.18));
+  }
+}
+
 .field-label {
   display: block;
   font-size: 0.8rem;
