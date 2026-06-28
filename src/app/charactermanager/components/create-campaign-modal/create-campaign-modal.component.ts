@@ -9,7 +9,6 @@ import { CampaignDraft, CampaignTint } from '../../models/campaign';
 export class CreateCampaignModalComponent {
   name = '';
   setting = '';
-  next = '';
   tint: CampaignTint = 'celestial';
 
   readonly tints: CampaignTint[] = ['celestial', 'violet', 'gold', 'crimson', 'emerald'];
@@ -22,7 +21,6 @@ export class CreateCampaignModalComponent {
     this.confirm.emit({
       name: this.name.trim(),
       setting: this.setting.trim(),
-      next: this.next.trim(),
       tint: this.tint,
     });
   }
