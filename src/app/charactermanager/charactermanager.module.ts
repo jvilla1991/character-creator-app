@@ -39,6 +39,7 @@ import { CampaignDashboardComponent } from './components/campaign-dashboard/camp
 import { PartyBoardComponent } from './components/campaign-dashboard/party-board/party-board.component';
 import { CampaignChronicleComponent } from './components/campaign-dashboard/campaign-chronicle/campaign-chronicle.component';
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
+import { CampaignNotesComponent } from './components/campaign-dashboard/campaign-notes/campaign-notes.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
@@ -105,6 +106,7 @@ const routes: Routes = [
     PartyBoardComponent,
     CampaignChronicleComponent,
     PartyTreasuryComponent,
+    CampaignNotesComponent,
     CreateCampaignModalComponent,
     JoinCampaignModalComponent,
     SessionModeComponent,

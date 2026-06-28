@@ -5,6 +5,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
+import { CampaignService } from '../../services/campaign.service';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -24,6 +25,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   state$ = this.sessionService.state$;
 
+  // In-session DM note composer — writes to the campaign's note log.
+  noteDraft = '';
+  savingNote = false;
+  noteSaved = false;
+
   private stateSub?: Subscription;
   private handledEnd = false;
 
@@ -32,6 +38,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private uiState: UiStateService,
     private pcService: PCService,
     private notifications: NotificationService,
+    private campaignService: CampaignService,
   ) {}
 
   ngOnInit(): void {
@@ -85,6 +92,29 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.sessionService.end(state.sessionId).subscribe({
       next: () => this.close(),
       error: () => this.close(),
+    });
+  }
+
+  /**
+   * The DM captures a note mid-session; it is appended to the campaign's note
+   * log (the same log shown on the dashboard's Session Notes panel), tagged with
+   * this session's id.
+   */
+  addNote(state: SessionState): void {
+    const body = this.noteDraft.trim();
+    if (!body || this.savingNote) return;
+    this.savingNote = true;
+    this.noteSaved = false;
+    this.campaignService.addNote(String(state.campaignId), body, state.sessionId).subscribe({
+      next: () => {
+        this.noteDraft = '';
+        this.savingNote = false;
+        this.noteSaved = true;
+      },
+      error: err => {
+        console.error('Failed to add session note', err);
+        this.savingNote = false;
+      },
     });
   }
 
