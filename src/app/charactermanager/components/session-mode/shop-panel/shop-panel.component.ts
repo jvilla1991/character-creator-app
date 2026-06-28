@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { SessionState, ParticipantView } from '../../../models/session';
-import { ShopItem, ShopView, formatCp } from '../../../models/shop';
+import { ShopCategory, ShopItem, ShopView, formatCp } from '../../../models/shop';
 import { PC } from '../../../models/pc';
 import { ShopService } from '../../../services/shop.service';
 import { PCService } from '../../../services/pc.service';
@@ -31,13 +31,14 @@ export class ShopPanelComponent implements OnChanges {
 
   // DM open-shop form
   settlement = '';
-  category: 'WEAPON' | 'ARMOR' = 'WEAPON';
+  category: ShopCategory = 'WEAPON';
   selected: { [pcId: number]: boolean } = {};
 
-  /** Catalog slices a DM can open (Phase 1). */
-  readonly categories: ReadonlyArray<{ value: 'WEAPON' | 'ARMOR'; label: string }> = [
+  /** Catalog slices a DM can open (Phase 1: all three). */
+  readonly categories: ReadonlyArray<{ value: ShopCategory; label: string }> = [
     { value: 'WEAPON', label: 'Weapons' },
     { value: 'ARMOR', label: 'Armor' },
+    { value: 'MATERIAL_COMPONENT', label: 'Components' },
   ];
 
   /** Guards re-fetching the catalog on every 2s poll; only refetch on a real change. */
@@ -96,14 +97,38 @@ export class ShopPanelComponent implements OnChanges {
     return Array.isArray(v) ? v.join(', ') : (v ?? '');
   }
 
+  /** The descriptive line under an item, by category. */
+  itemMeta(item: ShopItem): string {
+    const cat = (item.category || '').toUpperCase();
+    let fields: string[];
+    if (cat === 'ARMOR') {
+      fields = [this.detail(item, 'armorClass'), this.detail(item, 'armorCategory')];
+    } else if (cat === 'MATERIAL_COMPONENT') {
+      const consumed = item.details?.['consumedOnCast'] ? 'consumed on cast' : 'reusable';
+      fields = [this.detail(item, 'spell'), consumed];
+    } else {
+      fields = [this.detail(item, 'damage'), this.detail(item, 'properties')];
+    }
+    return fields.filter(f => f).join(' · ');
+  }
+
+  /** Singular label for a category, used in shop headers. */
+  categoryLabel(category: string | null | undefined): string {
+    switch ((category || '').toUpperCase()) {
+      case 'ARMOR': return 'Armor';
+      case 'MATERIAL_COMPONENT': return 'Component';
+      default: return 'Weapon';
+    }
+  }
+
   // --- DM actions ----------------------------------------------------------
 
   openShop(): void {
     const pcIds = this.roster.filter(p => this.selected[p.pcId!]).map(p => p.pcId!);
-    this.shopService.openShop(this.state.sessionId, 'WEAPON', this.settlement.trim(), pcIds).subscribe({
+    this.shopService.openShop(this.state.sessionId, this.category, this.settlement.trim(), pcIds).subscribe({
       next: view => {
         this.shop = view;
-        this.fetchedKey = `${this.state.sessionId}|WEAPON`;
+        this.fetchedKey = `${this.state.sessionId}|${this.category}`;
       },
       error: err => this.notifications.notify(this.errMsg(err, 'Could not open the shop.')),
     });

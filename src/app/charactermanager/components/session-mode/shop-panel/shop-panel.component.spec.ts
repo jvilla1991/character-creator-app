@@ -82,6 +82,49 @@ describe('ShopPanelComponent', () => {
     expect(component.shop).toBe(view);
   });
 
+  it('openShop sends the chosen category (armor / components)', () => {
+    const view: ShopView = { shopId: 11, sessionId: 1, category: 'ARMOR', settlement: '', attendeePcIds: [], items: [] };
+    shopService.openShop.and.returnValue(of(view));
+    component.state = state({ dm: true, participants: [participant({ pcId: 7 })] });
+    component.selected = { 7: true };
+
+    component.category = 'ARMOR';
+    component.openShop();
+    expect(shopService.openShop).toHaveBeenCalledWith(1, 'ARMOR', '', [7]);
+
+    component.category = 'MATERIAL_COMPONENT';
+    component.openShop();
+    expect(shopService.openShop).toHaveBeenCalledWith(1, 'MATERIAL_COMPONENT', '', [7]);
+  });
+
+  it('itemMeta adapts to category', () => {
+    expect(component.itemMeta(longsword)).toBe('1d8 slashing · versatile (1d10)');
+
+    const plate: ShopItem = {
+      itemKey: 'plate', name: 'Plate Armor', category: 'ARMOR', costCp: 150000, weight: 65,
+      details: { armorClass: '18', armorCategory: 'heavy' }, stock: null,
+    };
+    expect(component.itemMeta(plate)).toBe('18 · heavy');
+
+    const revivify: ShopItem = {
+      itemKey: 'mc-revivify', name: 'Diamonds (Revivify)', category: 'MATERIAL_COMPONENT',
+      costCp: 30000, weight: null, details: { spell: 'Revivify', consumedOnCast: true }, stock: null,
+    };
+    expect(component.itemMeta(revivify)).toBe('Revivify · consumed on cast');
+
+    const identify: ShopItem = {
+      itemKey: 'mc-identify', name: 'Pearl (Identify)', category: 'MATERIAL_COMPONENT',
+      costCp: 10000, weight: null, details: { spell: 'Identify', consumedOnCast: false }, stock: null,
+    };
+    expect(component.itemMeta(identify)).toBe('Identify · reusable');
+  });
+
+  it('categoryLabel is singular per category', () => {
+    expect(component.categoryLabel('WEAPON')).toBe('Weapon');
+    expect(component.categoryLabel('ARMOR')).toBe('Armor');
+    expect(component.categoryLabel('MATERIAL_COMPONENT')).toBe('Component');
+  });
+
   it('buy purchases, patches the local PC, and notifies', () => {
     pcService.getPCById.and.returnValue({ id: 7, coins: { gp: 20 } } as PC);
     shopService.purchase.and.returnValue(of({
