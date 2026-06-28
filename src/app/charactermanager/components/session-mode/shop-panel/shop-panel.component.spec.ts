@@ -82,6 +82,32 @@ describe('ShopPanelComponent', () => {
     expect(component.shop).toBe(view);
   });
 
+  it('openShop sends the selected category (armor)', () => {
+    const view: ShopView = { shopId: 11, sessionId: 1, category: 'ARMOR', settlement: '', attendeePcIds: [], items: [] };
+    shopService.openShop.and.returnValue(of(view));
+    component.state = state({ dm: true, participants: [participant({ pcId: 7 })] });
+    component.category = 'ARMOR';
+    component.selected = { 7: true };
+
+    component.openShop();
+
+    expect(shopService.openShop).toHaveBeenCalledWith(1, 'ARMOR', '', [7]);
+  });
+
+  it('itemMeta describes weapons by damage and armor by AC', () => {
+    expect(component.itemMeta(longsword)).toBe('1d8 slashing · versatile (1d10)');
+    const plate: ShopItem = {
+      itemKey: 'plate', name: 'Plate Armor', category: 'ARMOR', costCp: 150000, weight: 65,
+      details: { armorClass: '18', armorCategory: 'heavy' }, stock: null,
+    };
+    expect(component.itemMeta(plate)).toBe('18 · heavy');
+  });
+
+  it('categoryLabel is singular per category', () => {
+    expect(component.categoryLabel('WEAPON')).toBe('Weapon');
+    expect(component.categoryLabel('ARMOR')).toBe('Armor');
+  });
+
   it('buy purchases, patches the local PC, and notifies', () => {
     pcService.getPCById.and.returnValue({ id: 7, coins: { gp: 20 } } as PC);
     shopService.purchase.and.returnValue(of({
