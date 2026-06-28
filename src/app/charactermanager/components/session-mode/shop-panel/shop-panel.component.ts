@@ -96,28 +96,14 @@ export class ShopPanelComponent implements OnChanges {
     return Array.isArray(v) ? v.join(', ') : (v ?? '');
   }
 
-  /** The descriptive line under an item, by category (weapon damage vs armor AC). */
-  itemMeta(item: ShopItem): string {
-    const cat = (item.category || '').toUpperCase();
-    const fields = cat === 'ARMOR'
-      ? [this.detail(item, 'armorClass'), this.detail(item, 'armorCategory')]
-      : [this.detail(item, 'damage'), this.detail(item, 'properties')];
-    return fields.filter(f => f).join(' · ');
-  }
-
-  /** Singular label for a category, used in shop headers and buttons. */
-  categoryLabel(category: string | null | undefined): string {
-    return (category || '').toUpperCase() === 'ARMOR' ? 'Armor' : 'Weapon';
-  }
-
   // --- DM actions ----------------------------------------------------------
 
   openShop(): void {
     const pcIds = this.roster.filter(p => this.selected[p.pcId!]).map(p => p.pcId!);
-    this.shopService.openShop(this.state.sessionId, this.category, this.settlement.trim(), pcIds).subscribe({
+    this.shopService.openShop(this.state.sessionId, 'WEAPON', this.settlement.trim(), pcIds).subscribe({
       next: view => {
         this.shop = view;
-        this.fetchedKey = `${this.state.sessionId}|${this.category}`;
+        this.fetchedKey = `${this.state.sessionId}|WEAPON`;
       },
       error: err => this.notifications.notify(this.errMsg(err, 'Could not open the shop.')),
     });
