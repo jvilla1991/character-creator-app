@@ -6,7 +6,14 @@
     <!-- No shop open yet: the open form -->
     <div class="shop-card" *ngIf="!shop">
       <div class="eyebrow">Shop</div>
-      <h2 class="shop-title">Open a weapon shop</h2>
+      <h2 class="shop-title">Open a shop</h2>
+
+      <div class="field-label">What does it sell?</div>
+      <div class="seg" role="radiogroup">
+        <button type="button" class="seg-btn" *ngFor="let c of categories"
+                [class.active]="category === c.value"
+                (click)="category = c.value">{{ c.label }}</button>
+      </div>
 
       <label class="field">
         <span class="field-label">Settlement</span>
@@ -25,14 +32,13 @@
         <div class="muted">No characters are seated in this session yet.</div>
       </ng-template>
 
-      <button class="btn primary" (click)="openShop()">Open Weapons Shop</button>
+      <button class="btn primary" (click)="openShop()">Open Shop</button>
     </div>
 
     <!-- Shop open: manage attendees + browse the stock -->
     <div class="shop-card" *ngIf="shop">
       <div class="shop-head">
         <div>
-          <div class="eyebrow">Weapon Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <div class="eyebrow">{{ categoryLabel(shop.category) }} Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <h2 class="shop-title">Stock</h2>
         </div>
@@ -51,8 +57,7 @@
         <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
           <div class="item-main">
             <span class="item-name">{{ item.name }}</span>
-            <span class="item-meta">{{ detail(item, 'damage') }}<span
-              *ngIf="detail(item, 'properties')"> · {{ detail(item, 'properties') }}</span></span>
+            <span class="item-meta">{{ itemMeta(item) }}</span>
           </div>
           <span class="item-price">{{ formatCp(item.costCp) }}</span>
         </li>
@@ -65,7 +70,7 @@
     <div class="shop-card" *ngIf="shop">
       <div class="shop-head">
         <div>
-          <div class="eyebrow">Weapon Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <div class="eyebrow">{{ categoryLabel(shop.category) }} Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <h2 class="shop-title">Browse &amp; buy</h2>
         </div>
         <span class="purse" *ngIf="myPc">{{ formatCp(myCoinsCp) }}</span>
@@ -75,8 +80,7 @@
         <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
           <div class="item-main">
             <span class="item-name">{{ item.name }}</span>
-            <span class="item-meta">{{ detail(item, 'damage') }}<span
-              *ngIf="detail(item, 'properties')"> · {{ detail(item, 'properties') }}</span></span>
+            <span class="item-meta">{{ itemMeta(item) }}</span>
           </div>
           <span class="item-price">{{ formatCp(item.costCp) }}</span>
           <button class="btn buy"
