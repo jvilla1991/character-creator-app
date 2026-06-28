@@ -1,0 +1,88 @@
+// Session Notes panel. Panel chrome (.panel, .panel-header, .btn) comes from the
+// global design system; only the compose box and note rows are styled here.
+:host {
+  display: block;
+}
+
+.note-compose {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+
+  textarea {
+    flex: 1;
+    resize: vertical;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    background: var(--bg-2, rgba(0, 0, 0, 0.2));
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+
+    &:focus {
+      outline: none;
+      border-color: var(--celestial);
+    }
+  }
+
+  .btn { flex: none; }
+}
+
+.note-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.note {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  background: var(--bg-2, rgba(0, 0, 0, 0.15));
+
+  .note-body {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .note-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .note-time {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--text-dim);
+  }
+
+  .note-del {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 12px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+
+    &:hover { color: var(--crimson); }
+  }
+}
+
+.note-empty {
+  margin-top: 14px;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 13px;
+  padding: 8px 0;
+}
