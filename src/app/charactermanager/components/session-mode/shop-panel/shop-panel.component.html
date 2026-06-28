@@ -1,0 +1,93 @@
+<section class="shop-panel" *ngIf="state && (state.dm || state.shopForMe)">
+
+  <!-- ===================== DM view ===================== -->
+  <ng-container *ngIf="state.dm; else playerView">
+
+    <!-- No shop open yet: the open form -->
+    <div class="shop-card" *ngIf="!shop">
+      <div class="eyebrow">Shop</div>
+      <h2 class="shop-title">Open a weapon shop</h2>
+
+      <label class="field">
+        <span class="field-label">Settlement</span>
+        <input class="text-input" type="text" [(ngModel)]="settlement"
+               placeholder="e.g. Phandalin" />
+      </label>
+
+      <div class="field-label">Who's at the shop?</div>
+      <div class="roster" *ngIf="roster.length; else noRoster">
+        <label class="roster-row" *ngFor="let p of roster">
+          <input type="checkbox" [(ngModel)]="selected[p.pcId!]" />
+          <span>{{ p.name }}</span>
+        </label>
+      </div>
+      <ng-template #noRoster>
+        <div class="muted">No characters are seated in this session yet.</div>
+      </ng-template>
+
+      <button class="btn primary" (click)="openShop()">Open Weapons Shop</button>
+    </div>
+
+    <!-- Shop open: manage attendees + browse the stock -->
+    <div class="shop-card" *ngIf="shop">
+      <div class="shop-head">
+        <div>
+          <div class="eyebrow">Weapon Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <h2 class="shop-title">Stock</h2>
+        </div>
+        <button class="btn danger" (click)="closeShop()">Close Shop</button>
+      </div>
+
+      <div class="field-label">At the shop</div>
+      <div class="roster">
+        <label class="roster-row" *ngFor="let p of roster">
+          <input type="checkbox" [checked]="isAttendee(p.pcId!)" (change)="toggleAttendee(p.pcId!)" />
+          <span>{{ p.name }}</span>
+        </label>
+      </div>
+
+      <ul class="catalog">
+        <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
+          <div class="item-main">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-meta">{{ detail(item, 'damage') }}<span
+              *ngIf="detail(item, 'properties')"> · {{ detail(item, 'properties') }}</span></span>
+          </div>
+          <span class="item-price">{{ formatCp(item.costCp) }}</span>
+        </li>
+      </ul>
+    </div>
+  </ng-container>
+
+  <!-- ===================== Player view ===================== -->
+  <ng-template #playerView>
+    <div class="shop-card" *ngIf="shop">
+      <div class="shop-head">
+        <div>
+          <div class="eyebrow">Weapon Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <h2 class="shop-title">Browse &amp; buy</h2>
+        </div>
+        <span class="purse" *ngIf="myPc">{{ formatCp(myCoinsCp) }}</span>
+      </div>
+
+      <ul class="catalog">
+        <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
+          <div class="item-main">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-meta">{{ detail(item, 'damage') }}<span
+              *ngIf="detail(item, 'properties')"> · {{ detail(item, 'properties') }}</span></span>
+          </div>
+          <span class="item-price">{{ formatCp(item.costCp) }}</span>
+          <button class="btn buy"
+                  [disabled]="!canAfford(item) || busyItem === item.itemKey"
+                  (click)="buy(item)">
+            {{ busyItem === item.itemKey ? '…' : (canAfford(item) ? 'Buy' : 'Too costly') }}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="shop-card muted" *ngIf="!shop && loading">Reaching the shop…</div>
+  </ng-template>
+
+</section>

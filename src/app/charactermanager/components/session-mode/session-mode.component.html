@@ -49,6 +49,7 @@
       [dm]="state.dm"
     ></app-initiative-panel>
 
+    <app-shop-panel [state]="state"></app-shop-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
     <div *ngIf="state.dm" class="panel session-note">
       <div class="panel-header">
