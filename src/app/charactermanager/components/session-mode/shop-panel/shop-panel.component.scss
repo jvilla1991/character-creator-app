@@ -1,0 +1,115 @@
+.shop-panel {
+  margin-top: 20px;
+}
+
+.shop-card {
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.shop-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shop-title {
+  margin: 2px 0 14px;
+  font-size: 1.15rem;
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin-bottom: 6px;
+}
+
+.text-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+}
+
+.roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 16px;
+}
+
+.roster-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.catalog {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.catalog-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+}
+
+.item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-meta {
+  font-size: 0.8rem;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+}
+
+.item-price {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold, #d8b46a);
+  white-space: nowrap;
+}
+
+.purse {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold, #d8b46a);
+  font-weight: 600;
+}
+
+.btn.buy {
+  min-width: 84px;
+}
+
+.btn.buy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+}

@@ -100,6 +100,26 @@ export class PCService {
   }
 
   /**
+   * Merge a partial update into a PC already in the local store and push to
+   * subscribers — no backend call. Used when the server has already persisted
+   * the change (e.g. a shop purchase returns the new coins/inventory), so a full
+   * PUT would be a redundant double-write.
+   */
+  patchLocalPC(pcId: number, patch: Partial<PC>): void {
+    let patched: PC | null = null;
+    this.pcs = this.pcs.map(p => {
+      if (p.id !== pcId) return p;
+      patched = { ...p, ...patch };
+      return patched;
+    });
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (patched && active && active.id === pcId) {
+      this.activePCSubject.next(patched);
+    }
+  }
+
+  /**
    * Optimistically update a PC in the local store and push to all subscribers.
    * In non-demo mode, also persists to the backend.
    */
