@@ -31,7 +31,14 @@ export class ShopPanelComponent implements OnChanges {
 
   // DM open-shop form
   settlement = '';
+  category: 'WEAPON' | 'ARMOR' = 'WEAPON';
   selected: { [pcId: number]: boolean } = {};
+
+  /** Catalog slices a DM can open (Phase 1). */
+  readonly categories: ReadonlyArray<{ value: 'WEAPON' | 'ARMOR'; label: string }> = [
+    { value: 'WEAPON', label: 'Weapons' },
+    { value: 'ARMOR', label: 'Armor' },
+  ];
 
   /** Guards re-fetching the catalog on every 2s poll; only refetch on a real change. */
   private fetchedKey: string | null = null;

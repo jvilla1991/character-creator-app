@@ -33,6 +33,7 @@
       <div class="shop-head">
         <div>
           <div class="eyebrow">Weapon Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <div class="eyebrow">{{ categoryLabel(shop.category) }} Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <h2 class="shop-title">Stock</h2>
         </div>
         <button class="btn danger" (click)="closeShop()">Close Shop</button>
