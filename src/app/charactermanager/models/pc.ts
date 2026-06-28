@@ -16,6 +16,28 @@ export interface PcSpell {
   higherLevelSlot?: string;
 }
 
+/**
+ * An item a character owns — the client mirror of the backend inventory JSON
+ * entry. Mirrors PcSpell: a lean, self-contained snapshot (denormalized from the
+ * SRD catalog at purchase time) so the sheet renders without a catalog lookup.
+ */
+export interface PcItem {
+  catalogKey?: string;          // SRD slug, e.g. 'longsword'; absent for ad-hoc items
+  name: string;
+  category: 'weapon' | 'armor' | 'material-component' | 'gear';
+  qty: number;
+  unitCostCp?: number;          // unit price paid, in copper
+  weight?: number;
+  // category-specific snapshot fields (optional)
+  damage?: string;              // weapons
+  properties?: string[];        // weapons
+  armorClass?: string;          // armor
+  consumedOnCast?: boolean;     // material components
+  spell?: string;               // material component → consuming spell
+  equipped?: boolean;
+  notes?: string;
+}
+
 export interface PC {
   // --- Core (backend-persisted) ---
   id: number;
@@ -57,6 +79,8 @@ export interface PC {
   // Inventory
   weapons?: Array<{ name: string; magic?: boolean; dmg: string; notes?: string }>;
   gear?: Array<{ name: string; magic?: boolean; equipped?: boolean; notes?: string }>;
+  // Structured inventory — purchases land here (legacy weapons/gear left as-is).
+  inventory?: PcItem[];
 
   // Narrative
   features?: Array<{ name: string; source: string; desc: string }>;

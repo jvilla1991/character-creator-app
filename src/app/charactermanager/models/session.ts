@@ -39,5 +39,11 @@ export interface SessionState {
   currentTurnIndex: number;
   version: number;
   dm: boolean;
+  // Targeted-shop signal (shopping feature): a shop is open, and it's visible to
+  // this caller (DM or a targeted attendee). When shopForMe flips true, the
+  // client fetches the catalog from the shop endpoint.
+  shopOpen: boolean;
+  shopForMe: boolean;
+  shopCategory: string | null;
   participants: ParticipantView[];
 }
