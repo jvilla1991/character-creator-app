@@ -8,12 +8,37 @@
       <div class="eyebrow">Shop</div>
       <h2 class="shop-title">Open a shop</h2>
 
-      <div class="field-label">What does it sell?</div>
+      <div class="field-label">Shop source</div>
       <div class="seg" role="radiogroup">
-        <button type="button" class="seg-btn" *ngFor="let c of categories"
-                [class.active]="category === c.value"
-                (click)="category = c.value">{{ c.label }}</button>
+        <button type="button" class="seg-btn" [class.active]="source === 'standard'"
+                (click)="source = 'standard'">Standard</button>
+        <button type="button" class="seg-btn" [class.active]="source === 'curated'"
+                (click)="source = 'curated'">Curated</button>
       </div>
+
+      <!-- Standard: pick a catalog category -->
+      <ng-container *ngIf="source === 'standard'">
+        <div class="field-label">What does it sell?</div>
+        <div class="seg" role="radiogroup">
+          <button type="button" class="seg-btn" *ngFor="let c of categories"
+                  [class.active]="category === c.value"
+                  (click)="category = c.value">{{ c.label }}</button>
+        </div>
+      </ng-container>
+
+      <!-- Curated: pick one of the DM's pre-built shops -->
+      <ng-container *ngIf="source === 'curated'">
+        <div class="field-label">Which shop?</div>
+        <select class="text-input" [(ngModel)]="curatedShopId" *ngIf="curatedShops.length; else noCurated">
+          <option [ngValue]="null" disabled>Choose a curated shop…</option>
+          <option *ngFor="let cs of curatedShops" [ngValue]="cs.id">
+            {{ cs.name }}{{ cs.settlement ? ' · ' + cs.settlement : '' }} ({{ cs.itemCount }})
+          </option>
+        </select>
+        <ng-template #noCurated>
+          <div class="muted">No curated shops yet — build one on the campaign dashboard.</div>
+        </ng-template>
+      </ng-container>
 
       <label class="field">
         <span class="field-label">Settlement</span>
@@ -32,14 +57,14 @@
         <div class="muted">No characters are seated in this session yet.</div>
       </ng-template>
 
-      <button class="btn primary" (click)="openShop()">Open Shop</button>
+      <button class="btn primary" [disabled]="!canOpen" (click)="openShop()">Open Shop</button>
     </div>
 
     <!-- Shop open: manage attendees + browse the stock -->
     <div class="shop-card" *ngIf="shop">
       <div class="shop-head">
         <div>
-          <div class="eyebrow">{{ categoryLabel(shop.category) }} Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <h2 class="shop-title">Stock</h2>
         </div>
         <button class="btn danger" (click)="closeShop()">Close Shop</button>
@@ -70,7 +95,7 @@
     <div class="shop-card" *ngIf="shop">
       <div class="shop-head">
         <div>
-          <div class="eyebrow">{{ categoryLabel(shop.category) }} Shop{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+          <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
           <h2 class="shop-title">Browse &amp; buy</h2>
         </div>
         <span class="purse" *ngIf="myPc">{{ formatCp(myCoinsCp) }}</span>
