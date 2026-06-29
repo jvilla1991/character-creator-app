@@ -35,25 +35,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Overwrite the production environment file with real API URLs.
+      # Inject the real API URLs into the committed environment.prod.ts.
       # AUTH_SERVICE_URL and CHARACTER_SERVICE_URL come from the Terraform outputs
       # of table-mimic (auth_service_url and character_service_url).
+      #
+      # IMPORTANT: only fill the two empty URL fields — do NOT rewrite the whole
+      # file. The committed environment.prod.ts defines `demoMode` as a runtime
+      # getter that reads the visitor's localStorage opt-in; overwriting the file
+      # replaced it with a hardcoded `demoMode: false`, which is why the live
+      # "Enter in Demo Mode" button never engaged demo mode.
       - name: Inject production API URLs
         env:
           AUTH_URL: ${{ secrets.AUTH_SERVICE_URL }}
           CHARACTER_URL: ${{ secrets.CHARACTER_SERVICE_URL }}
         run: |
-          cat > src/environments/environment.prod.ts << 'ENVEOF'
-          export const environment = {
-            production: true,
-            demoMode: false,
-            authApiUrl: '${AUTH_URL}',
-            characterApiUrl: '${CHARACTER_URL}',
-          };
-          ENVEOF
-          # Expand the shell variables (heredoc keeps them literal above)
-          sed -i "s|\${AUTH_URL}|${AUTH_URL}|g" src/environments/environment.prod.ts
-          sed -i "s|\${CHARACTER_URL}|${CHARACTER_URL}|g" src/environments/environment.prod.ts
+          sed -i "s|authApiUrl: ''|authApiUrl: '${AUTH_URL}'|" src/environments/environment.prod.ts
+          sed -i "s|characterApiUrl: ''|characterApiUrl: '${CHARACTER_URL}'|" src/environments/environment.prod.ts
+          echo "Injected API URLs; demoMode getter preserved:"
+          cat src/environments/environment.prod.ts
 
       - name: Build
         run: npm run build -- --configuration production
