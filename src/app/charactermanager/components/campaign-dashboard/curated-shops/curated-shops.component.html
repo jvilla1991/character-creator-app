@@ -1,0 +1,64 @@
+<section class="curated-card">
+  <div class="eyebrow">DM · Shops</div>
+
+  <!-- ===== Shop list ===== -->
+  <ng-container *ngIf="!selected">
+    <h2 class="curated-title">Curated Shops</h2>
+
+    <div class="new-shop">
+      <input class="text-input" type="text" [(ngModel)]="newName"
+             placeholder="New shop name (e.g. Barthen's Provisions)"
+             (keyup.enter)="createShop()" />
+      <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createShop()">Create</button>
+    </div>
+
+    <ul class="shop-list" *ngIf="shops.length; else noShops">
+      <li class="shop-row" *ngFor="let s of shops; trackBy: trackById" (click)="open(s)">
+        <div>
+          <div class="shop-name">{{ s.name }}</div>
+          <div class="shop-sub">{{ s.settlement || 'No settlement' }} · {{ s.itemCount }} item{{ s.itemCount === 1 ? '' : 's' }}</div>
+        </div>
+        <span class="chevron">›</span>
+      </li>
+    </ul>
+    <ng-template #noShops>
+      <div class="muted">No curated shops yet. Create one, then import a category to stock it.</div>
+    </ng-template>
+  </ng-container>
+
+  <!-- ===== Shop editor ===== -->
+  <ng-container *ngIf="selected as shop">
+    <div class="editor-head">
+      <button class="btn link" (click)="back()">‹ All shops</button>
+      <button class="btn danger" (click)="deleteShop()">Delete shop</button>
+    </div>
+
+    <h2 class="curated-title">{{ shop.name }}</h2>
+
+    <div class="field-label">Import a standard category</div>
+    <div class="import-row">
+      <button class="btn" *ngFor="let c of importCategories"
+              [disabled]="busy" (click)="importCategory(c.value)">+ {{ c.label }}</button>
+    </div>
+
+    <ul class="catalog" *ngIf="shop.items.length; else emptyShop">
+      <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackById">
+        <div class="item-main">
+          <span class="item-name">{{ item.name }}</span>
+          <span class="item-meta">{{ item.category | lowercase }}</span>
+        </div>
+        <span class="item-price" [class.overridden]="item.priceOverrideCp != null">
+          {{ formatCp(item.effectiveCostCp) }}
+        </span>
+        <input class="price-input" type="number" min="0" step="0.01"
+               [value]="item.priceOverrideCp != null ? (item.priceOverrideCp / 100) : ''"
+               [placeholder]="'gp'"
+               (change)="setOverride(item, $any($event.target).value)" />
+        <button class="btn-x" title="Remove" (click)="removeItem(item)">✕</button>
+      </li>
+    </ul>
+    <ng-template #emptyShop>
+      <div class="muted">Empty shop. Import a category above to stock it from the catalog.</div>
+    </ng-template>
+  </ng-container>
+</section>

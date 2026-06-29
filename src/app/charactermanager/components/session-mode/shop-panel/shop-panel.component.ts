@@ -1,8 +1,10 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { SessionState, ParticipantView } from '../../../models/session';
 import { ShopCategory, ShopItem, ShopView, formatCp } from '../../../models/shop';
+import { ShopSummary } from '../../../models/curated-shop';
 import { PC } from '../../../models/pc';
 import { ShopService } from '../../../services/shop.service';
+import { CuratedShopService } from '../../../services/curated-shop.service';
 import { PCService } from '../../../services/pc.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -31,7 +33,10 @@ export class ShopPanelComponent implements OnChanges {
 
   // DM open-shop form
   settlement = '';
+  source: 'standard' | 'curated' = 'standard';
   category: ShopCategory = 'WEAPON';
+  curatedShopId: number | null = null;
+  curatedShops: ShopSummary[] = [];
   selected: { [pcId: number]: boolean } = {};
 
   /** Catalog slices a DM can open (Phase 1: all three). */
@@ -43,11 +48,14 @@ export class ShopPanelComponent implements OnChanges {
 
   /** Guards re-fetching the catalog on every 2s poll; only refetch on a real change. */
   private fetchedKey: string | null = null;
+  /** Guards re-loading the DM's curated shop list per campaign. */
+  private curatedLoadedFor: string | null = null;
 
   readonly formatCp = formatCp;
 
   constructor(
     private shopService: ShopService,
+    private curatedShopService: CuratedShopService,
     private pcService: PCService,
     private notifications: NotificationService,
   ) {}
@@ -64,6 +72,14 @@ export class ShopPanelComponent implements OnChanges {
     } else if (!s.shopOpen) {
       this.shop = null;
       this.fetchedKey = null;
+    }
+    // The DM can activate a pre-built curated shop — load the campaign's list once.
+    if (s.dm && `${s.campaignId}` !== this.curatedLoadedFor) {
+      this.curatedLoadedFor = `${s.campaignId}`;
+      this.curatedShopService.list(s.campaignId).subscribe({
+        next: shops => (this.curatedShops = shops),
+        error: () => (this.curatedShops = []),
+      });
     }
   }
 
@@ -123,15 +139,31 @@ export class ShopPanelComponent implements OnChanges {
 
   // --- DM actions ----------------------------------------------------------
 
+  /** True when the open form has a valid selection to submit. */
+  get canOpen(): boolean {
+    return this.source === 'standard' || this.curatedShopId != null;
+  }
+
   openShop(): void {
     const pcIds = this.roster.filter(p => this.selected[p.pcId!]).map(p => p.pcId!);
-    this.shopService.openShop(this.state.sessionId, this.category, this.settlement.trim(), pcIds).subscribe({
+    const settlement = this.settlement.trim();
+    const request$ = this.source === 'curated' && this.curatedShopId != null
+      ? this.shopService.openCuratedShop(this.state.sessionId, this.curatedShopId, settlement, pcIds)
+      : this.shopService.openShop(this.state.sessionId, this.category, settlement, pcIds);
+
+    request$.subscribe({
       next: view => {
         this.shop = view;
-        this.fetchedKey = `${this.state.sessionId}|${this.category}`;
+        // Force a re-fetch on the next poll regardless of category (curated = null).
+        this.fetchedKey = null;
       },
       error: err => this.notifications.notify(this.errMsg(err, 'Could not open the shop.')),
     });
+  }
+
+  /** Heading for an active shop: the curated shop's name, or the standard category. */
+  shopTitle(shop: ShopView): string {
+    return shop.shopName ? shop.shopName : `${this.categoryLabel(shop.category)} Shop`;
   }
 
   closeShop(): void {

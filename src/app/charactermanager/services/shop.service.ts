@@ -21,12 +21,20 @@ export class ShopService {
 
   constructor(private http: HttpClient) {}
 
-  /** DM activates a shop (replaces any open one) and targets characters. */
+  /** DM activates a standard catalog shop (replaces any open one) and targets characters. */
   openShop(sessionId: number | string, category: string, settlement: string,
            pcIds: number[]): Observable<ShopView> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<ShopView>(`${this.base}/${sessionId}/shop`,
       { category, settlement, pcIds });
+  }
+
+  /** DM activates a pre-built curated shop (replaces any open one) and targets characters. */
+  openCuratedShop(sessionId: number | string, curatedShopId: number, settlement: string,
+                  pcIds: number[]): Observable<ShopView> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.post<ShopView>(`${this.base}/${sessionId}/shop`,
+      { curatedShopId, settlement, pcIds });
   }
 
   /** DM re-targets the characters at the active shop. */

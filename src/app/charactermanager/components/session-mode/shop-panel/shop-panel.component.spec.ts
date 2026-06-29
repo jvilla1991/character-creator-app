@@ -11,6 +11,7 @@ import { PC } from '../../../models/pc';
 describe('ShopPanelComponent', () => {
   let component: ShopPanelComponent;
   let shopService: any;
+  let curatedShopService: any;
   let pcService: any;
   let notifications: any;
 
@@ -39,10 +40,11 @@ describe('ShopPanelComponent', () => {
 
   beforeEach(() => {
     shopService = jasmine.createSpyObj('ShopService',
-      ['openShop', 'setAttendees', 'closeShop', 'getShop', 'purchase']);
+      ['openShop', 'openCuratedShop', 'setAttendees', 'closeShop', 'getShop', 'purchase']);
+    curatedShopService = jasmine.createSpyObj('CuratedShopService', ['list']);
     pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
-    component = new ShopPanelComponent(shopService, pcService, notifications);
+    component = new ShopPanelComponent(shopService, curatedShopService, pcService, notifications);
   });
 
   it('myCoinsCp sums the purse in copper', () => {
@@ -123,6 +125,47 @@ describe('ShopPanelComponent', () => {
     expect(component.categoryLabel('WEAPON')).toBe('Weapon');
     expect(component.categoryLabel('ARMOR')).toBe('Armor');
     expect(component.categoryLabel('MATERIAL_COMPONENT')).toBe('Component');
+  });
+
+  it('openShop activates a curated shop when source is curated', () => {
+    const view = { shopId: 10, sessionId: 1, category: null, settlement: 'Phandalin',
+      attendeePcIds: [7], items: [], curatedShopId: 50, shopName: 'The Smithy' } as unknown as ShopView;
+    shopService.openCuratedShop.and.returnValue(of(view));
+    component.state = state({ dm: true, participants: [participant({ pcId: 7 })] });
+    component.source = 'curated';
+    component.curatedShopId = 50;
+    component.settlement = 'Phandalin';
+    component.selected = { 7: true };
+
+    component.openShop();
+
+    expect(shopService.openCuratedShop).toHaveBeenCalledWith(1, 50, 'Phandalin', [7]);
+    expect(shopService.openShop).not.toHaveBeenCalled();
+    expect(component.shop).toBe(view);
+  });
+
+  it('canOpen requires a chosen curated shop', () => {
+    component.source = 'standard';
+    expect(component.canOpen).toBeTrue();
+    component.source = 'curated';
+    component.curatedShopId = null;
+    expect(component.canOpen).toBeFalse();
+    component.curatedShopId = 50;
+    expect(component.canOpen).toBeTrue();
+  });
+
+  it('shopTitle prefers the curated name, else the category', () => {
+    expect(component.shopTitle({ shopName: 'The Smithy' } as ShopView)).toBe('The Smithy');
+    expect(component.shopTitle({ category: 'ARMOR' } as ShopView)).toBe('Armor Shop');
+  });
+
+  it('loads the DM’s curated shops once per campaign', () => {
+    curatedShopService.list.and.returnValue(of([{ id: 50, name: 'The Smithy' }]));
+    component.state = state({ dm: true });
+    component.ngOnChanges();
+    component.ngOnChanges(); // same campaign — must not reload
+    expect(curatedShopService.list).toHaveBeenCalledTimes(1);
+    expect(component.curatedShops.length).toBe(1);
   });
 
   it('buy purchases, patches the local PC, and notifies', () => {

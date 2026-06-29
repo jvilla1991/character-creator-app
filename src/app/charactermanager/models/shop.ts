@@ -21,10 +21,12 @@ export interface ShopItem {
 export interface ShopView {
   shopId: number;
   sessionId: number;
-  category: string;
+  category: string | null;        // null for a curated shop (spans categories)
   settlement: string | null;
   attendeePcIds: number[];
   items: ShopItem[];
+  curatedShopId?: number | null;  // set when a curated shop is active
+  shopName?: string | null;       // the curated shop's name (null for standard)
 }
 
 export interface PurchaseResult {
