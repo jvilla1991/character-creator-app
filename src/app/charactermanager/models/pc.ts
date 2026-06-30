@@ -44,6 +44,9 @@ export interface PC {
   name: string;
   clazz: string;
   level: number;
+  // Experience points. Accumulates only (DM awards in Session Mode); level-up
+  // stays the explicit player-driven flow. Backend column defaults to 0.
+  xp?: number;
   playerName: string; // kept for backend compat; new field is `player`
 
   // --- Rich fields (client-side for now; migrate backend after Phase 1) ---
