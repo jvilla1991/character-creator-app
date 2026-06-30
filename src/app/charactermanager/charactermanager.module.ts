@@ -37,7 +37,6 @@ import { RoleSwitchComponent } from './components/settings-panel/role-switch/rol
 import { CampaignSidebarComponent } from './components/campaign-sidebar/campaign-sidebar.component';
 import { CampaignDashboardComponent } from './components/campaign-dashboard/campaign-dashboard.component';
 import { PartyBoardComponent } from './components/campaign-dashboard/party-board/party-board.component';
-import { CampaignChronicleComponent } from './components/campaign-dashboard/campaign-chronicle/campaign-chronicle.component';
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
 import { CampaignNotesComponent } from './components/campaign-dashboard/campaign-notes/campaign-notes.component';
 import { CuratedShopsComponent } from './components/campaign-dashboard/curated-shops/curated-shops.component';
@@ -105,7 +104,6 @@ const routes: Routes = [
     CampaignSidebarComponent,
     CampaignDashboardComponent,
     PartyBoardComponent,
-    CampaignChronicleComponent,
     PartyTreasuryComponent,
     CampaignNotesComponent,
     CuratedShopsComponent,
