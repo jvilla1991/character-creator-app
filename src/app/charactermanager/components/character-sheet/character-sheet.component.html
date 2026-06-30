@@ -58,7 +58,7 @@
     </div>
 
     <!-- Action buttons -->
-    <div class="sheet-actions">
+    <div class="sheet-actions" *ngIf="showActions">
       <!-- Connect: enabled for campaign members; disabled with a hint otherwise -->
       <div class="connect-wrap">
         <span *ngIf="!inCampaign" class="connect-hint" [class.show]="connectHintPinned">

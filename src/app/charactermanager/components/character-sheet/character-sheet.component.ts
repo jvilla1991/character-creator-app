@@ -17,6 +17,9 @@ export class CharacterSheetComponent implements OnChanges {
    * of their campaign members (cross-linked from the dashboard).
    */
   @Input() editable = false;
+  /** Hide the header action buttons (Connect/Roll/Long Rest/Level Up/Delete) when
+   *  the sheet is embedded read-only, e.g. inside Session Mode. */
+  @Input() showActions = true;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();

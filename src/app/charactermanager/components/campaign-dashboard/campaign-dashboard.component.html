@@ -67,10 +67,7 @@
 
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
 
-    <div class="dm-cols" style="margin-top: 20px;">
-      <app-campaign-chronicle [campaign]="vm.campaign"></app-campaign-chronicle>
-      <app-party-treasury [members]="vm.members"></app-party-treasury>
-    </div>
+    <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
 
     <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
 

@@ -1,6 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { SessionState } from '../../models/session';
+import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
@@ -85,6 +86,17 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   myParticipantId(state: SessionState): number | null {
     const mine = state.participants.find(p => p.ownedByMe);
     return mine ? mine.participantId : null;
+  }
+
+  /**
+   * The requesting player's own seated character, for the read-only sheet shown
+   * at the bottom of the session so they can reference it while they play.
+   * Reads from the local PC store (the same source the end-of-session handler
+   * uses); undefined if it isn't loaded.
+   */
+  myPc(state: SessionState): PC | undefined {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    return mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
   }
 
   /** The DM ends the session for everyone, then exits the screen. */

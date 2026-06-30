@@ -69,6 +69,12 @@
       </div>
       <div *ngIf="noteSaved" class="note-saved">Saved to the campaign log.</div>
     </div>
+
+    <!-- Player: their own character sheet (read-only) for reference at the table -->
+    <ng-container *ngIf="!state.dm && myPc(state) as pc">
+      <div class="eyebrow" style="margin: 24px 0 8px;">Your Character</div>
+      <app-character-sheet [pc]="pc" [showActions]="false"></app-character-sheet>
+    </ng-container>
   </div>
 </ng-container>
 

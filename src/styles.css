@@ -1396,13 +1396,6 @@ app-root { display: block; height: 100vh; width: 100vw; }
 
 /* === DM DASHBOARD === */
 .vital-caption { font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px; }
-.dm-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
-}
-@media (max-width: 1100px) { .dm-cols { grid-template-columns: minmax(0, 1fr); } }
-
 /* Party Vitals Board */
 .board { overflow-x: auto; }
 .board-row {
@@ -1489,37 +1482,6 @@ app-root { display: block; height: 100vh; width: 100vw; }
 }
 .board-chev { color: var(--text-dim); width: 12px; height: 12px; }
 .board-row.member:hover .board-chev { color: var(--celestial); }
-
-/* Campaign chronicle threads */
-.thread {
-  display: grid;
-  grid-template-columns: 16px 1fr;
-  gap: 10px;
-  align-items: start;
-  padding: 8px 0;
-  border-bottom: 1px dotted var(--border-soft);
-  font-family: 'Newsreader', serif;
-  font-size: 14px;
-  color: var(--text-2);
-}
-.thread:last-child { border-bottom: none; }
-.thread-mark { color: var(--celestial); font-size: 12px; padding-top: 2px; }
-.secrets-box {
-  margin-top: 14px;
-  padding: 14px 16px;
-  background: color-mix(in oklch, var(--violet) 12%, var(--bg-2));
-  border: 1px solid color-mix(in oklch, var(--violet) 35%, transparent);
-  border-radius: 3px;
-}
-.secrets-box .eyebrow { color: var(--violet); margin-bottom: 8px; display: block; }
-.secrets-box p {
-  margin: 0;
-  font-family: 'Newsreader', serif;
-  font-style: italic;
-  font-size: 13.5px;
-  color: var(--text-2);
-  line-height: 1.5;
-}
 
 /* Treasury */
 .treasury-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }

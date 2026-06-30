@@ -20,9 +20,9 @@ interface DashboardVm {
 }
 
 /**
- * DM dashboard shell: header + aggregate vitals strip + party board + the
- * two-column chronicle/treasury row. Shows an empty state until a campaign is
- * selected in the campaign sidebar.
+ * DM dashboard shell: header + aggregate vitals strip + party board + party
+ * treasury. Shows an empty state until a campaign is selected in the campaign
+ * sidebar.
  *
  * Members come from CampaignService.getMembers — in real mode this is the
  * DM-scoped projection, so the board includes other players' bound characters.
