@@ -44,6 +44,16 @@
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
+        <span class="dot">✦</span>
+        <span
+          class="sheet-xp"
+          [title]="xpForNextLevel != null
+            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+            : 'Maximum level reached'"
+        >{{ pc.xp || 0 }} XP</span>
+        <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
+          Ready to level up
+        </span>
       </div>
     </div>
 
@@ -83,7 +93,7 @@
         </svg>
         Long Rest
       </button>
-      <button class="btn" title="Advance a level" (click)="levelUpRequested.emit()">
+      <button class="btn" [class.ready]="readyToLevel" title="Advance a level" (click)="levelUpRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
           <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>

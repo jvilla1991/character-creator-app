@@ -62,3 +62,31 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+// XP total in the hero subtitle — quieter than the level, sits beside it.
+.sheet-xp {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+// "Ready to level up" badge — appears once XP crosses the next 2024 PHB
+// threshold. Purely a hint; leveling is still the explicit Level Up action.
+.level-ready-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--gold, #d9b25f);
+  border: 1px solid var(--gold, #d9b25f);
+  border-radius: 999px;
+  background: rgba(217, 178, 95, 0.10);
+}
+
+// Emphasize the Level Up button when the character is ready to advance.
+.btn.ready {
+  color: var(--gold, #d9b25f);
+  border-color: var(--gold, #d9b25f);
+}

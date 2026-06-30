@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { tintFor } from '../../utils/character-math';
+import { isReadyToLevel, xpForNextLevel } from '../../models/xp-thresholds';
 
 @Component({
   selector: 'app-character-sheet',
@@ -25,6 +26,21 @@ export class CharacterSheetComponent implements OnChanges {
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
     return this.pc?.campaignId != null;
+  }
+
+  // ── XP (display only) ────────────────────────────────────────────────────
+  // XP accumulates via DM awards in Session Mode; leveling stays the explicit
+  // flow below. These getters drive the header's XP total and a "ready to level
+  // up" badge — they never advance a level on their own.
+
+  /** Total XP required to reach the next level, or null at max level. */
+  get xpForNextLevel(): number | null {
+    return xpForNextLevel(this.pc?.level ?? 1);
+  }
+
+  /** True once total XP has crossed the next 2024 PHB threshold. */
+  get readyToLevel(): boolean {
+    return isReadyToLevel(this.pc?.level ?? 1, this.pc?.xp ?? 0);
   }
 
   /** Briefly shows the "not in a campaign" hint after a click (hover shows it via CSS). */
