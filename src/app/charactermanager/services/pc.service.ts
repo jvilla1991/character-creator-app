@@ -366,6 +366,9 @@ export class PCService {
       species: pc.race ?? null,
       initiative: pc.init ?? null,
       profBonus: pc.prof ?? null,
+      // Scalar passthrough (rides on the spread, but kept explicit + defaulted so
+      // a never-awarded PC sends 0 rather than undefined against the NOT NULL column).
+      xp: pc.xp ?? 0,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -405,6 +408,7 @@ export class PCService {
       race: (pc['species'] as string) ?? pc.race,
       init: (pc['initiative'] as number) ?? pc.init,
       prof: (pc['profBonus'] as number) ?? pc.prof,
+      xp: (pc['xp'] as number) ?? pc.xp ?? 0,
       stats: {
         STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
         DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,

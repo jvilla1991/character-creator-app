@@ -68,17 +68,41 @@
       </div>
 
       <div *ngIf="dm" class="dm-adjust" (click)="$event.stopPropagation()">
-        <input
-          type="number"
-          class="dmg-input"
-          min="0"
-          placeholder="0"
-          [(ngModel)]="amounts[p.participantId]"
-          aria-label="Amount"
-        />
-        <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
-        <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
+        <div class="adjust-row">
+          <input
+            type="number"
+            class="dmg-input"
+            min="0"
+            placeholder="HP"
+            [(ngModel)]="amounts[p.participantId]"
+            aria-label="HP amount"
+          />
+          <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
+          <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
+        </div>
+        <div class="adjust-row" *ngIf="!p.npc">
+          <input
+            type="number"
+            class="dmg-input"
+            placeholder="XP"
+            [(ngModel)]="xpAmounts[p.participantId]"
+            aria-label="XP amount"
+          />
+          <button class="btn-mini xp" (click)="giveXp(p)" title="Award XP">+XP</button>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div *ngIf="dm" class="xp-all-bar">
+    <span class="xp-all-label">Award XP to all</span>
+    <input
+      type="number"
+      class="dmg-input"
+      placeholder="XP"
+      [(ngModel)]="xpAll"
+      aria-label="XP for all combatants"
+    />
+    <button class="btn-mini xp" (click)="giveXpToAll()" [disabled]="!participants.length">Give to all</button>
   </div>
 </div>

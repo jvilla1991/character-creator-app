@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { ParticipantView } from '../../../models/session';
 import { SessionService } from '../../../services/session.service';
+import { NotificationService } from '../../../services/notification.service';
 import { tintFor } from '../../../utils/character-math';
 
 /**
@@ -25,12 +26,21 @@ export class InitiativePanelComponent {
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};
 
-  constructor(private sessionService: SessionService) {}
+  /** Per-row XP amount typed into the DM's award box, keyed by participant id. */
+  xpAmounts: { [participantId: number]: number | null } = {};
+
+  /** Amount typed into the panel-level "award XP to all" box. */
+  xpAll: number | null = null;
+
+  constructor(
+    private sessionService: SessionService,
+    private notifications: NotificationService,
+  ) {}
 
   // 5 columns read-only; a 6th DM "Adjust" column appears for the DM.
   get columns(): string {
     const base = '44px minmax(140px, 1.6fr) 150px 56px minmax(110px, 1.2fr)';
-    return this.dm ? `${base} 168px` : base;
+    return this.dm ? `${base} 184px` : base;
   }
 
   onInitiative(p: ParticipantView, raw: string): void {
@@ -49,6 +59,39 @@ export class InitiativePanelComponent {
       next: () => (this.amounts[p.participantId] = null),
       error: err => console.error('Failed to adjust HP', err),
     });
+  }
+
+  /** Award the row's typed XP to that PC, then toast the new total. */
+  giveXp(p: ParticipantView): void {
+    const amt = this.xpAmounts[p.participantId];
+    if (amt == null || amt === 0) return;
+    this.sessionService.awardXp(this.sessionId, p.participantId, amt).subscribe({
+      next: result => {
+        this.xpAmounts[p.participantId] = null;
+        const e = result.awarded[0];
+        if (e) this.notifications.notify(`${e.name}: ${e.xp} XP (${this.signed(e.delta)})`);
+      },
+      error: err => console.error('Failed to award XP', err),
+    });
+  }
+
+  /** Award the same XP amount to every seated PC, then toast the count. */
+  giveXpToAll(): void {
+    const amt = this.xpAll;
+    if (amt == null || amt === 0) return;
+    this.sessionService.awardXpToAll(this.sessionId, amt).subscribe({
+      next: result => {
+        this.xpAll = null;
+        const n = result.awarded.length;
+        this.notifications.notify(`Awarded ${this.signed(amt)} XP to ${n} character${n === 1 ? '' : 's'}`);
+      },
+      error: err => console.error('Failed to award XP to all', err),
+    });
+  }
+
+  /** Format a delta with an explicit sign for the toast (e.g. +500, -100). */
+  private signed(n: number): string {
+    return n >= 0 ? `+${n}` : `${n}`;
   }
 
   tintFor(p: ParticipantView): string {

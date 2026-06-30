@@ -30,6 +30,22 @@ export interface ParticipantView {
   deathSaveFailures: number;
 }
 
+/**
+ * Result of a DM XP award (mirrors backend XpAwardResult) — one entry per
+ * affected PC. XP is intentionally not on the session snapshot, so this carries
+ * the new total(s) for the DM's confirmation toast.
+ */
+export interface XpAwardEntry {
+  pcId: number;
+  name: string;
+  xp: number;    // new total after the award
+  delta: number; // actual change applied (may differ from request when floored at 0)
+}
+
+export interface XpAwardResult {
+  awarded: XpAwardEntry[];
+}
+
 export interface SessionState {
   // Numeric in real mode; a string sentinel in demo mode.
   sessionId: number | string;
