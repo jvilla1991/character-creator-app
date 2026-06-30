@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { tintFor } from '../../utils/character-math';
-import { isReadyToLevel, xpForNextLevel } from '../../models/xp-thresholds';
+import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
 @Component({
   selector: 'app-character-sheet',
@@ -44,6 +44,11 @@ export class CharacterSheetComponent implements OnChanges {
   /** True once total XP has crossed the next 2024 PHB threshold. */
   get readyToLevel(): boolean {
     return isReadyToLevel(this.pc?.level ?? 1, this.pc?.xp ?? 0);
+  }
+
+  /** Fill % (0–100) of the XP bar — progress through the current level. */
+  get xpProgressPct(): number {
+    return xpProgressPct(this.pc?.level ?? 1, this.pc?.xp ?? 0);
   }
 
   /** Briefly shows the "not in a campaign" hint after a click (hover shows it via CSS). */
