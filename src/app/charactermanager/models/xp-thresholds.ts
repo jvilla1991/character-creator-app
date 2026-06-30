@@ -44,3 +44,17 @@ export function isReadyToLevel(level: number, xp: number): boolean {
   const next = xpForNextLevel(level);
   return next != null && xp >= next;
 }
+
+/**
+ * Progress (0–100) through the current level toward the next — the share of the
+ * current level's XP span already earned. Returns 100 at max level (or for any
+ * degenerate span). Used to fill the sheet's XP bar.
+ */
+export function xpProgressPct(level: number, xp: number): number {
+  if (level >= MAX_LEVEL) return 100;
+  const floor = XP_THRESHOLDS[level - 1] ?? 0; // current level's threshold
+  const ceil = XP_THRESHOLDS[level] ?? floor;  // next level's threshold
+  const span = ceil - floor;
+  if (span <= 0) return 100;
+  return Math.max(0, Math.min(100, ((xp - floor) / span) * 100));
+}

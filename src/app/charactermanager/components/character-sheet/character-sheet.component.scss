@@ -90,3 +90,28 @@
   color: var(--gold, #d9b25f);
   border-color: var(--gold, #d9b25f);
 }
+
+// XP progress bar — fills through the current level toward the next.
+.xp-track {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  max-width: 280px;
+  background: var(--bg-elev, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  overflow: hidden;
+}
+.xp-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold, #d9b25f);
+  transition: width 0.3s ease;
+}
+// Once ready (or at max level), let the full bar glow a touch brighter.
+.xp-track.ready .xp-fill,
+.xp-track.max .xp-fill {
+  background: var(--gold, #d9b25f);
+  box-shadow: 0 0 8px rgba(217, 178, 95, 0.5);
+}

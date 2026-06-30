@@ -50,10 +50,22 @@
           [title]="xpForNextLevel != null
             ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
             : 'Maximum level reached'"
-        >{{ pc.xp || 0 }} XP</span>
+        >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
         <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
           Ready to level up
         </span>
+      </div>
+
+      <!-- XP progress through the current level -->
+      <div
+        class="xp-track"
+        [class.max]="xpForNextLevel == null"
+        [class.ready]="readyToLevel"
+        [title]="xpForNextLevel != null
+          ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+          : 'Maximum level reached'"
+      >
+        <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
       </div>
     </div>
 
