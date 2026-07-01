@@ -1,24 +1,56 @@
-/* Panel/item classes (.panel, .equip-item, .equip-item-name/-meta) come from
-   global styles.css — shared with the equipment panel. Only the inventory-
-   specific edit controls live here. */
+/* Panel/typography classes (.panel, .equip-item-name/-meta, .numeric) come from
+   global styles.css. The item row layout + manage controls live here so the row
+   can reflow on narrow screens. */
 
 .inv-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+}
+
+.inv-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.inv-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dotted var(--border-soft, rgba(255, 255, 255, 0.08));
+
+  &:last-child { border-bottom: none; }
+}
+
+.inv-item-info {
+  flex: 1;
+  min-width: 0; // let long names ellipsize instead of overflowing
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inv-equipped-tag {
+  margin-left: 6px;
+  color: var(--accent, gold);
+  font-size: 11px;
+  text-transform: lowercase;
 }
 
 .inv-controls {
-  display: inline-flex;
-  gap: 4px;
+  flex: none;
   margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
 }
 
 .inv-btn {
   font-family: inherit;
   font-size: 12px;
   line-height: 1;
-  padding: 4px 8px;
+  white-space: nowrap;
+  padding: 5px 9px;
   color: var(--text-dim);
   background: transparent;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
@@ -30,59 +62,35 @@
     border-color: var(--text-dim);
   }
 
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
   &.on {
     color: var(--accent, gold);
     border-color: var(--accent, gold);
   }
-}
 
-.inv-add {
-  margin-top: 10px;
-}
-
-.inv-add-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.inv-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-
-  input,
-  select {
-    font-family: inherit;
-    font-size: 13px;
-    padding: 4px 6px;
-    color: var(--text, inherit);
-    background: var(--surface, rgba(0, 0, 0, 0.2));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-    border-radius: 4px;
+  &.danger:hover:not(:disabled) {
+    color: var(--crimson, #d9534f);
+    border-color: var(--crimson, #d9534f);
   }
 }
 
-.inv-catalog-list {
-  flex-basis: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-}
+/* Mobile: stack the item info above the controls, and let the buttons span the
+   row as full, easy-to-tap targets. */
+@media (max-width: 640px) {
+  .inv-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 
-.inv-catalog-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  .inv-controls {
+    margin-left: 0;
+    gap: 8px;
+  }
 
-  .equip-item-name { flex: 1; }
+  .inv-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 9px 10px; // larger tap target
+    text-align: center;
+  }
 }
