@@ -25,10 +25,26 @@
 
 .inv-item-info {
   flex: 1;
-  min-width: 0; // let long names ellipsize instead of overflowing
+  min-width: 0; // allow the column to shrink so long names wrap instead of overflowing
   display: flex;
   flex-direction: column;
   gap: 2px;
+
+  // The shared .equip-item-name is built for a flex row (`flex: 1 1 0`, nowrap,
+  // ellipsis). Inside this flex *column* that basis collapses the name to zero
+  // height, so reset the flex and let the name wrap onto multiple lines instead.
+  .equip-item-name {
+    flex: 0 0 auto;
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+
+    > span {
+      overflow: visible;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
 }
 
 .inv-equipped-tag {
@@ -90,7 +106,7 @@
   .inv-btn {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 9px 10px; // larger tap target
+    padding: 12px 10px; // ~40px tall — comfortable tap target
     text-align: center;
   }
 }
