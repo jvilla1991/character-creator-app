@@ -13,6 +13,7 @@ import { AbilityScoresComponent } from './components/character-sheet/panels/abil
 import { SkillsListComponent } from './components/character-sheet/panels/skills-list/skills-list.component';
 import { ConditionsPanelComponent } from './components/character-sheet/panels/conditions-panel/conditions-panel.component';
 import { EquipmentPanelComponent } from './components/character-sheet/panels/equipment-panel/equipment-panel.component';
+import { InventoryPanelComponent } from './components/character-sheet/panels/inventory-panel/inventory-panel.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -95,6 +96,7 @@ const routes: Routes = [
     SkillsListComponent,
     ConditionsPanelComponent,
     EquipmentPanelComponent,
+    InventoryPanelComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,

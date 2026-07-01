@@ -148,6 +148,11 @@
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
       <app-equipment-panel  [pc]="pc"></app-equipment-panel>
+      <app-inventory-panel
+        [pc]="pc"
+        [editable]="showActions"
+        (pcChange)="onPcChange($event)">
+      </app-inventory-panel>
       <app-spellbook-panel
         [pc]="pc"
         [editable]="editable"
