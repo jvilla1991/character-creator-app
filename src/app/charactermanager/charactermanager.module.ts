@@ -13,6 +13,7 @@ import { AbilityScoresComponent } from './components/character-sheet/panels/abil
 import { SkillsListComponent } from './components/character-sheet/panels/skills-list/skills-list.component';
 import { ConditionsPanelComponent } from './components/character-sheet/panels/conditions-panel/conditions-panel.component';
 import { EquipmentPanelComponent } from './components/character-sheet/panels/equipment-panel/equipment-panel.component';
+import { InventoryPanelComponent } from './components/character-sheet/panels/inventory-panel/inventory-panel.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -37,9 +38,9 @@ import { RoleSwitchComponent } from './components/settings-panel/role-switch/rol
 import { CampaignSidebarComponent } from './components/campaign-sidebar/campaign-sidebar.component';
 import { CampaignDashboardComponent } from './components/campaign-dashboard/campaign-dashboard.component';
 import { PartyBoardComponent } from './components/campaign-dashboard/party-board/party-board.component';
-import { CampaignChronicleComponent } from './components/campaign-dashboard/campaign-chronicle/campaign-chronicle.component';
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
 import { CampaignNotesComponent } from './components/campaign-dashboard/campaign-notes/campaign-notes.component';
+import { CuratedShopsComponent } from './components/campaign-dashboard/curated-shops/curated-shops.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
@@ -95,6 +96,7 @@ const routes: Routes = [
     SkillsListComponent,
     ConditionsPanelComponent,
     EquipmentPanelComponent,
+    InventoryPanelComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,
@@ -104,9 +106,9 @@ const routes: Routes = [
     CampaignSidebarComponent,
     CampaignDashboardComponent,
     PartyBoardComponent,
-    CampaignChronicleComponent,
     PartyTreasuryComponent,
     CampaignNotesComponent,
+    CuratedShopsComponent,
     CreateCampaignModalComponent,
     JoinCampaignModalComponent,
     SessionModeComponent,

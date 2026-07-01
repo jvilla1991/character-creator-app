@@ -3,9 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, of, timer } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { ParticipantView, SessionState } from '../models/session';
+import { ParticipantView, SessionState, XpAwardEntry, XpAwardResult } from '../models/session';
 import { PC } from '../models/pc';
 import { CampaignService } from './campaign.service';
+import { PCService } from './pc.service';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -29,7 +30,11 @@ export class SessionService {
 
   private pollSub?: Subscription;
 
-  constructor(private http: HttpClient, private campaignService: CampaignService) {}
+  constructor(
+    private http: HttpClient,
+    private campaignService: CampaignService,
+    private pcService: PCService,
+  ) {}
 
   /** DM opens a lobby for a campaign; stores and returns the initial snapshot. */
   createSession(campaignId: string): Observable<SessionState> {
@@ -157,6 +162,33 @@ export class SessionService {
     );
   }
 
+  /**
+   * DM awards XP to a single seated PC. The backend writes it through to the
+   * character (floored at 0) and bumps the session version; XP isn't on the
+   * snapshot, so the result carries the new total for a confirmation toast. The
+   * awarded total is mirrored into the local PC store so an open sheet updates
+   * without a refetch (same pattern as a shop purchase).
+   */
+  awardXp(sessionId: number | string, participantId: number, amount: number): Observable<XpAwardResult> {
+    if (environment.demoMode) return of(this.demoAwardXp(participantId, amount));
+    return this.http.post<XpAwardResult>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/xp`, { amount },
+    ).pipe(tap(result => this.patchXp(result)));
+  }
+
+  /** DM awards the same XP amount to every seated PC in the session. */
+  awardXpToAll(sessionId: number | string, amount: number): Observable<XpAwardResult> {
+    if (environment.demoMode) return of(this.demoAwardXpToAll(amount));
+    return this.http.post<XpAwardResult>(
+      `${this.sessionBase}/${sessionId}/xp`, { amount },
+    ).pipe(tap(result => this.patchXp(result)));
+  }
+
+  /** Mirror awarded totals into the local PC store (no-op for PCs not loaded). */
+  private patchXp(result: XpAwardResult): void {
+    result.awarded.forEach(e => this.pcService.patchLocalPC(e.pcId, { xp: e.xp }));
+  }
+
   // --- demo helpers ---------------------------------------------------------
 
   /** Demo: set a participant's initiative and re-sort the order locally. */
@@ -191,6 +223,39 @@ export class SessionService {
     const next = { ...state, participants, version: state.version + 1 };
     this.stateSubject.next(next);
     return next;
+  }
+
+  /** Demo: award XP to one seated PC's in-memory character, floored at 0. */
+  private demoAwardXp(participantId: number, amount: number): XpAwardResult {
+    const state = this.stateSubject.getValue();
+    const p = state?.participants.find(x => x.participantId === participantId);
+    const awarded: XpAwardEntry[] = [];
+    if (p && p.pcId != null && !p.npc) {
+      awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
+    }
+    if (state) this.stateSubject.next({ ...state, version: state.version + 1 });
+    return { awarded };
+  }
+
+  /** Demo: award the same XP to every seated PC (NPCs skipped). */
+  private demoAwardXpToAll(amount: number): XpAwardResult {
+    const state = this.stateSubject.getValue();
+    const awarded: XpAwardEntry[] = [];
+    if (state) {
+      state.participants.forEach(p => {
+        if (p.pcId != null && !p.npc) awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
+      });
+      this.stateSubject.next({ ...state, version: state.version + 1 });
+    }
+    return { awarded };
+  }
+
+  /** Demo: apply an XP delta to the in-memory PC (floored at 0) and patch the store. */
+  private demoApplyXp(pcId: number, name: string, amount: number): XpAwardEntry {
+    const current = this.pcService.getPCById(pcId)?.xp ?? 0;
+    const updated = Math.max(0, current + amount);
+    this.pcService.patchLocalPC(pcId, { xp: updated });
+    return { pcId, name, xp: updated, delta: updated - current };
   }
 
   private demoState(campaignId: string, members: PC[]): SessionState {

@@ -44,11 +44,33 @@
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
+        <span class="dot">✦</span>
+        <span
+          class="sheet-xp"
+          [title]="xpForNextLevel != null
+            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+            : 'Maximum level reached'"
+        >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
+        <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
+          Ready to level up
+        </span>
+      </div>
+
+      <!-- XP progress through the current level -->
+      <div
+        class="xp-track"
+        [class.max]="xpForNextLevel == null"
+        [class.ready]="readyToLevel"
+        [title]="xpForNextLevel != null
+          ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+          : 'Maximum level reached'"
+      >
+        <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
       </div>
     </div>
 
     <!-- Action buttons -->
-    <div class="sheet-actions">
+    <div class="sheet-actions" *ngIf="showActions">
       <!-- Connect: enabled for campaign members; disabled with a hint otherwise -->
       <div class="connect-wrap">
         <span *ngIf="!inCampaign" class="connect-hint" [class.show]="connectHintPinned">
@@ -83,7 +105,7 @@
         </svg>
         Long Rest
       </button>
-      <button class="btn" title="Advance a level" (click)="levelUpRequested.emit()">
+      <button class="btn" [class.ready]="readyToLevel" title="Advance a level" (click)="levelUpRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
           <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
@@ -126,6 +148,11 @@
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
       <app-equipment-panel  [pc]="pc"></app-equipment-panel>
+      <app-inventory-panel
+        [pc]="pc"
+        [editable]="showActions"
+        (pcChange)="onPcChange($event)">
+      </app-inventory-panel>
       <app-spellbook-panel
         [pc]="pc"
         [editable]="editable"

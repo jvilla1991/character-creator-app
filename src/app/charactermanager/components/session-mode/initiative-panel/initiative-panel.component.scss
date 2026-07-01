@@ -32,8 +32,15 @@
 
 .dm-adjust {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
+
+  .adjust-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 
   .dmg-input {
     width: 48px;
@@ -63,5 +70,56 @@
 
     &.dmg:hover { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
     &.heal:hover { border-color: var(--emerald, #4caf7d); color: var(--emerald, #4caf7d); }
+
+    // The XP buttons carry a short label, so let them size to their text.
+    &.xp {
+      width: auto;
+      padding: 0 8px;
+      font-size: 12px;
+      &:hover { border-color: var(--gold, #d9b25f); color: var(--gold, #d9b25f); }
+    }
+  }
+}
+
+// Panel-level "award XP to all" control, below the initiative board.
+.xp-all-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+
+  .xp-all-label {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .dmg-input {
+    width: 64px;
+    padding: 4px 6px;
+    text-align: center;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    border-radius: 6px;
+  }
+
+  .btn-mini.xp {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    color: var(--text);
+    &:hover:not([disabled]) { border-color: var(--gold, #d9b25f); color: var(--gold, #d9b25f); }
+    &[disabled] { opacity: 0.45; cursor: not-allowed; }
   }
 }

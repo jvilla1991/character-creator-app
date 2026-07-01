@@ -62,3 +62,56 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+// XP total in the hero subtitle — quieter than the level, sits beside it.
+.sheet-xp {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+// "Ready to level up" badge — appears once XP crosses the next 2024 PHB
+// threshold. Purely a hint; leveling is still the explicit Level Up action.
+.level-ready-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--gold, #d9b25f);
+  border: 1px solid var(--gold, #d9b25f);
+  border-radius: 999px;
+  background: rgba(217, 178, 95, 0.10);
+}
+
+// Emphasize the Level Up button when the character is ready to advance.
+.btn.ready {
+  color: var(--gold, #d9b25f);
+  border-color: var(--gold, #d9b25f);
+}
+
+// XP progress bar — fills through the current level toward the next.
+.xp-track {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  max-width: 280px;
+  background: var(--bg-elev, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  overflow: hidden;
+}
+.xp-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold, #d9b25f);
+  transition: width 0.3s ease;
+}
+// Once ready (or at max level), let the full bar glow a touch brighter.
+.xp-track.ready .xp-fill,
+.xp-track.max .xp-fill {
+  background: var(--gold, #d9b25f);
+  box-shadow: 0 0 8px rgba(217, 178, 95, 0.5);
+}
