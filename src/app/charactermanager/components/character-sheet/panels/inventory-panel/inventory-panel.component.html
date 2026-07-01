@@ -1,0 +1,79 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Inventory</span>
+    <span *ngIf="items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      {{ totalWeight }} lb
+    </span>
+  </div>
+
+  <!-- Item list -->
+  <div class="inv-list">
+    <div *ngIf="!items.length" style="color: var(--text-dim); font-style: italic; font-size: 13px;">
+      No items yet.
+    </div>
+
+    <div *ngFor="let item of items; let i = index" class="equip-item" [class.equipped]="item.equipped">
+      <span class="equip-item-name">
+        <span>{{ item.name }}</span>
+        <span *ngIf="item.qty > 1" class="numeric" style="color: var(--text-dim);"> ×{{ item.qty }}</span>
+        <span *ngIf="item.equipped" style="color: var(--text-dim); font-size: 11px;"> (equipped)</span>
+      </span>
+      <span class="equip-item-meta">
+        <span>{{ categoryLabel(item.category) }}</span>
+        <span *ngIf="item.damage"> · {{ item.damage }}</span>
+        <span *ngIf="item.armorClass"> · AC {{ item.armorClass }}</span>
+        <span *ngIf="item.weight != null"> · {{ item.weight }} lb</span>
+        <span *ngIf="item.unitCostCp != null"> · {{ formatCp(item.unitCostCp) }}</span>
+      </span>
+
+      <!-- Edit controls -->
+      <span *ngIf="editable" class="inv-controls">
+        <button type="button" class="inv-btn" (click)="adjustQty(i, -1)" [attr.aria-label]="'Decrease ' + item.name">−</button>
+        <button type="button" class="inv-btn" (click)="adjustQty(i, 1)" [attr.aria-label]="'Increase ' + item.name">+</button>
+        <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
+                [attr.aria-label]="'Toggle equipped for ' + item.name">equip</button>
+        <button type="button" class="inv-btn" (click)="removeItem(i)" [attr.aria-label]="'Remove ' + item.name">✕</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- Add controls -->
+  <div *ngIf="editable" class="inv-add">
+    <div class="inv-add-actions" *ngIf="!showAdHoc && !showCatalog">
+      <button type="button" class="inv-btn" (click)="openAdHoc()">+ Custom item</button>
+      <button type="button" class="inv-btn" (click)="openCatalog()">+ From catalog</button>
+    </div>
+
+    <!-- Ad-hoc form -->
+    <div *ngIf="showAdHoc" class="inv-form">
+      <input type="text" [(ngModel)]="adHocName" placeholder="Item name" aria-label="Item name" />
+      <select [(ngModel)]="adHocCategory" aria-label="Category">
+        <option *ngFor="let c of adHocCategories" [value]="c">{{ categoryLabel(c) }}</option>
+      </select>
+      <input type="number" [(ngModel)]="adHocQty" min="1" aria-label="Quantity" style="width: 56px;" />
+      <input type="number" [(ngModel)]="adHocWeight" step="0.1" placeholder="lb" aria-label="Weight" style="width: 64px;" />
+      <input type="text" [(ngModel)]="adHocNotes" placeholder="Notes (optional)" aria-label="Notes" />
+      <button type="button" class="inv-btn" (click)="addAdHoc()" [disabled]="!adHocName.trim()">Add</button>
+      <button type="button" class="inv-btn" (click)="cancelAdHoc()">Cancel</button>
+    </div>
+
+    <!-- Catalog picker -->
+    <div *ngIf="showCatalog" class="inv-form">
+      <select [(ngModel)]="catalogCategory" (change)="loadCatalog()" aria-label="Catalog category">
+        <option *ngFor="let c of catalogCategories" [value]="c.value">{{ c.label }}</option>
+      </select>
+      <button type="button" class="inv-btn" (click)="cancelCatalog()">Close</button>
+      <div class="inv-catalog-list">
+        <div *ngIf="catalogLoading" style="color: var(--text-dim); font-style: italic; font-size: 13px;">Loading…</div>
+        <div *ngIf="!catalogLoading && !catalogItems.length" style="color: var(--text-dim); font-style: italic; font-size: 13px;">
+          No items in this category.
+        </div>
+        <div *ngFor="let ci of catalogItems" class="inv-catalog-row">
+          <span class="equip-item-name">{{ ci.name }}</span>
+          <span class="equip-item-meta">{{ formatCp(ci.costCp) }}</span>
+          <button type="button" class="inv-btn" (click)="addFromCatalog(ci)" [attr.aria-label]="'Add ' + ci.name">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

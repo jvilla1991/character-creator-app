@@ -1,0 +1,88 @@
+/* Panel/item classes (.panel, .equip-item, .equip-item-name/-meta) come from
+   global styles.css — shared with the equipment panel. Only the inventory-
+   specific edit controls live here. */
+
+.inv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inv-controls {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.inv-btn {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text, inherit);
+    border-color: var(--text-dim);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &.on {
+    color: var(--accent, gold);
+    border-color: var(--accent, gold);
+  }
+}
+
+.inv-add {
+  margin-top: 10px;
+}
+
+.inv-add-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inv-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+
+  input,
+  select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 4px 6px;
+    color: var(--text, inherit);
+    background: var(--surface, rgba(0, 0, 0, 0.2));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+    border-radius: 4px;
+  }
+}
+
+.inv-catalog-list {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.inv-catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .equip-item-name { flex: 1; }
+}
