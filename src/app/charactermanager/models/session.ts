@@ -61,5 +61,9 @@ export interface SessionState {
   shopOpen: boolean;
   shopForMe: boolean;
   shopCategory: string | null;
+  // Caller-scoped: the requester's own seated PC's current XP total, or null if
+  // they're the DM or have no PC seated. Not on ParticipantView — that's broadcast
+  // to every participant, and XP shouldn't leak between players.
+  myXp: number | null;
   participants: ParticipantView[];
 }

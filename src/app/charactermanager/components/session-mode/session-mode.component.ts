@@ -91,12 +91,26 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   /**
    * The requesting player's own seated character, for the read-only sheet shown
    * at the bottom of the session so they can reference it while they play.
-   * Reads from the local PC store (the same source the end-of-session handler
-   * uses); undefined if it isn't loaded.
+   * Starts from the local PC store (same source the end-of-session handler uses)
+   * but overlays the live values the poll already carries — HP/AC/conditions from
+   * this participant's ParticipantView, XP from the caller-scoped `myXp` — so the
+   * sheet reflects DM actions (damage, conditions, XP awards) without a refresh.
    */
   myPc(state: SessionState): PC | undefined {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
-    return mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
+    const pc = mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
+    if (!pc || !mine) return pc;
+    return {
+      ...pc,
+      hp: {
+        cur: mine.hpCurrent ?? pc.hp?.cur ?? 0,
+        max: mine.hpMax ?? pc.hp?.max ?? 0,
+        temp: mine.hpTemp ?? pc.hp?.temp ?? 0,
+      },
+      ac: mine.ac ?? pc.ac,
+      conditions: mine.conditions ?? pc.conditions,
+      xp: state.myXp ?? pc.xp,
+    };
   }
 
   /** The DM ends the session for everyone, then exits the screen. */
