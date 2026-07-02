@@ -133,6 +133,35 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** DM starts the encounter — initiative locks for players, turn one begins. */
+  startEncounter(state: SessionState): void {
+    this.sessionService.start(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to start encounter', err);
+        this.notifications.notify('Could not start the encounter.');
+      },
+    });
+  }
+
+  /**
+   * Advance the turn: the DM's Next Turn, or a player's End Turn (the button
+   * only renders on their own turn; the server enforces it regardless). Sends
+   * the active id from the snapshot being rendered — if another advance won the
+   * race, the service already resolves the 409 by refetching.
+   */
+  advanceTurn(state: SessionState): void {
+    if (state.activeParticipantId == null) return;
+    this.sessionService.advance(state.sessionId, state.activeParticipantId).subscribe({
+      error: err => console.error('Failed to advance turn', err),
+    });
+  }
+
+  /** True when the viewer's own combatant holds the current turn. */
+  isMyTurn(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.activeParticipantId;
+  }
+
   /** The DM ends the session for everyone, then exits the screen. */
   endSession(state: SessionState): void {
     this.sessionService.end(state.sessionId).subscribe({
