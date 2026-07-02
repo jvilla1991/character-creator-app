@@ -12,31 +12,23 @@ describe('InventoryPanelComponent', () => {
     component.editable = true;
   });
 
-  it('reduces quantity by one and emits an updated PC without mutating the input', () => {
+  it('flags a line as dropped without removing it, and without mutating the input', () => {
     component.pc = basePc([{ name: 'Torch', category: 'gear', qty: 2 }]);
     const spy = spyOn(component.pcChange, 'emit');
 
-    component.reduceQty(0);
+    component.dropItem(0);
 
     const emitted = spy.calls.mostRecent().args[0] as PC;
-    expect(emitted.inventory![0].qty).toBe(1);
-    expect(component.pc.inventory![0].qty).toBe(2); // original untouched
+    expect(emitted.inventory!.length).toBe(1);
+    expect(emitted.inventory![0].status).toBe('dropped');
+    expect(component.pc.inventory![0].status).toBeUndefined(); // original untouched
   });
 
-  it('removes a line when its quantity reaches zero', () => {
-    component.pc = basePc([{ name: 'Torch', category: 'gear', qty: 1 }]);
+  it('removes a dropped line for good via discardItem', () => {
+    component.pc = basePc([{ name: 'Arrows', category: 'gear', qty: 20, status: 'dropped' }]);
     const spy = spyOn(component.pcChange, 'emit');
 
-    component.reduceQty(0);
-
-    expect((spy.calls.mostRecent().args[0] as PC).inventory!.length).toBe(0);
-  });
-
-  it('drops an entire stack via removeItem', () => {
-    component.pc = basePc([{ name: 'Arrows', category: 'gear', qty: 20 }]);
-    const spy = spyOn(component.pcChange, 'emit');
-
-    component.removeItem(0);
+    component.discardItem(0);
 
     expect((spy.calls.mostRecent().args[0] as PC).inventory!.length).toBe(0);
   });

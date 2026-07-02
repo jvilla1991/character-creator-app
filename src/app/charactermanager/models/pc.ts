@@ -36,6 +36,9 @@ export interface PcItem {
   spell?: string;               // material component → consuming spell
   equipped?: boolean;
   notes?: string;
+  // Drop lifecycle: undefined/'active' = owned normally; 'dropped' = flagged to
+  // leave behind but still shown (one more click permanently discards it).
+  status?: 'active' | 'dropped';
 }
 
 export interface PC {
