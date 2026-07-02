@@ -4,6 +4,49 @@
   display: block;
 }
 
+// Whole-device turn vignette: an inward glow around the entire viewport edge.
+// Green (with a slow pulse) on the viewer's own turn, gold when on deck.
+// Always in the DOM so the state change cross-fades instead of popping;
+// pointer-events: none keeps it purely ambient. position: fixed is safe here —
+// the .fade-in ancestor's transform resolves to none once its entry animation
+// finishes.
+.turn-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 900; // above the session content, below modal dialogs (Material CDK ~1000)
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+
+  &.my-turn {
+    opacity: 1;
+    animation: vignette-pulse-green 2.4s ease-in-out infinite;
+  }
+
+  &.on-deck {
+    opacity: 1;
+    box-shadow:
+      inset 0 0 0 3px rgba(228, 196, 124, 0.65),
+      inset 0 0 34px 6px rgba(217, 178, 95, 0.30),
+      inset 0 0 90px 20px rgba(217, 178, 95, 0.14);
+  }
+}
+
+@keyframes vignette-pulse-green {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 3px rgba(96, 200, 145, 0.80),
+      inset 0 0 38px 8px rgba(76, 175, 125, 0.34),
+      inset 0 0 100px 24px rgba(76, 175, 125, 0.16);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 3px rgba(96, 200, 145, 0.45),
+      inset 0 0 26px 5px rgba(76, 175, 125, 0.20),
+      inset 0 0 70px 16px rgba(76, 175, 125, 0.09);
+  }
+}
+
 // In-session DM note composer. Panel chrome is global; only the compose box
 // and confirmation line are styled here.
 .session-note {

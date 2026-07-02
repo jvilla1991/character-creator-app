@@ -133,6 +133,56 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** DM starts the encounter — initiative locks for players, turn one begins. */
+  startEncounter(state: SessionState): void {
+    this.sessionService.start(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to start encounter', err);
+        this.notifications.notify('Could not start the encounter.');
+      },
+    });
+  }
+
+  /**
+   * DM ends the encounter (back to the lobby — the session stays open).
+   * Confirmed first: it clears the turn order and everyone's initiative, so a
+   * mis-click mid-combat would be painful to reconstruct.
+   */
+  endEncounter(state: SessionState): void {
+    if (!window.confirm('Are you sure you want to end this encounter?')) return;
+    this.sessionService.endEncounter(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to end encounter', err);
+        this.notifications.notify('Could not end the encounter.');
+      },
+    });
+  }
+
+  /**
+   * Advance the turn: the DM's Next Turn, or a player's End Turn (the button
+   * only renders on their own turn; the server enforces it regardless). Sends
+   * the active id from the snapshot being rendered — if another advance won the
+   * race, the service already resolves the 409 by refetching.
+   */
+  advanceTurn(state: SessionState): void {
+    if (state.activeParticipantId == null) return;
+    this.sessionService.advance(state.sessionId, state.activeParticipantId).subscribe({
+      error: err => console.error('Failed to advance turn', err),
+    });
+  }
+
+  /** True when the viewer's own combatant holds the current turn. */
+  isMyTurn(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.activeParticipantId;
+  }
+
+  /** True when the viewer's own combatant is next up (drives the gold vignette). */
+  isMyOnDeck(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.onDeckParticipantId;
+  }
+
   /** The DM ends the session for everyone, then exits the screen. */
   endSession(state: SessionState): void {
     this.sessionService.end(state.sessionId).subscribe({
