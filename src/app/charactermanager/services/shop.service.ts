@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { PurchaseResult, ShopView } from '../models/shop';
+import { PurchaseResult, SellResult, ShopView } from '../models/shop';
 
 /**
  * Shop client for Session Mode. Real mode talks to character-manager-service;
@@ -62,6 +62,12 @@ export class ShopService {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<PurchaseResult>(`${this.base}/${sessionId}/shop/purchase`,
       { pcId, itemKey, qty });
+  }
+
+  /** Sell the entire stack at inventory position `index` back to the shop. */
+  sell(sessionId: number | string, pcId: number, index: number): Observable<SellResult> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.post<SellResult>(`${this.base}/${sessionId}/shop/sell`, { pcId, index });
   }
 
   private demoUnsupported<T>(): Observable<T> {

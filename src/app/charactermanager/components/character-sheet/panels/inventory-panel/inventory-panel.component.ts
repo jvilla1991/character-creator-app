@@ -22,7 +22,15 @@ export class InventoryPanelComponent {
   @Input() pc!: PC;
   /** When true, shows the manage controls (equip / reduce qty / drop) and emits pcChange. */
   @Input() editable = false;
+  /** True while a shop is open and this PC is targeted — reveals the Sell button. */
+  @Input() shopOpenForMe = false;
+  /** The open shop's category (backend format, e.g. 'WEAPON'), or null for a
+   *  curated shop (buys any category) or when no shop is open. */
+  @Input() shopCategory: string | null = null;
   @Output() pcChange = new EventEmitter<PC>();
+  /** Player sells the item at this inventory index; the host owns the actual
+   *  sell transaction (it needs the session/shop context this panel doesn't have). */
+  @Output() sellRequested = new EventEmitter<number>();
 
   readonly formatCp = formatCp;
 
@@ -70,6 +78,32 @@ export class InventoryPanelComponent {
     if (!line) return;
     line.equipped = !line.equipped;
     this.emit(inventory);
+  }
+
+  /**
+   * Whether this line can be sold to the open shop right now — best-effort
+   * client-side gating (mirrors the server's rules) so a doomed sell request
+   * never gets sent. The server is still authoritative.
+   */
+  canSell(item: PcItem): boolean {
+    if (!this.shopOpenForMe) return false;
+    if (item.status === 'dropped') return false;
+    if (this.shopCategory != null && this.categoryLabelFor(this.shopCategory) !== item.category) return false;
+    return !!item.catalogKey || (item.unitCostCp != null && item.unitCostCp > 0);
+  }
+
+  sell(index: number): void {
+    this.sellRequested.emit(index);
+  }
+
+  /** Mirrors the backend's ShopService#categoryLabel mapping. */
+  private categoryLabelFor(backendCategory: string): string {
+    switch (backendCategory) {
+      case 'WEAPON': return 'weapon';
+      case 'ARMOR': return 'armor';
+      case 'MATERIAL_COMPONENT': return 'material-component';
+      default: return backendCategory.toLowerCase();
+    }
   }
 
   private emit(inventory: PcItem[]): void {

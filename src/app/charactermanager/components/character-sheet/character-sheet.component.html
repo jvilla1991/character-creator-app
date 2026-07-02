@@ -151,7 +151,10 @@
       <app-inventory-panel
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
-        (pcChange)="onPcChange($event)">
+        [shopOpenForMe]="shopOpenForMe"
+        [shopCategory]="shopCategory"
+        (pcChange)="onPcChange($event)"
+        (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
       <app-spellbook-panel
         [pc]="pc"

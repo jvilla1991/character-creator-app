@@ -7,6 +7,8 @@ import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
+import { ShopService } from '../../services/shop.service';
+import { formatCp } from '../../models/shop';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -40,6 +42,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private pcService: PCService,
     private notifications: NotificationService,
     private campaignService: CampaignService,
+    private shopService: ShopService,
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +114,23 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       conditions: mine.conditions ?? pc.conditions,
       xp: state.myXp ?? pc.xp,
     };
+  }
+
+  /**
+   * The player sells the inventory item at `index` (bubbled up from the
+   * character sheet's inventory panel) back to the open shop.
+   */
+  sell(index: number, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    const pcId = mine.pcId;
+    this.shopService.sell(state.sessionId, pcId, index).subscribe({
+      next: result => {
+        this.pcService.patchLocalPC(pcId, { coins: result.coins, inventory: result.inventory });
+        this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
+      },
+      error: () => this.notifications.notify('Could not sell that item. Try again.'),
+    });
   }
 
   /** The DM ends the session for everyone, then exits the screen. */
