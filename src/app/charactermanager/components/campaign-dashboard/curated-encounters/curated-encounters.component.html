@@ -1,0 +1,74 @@
+<section class="curated-card">
+  <div class="eyebrow">DM · Encounters</div>
+
+  <!-- ===== Encounter list ===== -->
+  <ng-container *ngIf="!selected">
+    <h2 class="curated-title">Curated Encounters</h2>
+
+    <div class="new-shop">
+      <input class="text-input" type="text" [(ngModel)]="newName"
+             placeholder="New encounter name (e.g. Goblin Ambush)"
+             (keyup.enter)="createEncounter()" />
+      <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createEncounter()">Create</button>
+    </div>
+
+    <ul class="shop-list" *ngIf="encounters.length; else noEncounters">
+      <li class="shop-row" *ngFor="let e of encounters; trackBy: trackById" (click)="open(e)">
+        <div>
+          <div class="shop-name">{{ e.name }}</div>
+          <div class="shop-sub">{{ e.creatureCount }} creature{{ e.creatureCount === 1 ? '' : 's' }}</div>
+        </div>
+        <span class="chevron">›</span>
+      </li>
+    </ul>
+    <ng-template #noEncounters>
+      <div class="muted">No curated encounters yet. Create one, then add creatures to it.</div>
+    </ng-template>
+  </ng-container>
+
+  <!-- ===== Encounter editor ===== -->
+  <ng-container *ngIf="selected as encounter">
+    <div class="editor-head">
+      <button class="btn link" (click)="back()">‹ All encounters</button>
+      <button class="btn danger" (click)="deleteEncounter()">Delete encounter</button>
+    </div>
+
+    <h2 class="curated-title">{{ encounter.name }}</h2>
+
+    <div class="field-label">Notes</div>
+    <textarea class="text-input notes" rows="2" [(ngModel)]="notesDraft"
+              placeholder="Tactics, terrain, read-aloud text…"></textarea>
+    <div class="notes-actions">
+      <button class="btn" [disabled]="notesDraft === (encounter.notes ?? '')" (click)="saveNotes()">Save notes</button>
+    </div>
+
+    <div class="field-label">Add a creature</div>
+    <div class="creature-form">
+      <input class="text-input" type="text" [(ngModel)]="cName" placeholder="Name (e.g. Goblin)"
+             (keyup.enter)="addCreature()" />
+      <input class="num-input" type="number" [(ngModel)]="cDex" placeholder="DEX mod" title="DEX modifier" />
+      <input class="num-input" type="number" min="1" [(ngModel)]="cHp" placeholder="HP" title="Max HP (optional)" />
+      <input class="num-input" type="number" min="1" [(ngModel)]="cQty" placeholder="Qty" title="Quantity" />
+      <button class="btn primary" [disabled]="!cName.trim() || cDex == null || busy" (click)="addCreature()">Add</button>
+    </div>
+
+    <ul class="catalog" *ngIf="encounter.creatures.length; else emptyEncounter">
+      <li class="catalog-row" *ngFor="let c of encounter.creatures; trackBy: trackById">
+        <div class="item-main">
+          <span class="item-name">{{ c.quantity > 1 ? c.quantity + '× ' : '' }}{{ c.name }}</span>
+          <span class="item-meta">
+            DEX {{ c.dexModifier >= 0 ? '+' : '' }}{{ c.dexModifier }}<ng-container *ngIf="c.hpMax != null"> · {{ c.hpMax }} HP</ng-container>
+          </span>
+        </div>
+        <button class="btn-x" title="Remove" (click)="removeCreature(c)">✕</button>
+      </li>
+    </ul>
+    <ng-template #emptyEncounter>
+      <div class="muted">No creatures yet. Add one above.</div>
+    </ng-template>
+
+    <div class="total-line" *ngIf="encounter.creatures.length">
+      Loads {{ totalCombatants(encounter) }} combatant{{ totalCombatants(encounter) === 1 ? '' : 's' }} into a session.
+    </div>
+  </ng-container>
+</section>
