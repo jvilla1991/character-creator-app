@@ -49,4 +49,57 @@ describe('InventoryPanelComponent', () => {
     ]);
     expect(component.totalWeight).toBe(9);
   });
+
+  describe('canSell', () => {
+    const catalogItem: PcItem = { name: 'Longsword', category: 'weapon', qty: 1, catalogKey: 'longsword' };
+    const adHocItem: PcItem = { name: 'Heirloom Ring', category: 'gear', qty: 1, unitCostCp: 500 };
+    const priceless: PcItem = { name: 'Note', category: 'gear', qty: 1 };
+
+    it('is false when no shop is open', () => {
+      component.shopOpenForMe = false;
+      expect(component.canSell(catalogItem)).toBe(false);
+    });
+
+    it('is true for a catalog item when the shop is open with no category filter (curated)', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+      expect(component.canSell(catalogItem)).toBe(true);
+    });
+
+    it('is false when the standard shop category does not match the item', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = 'ARMOR';
+      expect(component.canSell(catalogItem)).toBe(false);
+    });
+
+    it('is true when the standard shop category matches the item', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = 'WEAPON';
+      expect(component.canSell(catalogItem)).toBe(true);
+    });
+
+    it('falls back to unitCostCp for an item with no catalogKey', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+      expect(component.canSell(adHocItem)).toBe(true);
+    });
+
+    it('is false for an item with no catalogKey and no unitCostCp', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+      expect(component.canSell(priceless)).toBe(false);
+    });
+
+    it('is false for a dropped item', () => {
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+      expect(component.canSell({ ...catalogItem, status: 'dropped' })).toBe(false);
+    });
+  });
+
+  it('sell() emits the requested index via sellRequested', () => {
+    const spy = spyOn(component.sellRequested, 'emit');
+    component.sell(2);
+    expect(spy).toHaveBeenCalledWith(2);
+  });
 });

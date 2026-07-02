@@ -30,6 +30,8 @@
       </div>
 
       <div *ngIf="editable" class="inv-controls">
+        <button type="button" *ngIf="canSell(item)" class="inv-btn sell" (click)="sell(i)"
+                [attr.aria-label]="'Sell ' + item.name" title="Sell to the shop">Sell</button>
         <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
                 [attr.aria-label]="(item.equipped ? 'Unequip ' : 'Equip ') + item.name">
           {{ item.equipped ? 'Unequip' : 'Equip' }}

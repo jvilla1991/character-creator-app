@@ -91,6 +91,16 @@
     border-color: var(--accent, gold);
   }
 
+  &.sell {
+    color: var(--accent, gold);
+    border-color: var(--accent, gold);
+
+    &:hover:not(:disabled) {
+      color: var(--accent, gold);
+      background: rgba(255, 215, 0, 0.1);
+    }
+  }
+
   &.danger:hover:not(:disabled) {
     color: var(--crimson, #d9534f);
     border-color: var(--crimson, #d9534f);
