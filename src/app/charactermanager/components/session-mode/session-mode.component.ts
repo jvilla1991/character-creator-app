@@ -144,6 +144,21 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * DM ends the encounter (back to the lobby — the session stays open).
+   * Confirmed first: it clears the turn order and everyone's initiative, so a
+   * mis-click mid-combat would be painful to reconstruct.
+   */
+  endEncounter(state: SessionState): void {
+    if (!window.confirm('Are you sure you want to end this encounter?')) return;
+    this.sessionService.endEncounter(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to end encounter', err);
+        this.notifications.notify('Could not end the encounter.');
+      },
+    });
+  }
+
+  /**
    * Advance the turn: the DM's Next Turn, or a player's End Turn (the button
    * only renders on their own turn; the server enforces it regardless). Sends
    * the active id from the snapshot being rendered — if another advance won the

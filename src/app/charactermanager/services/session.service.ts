@@ -258,6 +258,19 @@ export class SessionService {
   }
 
   /**
+   * DM ends the encounter (not the session): back to the lobby, turn tracking
+   * stops, initiative clears so the next encounter rolls fresh. HP/XP changes
+   * already made stand — nothing is undone.
+   */
+  endEncounter(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoEndEncounter());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/encounter/end`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
    * Advance the turn — the DM's Next, or a player ending their own turn. Sends
    * the participant id this client believes is active; the server 409s a stale
    * one (a racing advance already moved the turn), in which case we quietly
@@ -435,6 +448,20 @@ export class SessionService {
       ...state, participants, status: 'ACTIVE', round: 1,
       activeParticipantId: first, version: state.version + 1,
     });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: end the encounter — lobby, pointer cleared, initiative reset. */
+  private demoEndEncounter(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants.map(p =>
+      ({ ...p, initiative: null, initRolled: false, currentTurn: false }));
+    const next: SessionState = {
+      ...state, participants, status: 'LOBBY', round: 1,
+      activeParticipantId: null, onDeckParticipantId: null,
+      version: state.version + 1,
+    };
     this.pushState(next);
     return next;
   }
