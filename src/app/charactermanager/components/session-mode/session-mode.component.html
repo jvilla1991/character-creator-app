@@ -1,4 +1,13 @@
 <ng-container *ngIf="state$ | async as state; else loading">
+  <!-- Whole-device turn vignette: the viewport border glows green on the
+       viewer's own turn, gold when they're on deck. Driven by the same
+       per-viewer snapshot ids as the row glow, so a hidden enemy's turn never
+       lights a player's screen. pointer-events: none — purely ambient. -->
+  <div
+    class="turn-vignette"
+    [class.my-turn]="isMyTurn(state)"
+    [class.on-deck]="!isMyTurn(state) && isMyOnDeck(state)"
+  ></div>
   <div class="fade-in">
 
     <!-- Header -->

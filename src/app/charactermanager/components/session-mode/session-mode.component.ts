@@ -177,6 +177,12 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     return id != null && id === state.activeParticipantId;
   }
 
+  /** True when the viewer's own combatant is next up (drives the gold vignette). */
+  isMyOnDeck(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.onDeckParticipantId;
+  }
+
   /** The DM ends the session for everyone, then exits the screen. */
   endSession(state: SessionState): void {
     this.sessionService.end(state.sessionId).subscribe({
