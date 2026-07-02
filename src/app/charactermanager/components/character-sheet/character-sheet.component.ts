@@ -20,6 +20,10 @@ export class CharacterSheetComponent implements OnChanges {
   /** Hide the header action buttons (Connect/Roll/Long Rest/Level Up/Delete) when
    *  the sheet is embedded read-only, e.g. inside Session Mode. */
   @Input() showActions = true;
+  /** Keep the inventory panel interactive even when showActions is false — used by
+   *  Session Mode, where the header actions stay hidden but players still need to
+   *  manage their inventory mid-session. */
+  @Input() inventoryEditable = false;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
