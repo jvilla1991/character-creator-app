@@ -6,6 +6,7 @@ import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-main-content',
@@ -27,21 +28,26 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private characterModal: CharacterModalService,
     private sessionService: SessionService,
     private uiState: UiStateService,
+    private notifications: NotificationService,
   ) {}
 
   // ── Session connect ────────────────────────────────────────────────────────
   // Join this character's campaign session if the DM has one live, then open the
-  // session screen. No-op when the PC isn't in a campaign or none is running yet.
+  // session screen. No-op when the PC isn't in a campaign; tells the player when
+  // no session is live yet or the join itself fails.
 
   connectToSession(): void {
     if (!this.pc || this.pc.campaignId == null) return;
     const campaignId = String(this.pc.campaignId);
     const pcId = this.pc.id;
     this.sessionService.getActiveForCampaign(campaignId).subscribe(session => {
-      if (!session) return;
+      if (!session) {
+        this.notifications.notify("Your DM hasn't started a session yet.");
+        return;
+      }
       this.sessionService.joinSession(session.sessionId, pcId).subscribe({
         next: joined => this.uiState.openSession(String(joined.sessionId)),
-        error: err => console.error('Failed to join session', err),
+        error: () => this.notifications.notify('Could not connect to the session. Try again.'),
       });
     });
   }

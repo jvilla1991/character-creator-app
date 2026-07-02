@@ -47,21 +47,17 @@ export class InventoryPanelComponent {
 
   // ── Manage owned items (emit a new PC; host persists via updatePC/updatePCAsDm) ──
 
-  /** Reduce a line's quantity by one — used up or dropped; removes the line at 0. */
-  reduceQty(index: number): void {
+  /** First click: flag the whole line as dropped (kept, shown, no longer "owned"). */
+  dropItem(index: number): void {
     const inventory = this.items.map(i => ({ ...i }));
     const line = inventory[index];
     if (!line) return;
-    if ((line.qty ?? 0) <= 1) {
-      inventory.splice(index, 1);
-    } else {
-      line.qty = (line.qty ?? 0) - 1;
-    }
+    line.status = 'dropped';
     this.emit(inventory);
   }
 
-  /** Drop an entire line regardless of quantity. */
-  removeItem(index: number): void {
+  /** Second click (only available once dropped): remove the line for good. */
+  discardItem(index: number): void {
     const inventory = this.items.map(i => ({ ...i }));
     if (index < 0 || index >= inventory.length) return;
     inventory.splice(index, 1);

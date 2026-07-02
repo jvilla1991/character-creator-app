@@ -274,6 +274,7 @@ export class SessionService {
       shopOpen: false,
       shopForMe: false,
       shopCategory: null,
+      myXp: null,
       participants,
     };
   }
@@ -282,7 +283,7 @@ export class SessionService {
     return {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       currentTurnIndex: 0, version: 0, dm: true,
-      shopOpen: false, shopForMe: false, shopCategory: null, participants: [],
+      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null, participants: [],
     };
   }
 
@@ -325,6 +326,7 @@ export class SessionService {
       shopOpen: !!raw.shopOpen,
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
+      myXp: raw.myXp ?? null,
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }

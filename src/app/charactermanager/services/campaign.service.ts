@@ -162,7 +162,7 @@ export class CampaignService {
     }
     return this.http.post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId }).pipe(
       map(r => this.pcService.deserialize(r)),
-      tap(updated => this.pcService.refreshPCs()),
+      tap(updated => this.pcService.patchLocalPC(updated.id, updated)),
     );
   }
 

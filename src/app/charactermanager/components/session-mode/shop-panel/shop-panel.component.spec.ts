@@ -34,7 +34,7 @@ describe('ShopPanelComponent', () => {
     return {
       sessionId: 1, campaignId: 1, status: 'ACTIVE', round: 1, currentTurnIndex: 0,
       version: 1, dm: false, shopOpen: false, shopForMe: false, shopCategory: null,
-      participants: [], ...over,
+      myXp: null, participants: [], ...over,
     };
   }
 

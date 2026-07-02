@@ -150,7 +150,7 @@
       <app-equipment-panel  [pc]="pc"></app-equipment-panel>
       <app-inventory-panel
         [pc]="pc"
-        [editable]="showActions"
+        [editable]="showActions || inventoryEditable"
         (pcChange)="onPcChange($event)">
       </app-inventory-panel>
       <app-spellbook-panel
