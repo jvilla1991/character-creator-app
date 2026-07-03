@@ -249,7 +249,9 @@ export class CampaignService {
     };
 
     if (environment.demoMode) {
-      const campaign: Campaign = { ...base, id: 'c-' + Date.now() };
+      // Demo campaigns need an invite code too — the join flow (and its
+      // slot-inventory consent gate) resolves campaigns by code.
+      const campaign: Campaign = { ...base, id: 'c-' + Date.now(), inviteCode: this.demoInviteCode() };
       this.persistDemo([...this.campaignsSubject.getValue(), campaign]);
       return of(campaign).pipe(delay(50));
     }
@@ -317,6 +319,14 @@ export class CampaignService {
   }
 
   // --- demo persistence -----------------------------------------------------
+
+  /** 6-char demo invite code from the backend's alphabet (no 0/O/1/I). */
+  private demoInviteCode(): string {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return code;
+  }
 
   private persistDemo(campaigns: Campaign[]): void {
     this.campaignsSubject.next(campaigns);
