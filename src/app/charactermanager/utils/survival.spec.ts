@@ -23,8 +23,8 @@ const basePC = (overrides: Partial<PC> = {}): PC => ({
 
 describe('survival util', () => {
   describe('stages', () => {
-    it('defaults an untracked PC to all zeros and clamps stored values', () => {
-      expect(survivalOf(basePC())).toEqual({ hunger: 0, thirst: 0, fatigue: 0 });
+    it('defaults an untracked PC to Ok (stage 2) and clamps stored values', () => {
+      expect(survivalOf(basePC())).toEqual({ hunger: 2, thirst: 2, fatigue: 2 });
       expect(survivalOf(basePC({ survival: { hunger: 9, thirst: -2, fatigue: 3 } })))
         .toEqual({ hunger: 6, thirst: 0, fatigue: 3 });
     });

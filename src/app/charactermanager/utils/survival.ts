@@ -23,12 +23,18 @@ export function clampStage(stage: number): number {
   return Math.max(0, Math.min(6, Math.round(stage)));
 }
 
-/** A PC's stages with absent/partial state defaulting to zeros. */
+/**
+ * A PC's stages; a never-tracked condition defaults to "Ok" (stage 2), the
+ * table's neutral row — not "Stuffed" (0), which grants −1 exhaustion.
+ * Mirrors the server's DEFAULT_STAGE.
+ */
+export const DEFAULT_STAGE = 2;
+
 export function survivalOf(pc: PC): PcSurvival {
   return {
-    hunger: clampStage(pc.survival?.hunger ?? 0),
-    thirst: clampStage(pc.survival?.thirst ?? 0),
-    fatigue: clampStage(pc.survival?.fatigue ?? 0),
+    hunger: clampStage(pc.survival?.hunger ?? DEFAULT_STAGE),
+    thirst: clampStage(pc.survival?.thirst ?? DEFAULT_STAGE),
+    fatigue: clampStage(pc.survival?.fatigue ?? DEFAULT_STAGE),
   };
 }
 

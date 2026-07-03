@@ -12,11 +12,11 @@ describe('SurvivalPanelComponent', () => {
     component.editable = true;
   });
 
-  it('defaults an untracked PC to stage 0 with the book labels', () => {
+  it('defaults an untracked PC to the neutral Ok stage', () => {
     component.pc = basePc(undefined);
-    expect(component.stage('hunger')).toBe(0);
-    expect(component.label('hunger')).toBe('Stuffed');
-    expect(component.label('fatigue')).toBe('Energized');
+    expect(component.stage('hunger')).toBe(2);
+    expect(component.label('hunger')).toBe('Ok');
+    expect(component.exhaustion).toBe(0); // no free −3 for a fresh character
   });
 
   it('shows the label for the current stage', () => {
