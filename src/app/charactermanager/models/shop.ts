@@ -6,7 +6,7 @@
 
 import { PcItem } from './pc';
 
-export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT';
+export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR';
 
 export interface ShopItem {
   itemKey: string;

@@ -9,6 +9,8 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
+import { CampaignGameTime, TimeOfDay } from '../../models/campaign';
+import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -35,10 +37,20 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   /** True when this session's campaign uses the slot-based inventory variant. */
   slotInventory = false;
+  /** True when this session's campaign uses the survival-conditions variant. */
+  survivalConditions = false;
+
+  // DM's set-the-date form (collapsed by default under the clock bar).
+  editingTime = false;
+  timeYear: number | null = null;
+  timeMonth: number | null = null;
+  timeDay: number | null = null;
+  timeSegment: TimeOfDay = 'dawn';
+  readonly timeSegments: TimeOfDay[] = ['dawn', 'noon', 'dusk', 'night'];
 
   private stateSub?: Subscription;
   private handledEnd = false;
-  private slotInventoryResolvedFor: string | null = null;
+  private variantsResolvedFor: string | null = null;
 
   constructor(
     private sessionService: SessionService,
@@ -54,7 +66,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     // The DM may end the session from another device; a poll then reports ENDED.
     this.stateSub = this.sessionService.state$.subscribe(state => {
       if (state && state.status === 'ENDED') this.onSessionEnded(state);
-      if (state) this.resolveSlotInventory(state);
+      if (state) this.resolveVariants(state);
     });
   }
 
@@ -84,14 +96,71 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.close();
   }
 
-  /** One-time lookup of the campaign's slot-inventory flag (immutable per campaign). */
-  private resolveSlotInventory(state: SessionState): void {
+  /** One-time lookup of the campaign's variant flags (immutable per campaign). */
+  private resolveVariants(state: SessionState): void {
     const campaignId = state.campaignId != null ? String(state.campaignId) : null;
-    if (!campaignId || this.slotInventoryResolvedFor === campaignId) return;
-    this.slotInventoryResolvedFor = campaignId;
+    if (!campaignId || this.variantsResolvedFor === campaignId) return;
+    this.variantsResolvedFor = campaignId;
     this.campaignService.getSummary(campaignId).subscribe({
-      next: summary => { this.slotInventory = !!summary.variantRules?.slotInventory; },
+      next: summary => {
+        this.slotInventory = !!summary.variantRules?.slotInventory;
+        this.survivalConditions = !!summary.variantRules?.survivalConditions;
+      },
       error: () => { /* keep the standard view */ },
+    });
+  }
+
+  // ── Campaign clock (DM controls; read-only chip for players) ───────────────
+
+  describeTime(state: SessionState): string {
+    return describeGameTime(state.gameTime);
+  }
+
+  /** Label for the DM's advance button: the segment it advances INTO. */
+  advanceTimeLabel(state: SessionState): string {
+    if (!state.gameTime) return 'Start the clock';
+    const next = advanceGameTime(state.gameTime);
+    const segment = next.timeOfDay.charAt(0).toUpperCase() + next.timeOfDay.slice(1);
+    return next.timeOfDay === 'dawn' ? `Advance to ${segment} (new day)` : `Advance to ${segment}`;
+  }
+
+  advanceTime(state: SessionState): void {
+    this.sessionService.advanceTime(state.sessionId).subscribe({
+      error: () => this.notifications.notify('Could not advance the clock.'),
+    });
+  }
+
+  toggleTimeEdit(state: SessionState): void {
+    this.editingTime = !this.editingTime;
+    if (this.editingTime) {
+      const t = state.gameTime;
+      this.timeYear = t?.year ?? 1;
+      this.timeMonth = t?.month ?? 1;
+      this.timeDay = t?.day ?? 1;
+      this.timeSegment = t?.timeOfDay ?? 'dawn';
+    }
+  }
+
+  commitTime(state: SessionState): void {
+    if (this.timeYear == null || this.timeMonth == null || this.timeDay == null) return;
+    const time: CampaignGameTime = {
+      year: Math.max(0, Math.floor(this.timeYear)),
+      month: Math.min(12, Math.max(1, Math.floor(this.timeMonth))),
+      day: Math.min(30, Math.max(1, Math.floor(this.timeDay))),
+      timeOfDay: this.timeSegment,
+    };
+    this.sessionService.setTime(state.sessionId, time).subscribe({
+      next: () => { this.editingTime = false; },
+      error: () => this.notifications.notify('Could not set the date.'),
+    });
+  }
+
+  /** The player eats/drinks/sleeps — server-authoritative so everyone sees it. */
+  onSurvivalAction(action: SurvivalAction, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.consumeSurvival(state.sessionId, mine.pcId, action).subscribe({
+      error: () => this.notifications.notify('Could not update your condition. Try again.'),
     });
   }
 
@@ -128,6 +197,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       },
       ac: mine.ac ?? pc.ac,
       conditions: mine.conditions ?? pc.conditions,
+      survival: mine.survival ?? pc.survival,
       xp: state.myXp ?? pc.xp,
     };
   }

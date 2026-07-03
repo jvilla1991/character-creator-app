@@ -332,6 +332,12 @@ export class CampaignService {
     return null;
   }
 
+  /** Sync lookup of a campaign already in the local store (demo & session seams). */
+  getLocalCampaign(campaignId: string | number): Campaign | undefined {
+    const key = String(campaignId);
+    return this.campaignsSubject.getValue().find(c => c.id === key);
+  }
+
   /**
    * Mirror a session-side clock change onto the local campaign list (and demo
    * storage). Real mode's source of truth is the server — this only keeps the
