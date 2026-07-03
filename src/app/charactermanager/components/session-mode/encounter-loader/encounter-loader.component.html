@@ -1,0 +1,20 @@
+<section class="encounter-loader" *ngIf="state.dm">
+  <div class="eyebrow">DM · Encounters</div>
+  <h3 class="loader-title">Load an encounter</h3>
+
+  <div class="loader-row" *ngIf="encounters.length; else noEncounters">
+    <select class="select" [(ngModel)]="selectedId">
+      <option [ngValue]="null" disabled>Choose an encounter…</option>
+      <option *ngFor="let e of encounters; trackBy: trackById" [ngValue]="e.id">
+        {{ e.name }} ({{ e.creatureCount }})
+      </option>
+    </select>
+    <button class="btn primary" [disabled]="selectedId == null || busy" (click)="load()">Load</button>
+  </div>
+
+  <div class="notes" *ngIf="selectedNotes">{{ selectedNotes }}</div>
+
+  <ng-template #noEncounters>
+    <div class="muted">No curated encounters for this campaign. Build one on the campaign screen.</div>
+  </ng-template>
+</section>

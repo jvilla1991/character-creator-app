@@ -302,6 +302,21 @@ export class SessionService {
     );
   }
 
+  /**
+   * DM loads a curated encounter: every creature becomes an enemy combatant,
+   * appended to the current order with no initiative (the DM rolls). Quantity is
+   * expanded server-side into numbered rows.
+   */
+  loadEncounter(sessionId: number | string, encounterId: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoLoadEncounter());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/encounter/load`, {
+      encounterId,
+    }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
   /** DM toggles whether players can see enemy combatants at all. */
   setVisibility(sessionId: number | string, enemiesHidden: boolean): Observable<SessionState> {
     if (environment.demoMode) return of(this.demoPatch({ enemiesHidden }));
@@ -494,6 +509,23 @@ export class SessionService {
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     };
     const participants = this.demoSort([...state.participants, enemy]);
+    const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: spawn the canned "Goblin Ambush" encounter as three enemy rows. */
+  private demoLoadEncounter(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const base = Date.now();
+    const goblins: ParticipantView[] = [1, 2, 3].map((n, i) => ({
+      participantId: base + i, pcId: null, npc: true, ownedByMe: false, currentTurn: false,
+      name: `Goblin ${n}`, clazz: null, level: null, portraitTint: null, portraitInitials: null,
+      initiative: null, initRolled: false, dexModifier: 2, orderIndex: state.participants.length + i,
+      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [],
+      deathSaveSuccesses: 0, deathSaveFailures: 0,
+    }));
+    const participants = this.demoSort([...state.participants, ...goblins]);
     const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
     this.pushState(next);
     return next;

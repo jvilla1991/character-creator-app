@@ -41,6 +41,7 @@ import { PartyBoardComponent } from './components/campaign-dashboard/party-board
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
 import { CampaignNotesComponent } from './components/campaign-dashboard/campaign-notes/campaign-notes.component';
 import { CuratedShopsComponent } from './components/campaign-dashboard/curated-shops/curated-shops.component';
+import { CuratedEncountersComponent } from './components/campaign-dashboard/curated-encounters/curated-encounters.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
@@ -48,6 +49,7 @@ import { JoinCampaignModalComponent } from './components/join-campaign-modal/joi
 import { SessionModeComponent } from './components/session-mode/session-mode.component';
 import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
 import { ShopPanelComponent } from './components/session-mode/shop-panel/shop-panel.component';
+import { EncounterLoaderComponent } from './components/session-mode/encounter-loader/encounter-loader.component';
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
 import { ToastComponent } from './components/toast/toast.component';
 
@@ -109,11 +111,13 @@ const routes: Routes = [
     PartyTreasuryComponent,
     CampaignNotesComponent,
     CuratedShopsComponent,
+    CuratedEncountersComponent,
     CreateCampaignModalComponent,
     JoinCampaignModalComponent,
     SessionModeComponent,
     InitiativePanelComponent,
     ShopPanelComponent,
+    EncounterLoaderComponent,
     SessionLiveBannerComponent,
     ToastComponent,
   ],
