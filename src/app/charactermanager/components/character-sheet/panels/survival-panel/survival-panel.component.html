@@ -1,0 +1,38 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Survival</span>
+    <span *ngIf="exhaustion !== 0"
+          [style.color]="exhaustion > 0 ? 'var(--crimson)' : 'var(--gold, var(--celestial-2))'"
+          style="font-weight: 600; font-size: 13px;"
+          title="Computed from survival stages: +1 per condition at stage 5–6, −1 per condition at stage 0">
+      {{ exhaustion > 0 ? '+' + exhaustion : exhaustion }} exhaustion
+    </span>
+  </div>
+
+  <div *ngFor="let key of keys"
+       style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0;">
+    <span style="text-transform: capitalize; min-width: 62px;">{{ key }}</span>
+    <span class="equip-item-meta" style="flex: 1; text-align: right;">
+      {{ label(key) }} · {{ stage(key) }}/6
+    </span>
+    <span *ngIf="editable" style="display: inline-flex; gap: 4px;">
+      <button class="btn" style="padding: 0 8px; line-height: 20px;"
+              [disabled]="stage(key) <= 0" (click)="adjust(key, -1)"
+              [attr.aria-label]="'Lower ' + key">−</button>
+      <button class="btn" style="padding: 0 8px; line-height: 20px;"
+              [disabled]="stage(key) >= 6" (click)="adjust(key, 1)"
+              [attr.aria-label]="'Raise ' + key">+</button>
+    </span>
+  </div>
+
+  <div *ngIf="editable" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+    <button class="btn" (click)="actionRequested.emit('EAT')"
+            title="Consume a ration: −1 hunger">Eat</button>
+    <button class="btn" (click)="actionRequested.emit('DRINK')"
+            title="Drink from a waterskin: −1 thirst">Drink</button>
+    <button class="btn" (click)="actionRequested.emit('SLEEP_GOOD')"
+            title="Good night's sleep: −3 fatigue">Sleep</button>
+    <button class="btn" (click)="actionRequested.emit('SLEEP_DISTURBED')"
+            title="Disturbed sleep: −1 fatigue">Rough sleep</button>
+  </div>
+</div>

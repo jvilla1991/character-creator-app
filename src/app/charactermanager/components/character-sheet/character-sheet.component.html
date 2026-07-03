@@ -147,6 +147,13 @@
         [pc]="pc"
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
+      <app-survival-panel
+        *ngIf="survivalConditions"
+        [pc]="pc"
+        [editable]="showActions || inventoryEditable || editable"
+        (pcChange)="onPcChange($event)"
+        (actionRequested)="onSurvivalAction($event)">
+      </app-survival-panel>
       <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
       <app-inventory-panel
         [pc]="pc"
