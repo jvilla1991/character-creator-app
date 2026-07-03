@@ -1,23 +1,45 @@
 <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-  <div class="modal-title" style="color: var(--celestial-2);">Join a Campaign</div>
-  <div class="modal-sub">Enter the invite code your Dungeon Master shared, then choose who answers the call.</div>
 
-  <div class="field">
-    <label>Invite Code</label>
-    <input [(ngModel)]="code" autocomplete="off" placeholder="e.g. VEIL23"
-           style="text-transform: uppercase; letter-spacing: 0.15em;" autofocus>
-  </div>
+  <!-- Invite form -->
+  <ng-container *ngIf="!consent">
+    <div class="modal-title" style="color: var(--celestial-2);">Join a Campaign</div>
+    <div class="modal-sub">Enter the invite code your Dungeon Master shared, then choose who answers the call.</div>
 
-  <div class="field">
-    <label>Character</label>
-    <select [(ngModel)]="pcId">
-      <option [ngValue]="null" disabled>Choose a hero…</option>
-      <option *ngFor="let pc of pcs$ | async" [ngValue]="pc.id">{{ pc.name }} — {{ pc.race }} {{ pc.clazz }}</option>
-    </select>
-  </div>
+    <div class="field">
+      <label>Invite Code</label>
+      <input [(ngModel)]="code" autocomplete="off" placeholder="e.g. VEIL23"
+             style="text-transform: uppercase; letter-spacing: 0.15em;" autofocus>
+    </div>
 
-  <div class="modal-actions">
-    <button class="btn" (click)="cancel()">Cancel</button>
-    <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!canSubmit">Answer the Call</button>
-  </div>
+    <div class="field">
+      <label>Character</label>
+      <select [(ngModel)]="pcId">
+        <option [ngValue]="null" disabled>Choose a hero…</option>
+        <option *ngFor="let pc of pcs$ | async" [ngValue]="pc.id">{{ pc.name }} — {{ pc.race }} {{ pc.clazz }}</option>
+      </select>
+    </div>
+
+    <div class="modal-sub" *ngIf="error" style="color: var(--crimson);">{{ error }}</div>
+
+    <div class="modal-actions">
+      <button class="btn" (click)="cancel()">Cancel</button>
+      <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!canSubmit">Answer the Call</button>
+    </div>
+  </ng-container>
+
+  <!-- Slot-inventory conversion consent -->
+  <ng-container *ngIf="consent">
+    <div class="modal-title" style="color: var(--celestial-2);">Slot-Based Inventory</div>
+    <div class="modal-sub">
+      <strong>{{ consent.campaignName }}</strong> uses Darker Dungeons slot-based inventory.
+      Joining will convert this character's weapons and gear into the slot system —
+      every item gains a bulk rating and carrying capacity is tracked. This one-time
+      conversion can't be undone.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" (click)="declineConsent.emit()">Go Back</button>
+      <button class="btn primary" style="flex: none;" (click)="acceptConsent.emit()">Accept &amp; Join</button>
+    </div>
+  </ng-container>
 </div>

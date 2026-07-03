@@ -1,6 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
 import { formatCp } from '../../../../models/shop';
+import {
+  ENCUMBERED_PENALTY,
+  isEncumbered,
+  itemBulk,
+  slotCapacity,
+  usedSlots,
+} from '../../../../utils/slot-inventory';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -27,6 +34,11 @@ export class InventoryPanelComponent {
   /** The open shop's category (backend format, e.g. 'WEAPON'), or null for a
    *  curated shop (buys any category) or when no shop is open. */
   @Input() shopCategory: string | null = null;
+  /** True when the PC's campaign runs Darker Dungeons slot-based inventory —
+   *  the header shows slots used vs capacity and an Encumbered badge instead
+   *  of raw weight, and each line shows its bulk. Display-only: the encumbered
+   *  state is computed live and never written into pc.conditions. */
+  @Input() slotInventory = false;
   @Output() pcChange = new EventEmitter<PC>();
   /** Player sells the item at this inventory index; the host owns the actual
    *  sell transaction (it needs the session/shop context this panel doesn't have). */
@@ -40,6 +52,26 @@ export class InventoryPanelComponent {
 
   get totalWeight(): number {
     return this.items.reduce((sum, i) => sum + (i.weight ?? 0) * (i.qty ?? 0), 0);
+  }
+
+  // ── Slot-based inventory (Darker Dungeons variant) ─────────────────────────
+
+  readonly encumberedPenalty = ENCUMBERED_PENALTY;
+
+  get usedSlots(): number {
+    return usedSlots(this.items);
+  }
+
+  get slotCapacity(): number {
+    return slotCapacity(this.pc);
+  }
+
+  get encumbered(): boolean {
+    return isEncumbered(this.pc);
+  }
+
+  bulkFor(item: PcItem): number {
+    return itemBulk(item);
   }
 
   /** A tidy display label for an item's category. */

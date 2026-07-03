@@ -136,6 +136,7 @@
       <div class="eyebrow" style="margin: 24px 0 8px;">Your Character</div>
       <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
                            [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
+                           [slotInventory]="slotInventory"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
   </div>

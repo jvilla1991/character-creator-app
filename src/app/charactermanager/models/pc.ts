@@ -28,6 +28,7 @@ export interface PcItem {
   qty: number;
   unitCostCp?: number;          // unit price paid, in copper
   weight?: number;
+  bulk?: number;                // Darker Dungeons object bulk; stamped at purchase/conversion
   // category-specific snapshot fields (optional)
   damage?: string;              // weapons
   properties?: string[];        // weapons

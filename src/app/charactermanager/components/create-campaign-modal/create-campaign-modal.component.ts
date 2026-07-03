@@ -10,6 +10,7 @@ export class CreateCampaignModalComponent {
   name = '';
   setting = '';
   tint: CampaignTint = 'celestial';
+  slotInventory = false;
 
   readonly tints: CampaignTint[] = ['celestial', 'violet', 'gold', 'crimson', 'emerald'];
 
@@ -22,6 +23,7 @@ export class CreateCampaignModalComponent {
       name: this.name.trim(),
       setting: this.setting.trim(),
       tint: this.tint,
+      variantRules: { slotInventory: this.slotInventory },
     });
   }
 

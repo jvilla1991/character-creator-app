@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
-import { delay, map, take, tap } from 'rxjs/operators';
+import { delay, map, shareReplay, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Campaign, CampaignDraft } from '../models/campaign';
+import { Campaign, CampaignDraft, CampaignSummary, CampaignVariantRules } from '../models/campaign';
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
+import { convertPcToSlotInventory } from '../utils/slot-inventory';
 
 // ---------------------------------------------------------------------------
 // Demo seed campaigns. Members are the demo PCs bound via PC.campaignId.
@@ -93,6 +94,9 @@ export class CampaignService {
 
   readonly campaignUrl = `${environment.characterApiUrl}/api/v1/campaign`;
 
+  // Per-campaign summary cache (variant rules never change after creation).
+  private summaryCache = new Map<string, Observable<CampaignSummary>>();
+
   constructor(private http: HttpClient, private pcService: PCService) {
     if (!environment.demoMode) this.refreshCampaigns();
   }
@@ -148,8 +152,59 @@ export class CampaignService {
     );
   }
 
-  /** A player binds one of their own characters to a campaign via its invite code. */
-  join(code: string, pcId: number): Observable<PC> {
+  /**
+   * Member-visible campaign header (name + variant rules). Player-owned sheets
+   * use this to learn the campaign's variant rules — the full campaign payload
+   * is DM-only. Cached per id: variant rules are immutable after creation.
+   */
+  getSummary(campaignId: string | number): Observable<CampaignSummary> {
+    const key = String(campaignId);
+    let cached = this.summaryCache.get(key);
+    if (!cached) {
+      cached = environment.demoMode
+        ? this.campaigns$.pipe(
+            map(campaigns => campaigns.find(c => c.id === key)),
+            map(c => ({ id: key, name: c?.name ?? '', variantRules: c?.variantRules ?? {} })),
+            take(1),
+            shareReplay(1),
+          )
+        : this.http.get<{ id: number; name: string; variantRules: unknown }>(
+            `${this.campaignUrl}/${key}/summary`
+          ).pipe(
+            map(r => ({ id: key, name: r.name, variantRules: this.parseVariantRules(r.variantRules) })),
+            shareReplay(1),
+          );
+      this.summaryCache.set(key, cached);
+    }
+    return cached;
+  }
+
+  /**
+   * Campaign facts for a valid invite code — powers the join consent gate.
+   * Real mode hits the unauthenticated-by-membership preview endpoint; demo
+   * mode resolves from the local campaign list.
+   */
+  previewByCode(code: string): Observable<{ name: string; variantRules: CampaignVariantRules }> {
+    const trimmed = code.trim().toUpperCase();
+    if (environment.demoMode) {
+      const campaign = this.campaignsSubject.getValue().find(c => c.inviteCode === trimmed);
+      if (!campaign) {
+        return throwError(() => new Error('No campaign found for that invite code'));
+      }
+      return of({ name: campaign.name, variantRules: campaign.variantRules ?? {} });
+    }
+    return this.http
+      .get<{ name: string; variantRules: unknown }>(`${this.campaignUrl}/invite/${trimmed}/preview`)
+      .pipe(map(r => ({ name: r.name, variantRules: this.parseVariantRules(r.variantRules) })));
+  }
+
+  /**
+   * A player binds one of their own characters to a campaign via its invite
+   * code. For slot-inventory campaigns the caller must have accepted the
+   * conversion consent gate first (`acknowledgeVariantRules`); the backend
+   * rejects unacknowledged joins with a 409.
+   */
+  join(code: string, pcId: number, acknowledgeVariantRules = false): Observable<PC> {
     const trimmed = code.trim().toUpperCase();
     if (environment.demoMode) {
       const campaign = this.campaignsSubject.getValue().find(c => c.inviteCode === trimmed);
@@ -158,12 +213,19 @@ export class CampaignService {
       }
       const pc = this.pcService.getPCById(pcId);
       if (!pc) return throwError(() => new Error('Character not found'));
-      return this.pcService.updatePC({ ...pc, campaignId: campaign.id });
+      // Mirror the server-side join conversion (join() only runs post-consent,
+      // so no gate check here — the demo has no catalog, bulk falls back).
+      const bound = campaign.variantRules?.slotInventory
+        ? convertPcToSlotInventory({ ...pc, campaignId: campaign.id })
+        : { ...pc, campaignId: campaign.id };
+      return this.pcService.updatePC(bound);
     }
-    return this.http.post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId }).pipe(
-      map(r => this.pcService.deserialize(r)),
-      tap(updated => this.pcService.patchLocalPC(updated.id, updated)),
-    );
+    return this.http
+      .post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId, acknowledgeVariantRules })
+      .pipe(
+        map(r => this.pcService.deserialize(r)),
+        tap(updated => this.pcService.patchLocalPC(updated.id, updated)),
+      );
   }
 
   /** Create a campaign. Returns an Observable so callers can react to the saved row. */
@@ -183,10 +245,13 @@ export class CampaignService {
       chronicle: 'The chronicle is yet unwritten. Your first session will fill this page.',
       secrets: '',
       threads: [],
+      variantRules: draft.variantRules ?? {},
     };
 
     if (environment.demoMode) {
-      const campaign: Campaign = { ...base, id: 'c-' + Date.now() };
+      // Demo campaigns need an invite code too — the join flow (and its
+      // slot-inventory consent gate) resolves campaigns by code.
+      const campaign: Campaign = { ...base, id: 'c-' + Date.now(), inviteCode: this.demoInviteCode() };
       this.persistDemo([...this.campaignsSubject.getValue(), campaign]);
       return of(campaign).pipe(delay(50));
     }
@@ -212,6 +277,7 @@ export class CampaignService {
       chronicle: c.chronicle,
       secrets: c.secrets,
       threads: JSON.stringify(c.threads ?? []),
+      variantRules: JSON.stringify(c.variantRules ?? {}),
     };
   }
 
@@ -231,6 +297,7 @@ export class CampaignService {
       secrets: raw.secrets ?? '',
       threads: this.parseThreads(raw.threads),
       inviteCode: raw.inviteCode ?? undefined,
+      variantRules: this.parseVariantRules(raw.variantRules),
     };
   }
 
@@ -242,7 +309,24 @@ export class CampaignService {
     return [];
   }
 
+  /** Tolerates object (demo/localStorage), JSON string (backend TEXT), or null. */
+  private parseVariantRules(value: unknown): CampaignVariantRules {
+    if (value && typeof value === 'object') return value as CampaignVariantRules;
+    if (typeof value === 'string') {
+      try { return (JSON.parse(value) ?? {}) as CampaignVariantRules; } catch { return {}; }
+    }
+    return {};
+  }
+
   // --- demo persistence -----------------------------------------------------
+
+  /** 6-char demo invite code from the backend's alphabet (no 0/O/1/I). */
+  private demoInviteCode(): string {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return code;
+  }
 
   private persistDemo(campaigns: Campaign[]): void {
     this.campaignsSubject.next(campaigns);

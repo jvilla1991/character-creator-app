@@ -33,8 +33,12 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   savingNote = false;
   noteSaved = false;
 
+  /** True when this session's campaign uses the slot-based inventory variant. */
+  slotInventory = false;
+
   private stateSub?: Subscription;
   private handledEnd = false;
+  private slotInventoryResolvedFor: string | null = null;
 
   constructor(
     private sessionService: SessionService,
@@ -50,6 +54,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     // The DM may end the session from another device; a poll then reports ENDED.
     this.stateSub = this.sessionService.state$.subscribe(state => {
       if (state && state.status === 'ENDED') this.onSessionEnded(state);
+      if (state) this.resolveSlotInventory(state);
     });
   }
 
@@ -77,6 +82,17 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       this.notifications.notify('The DM ended the session.');
     }
     this.close();
+  }
+
+  /** One-time lookup of the campaign's slot-inventory flag (immutable per campaign). */
+  private resolveSlotInventory(state: SessionState): void {
+    const campaignId = state.campaignId != null ? String(state.campaignId) : null;
+    if (!campaignId || this.slotInventoryResolvedFor === campaignId) return;
+    this.slotInventoryResolvedFor = campaignId;
+    this.campaignService.getSummary(campaignId).subscribe({
+      next: summary => { this.slotInventory = !!summary.variantRules?.slotInventory; },
+      error: () => { /* keep the standard view */ },
+    });
   }
 
   /** Leave the session screen (does not end the session server-side). */

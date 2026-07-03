@@ -29,6 +29,10 @@ export class CharacterSheetComponent implements OnChanges {
   @Input() shopOpenForMe = false;
   /** The open shop's category (backend format), or null for curated/no shop. */
   @Input() shopCategory: string | null = null;
+  /** True when this PC's campaign runs the Darker Dungeons slot-based inventory
+   *  variant — switches the inventory panel to slots/bulk and hides the legacy
+   *  equipment panel (a converted PC's weapons/gear were consolidated on join). */
+  @Input() slotInventory = false;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();

@@ -1,9 +1,19 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Inventory</span>
-    <span *ngIf="items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+    <span *ngIf="slotInventory" class="inv-slots" [class.over]="encumbered"
+          style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      <span *ngIf="encumbered" class="inv-encumbered" [title]="encumberedPenalty"
+            style="color: var(--crimson); font-style: normal; font-weight: 600; margin-right: 8px;">Encumbered</span>
+      Slots {{ usedSlots }} / {{ slotCapacity }}
+    </span>
+    <span *ngIf="!slotInventory && items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
       {{ totalWeight }} lb
     </span>
+  </div>
+
+  <div *ngIf="slotInventory && encumbered" class="inv-empty" style="color: var(--crimson);">
+    Over capacity — {{ encumberedPenalty }}.
   </div>
 
   <div class="inv-list">
@@ -24,7 +34,8 @@
           <span>{{ categoryLabel(item.category) }}</span>
           <span *ngIf="item.damage"> · {{ item.damage }}</span>
           <span *ngIf="item.armorClass"> · AC {{ item.armorClass }}</span>
-          <span *ngIf="item.weight != null"> · {{ item.weight }} lb</span>
+          <span *ngIf="slotInventory"> · {{ bulkFor(item) }} bulk</span>
+          <span *ngIf="!slotInventory && item.weight != null"> · {{ item.weight }} lb</span>
           <span *ngIf="item.unitCostCp != null"> · {{ formatCp(item.unitCostCp) }}</span>
         </span>
       </div>
