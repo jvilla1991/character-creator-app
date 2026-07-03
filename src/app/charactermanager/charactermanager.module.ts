@@ -14,6 +14,7 @@ import { SkillsListComponent } from './components/character-sheet/panels/skills-
 import { ConditionsPanelComponent } from './components/character-sheet/panels/conditions-panel/conditions-panel.component';
 import { EquipmentPanelComponent } from './components/character-sheet/panels/equipment-panel/equipment-panel.component';
 import { InventoryPanelComponent } from './components/character-sheet/panels/inventory-panel/inventory-panel.component';
+import { SurvivalPanelComponent } from './components/character-sheet/panels/survival-panel/survival-panel.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -99,6 +100,7 @@ const routes: Routes = [
     ConditionsPanelComponent,
     EquipmentPanelComponent,
     InventoryPanelComponent,
+    SurvivalPanelComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,

@@ -39,11 +39,12 @@ export class ShopPanelComponent implements OnChanges {
   curatedShops: ShopSummary[] = [];
   selected: { [pcId: number]: boolean } = {};
 
-  /** Catalog slices a DM can open (Phase 1: all three). */
+  /** Catalog slices a DM can open. */
   readonly categories: ReadonlyArray<{ value: ShopCategory; label: string }> = [
     { value: 'WEAPON', label: 'Weapons' },
     { value: 'ARMOR', label: 'Armor' },
     { value: 'MATERIAL_COMPONENT', label: 'Components' },
+    { value: 'GEAR', label: 'Gear' },
   ];
 
   /** Guards re-fetching the catalog on every 2s poll; only refetch on a real change. */
@@ -133,6 +134,7 @@ export class ShopPanelComponent implements OnChanges {
     switch ((category || '').toUpperCase()) {
       case 'ARMOR': return 'Armor';
       case 'MATERIAL_COMPONENT': return 'Component';
+      case 'GEAR': return 'Gear';
       default: return 'Weapon';
     }
   }

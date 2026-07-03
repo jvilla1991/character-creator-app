@@ -20,6 +20,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   editable = false;
   /** True when the active PC's campaign uses the slot-based inventory variant. */
   slotInventory = false;
+  /** True when the active PC's campaign uses the survival-conditions variant. */
+  survivalConditions = false;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
@@ -61,7 +63,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(pc => {
         this.pc = pc;
-        this.resolveSlotInventory(pc);
+        this.resolveVariants(pc);
       });
 
     this.uiState.dmReturn$
@@ -74,9 +76,10 @@ export class MainContentComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /** Look up whether the PC's campaign runs slot-based inventory (false when unknown). */
-  private resolveSlotInventory(pc: PC | null): void {
+  /** Look up the PC's campaign variant rules (all false when unknown). */
+  private resolveVariants(pc: PC | null): void {
     this.slotInventory = false;
+    this.survivalConditions = false;
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.campaignService.getSummary(pc.campaignId)
@@ -86,6 +89,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
           // Guard against a stale response after switching characters.
           if (this.pc?.id === pcId) {
             this.slotInventory = !!summary.variantRules?.slotInventory;
+            this.survivalConditions = !!summary.variantRules?.survivalConditions;
           }
         },
         error: () => { /* not a member / offline — keep the standard view */ },

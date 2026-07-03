@@ -5,6 +5,9 @@
  * from the backend's JSON string into an array by the SessionService deserializer.
  */
 
+import { CampaignGameTime } from './campaign';
+import { PcSurvival } from './pc';
+
 export type SessionStatus = 'LOBBY' | 'ACTIVE' | 'ENDED';
 
 export interface ParticipantView {
@@ -29,6 +32,9 @@ export interface ParticipantView {
   hpTemp: number | null;
   ac: number | null;
   conditions: string[];
+  // Darker Dungeons survival stages from the canonical PC row (parsed from the
+  // backend's JSON string like conditions); null for NPCs / never-tracked PCs.
+  survival: PcSurvival | null;
   deathSaveSuccesses: number;
   deathSaveFailures: number;
 }
@@ -80,5 +86,8 @@ export interface SessionState {
   // they're the DM or have no PC seated. Not on ParticipantView — that's broadcast
   // to every participant, and XP shouldn't leak between players.
   myXp: number | null;
+  // The campaign's in-world clock (null until the DM sets or advances it).
+  // Broadcast to every viewer; only the DM can change it.
+  gameTime: CampaignGameTime | null;
   participants: ParticipantView[];
 }

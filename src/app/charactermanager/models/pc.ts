@@ -42,6 +42,13 @@ export interface PcItem {
   status?: 'active' | 'dropped';
 }
 
+/** Darker Dungeons ch. 31 survival-condition stages, 0 (best) to 6 (worst). */
+export interface PcSurvival {
+  hunger: number;
+  thirst: number;
+  fatigue: number;
+}
+
 export interface PC {
   // --- Core (backend-persisted) ---
   id: number;
@@ -75,6 +82,9 @@ export interface PC {
   saves?: Array<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'>;
   skills?: { [skillName: string]: 'prof' | 'expert' };
   conditions?: string[];
+  // Darker Dungeons survival stages (0–6 each); only meaningful in campaigns
+  // with the survivalConditions variant. Absent = never tracked (all zeros).
+  survival?: PcSurvival;
 
   // Wealth
   coins?: { cp: number; sp: number; ep: number; gp: number; pp: number };

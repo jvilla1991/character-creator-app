@@ -379,6 +379,10 @@ export class PCService {
       saves: JSON.stringify(pc.saves ?? []),
       skills: JSON.stringify(pc.skills ?? {}),
       conditions: JSON.stringify(pc.conditions ?? []),
+      // null (not a stringified default) when never tracked — the backend
+      // preserves the stored value on a null, so a sheet edit can't wipe
+      // survival changes made server-side during a session.
+      survival: pc.survival ? JSON.stringify(pc.survival) : null,
       coins: JSON.stringify(pc.coins ?? {}),
       weapons: JSON.stringify(pc.weapons ?? []),
       gear: JSON.stringify(pc.gear ?? []),
@@ -427,6 +431,7 @@ export class PCService {
       saves: this.parseJsonField(pc['saves'], []),
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),
+      survival: this.parseJsonField(pc['survival'], undefined),
       coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
       weapons: this.parseJsonField(pc['weapons'], []),
       gear: this.parseJsonField(pc['gear'], []),

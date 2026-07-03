@@ -17,6 +17,7 @@ export interface Campaign {
   threads: string[];    // open plot threads
   inviteCode?: string;  // players join by entering this (Phase 3)
   variantRules?: CampaignVariantRules; // creation-time opt-ins, immutable
+  gameTime?: CampaignGameTime | null;  // in-world clock; null until set
 }
 
 export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emerald';
@@ -28,6 +29,21 @@ export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emeral
  */
 export interface CampaignVariantRules {
   slotInventory?: boolean;
+  survivalConditions?: boolean;
+}
+
+/** Segment of the in-world day; dawn/noon/dusk worsen survival conditions. */
+export type TimeOfDay = 'dawn' | 'noon' | 'dusk' | 'night';
+
+/**
+ * The campaign's persisted in-world clock, advanced by the DM from Session
+ * Mode (simplified calendar: 12 months of 30 days). Null/absent = never set.
+ */
+export interface CampaignGameTime {
+  year: number;
+  month: number;
+  day: number;
+  timeOfDay: TimeOfDay;
 }
 
 /** Member-visible campaign header — what a player's sheet may know about it. */
@@ -43,6 +59,7 @@ export interface CampaignDraft {
   setting: string;
   tint: CampaignTint;
   variantRules: CampaignVariantRules;
+  gameTime?: CampaignGameTime;  // optional in-world start date
 }
 
 /** Dice & rolling preferences, persisted to localStorage under `tm_dice`. */

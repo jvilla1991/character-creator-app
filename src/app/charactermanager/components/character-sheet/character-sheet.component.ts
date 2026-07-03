@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { tintFor } from '../../utils/character-math';
+import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
 @Component({
@@ -33,6 +34,13 @@ export class CharacterSheetComponent implements OnChanges {
    *  variant — switches the inventory panel to slots/bulk and hides the legacy
    *  equipment panel (a converted PC's weapons/gear were consolidated on join). */
   @Input() slotInventory = false;
+  /** True when this PC's campaign runs the Darker Dungeons survival-conditions
+   *  variant — reveals the hunger/thirst/fatigue tracker panel. */
+  @Input() survivalConditions = false;
+  /** True when the sheet is embedded in a live session: survival Eat/Drink/Sleep
+   *  bubble up (survivalActionRequested) so the host can call the
+   *  server-authoritative consume endpoint instead of a local edit. */
+  @Input() sessionLive = false;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
@@ -40,6 +48,8 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() connectRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
+  /** In-session survival action (eat/drink/sleep); bubbled from the survival panel. */
+  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -111,6 +121,19 @@ export class CharacterSheetComponent implements OnChanges {
   /** A child panel emitted a fully-updated PC (e.g. an ability score changed). */
   onPcChange(updated: PC): void {
     this.persist(updated);
+  }
+
+  /**
+   * A survival action from the panel. In a live session the host owns it (the
+   * server decrements rations and bumps the poll version); on the plain sheet
+   * the local reducer applies the same rules and persists.
+   */
+  onSurvivalAction(action: SurvivalAction): void {
+    if (this.sessionLive) {
+      this.survivalActionRequested.emit(action);
+      return;
+    }
+    this.persist(applyConsumeToPc(this.pc, action));
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
