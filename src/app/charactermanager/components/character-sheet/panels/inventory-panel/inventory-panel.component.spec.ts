@@ -42,6 +42,37 @@ describe('InventoryPanelComponent', () => {
     expect((spy.calls.mostRecent().args[0] as PC).inventory![0].equipped).toBe(true);
   });
 
+  describe('slot-based inventory (Darker Dungeons variant)', () => {
+    const withStats = (inventory: PcItem[]): PC =>
+      ({ ...basePc(inventory), race: 'Human', stats: { STR: 14, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } } as PC);
+
+    it('totals used slots from stamped bulk × qty, excluding dropped lines', () => {
+      component.pc = withStats([
+        { name: 'Longsword', category: 'weapon', qty: 2, bulk: 3 },
+        { name: 'Anvil', category: 'gear', qty: 1, bulk: 9, status: 'dropped' },
+      ]);
+      expect(component.usedSlots).toBe(6);
+    });
+
+    it('computes capacity from species and STR (Medium 18 + mod)', () => {
+      component.pc = withStats([]);
+      expect(component.slotCapacity).toBe(20); // STR 14 → +2
+    });
+
+    it('flags encumbered only when over capacity', () => {
+      component.pc = withStats([{ name: 'Crate', category: 'gear', qty: 1, bulk: 21 }]);
+      expect(component.encumbered).toBe(true);
+
+      component.pc = withStats([{ name: 'Crate', category: 'gear', qty: 1, bulk: 20 }]);
+      expect(component.encumbered).toBe(false); // at capacity is fine
+    });
+
+    it('falls back to weight-band bulk for unstamped lines', () => {
+      expect(component.bulkFor({ name: 'Rope', category: 'gear', qty: 1, weight: 5 })).toBe(2);
+      expect(component.bulkFor({ name: 'Note', category: 'gear', qty: 1 })).toBe(1);
+    });
+  });
+
   it('sums total weight across quantities', () => {
     component.pc = basePc([
       { name: 'Rations', category: 'gear', qty: 3, weight: 2 },

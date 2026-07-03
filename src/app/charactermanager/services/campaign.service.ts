@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
-import { delay, map, take, tap } from 'rxjs/operators';
+import { delay, map, shareReplay, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Campaign, CampaignDraft, CampaignVariantRules } from '../models/campaign';
+import { Campaign, CampaignDraft, CampaignSummary, CampaignVariantRules } from '../models/campaign';
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
@@ -94,6 +94,9 @@ export class CampaignService {
 
   readonly campaignUrl = `${environment.characterApiUrl}/api/v1/campaign`;
 
+  // Per-campaign summary cache (variant rules never change after creation).
+  private summaryCache = new Map<string, Observable<CampaignSummary>>();
+
   constructor(private http: HttpClient, private pcService: PCService) {
     if (!environment.demoMode) this.refreshCampaigns();
   }
@@ -147,6 +150,33 @@ export class CampaignService {
     return this.http.get<unknown[]>(`${this.campaignUrl}/${campaignId}/members`).pipe(
       map(rows => rows.map(r => this.pcService.deserialize(r))),
     );
+  }
+
+  /**
+   * Member-visible campaign header (name + variant rules). Player-owned sheets
+   * use this to learn the campaign's variant rules — the full campaign payload
+   * is DM-only. Cached per id: variant rules are immutable after creation.
+   */
+  getSummary(campaignId: string | number): Observable<CampaignSummary> {
+    const key = String(campaignId);
+    let cached = this.summaryCache.get(key);
+    if (!cached) {
+      cached = environment.demoMode
+        ? this.campaigns$.pipe(
+            map(campaigns => campaigns.find(c => c.id === key)),
+            map(c => ({ id: key, name: c?.name ?? '', variantRules: c?.variantRules ?? {} })),
+            take(1),
+            shareReplay(1),
+          )
+        : this.http.get<{ id: number; name: string; variantRules: unknown }>(
+            `${this.campaignUrl}/${key}/summary`
+          ).pipe(
+            map(r => ({ id: key, name: r.name, variantRules: this.parseVariantRules(r.variantRules) })),
+            shareReplay(1),
+          );
+      this.summaryCache.set(key, cached);
+    }
+    return cached;
   }
 
   /**

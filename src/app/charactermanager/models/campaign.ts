@@ -30,6 +30,13 @@ export interface CampaignVariantRules {
   slotInventory?: boolean;
 }
 
+/** Member-visible campaign header — what a player's sheet may know about it. */
+export interface CampaignSummary {
+  id: string;
+  name: string;
+  variantRules: CampaignVariantRules;
+}
+
 /** A new campaign as drafted in the create-campaign modal (pre-id, pre-seed). */
 export interface CampaignDraft {
   name: string;

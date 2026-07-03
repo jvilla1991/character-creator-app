@@ -7,6 +7,7 @@ import { CharacterModalService } from '../../services/character-modal.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
+import { CampaignService } from '../../services/campaign.service';
 
 @Component({
   selector: 'app-main-content',
@@ -17,6 +18,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   /** True while a DM is viewing a campaign member's sheet → numbers are editable. */
   editable = false;
+  /** True when the active PC's campaign uses the slot-based inventory variant. */
+  slotInventory = false;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
@@ -29,6 +32,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private uiState: UiStateService,
     private notifications: NotificationService,
+    private campaignService: CampaignService,
   ) {}
 
   // ── Session connect ────────────────────────────────────────────────────────
@@ -55,7 +59,10 @@ export class MainContentComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.pcService.getActivePC()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(pc => { this.pc = pc; });
+      .subscribe(pc => {
+        this.pc = pc;
+        this.resolveSlotInventory(pc);
+      });
 
     this.uiState.dmReturn$
       .pipe(takeUntil(this.destroy$))
@@ -65,6 +72,24 @@ export class MainContentComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /** Look up whether the PC's campaign runs slot-based inventory (false when unknown). */
+  private resolveSlotInventory(pc: PC | null): void {
+    this.slotInventory = false;
+    if (!pc || pc.campaignId == null) return;
+    const pcId = pc.id;
+    this.campaignService.getSummary(pc.campaignId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: summary => {
+          // Guard against a stale response after switching characters.
+          if (this.pc?.id === pcId) {
+            this.slotInventory = !!summary.variantRules?.slotInventory;
+          }
+        },
+        error: () => { /* not a member / offline — keep the standard view */ },
+      });
   }
 
   // ── Create modal ─────────────────────────────────────────────────────────
