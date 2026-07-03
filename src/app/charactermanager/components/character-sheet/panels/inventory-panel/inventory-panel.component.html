@@ -1,9 +1,19 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Inventory</span>
-    <span *ngIf="items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+    <span *ngIf="slotInventory" class="inv-slots" [class.over]="encumbered"
+          style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      <span *ngIf="encumbered" class="inv-encumbered" [title]="encumberedPenalty"
+            style="color: var(--crimson); font-style: normal; font-weight: 600; margin-right: 8px;">Encumbered</span>
+      Slots {{ usedSlots }} / {{ slotCapacity }}
+    </span>
+    <span *ngIf="!slotInventory && items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
       {{ totalWeight }} lb
     </span>
+  </div>
+
+  <div *ngIf="slotInventory && encumbered" class="inv-empty" style="color: var(--crimson);">
+    Over capacity — {{ encumberedPenalty }}.
   </div>
 
   <div class="inv-list">
@@ -11,31 +21,36 @@
       No items yet — buy equipment at a shop during a session and it will appear here.
     </div>
 
-    <div *ngFor="let item of items; let i = index" class="inv-item" [class.equipped]="item.equipped">
+    <div *ngFor="let item of items; let i = index" class="inv-item"
+         [class.equipped]="item.equipped" [class.dropped]="item.status === 'dropped'">
       <div class="inv-item-info">
         <span class="equip-item-name">
           <span>{{ item.name }}</span>
           <span *ngIf="item.qty > 1" class="numeric" style="color: var(--text-dim);"> ×{{ item.qty }}</span>
           <span *ngIf="item.equipped" class="inv-equipped-tag">equipped</span>
+          <span *ngIf="item.status === 'dropped'" class="inv-equipped-tag">dropped</span>
         </span>
         <span class="equip-item-meta">
           <span>{{ categoryLabel(item.category) }}</span>
           <span *ngIf="item.damage"> · {{ item.damage }}</span>
           <span *ngIf="item.armorClass"> · AC {{ item.armorClass }}</span>
-          <span *ngIf="item.weight != null"> · {{ item.weight }} lb</span>
+          <span *ngIf="slotInventory"> · {{ bulkFor(item) }} bulk</span>
+          <span *ngIf="!slotInventory && item.weight != null"> · {{ item.weight }} lb</span>
           <span *ngIf="item.unitCostCp != null"> · {{ formatCp(item.unitCostCp) }}</span>
         </span>
       </div>
 
       <div *ngIf="editable" class="inv-controls">
+        <button type="button" *ngIf="canSell(item)" class="inv-btn sell" (click)="sell(i)"
+                [attr.aria-label]="'Sell ' + item.name" title="Sell to the shop">Sell</button>
         <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
                 [attr.aria-label]="(item.equipped ? 'Unequip ' : 'Equip ') + item.name">
           {{ item.equipped ? 'Unequip' : 'Equip' }}
         </button>
-        <button type="button" class="inv-btn" (click)="reduceQty(i)"
-                [attr.aria-label]="'Reduce quantity of ' + item.name" title="Use one / drop one">−1</button>
-        <button type="button" class="inv-btn danger" (click)="removeItem(i)"
-                [attr.aria-label]="'Drop ' + item.name" title="Drop the whole stack">Drop</button>
+        <button type="button" *ngIf="item.status !== 'dropped'" class="inv-btn danger" (click)="dropItem(i)"
+                [attr.aria-label]="'Drop ' + item.name" title="Drop this item">Drop</button>
+        <button type="button" *ngIf="item.status === 'dropped'" class="inv-btn danger" (click)="discardItem(i)"
+                [attr.aria-label]="'Discard ' + item.name" title="Remove this item for good">Discard</button>
       </div>
     </div>
   </div>

@@ -7,6 +7,8 @@ import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
+import { ShopService } from '../../services/shop.service';
+import { formatCp } from '../../models/shop';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -31,8 +33,12 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   savingNote = false;
   noteSaved = false;
 
+  /** True when this session's campaign uses the slot-based inventory variant. */
+  slotInventory = false;
+
   private stateSub?: Subscription;
   private handledEnd = false;
+  private slotInventoryResolvedFor: string | null = null;
 
   constructor(
     private sessionService: SessionService,
@@ -40,6 +46,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private pcService: PCService,
     private notifications: NotificationService,
     private campaignService: CampaignService,
+    private shopService: ShopService,
   ) {}
 
   ngOnInit(): void {
@@ -47,6 +54,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     // The DM may end the session from another device; a poll then reports ENDED.
     this.stateSub = this.sessionService.state$.subscribe(state => {
       if (state && state.status === 'ENDED') this.onSessionEnded(state);
+      if (state) this.resolveSlotInventory(state);
     });
   }
 
@@ -76,6 +84,17 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.close();
   }
 
+  /** One-time lookup of the campaign's slot-inventory flag (immutable per campaign). */
+  private resolveSlotInventory(state: SessionState): void {
+    const campaignId = state.campaignId != null ? String(state.campaignId) : null;
+    if (!campaignId || this.slotInventoryResolvedFor === campaignId) return;
+    this.slotInventoryResolvedFor = campaignId;
+    this.campaignService.getSummary(campaignId).subscribe({
+      next: summary => { this.slotInventory = !!summary.variantRules?.slotInventory; },
+      error: () => { /* keep the standard view */ },
+    });
+  }
+
   /** Leave the session screen (does not end the session server-side). */
   close(): void {
     this.sessionService.clear();
@@ -91,12 +110,93 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   /**
    * The requesting player's own seated character, for the read-only sheet shown
    * at the bottom of the session so they can reference it while they play.
-   * Reads from the local PC store (the same source the end-of-session handler
-   * uses); undefined if it isn't loaded.
+   * Starts from the local PC store (same source the end-of-session handler uses)
+   * but overlays the live values the poll already carries — HP/AC/conditions from
+   * this participant's ParticipantView, XP from the caller-scoped `myXp` — so the
+   * sheet reflects DM actions (damage, conditions, XP awards) without a refresh.
    */
   myPc(state: SessionState): PC | undefined {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
-    return mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
+    const pc = mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
+    if (!pc || !mine) return pc;
+    return {
+      ...pc,
+      hp: {
+        cur: mine.hpCurrent ?? pc.hp?.cur ?? 0,
+        max: mine.hpMax ?? pc.hp?.max ?? 0,
+        temp: mine.hpTemp ?? pc.hp?.temp ?? 0,
+      },
+      ac: mine.ac ?? pc.ac,
+      conditions: mine.conditions ?? pc.conditions,
+      xp: state.myXp ?? pc.xp,
+    };
+  }
+
+  /**
+   * The player sells the inventory item at `index` (bubbled up from the
+   * character sheet's inventory panel) back to the open shop.
+   */
+  sell(index: number, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    const pcId = mine.pcId;
+    this.shopService.sell(state.sessionId, pcId, index).subscribe({
+      next: result => {
+        this.pcService.patchLocalPC(pcId, { coins: result.coins, inventory: result.inventory });
+        this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
+      },
+      error: () => this.notifications.notify('Could not sell that item. Try again.'),
+    });
+  }
+
+  /** DM starts the encounter — initiative locks for players, turn one begins. */
+  startEncounter(state: SessionState): void {
+    this.sessionService.start(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to start encounter', err);
+        this.notifications.notify('Could not start the encounter.');
+      },
+    });
+  }
+
+  /**
+   * DM ends the encounter (back to the lobby — the session stays open).
+   * Confirmed first: it clears the turn order and everyone's initiative, so a
+   * mis-click mid-combat would be painful to reconstruct.
+   */
+  endEncounter(state: SessionState): void {
+    if (!window.confirm('Are you sure you want to end this encounter?')) return;
+    this.sessionService.endEncounter(state.sessionId).subscribe({
+      error: err => {
+        console.error('Failed to end encounter', err);
+        this.notifications.notify('Could not end the encounter.');
+      },
+    });
+  }
+
+  /**
+   * Advance the turn: the DM's Next Turn, or a player's End Turn (the button
+   * only renders on their own turn; the server enforces it regardless). Sends
+   * the active id from the snapshot being rendered — if another advance won the
+   * race, the service already resolves the 409 by refetching.
+   */
+  advanceTurn(state: SessionState): void {
+    if (state.activeParticipantId == null) return;
+    this.sessionService.advance(state.sessionId, state.activeParticipantId).subscribe({
+      error: err => console.error('Failed to advance turn', err),
+    });
+  }
+
+  /** True when the viewer's own combatant holds the current turn. */
+  isMyTurn(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.activeParticipantId;
+  }
+
+  /** True when the viewer's own combatant is next up (drives the gold vignette). */
+  isMyOnDeck(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return id != null && id === state.onDeckParticipantId;
   }
 
   /** The DM ends the session for everyone, then exits the screen. */

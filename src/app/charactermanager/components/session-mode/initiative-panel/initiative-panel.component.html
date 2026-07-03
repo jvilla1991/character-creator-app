@@ -2,7 +2,7 @@
   <div class="panel-header">
     <span class="panel-title">Initiative Order</span>
     <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-      turn order is set by the table
+      {{ status === 'LOBBY' ? 'enter initiative — the DM starts the encounter' : 'highest acts first · green is up, gold is on deck' }}
     </span>
   </div>
 
@@ -24,13 +24,14 @@
     <div
       *ngFor="let p of participants; trackBy: trackByParticipant"
       class="board-row member"
-      [class.current-turn]="p.currentTurn"
+      [class.current-turn]="isActive(p)"
+      [class.on-deck]="isOnDeck(p)"
       [style.grid-template-columns]="columns"
       style="cursor: default;"
     >
       <div class="board-num lit numeric">
         <input
-          *ngIf="dm; else initRead"
+          *ngIf="canEditInitiative(p); else initRead"
           type="number"
           class="init-input"
           placeholder="0"
@@ -92,6 +93,62 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- DM encounter controls: add enemy, enemy visibility, turn cue. -->
+  <div *ngIf="dm" class="encounter-bar">
+    <div class="enemy-form">
+      <input
+        type="text"
+        class="enemy-input name"
+        placeholder="Enemy name"
+        [(ngModel)]="enemyName"
+        aria-label="Enemy name"
+      />
+      <input
+        type="number"
+        class="enemy-input"
+        placeholder="DEX"
+        title="DEX modifier (you calculate it)"
+        [(ngModel)]="enemyDexMod"
+        aria-label="Enemy DEX modifier"
+      />
+      <input
+        type="number"
+        class="enemy-input"
+        min="1"
+        placeholder="HP"
+        [(ngModel)]="enemyHp"
+        aria-label="Enemy max HP"
+      />
+      <button
+        class="btn-mini xp"
+        (click)="addEnemy()"
+        [disabled]="!enemyName.trim() || enemyDexMod == null || addingEnemy"
+      >Add Enemy</button>
+    </div>
+    <label class="visibility-toggle">
+      <input
+        type="checkbox"
+        [checked]="!enemiesHidden"
+        (change)="onVisibilityChange($any($event.target).checked)"
+      />
+      Players see enemies
+    </label>
+    <label class="sound-picker">
+      Turn cue
+      <select [ngModel]="turnSound || ''" (ngModelChange)="onSoundChange($event)" aria-label="Turn sound">
+        <option value="">None</option>
+        <option *ngFor="let s of soundOptions" [value]="s.key">{{ s.label }}</option>
+      </select>
+    </label>
+  </div>
+
+  <!-- Everyone: local mute for the turn cue (this device only). -->
+  <div class="cue-mute">
+    <button class="btn-mini" (click)="toggleMute()">
+      {{ muted ? 'Unmute turn cue' : 'Mute turn cue' }}
+    </button>
   </div>
 
   <div *ngIf="dm" class="xp-all-bar">

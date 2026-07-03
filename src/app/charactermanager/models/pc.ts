@@ -28,6 +28,7 @@ export interface PcItem {
   qty: number;
   unitCostCp?: number;          // unit price paid, in copper
   weight?: number;
+  bulk?: number;                // Darker Dungeons object bulk; stamped at purchase/conversion
   // category-specific snapshot fields (optional)
   damage?: string;              // weapons
   properties?: string[];        // weapons
@@ -36,6 +37,9 @@ export interface PcItem {
   spell?: string;               // material component → consuming spell
   equipped?: boolean;
   notes?: string;
+  // Drop lifecycle: undefined/'active' = owned normally; 'dropped' = flagged to
+  // leave behind but still shown (one more click permanently discards it).
+  status?: 'active' | 'dropped';
 }
 
 export interface PC {

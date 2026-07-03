@@ -10,6 +10,19 @@ import { PCService } from './pc.service';
 
 const POLL_INTERVAL_MS = 2000;
 
+/** localStorage key for the per-device sound mute (player preference, not synced). */
+const SOUND_MUTE_KEY = 'tm-session-sound-muted';
+
+/**
+ * Turn-cue presets synthesized with WebAudio — no bundled assets. The key is
+ * what the DM stores on the session (`turnSound`).
+ */
+export const TURN_SOUNDS: { key: string; label: string }[] = [
+  { key: 'chime', label: 'Chime' },
+  { key: 'bell', label: 'Bell' },
+  { key: 'drum', label: 'Drum' },
+];
+
 /**
  * Live session client. Mirrors the demo/real split every other service uses:
  * in real mode it talks to the cloud character-manager-service (the same service
@@ -30,6 +43,16 @@ export class SessionService {
 
   private pollSub?: Subscription;
 
+  /**
+   * The active-participant id of the last snapshot seen, for the turn-cue
+   * trigger. `undefined` means "no snapshot yet" — the first snapshot after
+   * opening (or rejoining) initializes silently, so a reconnect never replays a
+   * stale cue; poll catch-up over several turns plays at most the current one.
+   */
+  private lastActiveId: number | null | undefined;
+
+  private audioCtx?: AudioContext;
+
   constructor(
     private http: HttpClient,
     private campaignService: CampaignService,
@@ -42,12 +65,12 @@ export class SessionService {
       return this.campaignService.getMembers(campaignId).pipe(
         take(1),
         map(members => this.demoState(campaignId, members)),
-        tap(state => this.stateSubject.next(state)),
+        tap(state => this.pushState(state)),
       );
     }
     return this.http.post<unknown>(`${this.campaignBase}/${campaignId}/session`, {}).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -59,23 +82,31 @@ export class SessionService {
     }
     return this.http.get<unknown>(`${this.sessionBase}/${sessionId}/state`).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
   /**
    * Begin polling the snapshot every 2s, paused while the tab is hidden to save
-   * requests. No-op in demo mode (the single in-memory state is already live).
+   * requests. Sends `sinceVersion` (the version of the snapshot we already
+   * hold) so an unchanged session answers 204 with no payload; a null body is
+   * simply skipped. No-op in demo mode (the single in-memory state is already
+   * live).
    */
   startPolling(sessionId: number | string): void {
     this.stopPolling();
     if (environment.demoMode) return;
     this.pollSub = timer(0, POLL_INTERVAL_MS).pipe(
       filter(() => !document.hidden),
-      switchMap(() => this.http.get<unknown>(`${this.sessionBase}/${sessionId}/state`)),
-      map(raw => this.deserialize(raw)),
+      switchMap(() => {
+        const current = this.stateSubject.getValue();
+        const since = current != null ? `?sinceVersion=${current.version}` : '';
+        return this.http.get<unknown>(`${this.sessionBase}/${sessionId}/state${since}`);
+      }),
     ).subscribe({
-      next: state => this.stateSubject.next(state),
+      next: raw => {
+        if (raw != null) this.pushState(this.deserialize(raw));
+      },
       error: err => console.error('Session poll failed', err),
     });
   }
@@ -88,7 +119,84 @@ export class SessionService {
   /** Stop polling and clear local state — used when leaving the session screen. */
   clear(): void {
     this.stopPolling();
-    this.stateSubject.next(null);
+    this.pushState(null);
+  }
+
+  /**
+   * The single funnel every snapshot goes through before components see it —
+   * this is where the turn cue fires. Sound plays only on an observed CHANGE of
+   * the active-participant id to a non-null value, which encodes the whole rule
+   * set: no cue on first load or rejoin (`lastActiveId` still undefined), no cue
+   * while a hidden enemy acts (the server nulls the id for players), one cue —
+   * not several — when a poll catches up over multiple turns, and a cue when a
+   * hidden enemy's turn ends and a visible combatant comes up (null → id).
+   */
+  private pushState(state: SessionState | null): void {
+    if (state == null) {
+      this.lastActiveId = undefined;
+    } else {
+      const previous = this.lastActiveId;
+      const current = state.activeParticipantId;
+      if (previous !== undefined && current != null && current !== previous && state.turnSound) {
+        this.playCue(state.turnSound);
+      }
+      this.lastActiveId = current;
+    }
+    this.stateSubject.next(state);
+  }
+
+  // --- turn-cue sound ---------------------------------------------------------
+
+  /** Per-device mute (localStorage) — the DM's chosen cue still syncs to everyone. */
+  isMuted(): boolean {
+    try {
+      return localStorage.getItem(SOUND_MUTE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  setMuted(muted: boolean): void {
+    try {
+      if (muted) localStorage.setItem(SOUND_MUTE_KEY, '1');
+      else localStorage.removeItem(SOUND_MUTE_KEY);
+    } catch {
+      // storage unavailable — sounds just stay on
+    }
+  }
+
+  /**
+   * Synthesize the cue with WebAudio (no audio assets to ship). Public so the
+   * DM's sound picker can preview a cue on selection. Failures are swallowed —
+   * a blocked AudioContext must never break the tracker.
+   */
+  playCue(key: string): void {
+    if (this.isMuted()) return;
+    try {
+      const ctx = this.audioCtx ?? (this.audioCtx = new AudioContext());
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+      // frequency (Hz), oscillator shape, decay (s) per preset.
+      const presets: { [k: string]: { freq: number; type: OscillatorType; decay: number } } = {
+        chime: { freq: 880, type: 'sine', decay: 0.6 },
+        bell: { freq: 660, type: 'triangle', decay: 0.9 },
+        drum: { freq: 130, type: 'sine', decay: 0.25 },
+      };
+      const preset = presets[key];
+      if (!preset) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = preset.type;
+      osc.frequency.value = preset.freq;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + preset.decay);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + preset.decay);
+    } catch {
+      // audio unavailable (autoplay policy, no device) — stay silent
+    }
   }
 
   /**
@@ -109,7 +217,7 @@ export class SessionService {
     if (environment.demoMode) return this.getState(sessionId).pipe(take(1));
     return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/join`, { pcId }).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -120,7 +228,7 @@ export class SessionService {
       `${this.sessionBase}/${sessionId}/participants/${participantId}`,
     ).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -131,12 +239,99 @@ export class SessionService {
       const ended: SessionState = current
         ? { ...current, status: 'ENDED' }
         : { ...this.emptyState(sessionId), status: 'ENDED' };
-      this.stateSubject.next(ended);
+      this.pushState(ended);
       return of(ended);
     }
     return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/end`, {}).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** DM starts the encounter: LOBBY → ACTIVE, turn points at the top of the order. */
+  start(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoStart());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/start`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
+   * DM ends the encounter (not the session): back to the lobby, turn tracking
+   * stops, initiative clears so the next encounter rolls fresh. HP/XP changes
+   * already made stand — nothing is undone.
+   */
+  endEncounter(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoEndEncounter());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/encounter/end`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
+   * Advance the turn — the DM's Next, or a player ending their own turn. Sends
+   * the participant id this client believes is active; the server 409s a stale
+   * one (a racing advance already moved the turn), in which case we quietly
+   * refetch so the UI snaps to the truth instead of surfacing an error.
+   */
+  advance(sessionId: number | string, expectedActiveParticipantId: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoAdvance());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/advance`, {
+      expectedActiveParticipantId,
+    }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+      catchError(err => {
+        if (err?.status === 409) return this.getState(sessionId).pipe(take(1));
+        throw err;
+      }),
+    );
+  }
+
+  /** DM adds an enemy (DM-calculated DEX modifier, optional HP); it parks at the bottom. */
+  addEnemy(sessionId: number | string, name: string, dexModifier: number,
+           hpMax: number | null): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoAddEnemy(name, dexModifier, hpMax));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/enemies`, {
+      name, dexModifier, hpMax,
+    }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
+   * DM loads a curated encounter: every creature becomes an enemy combatant,
+   * appended to the current order with no initiative (the DM rolls). Quantity is
+   * expanded server-side into numbered rows.
+   */
+  loadEncounter(sessionId: number | string, encounterId: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoLoadEncounter());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/encounter/load`, {
+      encounterId,
+    }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** DM toggles whether players can see enemy combatants at all. */
+  setVisibility(sessionId: number | string, enemiesHidden: boolean): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoPatch({ enemiesHidden }));
+    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/visibility`, { enemiesHidden }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** DM sets (or clears) the encounter turn-cue sound, pushed to every client. */
+  setSound(sessionId: number | string, turnSound: string | null): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoPatch({ turnSound }));
+    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/sound`, { turnSound }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -147,7 +342,7 @@ export class SessionService {
       `${this.sessionBase}/${sessionId}/participants/${participantId}/initiative`, { value },
     ).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -158,7 +353,7 @@ export class SessionService {
       `${this.sessionBase}/${sessionId}/participants/${participantId}/damage`, { amount },
     ).pipe(
       map(raw => this.deserialize(raw)),
-      tap(state => this.stateSubject.next(state)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -191,16 +386,50 @@ export class SessionService {
 
   // --- demo helpers ---------------------------------------------------------
 
-  /** Demo: set a participant's initiative and re-sort the order locally. */
+  /**
+   * Demo: set a participant's initiative and re-sort the order locally, using
+   * the backend's comparator (initiative desc, unset last → DEX modifier desc →
+   * stable id). The pointer is an id, so it survives the re-sort untouched —
+   * same late-entry semantics as the real server.
+   */
   private demoSetInitiative(participantId: number, value: number): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    const participants = state.participants
-      .map(p => (p.participantId === participantId ? { ...p, initiative: value, initRolled: true } : p))
-      .sort((a, b) => (b.initiative ?? -99) - (a.initiative ?? -99));
-    participants.forEach((p, i) => (p.orderIndex = i));
-    const next = { ...state, participants, version: state.version + 1 };
-    this.stateSubject.next(next);
+    const participants = this.demoSort(state.participants.map(p =>
+      p.participantId === participantId ? { ...p, initiative: value, initRolled: true } : p,
+    ));
+    const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
+    this.pushState(next);
     return next;
+  }
+
+  /** The backend's turn-order comparator, mirrored for demo mode. */
+  private demoSort(participants: ParticipantView[]): ParticipantView[] {
+    const sorted = [...participants].sort((a, b) =>
+      ((b.initiative ?? -999) - (a.initiative ?? -999))
+      || ((b.dexModifier ?? -999) - (a.dexModifier ?? -999))
+      || (a.participantId - b.participantId),
+    );
+    sorted.forEach((p, i) => (p.orderIndex = i));
+    return sorted;
+  }
+
+  /**
+   * Demo: recompute the glow targets from the pointer. The demo viewer is the
+   * DM, so everything is visible — on-deck is simply the next in order (null
+   * with a single combatant, mirroring the server).
+   */
+  private demoWithPointers(state: SessionState): SessionState {
+    if (state.status !== 'ACTIVE' || state.activeParticipantId == null) {
+      return { ...state, onDeckParticipantId: null };
+    }
+    const order = state.participants;
+    const idx = order.findIndex(p => p.participantId === state.activeParticipantId);
+    if (idx < 0) return { ...state, onDeckParticipantId: null };
+    const next = order[(idx + 1) % order.length];
+    const onDeck = next.participantId === state.activeParticipantId ? null : next.participantId;
+    const participants = order.map(p =>
+      ({ ...p, currentTurn: p.participantId === state.activeParticipantId }));
+    return { ...state, participants, onDeckParticipantId: onDeck };
   }
 
   /** Demo: apply an HP delta to a participant locally (temp absorbs, floor 0, heal caps at max). */
@@ -221,7 +450,92 @@ export class SessionService {
       return { ...p, hpCurrent: cur, hpTemp: temp };
     });
     const next = { ...state, participants, version: state.version + 1 };
-    this.stateSubject.next(next);
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: start the encounter — pointer at the top of the current order. */
+  private demoStart(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = this.demoSort(state.participants);
+    const first = participants.length ? participants[0].participantId : null;
+    const next = this.demoWithPointers({
+      ...state, participants, status: 'ACTIVE', round: 1,
+      activeParticipantId: first, version: state.version + 1,
+    });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: end the encounter — lobby, pointer cleared, initiative reset. */
+  private demoEndEncounter(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants.map(p =>
+      ({ ...p, initiative: null, initRolled: false, currentTurn: false }));
+    const next: SessionState = {
+      ...state, participants, status: 'LOBBY', round: 1,
+      activeParticipantId: null, onDeckParticipantId: null,
+      version: state.version + 1,
+    };
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: advance to the next combatant, wrapping to the top and bumping the round. */
+  private demoAdvance(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const order = state.participants;
+    const idx = order.findIndex(p => p.participantId === state.activeParticipantId);
+    if (idx < 0 || !order.length) return state;
+    const nextIdx = (idx + 1) % order.length;
+    const next = this.demoWithPointers({
+      ...state,
+      activeParticipantId: order[nextIdx].participantId,
+      round: nextIdx === 0 ? state.round + 1 : state.round,
+      version: state.version + 1,
+    });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: add an enemy with no initiative — it parks at the bottom of the order. */
+  private demoAddEnemy(name: string, dexModifier: number, hpMax: number | null): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const enemy: ParticipantView = {
+      participantId: Date.now(), pcId: null, npc: true, ownedByMe: false, currentTurn: false,
+      name, clazz: null, level: null, portraitTint: null, portraitInitials: null,
+      initiative: null, initRolled: false, dexModifier, orderIndex: state.participants.length,
+      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [],
+      deathSaveSuccesses: 0, deathSaveFailures: 0,
+    };
+    const participants = this.demoSort([...state.participants, enemy]);
+    const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: spawn the canned "Goblin Ambush" encounter as three enemy rows. */
+  private demoLoadEncounter(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const base = Date.now();
+    const goblins: ParticipantView[] = [1, 2, 3].map((n, i) => ({
+      participantId: base + i, pcId: null, npc: true, ownedByMe: false, currentTurn: false,
+      name: `Goblin ${n}`, clazz: null, level: null, portraitTint: null, portraitInitials: null,
+      initiative: null, initRolled: false, dexModifier: 2, orderIndex: state.participants.length + i,
+      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [],
+      deathSaveSuccesses: 0, deathSaveFailures: 0,
+    }));
+    const participants = this.demoSort([...state.participants, ...goblins]);
+    const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
+    this.pushState(next);
+    return next;
+  }
+
+  /** Demo: apply a session-settings patch (visibility, sound) locally. */
+  private demoPatch(patch: Partial<SessionState>): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const next = { ...state, ...patch, version: state.version + 1 };
+    this.pushState(next);
     return next;
   }
 
@@ -233,7 +547,7 @@ export class SessionService {
     if (p && p.pcId != null && !p.npc) {
       awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
     }
-    if (state) this.stateSubject.next({ ...state, version: state.version + 1 });
+    if (state) this.pushState({ ...state, version: state.version + 1 });
     return { awarded };
   }
 
@@ -245,7 +559,7 @@ export class SessionService {
       state.participants.forEach(p => {
         if (p.pcId != null && !p.npc) awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
       });
-      this.stateSubject.next({ ...state, version: state.version + 1 });
+      this.pushState({ ...state, version: state.version + 1 });
     }
     return { awarded };
   }
@@ -268,12 +582,16 @@ export class SessionService {
       campaignId,
       status: 'LOBBY',
       round: 1,
-      currentTurnIndex: 0,
+      activeParticipantId: null,
+      onDeckParticipantId: null,
       version: 0,
       dm: true,
+      enemiesHidden: true,
+      turnSound: null,
       shopOpen: false,
       shopForMe: false,
       shopCategory: null,
+      myXp: null,
       participants,
     };
   }
@@ -281,8 +599,9 @@ export class SessionService {
   private emptyState(sessionId: number | string): SessionState {
     return {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
-      currentTurnIndex: 0, version: 0, dm: true,
-      shopOpen: false, shopForMe: false, shopCategory: null, participants: [],
+      activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
+      enemiesHidden: true, turnSound: null,
+      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null, participants: [],
     };
   }
 
@@ -300,6 +619,7 @@ export class SessionService {
       portraitInitials: pc.portraitInitials ?? null,
       initiative: pc.init ?? null,
       initRolled: pc.init != null,
+      dexModifier: null,
       orderIndex: index,
       hpMax: pc.hp?.max ?? null,
       hpCurrent: pc.hp?.cur ?? null,
@@ -319,12 +639,16 @@ export class SessionService {
       campaignId: raw.campaignId,
       status: raw.status,
       round: raw.round,
-      currentTurnIndex: raw.currentTurnIndex,
+      activeParticipantId: raw.activeParticipantId ?? null,
+      onDeckParticipantId: raw.onDeckParticipantId ?? null,
       version: raw.version,
       dm: !!raw.dm,
+      enemiesHidden: !!raw.enemiesHidden,
+      turnSound: raw.turnSound ?? null,
       shopOpen: !!raw.shopOpen,
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
+      myXp: raw.myXp ?? null,
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }
@@ -343,6 +667,7 @@ export class SessionService {
       portraitInitials: p.portraitInitials ?? null,
       initiative: p.initiative ?? null,
       initRolled: !!p.initRolled,
+      dexModifier: p.dexModifier ?? null,
       orderIndex: p.orderIndex ?? 0,
       hpMax: p.hpMax ?? null,
       hpCurrent: p.hpCurrent ?? null,

@@ -20,6 +20,9 @@ export interface ParticipantView {
   portraitInitials: string | null;
   initiative: number | null;
   initRolled: boolean;
+  // DM-entered DEX modifier for an enemy row (the initiative tie-breaker);
+  // null for PCs, whose modifier lives on the canonical character.
+  dexModifier: number | null;
   orderIndex: number;
   hpMax: number | null;
   hpCurrent: number | null;
@@ -52,14 +55,30 @@ export interface SessionState {
   campaignId: number | string;
   status: SessionStatus;
   round: number;
-  currentTurnIndex: number;
+  // Per-viewer glow targets, resolved server-side. activeParticipantId is the
+  // stable turn pointer — null while the encounter isn't ACTIVE, and null for a
+  // player while a hidden enemy acts (no green glow, no sound cue).
+  // onDeckParticipantId is the next combatant in TRUE turn order this viewer is
+  // allowed to see (yellow glow); never equal to activeParticipantId. The client
+  // renders both verbatim and never re-derives visibility.
+  activeParticipantId: number | null;
+  onDeckParticipantId: number | null;
   version: number;
   dm: boolean;
+  // DM checkbox: hidden enemies are omitted from player snapshots entirely.
+  enemiesHidden: boolean;
+  // Encounter-level turn-cue key set by the DM (null = silent); each device can
+  // still mute locally.
+  turnSound: string | null;
   // Targeted-shop signal (shopping feature): a shop is open, and it's visible to
   // this caller (DM or a targeted attendee). When shopForMe flips true, the
   // client fetches the catalog from the shop endpoint.
   shopOpen: boolean;
   shopForMe: boolean;
   shopCategory: string | null;
+  // Caller-scoped: the requester's own seated PC's current XP total, or null if
+  // they're the DM or have no PC seated. Not on ParticipantView — that's broadcast
+  // to every participant, and XP shouldn't leak between players.
+  myXp: number | null;
   participants: ParticipantView[];
 }

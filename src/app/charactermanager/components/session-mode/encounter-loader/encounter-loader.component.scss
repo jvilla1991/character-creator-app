@@ -1,0 +1,40 @@
+.encounter-loader {
+  display: block;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.loader-title {
+  margin: 2px 0 12px;
+  font-size: 1.02rem;
+}
+
+.loader-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.select {
+  flex: 1;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+}
+
+.notes {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--muted, rgba(255, 255, 255, 0.7));
+  font-style: italic;
+}
+
+.muted {
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  font-size: 0.85rem;
+}

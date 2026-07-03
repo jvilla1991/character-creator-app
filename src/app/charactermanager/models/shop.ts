@@ -35,6 +35,12 @@ export interface PurchaseResult {
   totalCostCp: number;
 }
 
+export interface SellResult {
+  coins: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  inventory: PcItem[];
+  totalGainCp: number;
+}
+
 /** Break a copper price into whole gp/sp/cp (no electrum), matching the purse rates. */
 export function costToCoins(costCp: number): { gp: number; sp: number; cp: number } {
   let rem = Math.max(0, Math.floor(costCp));

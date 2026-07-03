@@ -1,4 +1,13 @@
 <ng-container *ngIf="state$ | async as state; else loading">
+  <!-- Whole-device turn vignette: the viewport border glows green on the
+       viewer's own turn, gold when they're on deck. Driven by the same
+       per-viewer snapshot ids as the row glow, so a hidden enemy's turn never
+       lights a player's screen. pointer-events: none — purely ambient. -->
+  <div
+    class="turn-vignette"
+    [class.my-turn]="isMyTurn(state)"
+    [class.on-deck]="!isMyTurn(state) && isMyOnDeck(state)"
+  ></div>
   <div class="fade-in">
 
     <!-- Header -->
@@ -11,6 +20,51 @@
         </div>
       </div>
       <div class="sheet-actions">
+        <button
+          *ngIf="state.dm && state.status === 'LOBBY'"
+          class="btn primary"
+          (click)="startEncounter(state)"
+          [disabled]="!state.participants.length"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M4 2l9 6-9 6V2z"/>
+          </svg>
+          Start Encounter
+        </button>
+        <button
+          *ngIf="state.dm && state.status === 'ACTIVE'"
+          class="btn primary"
+          (click)="advanceTurn(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M3 8h10M9 4l4 4-4 4"/>
+          </svg>
+          Next Turn
+        </button>
+        <button
+          *ngIf="state.dm && state.status === 'ACTIVE'"
+          class="btn"
+          (click)="endEncounter(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <rect x="4" y="4" width="8" height="8" rx="1"/>
+          </svg>
+          End Encounter
+        </button>
+        <button
+          *ngIf="!state.dm && state.status === 'ACTIVE' && isMyTurn(state)"
+          class="btn primary"
+          (click)="advanceTurn(state)"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M3 8h10M9 4l4 4-4 4"/>
+          </svg>
+          End Turn
+        </button>
         <button
           *ngIf="state.dm"
           class="btn danger"
@@ -47,7 +101,14 @@
       [participants]="state.participants"
       [sessionId]="state.sessionId"
       [dm]="state.dm"
+      [status]="state.status"
+      [activeParticipantId]="state.activeParticipantId"
+      [onDeckParticipantId]="state.onDeckParticipantId"
+      [enemiesHidden]="state.enemiesHidden"
+      [turnSound]="state.turnSound"
     ></app-initiative-panel>
+
+    <app-encounter-loader [state]="state" *ngIf="state.dm" style="display: block; margin-top: 16px;"></app-encounter-loader>
 
     <app-shop-panel [state]="state"></app-shop-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
@@ -73,7 +134,10 @@
     <!-- Player: their own character sheet (read-only) for reference at the table -->
     <ng-container *ngIf="!state.dm && myPc(state) as pc">
       <div class="eyebrow" style="margin: 24px 0 8px;">Your Character</div>
-      <app-character-sheet [pc]="pc" [showActions]="false"></app-character-sheet>
+      <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
+                           [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
+                           [slotInventory]="slotInventory"
+                           (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
   </div>
 </ng-container>

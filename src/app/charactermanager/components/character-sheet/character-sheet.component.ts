@@ -20,11 +20,26 @@ export class CharacterSheetComponent implements OnChanges {
   /** Hide the header action buttons (Connect/Roll/Long Rest/Level Up/Delete) when
    *  the sheet is embedded read-only, e.g. inside Session Mode. */
   @Input() showActions = true;
+  /** Keep the inventory panel interactive even when showActions is false — used by
+   *  Session Mode, where the header actions stay hidden but players still need to
+   *  manage their inventory mid-session. */
+  @Input() inventoryEditable = false;
+  /** True while a shop is open and this PC is targeted — passed through to the
+   *  inventory panel to reveal its Sell button. */
+  @Input() shopOpenForMe = false;
+  /** The open shop's category (backend format), or null for curated/no shop. */
+  @Input() shopCategory: string | null = null;
+  /** True when this PC's campaign runs the Darker Dungeons slot-based inventory
+   *  variant — switches the inventory panel to slots/bulk and hides the legacy
+   *  equipment panel (a converted PC's weapons/gear were consolidated on join). */
+  @Input() slotInventory = false;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
   /** Player asks to connect to their campaign's live session. */
   @Output() connectRequested = new EventEmitter<void>();
+  /** Player sells the inventory item at this index; bubbled from the inventory panel. */
+  @Output() sellRequested = new EventEmitter<number>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
