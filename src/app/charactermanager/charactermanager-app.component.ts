@@ -6,7 +6,7 @@ import { PC } from './models/pc';
 import { PCService } from './services/pc.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { CampaignModalService } from './services/campaign-modal.service';
-import { JoinModalService, JoinRequest } from './services/join-modal.service';
+import { JoinConsentState, JoinModalService, JoinRequest } from './services/join-modal.service';
 import { UiStateService } from './services/ui-state.service';
 import { CurrentUserService } from './services/current-user.service';
 import { CampaignDraft } from './models/campaign';
@@ -42,7 +42,11 @@ import { CampaignDraft } from './models/campaign';
          class="modal-backdrop"
          (click)="closeJoin()">
       <app-join-campaign-modal
+        [consent]="joinConsent"
+        [error]="joinError"
         (confirm)="onJoin($event)"
+        (acceptConsent)="joinModal.acceptConsent()"
+        (declineConsent)="joinModal.declineConsent()"
         (close)="closeJoin()">
       </app-join-campaign-modal>
     </div>
@@ -61,6 +65,8 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   isCampaignModalOpen = false;
   isJoinModalOpen = false;
   isSettingsOpen = false;
+  joinConsent: JoinConsentState | null = null;
+  joinError: string | null = null;
 
   private subs: Subscription[] = [];
 
@@ -68,7 +74,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
     private pcService: PCService,
     private characterModal: CharacterModalService,
     private campaignModal: CampaignModalService,
-    private joinModal: JoinModalService,
+    public joinModal: JoinModalService,
     private uiState: UiStateService,
     private currentUser: CurrentUserService,
     private router: Router,
@@ -84,6 +90,8 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
       this.characterModal.isOpen$.subscribe(open => { this.isCreateModalOpen = open; }),
       this.campaignModal.isOpen$.subscribe(open => { this.isCampaignModalOpen = open; }),
       this.joinModal.isOpen$.subscribe(open => { this.isJoinModalOpen = open; }),
+      this.joinModal.consent$.subscribe(consent => { this.joinConsent = consent; }),
+      this.joinModal.error$.subscribe(error => { this.joinError = error; }),
       this.uiState.settingsOpen$.subscribe(open => { this.isSettingsOpen = open; }),
 
       this.router.events

@@ -7,6 +7,7 @@ import { Campaign, CampaignDraft, CampaignVariantRules } from '../models/campaig
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
+import { convertPcToSlotInventory } from '../utils/slot-inventory';
 
 // ---------------------------------------------------------------------------
 // Demo seed campaigns. Members are the demo PCs bound via PC.campaignId.
@@ -148,8 +149,32 @@ export class CampaignService {
     );
   }
 
-  /** A player binds one of their own characters to a campaign via its invite code. */
-  join(code: string, pcId: number): Observable<PC> {
+  /**
+   * Campaign facts for a valid invite code — powers the join consent gate.
+   * Real mode hits the unauthenticated-by-membership preview endpoint; demo
+   * mode resolves from the local campaign list.
+   */
+  previewByCode(code: string): Observable<{ name: string; variantRules: CampaignVariantRules }> {
+    const trimmed = code.trim().toUpperCase();
+    if (environment.demoMode) {
+      const campaign = this.campaignsSubject.getValue().find(c => c.inviteCode === trimmed);
+      if (!campaign) {
+        return throwError(() => new Error('No campaign found for that invite code'));
+      }
+      return of({ name: campaign.name, variantRules: campaign.variantRules ?? {} });
+    }
+    return this.http
+      .get<{ name: string; variantRules: unknown }>(`${this.campaignUrl}/invite/${trimmed}/preview`)
+      .pipe(map(r => ({ name: r.name, variantRules: this.parseVariantRules(r.variantRules) })));
+  }
+
+  /**
+   * A player binds one of their own characters to a campaign via its invite
+   * code. For slot-inventory campaigns the caller must have accepted the
+   * conversion consent gate first (`acknowledgeVariantRules`); the backend
+   * rejects unacknowledged joins with a 409.
+   */
+  join(code: string, pcId: number, acknowledgeVariantRules = false): Observable<PC> {
     const trimmed = code.trim().toUpperCase();
     if (environment.demoMode) {
       const campaign = this.campaignsSubject.getValue().find(c => c.inviteCode === trimmed);
@@ -158,12 +183,19 @@ export class CampaignService {
       }
       const pc = this.pcService.getPCById(pcId);
       if (!pc) return throwError(() => new Error('Character not found'));
-      return this.pcService.updatePC({ ...pc, campaignId: campaign.id });
+      // Mirror the server-side join conversion (join() only runs post-consent,
+      // so no gate check here — the demo has no catalog, bulk falls back).
+      const bound = campaign.variantRules?.slotInventory
+        ? convertPcToSlotInventory({ ...pc, campaignId: campaign.id })
+        : { ...pc, campaignId: campaign.id };
+      return this.pcService.updatePC(bound);
     }
-    return this.http.post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId }).pipe(
-      map(r => this.pcService.deserialize(r)),
-      tap(updated => this.pcService.patchLocalPC(updated.id, updated)),
-    );
+    return this.http
+      .post<unknown>(`${this.campaignUrl}/join`, { code: trimmed, pcId, acknowledgeVariantRules })
+      .pipe(
+        map(r => this.pcService.deserialize(r)),
+        tap(updated => this.pcService.patchLocalPC(updated.id, updated)),
+      );
   }
 
   /** Create a campaign. Returns an Observable so callers can react to the saved row. */
