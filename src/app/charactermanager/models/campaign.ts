@@ -16,15 +16,26 @@ export interface Campaign {
   secrets: string;      // DM-only, never shown to players
   threads: string[];    // open plot threads
   inviteCode?: string;  // players join by entering this (Phase 3)
+  variantRules?: CampaignVariantRules; // creation-time opt-ins, immutable
 }
 
 export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emerald';
+
+/**
+ * Variant-rule opt-ins chosen at campaign creation (immutable afterward —
+ * the backend pins them on update). Extensible: future Darker Dungeons
+ * rules (Wear & Tear, …) add keys here, not new columns.
+ */
+export interface CampaignVariantRules {
+  slotInventory?: boolean;
+}
 
 /** A new campaign as drafted in the create-campaign modal (pre-id, pre-seed). */
 export interface CampaignDraft {
   name: string;
   setting: string;
   tint: CampaignTint;
+  variantRules: CampaignVariantRules;
 }
 
 /** Dice & rolling preferences, persisted to localStorage under `tm_dice`. */

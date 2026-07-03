@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
 import { delay, map, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Campaign, CampaignDraft } from '../models/campaign';
+import { Campaign, CampaignDraft, CampaignVariantRules } from '../models/campaign';
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
@@ -183,6 +183,7 @@ export class CampaignService {
       chronicle: 'The chronicle is yet unwritten. Your first session will fill this page.',
       secrets: '',
       threads: [],
+      variantRules: draft.variantRules ?? {},
     };
 
     if (environment.demoMode) {
@@ -212,6 +213,7 @@ export class CampaignService {
       chronicle: c.chronicle,
       secrets: c.secrets,
       threads: JSON.stringify(c.threads ?? []),
+      variantRules: JSON.stringify(c.variantRules ?? {}),
     };
   }
 
@@ -231,6 +233,7 @@ export class CampaignService {
       secrets: raw.secrets ?? '',
       threads: this.parseThreads(raw.threads),
       inviteCode: raw.inviteCode ?? undefined,
+      variantRules: this.parseVariantRules(raw.variantRules),
     };
   }
 
@@ -240,6 +243,15 @@ export class CampaignService {
       try { return JSON.parse(value) as string[]; } catch { return []; }
     }
     return [];
+  }
+
+  /** Tolerates object (demo/localStorage), JSON string (backend TEXT), or null. */
+  private parseVariantRules(value: unknown): CampaignVariantRules {
+    if (value && typeof value === 'object') return value as CampaignVariantRules;
+    if (typeof value === 'string') {
+      try { return (JSON.parse(value) ?? {}) as CampaignVariantRules; } catch { return {}; }
+    }
+    return {};
   }
 
   // --- demo persistence -----------------------------------------------------

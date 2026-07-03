@@ -25,6 +25,16 @@
     </div>
   </div>
 
+  <div class="field">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="checkbox" [(ngModel)]="slotInventory" style="width: auto;">
+      Use slot-based inventory (Darker Dungeons)
+    </label>
+    <div class="modal-sub" style="margin-top: 4px;">
+      Players who join convert their inventory to bulk &amp; slots. Set at creation; can't be changed later.
+    </div>
+  </div>
+
   <div class="modal-actions">
     <button class="btn" (click)="cancel()">Cancel</button>
     <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>
