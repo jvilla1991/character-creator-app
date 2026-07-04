@@ -115,15 +115,16 @@
         </button>
       </div>
       <div *ngIf="state.dm && editingTime"
-           style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 8px; margin-top: 10px; align-items: center;">
-        <input type="number" [(ngModel)]="timeYear" placeholder="Year" min="0" aria-label="Year">
-        <input type="number" [(ngModel)]="timeMonth" placeholder="Month" min="1" max="12" aria-label="Month">
-        <input type="number" [(ngModel)]="timeDay" placeholder="Day" min="1" max="30" aria-label="Day">
+           style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 8px; margin-top: 10px; align-items: center;">
+        <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
+        <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
+        <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
+        <input [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
+               title="Free text. Re-entering a weekday you have used before marks a completed week.">
         <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
           <option *ngFor="let s of timeSegments" [value]="s">{{ s }}</option>
         </select>
-        <button class="btn primary" (click)="commitTime(state)"
-                [disabled]="timeYear == null || timeMonth == null || timeDay == null">Set</button>
+        <button class="btn primary" (click)="commitTime(state)">Set</button>
       </div>
     </div>
 

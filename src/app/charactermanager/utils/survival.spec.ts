@@ -6,11 +6,14 @@ import {
   clampStage,
   describeGameTime,
   initialGameTime,
+  normalizeGameTime,
+  registerWeekday,
   SURVIVAL_LABELS,
   survivalExhaustion,
   survivalOf,
 } from './survival';
 import { PC, PcItem } from '../models/pc';
+import { CampaignGameTime } from '../models/campaign';
 
 const basePC = (overrides: Partial<PC> = {}): PC => ({
   id: 1,
@@ -43,24 +46,20 @@ describe('survival util', () => {
     });
   });
 
-  describe('time-of-day bumps', () => {
+  describe('time-of-day bumps (three-segment mapping)', () => {
     const s = { hunger: 2, thirst: 2, fatigue: 2 };
 
-    it('dawn bumps hunger and thirst', () => {
-      expect(applyTimeBump(s, 'dawn')).toEqual({ hunger: 3, thirst: 3, fatigue: 2 });
+    it('morning bumps hunger and thirst', () => {
+      expect(applyTimeBump(s, 'morning')).toEqual({ hunger: 3, thirst: 3, fatigue: 2 });
     });
 
     it('noon bumps fatigue only', () => {
       expect(applyTimeBump(s, 'noon')).toEqual({ hunger: 2, thirst: 2, fatigue: 3 });
     });
 
-    it('dusk bumps all three, clamped at starving', () => {
-      expect(applyTimeBump({ hunger: 6, thirst: 5, fatigue: 0 }, 'dusk'))
+    it('night bumps all three (dusk\'s bump — sleep comes before next morning)', () => {
+      expect(applyTimeBump({ hunger: 6, thirst: 5, fatigue: 0 }, 'night'))
         .toEqual({ hunger: 6, thirst: 6, fatigue: 1 });
-    });
-
-    it('night is the sleep window — no change', () => {
-      expect(applyTimeBump(s, 'night')).toEqual(s);
     });
   });
 
@@ -123,28 +122,53 @@ describe('survival util', () => {
     });
   });
 
-  describe('game clock', () => {
-    it('cycles the day segments and rolls the calendar', () => {
-      let t = initialGameTime();
-      expect(t).toEqual({ year: 1, month: 1, day: 1, timeOfDay: 'dawn' });
+  describe('game clock v2', () => {
+    const clock = (over: Partial<CampaignGameTime> = {}): CampaignGameTime => ({
+      year: '1492 DR', month: 'Hammer', day: '3rd', timeOfDay: 'morning',
+      weekday: null, weekdaysSeen: [], week: 1, ...over,
+    });
+
+    it('cycles the three segments and never touches the free-text date', () => {
+      expect(initialGameTime().timeOfDay).toBe('morning');
+      let t = clock();
       t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('noon');
-      t = advanceGameTime(advanceGameTime(t)); // dusk → night
+      t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('night');
       t = advanceGameTime(t);
-      expect(t).toEqual({ year: 1, month: 1, day: 2, timeOfDay: 'dawn' });
+      // night wraps to morning — the DATE stays; the DM edits it by hand
+      expect(t.timeOfDay).toBe('morning');
+      expect(t.day).toBe('3rd');
     });
 
-    it('rolls month and year at the simplified 30/12 boundaries', () => {
-      expect(advanceGameTime({ year: 1, month: 3, day: 30, timeOfDay: 'night' }))
-        .toEqual({ year: 1, month: 4, day: 1, timeOfDay: 'dawn' });
-      expect(advanceGameTime({ year: 1, month: 12, day: 30, timeOfDay: 'night' }))
-        .toEqual({ year: 2, month: 1, day: 1, timeOfDay: 'dawn' });
+    it('normalizes the pre-v2 numeric shape on read', () => {
+      expect(normalizeGameTime({ year: 1492, month: 3, day: 12, timeOfDay: 'dawn' }))
+        .toEqual({ year: '1492', month: '3', day: '12', timeOfDay: 'morning',
+                   weekday: null, weekdaysSeen: [], week: 1 });
+      expect(normalizeGameTime({ timeOfDay: 'dusk' })!.timeOfDay).toBe('night');
+      expect(normalizeGameTime(null)).toBeNull();
     });
 
-    it('describes the clock (and its absence) for display', () => {
-      expect(describeGameTime({ year: 1492, month: 3, day: 12, timeOfDay: 'dawn' }))
-        .toBe('Day 12 · Month 3 · Year 1492 — Dawn');
+    it('registerWeekday ticks the week when an entered weekday repeats', () => {
+      let t = clock({ weekday: 'Sul', weekdaysSeen: ['Sul'] });
+      t = registerWeekday(t, 'Mol');
+      expect(t.weekdaysSeen).toEqual(['Sul', 'Mol']);
+      expect(t.week).toBe(1);
+      t = registerWeekday(t, 'sul'); // case-insensitive repeat = a full week
+      expect(t.week).toBe(2);
+      expect(t.weekdaysSeen).toEqual(['sul']); // history resets
+    });
+
+    it('registerWeekday ignores unchanged-weekday corrections and blanks', () => {
+      const t = clock({ weekday: 'Mol', weekdaysSeen: ['Sul', 'Mol'] });
+      expect(registerWeekday(t, 'Mol')).toEqual(t);      // resubmit = no double count
+      expect(registerWeekday(t, '  ').weekdaysSeen).toEqual(['Sul', 'Mol']);
+    });
+
+    it('describes the clock, skipping blank parts', () => {
+      expect(describeGameTime(clock({ weekday: 'Far', week: 2 })))
+        .toBe('3rd · Hammer · 1492 DR — Morning · Far · Week 2');
+      expect(describeGameTime(clock())).toBe('3rd · Hammer · 1492 DR — Morning');
       expect(describeGameTime(null)).toBe('Clock not set');
     });
   });

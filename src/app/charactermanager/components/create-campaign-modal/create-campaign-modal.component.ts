@@ -13,11 +13,13 @@ export class CreateCampaignModalComponent {
   slotInventory = false;
   survivalConditions = false;
 
-  // Optional in-world start date; the clock starts at dawn of that day. All
-  // three parts or none — a partial date is treated as unset.
-  startYear: number | null = null;
-  startMonth: number | null = null;
-  startDay: number | null = null;
+  // Optional in-world start date — free-text labels for any homebrew calendar
+  // ("1492 DR" / "Hammer" / "3rd"). The clock starts at morning of that day.
+  // Any part filled counts as "set"; empty parts default to "1".
+  startYear = '';
+  startMonth = '';
+  startDay = '';
+  startWeekday = '';
 
   readonly tints: CampaignTint[] = ['celestial', 'violet', 'gold', 'crimson', 'emerald'];
 
@@ -41,14 +43,19 @@ export class CreateCampaignModalComponent {
   cancel(): void { this.close.emit(); }
 
   private draftGameTime(): CampaignGameTime | undefined {
-    if (this.startYear == null || this.startMonth == null || this.startDay == null) {
-      return undefined;
-    }
+    const year = this.startYear.trim();
+    const month = this.startMonth.trim();
+    const day = this.startDay.trim();
+    const weekday = this.startWeekday.trim();
+    if (!year && !month && !day && !weekday) return undefined;
     return {
-      year: Math.max(0, Math.floor(this.startYear)),
-      month: Math.min(12, Math.max(1, Math.floor(this.startMonth))),
-      day: Math.min(30, Math.max(1, Math.floor(this.startDay))),
-      timeOfDay: 'dawn',
+      year: year || '1',
+      month: month || '1',
+      day: day || '1',
+      timeOfDay: 'morning',
+      weekday: weekday || null,
+      weekdaysSeen: weekday ? [weekday] : [],
+      week: 1,
     };
   }
 }

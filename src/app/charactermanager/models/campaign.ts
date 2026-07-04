@@ -32,18 +32,25 @@ export interface CampaignVariantRules {
   survivalConditions?: boolean;
 }
 
-/** Segment of the in-world day; dawn/noon/dusk worsen survival conditions. */
-export type TimeOfDay = 'dawn' | 'noon' | 'dusk' | 'night';
+/** Segment of the in-world day; each worsens survival conditions in its way. */
+export type TimeOfDay = 'morning' | 'noon' | 'night';
 
 /**
- * The campaign's persisted in-world clock, advanced by the DM from Session
- * Mode (simplified calendar: 12 months of 30 days). Null/absent = never set.
+ * The campaign's persisted in-world clock. Date parts are FREE TEXT the DM
+ * curates ("1492 DR" / "Hammer" / "3rd" — any homebrew calendar); advancing
+ * time only cycles the day segments, never the date. The weekday history
+ * drives the week counter: re-entering a previously seen weekday marks a
+ * completed week. Null/absent = never set. (Pre-v2 clocks stored numbers and
+ * dawn/dusk segments — normalizeGameTime converts them on read.)
  */
 export interface CampaignGameTime {
-  year: number;
-  month: number;
-  day: number;
+  year: string;
+  month: string;
+  day: string;
   timeOfDay: TimeOfDay;
+  weekday: string | null;
+  weekdaysSeen: string[];
+  week: number;
 }
 
 /** Member-visible campaign header — what a player's sheet may know about it. */

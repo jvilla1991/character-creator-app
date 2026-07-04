@@ -47,13 +47,15 @@
 
   <div class="field">
     <label>In-world start date (optional)</label>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-      <input type="number" [(ngModel)]="startYear" autocomplete="off" placeholder="Year" min="0">
-      <input type="number" [(ngModel)]="startMonth" autocomplete="off" placeholder="Month" min="1" max="12">
-      <input type="number" [(ngModel)]="startDay" autocomplete="off" placeholder="Day" min="1" max="30">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+      <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · e.g. 3rd" maxlength="40">
+      <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · e.g. Hammer" maxlength="40">
+      <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · e.g. 1492 DR" maxlength="40">
+      <input [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
     </div>
     <div class="modal-sub" style="margin-top: 4px;">
-      The campaign clock starts at dawn of this day; the DM advances time in session. Leave blank to set it later.
+      Free text — any calendar works. The clock starts at morning of this day; the DM advances time
+      in session and updates the date when a new day begins. Leave blank to set it later.
     </div>
   </div>
 
