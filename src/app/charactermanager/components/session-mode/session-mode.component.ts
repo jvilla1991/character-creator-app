@@ -164,6 +164,15 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Players see the initiative tracker only while an encounter is running;
+   * the DM always sees it (their setup controls live there). Players enter
+   * their rolls after Start Encounter — the server sorts late entries.
+   */
+  showInitiative(state: SessionState): boolean {
+    return state.dm || state.status === 'ACTIVE';
+  }
+
   /** Leave the session screen (does not end the session server-side). */
   close(): void {
     this.sessionService.clear();
