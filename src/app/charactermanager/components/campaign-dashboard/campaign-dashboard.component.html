@@ -69,6 +69,12 @@
       </div>
     </div>
 
+    <div style="display: flex; justify-content: flex-end; margin-bottom: -8px;">
+      <button class="btn" (click)="refreshMembers()"
+              title="Reload the party list — new joins also load automatically when you return to this tab">
+        ↻ Refresh party
+      </button>
+    </div>
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
 
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
