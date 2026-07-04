@@ -13,6 +13,10 @@
           <span class="eyebrow">Invite</span>
           <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
         </div>
+        <div class="invite-chip" *ngIf="vm.campaign.gameTime" title="The in-world clock — advance it from Session Mode">
+          <span class="eyebrow">Clock</span>
+          <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
+        </div>
       </div>
       <div class="sheet-actions">
         <button class="btn" (click)="openManageParty()">

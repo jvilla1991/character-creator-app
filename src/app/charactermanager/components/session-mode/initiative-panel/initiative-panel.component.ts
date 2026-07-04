@@ -3,6 +3,7 @@ import { ParticipantView, SessionStatus } from '../../../models/session';
 import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { tintFor } from '../../../utils/character-math';
+import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
 
 /**
  * Initiative order — one row per combatant in server-computed turn order, with
@@ -34,6 +35,10 @@ export class InitiativePanelComponent {
   @Input() onDeckParticipantId: number | null = null;
   @Input() enemiesHidden = true;
   @Input() turnSound: string | null = null;
+  /** True when the campaign runs the survival-conditions variant — the DM's
+   *  rows then show compact hunger/thirst/fatigue chips so time can be
+   *  advanced with the party's state in view. */
+  @Input() survivalConditions = false;
 
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};
@@ -60,6 +65,24 @@ export class InitiativePanelComponent {
     private notifications: NotificationService,
   ) {
     this.muted = this.sessionService.isMuted();
+  }
+
+  /**
+   * Compact survival chips for a PC row (DM view, survival campaigns): "H3"
+   * with the stage label in the tooltip; stage 5–6 chips are flagged dire.
+   * NPCs render nothing; a never-tracked PC shows the neutral Ok default.
+   */
+  survivalChips(p: ParticipantView): Array<{ text: string; title: string; dire: boolean }> {
+    if (p.npc) return [];
+    return SURVIVAL_KEYS.map(key => {
+      // Never-tracked PCs sit at the neutral Ok default, same as the panel.
+      const stage = clampStage(p.survival?.[key] ?? 2);
+      return {
+        text: `${key.charAt(0).toUpperCase()}${stage}`,
+        title: `${key}: ${SURVIVAL_LABELS[key][stage]} (${stage}/6)`,
+        dire: stage >= 5,
+      };
+    });
   }
 
   /**

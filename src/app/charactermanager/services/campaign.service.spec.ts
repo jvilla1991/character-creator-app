@@ -40,6 +40,51 @@ describe('CampaignService', () => {
     });
   });
 
+  describe('game clock (de)serialization', () => {
+    it('createCampaign sends gameTime as a JSON string (null when unset) and parses it back', done => {
+      http.post.and.returnValue(of({
+        id: 9, name: 'Timed Table',
+        gameTime: '{"year":1492,"month":3,"day":12,"timeOfDay":"dawn"}',
+      }));
+
+      service.createCampaign({
+        name: 'Timed Table', setting: '', tint: 'celestial', variantRules: {},
+        gameTime: { year: 1492, month: 3, day: 12, timeOfDay: 'dawn' },
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['gameTime']).toBe('{"year":1492,"month":3,"day":12,"timeOfDay":"dawn"}');
+        expect(campaign.gameTime).toEqual({ year: 1492, month: 3, day: 12, timeOfDay: 'dawn' });
+        done();
+      });
+    });
+
+    it('createCampaign without a start date sends null (clock never set)', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Plain Table', gameTime: null }));
+
+      service.createCampaign({
+        name: 'Plain Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['gameTime']).toBeNull();
+        expect(campaign.gameTime).toBeNull();
+        done();
+      });
+    });
+
+    it('setLocalGameTime updates the stored campaign copy', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Timed Table', gameTime: null }));
+
+      service.createCampaign({
+        name: 'Timed Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(() => {
+        service.setLocalGameTime(9, { year: 2, month: 1, day: 1, timeOfDay: 'dusk' });
+        expect(service.getLocalCampaign(9)?.gameTime)
+          .toEqual({ year: 2, month: 1, day: 1, timeOfDay: 'dusk' });
+        done();
+      });
+    });
+  });
+
   describe('previewByCode', () => {
     it('normalizes the code and tolerates a null variantRules column', done => {
       http.get.and.returnValue(of({ name: 'Plain Table', variantRules: null }));
