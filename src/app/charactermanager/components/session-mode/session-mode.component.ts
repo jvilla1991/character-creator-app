@@ -11,6 +11,7 @@ import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
 import { CampaignGameTime, TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
+import { withRecomputedAc } from '../../utils/armor-math';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -221,7 +222,19 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     const pcId = mine.pcId;
     this.shopService.sell(state.sessionId, pcId, index).subscribe({
       next: result => {
+        // Capture the pre-sell inventory first — selling an equipped armor
+        // piece changes AC, and the comparison needs the old equipped set.
+        const before = this.pcService.getPCById(pcId);
         this.pcService.patchLocalPC(pcId, { coins: result.coins, inventory: result.inventory });
+        const after = this.pcService.getPCById(pcId);
+        if (before && after) {
+          const recomputed = withRecomputedAc(after, before.inventory);
+          if (recomputed.ac !== after.ac) {
+            this.pcService.updatePC(recomputed).subscribe({
+              error: err => console.error('Failed to persist recomputed AC', err),
+            });
+          }
+        }
         this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
       },
       error: () => this.notifications.notify('Could not sell that item. Try again.'),
