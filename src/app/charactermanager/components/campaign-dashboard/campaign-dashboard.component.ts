@@ -9,6 +9,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
+import { describeGameTime } from '../../utils/survival';
 
 interface DashboardVm {
   campaign: Campaign;
@@ -32,6 +33,9 @@ interface DashboardVm {
   templateUrl: './campaign-dashboard.component.html',
 })
 export class CampaignDashboardComponent {
+  /** In-world clock label for the header chip (campaigns$ keeps it fresh). */
+  readonly describeGameTime = describeGameTime;
+
   // Bump to re-pull the member projection (after a bind/unbind).
   private membersRefresh$ = new BehaviorSubject<void>(undefined);
 
