@@ -12,6 +12,7 @@ export class CreateCampaignModalComponent {
   tint: CampaignTint = 'celestial';
   slotInventory = false;
   survivalConditions = false;
+  strictComponents = false;
 
   // Optional in-world start date — free-text labels for any homebrew calendar
   // ("1492 DR" / "Hammer" / "3rd"). The clock starts at morning of that day.
@@ -35,6 +36,7 @@ export class CreateCampaignModalComponent {
       variantRules: {
         slotInventory: this.slotInventory,
         survivalConditions: this.survivalConditions,
+        strictComponents: this.strictComponents,
       },
       gameTime: this.draftGameTime(),
     });

@@ -761,7 +761,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
 .spell-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 5px 0;
@@ -769,6 +769,51 @@ app-root { display: block; height: 100vh; width: 100vw; }
   transition: opacity 0.15s;
 }
 .spell-row:hover { opacity: 0.85; }
+.spell-cast-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid rgba(212,175,55,0.45);
+  border-radius: 100px;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+}
+.spell-cast-btn:hover:not(:disabled) { background: rgba(212,175,55,0.12); box-shadow: var(--glow-gold); }
+.spell-cast-btn:disabled { opacity: 0.35; cursor: default; }
+.spell-cast-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 6px;
+}
+.spell-cast-strip .spell-cast-note {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.spell-cast-strip.warn .spell-cast-note { color: #fbbf24; }
+.spell-cast-strip.blocked .spell-cast-note { color: #f87171; }
+.spell-cast-level {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid rgba(212,175,55,0.45);
+  border-radius: 100px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.spell-cast-level:hover { background: rgba(212,175,55,0.12); }
+.spell-cast-level.dim { color: var(--text-dim); border-color: rgba(255,255,255,0.2); }
 .spell-name, .equip-item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spell-name { color: var(--text); }
 .spell-name.prepared::before {
@@ -1479,6 +1524,13 @@ app-root { display: block; height: 100vh; width: 100vw; }
   background: var(--bg-2);
   border-color: var(--border-soft);
   color: var(--text-dim);
+}
+/* Spell-slot glance chips: gold accent to read apart from crimson conditions;
+   .calm (slots remaining) dims to gold-on-dark, dire (spent) inherits crimson. */
+.board-cond.slot-chip.calm {
+  background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
+  border-color: color-mix(in oklch, var(--gold) 35%, transparent);
+  color: var(--gold);
 }
 .board-chev { color: var(--text-dim); width: 12px; height: 12px; }
 .board-row.member:hover .board-chev { color: var(--celestial); }

@@ -30,6 +30,7 @@ export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emeral
 export interface CampaignVariantRules {
   slotInventory?: boolean;
   survivalConditions?: boolean;
+  strictComponents?: boolean;
 }
 
 /** Segment of the in-world day; each worsens survival conditions in its way. */

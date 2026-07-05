@@ -46,6 +46,16 @@
   </div>
 
   <div class="field">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="checkbox" [(ngModel)]="strictComponents" style="width: auto;">
+      Strict material components
+    </label>
+    <div class="modal-sub" style="margin-top: 4px;">
+      Casting a spell with a costly material component requires that component in inventory. Set at creation; can't be changed later.
+    </div>
+  </div>
+
+  <div class="field">
     <label>In-world start date (optional)</label>
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
       <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · e.g. 3rd" maxlength="40">

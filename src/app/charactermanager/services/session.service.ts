@@ -18,6 +18,7 @@ import {
   registerWeekday,
   survivalOf,
 } from '../utils/survival';
+import { applyCastToPc } from '../utils/spellcasting';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -384,6 +385,26 @@ export class SessionService {
     );
   }
 
+  /**
+   * A player casts one of their own seated PC's spells. Server-authoritative
+   * (the slot spend and component consumption happen there and bump the poll
+   * version so the DM sees it live); the result patches the local PC store so an
+   * open sheet updates without a refetch, and a non-null `warning` (missing
+   * costly component in a lenient campaign) is surfaced to the caller.
+   */
+  castSpell(sessionId: number | string, pcId: number, spellName: string, atLevel: number):
+      Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
+    if (environment.demoMode) return this.demoCast(pcId, spellName, atLevel);
+    return this.http.post<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }>(
+      `${this.sessionBase}/${sessionId}/spell/cast`, { pcId, spellName, atLevel },
+    ).pipe(
+      tap(result => this.pcService.patchLocalPC(pcId, {
+        spellSlots: result.spellSlots,
+        inventory: result.inventory ?? [],
+      })),
+    );
+  }
+
   /** Keep the campaign list's copy of the clock fresh after a session change. */
   private mirrorGameTime(state: SessionState): void {
     if (state.gameTime) {
@@ -570,7 +591,7 @@ export class SessionService {
       participantId: Date.now(), pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name, clazz: null, level: null, portraitTint: null, portraitInitials: null,
       initiative: null, initRolled: false, dexModifier, orderIndex: state.participants.length,
-      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [], survival: null,
+      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     };
     const participants = this.demoSort([...state.participants, enemy]);
@@ -587,7 +608,7 @@ export class SessionService {
       participantId: base + i, pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name: `Goblin ${n}`, clazz: null, level: null, portraitTint: null, portraitInitials: null,
       initiative: null, initRolled: false, dexModifier: 2, orderIndex: state.participants.length + i,
-      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [], survival: null,
+      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     }));
     const participants = this.demoSort([...state.participants, ...goblins]);
@@ -696,6 +717,23 @@ export class SessionService {
     return of({ pcId, survival: updated.survival!, inventory: updated.inventory ?? [] });
   }
 
+  /** Demo mirror of the cast endpoint (shared reducer, local persistence + version bump). */
+  private demoCast(pcId: number, spellName: string, atLevel: number):
+      Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
+    const pc = this.pcService.getPCById(pcId);
+    if (!pc) return throwError(() => new Error('Character not found'));
+    const updated = applyCastToPc(pc, spellName, atLevel);
+    this.pcService.patchLocalPC(pcId, { spellSlots: updated.spellSlots, inventory: updated.inventory ?? [] });
+
+    const state = this.stateSubject.getValue();
+    if (state) {
+      const participants = state.participants.map(p =>
+        p.pcId === pcId ? { ...p, spellSlots: updated.spellSlots ?? null } : p);
+      this.demoPatch({ participants });
+    }
+    return of({ pcId, spellSlots: updated.spellSlots, inventory: updated.inventory ?? [], warning: null });
+  }
+
   private demoState(campaignId: string, members: PC[]): SessionState {
     const participants = members
       .map((pc, i) => this.pcToParticipant(pc, i))
@@ -753,6 +791,7 @@ export class SessionService {
       ac: pc.ac ?? null,
       conditions: pc.conditions ?? [],
       survival: pc.survival ?? null,
+      spellSlots: pc.spellSlots ?? null,
       deathSaveSuccesses: 0,
       deathSaveFailures: 0,
     };
@@ -803,6 +842,7 @@ export class SessionService {
       ac: p.ac ?? null,
       conditions: this.parseConditions(p.conditions),
       survival: this.parseJsonObject<PcSurvival>(p.survival),
+      spellSlots: this.parseJsonObject<PC['spellSlots']>(p.spellSlots),
       deathSaveSuccesses: p.deathSaveSuccesses ?? 0,
       deathSaveFailures: p.deathSaveFailures ?? 0,
     };

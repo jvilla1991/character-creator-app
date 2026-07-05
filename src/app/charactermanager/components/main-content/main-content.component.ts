@@ -22,6 +22,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   slotInventory = false;
   /** True when the active PC's campaign uses the survival-conditions variant. */
   survivalConditions = false;
+  /** True when the active PC's campaign uses the strict material-components variant. */
+  strictComponents = false;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
@@ -80,6 +82,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
   private resolveVariants(pc: PC | null): void {
     this.slotInventory = false;
     this.survivalConditions = false;
+    this.strictComponents = false;
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.campaignService.getSummary(pc.campaignId)
@@ -90,6 +93,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
           if (this.pc?.id === pcId) {
             this.slotInventory = !!summary.variantRules?.slotInventory;
             this.survivalConditions = !!summary.variantRules?.survivalConditions;
+            this.strictComponents = !!summary.variantRules?.strictComponents;
           }
         },
         error: () => { /* not a member / offline — keep the standard view */ },

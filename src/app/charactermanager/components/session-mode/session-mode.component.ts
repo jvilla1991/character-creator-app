@@ -11,6 +11,7 @@ import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
 import { TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
+import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
 
 /**
@@ -40,6 +41,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   slotInventory = false;
   /** True when this session's campaign uses the survival-conditions variant. */
   survivalConditions = false;
+  /** True when this session's campaign uses the strict material-components variant. */
+  strictComponents = false;
 
   // DM's set-the-date form (collapsed by default under the clock bar; opens
   // automatically when night rolls into a new morning). Free-text labels.
@@ -115,6 +118,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       next: summary => {
         this.slotInventory = !!summary.variantRules?.slotInventory;
         this.survivalConditions = !!summary.variantRules?.survivalConditions;
+        this.strictComponents = !!summary.variantRules?.strictComponents;
       },
       error: () => { /* keep the standard view */ },
     });
@@ -202,6 +206,26 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** The player casts one of their spells — server-authoritative so the DM sees the slot spend. */
+  onCast(ev: CastRequest, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.castSpell(state.sessionId, mine.pcId, ev.spellName, ev.atLevel).subscribe({
+      next: result => {
+        if (result.warning) this.notifications.notify(result.warning);
+      },
+      error: err => this.notifications.notify(this.castErrorMessage(err)),
+    });
+  }
+
+  /** Prefer the server's message (e.g. a strict-component block), else a generic hint. */
+  private castErrorMessage(err: unknown): string {
+    const serverMessage = (err as { error?: { message?: string } })?.error?.message;
+    if (serverMessage) return serverMessage;
+    if ((err as { status?: number })?.status === 409) {
+      return 'That cast was blocked. Check your slots and components.';
+    }
+    return 'Could not cast that spell. Try again.';
   /**
    * Players see the initiative tracker only while an encounter is running;
    * the DM always sees it (their setup controls live there). Players enter
@@ -245,6 +269,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       ac: mine.ac ?? pc.ac,
       conditions: mine.conditions ?? pc.conditions,
       survival: mine.survival ?? pc.survival,
+      spellSlots: mine.spellSlots ?? pc.spellSlots,
       xp: state.myXp ?? pc.xp,
     };
   }

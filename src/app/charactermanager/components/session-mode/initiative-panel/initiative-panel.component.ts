@@ -86,6 +86,27 @@ export class InitiativePanelComponent {
   }
 
   /**
+   * Compact spell-slot chips for a caster row (DM glance): "L1 2/4" per level
+   * with a remaining slot, dire when fully spent. NPCs and non-casters render
+   * nothing. Casting during the session bumps the version, so these stay live.
+   */
+  slotChips(p: ParticipantView): Array<{ text: string; title: string; dire: boolean }> {
+    if (p.npc || !p.spellSlots) return [];
+    return Object.keys(p.spellSlots)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map(lvl => {
+        const slot = p.spellSlots![lvl];
+        const remaining = slot.max - slot.used;
+        return {
+          text: `L${lvl} ${remaining}/${slot.max}`,
+          title: `Level ${lvl} slots: ${remaining} of ${slot.max} remaining`,
+          dire: remaining === 0,
+        };
+      });
+  }
+
+  /**
    * Whether the viewer may type into this row's Init cell. DM: always (until
    * the session ends). Player: own row only — freely in the lobby, and while
    * active only to enter a still-missing value, mirroring the server rule.
