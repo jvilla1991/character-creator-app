@@ -1,0 +1,30 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Character Notes</span>
+    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      what this character remembers
+    </span>
+  </div>
+
+  <div *ngIf="canWrite" style="display: flex; gap: 8px; margin-bottom: 10px;">
+    <textarea
+      [(ngModel)]="draft"
+      rows="2"
+      placeholder="Log a memory, a clue, a grudge…"
+      style="flex: 1;"
+      (keydown.control.enter)="addNote()"
+    ></textarea>
+    <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="addNote()">Add</button>
+  </div>
+
+  <div *ngIf="notes.length === 0" style="color: var(--text-dim); font-style: italic; padding: 4px 0;">
+    No notes yet{{ canWrite ? ' — the page is yours' : '' }}.
+  </div>
+
+  <div *ngFor="let note of notes" style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
+    <div style="white-space: pre-wrap;">{{ note.body }}</div>
+    <div class="equip-item-meta" style="margin-top: 2px;">
+      {{ noteDate(note) }}<span *ngIf="note.sessionId"> · in session</span>
+    </div>
+  </div>
+</div>

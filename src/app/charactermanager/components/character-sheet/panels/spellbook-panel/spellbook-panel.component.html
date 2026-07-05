@@ -1,6 +1,27 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
+    <button *ngIf="addAllowed && !grantFormOpen" class="btn sm" (click)="openGrantForm()">Grant spells</button>
+  </div>
+
+  <!-- DM grant form -->
+  <div *ngIf="grantFormOpen" class="grant-form">
+    <label class="all-classes-toggle">
+      <input type="checkbox" [checked]="allClasses" (change)="toggleAllClasses(!allClasses)">
+      All classes
+    </label>
+    <app-spell-picker
+      [spells]="grantCandidates"
+      [selected]="grantSelection"
+      [cantripLimit]="null"
+      [spellLimit]="null"
+      [loading]="loadingGrantSpells"
+      (selectedChange)="grantSelection = $event">
+    </app-spell-picker>
+    <div class="grant-form-actions">
+      <button class="btn primary sm" [disabled]="!grantSelection.length" (click)="confirmGrant()">Add</button>
+      <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+    </div>
   </div>
 
   <!-- No spells -->
@@ -49,7 +70,32 @@
           <span class="spell-school">{{ s.school }}</span>
           <span class="spell-time">{{ s.time }}</span>
           <span class="spell-range" *ngIf="s.range">{{ s.range }}</span>
+          <button
+            *ngIf="!editable && s.prepared"
+            class="spell-cast-btn"
+            [disabled]="!canCast(s)"
+            [title]="castTitle(s)"
+            (click)="onCastClick(s, $event)"
+          >Cast</button>
         </div>
+
+        <!-- Upcast: pick which slot level to spend -->
+        <div class="spell-cast-strip" *ngIf="pickerFor === s.name">
+          <span class="spell-cast-note">Cast at:</span>
+          <button *ngFor="let lvl of levelsFor(s)" class="spell-cast-level"
+                  (click)="pickLevel(s, lvl, $event)">{{ ordinal(lvl) }}</button>
+        </div>
+
+        <!-- Missing costly component: the table decides (strict campaigns block instead) -->
+        <div class="spell-cast-strip warn" *ngIf="pendingCast?.spellName === s.name">
+          <span class="spell-cast-note">{{ pendingCast!.message }}</span>
+          <button class="spell-cast-level" (click)="confirmPendingCast($event)">Cast anyway</button>
+          <button class="spell-cast-level dim" (click)="cancelPendingCast($event)">Cancel</button>
+        </div>
+        <div class="spell-cast-strip blocked" *ngIf="blockedFor?.spellName === s.name">
+          <span class="spell-cast-note">{{ blockedFor!.message }}</span>
+        </div>
+
         <div class="spell-expand" *ngIf="expandedSpells[s.name]">
           <p class="spell-desc"     *ngIf="s.description">{{ s.description }}</p>
           <p class="spell-higher"   *ngIf="s.higherLevelSlot"><em>At higher levels:</em> {{ s.higherLevelSlot }}</p>

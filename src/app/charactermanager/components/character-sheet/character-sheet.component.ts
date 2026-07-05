@@ -1,7 +1,11 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { PC } from '../../models/pc';
+import { PC, PcSpell, PcItem } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
+import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
+import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
+import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
+import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
 @Component({
@@ -33,6 +37,18 @@ export class CharacterSheetComponent implements OnChanges {
    *  variant — switches the inventory panel to slots/bulk and hides the legacy
    *  equipment panel (a converted PC's weapons/gear were consolidated on join). */
   @Input() slotInventory = false;
+  /** True when this PC's campaign runs the Darker Dungeons survival-conditions
+   *  variant — reveals the hunger/thirst/fatigue tracker panel. */
+  @Input() survivalConditions = false;
+  /** True when this PC's campaign runs the strict material-components variant —
+   *  a missing costly component blocks the cast instead of warning. */
+  @Input() strictComponents = false;
+  /** True when the sheet is embedded in a live session: survival Eat/Drink/Sleep
+   *  bubble up (survivalActionRequested) so the host can call the
+   *  server-authoritative consume endpoint instead of a local edit. */
+  @Input() sessionLive = false;
+  /** The live session id (session embeds only) — tags new character notes. */
+  @Input() noteSessionId: number | string | null = null;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
@@ -40,6 +56,10 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() connectRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
+  /** In-session survival action (eat/drink/sleep); bubbled from the survival panel. */
+  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
+  /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
+  @Output() castRequested = new EventEmitter<CastRequest>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -83,7 +103,7 @@ export class CharacterSheetComponent implements OnChanges {
   editingLevel = false;
   levelDraft: number | null = null;
 
-  constructor(private pcService: PCService) {}
+  constructor(private pcService: PCService, private grantService: GrantService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['pc']) {
@@ -111,6 +131,37 @@ export class CharacterSheetComponent implements OnChanges {
   /** A child panel emitted a fully-updated PC (e.g. an ability score changed). */
   onPcChange(updated: PC): void {
     this.persist(updated);
+  }
+
+  /**
+   * A survival action from the panel. In a live session the host owns it (the
+   * server decrements rations and bumps the poll version); on the plain sheet
+   * the local reducer applies the same rules and persists.
+   */
+  onSurvivalAction(action: SurvivalAction): void {
+    if (this.sessionLive) {
+      this.survivalActionRequested.emit(action);
+      return;
+    }
+    this.persist(applyConsumeToPc(this.pc, action));
+  }
+
+  /**
+   * A cast from the spellbook panel. In a live session the host owns it (the
+   * server spends the slot, consumes the component, and bumps the poll version);
+   * on the plain sheet the local reducer applies the same rules and persists.
+   */
+  onCastRequested(ev: CastRequest): void {
+    if (this.sessionLive) {
+      this.castRequested.emit(ev);
+      return;
+    }
+    this.persist(applyCastToPc(this.pc, ev.spellName, ev.atLevel));
+  }
+
+  /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
+  onLongRest(): void {
+    this.persist({ ...this.pc, spellSlots: applyLongRestToSlots(this.pc.spellSlots) });
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
@@ -171,5 +222,44 @@ export class CharacterSheetComponent implements OnChanges {
     const used = index < slot.used ? index : index + 1;
     slots[level] = { ...slot, used: Math.min(slot.max, Math.max(0, used)) };
     this.persist({ ...this.pc, spellSlots: slots });
+  }
+
+  // ── DM grants ────────────────────────────────────────────────────────────
+  // Grants go through GrantService's refetch-merge-save rather than persist() —
+  // the sheet's `pc` copy can be stale by the time the DM submits the form, and
+  // PUTting it directly risks clobbering a concurrent player edit.
+
+  onFeatureGrant(f: { name: string; source: string; desc: string }): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
+      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+  }
+
+  onSpellsGrant(granted: PcSpell[]): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Dedupe against the FRESH copy — the player may have learned one of these
+        // spells (e.g. via level-up) in the moments between the picker opening and
+        // the DM confirming the grant.
+        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
+        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
+        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
+      })
+      .subscribe({ error: err => console.error('Failed to grant spells', err) });
+  }
+
+  onItemGrant(item: PcItem): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Stack onto an existing catalog line (mirrors the backend purchase path);
+        // ad-hoc items have no catalogKey and always append. Granted items arrive
+        // unequipped, so there's no AC to recompute.
+        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
+        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+        else inventory.push(item);
+        return { ...fresh, inventory };
+      })
+      .subscribe({ error: err => console.error('Failed to grant item', err) });
   }
 }

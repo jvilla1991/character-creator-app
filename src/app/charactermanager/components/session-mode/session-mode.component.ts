@@ -9,6 +9,10 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
+import { TimeOfDay } from '../../models/campaign';
+import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
+import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
+import { withRecomputedAc } from '../../utils/armor-math';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -35,10 +39,28 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   /** True when this session's campaign uses the slot-based inventory variant. */
   slotInventory = false;
+  /** True when this session's campaign uses the survival-conditions variant. */
+  survivalConditions = false;
+  /** True when this session's campaign uses the strict material-components variant. */
+  strictComponents = false;
+
+  // DM's set-the-date form (collapsed by default under the clock bar; opens
+  // automatically when night rolls into a new morning). Free-text labels.
+  editingTime = false;
+  timeYear = '';
+  timeMonth = '';
+  timeDay = '';
+  timeWeekday = '';
+  timeSegment: TimeOfDay = 'morning';
+  readonly timeSegments: TimeOfDay[] = ['morning', 'noon', 'night'];
+
+  // Week-tick toast + rollover detection, driven by snapshot transitions.
+  private lastSeenWeek: number | null = null;
+  private lastSeenSegment: TimeOfDay | null = null;
 
   private stateSub?: Subscription;
   private handledEnd = false;
-  private slotInventoryResolvedFor: string | null = null;
+  private variantsResolvedFor: string | null = null;
 
   constructor(
     private sessionService: SessionService,
@@ -54,7 +76,10 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     // The DM may end the session from another device; a poll then reports ENDED.
     this.stateSub = this.sessionService.state$.subscribe(state => {
       if (state && state.status === 'ENDED') this.onSessionEnded(state);
-      if (state) this.resolveSlotInventory(state);
+      if (state) {
+        this.resolveVariants(state);
+        this.trackClock(state);
+      }
     });
   }
 
@@ -84,15 +109,132 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.close();
   }
 
-  /** One-time lookup of the campaign's slot-inventory flag (immutable per campaign). */
-  private resolveSlotInventory(state: SessionState): void {
+  /** One-time lookup of the campaign's variant flags (immutable per campaign). */
+  private resolveVariants(state: SessionState): void {
     const campaignId = state.campaignId != null ? String(state.campaignId) : null;
-    if (!campaignId || this.slotInventoryResolvedFor === campaignId) return;
-    this.slotInventoryResolvedFor = campaignId;
+    if (!campaignId || this.variantsResolvedFor === campaignId) return;
+    this.variantsResolvedFor = campaignId;
     this.campaignService.getSummary(campaignId).subscribe({
-      next: summary => { this.slotInventory = !!summary.variantRules?.slotInventory; },
+      next: summary => {
+        this.slotInventory = !!summary.variantRules?.slotInventory;
+        this.survivalConditions = !!summary.variantRules?.survivalConditions;
+        this.strictComponents = !!summary.variantRules?.strictComponents;
+      },
       error: () => { /* keep the standard view */ },
     });
+  }
+
+  // ── Campaign clock (DM controls; read-only chip for players) ───────────────
+
+  describeTime(state: SessionState): string {
+    return describeGameTime(state.gameTime);
+  }
+
+  /** Label for the DM's advance button: the segment it advances INTO. */
+  advanceTimeLabel(state: SessionState): string {
+    if (!state.gameTime) return 'Start the clock';
+    const next = advanceGameTime(state.gameTime);
+    const segment = next.timeOfDay.charAt(0).toUpperCase() + next.timeOfDay.slice(1);
+    return next.timeOfDay === 'morning' ? `Advance to ${segment} (new day)` : `Advance to ${segment}`;
+  }
+
+  advanceTime(state: SessionState): void {
+    this.sessionService.advanceTime(state.sessionId).subscribe({
+      error: () => this.notifications.notify('Could not advance the clock.'),
+    });
+  }
+
+  /**
+   * Snapshot transitions drive two clock behaviors: a toast when the week
+   * counter ticks (any viewer), and auto-opening the DM's set-date form when
+   * night rolls into a new morning — the date is free text, so updating it
+   * (and the weekday) is the DM's move.
+   */
+  private trackClock(state: SessionState): void {
+    const week = state.gameTime?.week ?? null;
+    const segment = state.gameTime?.timeOfDay ?? null;
+
+    if (this.lastSeenWeek != null && week != null && week > this.lastSeenWeek) {
+      this.notifications.notify(`A full week has passed — Week ${week} begins.`);
+    }
+    if (state.dm && this.lastSeenSegment === 'night' && segment === 'morning' && !this.editingTime) {
+      this.openTimeEdit(state);
+      this.notifications.notify('A new day dawns — set the date and weekday.');
+    }
+
+    this.lastSeenWeek = week;
+    this.lastSeenSegment = segment;
+  }
+
+  toggleTimeEdit(state: SessionState): void {
+    if (this.editingTime) {
+      this.editingTime = false;
+      return;
+    }
+    this.openTimeEdit(state);
+  }
+
+  private openTimeEdit(state: SessionState): void {
+    const t = state.gameTime;
+    this.timeYear = t?.year ?? '';
+    this.timeMonth = t?.month ?? '';
+    this.timeDay = t?.day ?? '';
+    this.timeWeekday = t?.weekday ?? '';
+    this.timeSegment = t?.timeOfDay ?? 'morning';
+    this.editingTime = true;
+  }
+
+  commitTime(state: SessionState): void {
+    this.sessionService.setTime(state.sessionId, {
+      year: this.timeYear.trim(),
+      month: this.timeMonth.trim(),
+      day: this.timeDay.trim(),
+      timeOfDay: this.timeSegment,
+      weekday: this.timeWeekday.trim() || null,
+    }).subscribe({
+      next: () => { this.editingTime = false; },
+      error: () => this.notifications.notify('Could not set the date.'),
+    });
+  }
+
+  /** The player eats/drinks/sleeps — server-authoritative so everyone sees it. */
+  onSurvivalAction(action: SurvivalAction, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.consumeSurvival(state.sessionId, mine.pcId, action).subscribe({
+      error: () => this.notifications.notify('Could not update your condition. Try again.'),
+    });
+  }
+
+  /** The player casts one of their spells — server-authoritative so the DM sees the slot spend. */
+  onCast(ev: CastRequest, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.castSpell(state.sessionId, mine.pcId, ev.spellName, ev.atLevel).subscribe({
+      next: result => {
+        if (result.warning) this.notifications.notify(result.warning);
+      },
+      error: err => this.notifications.notify(this.castErrorMessage(err)),
+    });
+  }
+
+  /** Prefer the server's message (e.g. a strict-component block), else a generic hint. */
+  private castErrorMessage(err: unknown): string {
+    const serverMessage = (err as { error?: { message?: string } })?.error?.message;
+    if (serverMessage) return serverMessage;
+    if ((err as { status?: number })?.status === 409) {
+      return 'That cast was blocked. Check your slots and components.';
+    }
+    return 'Could not cast that spell. Try again.';
+  }
+
+  /**
+   * Players see the initiative tracker only while an encounter is running;
+   * the DM always sees it (their setup controls live there). Players enter
+   * their rolls after Start Encounter — the server sorts late entries.
+   */
+  showInitiative(state: SessionState): boolean {
+    return state.dm || state.status === 'ACTIVE';
   }
 
   /** Leave the session screen (does not end the session server-side). */
@@ -128,6 +270,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       },
       ac: mine.ac ?? pc.ac,
       conditions: mine.conditions ?? pc.conditions,
+      survival: mine.survival ?? pc.survival,
+      spellSlots: mine.spellSlots ?? pc.spellSlots,
       xp: state.myXp ?? pc.xp,
     };
   }
@@ -142,7 +286,19 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     const pcId = mine.pcId;
     this.shopService.sell(state.sessionId, pcId, index).subscribe({
       next: result => {
+        // Capture the pre-sell inventory first — selling an equipped armor
+        // piece changes AC, and the comparison needs the old equipped set.
+        const before = this.pcService.getPCById(pcId);
         this.pcService.patchLocalPC(pcId, { coins: result.coins, inventory: result.inventory });
+        const after = this.pcService.getPCById(pcId);
+        if (before && after) {
+          const recomputed = withRecomputedAc(after, before.inventory);
+          if (recomputed.ac !== after.ac) {
+            this.pcService.updatePC(recomputed).subscribe({
+              error: err => console.error('Failed to persist recomputed AC', err),
+            });
+          }
+        }
         this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
       },
       error: () => this.notifications.notify('Could not sell that item. Try again.'),

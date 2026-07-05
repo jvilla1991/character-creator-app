@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 
@@ -11,6 +11,15 @@ type Feature = { name: string; source: string; desc: string };
 })
 export class FeaturesListComponent {
   @Input() pc!: PC;
+  /** True when the viewer is a DM cross-linked into this sheet — reveals the Grant control. */
+  @Input() addAllowed = false;
+  /**
+   * A DM-granted feature. Emitted as a bare payload rather than a merged PC because a grant
+   * must go through GrantService's refetch-merge-save (the sheet's `pc` copy can be stale —
+   * PUTting it directly risks clobbering a concurrent player edit). CharacterSheetComponent
+   * owns the actual save.
+   */
+  @Output() featureGranted = new EventEmitter<Feature>();
 
   constructor(private dndResources: DndResourcesService) {}
 
@@ -25,5 +34,36 @@ export class FeaturesListComponent {
       return this.dndResources.getFeatDescription(feature.name);
     }
     return '';
+  }
+
+  // ── DM grant form ────────────────────────────────────────────────────────
+
+  grantFormOpen = false;
+  nameDraft = '';
+  sourceDraft = 'DM Grant';
+  descDraft = '';
+
+  openGrantForm(): void {
+    this.grantFormOpen = true;
+  }
+
+  cancelGrant(): void {
+    this.resetGrantForm();
+  }
+
+  submitGrant(): void {
+    const name = this.nameDraft.trim();
+    if (!name) return;
+    const source = this.sourceDraft.trim() || 'DM Grant';
+    const desc = this.descDraft.trim();
+    this.featureGranted.emit({ name, source, desc });
+    this.resetGrantForm();
+  }
+
+  private resetGrantForm(): void {
+    this.grantFormOpen = false;
+    this.nameDraft = '';
+    this.sourceDraft = 'DM Grant';
+    this.descDraft = '';
   }
 }

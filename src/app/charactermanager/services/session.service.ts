@@ -1,12 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, Subscription, of, timer } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ParticipantView, SessionState, XpAwardEntry, XpAwardResult } from '../models/session';
-import { PC } from '../models/pc';
+import { PC, PcItem, PcSurvival } from '../models/pc';
+import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
+import {
+  SurvivalAction,
+  advanceGameTime,
+  applyConsumeToPc,
+  applyTimeBump,
+  initialGameTime,
+  normalizeGameTime,
+  registerWeekday,
+  survivalOf,
+} from '../utils/survival';
+import { applyCastToPc } from '../utils/spellcasting';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -326,6 +338,80 @@ export class SessionService {
     );
   }
 
+  /**
+   * DM advances the campaign clock one segment. Real mode is server-
+   * authoritative (member survival bumps happen there and arrive on the
+   * snapshot); demo mirrors the same rules locally, including the
+   * initialize-without-bumps first click.
+   */
+  advanceTime(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return this.demoAdvanceTime();
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/time/advance`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => { this.pushState(state); this.mirrorGameTime(state); }),
+    );
+  }
+
+  /**
+   * DM sets the campaign clock directly — no condition bumps. Sends the free
+   * text date labels + weekday; the server owns the week-counter logic (the
+   * demo branch mirrors it via registerWeekday).
+   */
+  setTime(sessionId: number | string,
+          time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+  ): Observable<SessionState> {
+    if (environment.demoMode) return this.demoSetTime(time);
+    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/time`, time).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => { this.pushState(state); this.mirrorGameTime(state); }),
+    );
+  }
+
+  /**
+   * A player improves their own seated PC's survival condition. The result
+   * patches the local PC store (survival + possibly-decremented inventory, the
+   * sell-flow pattern); other viewers see the stages via the version bump.
+   */
+  consumeSurvival(sessionId: number | string, pcId: number, action: SurvivalAction):
+      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
+    if (environment.demoMode) return this.demoConsume(pcId, action);
+    return this.http.post<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }>(
+      `${this.sessionBase}/${sessionId}/survival/consume`, { pcId, action },
+    ).pipe(
+      tap(result => this.pcService.patchLocalPC(pcId, {
+        survival: result.survival,
+        inventory: result.inventory ?? [],
+      })),
+    );
+  }
+
+  /**
+   * A player casts one of their own seated PC's spells. Server-authoritative
+   * (the slot spend and component consumption happen there and bump the poll
+   * version so the DM sees it live); the result patches the local PC store so an
+   * open sheet updates without a refetch, and a non-null `warning` (missing
+   * costly component in a lenient campaign) is surfaced to the caller.
+   */
+  castSpell(sessionId: number | string, pcId: number, spellName: string, atLevel: number):
+      Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
+    if (environment.demoMode) return this.demoCast(pcId, spellName, atLevel);
+    return this.http.post<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }>(
+      `${this.sessionBase}/${sessionId}/spell/cast`, { pcId, spellName, atLevel },
+    ).pipe(
+      tap(result => this.pcService.patchLocalPC(pcId, {
+        spellSlots: result.spellSlots,
+        inventory: result.inventory ?? [],
+      })),
+    );
+  }
+
+  /** Keep the campaign list's copy of the clock fresh after a session change. */
+  private mirrorGameTime(state: SessionState): void {
+    if (state.gameTime) {
+      this.campaignService.setLocalGameTime(state.campaignId, state.gameTime);
+    }
+  }
+
   /** DM sets (or clears) the encounter turn-cue sound, pushed to every client. */
   setSound(sessionId: number | string, turnSound: string | null): Observable<SessionState> {
     if (environment.demoMode) return of(this.demoPatch({ turnSound }));
@@ -505,7 +591,7 @@ export class SessionService {
       participantId: Date.now(), pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name, clazz: null, level: null, portraitTint: null, portraitInitials: null,
       initiative: null, initRolled: false, dexModifier, orderIndex: state.participants.length,
-      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [],
+      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     };
     const participants = this.demoSort([...state.participants, enemy]);
@@ -522,7 +608,7 @@ export class SessionService {
       participantId: base + i, pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name: `Goblin ${n}`, clazz: null, level: null, portraitTint: null, portraitInitials: null,
       initiative: null, initRolled: false, dexModifier: 2, orderIndex: state.participants.length + i,
-      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [],
+      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     }));
     const participants = this.demoSort([...state.participants, ...goblins]);
@@ -572,6 +658,82 @@ export class SessionService {
     return { pcId, name, xp: updated, delta: updated - current };
   }
 
+  /** Demo mirror of the server's advance-time (clock + member bumps). */
+  private demoAdvanceTime(): Observable<SessionState> {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const campaign = this.campaignService.getLocalCampaign(state.campaignId);
+    const current = state.gameTime ?? campaign?.gameTime ?? null;
+    const next = current ? advanceGameTime(current) : initialGameTime();
+    // First click establishes the clock — no bumps. Every segment bumps under
+    // the three-segment mapping (morning +H/T, noon +F, night +all).
+    const bumps = current != null && !!campaign?.variantRules?.survivalConditions;
+
+    let participants = state.participants;
+    if (bumps) {
+      participants = state.participants.map(p => {
+        if (p.pcId == null) return p;
+        const pc = this.pcService.getPCById(p.pcId);
+        if (!pc) return p;
+        const survival = applyTimeBump(survivalOf(pc), next.timeOfDay);
+        this.pcService.patchLocalPC(p.pcId, { survival });
+        return { ...p, survival };
+      });
+    }
+    this.campaignService.setLocalGameTime(state.campaignId, next);
+    return of(this.demoPatch({ gameTime: next, participants }));
+  }
+
+  private demoSetTime(
+    time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+  ): Observable<SessionState> {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const current = state.gameTime
+      ?? this.campaignService.getLocalCampaign(state.campaignId)?.gameTime
+      ?? initialGameTime();
+    // Mirror the server: dates apply verbatim, the weekday history drives the
+    // week counter (registerWeekday guards unchanged-weekday corrections).
+    const next = registerWeekday(
+      { ...current, year: time.year, month: time.month, day: time.day, timeOfDay: time.timeOfDay },
+      time.weekday,
+    );
+    this.campaignService.setLocalGameTime(state.campaignId, next);
+    return of(this.demoPatch({ gameTime: next }));
+  }
+
+  /** Demo mirror of the consume endpoint (shared reducer, local persistence). */
+  private demoConsume(pcId: number, action: SurvivalAction):
+      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
+    const pc = this.pcService.getPCById(pcId);
+    if (!pc) return throwError(() => new Error('Character not found'));
+    const updated = applyConsumeToPc(pc, action);
+    this.pcService.patchLocalPC(pcId, { survival: updated.survival, inventory: updated.inventory ?? [] });
+
+    const state = this.stateSubject.getValue();
+    if (state) {
+      const participants = state.participants.map(p =>
+        p.pcId === pcId ? { ...p, survival: updated.survival ?? null } : p);
+      this.demoPatch({ participants });
+    }
+    return of({ pcId, survival: updated.survival!, inventory: updated.inventory ?? [] });
+  }
+
+  /** Demo mirror of the cast endpoint (shared reducer, local persistence + version bump). */
+  private demoCast(pcId: number, spellName: string, atLevel: number):
+      Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
+    const pc = this.pcService.getPCById(pcId);
+    if (!pc) return throwError(() => new Error('Character not found'));
+    const updated = applyCastToPc(pc, spellName, atLevel);
+    this.pcService.patchLocalPC(pcId, { spellSlots: updated.spellSlots, inventory: updated.inventory ?? [] });
+
+    const state = this.stateSubject.getValue();
+    if (state) {
+      const participants = state.participants.map(p =>
+        p.pcId === pcId ? { ...p, spellSlots: updated.spellSlots ?? null } : p);
+      this.demoPatch({ participants });
+    }
+    return of({ pcId, spellSlots: updated.spellSlots, inventory: updated.inventory ?? [], warning: null });
+  }
+
   private demoState(campaignId: string, members: PC[]): SessionState {
     const participants = members
       .map((pc, i) => this.pcToParticipant(pc, i))
@@ -592,6 +754,7 @@ export class SessionService {
       shopForMe: false,
       shopCategory: null,
       myXp: null,
+      gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
       participants,
     };
   }
@@ -601,7 +764,8 @@ export class SessionService {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
-      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null, participants: [],
+      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
+      gameTime: null, participants: [],
     };
   }
 
@@ -626,6 +790,8 @@ export class SessionService {
       hpTemp: pc.hp?.temp ?? null,
       ac: pc.ac ?? null,
       conditions: pc.conditions ?? [],
+      survival: pc.survival ?? null,
+      spellSlots: pc.spellSlots ?? null,
       deathSaveSuccesses: 0,
       deathSaveFailures: 0,
     };
@@ -649,6 +815,7 @@ export class SessionService {
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
       myXp: raw.myXp ?? null,
+      gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }
@@ -674,9 +841,20 @@ export class SessionService {
       hpTemp: p.hpTemp ?? null,
       ac: p.ac ?? null,
       conditions: this.parseConditions(p.conditions),
+      survival: this.parseJsonObject<PcSurvival>(p.survival),
+      spellSlots: this.parseJsonObject<PC['spellSlots']>(p.spellSlots),
       deathSaveSuccesses: p.deathSaveSuccesses ?? 0,
       deathSaveFailures: p.deathSaveFailures ?? 0,
     };
+  }
+
+  /** Tolerates an object, a JSON-string TEXT column, or null (→ null). */
+  private parseJsonObject<T>(raw: any): T | null {
+    if (raw && typeof raw === 'object') return raw as T;
+    if (typeof raw === 'string' && raw.trim()) {
+      try { return (JSON.parse(raw) ?? null) as T | null; } catch { return null; }
+    }
+    return null;
   }
 
   /** Backend sends conditions as a JSON string (PC.conditions); normalize to an array. */

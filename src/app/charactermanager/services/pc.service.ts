@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
+import { PcNote } from '../models/pc-note';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
@@ -164,6 +165,31 @@ export class PCService {
     return this.http.get<PC>(`${this.pcUrl}${id}/as-dm`).pipe(
       map(raw => this.deserializePC(raw))
     );
+  }
+
+  // ── Per-character session notes ────────────────────────────────────────────
+  // Written by the owning player; readable also by the campaign's DM. Demo
+  // mode keeps an in-memory log per PC (same lifetime as the demo PC store).
+
+  private demoNotes: { [pcId: number]: PcNote[] } = {};
+
+  getNotes(pcId: number): Observable<PcNote[]> {
+    if (environment.demoMode) {
+      return of([...(this.demoNotes[pcId] ?? [])]).pipe(delay(50));
+    }
+    return this.http.get<PcNote[]>(`${this.pcUrl}${pcId}/notes`);
+  }
+
+  addNote(pcId: number, body: string, sessionId?: number | string | null): Observable<PcNote> {
+    if (environment.demoMode) {
+      const note: PcNote = {
+        id: 'n-' + Date.now(), pcId, body: body.trim(),
+        createdAt: new Date().toISOString(), sessionId: sessionId ?? null,
+      };
+      this.demoNotes[pcId] = [note, ...(this.demoNotes[pcId] ?? [])];
+      return of(note).pipe(delay(50));
+    }
+    return this.http.post<PcNote>(`${this.pcUrl}${pcId}/notes`, { body, sessionId: sessionId ?? null });
   }
 
   /**
@@ -379,6 +405,10 @@ export class PCService {
       saves: JSON.stringify(pc.saves ?? []),
       skills: JSON.stringify(pc.skills ?? {}),
       conditions: JSON.stringify(pc.conditions ?? []),
+      // null (not a stringified default) when never tracked — the backend
+      // preserves the stored value on a null, so a sheet edit can't wipe
+      // survival changes made server-side during a session.
+      survival: pc.survival ? JSON.stringify(pc.survival) : null,
       coins: JSON.stringify(pc.coins ?? {}),
       weapons: JSON.stringify(pc.weapons ?? []),
       gear: JSON.stringify(pc.gear ?? []),
@@ -427,6 +457,7 @@ export class PCService {
       saves: this.parseJsonField(pc['saves'], []),
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),
+      survival: this.parseJsonField(pc['survival'], undefined),
       coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
       weapons: this.parseJsonField(pc['weapons'], []),
       gear: this.parseJsonField(pc['gear'], []),

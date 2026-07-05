@@ -17,6 +17,7 @@ export interface Campaign {
   threads: string[];    // open plot threads
   inviteCode?: string;  // players join by entering this (Phase 3)
   variantRules?: CampaignVariantRules; // creation-time opt-ins, immutable
+  gameTime?: CampaignGameTime | null;  // in-world clock; null until set
 }
 
 export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emerald';
@@ -28,6 +29,29 @@ export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emeral
  */
 export interface CampaignVariantRules {
   slotInventory?: boolean;
+  survivalConditions?: boolean;
+  strictComponents?: boolean;
+}
+
+/** Segment of the in-world day; each worsens survival conditions in its way. */
+export type TimeOfDay = 'morning' | 'noon' | 'night';
+
+/**
+ * The campaign's persisted in-world clock. Date parts are FREE TEXT the DM
+ * curates ("1492 DR" / "Hammer" / "3rd" — any homebrew calendar); advancing
+ * time only cycles the day segments, never the date. The weekday history
+ * drives the week counter: re-entering a previously seen weekday marks a
+ * completed week. Null/absent = never set. (Pre-v2 clocks stored numbers and
+ * dawn/dusk segments — normalizeGameTime converts them on read.)
+ */
+export interface CampaignGameTime {
+  year: string;
+  month: string;
+  day: string;
+  timeOfDay: TimeOfDay;
+  weekday: string | null;
+  weekdaysSeen: string[];
+  week: number;
 }
 
 /** Member-visible campaign header — what a player's sheet may know about it. */
@@ -43,6 +67,7 @@ export interface CampaignDraft {
   setting: string;
   tint: CampaignTint;
   variantRules: CampaignVariantRules;
+  gameTime?: CampaignGameTime;  // optional in-world start date
 }
 
 /** Dice & rolling preferences, persisted to localStorage under `tm_dice`. */

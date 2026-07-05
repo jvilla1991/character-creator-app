@@ -98,7 +98,7 @@
         </svg>
         Roll
       </button>
-      <button class="btn" title="Take a long rest">
+      <button class="btn" title="Take a long rest" (click)="onLongRest()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
           <path d="M2 3a1 1 0 011-1h4a1 1 0 011 1v11M8 3a1 1 0 011-1h4a1 1 0 011 1v11M2 14h12"/>
@@ -147,23 +147,41 @@
         [pc]="pc"
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
+      <app-survival-panel
+        *ngIf="survivalConditions"
+        [pc]="pc"
+        [editable]="showActions || inventoryEditable || editable"
+        (pcChange)="onPcChange($event)"
+        (actionRequested)="onSurvivalAction($event)">
+      </app-survival-panel>
       <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
       <app-inventory-panel
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
+        [addAllowed]="editable"
         [shopOpenForMe]="shopOpenForMe"
         [shopCategory]="shopCategory"
         [slotInventory]="slotInventory"
         (pcChange)="onPcChange($event)"
+        (itemGranted)="onItemGrant($event)"
         (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
       <app-spellbook-panel
         [pc]="pc"
         [editable]="editable"
+        [strictComponents]="strictComponents"
+        [addAllowed]="editable"
         (slotToggled)="onSlotToggle($event.level, $event.index)"
-        (pcChange)="onPcChange($event)">
+        (castRequested)="onCastRequested($event)"
+        (pcChange)="onPcChange($event)"
+        (spellsGranted)="onSpellsGrant($event)">
       </app-spellbook-panel>
-      <app-features-list    [pc]="pc"></app-features-list>
+      <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
+      <app-pc-notes
+        [pc]="pc"
+        [canWrite]="(showActions || inventoryEditable) && !editable"
+        [sessionId]="noteSessionId">
+      </app-pc-notes>
       <app-coin-purse
         [pc]="pc"
         [editable]="editable"

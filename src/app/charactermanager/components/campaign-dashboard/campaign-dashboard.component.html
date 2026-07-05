@@ -13,6 +13,10 @@
           <span class="eyebrow">Invite</span>
           <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
         </div>
+        <div class="invite-chip" *ngIf="vm.campaign.gameTime" title="The in-world clock — advance it from Session Mode">
+          <span class="eyebrow">Clock</span>
+          <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
+        </div>
       </div>
       <div class="sheet-actions">
         <button class="btn" (click)="openManageParty()">
@@ -65,6 +69,12 @@
       </div>
     </div>
 
+    <div style="display: flex; justify-content: flex-end; margin-bottom: -8px;">
+      <button class="btn" (click)="refreshMembers()"
+              title="Reload the party list — new joins also load automatically when you return to this tab">
+        ↻ Refresh party
+      </button>
+    </div>
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
 
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>

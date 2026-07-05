@@ -14,6 +14,8 @@ import { SkillsListComponent } from './components/character-sheet/panels/skills-
 import { ConditionsPanelComponent } from './components/character-sheet/panels/conditions-panel/conditions-panel.component';
 import { EquipmentPanelComponent } from './components/character-sheet/panels/equipment-panel/equipment-panel.component';
 import { InventoryPanelComponent } from './components/character-sheet/panels/inventory-panel/inventory-panel.component';
+import { SurvivalPanelComponent } from './components/character-sheet/panels/survival-panel/survival-panel.component';
+import { PcNotesComponent } from './components/character-sheet/panels/pc-notes/pc-notes.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -31,6 +33,7 @@ import { ReviewStepComponent } from './components/create-character-modal/steps/r
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
+import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -90,6 +93,7 @@ const routes: Routes = [
     ReviewStepComponent,
     DiceRollerModalComponent,
     LevelUpModalComponent,
+    SpellPickerComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
     EditableNumberComponent,
@@ -99,6 +103,8 @@ const routes: Routes = [
     ConditionsPanelComponent,
     EquipmentPanelComponent,
     InventoryPanelComponent,
+    SurvivalPanelComponent,
+    PcNotesComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,

@@ -40,6 +40,69 @@ describe('CampaignService', () => {
     });
   });
 
+  describe('game clock (de)serialization', () => {
+    it('createCampaign sends gameTime as a JSON string (null when unset) and parses it back', done => {
+      const start = {
+        year: '1492 DR', month: 'Hammer', day: '3rd', timeOfDay: 'morning' as const,
+        weekday: 'Far', weekdaysSeen: ['Far'], week: 1,
+      };
+      http.post.and.returnValue(of({ id: 9, name: 'Timed Table', gameTime: JSON.stringify(start) }));
+
+      service.createCampaign({
+        name: 'Timed Table', setting: '', tint: 'celestial', variantRules: {}, gameTime: start,
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['gameTime']).toBe(JSON.stringify(start));
+        expect(campaign.gameTime).toEqual(start);
+        done();
+      });
+    });
+
+    it('normalizes a pre-v2 numeric clock arriving from the backend', done => {
+      http.post.and.returnValue(of({
+        id: 9, name: 'Old Table',
+        gameTime: '{"year":1492,"month":3,"day":12,"timeOfDay":"dawn"}',
+      }));
+
+      service.createCampaign({
+        name: 'Old Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        expect(campaign.gameTime).toEqual({
+          year: '1492', month: '3', day: '12', timeOfDay: 'morning',
+          weekday: null, weekdaysSeen: [], week: 1,
+        });
+        done();
+      });
+    });
+
+    it('createCampaign without a start date sends null (clock never set)', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Plain Table', gameTime: null }));
+
+      service.createCampaign({
+        name: 'Plain Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['gameTime']).toBeNull();
+        expect(campaign.gameTime).toBeNull();
+        done();
+      });
+    });
+
+    it('setLocalGameTime updates the stored campaign copy', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Timed Table', gameTime: null }));
+
+      service.createCampaign({
+        name: 'Timed Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(() => {
+        const t = { year: '2', month: '1', day: '1', timeOfDay: 'night' as const,
+                    weekday: 'Sul', weekdaysSeen: ['Sul'], week: 3 };
+        service.setLocalGameTime(9, t);
+        expect(service.getLocalCampaign(9)?.gameTime).toEqual(t);
+        done();
+      });
+    });
+  });
+
   describe('previewByCode', () => {
     it('normalizes the code and tolerates a null variantRules column', done => {
       http.get.and.returnValue(of({ name: 'Plain Table', variantRules: null }));

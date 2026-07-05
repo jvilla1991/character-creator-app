@@ -35,6 +35,40 @@
     </div>
   </div>
 
+  <div class="field">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="checkbox" [(ngModel)]="survivalConditions" style="width: auto;">
+      Use survival conditions (Darker Dungeons)
+    </label>
+    <div class="modal-sub" style="margin-top: 4px;">
+      Characters track hunger, thirst &amp; fatigue; time of day worsens them. Set at creation; can't be changed later.
+    </div>
+  </div>
+
+  <div class="field">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="checkbox" [(ngModel)]="strictComponents" style="width: auto;">
+      Strict material components
+    </label>
+    <div class="modal-sub" style="margin-top: 4px;">
+      Casting a spell with a costly material component requires that component in inventory. Set at creation; can't be changed later.
+    </div>
+  </div>
+
+  <div class="field">
+    <label>In-world start date (optional)</label>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+      <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · e.g. 3rd" maxlength="40">
+      <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · e.g. Hammer" maxlength="40">
+      <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · e.g. 1492 DR" maxlength="40">
+      <input [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
+    </div>
+    <div class="modal-sub" style="margin-top: 4px;">
+      Free text — any calendar works. The clock starts at morning of this day; the DM advances time
+      in session and updates the date when a new day begins. Leave blank to set it later.
+    </div>
+  </div>
+
   <div class="modal-actions">
     <button class="btn" (click)="cancel()">Cancel</button>
     <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>

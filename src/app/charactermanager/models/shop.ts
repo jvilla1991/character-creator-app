@@ -6,7 +6,36 @@
 
 import { PcItem } from './pc';
 
-export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT';
+export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR';
+
+/**
+ * One entry from the raw SRD catalog browse (`GET /api/v1/catalog`), used by the
+ * DM-grant equipment picker. Unlike {@link ShopItem} it carries the effective
+ * `bulk` rating the backend stamps at purchase, so a granted line can be
+ * denormalized client-side without re-deriving weight bands. `category` is the
+ * raw backend enum (e.g. 'WEAPON'); map it with {@link categoryLabelFor}.
+ */
+export interface CatalogItem {
+  itemKey: string;
+  name: string;
+  category: string;
+  costCp: number;
+  weight?: number | null;
+  bulk: number;
+  details: { [key: string]: any };
+}
+
+/** Map a backend catalog category ('WEAPON') to the lowercase inventory label
+ *  ('weapon'). Mirrors the backend ShopService#categoryLabel mapping — the
+ *  single client-side source of truth (inventory panel and grant picker share it). */
+export function categoryLabelFor(backendCategory: string): PcItem['category'] {
+  switch (backendCategory) {
+    case 'WEAPON': return 'weapon';
+    case 'ARMOR': return 'armor';
+    case 'MATERIAL_COMPONENT': return 'material-component';
+    default: return backendCategory.toLowerCase() as PcItem['category'];
+  }
+}
 
 export interface ShopItem {
   itemKey: string;

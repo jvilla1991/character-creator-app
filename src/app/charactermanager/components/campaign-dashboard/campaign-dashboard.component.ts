@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
@@ -9,6 +9,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
+import { describeGameTime } from '../../utils/survival';
 
 interface DashboardVm {
   campaign: Campaign;
@@ -31,7 +32,10 @@ interface DashboardVm {
   selector: 'app-campaign-dashboard',
   templateUrl: './campaign-dashboard.component.html',
 })
-export class CampaignDashboardComponent {
+export class CampaignDashboardComponent implements OnInit, OnDestroy {
+  /** In-world clock label for the header chip (campaigns$ keeps it fresh). */
+  readonly describeGameTime = describeGameTime;
+
   // Bump to re-pull the member projection (after a bind/unbind).
   private membersRefresh$ = new BehaviorSubject<void>(undefined);
 
@@ -56,12 +60,32 @@ export class CampaignDashboardComponent {
   allPcs$ = this.pcService.pcs$;
   managePartyOpen = false;
 
+  // A player joining from their own device doesn't touch this client — refetch
+  // members when the DM's tab regains focus (and via the manual ↻ button). No
+  // background polling: zero idle requests to App Runner.
+  private readonly onVisible = () => {
+    if (document.visibilityState === 'visible') this.membersRefresh$.next();
+  };
+
   constructor(
     private campaignService: CampaignService,
     private pcService: PCService,
     private sessionService: SessionService,
     private uiState: UiStateService,
   ) {}
+
+  ngOnInit(): void {
+    document.addEventListener('visibilitychange', this.onVisible);
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener('visibilitychange', this.onVisible);
+  }
+
+  /** Manual member refetch (the ↻ button on the party board). */
+  refreshMembers(): void {
+    this.membersRefresh$.next();
+  }
 
   /**
    * Open a live Session Mode lobby for this campaign and switch the main view to

@@ -3,11 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
 import { delay, map, shareReplay, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Campaign, CampaignDraft, CampaignSummary, CampaignVariantRules } from '../models/campaign';
+import { Campaign, CampaignDraft, CampaignGameTime, CampaignSummary, CampaignVariantRules } from '../models/campaign';
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
 import { convertPcToSlotInventory } from '../utils/slot-inventory';
+import { normalizeGameTime } from '../utils/survival';
 
 // ---------------------------------------------------------------------------
 // Demo seed campaigns. Members are the demo PCs bound via PC.campaignId.
@@ -246,6 +247,7 @@ export class CampaignService {
       secrets: '',
       threads: [],
       variantRules: draft.variantRules ?? {},
+      gameTime: draft.gameTime ?? null,
     };
 
     if (environment.demoMode) {
@@ -278,6 +280,9 @@ export class CampaignService {
       secrets: c.secrets,
       threads: JSON.stringify(c.threads ?? []),
       variantRules: JSON.stringify(c.variantRules ?? {}),
+      // null (not '{}') when unset — the clock is "never set" until the DM
+      // enters a date or advances time; the backend pins it on updates anyway.
+      gameTime: c.gameTime ? JSON.stringify(c.gameTime) : null,
     };
   }
 
@@ -298,6 +303,7 @@ export class CampaignService {
       threads: this.parseThreads(raw.threads),
       inviteCode: raw.inviteCode ?? undefined,
       variantRules: this.parseVariantRules(raw.variantRules),
+      gameTime: this.parseGameTime(raw.gameTime),
     };
   }
 
@@ -316,6 +322,38 @@ export class CampaignService {
       try { return (JSON.parse(value) ?? {}) as CampaignVariantRules; } catch { return {}; }
     }
     return {};
+  }
+
+  /** Same tolerance as parseVariantRules; null = the clock was never set.
+   *  Pre-v2 numeric clocks are converted by normalizeGameTime. */
+  private parseGameTime(value: unknown): CampaignGameTime | null {
+    if (value && typeof value === 'object') return normalizeGameTime(value);
+    if (typeof value === 'string') {
+      try { return normalizeGameTime(JSON.parse(value)); } catch { return null; }
+    }
+    return null;
+  }
+
+  /** Sync lookup of a campaign already in the local store (demo & session seams). */
+  getLocalCampaign(campaignId: string | number): Campaign | undefined {
+    const key = String(campaignId);
+    return this.campaignsSubject.getValue().find(c => c.id === key);
+  }
+
+  /**
+   * Mirror a session-side clock change onto the local campaign list (and demo
+   * storage). Real mode's source of truth is the server — this only keeps the
+   * DM dashboard's copy fresh; demo mode persists it.
+   */
+  setLocalGameTime(campaignId: string | number, gameTime: CampaignGameTime): void {
+    const key = String(campaignId);
+    const updated = this.campaignsSubject.getValue()
+      .map(c => (c.id === key ? { ...c, gameTime } : c));
+    if (environment.demoMode) {
+      this.persistDemo(updated);
+    } else {
+      this.campaignsSubject.next(updated);
+    }
   }
 
   // --- demo persistence -----------------------------------------------------

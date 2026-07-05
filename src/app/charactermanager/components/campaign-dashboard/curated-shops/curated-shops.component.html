@@ -10,6 +10,19 @@
              placeholder="New shop name (e.g. Barthen's Provisions)"
              (keyup.enter)="createShop()" />
       <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createShop()">Create</button>
+      <button class="btn" (click)="toggleImport()">{{ importOpen ? 'Cancel import' : 'Import JSON' }}</button>
+    </div>
+
+    <div *ngIf="importOpen" style="margin: 10px 0;">
+      <textarea [(ngModel)]="importDraft" rows="7" style="width: 100%; font-family: monospace;"
+                [placeholder]="importExample" aria-label="Shop JSON"></textarea>
+      <div class="muted" style="margin-top: 4px;">
+        Item keys are SRD catalog slugs (e.g. "longsword", "rations"); priceGp overrides the catalog
+        price. Use “Copy JSON” on an existing shop to see the format.
+      </div>
+      <div *ngIf="importError" style="color: var(--crimson); margin-top: 4px;">{{ importError }}</div>
+      <button class="btn primary" style="margin-top: 6px;"
+              [disabled]="!importDraft.trim() || busy" (click)="importShop()">Import shop</button>
     </div>
 
     <ul class="shop-list" *ngIf="shops.length; else noShops">
@@ -18,6 +31,10 @@
           <div class="shop-name">{{ s.name }}</div>
           <div class="shop-sub">{{ s.settlement || 'No settlement' }} · {{ s.itemCount }} item{{ s.itemCount === 1 ? '' : 's' }}</div>
         </div>
+        <button class="btn link" (click)="$event.stopPropagation(); copyShopJson(s)"
+                title="Copy this shop as import JSON">
+          {{ copiedShopId === s.id ? 'Copied ✓' : 'Copy JSON' }}
+        </button>
         <span class="chevron">›</span>
       </li>
     </ul>

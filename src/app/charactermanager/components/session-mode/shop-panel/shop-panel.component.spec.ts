@@ -25,8 +25,8 @@ describe('ShopPanelComponent', () => {
       participantId: 1, pcId: 7, npc: false, ownedByMe: false, currentTurn: false,
       name: 'Aria', clazz: 'Fighter', level: 3, portraitTint: null, portraitInitials: null,
       initiative: null, initRolled: false, dexModifier: null, orderIndex: 0, hpMax: null,
-      hpCurrent: null, hpTemp: null, ac: null, conditions: [], deathSaveSuccesses: 0,
-      deathSaveFailures: 0,
+      hpCurrent: null, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
+      deathSaveSuccesses: 0, deathSaveFailures: 0,
       ...over,
     };
   }
@@ -36,7 +36,7 @@ describe('ShopPanelComponent', () => {
       sessionId: 1, campaignId: 1, status: 'ACTIVE', round: 1, activeParticipantId: null,
       onDeckParticipantId: null, version: 1, dm: false, enemiesHidden: true, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
-      myXp: null, participants: [], ...over,
+      myXp: null, gameTime: null, participants: [], ...over,
     };
   }
 

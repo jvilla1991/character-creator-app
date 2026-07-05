@@ -97,7 +97,42 @@
       </div>
     </header>
 
+    <!-- The campaign clock: visible to everyone; only the DM moves time. -->
+    <div class="panel" style="margin-bottom: 16px;">
+      <div class="panel-header" style="margin-bottom: 0;">
+        <span class="panel-title">Campaign Clock</span>
+        <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+          {{ describeTime(state) }}
+        </span>
+      </div>
+      <div *ngIf="state.dm" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+        <button class="btn primary" (click)="advanceTime(state)"
+                [title]="survivalConditions ? 'Dawn, noon and dusk worsen survival conditions for the whole party' : 'Moves the in-world clock'">
+          {{ advanceTimeLabel(state) }}
+        </button>
+        <button class="btn" (click)="toggleTimeEdit(state)">
+          {{ editingTime ? 'Cancel' : 'Set date' }}
+        </button>
+      </div>
+      <div *ngIf="state.dm && editingTime"
+           style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 8px; margin-top: 10px; align-items: center;">
+        <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
+        <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
+        <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
+        <input [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
+               title="Free text. Re-entering a weekday you have used before marks a completed week.">
+        <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
+          <option *ngFor="let s of timeSegments" [value]="s">{{ s }}</option>
+        </select>
+        <button class="btn primary" (click)="commitTime(state)">Set</button>
+      </div>
+    </div>
+
+    <!-- Players see the tracker only during an encounter: it appears at Start
+         Encounter and disappears at End Encounter (status back to LOBBY).
+         The DM always sees it (it hosts their setup controls). -->
     <app-initiative-panel
+      *ngIf="showInitiative(state)"
       [participants]="state.participants"
       [sessionId]="state.sessionId"
       [dm]="state.dm"
@@ -106,7 +141,14 @@
       [onDeckParticipantId]="state.onDeckParticipantId"
       [enemiesHidden]="state.enemiesHidden"
       [turnSound]="state.turnSound"
+      [survivalConditions]="survivalConditions"
     ></app-initiative-panel>
+    <div *ngIf="!showInitiative(state)" class="panel"
+         style="color: var(--text-dim); font-style: italic;">
+      The DM is setting the table — the initiative order appears when the encounter begins.
+    </div>
+
+    <app-encounter-loader [state]="state" *ngIf="state.dm" style="display: block; margin-top: 16px;"></app-encounter-loader>
 
     <app-encounter-loader [state]="state" *ngIf="state.dm" style="display: block; margin-top: 16px;"></app-encounter-loader>
 
@@ -137,6 +179,10 @@
       <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
                            [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
                            [slotInventory]="slotInventory"
+                           [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
+                           [sessionLive]="true"
+                           (survivalActionRequested)="onSurvivalAction($event, state)"
+                           (castRequested)="onCast($event, state)"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
   </div>
