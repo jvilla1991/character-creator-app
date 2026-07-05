@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
-import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
+import { CuratedShop, ShopSummary, parseImportPayload, toImportPayload } from '../../../models/curated-shop';
 import { formatCp } from '../../../models/shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 
@@ -22,6 +22,17 @@ export class CuratedShopsComponent implements OnChanges {
   selected: CuratedShop | null = null;
   newName = '';
   busy = false;
+
+  // Paste-a-shop import (whole shop as JSON; keys validated server-side).
+  importOpen = false;
+  importDraft = '';
+  importError: string | null = null;
+  /** Shop id whose JSON was just copied (drives the "Copied" flash). */
+  copiedShopId: number | null = null;
+
+  readonly importExample = JSON.stringify(
+    { name: 'The Gilded Flask', settlement: 'Phandalin',
+      items: [{ key: 'longsword', priceGp: 12 }, { key: 'rations' }] }, null, 2);
 
   readonly importCategories: ReadonlyArray<{ value: string; label: string }> = [
     { value: 'WEAPON', label: 'Weapons' },
@@ -74,6 +85,50 @@ export class CuratedShopsComponent implements OnChanges {
   back(): void {
     this.selected = null;
     this.loadShops(); // refresh item counts
+  }
+
+  // ── Import a whole shop from pasted JSON ──────────────────────────────────
+
+  toggleImport(): void {
+    this.importOpen = !this.importOpen;
+    this.importError = null;
+  }
+
+  importShop(): void {
+    if (this.busy) return;
+    const { payload, error } = parseImportPayload(this.importDraft);
+    if (error || !payload) {
+      this.importError = error ?? 'Could not read that JSON.';
+      return;
+    }
+    this.busy = true;
+    this.importError = null;
+    this.curatedShops.importShop(this.campaign.id, payload).subscribe({
+      next: shop => {
+        this.busy = false;
+        this.importOpen = false;
+        this.importDraft = '';
+        this.selected = shop;
+        this.loadShops();
+      },
+      error: err => {
+        this.busy = false;
+        // Surface the server's message (e.g. "Unknown catalog keys: vorpal-blade").
+        this.importError = err?.error?.message ?? err?.message ?? 'Import failed.';
+      },
+    });
+  }
+
+  /** Copy a shop's JSON (import format) so DMs can share or author by example. */
+  copyShopJson(summary: ShopSummary): void {
+    this.curatedShops.get(summary.id).subscribe({
+      next: shop => {
+        navigator.clipboard?.writeText(JSON.stringify(toImportPayload(shop), null, 2));
+        this.copiedShopId = summary.id;
+        setTimeout(() => (this.copiedShopId = null), 1500);
+      },
+      error: err => console.error('Failed to copy shop JSON', err),
+    });
   }
 
   importCategory(category: string): void {
