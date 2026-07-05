@@ -1,4 +1,8 @@
+import { of } from 'rxjs';
+
 import { SpellbookPanelComponent } from './spellbook-panel.component';
+import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { DndSpell } from '../../../../models/dnd-api.types';
 import { PC, PcSpell } from '../../../../models/pc';
 
 /**
@@ -7,7 +11,12 @@ import { PC, PcSpell } from '../../../../models/pc';
  * Template rendering is verified in the browser.
  */
 function makePanel(pc: Partial<PC>, strict = false): SpellbookPanelComponent {
-  const panel = new SpellbookPanelComponent();
+  // The constructor now requires DndResourcesService/ChangeDetectorRef (the DM
+  // grant flow); the cast-logic tests don't exercise them, so stubs suffice.
+  const dndResources = jasmine.createSpyObj<DndResourcesService>(
+    'DndResourcesService', ['getSpells', 'getSpellsForClass']);
+  const cdr = { markForCheck: () => {} } as any;
+  const panel = new SpellbookPanelComponent(dndResources, cdr);
   panel.pc = {
     id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 0 } },
@@ -98,5 +107,102 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     });
     expect(panel.canCast(panel.pc.spells![0])).toBeFalse();
     expect(panel.castTitle(panel.pc.spells![0])).toBe('No slots available');
+  });
+});
+
+function makeSpell(overrides: Partial<DndSpell> = {}): DndSpell {
+  return {
+    name: 'Fire Bolt',
+    level: 0,
+    school: 'evocation',
+    classes: ['wizard'],
+    actionType: 'action',
+    concentration: false,
+    ritual: false,
+    range: '120 feet',
+    components: [],
+    duration: 'Instantaneous',
+    description: 'A mote of fire.',
+    ...overrides,
+  } as DndSpell;
+}
+
+function makePC(overrides: Partial<PC> = {}): PC {
+  return { id: 7, name: 'Aelindra', clazz: 'Wizard', level: 4, ...overrides } as PC;
+}
+
+describe('SpellbookPanelComponent — DM grants', () => {
+  let component: SpellbookPanelComponent;
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
+  const cdr = { markForCheck: () => {} } as any;
+
+  beforeEach(() => {
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells', 'getSpellsForClass']);
+    component = new SpellbookPanelComponent(dndResources, cdr);
+    component.pc = makePC();
+  });
+
+  it('loads the class spell list by default and excludes already-known spells (case-insensitive)', () => {
+    component.pc = makePC({ spells: [{ lvl: 0, name: 'fire bolt', school: 'Evocation', time: 'action', prepared: true }] });
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Fire Bolt' }), makeSpell({ name: 'Mage Hand' })]));
+
+    component.openGrantForm();
+
+    expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Wizard');
+    expect(dndResources.getSpells).not.toHaveBeenCalled();
+    expect(component.grantCandidates.map(s => s.name)).toEqual(['Mage Hand']);
+    expect(component.loadingGrantSpells).toBeFalse();
+  });
+
+  it('reloads the full SRD list unfiltered by class when "All classes" is toggled on', () => {
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Mage Hand' })]));
+    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Cure Wounds', classes: ['cleric'] })]));
+    component.openGrantForm();
+
+    component.toggleAllClasses(true);
+
+    expect(component.allClasses).toBeTrue();
+    expect(dndResources.getSpells).toHaveBeenCalled();
+    expect(component.grantCandidates.map(s => s.name)).toEqual(['Cure Wounds']);
+  });
+
+  it('emits the selection mapped to PcSpell and resets the form on confirm', () => {
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Mage Hand', level: 0 })]));
+    const emitted: any[] = [];
+    component.spellsGranted.subscribe(v => emitted.push(v));
+    component.openGrantForm();
+    component.grantSelection = [makeSpell({ name: 'Mage Hand', level: 0, school: 'conjuration', actionType: 'action' })];
+
+    component.confirmGrant();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0]).toEqual([jasmine.objectContaining({
+      lvl: 0, name: 'Mage Hand', school: 'conjuration', time: 'action', prepared: true,
+    })]);
+    expect(component.grantFormOpen).toBeFalse();
+    expect(component.grantSelection).toEqual([]);
+  });
+
+  it('does not emit when the selection is empty', () => {
+    const emitted: any[] = [];
+    component.spellsGranted.subscribe(v => emitted.push(v));
+    component.grantSelection = [];
+
+    component.confirmGrant();
+
+    expect(emitted.length).toBe(0);
+  });
+
+  it('collapses and clears the form on cancel', () => {
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell()]));
+    component.openGrantForm();
+    component.grantSelection = [makeSpell()];
+
+    component.cancelGrant();
+
+    expect(component.grantFormOpen).toBeFalse();
+    expect(component.grantCandidates).toEqual([]);
+    expect(component.grantSelection).toEqual([]);
+    expect(component.allClasses).toBeFalse();
   });
 });

@@ -81,4 +81,50 @@ describe('CharacterSheetComponent', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
   });
+
+  // --- DM spell grants ---
+
+  it('grants spells, deduping against the FRESH pc so a concurrently-learned spell is not re-added', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const granted = [
+      { lvl: 1, name: 'Cure Wounds', school: 'Abjuration', time: 'action', prepared: true },
+      { lvl: 0, name: 'Guidance', school: 'Divination', time: 'action', prepared: true },
+    ];
+
+    component.onSpellsGrant(granted);
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    // Fresh pc already learned "cure wounds" (different case) since the picker opened.
+    const fresh: PC = makePC({ spells: [{ lvl: 1, name: 'cure wounds', school: 'Abjuration', time: 'action', prepared: true }] });
+    const freshSpellsBefore = fresh.spells;
+
+    const result = mutate(fresh);
+
+    expect(result.spells?.map(s => s.name)).toEqual(['cure wounds', 'Guidance']);
+    // Purity: input array untouched.
+    expect(fresh.spells).toBe(freshSpellsBefore);
+    expect(fresh.spells?.length).toBe(1);
+  });
+
+  it('appends granted spells onto an undefined spell list', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const granted = [{ lvl: 0, name: 'Light', school: 'Evocation', time: 'action', prepared: true }];
+
+    component.onSpellsGrant(granted);
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const result = mutate(makePC({ spells: undefined }));
+
+    expect(result.spells).toEqual(granted);
+  });
+
+  it('logs an error if the spell grant fails', () => {
+    const error = new Error('network down');
+    grantService.grantToPc.and.returnValue(throwError(() => error));
+    const consoleSpy = spyOn(console, 'error');
+
+    component.onSpellsGrant([{ lvl: 0, name: 'Light', school: 'Evocation', time: 'action', prepared: true }]);
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant spells', error);
+  });
 });

@@ -168,9 +168,11 @@
         [pc]="pc"
         [editable]="editable"
         [strictComponents]="strictComponents"
+        [addAllowed]="editable"
         (slotToggled)="onSlotToggle($event.level, $event.index)"
         (castRequested)="onCastRequested($event)"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (spellsGranted)="onSpellsGrant($event)">
       </app-spellbook-panel>
       <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
       <app-pc-notes

@@ -1,6 +1,27 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
+    <button *ngIf="addAllowed && !grantFormOpen" class="btn sm" (click)="openGrantForm()">Grant spells</button>
+  </div>
+
+  <!-- DM grant form -->
+  <div *ngIf="grantFormOpen" class="grant-form">
+    <label class="all-classes-toggle">
+      <input type="checkbox" [checked]="allClasses" (change)="toggleAllClasses(!allClasses)">
+      All classes
+    </label>
+    <app-spell-picker
+      [spells]="grantCandidates"
+      [selected]="grantSelection"
+      [cantripLimit]="null"
+      [spellLimit]="null"
+      [loading]="loadingGrantSpells"
+      (selectedChange)="grantSelection = $event">
+    </app-spell-picker>
+    <div class="grant-form-actions">
+      <button class="btn primary sm" [disabled]="!grantSelection.length" (click)="confirmGrant()">Add</button>
+      <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+    </div>
   </div>
 
   <!-- No spells -->

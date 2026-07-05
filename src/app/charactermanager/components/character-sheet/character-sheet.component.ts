@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { PC } from '../../models/pc';
+import { PC, PcSpell } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
@@ -233,5 +233,18 @@ export class CharacterSheetComponent implements OnChanges {
     this.grantService
       .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
       .subscribe({ error: err => console.error('Failed to grant feature', err) });
+  }
+
+  onSpellsGrant(granted: PcSpell[]): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Dedupe against the FRESH copy — the player may have learned one of these
+        // spells (e.g. via level-up) in the moments between the picker opening and
+        // the DM confirming the grant.
+        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
+        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
+        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
+      })
+      .subscribe({ error: err => console.error('Failed to grant spells', err) });
   }
 }
