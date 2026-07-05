@@ -178,6 +178,7 @@
                            [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
                            [slotInventory]="slotInventory"
                            [survivalConditions]="survivalConditions" [sessionLive]="true"
+                           [noteSessionId]="state.sessionId"
                            (survivalActionRequested)="onSurvivalAction($event, state)"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
