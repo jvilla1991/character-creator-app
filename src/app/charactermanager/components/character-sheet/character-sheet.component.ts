@@ -4,7 +4,7 @@ import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
-import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
+import { applyLongRestToSlots } from '../../utils/spellcasting';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
@@ -147,16 +147,12 @@ export class CharacterSheetComponent implements OnChanges {
   }
 
   /**
-   * A cast from the spellbook panel. In a live session the host owns it (the
-   * server spends the slot, consumes the component, and bumps the poll version);
-   * on the plain sheet the local reducer applies the same rules and persists.
+   * A cast from the spellbook panel — only reachable inside a live session (the
+   * Cast buttons are hidden otherwise). The host forwards it to Session Mode,
+   * which spends the slot, consumes the component, and bumps the poll version.
    */
   onCastRequested(ev: CastRequest): void {
-    if (this.sessionLive) {
-      this.castRequested.emit(ev);
-      return;
-    }
-    this.persist(applyCastToPc(this.pc, ev.spellName, ev.atLevel));
+    this.castRequested.emit(ev);
   }
 
   /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
@@ -211,17 +207,6 @@ export class CharacterSheetComponent implements OnChanges {
       ? conditions.filter(c => c !== condition)
       : [...conditions, condition];
     this.persist({ ...this.pc, conditions: next });
-  }
-
-  // ── Spell slots (wired fully in Phase 5) ────────────────────────────────────
-
-  onSlotToggle(level: number, index: number): void {
-    const slots = { ...(this.pc.spellSlots ?? {}) };
-    const slot = slots[level];
-    if (!slot) return;
-    const used = index < slot.used ? index : index + 1;
-    slots[level] = { ...slot, used: Math.min(slot.max, Math.max(0, used)) };
-    this.persist({ ...this.pc, spellSlots: slots });
   }
 
   // ── DM grants ────────────────────────────────────────────────────────────

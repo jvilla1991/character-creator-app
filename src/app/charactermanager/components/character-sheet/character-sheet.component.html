@@ -170,8 +170,8 @@
         [pc]="pc"
         [editable]="editable"
         [strictComponents]="strictComponents"
+        [castable]="sessionLive"
         [addAllowed]="editable"
-        (slotToggled)="onSlotToggle($event.level, $event.index)"
         (castRequested)="onCastRequested($event)"
         (pcChange)="onPcChange($event)"
         (spellsGranted)="onSpellsGrant($event)">

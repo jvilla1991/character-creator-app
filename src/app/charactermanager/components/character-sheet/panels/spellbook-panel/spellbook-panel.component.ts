@@ -31,12 +31,15 @@ export class SpellbookPanelComponent implements OnChanges {
   @Input() editable = false;
   /** Campaign runs strict material components: a missing costly component blocks the cast. */
   @Input() strictComponents = false;
+  /** True only inside a live session — casting is a session-mode action, so the
+   *  Cast buttons appear only when this is set. Slots are never player-editable
+   *  by hand; they change solely through casting (session) or the DM's editor. */
+  @Input() castable = false;
   /** DM cross-link: reveals the "Grant spells" control. Distinct from `editable`
    *  (slot editing) — a DM may be able to grant spells without also editing slots. */
   @Input() addAllowed = false;
-  @Output() slotToggled = new EventEmitter<{ level: number; index: number }>();
   @Output() pcChange = new EventEmitter<PC>();
-  /** A cast resolved to a slot level — the host decides local vs. live-session handling. */
+  /** A cast resolved to a slot level — the host forwards it to the live session. */
   @Output() castRequested = new EventEmitter<CastRequest>();
   /**
    * DM-granted spells, already mapped to the PcSpell snapshot shape. Emitted as a bare
