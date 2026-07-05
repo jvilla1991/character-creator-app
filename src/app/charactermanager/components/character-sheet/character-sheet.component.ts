@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
+import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
@@ -102,7 +103,7 @@ export class CharacterSheetComponent implements OnChanges {
   editingLevel = false;
   levelDraft: number | null = null;
 
-  constructor(private pcService: PCService) {}
+  constructor(private pcService: PCService, private grantService: GrantService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['pc']) {
@@ -221,5 +222,16 @@ export class CharacterSheetComponent implements OnChanges {
     const used = index < slot.used ? index : index + 1;
     slots[level] = { ...slot, used: Math.min(slot.max, Math.max(0, used)) };
     this.persist({ ...this.pc, spellSlots: slots });
+  }
+
+  // ── DM grants ────────────────────────────────────────────────────────────
+  // Grants go through GrantService's refetch-merge-save rather than persist() —
+  // the sheet's `pc` copy can be stale by the time the DM submits the form, and
+  // PUTting it directly risks clobbering a concurrent player edit.
+
+  onFeatureGrant(f: { name: string; source: string; desc: string }): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
+      .subscribe({ error: err => console.error('Failed to grant feature', err) });
   }
 }

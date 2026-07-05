@@ -172,7 +172,7 @@
         (castRequested)="onCastRequested($event)"
         (pcChange)="onPcChange($event)">
       </app-spellbook-panel>
-      <app-features-list    [pc]="pc"></app-features-list>
+      <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
       <app-pc-notes
         [pc]="pc"
         [canWrite]="(showActions || inventoryEditable) && !editable"
