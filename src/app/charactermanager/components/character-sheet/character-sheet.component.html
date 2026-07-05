@@ -173,6 +173,11 @@
         (pcChange)="onPcChange($event)">
       </app-spellbook-panel>
       <app-features-list    [pc]="pc"></app-features-list>
+      <app-pc-notes
+        [pc]="pc"
+        [canWrite]="(showActions || inventoryEditable) && !editable"
+        [sessionId]="noteSessionId">
+      </app-pc-notes>
       <app-coin-purse
         [pc]="pc"
         [editable]="editable"

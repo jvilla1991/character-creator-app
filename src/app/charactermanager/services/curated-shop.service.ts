@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CuratedShop, ShopSummary } from '../models/curated-shop';
+import { CuratedShop, ShopImportPayload, ShopSummary } from '../models/curated-shop';
 
 /**
  * DM-curated shop management client (Phase 2). Talks to the campaign-scoped
@@ -61,6 +61,15 @@ export class CuratedShopService {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<CuratedShop>(
       `${this.base}/shops/${shopId}/import?category=${encodeURIComponent(category)}`, {});
+  }
+
+  /**
+   * Create a whole shop from pasted JSON — all-or-nothing server-side: any
+   * unknown catalog key rejects the import with a 400 naming the offenders.
+   */
+  importShop(campaignId: number | string, payload: ShopImportPayload): Observable<CuratedShop> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.post<CuratedShop>(`${this.base}/campaign/${campaignId}/shops/import`, payload);
   }
 
   private demoUnsupported<T>(): Observable<T> {

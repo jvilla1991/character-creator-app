@@ -9,9 +9,10 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
-import { CampaignGameTime, TimeOfDay } from '../../models/campaign';
+import { TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
+import { withRecomputedAc } from '../../utils/armor-math';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -43,13 +44,19 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   /** True when this session's campaign uses the strict material-components variant. */
   strictComponents = false;
 
-  // DM's set-the-date form (collapsed by default under the clock bar).
+  // DM's set-the-date form (collapsed by default under the clock bar; opens
+  // automatically when night rolls into a new morning). Free-text labels.
   editingTime = false;
-  timeYear: number | null = null;
-  timeMonth: number | null = null;
-  timeDay: number | null = null;
-  timeSegment: TimeOfDay = 'dawn';
-  readonly timeSegments: TimeOfDay[] = ['dawn', 'noon', 'dusk', 'night'];
+  timeYear = '';
+  timeMonth = '';
+  timeDay = '';
+  timeWeekday = '';
+  timeSegment: TimeOfDay = 'morning';
+  readonly timeSegments: TimeOfDay[] = ['morning', 'noon', 'night'];
+
+  // Week-tick toast + rollover detection, driven by snapshot transitions.
+  private lastSeenWeek: number | null = null;
+  private lastSeenSegment: TimeOfDay | null = null;
 
   private stateSub?: Subscription;
   private handledEnd = false;
@@ -69,7 +76,10 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     // The DM may end the session from another device; a poll then reports ENDED.
     this.stateSub = this.sessionService.state$.subscribe(state => {
       if (state && state.status === 'ENDED') this.onSessionEnded(state);
-      if (state) this.resolveVariants(state);
+      if (state) {
+        this.resolveVariants(state);
+        this.trackClock(state);
+      }
     });
   }
 
@@ -125,7 +135,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     if (!state.gameTime) return 'Start the clock';
     const next = advanceGameTime(state.gameTime);
     const segment = next.timeOfDay.charAt(0).toUpperCase() + next.timeOfDay.slice(1);
-    return next.timeOfDay === 'dawn' ? `Advance to ${segment} (new day)` : `Advance to ${segment}`;
+    return next.timeOfDay === 'morning' ? `Advance to ${segment} (new day)` : `Advance to ${segment}`;
   }
 
   advanceTime(state: SessionState): void {
@@ -134,26 +144,54 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleTimeEdit(state: SessionState): void {
-    this.editingTime = !this.editingTime;
-    if (this.editingTime) {
-      const t = state.gameTime;
-      this.timeYear = t?.year ?? 1;
-      this.timeMonth = t?.month ?? 1;
-      this.timeDay = t?.day ?? 1;
-      this.timeSegment = t?.timeOfDay ?? 'dawn';
+  /**
+   * Snapshot transitions drive two clock behaviors: a toast when the week
+   * counter ticks (any viewer), and auto-opening the DM's set-date form when
+   * night rolls into a new morning — the date is free text, so updating it
+   * (and the weekday) is the DM's move.
+   */
+  private trackClock(state: SessionState): void {
+    const week = state.gameTime?.week ?? null;
+    const segment = state.gameTime?.timeOfDay ?? null;
+
+    if (this.lastSeenWeek != null && week != null && week > this.lastSeenWeek) {
+      this.notifications.notify(`A full week has passed — Week ${week} begins.`);
     }
+    if (state.dm && this.lastSeenSegment === 'night' && segment === 'morning' && !this.editingTime) {
+      this.openTimeEdit(state);
+      this.notifications.notify('A new day dawns — set the date and weekday.');
+    }
+
+    this.lastSeenWeek = week;
+    this.lastSeenSegment = segment;
+  }
+
+  toggleTimeEdit(state: SessionState): void {
+    if (this.editingTime) {
+      this.editingTime = false;
+      return;
+    }
+    this.openTimeEdit(state);
+  }
+
+  private openTimeEdit(state: SessionState): void {
+    const t = state.gameTime;
+    this.timeYear = t?.year ?? '';
+    this.timeMonth = t?.month ?? '';
+    this.timeDay = t?.day ?? '';
+    this.timeWeekday = t?.weekday ?? '';
+    this.timeSegment = t?.timeOfDay ?? 'morning';
+    this.editingTime = true;
   }
 
   commitTime(state: SessionState): void {
-    if (this.timeYear == null || this.timeMonth == null || this.timeDay == null) return;
-    const time: CampaignGameTime = {
-      year: Math.max(0, Math.floor(this.timeYear)),
-      month: Math.min(12, Math.max(1, Math.floor(this.timeMonth))),
-      day: Math.min(30, Math.max(1, Math.floor(this.timeDay))),
+    this.sessionService.setTime(state.sessionId, {
+      year: this.timeYear.trim(),
+      month: this.timeMonth.trim(),
+      day: this.timeDay.trim(),
       timeOfDay: this.timeSegment,
-    };
-    this.sessionService.setTime(state.sessionId, time).subscribe({
+      weekday: this.timeWeekday.trim() || null,
+    }).subscribe({
       next: () => { this.editingTime = false; },
       error: () => this.notifications.notify('Could not set the date.'),
     });
@@ -188,6 +226,13 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       return 'That cast was blocked. Check your slots and components.';
     }
     return 'Could not cast that spell. Try again.';
+  /**
+   * Players see the initiative tracker only while an encounter is running;
+   * the DM always sees it (their setup controls live there). Players enter
+   * their rolls after Start Encounter — the server sorts late entries.
+   */
+  showInitiative(state: SessionState): boolean {
+    return state.dm || state.status === 'ACTIVE';
   }
 
   /** Leave the session screen (does not end the session server-side). */
@@ -239,7 +284,19 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     const pcId = mine.pcId;
     this.shopService.sell(state.sessionId, pcId, index).subscribe({
       next: result => {
+        // Capture the pre-sell inventory first — selling an equipped armor
+        // piece changes AC, and the comparison needs the old equipped set.
+        const before = this.pcService.getPCById(pcId);
         this.pcService.patchLocalPC(pcId, { coins: result.coins, inventory: result.inventory });
+        const after = this.pcService.getPCById(pcId);
+        if (before && after) {
+          const recomputed = withRecomputedAc(after, before.inventory);
+          if (recomputed.ac !== after.ac) {
+            this.pcService.updatePC(recomputed).subscribe({
+              error: err => console.error('Failed to persist recomputed AC', err),
+            });
+          }
+        }
         this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
       },
       error: () => this.notifications.notify('Could not sell that item. Try again.'),

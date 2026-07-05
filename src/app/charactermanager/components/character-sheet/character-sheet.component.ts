@@ -46,6 +46,8 @@ export class CharacterSheetComponent implements OnChanges {
    *  bubble up (survivalActionRequested) so the host can call the
    *  server-authoritative consume endpoint instead of a local edit. */
   @Input() sessionLive = false;
+  /** The live session id (session embeds only) — tags new character notes. */
+  @Input() noteSessionId: number | string | null = null;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();

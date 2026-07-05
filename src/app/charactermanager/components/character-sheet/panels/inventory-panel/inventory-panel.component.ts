@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
 import { formatCp } from '../../../../models/shop';
+import { withRecomputedAc } from '../../../../utils/armor-math';
 import {
   ENCUMBERED_PENALTY,
   isEncumbered,
@@ -139,6 +140,8 @@ export class InventoryPanelComponent {
   }
 
   private emit(inventory: PcItem[]): void {
-    this.pcChange.emit({ ...this.pc, inventory });
+    // Equipping/unequipping (or losing) armor recomputes AC; unrelated edits
+    // leave a hand-set AC untouched.
+    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory }, this.pc.inventory));
   }
 }
