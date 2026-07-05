@@ -12,6 +12,7 @@ export class CreateCampaignModalComponent {
   tint: CampaignTint = 'celestial';
   slotInventory = false;
   survivalConditions = false;
+  strictComponents = false;
 
   // Optional in-world start date; the clock starts at dawn of that day. All
   // three parts or none — a partial date is treated as unset.
@@ -33,6 +34,7 @@ export class CreateCampaignModalComponent {
       variantRules: {
         slotInventory: this.slotInventory,
         survivalConditions: this.survivalConditions,
+        strictComponents: this.strictComponents,
       },
       gameTime: this.draftGameTime(),
     });
