@@ -139,17 +139,14 @@
           <ng-container *ngIf="spellDelta">Spells {{ selectedSpellCount }}/{{ spellDelta }}</ng-container>
         </span>
       </div>
-      <input class="spell-search" type="text" [(ngModel)]="spellSearch" placeholder="Search spells…">
-      <div *ngIf="loadingSpells" class="spell-loading">Consulting the grimoire…</div>
-      <div class="spell-list" *ngIf="!loadingSpells">
-        <label class="spell-option" *ngFor="let s of filteredSpells" [class.is-selected]="isSpellSelected(s)">
-          <input type="checkbox" [checked]="isSpellSelected(s)" (change)="toggleSpell(s)">
-          <span class="spell-row">
-            <span class="spell-name">{{ s.name }}</span>
-            <span class="spell-meta">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school }}</span>
-          </span>
-        </label>
-      </div>
+      <app-spell-picker
+        [spells]="spellList"
+        [selected]="selectedSpells"
+        [cantripLimit]="cantripDelta"
+        [spellLimit]="spellDelta"
+        [loading]="loadingSpells"
+        (selectedChange)="selectedSpells = $event">
+      </app-spell-picker>
     </div>
 
     <!-- Class features automatically gained this level (read-only) -->

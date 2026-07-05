@@ -33,6 +33,7 @@ import { ReviewStepComponent } from './components/create-character-modal/steps/r
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
+import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -92,6 +93,7 @@ const routes: Routes = [
     ReviewStepComponent,
     DiceRollerModalComponent,
     LevelUpModalComponent,
+    SpellPickerComponent,
     CharacterSheetComponent,
     VitalsStripComponent,
     EditableNumberComponent,

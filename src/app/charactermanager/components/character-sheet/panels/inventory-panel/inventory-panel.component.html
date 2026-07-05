@@ -10,6 +10,61 @@
     <span *ngIf="!slotInventory && items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
       {{ totalWeight }} lb
     </span>
+    <button type="button" *ngIf="addAllowed && !grantFormOpen" class="inv-btn grant" (click)="openGrantForm()">+ Grant item</button>
+  </div>
+
+  <!-- DM grant form -->
+  <div *ngIf="grantFormOpen" class="grant-form">
+    <div class="grant-tabs">
+      <button type="button" *ngIf="!demoMode" class="grant-tab" [class.on]="grantTab === 'catalog'"
+              (click)="setGrantTab('catalog')">Catalog</button>
+      <button type="button" class="grant-tab" [class.on]="grantTab === 'custom'"
+              (click)="setGrantTab('custom')">Custom</button>
+    </div>
+
+    <p *ngIf="demoMode" class="grant-hint">The demo has no catalog — grant a custom item below.</p>
+
+    <!-- Catalog tab -->
+    <div *ngIf="grantTab === 'catalog' && !demoMode" class="grant-body">
+      <div class="grant-row">
+        <select [(ngModel)]="grantCategory" (ngModelChange)="loadCatalog()" aria-label="Category">
+          <option *ngFor="let c of grantCategories" [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
+        </select>
+        <input type="number" min="1" [(ngModel)]="catalogQty" class="grant-qty" aria-label="Quantity">
+      </div>
+      <input type="text" [(ngModel)]="catalogSearch" class="grant-search" placeholder="Search items…">
+      <div *ngIf="loadingCatalog" class="grant-hint">Loading catalog…</div>
+      <div *ngIf="!loadingCatalog" class="grant-list">
+        <label *ngFor="let item of filteredCatalog" class="grant-option" [class.on]="catalogSelectedKey === item.itemKey">
+          <input type="radio" name="catalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
+          <span class="grant-option-name">{{ item.name }}</span>
+          <span class="grant-option-meta">{{ formatCp(item.costCp) }}</span>
+        </label>
+        <div *ngIf="!filteredCatalog.length" class="grant-hint">No matching items.</div>
+      </div>
+      <div class="grant-actions">
+        <button type="button" class="inv-btn" [disabled]="!catalogSelectedKey" (click)="grantCatalogItem()">Add</button>
+        <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Custom tab -->
+    <div *ngIf="grantTab === 'custom'" class="grant-body">
+      <input type="text" [(ngModel)]="customName" class="grant-search" placeholder="Item name">
+      <div class="grant-row">
+        <select [(ngModel)]="customCategory" aria-label="Category">
+          <option value="weapon">Weapon</option>
+          <option value="armor">Armor</option>
+          <option value="material-component">Material</option>
+          <option value="gear">Gear</option>
+        </select>
+        <input type="number" min="1" [(ngModel)]="customQty" class="grant-qty" aria-label="Quantity">
+      </div>
+      <div class="grant-actions">
+        <button type="button" class="inv-btn" [disabled]="!customName.trim()" (click)="grantCustomItem()">Add</button>
+        <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <div *ngIf="slotInventory && encumbered" class="inv-empty" style="color: var(--crimson);">

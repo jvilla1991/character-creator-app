@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { PC, PcSpell } from '../../../../models/pc';
+import { DndSpell } from '../../../../models/dnd-api.types';
+import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
 
 export interface SpellLevel {
@@ -28,10 +31,22 @@ export class SpellbookPanelComponent implements OnChanges {
   @Input() editable = false;
   /** Campaign runs strict material components: a missing costly component blocks the cast. */
   @Input() strictComponents = false;
+  /** DM cross-link: reveals the "Grant spells" control. Distinct from `editable`
+   *  (slot editing) — a DM may be able to grant spells without also editing slots. */
+  @Input() addAllowed = false;
   @Output() slotToggled = new EventEmitter<{ level: number; index: number }>();
   @Output() pcChange = new EventEmitter<PC>();
   /** A cast resolved to a slot level — the host decides local vs. live-session handling. */
   @Output() castRequested = new EventEmitter<CastRequest>();
+  /**
+   * DM-granted spells, already mapped to the PcSpell snapshot shape. Emitted as a bare
+   * payload rather than a merged PC because a grant must go through GrantService's
+   * refetch-merge-save (the sheet's `pc` copy can be stale — PUTting it directly risks
+   * clobbering a concurrent player edit). CharacterSheetComponent owns the actual save.
+   */
+  @Output() spellsGranted = new EventEmitter<PcSpell[]>();
+
+  constructor(private dndResources: DndResourcesService, private cdr: ChangeDetectorRef) {}
 
   hasSpells   = false;
   spellsByLevel: SpellLevel[] = [];
@@ -170,5 +185,62 @@ export class SpellbookPanelComponent implements OnChanges {
     next.used = Math.max(0, Math.min(next.used, next.max));
     slots[level] = next;
     this.pcChange.emit({ ...this.pc, spellSlots: slots });
+  }
+
+  // ── DM grant form ────────────────────────────────────────────────────────
+  // Defaults to the PC's own class list; "All classes" widens the candidate pool to
+  // the full SRD list. Either way, candidates already known to the PC are excluded
+  // (case-insensitive, matching the level-up modal's rule) so grants can't duplicate
+  // a spell the player already has.
+
+  grantFormOpen = false;
+  allClasses = false;
+  loadingGrantSpells = false;
+  grantCandidates: DndSpell[] = [];
+  grantSelection: DndSpell[] = [];
+
+  openGrantForm(): void {
+    this.grantFormOpen = true;
+    this.loadGrantCandidates();
+  }
+
+  cancelGrant(): void {
+    this.resetGrantForm();
+  }
+
+  toggleAllClasses(allClasses: boolean): void {
+    this.allClasses = allClasses;
+    this.loadGrantCandidates();
+  }
+
+  confirmGrant(): void {
+    if (!this.grantSelection.length) return;
+    this.spellsGranted.emit(this.grantSelection.map(toPcSpell));
+    this.resetGrantForm();
+  }
+
+  private loadGrantCandidates(): void {
+    this.loadingGrantSpells = true;
+    this.grantSelection = [];
+    const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    const spells$ = this.allClasses ? this.dndResources.getSpells() : this.dndResources.getSpellsForClass(this.pc.clazz);
+    spells$.subscribe({
+      next: spells => {
+        this.grantCandidates = spells.filter(s => !known.has(s.name.toLowerCase()));
+        this.loadingGrantSpells = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingGrantSpells = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private resetGrantForm(): void {
+    this.grantFormOpen = false;
+    this.allClasses = false;
+    this.grantCandidates = [];
+    this.grantSelection = [];
   }
 }

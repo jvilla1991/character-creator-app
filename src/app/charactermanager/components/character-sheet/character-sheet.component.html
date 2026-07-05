@@ -158,21 +158,25 @@
       <app-inventory-panel
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
+        [addAllowed]="editable"
         [shopOpenForMe]="shopOpenForMe"
         [shopCategory]="shopCategory"
         [slotInventory]="slotInventory"
         (pcChange)="onPcChange($event)"
+        (itemGranted)="onItemGrant($event)"
         (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
       <app-spellbook-panel
         [pc]="pc"
         [editable]="editable"
         [strictComponents]="strictComponents"
+        [addAllowed]="editable"
         (slotToggled)="onSlotToggle($event.level, $event.index)"
         (castRequested)="onCastRequested($event)"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (spellsGranted)="onSpellsGrant($event)">
       </app-spellbook-panel>
-      <app-features-list    [pc]="pc"></app-features-list>
+      <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
       <app-pc-notes
         [pc]="pc"
         [canWrite]="(showActions || inventoryEditable) && !editable"

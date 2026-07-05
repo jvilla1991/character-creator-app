@@ -1,0 +1,13 @@
+<div class="spell-picker">
+  <input class="spell-search" type="text" [(ngModel)]="search" placeholder="Search spells…">
+  <div *ngIf="loading" class="spell-loading">Consulting the grimoire…</div>
+  <div class="spell-list" *ngIf="!loading">
+    <label class="spell-option" *ngFor="let s of filteredSpells" [class.is-selected]="isSelected(s)">
+      <input type="checkbox" [checked]="isSelected(s)" (change)="toggle(s)">
+      <span class="spell-row">
+        <span class="spell-name">{{ s.name }}</span>
+        <span class="spell-meta">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school }}</span>
+      </span>
+    </label>
+  </div>
+</div>

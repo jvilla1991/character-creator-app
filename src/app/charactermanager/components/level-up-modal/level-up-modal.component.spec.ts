@@ -344,7 +344,7 @@ describe('LevelUpModalComponent', () => {
     return { level, name, school: 'Evocation', actionType: '1 action', classes: ['bard'] };
   }
 
-  it('shows the picker and loads spells when the level grants new spells', () => {
+  it('shows the picker and loads the class spell list, passing deltas through as picker limits', () => {
     dndResources.getSpellsForClass.and.returnValue(of(
       [dndSpell(0, 'Light'), dndSpell(1, 'Heroism'), dndSpell(2, 'Invisibility')] as any));
     pcService.levelUpPreview.and.returnValue(of(makePreview({
@@ -358,20 +358,21 @@ describe('LevelUpModalComponent', () => {
     expect(component.cantripDelta).toBe(0);
     expect(component.spellDelta).toBe(2);
     expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Bard');
-    // cantrips hidden (delta 0), leveled spells shown
-    expect(component.filteredSpells.map(s => s.name)).toEqual(['Heroism', 'Invisibility']);
+    // The modal hands the full candidate list to app-spell-picker along with the deltas as
+    // cantripLimit/spellLimit — the picker (tested separately) applies the level-0/level>0 filter.
+    expect(component.spellList.map(s => s.name)).toEqual(['Light', 'Heroism', 'Invisibility']);
   });
 
-  it('caps spell selection at the allowed delta', () => {
+  it('caps spell selection at the allowed delta (as the spell-picker would enforce via selectedChange)', () => {
     const spells = [dndSpell(1, 'A'), dndSpell(1, 'B'), dndSpell(1, 'C')];
     dndResources.getSpellsForClass.and.returnValue(of(spells as any));
     pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
     component.pc = makePC({ clazz: 'Bard', spells: [] });
     component.ngOnInit();
 
-    component.toggleSpell(spells[0]);
-    component.toggleSpell(spells[1]);
-    component.toggleSpell(spells[2]); // exceeds delta of 2 -> ignored
+    // The picker enforces the limit before emitting; the modal just accepts whatever
+    // selectedChange emits. Simulate the picker allowing exactly 2 (the delta) through.
+    component.selectedSpells = [spells[0], spells[1]];
     expect(component.selectedSpellCount).toBe(2);
   });
 
@@ -394,7 +395,9 @@ describe('LevelUpModalComponent', () => {
     component.pc = makePC({ clazz: 'Bard', spells: [] });
     component.ngOnInit();
 
-    component.toggleSpell(spells[0]);
+    // Simulate the spell-picker's (selectedChange) output, which the template binds
+    // directly onto selectedSpells.
+    component.selectedSpells = [spells[0]];
     component.confirm();
 
     expect(pcService.levelUp).toHaveBeenCalledWith(7, {

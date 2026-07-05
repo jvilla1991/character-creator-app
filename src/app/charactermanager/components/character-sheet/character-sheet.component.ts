@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { PC } from '../../models/pc';
+import { PC, PcSpell, PcItem } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
+import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
@@ -102,7 +103,7 @@ export class CharacterSheetComponent implements OnChanges {
   editingLevel = false;
   levelDraft: number | null = null;
 
-  constructor(private pcService: PCService) {}
+  constructor(private pcService: PCService, private grantService: GrantService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['pc']) {
@@ -221,5 +222,44 @@ export class CharacterSheetComponent implements OnChanges {
     const used = index < slot.used ? index : index + 1;
     slots[level] = { ...slot, used: Math.min(slot.max, Math.max(0, used)) };
     this.persist({ ...this.pc, spellSlots: slots });
+  }
+
+  // ── DM grants ────────────────────────────────────────────────────────────
+  // Grants go through GrantService's refetch-merge-save rather than persist() —
+  // the sheet's `pc` copy can be stale by the time the DM submits the form, and
+  // PUTting it directly risks clobbering a concurrent player edit.
+
+  onFeatureGrant(f: { name: string; source: string; desc: string }): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
+      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+  }
+
+  onSpellsGrant(granted: PcSpell[]): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Dedupe against the FRESH copy — the player may have learned one of these
+        // spells (e.g. via level-up) in the moments between the picker opening and
+        // the DM confirming the grant.
+        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
+        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
+        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
+      })
+      .subscribe({ error: err => console.error('Failed to grant spells', err) });
+  }
+
+  onItemGrant(item: PcItem): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Stack onto an existing catalog line (mirrors the backend purchase path);
+        // ad-hoc items have no catalogKey and always append. Granted items arrive
+        // unequipped, so there's no AC to recompute.
+        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
+        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+        else inventory.push(item);
+        return { ...fresh, inventory };
+      })
+      .subscribe({ error: err => console.error('Failed to grant item', err) });
   }
 }
