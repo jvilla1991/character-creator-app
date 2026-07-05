@@ -8,6 +8,7 @@ import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
 import { convertPcToSlotInventory } from '../utils/slot-inventory';
+import { normalizeGameTime } from '../utils/survival';
 
 // ---------------------------------------------------------------------------
 // Demo seed campaigns. Members are the demo PCs bound via PC.campaignId.
@@ -323,11 +324,12 @@ export class CampaignService {
     return {};
   }
 
-  /** Same tolerance as parseVariantRules; null = the clock was never set. */
+  /** Same tolerance as parseVariantRules; null = the clock was never set.
+   *  Pre-v2 numeric clocks are converted by normalizeGameTime. */
   private parseGameTime(value: unknown): CampaignGameTime | null {
-    if (value && typeof value === 'object') return value as CampaignGameTime;
+    if (value && typeof value === 'object') return normalizeGameTime(value);
     if (typeof value === 'string') {
-      try { return (JSON.parse(value) ?? null) as CampaignGameTime | null; } catch { return null; }
+      try { return normalizeGameTime(JSON.parse(value)); } catch { return null; }
     }
     return null;
   }

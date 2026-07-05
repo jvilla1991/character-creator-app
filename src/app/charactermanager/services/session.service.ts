@@ -5,7 +5,7 @@ import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ParticipantView, SessionState, XpAwardEntry, XpAwardResult } from '../models/session';
 import { PC, PcItem, PcSurvival } from '../models/pc';
-import { CampaignGameTime } from '../models/campaign';
+import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
 import {
@@ -14,6 +14,8 @@ import {
   applyConsumeToPc,
   applyTimeBump,
   initialGameTime,
+  normalizeGameTime,
+  registerWeekday,
   survivalOf,
 } from '../utils/survival';
 
@@ -349,8 +351,14 @@ export class SessionService {
     );
   }
 
-  /** DM sets the campaign clock directly — corrections only, no condition bumps. */
-  setTime(sessionId: number | string, time: CampaignGameTime): Observable<SessionState> {
+  /**
+   * DM sets the campaign clock directly — no condition bumps. Sends the free
+   * text date labels + weekday; the server owns the week-counter logic (the
+   * demo branch mirrors it via registerWeekday).
+   */
+  setTime(sessionId: number | string,
+          time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+  ): Observable<SessionState> {
     if (environment.demoMode) return this.demoSetTime(time);
     return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/time`, time).pipe(
       map(raw => this.deserialize(raw)),
@@ -635,9 +643,9 @@ export class SessionService {
     const campaign = this.campaignService.getLocalCampaign(state.campaignId);
     const current = state.gameTime ?? campaign?.gameTime ?? null;
     const next = current ? advanceGameTime(current) : initialGameTime();
-    // First click establishes the clock — no bumps. Night is the sleep window.
-    const bumps = current != null && next.timeOfDay !== 'night'
-        && !!campaign?.variantRules?.survivalConditions;
+    // First click establishes the clock — no bumps. Every segment bumps under
+    // the three-segment mapping (morning +H/T, noon +F, night +all).
+    const bumps = current != null && !!campaign?.variantRules?.survivalConditions;
 
     let participants = state.participants;
     if (bumps) {
@@ -654,10 +662,21 @@ export class SessionService {
     return of(this.demoPatch({ gameTime: next, participants }));
   }
 
-  private demoSetTime(time: CampaignGameTime): Observable<SessionState> {
+  private demoSetTime(
+    time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+  ): Observable<SessionState> {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    this.campaignService.setLocalGameTime(state.campaignId, time);
-    return of(this.demoPatch({ gameTime: time }));
+    const current = state.gameTime
+      ?? this.campaignService.getLocalCampaign(state.campaignId)?.gameTime
+      ?? initialGameTime();
+    // Mirror the server: dates apply verbatim, the weekday history drives the
+    // week counter (registerWeekday guards unchanged-weekday corrections).
+    const next = registerWeekday(
+      { ...current, year: time.year, month: time.month, day: time.day, timeOfDay: time.timeOfDay },
+      time.weekday,
+    );
+    this.campaignService.setLocalGameTime(state.campaignId, next);
+    return of(this.demoPatch({ gameTime: next }));
   }
 
   /** Demo mirror of the consume endpoint (shared reducer, local persistence). */
@@ -757,7 +776,7 @@ export class SessionService {
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
       myXp: raw.myXp ?? null,
-      gameTime: this.parseJsonObject<CampaignGameTime>(raw.gameTime),
+      gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }

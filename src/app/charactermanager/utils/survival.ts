@@ -39,16 +39,17 @@ export function survivalOf(pc: PC): PcSurvival {
 }
 
 /**
- * The book's time-of-day table: dawn +1 hunger +1 thirst, noon +1 fatigue,
- * dusk +1 to all three. Night is the sleep window — no change.
+ * The book's time-of-day table mapped onto the three-segment day: morning
+ * takes dawn's +1 hunger +1 thirst, noon keeps +1 fatigue, night takes dusk's
+ * +1 to all three (sleep happens during the night before the next morning).
  */
 export function applyTimeBump(s: PcSurvival, timeOfDay: TimeOfDay): PcSurvival {
   const out = { ...s };
-  if (timeOfDay === 'dawn' || timeOfDay === 'dusk') {
+  if (timeOfDay === 'morning' || timeOfDay === 'night') {
     out.hunger = clampStage(out.hunger + 1);
     out.thirst = clampStage(out.thirst + 1);
   }
-  if (timeOfDay === 'noon' || timeOfDay === 'dusk') {
+  if (timeOfDay === 'noon' || timeOfDay === 'night') {
     out.fatigue = clampStage(out.fatigue + 1);
   }
   return out;
@@ -104,39 +105,73 @@ export function survivalExhaustion(s: PcSurvival): number {
   return Math.max(-3, Math.min(3, net));
 }
 
-// ── The campaign game clock (mirror of the server's GameClock) ──────────────
+// ── The campaign game clock (mirror of the server's GameClock v2) ───────────
+// Date parts are FREE TEXT the DM curates; advancing time only cycles the day
+// segments. Weekday repetition drives the week counter.
 
-export const TIME_SEGMENTS: TimeOfDay[] = ['dawn', 'noon', 'dusk', 'night'];
-export const DAYS_PER_MONTH = 30;
-export const MONTHS_PER_YEAR = 12;
+export const TIME_SEGMENTS: TimeOfDay[] = ['morning', 'noon', 'night'];
+export const MAX_TIME_LABEL = 40;
 
 export function initialGameTime(): CampaignGameTime {
-  return { year: 1, month: 1, day: 1, timeOfDay: 'dawn' };
+  return { year: '1', month: '1', day: '1', timeOfDay: 'morning',
+           weekday: null, weekdaysSeen: [], week: 1 };
 }
 
-/** dawn → noon → dusk → night → next day's dawn (30-day months, 12-month years). */
+/**
+ * Tolerant read of any stored clock, including the pre-v2 numeric shape
+ * (numbers → strings, dawn → morning, dusk/night → night, week fields filled).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeGameTime(raw: any): CampaignGameTime | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const label = (v: unknown, fallback: string): string =>
+    typeof v === 'string' && v.trim() ? v : typeof v === 'number' ? String(v) : fallback;
+  const segment: TimeOfDay =
+    raw.timeOfDay === 'morning' || raw.timeOfDay === 'dawn' ? 'morning'
+      : raw.timeOfDay === 'noon' ? 'noon'
+      : 'night'; // night, dusk, or anything malformed
+  return {
+    year: label(raw.year, '1'),
+    month: label(raw.month, '1'),
+    day: label(raw.day, '1'),
+    timeOfDay: segment,
+    weekday: typeof raw.weekday === 'string' && raw.weekday.trim() ? raw.weekday : null,
+    weekdaysSeen: Array.isArray(raw.weekdaysSeen) ? raw.weekdaysSeen : [],
+    week: typeof raw.week === 'number' ? Math.max(1, Math.round(raw.week)) : 1,
+  };
+}
+
+/** morning → noon → night → next day's MORNING; the date never changes here. */
 export function advanceGameTime(t: CampaignGameTime): CampaignGameTime {
   const idx = TIME_SEGMENTS.indexOf(t.timeOfDay);
-  if (idx < 0) return { ...t, timeOfDay: 'dawn' }; // repair, don't advance
   const next = TIME_SEGMENTS[(idx + 1) % TIME_SEGMENTS.length];
-  if (next !== 'dawn') return { ...t, timeOfDay: next };
-
-  let { year, month, day } = t;
-  day += 1;
-  if (day > DAYS_PER_MONTH) {
-    day = 1;
-    month += 1;
-    if (month > MONTHS_PER_YEAR) {
-      month = 1;
-      year += 1;
-    }
-  }
-  return { year, month, day, timeOfDay: 'dawn' };
+  return { ...t, timeOfDay: idx < 0 ? 'morning' : next };
 }
 
-/** "Day 12 · Month 3 · Year 1492 — Dawn" (setting-agnostic numerals). */
+/**
+ * Record the DM's weekday entry (mirror of the server's set-time week logic):
+ * only a CHANGED weekday moves the history — re-entering one seen since the
+ * last completed week ticks the counter and resets the history; a new name is
+ * appended; resubmitting the same weekday (a date correction) does nothing.
+ */
+export function registerWeekday(t: CampaignGameTime, weekdayRaw: string | null): CampaignGameTime {
+  const weekday = weekdayRaw?.trim() || null;
+  if (!weekday || (t.weekday && weekday.toLowerCase() === t.weekday.toLowerCase())) {
+    return { ...t, weekday: weekday ?? t.weekday };
+  }
+  const seenBefore = t.weekdaysSeen.some(d => d.toLowerCase() === weekday.toLowerCase());
+  return seenBefore
+    ? { ...t, weekday, weekdaysSeen: [weekday], week: t.week + 1 }
+    : { ...t, weekday, weekdaysSeen: [...t.weekdaysSeen, weekday] };
+}
+
+/** "3rd · Hammer · 1492 DR — Morning · Far · Week 2" (blank parts skipped). */
 export function describeGameTime(t: CampaignGameTime | null | undefined): string {
   if (!t) return 'Clock not set';
   const segment = t.timeOfDay.charAt(0).toUpperCase() + t.timeOfDay.slice(1);
-  return `Day ${t.day} · Month ${t.month} · Year ${t.year} — ${segment}`;
+  const date = [t.day, t.month, t.year].filter(p => p && p.trim()).join(' · ');
+  const parts = [`${date} — ${segment}`];
+  if (t.weekday) parts.push(t.weekday);
+  if (t.week > 1) parts.push(`Week ${t.week}`);
+  return parts.join(' · ');
 }
