@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { PurchaseResult, SellResult, ShopView } from '../models/shop';
+import { CatalogItem, PurchaseResult, SellResult, ShopView } from '../models/shop';
 
 /**
  * Shop client for Session Mode. Real mode talks to character-manager-service;
@@ -18,8 +18,19 @@ import { PurchaseResult, SellResult, ShopView } from '../models/shop';
 export class ShopService {
 
   private readonly base = `${environment.characterApiUrl}/api/v1/session`;
+  private readonly catalogUrl = `${environment.characterApiUrl}/api/v1/catalog`;
 
   constructor(private http: HttpClient) {}
+
+  /**
+   * Browse the raw SRD catalog by category, independent of any open shop — the
+   * DM-grant equipment picker. Demo mode has no catalog, so it returns an empty
+   * list (not an error): the picker detects this and offers ad-hoc entry only.
+   */
+  getCatalog(category: string): Observable<CatalogItem[]> {
+    if (environment.demoMode) return of([]);
+    return this.http.get<CatalogItem[]>(`${this.catalogUrl}?category=${encodeURIComponent(category)}`);
+  }
 
   /** DM activates a standard catalog shop (replaces any open one) and targets characters. */
   openShop(sessionId: number | string, category: string, settlement: string,

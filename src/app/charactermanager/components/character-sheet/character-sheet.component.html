@@ -158,10 +158,12 @@
       <app-inventory-panel
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
+        [addAllowed]="editable"
         [shopOpenForMe]="shopOpenForMe"
         [shopCategory]="shopCategory"
         [slotInventory]="slotInventory"
         (pcChange)="onPcChange($event)"
+        (itemGranted)="onItemGrant($event)"
         (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
       <app-spellbook-panel

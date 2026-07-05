@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { PC, PcSpell } from '../../models/pc';
+import { PC, PcSpell, PcItem } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
@@ -246,5 +246,20 @@ export class CharacterSheetComponent implements OnChanges {
         return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
       })
       .subscribe({ error: err => console.error('Failed to grant spells', err) });
+  }
+
+  onItemGrant(item: PcItem): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Stack onto an existing catalog line (mirrors the backend purchase path);
+        // ad-hoc items have no catalogKey and always append. Granted items arrive
+        // unequipped, so there's no AC to recompute.
+        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
+        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+        else inventory.push(item);
+        return { ...fresh, inventory };
+      })
+      .subscribe({ error: err => console.error('Failed to grant item', err) });
   }
 }

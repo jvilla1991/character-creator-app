@@ -28,6 +28,14 @@ describe('ShopService', () => {
     req.flush({});
   });
 
+  it('getCatalog GETs the catalog by category', () => {
+    const catalogUrl = `${environment.characterApiUrl}/api/v1/catalog`;
+    service.getCatalog('WEAPON').subscribe();
+    const req = httpMock.expectOne(`${catalogUrl}?category=WEAPON`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
   it('setAttendees PUTs the pcIds', () => {
     service.setAttendees(1, [7]).subscribe();
     const req = httpMock.expectOne(`${base}/1/shop/attendees`);

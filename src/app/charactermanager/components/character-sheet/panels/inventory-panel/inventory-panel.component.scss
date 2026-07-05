@@ -105,6 +105,114 @@
     color: var(--crimson, #d9534f);
     border-color: var(--crimson, #d9534f);
   }
+
+  &.grant {
+    margin-left: auto;
+    color: var(--accent, gold);
+    border-color: var(--accent, gold);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}
+
+/* DM grant form */
+.grant-form {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grant-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.grant-tab {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+  cursor: pointer;
+
+  &.on {
+    color: var(--accent, gold);
+    border-color: var(--accent, gold);
+  }
+}
+
+.grant-hint {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 12px;
+  margin: 0;
+}
+
+.grant-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grant-row {
+  display: flex;
+  gap: 8px;
+
+  select { flex: 1; }
+}
+
+.grant-qty {
+  width: 64px;
+}
+
+.grant-search,
+.grant-row select,
+.grant-row input,
+.grant-qty {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  color: var(--text, inherit);
+  background: var(--panel, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+}
+
+.grant-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.grant-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--border-soft, rgba(255, 255, 255, 0.08));
+
+  &:last-child { border-bottom: none; }
+  &.on { color: var(--accent, gold); }
+
+  .grant-option-name { flex: 1; }
+  .grant-option-meta { color: var(--text-dim); font-size: 12px; }
+}
+
+.grant-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 /* Mobile: stack the item info above the controls, and let the buttons span the

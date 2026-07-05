@@ -127,4 +127,43 @@ describe('CharacterSheetComponent', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith('Failed to grant spells', error);
   });
+
+  // --- DM equipment grants ---
+
+  it('stacks a granted catalog item onto an existing line with the same catalogKey', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    component.onItemGrant({ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 2 });
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const fresh: PC = makePC({ inventory: [{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1 }] });
+    const freshInv = fresh.inventory;
+
+    const result = mutate(fresh);
+
+    expect(result.inventory).toEqual([{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 3 }]);
+    // Purity: the fresh inventory array/objects are not mutated in place.
+    expect(fresh.inventory).toBe(freshInv);
+    expect(fresh.inventory![0].qty).toBe(1);
+  });
+
+  it('appends an ad-hoc granted item (no catalogKey) rather than stacking', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const granted = { name: 'Cracked Fang', category: 'gear' as const, qty: 1 };
+    component.onItemGrant(granted);
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const result = mutate(makePC({ inventory: [{ name: 'Cracked Fang', category: 'gear', qty: 1 }] }));
+
+    expect(result.inventory?.length).toBe(2);
+  });
+
+  it('logs an error if the item grant fails', () => {
+    const error = new Error('network down');
+    grantService.grantToPc.and.returnValue(throwError(() => error));
+    const consoleSpy = spyOn(console, 'error');
+
+    component.onItemGrant({ name: 'Rope', category: 'gear', qty: 1 });
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant item', error);
+  });
 });
