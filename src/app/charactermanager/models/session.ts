@@ -6,7 +6,7 @@
  */
 
 import { CampaignGameTime } from './campaign';
-import { PcSurvival } from './pc';
+import { PC, PcSurvival } from './pc';
 
 export type SessionStatus = 'LOBBY' | 'ACTIVE' | 'ENDED';
 
@@ -35,6 +35,10 @@ export interface ParticipantView {
   // Darker Dungeons survival stages from the canonical PC row (parsed from the
   // backend's JSON string like conditions); null for NPCs / never-tracked PCs.
   survival: PcSurvival | null;
+  // Spell slots from the canonical PC row (parsed from the backend's JSON
+  // string), so the DM sees a caster's slot spend live; null for NPCs / PCs
+  // with no slots.
+  spellSlots: PC['spellSlots'] | null;
   deathSaveSuccesses: number;
   deathSaveFailures: number;
 }

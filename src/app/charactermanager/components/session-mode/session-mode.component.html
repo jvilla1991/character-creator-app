@@ -168,8 +168,10 @@
       <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
                            [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
                            [slotInventory]="slotInventory"
-                           [survivalConditions]="survivalConditions" [sessionLive]="true"
+                           [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
+                           [sessionLive]="true"
                            (survivalActionRequested)="onSurvivalAction($event, state)"
+                           (castRequested)="onCast($event, state)"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
   </div>

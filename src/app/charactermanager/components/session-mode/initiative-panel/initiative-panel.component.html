@@ -73,6 +73,13 @@
                 [class.calm]="!chip.dire"
                 [title]="chip.title">{{ chip.text }}</span>
         </ng-container>
+        <!-- DM only: a caster's remaining spell slots at a glance; dire when a
+             level is fully spent. Casting mid-session keeps these live. -->
+        <ng-container *ngIf="dm">
+          <span *ngFor="let chip of slotChips(p)" class="board-cond slot-chip"
+                [class.calm]="!chip.dire"
+                [title]="chip.title">{{ chip.text }}</span>
+        </ng-container>
       </div>
 
       <div *ngIf="dm" class="dm-adjust" (click)="$event.stopPropagation()">
