@@ -226,6 +226,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       return 'That cast was blocked. Check your slots and components.';
     }
     return 'Could not cast that spell. Try again.';
+  }
+
   /**
    * Players see the initiative tracker only while an encounter is running;
    * the DM always sees it (their setup controls live there). Players enter
