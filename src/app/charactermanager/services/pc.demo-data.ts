@@ -160,8 +160,15 @@ export const DEMO_PCS: PC[] = [
       { lvl: 0, name: 'Prestidigitation', school: 'Transmutation', time: '1 action', prepared: true },
       { lvl: 1, name: 'Charm Person', school: 'Enchantment', time: '1 action', prepared: true },
       { lvl: 1, name: 'Disguise Self', school: 'Illusion', time: '1 action', prepared: true },
-      { lvl: 1, name: 'Find Familiar', school: 'Conjuration', time: '1 hour', prepared: true },
+      { lvl: 1, name: 'Find Familiar', school: 'Conjuration', time: '1 hour', prepared: true,
+        components: ['v', 's', 'm'],
+        material: 'charcoal, incense, and herbs worth 10+ GP, consumed by the spell' },
       { lvl: 2, name: 'Invisibility', school: 'Illusion', time: '1 action', prepared: true },
+    ],
+    inventory: [
+      { catalogKey: 'mc-find-familiar', name: 'Charcoal, Incense & Herbs (Find Familiar)',
+        category: 'material-component', qty: 2, unitCostCp: 1000, consumedOnCast: true,
+        spell: 'Find Familiar' },
     ],
     weapons: [
       { name: "Shortsword 'Whisper'", magic: true, dmg: '1d6+5 piercing', notes: '+1, silent' },

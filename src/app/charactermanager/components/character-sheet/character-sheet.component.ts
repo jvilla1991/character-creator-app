@@ -3,6 +3,8 @@ import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
+import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
+import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
 @Component({
@@ -37,6 +39,9 @@ export class CharacterSheetComponent implements OnChanges {
   /** True when this PC's campaign runs the Darker Dungeons survival-conditions
    *  variant — reveals the hunger/thirst/fatigue tracker panel. */
   @Input() survivalConditions = false;
+  /** True when this PC's campaign runs the strict material-components variant —
+   *  a missing costly component blocks the cast instead of warning. */
+  @Input() strictComponents = false;
   /** True when the sheet is embedded in a live session: survival Eat/Drink/Sleep
    *  bubble up (survivalActionRequested) so the host can call the
    *  server-authoritative consume endpoint instead of a local edit. */
@@ -50,6 +55,8 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() sellRequested = new EventEmitter<number>();
   /** In-session survival action (eat/drink/sleep); bubbled from the survival panel. */
   @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
+  /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
+  @Output() castRequested = new EventEmitter<CastRequest>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -134,6 +141,24 @@ export class CharacterSheetComponent implements OnChanges {
       return;
     }
     this.persist(applyConsumeToPc(this.pc, action));
+  }
+
+  /**
+   * A cast from the spellbook panel. In a live session the host owns it (the
+   * server spends the slot, consumes the component, and bumps the poll version);
+   * on the plain sheet the local reducer applies the same rules and persists.
+   */
+  onCastRequested(ev: CastRequest): void {
+    if (this.sessionLive) {
+      this.castRequested.emit(ev);
+      return;
+    }
+    this.persist(applyCastToPc(this.pc, ev.spellName, ev.atLevel));
+  }
+
+  /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
+  onLongRest(): void {
+    this.persist({ ...this.pc, spellSlots: applyLongRestToSlots(this.pc.spellSlots) });
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
