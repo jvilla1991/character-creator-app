@@ -50,6 +50,19 @@ describe('InventoryPanelComponent', () => {
     expect((spy.calls.mostRecent().args[0] as PC).inventory![0].equipped).toBe(true);
   });
 
+  it('recomputes AC when armor with a catalog formula is equipped', () => {
+    // DEX defaults to 10 (+0), so leather (11 + Dex) resolves to AC 11.
+    component.pc = basePc([{ name: 'Leather Armor', category: 'armor', qty: 1, armorClass: '11 + Dex modifier' }]);
+    component.pc.ac = 10;
+    const spy = spyOn(component.pcChange, 'emit');
+
+    component.toggleEquipped(0);
+
+    const emitted = spy.calls.mostRecent().args[0] as PC;
+    expect(emitted.inventory![0].equipped).toBe(true);
+    expect(emitted.ac).toBe(11);
+  });
+
   describe('slot-based inventory (Darker Dungeons variant)', () => {
     const withStats = (inventory: PcItem[]): PC =>
       ({ ...basePc(inventory), race: 'Human', stats: { STR: 14, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } } as PC);
@@ -231,6 +244,37 @@ describe('InventoryPanelComponent', () => {
       component.grantCustomItem();
 
       expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1 });
+    });
+
+    it('carries value/weight and the category stat on a custom grant', () => {
+      component.customName = 'Flametongue';
+      component.customCategory = 'weapon';
+      component.customQty = 1;
+      component.customValueGp = 50;      // → 5000 cp
+      component.customWeight = 3;
+      component.customDamage = '1d8 slashing + 2d6 fire';
+      component.customArmorClass = 'ignored for a weapon';
+      const emitted: PcItem[] = [];
+      component.itemGranted.subscribe(i => emitted.push(i));
+
+      component.grantCustomItem();
+
+      expect(emitted[0]).toEqual({
+        name: 'Flametongue', category: 'weapon', qty: 1,
+        unitCostCp: 5000, weight: 3, damage: '1d8 slashing + 2d6 fire',
+      });
+    });
+
+    it('carries armor class on a custom armor grant', () => {
+      component.customName = 'Mithral Plate';
+      component.customCategory = 'armor';
+      component.customArmorClass = '18';
+      const emitted: PcItem[] = [];
+      component.itemGranted.subscribe(i => emitted.push(i));
+
+      component.grantCustomItem();
+
+      expect(emitted[0]).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, armorClass: '18' });
     });
 
     it('blocks a custom grant with a blank name', () => {

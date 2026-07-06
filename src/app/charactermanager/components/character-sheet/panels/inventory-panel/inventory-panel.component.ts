@@ -11,6 +11,7 @@ import {
   slotCapacity,
   usedSlots,
 } from '../../../../utils/slot-inventory';
+import { isSupplyItem } from '../../../../utils/survival';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -58,8 +59,11 @@ export class InventoryPanelComponent {
 
   readonly formatCp = formatCp;
 
+  /** The lines shown/managed here: everything except travel supplies, which the
+   *  Supplies pane owns. Index-based edits below run over this filtered list and
+   *  re-merge the supply lines in {@link emit}, so supplies are never dropped. */
   get items(): PcItem[] {
-    return this.pc?.inventory ?? [];
+    return (this.pc?.inventory ?? []).filter(i => !isSupplyItem(i));
   }
 
   get totalWeight(): number {
@@ -71,7 +75,9 @@ export class InventoryPanelComponent {
   readonly encumberedPenalty = ENCUMBERED_PENALTY;
 
   get usedSlots(): number {
-    return usedSlots(this.items);
+    // Full inventory, not `items` — supplies are hidden from the list but their
+    // over-the-free-allowance servings still count toward slots.
+    return usedSlots(this.pc?.inventory ?? []);
   }
 
   get slotCapacity(): number {
@@ -141,9 +147,13 @@ export class InventoryPanelComponent {
   }
 
   private emit(inventory: PcItem[]): void {
+    // `inventory` is the managed (non-supply) list; re-append the supply lines
+    // the Supplies pane owns so an inventory edit never discards them.
+    const supplies = (this.pc.inventory ?? []).filter(isSupplyItem);
+    const merged = [...inventory, ...supplies];
     // Equipping/unequipping (or losing) armor recomputes AC; unrelated edits
     // leave a hand-set AC untouched.
-    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory }, this.pc.inventory));
+    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory: merged }, this.pc.inventory));
   }
 
   // ── DM grant form ──────────────────────────────────────────────────────────
@@ -170,6 +180,10 @@ export class InventoryPanelComponent {
   customName = '';
   customCategory: PcItem['category'] = 'gear';
   customQty = 1;
+  customValueGp: number | null = null;   // value in gold, converted to unitCostCp
+  customWeight: number | null = null;    // pounds (feeds bulk in slot campaigns)
+  customDamage = '';                     // weapons, e.g. "1d8 slashing"
+  customArmorClass = '';                 // armor, e.g. "14 + Dex modifier (max 2)"
 
   openGrantForm(): void {
     this.grantFormOpen = true;
@@ -223,15 +237,28 @@ export class InventoryPanelComponent {
     this.resetGrantForm();
   }
 
-  /** Grant an ad-hoc homebrew line (no catalog key, cost, or bulk). */
+  /** Grant an ad-hoc homebrew line. Beyond name/category/qty, the DM may set a
+   *  value (gp → unitCostCp), weight, and the category-specific stat (weapon
+   *  damage or armor class) — each added only when provided. */
   grantCustomItem(): void {
     const name = this.customName.trim();
     if (!name) return;
-    this.itemGranted.emit({
+    const entry: PcItem = {
       name,
       category: this.customCategory,
       qty: Math.max(1, Math.floor(this.customQty || 1)),
-    });
+    };
+    if (this.customValueGp != null && this.customValueGp >= 0) {
+      entry.unitCostCp = Math.round(this.customValueGp * 100);
+    }
+    if (this.customWeight != null && this.customWeight >= 0) {
+      entry.weight = this.customWeight;
+    }
+    const damage = this.customDamage.trim();
+    if (this.customCategory === 'weapon' && damage) entry.damage = damage;
+    const armorClass = this.customArmorClass.trim();
+    if (this.customCategory === 'armor' && armorClass) entry.armorClass = armorClass;
+    this.itemGranted.emit(entry);
     this.resetGrantForm();
   }
 
@@ -246,5 +273,9 @@ export class InventoryPanelComponent {
     this.customName = '';
     this.customCategory = 'gear';
     this.customQty = 1;
+    this.customValueGp = null;
+    this.customWeight = null;
+    this.customDamage = '';
+    this.customArmorClass = '';
   }
 }

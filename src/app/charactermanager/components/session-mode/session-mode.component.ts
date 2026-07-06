@@ -9,7 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
-import { TimeOfDay } from '../../models/campaign';
+import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
@@ -197,6 +197,37 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Party location (DM controls; read-only chip for players) ───────────────
+
+  editingLocation = false;
+  locationName = '';
+  locationType: LocationType = 'Settlement';
+  readonly locationTypes = LOCATION_TYPES;
+
+  /** "Neverwinter · Settlement" (type only when unnamed); "No location set" when unset. */
+  describeLocation(state: SessionState): string {
+    const loc = state.location;
+    if (!loc) return 'No location set';
+    return loc.name ? `${loc.name} · ${loc.type}` : loc.type;
+  }
+
+  toggleLocationEdit(state: SessionState): void {
+    if (this.editingLocation) { this.editingLocation = false; return; }
+    this.locationName = state.location?.name ?? '';
+    this.locationType = state.location?.type ?? 'Settlement';
+    this.editingLocation = true;
+  }
+
+  commitLocation(state: SessionState): void {
+    this.sessionService.setLocation(state.sessionId, {
+      name: this.locationName.trim(),
+      type: this.locationType,
+    }).subscribe({
+      next: () => { this.editingLocation = false; },
+      error: () => this.notifications.notify('Could not set the location.'),
+    });
+  }
+
   // ── Long rest (DM) ─────────────────────────────────────────────────────────
   // The DM rests the party: recovers spell slots and, in a survival campaign,
   // sheds fatigue. A modal asks whether the rest was undisturbed (−3) or not (−1).
@@ -277,7 +308,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
         max: mine.hpMax ?? pc.hp?.max ?? 0,
         temp: mine.hpTemp ?? pc.hp?.temp ?? 0,
       },
-      ac: mine.ac ?? pc.ac,
+      // AC is driven by the player's own equipment (equipping recomputes and
+      // persists pc.ac immediately), not by DM combat actions — so trust the
+      // local store first and fall back to the poll snapshot. Preferring the
+      // snapshot froze AC at the join-time value until the next poll.
+      ac: pc.ac ?? mine.ac ?? undefined,
       conditions: mine.conditions ?? pc.conditions,
       survival: mine.survival ?? pc.survival,
       spellSlots: mine.spellSlots ?? pc.spellSlots,

@@ -18,6 +18,22 @@ export interface Campaign {
   inviteCode?: string;  // players join by entering this (Phase 3)
   variantRules?: CampaignVariantRules; // creation-time opt-ins, immutable
   gameTime?: CampaignGameTime | null;  // in-world clock; null until set
+  location?: CampaignLocation | null;  // party's current place; null until set
+}
+
+/** The kinds of place the party can be — drives the type chip on the sheet. */
+export type LocationType = 'Settlement' | 'Wilderness' | 'Dungeon';
+
+export const LOCATION_TYPES: LocationType[] = ['Settlement', 'Wilderness', 'Dungeon'];
+
+/**
+ * The party's current location, set by the DM in Session Mode and shown at the
+ * top of every member's character sheet. `name` is free text; `type` is one of
+ * the three {@link LocationType}s. Null/absent = never set.
+ */
+export interface CampaignLocation {
+  name: string;
+  type: LocationType;
 }
 
 export type CampaignTint = 'celestial' | 'violet' | 'gold' | 'crimson' | 'emerald';
@@ -59,6 +75,7 @@ export interface CampaignSummary {
   id: string;
   name: string;
   variantRules: CampaignVariantRules;
+  location: CampaignLocation | null;
 }
 
 /** A new campaign as drafted in the create-campaign modal (pre-id, pre-seed). */

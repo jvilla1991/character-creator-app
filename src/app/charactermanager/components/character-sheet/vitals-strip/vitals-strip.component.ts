@@ -21,6 +21,15 @@ export class VitalsStripComponent {
 
   get hitDie(): number { return hitDieFor(this.pc.clazz); }
 
+  /** Names of the currently-equipped armor/shield lines, or "unarmored" when
+   *  nothing is worn — the caption shown under the AC value. */
+  get armorLabel(): string {
+    const worn = (this.pc.inventory ?? [])
+      .filter(i => i.category === 'armor' && i.equipped && i.status !== 'dropped')
+      .map(i => i.name);
+    return worn.length ? worn.join(' & ') : 'unarmored';
+  }
+
   fmtMod(n: number): string { return fmtMod(n); }
 
   /** Edit one of the HP fields, keeping current within [0, max]. */

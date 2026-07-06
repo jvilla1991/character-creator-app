@@ -26,7 +26,7 @@
       [value]="pc.ac" [editable]="editable" [min]="0"
       label="armor class" (committed)="setVital('ac', $event)"
     >{{ pc.ac ?? '—' }}</app-editable-number></div>
-    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">plate &amp; shield</div>
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">{{ armorLabel }}</div>
   </div>
 
   <!-- Initiative -->

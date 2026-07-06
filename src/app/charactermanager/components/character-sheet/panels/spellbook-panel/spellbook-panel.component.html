@@ -97,7 +97,7 @@
           <span class="spell-cast-note">{{ blockedFor!.message }}</span>
         </div>
 
-        <div class="spell-expand" *ngIf="expandedSpells[s.name]">
+        <div class="spell-expand" *ngIf="isExpanded(s.name)">
           <p class="spell-desc"     *ngIf="s.description">{{ s.description }}</p>
           <p class="spell-higher"   *ngIf="s.higherLevelSlot"><em>At higher levels:</em> {{ s.higherLevelSlot }}</p>
           <p class="spell-material" *ngIf="s.material"><em>Materials:</em> {{ s.material }}</p>

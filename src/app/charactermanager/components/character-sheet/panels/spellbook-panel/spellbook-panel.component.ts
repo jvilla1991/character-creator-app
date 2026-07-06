@@ -88,11 +88,17 @@ export class SpellbookPanelComponent implements OnChanges {
   trackByLvl(_: number, row: SpellLevel): number { return row.lvl; }
 
   // ── Expand/collapse spell detail ─────────────────────────────────────────
+  // Spells render expanded by default; the map only records the ones a reader
+  // has explicitly collapsed (false), so a fresh sheet shows every spell open.
   expandedSpells: Record<string, boolean> = {};
+
+  isExpanded(name: string): boolean {
+    return this.expandedSpells[name] !== false;
+  }
 
   toggleExpand(name: string): void {
     // New object reference required for OnPush change detection
-    this.expandedSpells = { ...this.expandedSpells, [name]: !this.expandedSpells[name] };
+    this.expandedSpells = { ...this.expandedSpells, [name]: !this.isExpanded(name) };
   }
 
   // ── Casting ──────────────────────────────────────────────────────────────

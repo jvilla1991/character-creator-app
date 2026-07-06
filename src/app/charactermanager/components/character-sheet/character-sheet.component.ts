@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
+import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
@@ -46,6 +47,9 @@ export class CharacterSheetComponent implements OnChanges {
   @Input() sessionLive = false;
   /** The live session id (session embeds only) — tags new character notes. */
   @Input() noteSessionId: number | string | null = null;
+  /** The party's current location (campaign-level), shown at the top of the
+   *  sheet. Set by the DM in Session Mode; null until then. */
+  @Input() location: CampaignLocation | null = null;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
