@@ -759,6 +759,33 @@ app-root { display: block; height: 100vh; width: 100vw; }
   transition: background .15s;
 }
 .spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
+
+/* === SUPPLIES (travel rations/water tracked as charges) === */
+.supply-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.supply-name { min-width: 92px; font-size: 14px; }
+.supply-track { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.supply-track.empty::before {
+  content: 'empty';
+  font-size: 12px;
+  font-style: italic;
+  color: var(--crimson);
+}
+.supply-pip {
+  width: 11px; height: 11px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: transparent;
+}
+.supply-pip.full { background: var(--gold); box-shadow: var(--glow-gold); }
+.supply-count { min-width: 18px; text-align: right; color: var(--text-dim); font-size: 13px; }
+.supply-steppers { display: inline-flex; gap: 4px; }
+.supply-steppers .btn { padding: 0 8px; line-height: 20px; }
+.supply-note { margin-top: 8px; }
 .spell-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto auto auto auto auto;

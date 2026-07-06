@@ -1,0 +1,23 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Supplies</span>
+  </div>
+
+  <div *ngFor="let row of rows" class="supply-row">
+    <span class="supply-name">{{ row.label }}</span>
+    <span class="supply-track" [class.empty]="row.charges <= 0">
+      <span *ngFor="let filled of row.pips" class="supply-pip" [class.full]="filled"></span>
+    </span>
+    <span class="supply-count numeric">{{ row.charges }}</span>
+    <span *ngIf="editable" class="supply-steppers">
+      <button type="button" class="btn" [disabled]="row.charges <= 0"
+              (click)="adjust(row.key, -1)" [attr.aria-label]="'Use one ' + row.label">−</button>
+      <button type="button" class="btn"
+              (click)="adjust(row.key, 1)" [attr.aria-label]="'Restock ' + row.label">+</button>
+    </span>
+  </div>
+
+  <p class="equip-item-meta supply-note">
+    One serving is used automatically each morning and night as time passes.
+  </p>
+</div>

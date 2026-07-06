@@ -11,6 +11,7 @@ import {
   slotCapacity,
   usedSlots,
 } from '../../../../utils/slot-inventory';
+import { isSupplyItem } from '../../../../utils/survival';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -58,8 +59,11 @@ export class InventoryPanelComponent {
 
   readonly formatCp = formatCp;
 
+  /** The lines shown/managed here: everything except travel supplies, which the
+   *  Supplies pane owns. Index-based edits below run over this filtered list and
+   *  re-merge the supply lines in {@link emit}, so supplies are never dropped. */
   get items(): PcItem[] {
-    return this.pc?.inventory ?? [];
+    return (this.pc?.inventory ?? []).filter(i => !isSupplyItem(i));
   }
 
   get totalWeight(): number {
@@ -141,9 +145,13 @@ export class InventoryPanelComponent {
   }
 
   private emit(inventory: PcItem[]): void {
+    // `inventory` is the managed (non-supply) list; re-append the supply lines
+    // the Supplies pane owns so an inventory edit never discards them.
+    const supplies = (this.pc.inventory ?? []).filter(isSupplyItem);
+    const merged = [...inventory, ...supplies];
     // Equipping/unequipping (or losing) armor recomputes AC; unrelated edits
     // leave a hand-set AC untouched.
-    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory }, this.pc.inventory));
+    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory: merged }, this.pc.inventory));
   }
 
   // ── DM grant form ──────────────────────────────────────────────────────────

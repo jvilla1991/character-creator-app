@@ -182,6 +182,13 @@
 
   <!-- INVENTORY TAB -->
   <div class="sheet-tab-panel" *ngIf="activeTab === 'inventory'">
+    <!-- Travel supplies as charges (survival campaigns) — sits above Inventory. -->
+    <app-supplies-panel
+      *ngIf="survivalConditions"
+      [pc]="pc"
+      [editable]="showActions || inventoryEditable"
+      (pcChange)="onPcChange($event)">
+    </app-supplies-panel>
     <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
     <app-inventory-panel
       [pc]="pc"
