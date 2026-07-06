@@ -1,0 +1,245 @@
+:host {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.spell-carousel {
+  position: relative;
+}
+
+// ── Header bar ──────────────────────────────────────────────────────────────
+.carousel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chevron-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+
+  &.collapsed { transform: rotate(-90deg); }
+}
+
+.carousel-title {
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+// ── Card row (wraps onto multiple lines) ────────────────────────────────────
+.card-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.spell-card {
+  position: relative;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+
+  &.is-focused {
+    border-color: var(--celestial);
+    animation: card-pulse 1.6s ease;
+  }
+
+  &.cdk-drag-preview {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  }
+
+  &.cdk-drag-placeholder { opacity: 0.35; }
+}
+
+@keyframes card-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--glow-gold); }
+  30%  { box-shadow: 0 0 0 4px var(--glow-gold); }
+  100% { box-shadow: var(--shadow); }
+}
+
+.card-remove {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { color: var(--crimson); background: var(--surface-3); }
+}
+
+.card-handle {
+  position: absolute;
+  top: 8px;
+  right: 34px;
+  color: var(--text-dim);
+  cursor: grab;
+  user-select: none;
+
+  &:active { cursor: grabbing; }
+}
+
+.card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 48px; // clear the remove/handle controls
+}
+
+.card-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card-sub {
+  font-size: 0.72rem;
+  color: var(--celestial);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  margin: 0;
+
+  div { min-width: 0; }
+
+  dt {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  color: var(--text-2);
+}
+
+.card-desc,
+.card-note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-2);
+  white-space: pre-line;
+}
+
+.card-note em { color: var(--text); font-style: italic; }
+
+// ── Trailing "+" silhouette ─────────────────────────────────────────────────
+.add-silhouette {
+  width: 260px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    border-color: var(--celestial);
+    color: var(--celestial);
+  }
+
+  .plus { font-size: 32px; line-height: 1; }
+  .add-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+}
+
+// ── Search overlay ──────────────────────────────────────────────────────────
+.search-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.search-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+}
+
+.search-panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 92%);
+  margin-top: 44px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.search-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.search-panel-title {
+  font-weight: 600;
+  color: var(--text);
+}
