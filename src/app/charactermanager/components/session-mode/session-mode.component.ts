@@ -277,7 +277,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
         max: mine.hpMax ?? pc.hp?.max ?? 0,
         temp: mine.hpTemp ?? pc.hp?.temp ?? 0,
       },
-      ac: mine.ac ?? pc.ac,
+      // AC is driven by the player's own equipment (equipping recomputes and
+      // persists pc.ac immediately), not by DM combat actions — so trust the
+      // local store first and fall back to the poll snapshot. Preferring the
+      // snapshot froze AC at the join-time value until the next poll.
+      ac: pc.ac ?? mine.ac ?? undefined,
       conditions: mine.conditions ?? pc.conditions,
       survival: mine.survival ?? pc.survival,
       spellSlots: mine.spellSlots ?? pc.spellSlots,
