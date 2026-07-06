@@ -71,10 +71,6 @@
     Over capacity — {{ encumberedPenalty }}.
   </div>
 
-  <div *ngIf="slotInventory && encumbered" class="inv-empty" style="color: var(--crimson);">
-    Over capacity — {{ encumberedPenalty }}.
-  </div>
-
   <div class="inv-list">
     <div *ngIf="!items.length" class="inv-empty">
       No items yet — buy equipment at a shop during a session and it will appear here.
