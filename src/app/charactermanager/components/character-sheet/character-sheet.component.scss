@@ -91,11 +91,29 @@
   border-color: var(--gold, #d9b25f);
 }
 
+// XP bar + party location on one line beneath the subtitle.
+.xp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+// The party location, shown as "Name(Type)" beside the XP bar; tinted by type.
+.sheet-location-tag {
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--text-dim);
+
+  &[data-loc-type='Settlement'] { color: var(--celestial); }
+  &[data-loc-type='Wilderness'] { color: var(--emerald, #4ea36b); }
+  &[data-loc-type='Dungeon']    { color: var(--crimson); }
+}
+
 // XP progress bar — fills through the current level toward the next.
 .xp-track {
   position: relative;
   height: 6px;
-  margin-top: 10px;
   max-width: 280px;
   background: var(--bg-elev, rgba(255, 255, 255, 0.06));
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
