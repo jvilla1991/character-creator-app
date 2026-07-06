@@ -3,8 +3,6 @@ import { PC, PcSpell, PcItem } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
-import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
-import { applyLongRestToSlots } from '../../utils/spellcasting';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
@@ -136,30 +134,12 @@ export class CharacterSheetComponent implements OnChanges {
   }
 
   /**
-   * A survival action from the panel. In a live session the host owns it (the
-   * server decrements rations and bumps the poll version); on the plain sheet
-   * the local reducer applies the same rules and persists.
-   */
-  onSurvivalAction(action: SurvivalAction): void {
-    if (this.sessionLive) {
-      this.survivalActionRequested.emit(action);
-      return;
-    }
-    this.persist(applyConsumeToPc(this.pc, action));
-  }
-
-  /**
    * A cast from the spellbook panel — only reachable inside a live session (the
    * Cast buttons are hidden otherwise). The host forwards it to Session Mode,
    * which spends the slot, consumes the component, and bumps the poll version.
    */
   onCastRequested(ev: CastRequest): void {
     this.castRequested.emit(ev);
-  }
-
-  /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
-  onLongRest(): void {
-    this.persist({ ...this.pc, spellSlots: applyLongRestToSlots(this.pc.spellSlots) });
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
@@ -209,45 +189,6 @@ export class CharacterSheetComponent implements OnChanges {
       ? conditions.filter(c => c !== condition)
       : [...conditions, condition];
     this.persist({ ...this.pc, conditions: next });
-  }
-
-  // ── DM grants ────────────────────────────────────────────────────────────
-  // Grants go through GrantService's refetch-merge-save rather than persist() —
-  // the sheet's `pc` copy can be stale by the time the DM submits the form, and
-  // PUTting it directly risks clobbering a concurrent player edit.
-
-  onFeatureGrant(f: { name: string; source: string; desc: string }): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
-      .subscribe({ error: err => console.error('Failed to grant feature', err) });
-  }
-
-  onSpellsGrant(granted: PcSpell[]): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => {
-        // Dedupe against the FRESH copy — the player may have learned one of these
-        // spells (e.g. via level-up) in the moments between the picker opening and
-        // the DM confirming the grant.
-        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
-        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
-        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
-      })
-      .subscribe({ error: err => console.error('Failed to grant spells', err) });
-  }
-
-  onItemGrant(item: PcItem): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => {
-        // Stack onto an existing catalog line (mirrors the backend purchase path);
-        // ad-hoc items have no catalogKey and always append. Granted items arrive
-        // unequipped, so there's no AC to recompute.
-        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
-        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
-        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
-        else inventory.push(item);
-        return { ...fresh, inventory };
-      })
-      .subscribe({ error: err => console.error('Failed to grant item', err) });
   }
 
   // ── DM grants ────────────────────────────────────────────────────────────
