@@ -44,19 +44,17 @@
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
-        <span class="dot">✦</span>
-        <span
-          class="sheet-xp"
-          [title]="xpForNextLevel != null
-            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
-            : 'Maximum level reached'"
-        >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
+        <ng-container *ngIf="location">
+          <span class="dot">✦</span>
+          <span class="sheet-location-tag" [attr.data-loc-type]="location.type"
+                title="Party location">{{ location.name }}({{ location.type }})</span>
+        </ng-container>
         <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
           Ready to level up
         </span>
       </div>
 
-      <!-- XP progress through the current level, with the party location beside it -->
+      <!-- XP progress through the current level, with the XP total beside it -->
       <div class="xp-row">
         <div
           class="xp-track"
@@ -68,8 +66,12 @@
         >
           <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
         </div>
-        <span *ngIf="location" class="sheet-location-tag" [attr.data-loc-type]="location.type"
-              title="Party location">{{ location.name }}({{ location.type }})</span>
+        <span
+          class="sheet-xp"
+          [title]="xpForNextLevel != null
+            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+            : 'Maximum level reached'"
+        >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
       </div>
     </div>
 
