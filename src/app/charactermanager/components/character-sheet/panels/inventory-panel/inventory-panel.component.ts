@@ -75,7 +75,9 @@ export class InventoryPanelComponent {
   readonly encumberedPenalty = ENCUMBERED_PENALTY;
 
   get usedSlots(): number {
-    return usedSlots(this.items);
+    // Full inventory, not `items` — supplies are hidden from the list but their
+    // over-the-free-allowance servings still count toward slots.
+    return usedSlots(this.pc?.inventory ?? []);
   }
 
   get slotCapacity(): number {

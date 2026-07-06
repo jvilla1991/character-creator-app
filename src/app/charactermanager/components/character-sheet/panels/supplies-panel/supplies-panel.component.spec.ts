@@ -21,8 +21,21 @@ describe('SuppliesPanelComponent', () => {
     expect(rows.map(r => r.label)).toEqual(['Ration box', 'Water skin']);
     expect(rows[0].charges).toBe(3);
     expect(rows[1].charges).toBe(5);
-    // capacity is max(charges, 5): 3 charges → 5 pips, 3 filled
-    expect(rows[0].pips).toEqual([true, true, true, false, false]);
+    // capacity is max(charges, 5): 3 charges → 5 pips, 3 filled, none extra
+    expect(rows[0].pips).toEqual([
+      { filled: true, extra: false }, { filled: true, extra: false }, { filled: true, extra: false },
+      { filled: false, extra: false }, { filled: false, extra: false },
+    ]);
+    expect(rows[0].slots).toBe(0);
+  });
+
+  it('charges the free box/skin no slots but bulk-tags every extra serving', () => {
+    component.pc = basePc([{ catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 7 }]);
+    const row = component.rows[0];
+    expect(row.slots).toBe(2); // 7 − 5 free
+    expect(row.pips.length).toBe(7);
+    expect(row.pips.filter(p => p.extra).length).toBe(2);
+    expect(row.pips[5]).toEqual({ filled: true, extra: true });
   });
 
   it('shows both supplies at zero when no lines exist yet', () => {
@@ -30,13 +43,16 @@ describe('SuppliesPanelComponent', () => {
     const rows = component.rows;
     expect(rows.length).toBe(2);
     expect(rows.every(r => r.charges === 0)).toBeTrue();
-    expect(rows[0].pips).toEqual([false, false, false, false, false]);
+    expect(rows.every(r => r.slots === 0)).toBeTrue();
+    expect(rows[0].pips.every(p => !p.filled)).toBeTrue();
+    expect(rows[0].pips.length).toBe(5);
   });
 
-  it('drops pips (but keeps the count) once charges exceed the pip cap', () => {
+  it('drops pips (but keeps the count and slot cost) once charges exceed the pip cap', () => {
     component.pc = basePc([{ catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 20 }]);
     const row = component.rows[0];
     expect(row.charges).toBe(20);
+    expect(row.slots).toBe(15);
     expect(row.pips).toEqual([]);
   });
 

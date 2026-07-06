@@ -1,15 +1,30 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
-import { SUPPLY_KEYS, SUPPLY_LABELS, SupplyKey, SURVIVAL_STARTING_CHARGES } from '../../../../utils/survival';
+import {
+  SUPPLY_KEYS,
+  SUPPLY_LABELS,
+  SUPPLY_FREE_CHARGES,
+  SupplyKey,
+  SURVIVAL_STARTING_CHARGES,
+} from '../../../../utils/survival';
+
+/** One pip in a supply track: filled = a serving in hand; extra = a bought
+ *  serving beyond the free box/skin, so it costs an inventory slot. */
+interface SupplyPip {
+  filled: boolean;
+  extra: boolean;
+}
 
 /** A single supply row as rendered: label, remaining charges, and the pip track. */
 interface SupplyRow {
   key: SupplyKey;
   label: string;
   charges: number;
-  /** One entry per pip; true = a charge still in hand. Empty when the count is
-   *  too large to draw as pips (a numeric count is always shown too). */
-  pips: boolean[];
+  /** Servings beyond the free box/skin — each costs one inventory slot. */
+  slots: number;
+  /** One entry per pip. Empty when the count is too large to draw as pips
+   *  (the numeric count is always shown too). */
+  pips: SupplyPip[];
 }
 
 /** Beyond this many charges we stop drawing pips and lean on the numeric count. */
@@ -43,9 +58,15 @@ export class SuppliesPanelComponent {
       const charges = this.chargesFor(key);
       const capacity = Math.max(charges, SURVIVAL_STARTING_CHARGES);
       const pips = capacity <= MAX_PIPS
-        ? Array.from({ length: capacity }, (_, i) => i < charges)
+        ? Array.from({ length: capacity }, (_, i) => ({ filled: i < charges, extra: i >= SUPPLY_FREE_CHARGES }))
         : [];
-      return { key, label: SUPPLY_LABELS[key], charges, pips };
+      return {
+        key,
+        label: SUPPLY_LABELS[key],
+        charges,
+        slots: Math.max(0, charges - SUPPLY_FREE_CHARGES),
+        pips,
+      };
     });
   }
 

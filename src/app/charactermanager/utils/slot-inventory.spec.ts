@@ -61,6 +61,22 @@ describe('slot-inventory util', () => {
       expect(usedSlots(darts)).toBe(0.6);
       expect(usedSlots(undefined)).toBe(0);
     });
+
+    it('gives the free starting box/skin no bulk but 1 slot per extra serving', () => {
+      // Starting supplies: rations & water at 5 each — weightless despite bulk: 1.
+      const starting: PcItem[] = [
+        { catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 5, bulk: 1 },
+        { catalogKey: 'waterskin', name: 'Water skin', category: 'gear', qty: 5, bulk: 1 },
+      ];
+      expect(usedSlots(starting)).toBe(0);
+
+      // Bought extras: 8 rations (3 over) + 6 water (1 over) = 4 slots.
+      const stocked: PcItem[] = [
+        { catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 8, bulk: 1 },
+        { catalogKey: 'waterskin', name: 'Water skin', category: 'gear', qty: 6, bulk: 1 },
+      ];
+      expect(usedSlots(stocked)).toBe(4);
+    });
   });
 
   describe('slotCapacity', () => {

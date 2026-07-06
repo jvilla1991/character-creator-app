@@ -54,9 +54,22 @@ export const SUPPLY_LABELS: Record<SupplyKey, string> = {
   waterskin: 'Water skin',
 };
 
-/** True for a rations/waterskin line — tracked as charges, excluded from bulk. */
+/** True for a rations/waterskin line — tracked as charges in the Supplies pane. */
 export function isSupplyItem(item: Pick<PcItem, 'catalogKey'>): boolean {
   return item.catalogKey === 'rations' || item.catalogKey === 'waterskin';
+}
+
+/** Servings you carry for free (the starting box/skin); extras cost bulk. */
+export const SUPPLY_FREE_CHARGES = SURVIVAL_STARTING_CHARGES;
+
+/**
+ * A supply line's bulk: the starting box/skin (up to {@link SUPPLY_FREE_CHARGES}
+ * servings) is weightless; every serving bought beyond that takes 1 slot. A
+ * non-supply item contributes nothing here (the caller bulks it normally).
+ */
+export function supplyBulk(item: PcItem): number {
+  if (!isSupplyItem(item)) return 0;
+  return Math.max(0, (item.qty ?? 0) - SUPPLY_FREE_CHARGES);
 }
 
 /** Add a full Ration box and Water skin if a live line for each isn't present. */
