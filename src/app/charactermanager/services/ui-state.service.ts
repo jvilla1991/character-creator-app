@@ -3,6 +3,12 @@ import { BehaviorSubject } from 'rxjs';
 
 export type Role = 'player' | 'dm';
 
+// Persisted so a browser refresh keeps a DM on their campaign dashboard rather
+// than resetting to the default player/character view. Cleared on sign-out (see
+// AuthService.logout) so the next user starts fresh as a player.
+export const UI_ROLE_KEY = 'tm_role';
+export const UI_ACTIVE_CAMPAIGN_KEY = 'tm_active_campaign';
+
 /**
  * In-app, full-screen-ish views that are *not* routes but should still respond
  * to the browser Back button: the live-session overlay, the settings slide-over,
@@ -51,6 +57,24 @@ export class UiStateService {
 
   constructor() {
     window.addEventListener('popstate', this.onPopState);
+    this.rehydrate();
+  }
+
+  /** Restore the persisted role/campaign so a refresh keeps a DM in place. */
+  private rehydrate(): void {
+    try {
+      const campaign = localStorage.getItem(UI_ACTIVE_CAMPAIGN_KEY);
+      if (campaign) this.activeCampaignIdSubject.next(campaign);
+      const role = localStorage.getItem(UI_ROLE_KEY);
+      if (role === 'dm' || role === 'player') this.roleSubject.next(role);
+    } catch { /* storage unavailable — fall back to the player default */ }
+  }
+
+  private persist(key: string, value: string | null): void {
+    try {
+      if (value == null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    } catch { /* ignore — persistence is best-effort */ }
   }
   // True while a DM is viewing one of their campaign members' sheets (reached by
   // clicking a hero on the campaign dashboard). Drives the "back to campaign" bar.
@@ -63,9 +87,19 @@ export class UiStateService {
     // A manual role switch ends any campaign cross-link.
     this.dmReturnSubject.next(false);
     this.roleSubject.next(role);
+    this.persist(UI_ROLE_KEY, role);
   }
 
-  setActiveCampaign(id: string | null): void { this.activeCampaignIdSubject.next(id); }
+  setActiveCampaign(id: string | null): void {
+    this.activeCampaignIdSubject.next(id);
+    this.persist(UI_ACTIVE_CAMPAIGN_KEY, id);
+  }
+
+  /** Forget the persisted DM role/campaign (sign-out) so the next user is a player. */
+  clearPersistedView(): void {
+    this.persist(UI_ROLE_KEY, null);
+    this.persist(UI_ACTIVE_CAMPAIGN_KEY, null);
+  }
 
   // ── Settings slide-over ───────────────────────────────────────────────────
   openSettings(): void {

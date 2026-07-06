@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, delay, Observable, of, tap } from 'rxjs';
 import { environment, DEMO_MODE_KEY } from '../../../environments/environment';
+import { UiStateService } from './ui-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,7 @@ import { environment, DEMO_MODE_KEY } from '../../../environments/environment';
 export class AuthService {
   private authUrl = `${environment.authApiUrl}/api/v1/auth`;
 
-  constructor(private router: Router, private http: HttpClient) {}
+  constructor(private router: Router, private http: HttpClient, private uiState: UiStateService) {}
 
   login(userName: string, password: string): Observable<any> {
     if (environment.demoMode) {
@@ -60,6 +61,8 @@ export class AuthService {
 
   logout(): void {
     const wasDemo = localStorage.getItem(DEMO_MODE_KEY) === 'true';
+    // Drop the persisted DM role/campaign so the next user starts as a player.
+    this.uiState.clearPersistedView();
     localStorage.removeItem('token');
     localStorage.removeItem(DEMO_MODE_KEY);
     // Demo-seeded singletons (PCService, CampaignService) read demoMode once at

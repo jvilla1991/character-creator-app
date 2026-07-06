@@ -6,12 +6,12 @@
     </span>
   </div>
 
-  <div *ngIf="canWrite" style="display: flex; gap: 8px; margin-bottom: 10px;">
+  <div *ngIf="canWrite" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 10px;">
     <textarea
       [(ngModel)]="draft"
-      rows="2"
+      rows="5"
       placeholder="Log a memory, a clue, a grudge…"
-      style="flex: 1;"
+      style="width: 100%; resize: vertical;"
       (keydown.control.enter)="addNote()"
     ></textarea>
     <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="addNote()">Add</button>

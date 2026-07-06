@@ -50,6 +50,19 @@ describe('InventoryPanelComponent', () => {
     expect((spy.calls.mostRecent().args[0] as PC).inventory![0].equipped).toBe(true);
   });
 
+  it('recomputes AC when armor with a catalog formula is equipped', () => {
+    // DEX defaults to 10 (+0), so leather (11 + Dex) resolves to AC 11.
+    component.pc = basePc([{ name: 'Leather Armor', category: 'armor', qty: 1, armorClass: '11 + Dex modifier' }]);
+    component.pc.ac = 10;
+    const spy = spyOn(component.pcChange, 'emit');
+
+    component.toggleEquipped(0);
+
+    const emitted = spy.calls.mostRecent().args[0] as PC;
+    expect(emitted.inventory![0].equipped).toBe(true);
+    expect(emitted.ac).toBe(11);
+  });
+
   describe('slot-based inventory (Darker Dungeons variant)', () => {
     const withStats = (inventory: PcItem[]): PC =>
       ({ ...basePc(inventory), race: 'Human', stats: { STR: 14, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } } as PC);
