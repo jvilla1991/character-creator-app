@@ -47,7 +47,7 @@
         <ng-container *ngIf="location">
           <span class="dot">✦</span>
           <span class="sheet-location-tag" [attr.data-loc-type]="location.type"
-                title="Party location">{{ location.name }}({{ location.type }})</span>
+                title="Party location">📍 {{ location.name }}({{ location.type }})</span>
         </ng-container>
         <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
           Ready to level up
