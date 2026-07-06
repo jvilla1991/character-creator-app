@@ -40,13 +40,14 @@
         <span class="spell-level-name">{{ level.label }}</span>
         <div *ngIf="level.slots" class="spell-slots">
           <ng-container *ngIf="!editable">
-            <button
+            <!-- Display-only for players: slots are spent by casting (in session),
+                 never toggled by hand. The DM edits them via the numbers below. -->
+            <span
               *ngFor="let i of level.slotIndices"
               class="spell-slot"
               [class.used]="i < level.slots!.used"
-              (click)="slotToggled.emit({ level: level.lvl, index: i })"
-              [title]="i < level.slots!.used ? 'Restore slot' : 'Expend slot'"
-            ></button>
+              [title]="i < level.slots!.used ? 'Slot expended' : 'Slot available'"
+            ></span>
           </ng-container>
           <span *ngIf="editable" class="slot-edit">
             <app-editable-number
@@ -71,7 +72,7 @@
           <span class="spell-time">{{ s.time }}</span>
           <span class="spell-range" *ngIf="s.range">{{ s.range }}</span>
           <button
-            *ngIf="!editable && s.prepared"
+            *ngIf="!editable && s.prepared && castable"
             class="spell-cast-btn"
             [disabled]="!canCast(s)"
             [title]="castTitle(s)"

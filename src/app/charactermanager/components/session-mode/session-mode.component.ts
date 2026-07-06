@@ -10,7 +10,7 @@ import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
 import { TimeOfDay } from '../../models/campaign';
-import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
+import { advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
 
@@ -197,12 +197,21 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** The player eats/drinks/sleeps — server-authoritative so everyone sees it. */
-  onSurvivalAction(action: SurvivalAction, state: SessionState): void {
-    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
-    if (mine?.pcId == null) return;
-    this.sessionService.consumeSurvival(state.sessionId, mine.pcId, action).subscribe({
-      error: () => this.notifications.notify('Could not update your condition. Try again.'),
+  // ── Long rest (DM) ─────────────────────────────────────────────────────────
+  // The DM rests the party: recovers spell slots and, in a survival campaign,
+  // sheds fatigue. A modal asks whether the rest was undisturbed (−3) or not (−1).
+
+  longRestModalOpen = false;
+
+  openLongRest(): void { this.longRestModalOpen = true; }
+  cancelLongRest(): void { this.longRestModalOpen = false; }
+
+  confirmLongRest(undisturbed: boolean, state: SessionState): void {
+    this.longRestModalOpen = false;
+    this.sessionService.longRest(state.sessionId, undisturbed).subscribe({
+      next: () => this.notifications.notify(
+        undisturbed ? 'The party rests soundly.' : 'The party rests, but fitfully.'),
+      error: () => this.notifications.notify('Could not rest the party. Try again.'),
     });
   }
 

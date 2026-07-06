@@ -25,14 +25,7 @@
     </span>
   </div>
 
-  <div *ngIf="editable" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-    <button class="btn" (click)="actionRequested.emit('EAT')"
-            title="Consume a ration: −1 hunger">Eat</button>
-    <button class="btn" (click)="actionRequested.emit('DRINK')"
-            title="Drink from a waterskin: −1 thirst">Drink</button>
-    <button class="btn" (click)="actionRequested.emit('SLEEP_GOOD')"
-            title="Good night's sleep: −3 fatigue">Sleep</button>
-    <button class="btn" (click)="actionRequested.emit('SLEEP_DISTURBED')"
-            title="Disturbed sleep: −1 fatigue">Rough sleep</button>
-  </div>
+  <p class="equip-item-meta" style="margin-top: 8px;">
+    Hunger &amp; thirst are fed automatically from supplies as time passes; fatigue clears on a long rest.
+  </p>
 </div>

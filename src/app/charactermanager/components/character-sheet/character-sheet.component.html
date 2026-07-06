@@ -121,19 +121,28 @@
 
   </header>
 
-  <!-- ═══════════════════════════════════════════════
-       VITALS STRIP
-       ═══════════════════════════════════════════════ -->
+  <!-- Section tabs. Desktop: a bar under the header. Mobile: fixed to the
+       bottom of the screen and follows the player as they scroll (see SCSS). -->
+  <nav class="sheet-tabs" role="tablist">
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'sheet'"
+            [attr.aria-selected]="activeTab === 'sheet'" (click)="setTab('sheet')">Sheet</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'spells'"
+            [attr.aria-selected]="activeTab === 'spells'" (click)="setTab('spells')">Spells</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'inventory'"
+            [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
+            [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
+  </nav>
+
+  <!-- Vitals stay visible on every tab (HP/AC always matter). -->
   <app-vitals-strip
     [pc]="pc"
     [editable]="editable"
     (pcChange)="onPcChange($event)">
   </app-vitals-strip>
 
-  <!-- ═══════════════════════════════════════════════
-       SHEET GRID
-       ═══════════════════════════════════════════════ -->
-  <div class="sheet-grid">
+  <!-- SHEET TAB: abilities, skills, conditions, survival, features, wealth, bio -->
+  <div class="sheet-grid" *ngIf="activeTab === 'sheet'">
     <div class="col-left">
       <app-ability-scores
         [pc]="pc"
@@ -147,12 +156,12 @@
         [pc]="pc"
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
+      <!-- Survival is DM-managed: the controls show only on the DM's cross-link view. -->
       <app-survival-panel
-        *ngIf="survivalConditions"
+        *ngIf="survivalConditions && editable"
         [pc]="pc"
-        [editable]="showActions || inventoryEditable || editable"
-        (pcChange)="onPcChange($event)"
-        (actionRequested)="onSurvivalAction($event)">
+        [editable]="true"
+        (pcChange)="onPcChange($event)">
       </app-survival-panel>
       <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
       <app-inventory-panel
@@ -170,18 +179,13 @@
         [pc]="pc"
         [editable]="editable"
         [strictComponents]="strictComponents"
+        [castable]="sessionLive"
         [addAllowed]="editable"
-        (slotToggled)="onSlotToggle($event.level, $event.index)"
         (castRequested)="onCastRequested($event)"
         (pcChange)="onPcChange($event)"
         (spellsGranted)="onSpellsGrant($event)">
       </app-spellbook-panel>
       <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
-      <app-pc-notes
-        [pc]="pc"
-        [canWrite]="(showActions || inventoryEditable) && !editable"
-        [sessionId]="noteSessionId">
-      </app-pc-notes>
       <app-coin-purse
         [pc]="pc"
         [editable]="editable"
@@ -189,6 +193,45 @@
       </app-coin-purse>
       <app-background-story [pc]="pc"></app-background-story>
     </div>
+  </div>
+
+  <!-- SPELLS TAB -->
+  <div class="sheet-tab-panel" *ngIf="activeTab === 'spells'">
+    <app-spellbook-panel
+      [pc]="pc"
+      [editable]="editable"
+      [strictComponents]="strictComponents"
+      [castable]="sessionLive"
+      [addAllowed]="editable"
+      (castRequested)="onCastRequested($event)"
+      (pcChange)="onPcChange($event)"
+      (spellsGranted)="onSpellsGrant($event)">
+    </app-spellbook-panel>
+  </div>
+
+  <!-- INVENTORY TAB -->
+  <div class="sheet-tab-panel" *ngIf="activeTab === 'inventory'">
+    <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
+    <app-inventory-panel
+      [pc]="pc"
+      [editable]="showActions || inventoryEditable"
+      [addAllowed]="editable"
+      [shopOpenForMe]="shopOpenForMe"
+      [shopCategory]="shopCategory"
+      [slotInventory]="slotInventory"
+      (pcChange)="onPcChange($event)"
+      (itemGranted)="onItemGrant($event)"
+      (sellRequested)="sellRequested.emit($event)">
+    </app-inventory-panel>
+  </div>
+
+  <!-- NOTES TAB -->
+  <div class="sheet-tab-panel" *ngIf="activeTab === 'notes'">
+    <app-pc-notes
+      [pc]="pc"
+      [canWrite]="(showActions || inventoryEditable) && !editable"
+      [sessionId]="noteSessionId">
+    </app-pc-notes>
   </div>
 
 </div>

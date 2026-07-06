@@ -3,7 +3,6 @@ import { PC, PcSurvival } from '../../../../models/pc';
 import {
   SURVIVAL_KEYS,
   SURVIVAL_LABELS,
-  SurvivalAction,
   SurvivalKey,
   clampStage,
   survivalExhaustion,
@@ -32,7 +31,6 @@ export class SurvivalPanelComponent {
   /** Steppers active (own sheet, or a DM viewing a member). */
   @Input() editable = false;
   @Output() pcChange = new EventEmitter<PC>();
-  @Output() actionRequested = new EventEmitter<SurvivalAction>();
 
   readonly keys = SURVIVAL_KEYS;
 

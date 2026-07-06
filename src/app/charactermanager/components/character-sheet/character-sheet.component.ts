@@ -4,7 +4,7 @@ import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
-import { applyCastToPc, applyLongRestToSlots } from '../../utils/spellcasting';
+import { applyLongRestToSlots } from '../../utils/spellcasting';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
@@ -43,9 +43,8 @@ export class CharacterSheetComponent implements OnChanges {
   /** True when this PC's campaign runs the strict material-components variant —
    *  a missing costly component blocks the cast instead of warning. */
   @Input() strictComponents = false;
-  /** True when the sheet is embedded in a live session: survival Eat/Drink/Sleep
-   *  bubble up (survivalActionRequested) so the host can call the
-   *  server-authoritative consume endpoint instead of a local edit. */
+  /** True when the sheet is embedded in a live session — enables the in-session
+   *  spellbook Cast buttons and tags new character notes with the session. */
   @Input() sessionLive = false;
   /** The live session id (session embeds only) — tags new character notes. */
   @Input() noteSessionId: number | string | null = null;
@@ -56,8 +55,6 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() connectRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
-  /** In-session survival action (eat/drink/sleep); bubbled from the survival panel. */
-  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
   @Output() castRequested = new EventEmitter<CastRequest>();
 
@@ -97,6 +94,11 @@ export class CharacterSheetComponent implements OnChanges {
     this.connectHintPinned = true;
     setTimeout(() => (this.connectHintPinned = false), 2500);
   }
+
+  /** Active section tab. The sheet is split so Notes (and Spells/Inventory) get
+   *  their own space; on mobile the tab bar is pinned to the bottom of the screen. */
+  activeTab: 'sheet' | 'spells' | 'inventory' | 'notes' = 'sheet';
+  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'notes'): void { this.activeTab = tab; }
 
   editingName = false;
   nameDraft = '';
@@ -147,16 +149,12 @@ export class CharacterSheetComponent implements OnChanges {
   }
 
   /**
-   * A cast from the spellbook panel. In a live session the host owns it (the
-   * server spends the slot, consumes the component, and bumps the poll version);
-   * on the plain sheet the local reducer applies the same rules and persists.
+   * A cast from the spellbook panel — only reachable inside a live session (the
+   * Cast buttons are hidden otherwise). The host forwards it to Session Mode,
+   * which spends the slot, consumes the component, and bumps the poll version.
    */
   onCastRequested(ev: CastRequest): void {
-    if (this.sessionLive) {
-      this.castRequested.emit(ev);
-      return;
-    }
-    this.persist(applyCastToPc(this.pc, ev.spellName, ev.atLevel));
+    this.castRequested.emit(ev);
   }
 
   /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
@@ -213,15 +211,43 @@ export class CharacterSheetComponent implements OnChanges {
     this.persist({ ...this.pc, conditions: next });
   }
 
-  // ── Spell slots (wired fully in Phase 5) ────────────────────────────────────
+  // ── DM grants ────────────────────────────────────────────────────────────
+  // Grants go through GrantService's refetch-merge-save rather than persist() —
+  // the sheet's `pc` copy can be stale by the time the DM submits the form, and
+  // PUTting it directly risks clobbering a concurrent player edit.
 
-  onSlotToggle(level: number, index: number): void {
-    const slots = { ...(this.pc.spellSlots ?? {}) };
-    const slot = slots[level];
-    if (!slot) return;
-    const used = index < slot.used ? index : index + 1;
-    slots[level] = { ...slot, used: Math.min(slot.max, Math.max(0, used)) };
-    this.persist({ ...this.pc, spellSlots: slots });
+  onFeatureGrant(f: { name: string; source: string; desc: string }): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
+      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+  }
+
+  onSpellsGrant(granted: PcSpell[]): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Dedupe against the FRESH copy — the player may have learned one of these
+        // spells (e.g. via level-up) in the moments between the picker opening and
+        // the DM confirming the grant.
+        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
+        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
+        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
+      })
+      .subscribe({ error: err => console.error('Failed to grant spells', err) });
+  }
+
+  onItemGrant(item: PcItem): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Stack onto an existing catalog line (mirrors the backend purchase path);
+        // ad-hoc items have no catalogKey and always append. Granted items arrive
+        // unequipped, so there's no AC to recompute.
+        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
+        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+        else inventory.push(item);
+        return { ...fresh, inventory };
+      })
+      .subscribe({ error: err => console.error('Failed to grant item', err) });
   }
 
   // ── DM grants ────────────────────────────────────────────────────────────
