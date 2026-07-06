@@ -3,6 +3,8 @@ import { PC, PcSpell, PcItem } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
+import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
+import { applyLongRestToSlots } from '../../utils/spellcasting';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 
@@ -129,12 +131,30 @@ export class CharacterSheetComponent implements OnChanges {
   }
 
   /**
+   * A survival action from the panel. In a live session the host owns it (the
+   * server decrements rations and bumps the poll version); on the plain sheet
+   * the local reducer applies the same rules and persists.
+   */
+  onSurvivalAction(action: SurvivalAction): void {
+    if (this.sessionLive) {
+      this.survivalActionRequested.emit(action);
+      return;
+    }
+    this.persist(applyConsumeToPc(this.pc, action));
+  }
+
+  /**
    * A cast from the spellbook panel — only reachable inside a live session (the
    * Cast buttons are hidden otherwise). The host forwards it to Session Mode,
    * which spends the slot, consumes the component, and bumps the poll version.
    */
   onCastRequested(ev: CastRequest): void {
     this.castRequested.emit(ev);
+  }
+
+  /** Long rest — restore every spent spell slot. HP/survival stay out of scope for now. */
+  onLongRest(): void {
+    this.persist({ ...this.pc, spellSlots: applyLongRestToSlots(this.pc.spellSlots) });
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
