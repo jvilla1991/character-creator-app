@@ -50,13 +50,4 @@ describe('SurvivalPanelComponent', () => {
     component.pc = basePc({ hunger: 2, thirst: 3, fatigue: 1 });
     expect(component.exhaustion).toBe(0);
   });
-
-  it('emits the raw action for the host to route', () => {
-    component.pc = basePc({ hunger: 3, thirst: 3, fatigue: 3 });
-    const spy = spyOn(component.actionRequested, 'emit');
-
-    component.actionRequested.emit('EAT');
-
-    expect(spy).toHaveBeenCalledWith('EAT');
-  });
 });

@@ -47,6 +47,9 @@ export interface PcSurvival {
   hunger: number;
   thirst: number;
   fatigue: number;
+  /** True once the character's starting Rations/Waterskin have been granted —
+   *  guards against re-seeding after the supplies are consumed. */
+  seeded?: boolean;
 }
 
 export interface PC {
