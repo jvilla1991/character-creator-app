@@ -98,6 +98,13 @@
         </svg>
         Roll
       </button>
+      <button class="btn" title="Take a long rest" (click)="onLongRest()">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M2 3a1 1 0 011-1h4a1 1 0 011 1v11M8 3a1 1 0 011-1h4a1 1 0 011 1v11M2 14h12"/>
+        </svg>
+        Long Rest
+      </button>
       <button class="btn" [class.ready]="readyToLevel" title="Advance a level" (click)="levelUpRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
