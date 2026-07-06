@@ -149,11 +149,12 @@
         [pc]="pc"
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
-      <!-- Survival is DM-managed: the controls show only on the DM's cross-link view. -->
+      <!-- Survival is visible to everyone in a survival campaign; only the DM's
+           cross-link view (editable) gets the steppers to change it. -->
       <app-survival-panel
-        *ngIf="survivalConditions && editable"
+        *ngIf="survivalConditions"
         [pc]="pc"
-        [editable]="true"
+        [editable]="editable"
         (pcChange)="onPcChange($event)">
       </app-survival-panel>
       <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>

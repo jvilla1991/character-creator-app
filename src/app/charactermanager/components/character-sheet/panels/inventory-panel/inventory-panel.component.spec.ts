@@ -246,6 +246,37 @@ describe('InventoryPanelComponent', () => {
       expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1 });
     });
 
+    it('carries value/weight and the category stat on a custom grant', () => {
+      component.customName = 'Flametongue';
+      component.customCategory = 'weapon';
+      component.customQty = 1;
+      component.customValueGp = 50;      // → 5000 cp
+      component.customWeight = 3;
+      component.customDamage = '1d8 slashing + 2d6 fire';
+      component.customArmorClass = 'ignored for a weapon';
+      const emitted: PcItem[] = [];
+      component.itemGranted.subscribe(i => emitted.push(i));
+
+      component.grantCustomItem();
+
+      expect(emitted[0]).toEqual({
+        name: 'Flametongue', category: 'weapon', qty: 1,
+        unitCostCp: 5000, weight: 3, damage: '1d8 slashing + 2d6 fire',
+      });
+    });
+
+    it('carries armor class on a custom armor grant', () => {
+      component.customName = 'Mithral Plate';
+      component.customCategory = 'armor';
+      component.customArmorClass = '18';
+      const emitted: PcItem[] = [];
+      component.itemGranted.subscribe(i => emitted.push(i));
+
+      component.grantCustomItem();
+
+      expect(emitted[0]).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, armorClass: '18' });
+    });
+
     it('blocks a custom grant with a blank name', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));

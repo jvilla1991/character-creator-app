@@ -180,6 +180,10 @@ export class InventoryPanelComponent {
   customName = '';
   customCategory: PcItem['category'] = 'gear';
   customQty = 1;
+  customValueGp: number | null = null;   // value in gold, converted to unitCostCp
+  customWeight: number | null = null;    // pounds (feeds bulk in slot campaigns)
+  customDamage = '';                     // weapons, e.g. "1d8 slashing"
+  customArmorClass = '';                 // armor, e.g. "14 + Dex modifier (max 2)"
 
   openGrantForm(): void {
     this.grantFormOpen = true;
@@ -233,15 +237,28 @@ export class InventoryPanelComponent {
     this.resetGrantForm();
   }
 
-  /** Grant an ad-hoc homebrew line (no catalog key, cost, or bulk). */
+  /** Grant an ad-hoc homebrew line. Beyond name/category/qty, the DM may set a
+   *  value (gp → unitCostCp), weight, and the category-specific stat (weapon
+   *  damage or armor class) — each added only when provided. */
   grantCustomItem(): void {
     const name = this.customName.trim();
     if (!name) return;
-    this.itemGranted.emit({
+    const entry: PcItem = {
       name,
       category: this.customCategory,
       qty: Math.max(1, Math.floor(this.customQty || 1)),
-    });
+    };
+    if (this.customValueGp != null && this.customValueGp >= 0) {
+      entry.unitCostCp = Math.round(this.customValueGp * 100);
+    }
+    if (this.customWeight != null && this.customWeight >= 0) {
+      entry.weight = this.customWeight;
+    }
+    const damage = this.customDamage.trim();
+    if (this.customCategory === 'weapon' && damage) entry.damage = damage;
+    const armorClass = this.customArmorClass.trim();
+    if (this.customCategory === 'armor' && armorClass) entry.armorClass = armorClass;
+    this.itemGranted.emit(entry);
     this.resetGrantForm();
   }
 
@@ -256,5 +273,9 @@ export class InventoryPanelComponent {
     this.customName = '';
     this.customCategory = 'gear';
     this.customQty = 1;
+    this.customValueGp = null;
+    this.customWeight = null;
+    this.customDamage = '';
+    this.customArmorClass = '';
   }
 }
