@@ -9,7 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
-import { TimeOfDay } from '../../models/campaign';
+import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
@@ -194,6 +194,37 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => { this.editingTime = false; },
       error: () => this.notifications.notify('Could not set the date.'),
+    });
+  }
+
+  // ── Party location (DM controls; read-only chip for players) ───────────────
+
+  editingLocation = false;
+  locationName = '';
+  locationType: LocationType = 'Settlement';
+  readonly locationTypes = LOCATION_TYPES;
+
+  /** "Neverwinter · Settlement" (type only when unnamed); "No location set" when unset. */
+  describeLocation(state: SessionState): string {
+    const loc = state.location;
+    if (!loc) return 'No location set';
+    return loc.name ? `${loc.name} · ${loc.type}` : loc.type;
+  }
+
+  toggleLocationEdit(state: SessionState): void {
+    if (this.editingLocation) { this.editingLocation = false; return; }
+    this.locationName = state.location?.name ?? '';
+    this.locationType = state.location?.type ?? 'Settlement';
+    this.editingLocation = true;
+  }
+
+  commitLocation(state: SessionState): void {
+    this.sessionService.setLocation(state.sessionId, {
+      name: this.locationName.trim(),
+      type: this.locationType,
+    }).subscribe({
+      next: () => { this.editingLocation = false; },
+      error: () => this.notifications.notify('Could not set the location.'),
     });
   }
 

@@ -5,7 +5,7 @@ import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ParticipantView, SessionState, XpAwardEntry, XpAwardResult } from '../models/session';
 import { PC, PcItem, PcSurvival } from '../models/pc';
-import { CampaignGameTime, TimeOfDay } from '../models/campaign';
+import { CampaignGameTime, CampaignLocation, LocationType, LOCATION_TYPES, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
 import {
@@ -405,6 +405,34 @@ export class SessionService {
     }
   }
 
+  /**
+   * DM sets the party's current location. Party-wide (stored on the campaign,
+   * like the clock); server-authoritative and version-bumped so every seated
+   * sheet updates via the poll. Mirrors the change onto the local campaign so a
+   * standing sheet picks it up too.
+   */
+  setLocation(sessionId: number | string,
+              location: { name: string; type: LocationType }): Observable<SessionState> {
+    if (environment.demoMode) return this.demoSetLocation(location);
+    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/location`, location).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => { this.pushState(state); this.mirrorLocation(state); }),
+    );
+  }
+
+  /** Keep the campaign list's copy of the location fresh after a session change. */
+  private mirrorLocation(state: SessionState): void {
+    this.campaignService.setLocalLocation(state.campaignId, state.location);
+  }
+
+  /** Demo mirror of the server's set-location. */
+  private demoSetLocation(location: { name: string; type: LocationType }): Observable<SessionState> {
+    const loc: CampaignLocation = { name: (location.name ?? '').trim(), type: location.type };
+    const state = this.demoPatch({ location: loc });
+    this.campaignService.setLocalLocation(state.campaignId, loc);
+    return of(state);
+  }
+
   /** DM sets (or clears) the encounter turn-cue sound, pushed to every client. */
   setSound(sessionId: number | string, turnSound: string | null): Observable<SessionState> {
     if (environment.demoMode) return of(this.demoPatch({ turnSound }));
@@ -748,6 +776,7 @@ export class SessionService {
       shopCategory: null,
       myXp: null,
       gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
+      location: this.campaignService.getLocalCampaign(campaignId)?.location ?? null,
       participants,
     };
   }
@@ -758,7 +787,7 @@ export class SessionService {
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
-      gameTime: null, participants: [],
+      gameTime: null, location: null, participants: [],
     };
   }
 
@@ -809,6 +838,7 @@ export class SessionService {
       shopCategory: raw.shopCategory ?? null,
       myXp: raw.myXp ?? null,
       gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
+      location: this.parseLocation(this.parseJsonObject<CampaignLocation>(raw.location)),
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }
@@ -839,6 +869,14 @@ export class SessionService {
       deathSaveSuccesses: p.deathSaveSuccesses ?? 0,
       deathSaveFailures: p.deathSaveFailures ?? 0,
     };
+  }
+
+  /** Validate a parsed location map; null when unset or the type isn't one of
+   *  the three recognized kinds. */
+  private parseLocation(obj: CampaignLocation | null): CampaignLocation | null {
+    if (!obj || typeof obj !== 'object') return null;
+    if (!LOCATION_TYPES.includes(obj.type)) return null;
+    return { name: typeof obj.name === 'string' ? obj.name : '', type: obj.type };
   }
 
   /** Tolerates an object, a JSON-string TEXT column, or null (→ null). */

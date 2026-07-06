@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
 import { delay, map, shareReplay, take, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { Campaign, CampaignDraft, CampaignGameTime, CampaignSummary, CampaignVariantRules } from '../models/campaign';
+import { Campaign, CampaignDraft, CampaignGameTime, CampaignLocation, CampaignSummary, CampaignVariantRules, LOCATION_TYPES } from '../models/campaign';
 import { SessionNote } from '../models/session-note';
 import { PC } from '../models/pc';
 import { PCService } from './pc.service';
@@ -165,14 +165,14 @@ export class CampaignService {
       cached = environment.demoMode
         ? this.campaigns$.pipe(
             map(campaigns => campaigns.find(c => c.id === key)),
-            map(c => ({ id: key, name: c?.name ?? '', variantRules: c?.variantRules ?? {} })),
+            map(c => ({ id: key, name: c?.name ?? '', variantRules: c?.variantRules ?? {}, location: c?.location ?? null })),
             take(1),
             shareReplay(1),
           )
-        : this.http.get<{ id: number; name: string; variantRules: unknown }>(
+        : this.http.get<{ id: number; name: string; variantRules: unknown; location: unknown }>(
             `${this.campaignUrl}/${key}/summary`
           ).pipe(
-            map(r => ({ id: key, name: r.name, variantRules: this.parseVariantRules(r.variantRules) })),
+            map(r => ({ id: key, name: r.name, variantRules: this.parseVariantRules(r.variantRules), location: this.parseLocation(r.location) })),
             shareReplay(1),
           );
       this.summaryCache.set(key, cached);
@@ -283,6 +283,8 @@ export class CampaignService {
       // null (not '{}') when unset — the clock is "never set" until the DM
       // enters a date or advances time; the backend pins it on updates anyway.
       gameTime: c.gameTime ? JSON.stringify(c.gameTime) : null,
+      // null until the DM sets a party location in session.
+      location: c.location ? JSON.stringify(c.location) : null,
     };
   }
 
@@ -304,6 +306,7 @@ export class CampaignService {
       inviteCode: raw.inviteCode ?? undefined,
       variantRules: this.parseVariantRules(raw.variantRules),
       gameTime: this.parseGameTime(raw.gameTime),
+      location: this.parseLocation(raw.location),
     };
   }
 
@@ -334,6 +337,19 @@ export class CampaignService {
     return null;
   }
 
+  /** Tolerant read of a stored location (object or JSON string); null when
+   *  unset or the type isn't one of the three recognized kinds. */
+  private parseLocation(value: unknown): CampaignLocation | null {
+    let obj = value;
+    if (typeof value === 'string') {
+      try { obj = JSON.parse(value); } catch { return null; }
+    }
+    if (!obj || typeof obj !== 'object') return null;
+    const { name, type } = obj as { name?: unknown; type?: unknown };
+    if (typeof type !== 'string' || !LOCATION_TYPES.includes(type as CampaignLocation['type'])) return null;
+    return { name: typeof name === 'string' ? name : '', type: type as CampaignLocation['type'] };
+  }
+
   /** Sync lookup of a campaign already in the local store (demo & session seams). */
   getLocalCampaign(campaignId: string | number): Campaign | undefined {
     const key = String(campaignId);
@@ -354,6 +370,23 @@ export class CampaignService {
     } else {
       this.campaignsSubject.next(updated);
     }
+  }
+
+  /**
+   * Mirror a session-side location change onto the local campaign list (and demo
+   * storage), and drop the cached member summary so a player's standing sheet
+   * refetches the new location the next time it loads.
+   */
+  setLocalLocation(campaignId: string | number, location: CampaignLocation | null): void {
+    const key = String(campaignId);
+    const updated = this.campaignsSubject.getValue()
+      .map(c => (c.id === key ? { ...c, location } : c));
+    if (environment.demoMode) {
+      this.persistDemo(updated);
+    } else {
+      this.campaignsSubject.next(updated);
+    }
+    this.summaryCache.delete(key);
   }
 
   // --- demo persistence -----------------------------------------------------

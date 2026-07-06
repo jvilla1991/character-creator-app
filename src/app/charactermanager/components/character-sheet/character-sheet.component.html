@@ -1,5 +1,17 @@
 <div class="fade-in">
 
+  <!-- Party location (campaign-level; DM-set in Session Mode). Sits at the very
+       top so players always see where they are. -->
+  <div *ngIf="location" class="sheet-location" [attr.data-loc-type]="location.type">
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4"
+         style="vertical-align: -2px; margin-right: 6px;">
+      <path d="M8 1.5c-2.5 0-4.5 2-4.5 4.5C3.5 9.5 8 14.5 8 14.5s4.5-5 4.5-8.5C12.5 3.5 10.5 1.5 8 1.5z"/>
+      <circle cx="8" cy="6" r="1.6"/>
+    </svg>
+    <span *ngIf="location.name" class="sheet-location-name">{{ location.name }}</span>
+    <span class="sheet-location-type">{{ location.type }}</span>
+  </div>
+
   <!-- ═══════════════════════════════════════════════
        SHEET HEADER: portrait · identity · actions
        ═══════════════════════════════════════════════ -->

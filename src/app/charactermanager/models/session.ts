@@ -5,7 +5,7 @@
  * from the backend's JSON string into an array by the SessionService deserializer.
  */
 
-import { CampaignGameTime } from './campaign';
+import { CampaignGameTime, CampaignLocation } from './campaign';
 import { PC, PcSurvival } from './pc';
 
 export type SessionStatus = 'LOBBY' | 'ACTIVE' | 'ENDED';
@@ -93,5 +93,8 @@ export interface SessionState {
   // The campaign's in-world clock (null until the DM sets or advances it).
   // Broadcast to every viewer; only the DM can change it.
   gameTime: CampaignGameTime | null;
+  // The party's current location (null until the DM sets it). Broadcast to
+  // every viewer; only the DM can change it.
+  location: CampaignLocation | null;
   participants: ParticipantView[];
 }

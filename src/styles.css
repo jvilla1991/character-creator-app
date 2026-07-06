@@ -760,6 +760,40 @@ app-root { display: block; height: 100vh; width: 100vw; }
 }
 .spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
 
+/* === PARTY LOCATION (top-of-sheet banner) === */
+.sheet-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--surface) 70%, transparent);
+  font-family: 'Newsreader', serif;
+  color: var(--text-dim);
+}
+.sheet-location-name {
+  font-size: 15px;
+  font-style: italic;
+  color: var(--text);
+}
+.sheet-location-type {
+  margin-left: auto;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+/* Type-tinted accents: settlement = calm blue, wilderness = green, dungeon = red. */
+.sheet-location[data-loc-type='Settlement'] { border-left-color: var(--celestial); color: var(--celestial); }
+.sheet-location[data-loc-type='Wilderness'] { border-left-color: var(--emerald, #4ea36b); color: var(--emerald, #4ea36b); }
+.sheet-location[data-loc-type='Dungeon']    { border-left-color: var(--crimson); color: var(--crimson); }
+
 /* === SUPPLIES (travel rations/water tracked as charges) === */
 .supply-row {
   display: flex;
