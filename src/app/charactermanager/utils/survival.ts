@@ -1,4 +1,4 @@
-import { PC, PcSurvival } from '../models/pc';
+import { PC, PcItem, PcSurvival } from '../models/pc';
 import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 
 // ── Darker Dungeons "Survival Conditions" (ch. 31) ──────────────────────────
@@ -8,7 +8,6 @@ import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 // SurvivalRules/GameClock so demo mode behaves identically.
 
 export type SurvivalKey = 'hunger' | 'thirst' | 'fatigue';
-export type SurvivalAction = 'EAT' | 'DRINK' | 'SLEEP_GOOD' | 'SLEEP_DISTURBED';
 
 export const SURVIVAL_KEYS: SurvivalKey[] = ['hunger', 'thirst', 'fatigue'];
 
@@ -38,57 +37,76 @@ export function survivalOf(pc: PC): PcSurvival {
   };
 }
 
-/**
- * The book's time-of-day table mapped onto the three-segment day: morning
- * takes dawn's +1 hunger +1 thirst, noon keeps +1 fatigue, night takes dusk's
- * +1 to all three (sleep happens during the night before the next morning).
- */
-export function applyTimeBump(s: PcSurvival, timeOfDay: TimeOfDay): PcSurvival {
-  const out = { ...s };
-  if (timeOfDay === 'morning' || timeOfDay === 'night') {
-    out.hunger = clampStage(out.hunger + 1);
-    out.thirst = clampStage(out.thirst + 1);
-  }
-  if (timeOfDay === 'noon' || timeOfDay === 'night') {
-    out.fatigue = clampStage(out.fatigue + 1);
-  }
-  return out;
-}
+export const SURVIVAL_STARTING_CHARGES = 5;
 
-/** Eat −1 hunger · drink −1 thirst · good sleep −3 fatigue · disturbed −1. */
-export function applyAction(s: PcSurvival, action: SurvivalAction): PcSurvival {
-  const out = { ...s };
-  switch (action) {
-    case 'EAT': out.hunger = clampStage(out.hunger - 1); break;
-    case 'DRINK': out.thirst = clampStage(out.thirst - 1); break;
-    case 'SLEEP_GOOD': out.fatigue = clampStage(out.fatigue - 3); break;
-    case 'SLEEP_DISTURBED': out.fatigue = clampStage(out.fatigue - 1); break;
+/** Add a full Rations box and Waterskin if a live line for each isn't present. */
+function seedSupplies(inventory: PcItem[]): PcItem[] {
+  const items = inventory.map(i => ({ ...i }));
+  const has = (key: string) => items.some(i => i.catalogKey === key && i.status !== 'dropped');
+  if (!has('rations')) {
+    items.push({ catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear',
+      qty: SURVIVAL_STARTING_CHARGES, weight: 2, bulk: 1, unitCostCp: 50 });
   }
-  return out;
-}
-
-/**
- * Apply a consume action to a whole PC — the out-of-session (and demo) mirror
- * of the server's consume endpoint: EAT decrements a live Rations inventory
- * line (line removed at zero; no line still relieves hunger), DRINK the same
- * with a Waterskin. Returns a new PC; the input is untouched.
- */
-export function applyConsumeToPc(pc: PC, action: SurvivalAction): PC {
-  let inventory = pc.inventory;
-  if (action === 'EAT' || action === 'DRINK') {
-    inventory = consumeLine(pc.inventory ?? [], action === 'EAT' ? 'rations' : 'waterskin');
+  if (!has('waterskin')) {
+    items.push({ catalogKey: 'waterskin', name: 'Waterskin', category: 'gear',
+      qty: SURVIVAL_STARTING_CHARGES, weight: 5, bulk: 1, unitCostCp: 20 });
   }
-  return { ...pc, inventory, survival: applyAction(survivalOf(pc), action) };
-}
-
-function consumeLine(inventory: PC['inventory'], catalogKey: string): PC['inventory'] {
-  const items = (inventory ?? []).map(i => ({ ...i }));
-  const line = items.find(i =>
-    i.catalogKey === catalogKey && i.status !== 'dropped' && (i.qty ?? 0) > 0);
-  if (!line) return items;
-  if (line.qty === 1) return items.filter(i => i !== line);
-  line.qty -= 1;
   return items;
+}
+
+/** Decrement one unit of the first live line with this key; returns [items, consumed]. */
+function tryConsume(inventory: PcItem[], key: string): [PcItem[], boolean] {
+  const items = inventory.map(i => ({ ...i }));
+  const line = items.find(i => i.catalogKey === key && i.status !== 'dropped' && (i.qty ?? 0) > 0);
+  if (!line) return [items, false];
+  if (line.qty === 1) return [items.filter(i => i !== line), true];
+  line.qty -= 1;
+  return [items, true];
+}
+
+/**
+ * Advance one PC by a day-segment — the demo/local mirror of the server. The
+ * party auto-eats/drinks their supplies: hunger and thirst hold while a
+ * ration/water serving lasts and rise only when the box runs out; fatigue
+ * always climbs on its steps. Starting supplies are seeded once (seeded flag).
+ * Returns a new PC; the input is untouched.
+ */
+export function applySegmentToPc(pc: PC, segment: TimeOfDay): PC {
+  let inventory: PcItem[] = pc.inventory ?? [];
+  if (pc.survival?.seeded !== true) inventory = seedSupplies(inventory);
+
+  const s = survivalOf(pc);
+  const supplyStep = segment === 'morning' || segment === 'night';
+  let ate = false;
+  let drank = false;
+  if (supplyStep) {
+    [inventory, ate] = tryConsume(inventory, 'rations');
+    [inventory, drank] = tryConsume(inventory, 'waterskin');
+  }
+  const survival: PcSurvival = {
+    hunger: supplyStep && !ate ? clampStage(s.hunger + 1) : s.hunger,
+    thirst: supplyStep && !drank ? clampStage(s.thirst + 1) : s.thirst,
+    fatigue: segment === 'noon' || segment === 'night' ? clampStage(s.fatigue + 1) : s.fatigue,
+    seeded: true,
+  };
+  return { ...pc, inventory, survival };
+}
+
+/**
+ * DM long rest (demo/local mirror): restore every spell slot and, in a survival
+ * campaign, shed fatigue — 3 for an undisturbed rest, 1 for a disturbed one.
+ */
+export function applyLongRestToPc(pc: PC, undisturbed: boolean, survivalOn: boolean): PC {
+  const spellSlots = pc.spellSlots
+    ? Object.fromEntries(Object.entries(pc.spellSlots).map(([lvl, slot]) => [lvl, { ...slot, used: 0 }]))
+    : pc.spellSlots;
+  if (!survivalOn) return { ...pc, spellSlots };
+  const s = survivalOf(pc);
+  return {
+    ...pc,
+    spellSlots,
+    survival: { ...s, fatigue: clampStage(s.fatigue - (undisturbed ? 3 : 1)), seeded: pc.survival?.seeded },
+  };
 }
 
 /**

@@ -107,11 +107,15 @@
       </div>
       <div *ngIf="state.dm" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
         <button class="btn primary" (click)="advanceTime(state)"
-                [title]="survivalConditions ? 'Dawn, noon and dusk worsen survival conditions for the whole party' : 'Moves the in-world clock'">
+                [title]="survivalConditions ? 'Time passes: the party eats its supplies; hunger, thirst and fatigue shift' : 'Moves the in-world clock'">
           {{ advanceTimeLabel(state) }}
         </button>
         <button class="btn" (click)="toggleTimeEdit(state)">
           {{ editingTime ? 'Cancel' : 'Set date' }}
+        </button>
+        <button class="btn" (click)="openLongRest()"
+                title="Rest the party: recover spell slots and (in survival campaigns) shed fatigue">
+          Long Rest
         </button>
       </div>
       <div *ngIf="state.dm && editingTime"
@@ -181,10 +185,28 @@
                            [slotInventory]="slotInventory"
                            [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
                            [sessionLive]="true"
-                           (survivalActionRequested)="onSurvivalAction($event, state)"
                            (castRequested)="onCast($event, state)"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
+
+    <!-- Long rest modal (DM): was the rest undisturbed? -->
+    <div *ngIf="state.dm && longRestModalOpen" class="modal-backdrop" (click)="cancelLongRest()">
+      <div class="panel" style="max-width: 420px;" (click)="$event.stopPropagation()">
+        <div class="panel-header"><span class="panel-title">Long Rest</span></div>
+        <p>The party settles in to rest — spell slots recover for everyone.
+          <ng-container *ngIf="survivalConditions">Was the rest undisturbed?</ng-container>
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+          <button class="btn primary" (click)="confirmLongRest(true, state)">
+            {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
+          </button>
+          <button *ngIf="survivalConditions" class="btn" (click)="confirmLongRest(false, state)">
+            Disturbed (−1 fatigue)
+          </button>
+          <button class="btn" (click)="cancelLongRest()">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 </ng-container>
 

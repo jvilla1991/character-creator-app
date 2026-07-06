@@ -9,14 +9,12 @@ import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
 import {
-  SurvivalAction,
   advanceGameTime,
-  applyConsumeToPc,
-  applyTimeBump,
+  applyLongRestToPc,
+  applySegmentToPc,
   initialGameTime,
   normalizeGameTime,
   registerWeekday,
-  survivalOf,
 } from '../utils/survival';
 import { applyCastToPc } from '../utils/spellcasting';
 
@@ -368,20 +366,15 @@ export class SessionService {
   }
 
   /**
-   * A player improves their own seated PC's survival condition. The result
-   * patches the local PC store (survival + possibly-decremented inventory, the
-   * sell-flow pattern); other viewers see the stages via the version bump.
+   * DM long rest for the seated party: restores every PC's spell slots and, in
+   * a survival campaign, sheds fatigue (3 undisturbed / 1 disturbed). Server-
+   * authoritative and version-bumped so every sheet updates via the poll.
    */
-  consumeSurvival(sessionId: number | string, pcId: number, action: SurvivalAction):
-      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
-    if (environment.demoMode) return this.demoConsume(pcId, action);
-    return this.http.post<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }>(
-      `${this.sessionBase}/${sessionId}/survival/consume`, { pcId, action },
-    ).pipe(
-      tap(result => this.pcService.patchLocalPC(pcId, {
-        survival: result.survival,
-        inventory: result.inventory ?? [],
-      })),
+  longRest(sessionId: number | string, undisturbed: boolean): Observable<SessionState> {
+    if (environment.demoMode) return this.demoLongRest(undisturbed);
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest`, { undisturbed }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
     );
   }
 
@@ -674,13 +667,29 @@ export class SessionService {
         if (p.pcId == null) return p;
         const pc = this.pcService.getPCById(p.pcId);
         if (!pc) return p;
-        const survival = applyTimeBump(survivalOf(pc), next.timeOfDay);
-        this.pcService.patchLocalPC(p.pcId, { survival });
-        return { ...p, survival };
+        // Auto-eat/drink supplies as time passes (mirror of the server).
+        const updated = applySegmentToPc(pc, next.timeOfDay);
+        this.pcService.patchLocalPC(p.pcId, { survival: updated.survival, inventory: updated.inventory ?? [] });
+        return { ...p, survival: updated.survival ?? null };
       });
     }
     this.campaignService.setLocalGameTime(state.campaignId, next);
     return of(this.demoPatch({ gameTime: next, participants }));
+  }
+
+  /** Demo mirror of the DM long rest (restore slots + shed fatigue for the party). */
+  private demoLongRest(undisturbed: boolean): Observable<SessionState> {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const survivalOn = !!this.campaignService.getLocalCampaign(state.campaignId)?.variantRules?.survivalConditions;
+    const participants = state.participants.map(p => {
+      if (p.pcId == null) return p;
+      const pc = this.pcService.getPCById(p.pcId);
+      if (!pc) return p;
+      const updated = applyLongRestToPc(pc, undisturbed, survivalOn);
+      this.pcService.patchLocalPC(p.pcId, { spellSlots: updated.spellSlots, survival: updated.survival });
+      return { ...p, survival: updated.survival ?? p.survival };
+    });
+    return of(this.demoPatch({ participants }));
   }
 
   private demoSetTime(
@@ -700,22 +709,6 @@ export class SessionService {
     return of(this.demoPatch({ gameTime: next }));
   }
 
-  /** Demo mirror of the consume endpoint (shared reducer, local persistence). */
-  private demoConsume(pcId: number, action: SurvivalAction):
-      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
-    const pc = this.pcService.getPCById(pcId);
-    if (!pc) return throwError(() => new Error('Character not found'));
-    const updated = applyConsumeToPc(pc, action);
-    this.pcService.patchLocalPC(pcId, { survival: updated.survival, inventory: updated.inventory ?? [] });
-
-    const state = this.stateSubject.getValue();
-    if (state) {
-      const participants = state.participants.map(p =>
-        p.pcId === pcId ? { ...p, survival: updated.survival ?? null } : p);
-      this.demoPatch({ participants });
-    }
-    return of({ pcId, survival: updated.survival!, inventory: updated.inventory ?? [] });
-  }
 
   /** Demo mirror of the cast endpoint (shared reducer, local persistence + version bump). */
   private demoCast(pcId: number, spellName: string, atLevel: number):

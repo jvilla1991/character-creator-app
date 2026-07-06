@@ -1,8 +1,7 @@
 import {
   advanceGameTime,
-  applyAction,
-  applyConsumeToPc,
-  applyTimeBump,
+  applyLongRestToPc,
+  applySegmentToPc,
   clampStage,
   describeGameTime,
   initialGameTime,
@@ -46,70 +45,76 @@ describe('survival util', () => {
     });
   });
 
-  describe('time-of-day bumps (three-segment mapping)', () => {
-    const s = { hunger: 2, thirst: 2, fatigue: 2 };
-
-    it('morning bumps hunger and thirst', () => {
-      expect(applyTimeBump(s, 'morning')).toEqual({ hunger: 3, thirst: 3, fatigue: 2 });
+  describe('applySegmentToPc (auto-consume)', () => {
+    const rations: PcItem = { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 5 };
+    const waterskin: PcItem = { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 5 };
+    const fedPc = (over: Partial<PC> = {}): PC => basePC({
+      survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true },
+      inventory: [{ ...rations }, { ...waterskin }],
+      ...over,
     });
 
-    it('noon bumps fatigue only', () => {
-      expect(applyTimeBump(s, 'noon')).toEqual({ hunger: 2, thirst: 2, fatigue: 3 });
+    it('morning: eats/drinks to hold hunger & thirst, decrementing supplies', () => {
+      const after = applySegmentToPc(fedPc(), 'morning');
+      expect(after.survival).toEqual({ hunger: 2, thirst: 2, fatigue: 2, seeded: true });
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(4);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(4);
     });
 
-    it('night bumps all three (dusk\'s bump — sleep comes before next morning)', () => {
-      expect(applyTimeBump({ hunger: 6, thirst: 5, fatigue: 0 }, 'night'))
-        .toEqual({ hunger: 6, thirst: 6, fatigue: 1 });
+    it('noon: raises fatigue only and consumes nothing', () => {
+      const after = applySegmentToPc(fedPc(), 'noon');
+      expect(after.survival!.fatigue).toBe(3);
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
+    });
+
+    it('night: holds hunger/thirst when fed but always raises fatigue', () => {
+      const after = applySegmentToPc(fedPc({ survival: { hunger: 3, thirst: 3, fatigue: 4, seeded: true } }), 'night');
+      expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 5, seeded: true });
+    });
+
+    it('raises hunger/thirst once the supplies run out', () => {
+      const pc = basePC({ survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true }, inventory: [] });
+      const after = applySegmentToPc(pc, 'night');
+      expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 3, seeded: true });
+    });
+
+    it('seeds the starting supplies once for an unseeded character', () => {
+      const pc = basePC({ inventory: [] }); // no survival → unseeded
+      const after = applySegmentToPc(pc, 'noon'); // noon consumes nothing, so 5 remain
+      expect(after.survival!.seeded).toBeTrue();
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(5);
+    });
+
+    it('does not mutate the input PC', () => {
+      const pc = fedPc();
+      applySegmentToPc(pc, 'night');
+      expect(pc.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
     });
   });
 
-  describe('actions', () => {
-    it('applies the book deltas floored at zero', () => {
-      expect(applyAction({ hunger: 4, thirst: 0, fatigue: 0 }, 'EAT').hunger).toBe(3);
-      expect(applyAction({ hunger: 0, thirst: 1, fatigue: 0 }, 'DRINK').thirst).toBe(0);
-      expect(applyAction({ hunger: 0, thirst: 0, fatigue: 2 }, 'SLEEP_GOOD').fatigue).toBe(0);
-      expect(applyAction({ hunger: 0, thirst: 0, fatigue: 5 }, 'SLEEP_DISTURBED').fatigue).toBe(4);
-    });
-  });
-
-  describe('applyConsumeToPc', () => {
-    const rations: PcItem = { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 2 };
-
-    it('eating decrements a rations line and relieves hunger, without mutating the input', () => {
-      const pc = basePC({ survival: { hunger: 4, thirst: 0, fatigue: 0 }, inventory: [rations] });
-
-      const after = applyConsumeToPc(pc, 'EAT');
-
-      expect(after.survival!.hunger).toBe(3);
-      expect(after.inventory![0].qty).toBe(1);
-      expect(pc.inventory![0].qty).toBe(2); // input untouched
+  describe('applyLongRestToPc', () => {
+    const casterPc = (over: Partial<PC> = {}): PC => basePC({
+      spellSlots: { 1: { max: 4, used: 3 }, 2: { max: 2, used: 2 } },
+      survival: { hunger: 2, thirst: 2, fatigue: 5, seeded: true },
+      ...over,
     });
 
-    it('removes the line at the last ration and skips dropped lines', () => {
-      const pc = basePC({
-        survival: { hunger: 2, thirst: 0, fatigue: 0 },
-        inventory: [
-          { ...rations, qty: 1, status: 'dropped' },
-          { ...rations, qty: 1 },
-        ],
-      });
-
-      const after = applyConsumeToPc(pc, 'EAT');
-
-      expect(after.inventory!.length).toBe(1);
-      expect(after.inventory![0].status).toBe('dropped'); // the dropped line survives
+    it('restores every spell slot and sheds 3 fatigue when undisturbed', () => {
+      const after = applyLongRestToPc(casterPc(), true, true);
+      expect(after.spellSlots![1].used).toBe(0);
+      expect(after.spellSlots![2].used).toBe(0);
+      expect(after.survival!.fatigue).toBe(2); // 5 - 3
     });
 
-    it('still relieves hunger with no rations (free-form fallback)', () => {
-      const after = applyConsumeToPc(basePC({ survival: { hunger: 2, thirst: 0, fatigue: 0 } }), 'EAT');
-      expect(after.survival!.hunger).toBe(1);
+    it('sheds only 1 fatigue when disturbed', () => {
+      expect(applyLongRestToPc(casterPc(), false, true).survival!.fatigue).toBe(4);
     });
 
-    it('sleeping leaves the inventory alone', () => {
-      const pc = basePC({ survival: { hunger: 0, thirst: 0, fatigue: 3 }, inventory: [rations] });
-      const after = applyConsumeToPc(pc, 'SLEEP_GOOD');
-      expect(after.survival!.fatigue).toBe(0);
-      expect(after.inventory).toBe(pc.inventory);
+    it('restores slots but leaves survival alone outside a survival campaign', () => {
+      const after = applyLongRestToPc(casterPc(), true, false);
+      expect(after.spellSlots![1].used).toBe(0);
+      expect(after.survival!.fatigue).toBe(5); // untouched
     });
   });
 

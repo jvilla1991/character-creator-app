@@ -43,9 +43,8 @@ export class CharacterSheetComponent implements OnChanges {
   /** True when this PC's campaign runs the strict material-components variant —
    *  a missing costly component blocks the cast instead of warning. */
   @Input() strictComponents = false;
-  /** True when the sheet is embedded in a live session: survival Eat/Drink/Sleep
-   *  bubble up (survivalActionRequested) so the host can call the
-   *  server-authoritative consume endpoint instead of a local edit. */
+  /** True when the sheet is embedded in a live session — enables the in-session
+   *  spellbook Cast buttons and tags new character notes with the session. */
   @Input() sessionLive = false;
   /** The live session id (session embeds only) — tags new character notes. */
   @Input() noteSessionId: number | string | null = null;
@@ -56,8 +55,6 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() connectRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
-  /** In-session survival action (eat/drink/sleep); bubbled from the survival panel. */
-  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
   @Output() castRequested = new EventEmitter<CastRequest>();
 
