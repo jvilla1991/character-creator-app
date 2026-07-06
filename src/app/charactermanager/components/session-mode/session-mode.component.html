@@ -132,8 +132,9 @@
       </div>
     </div>
 
-    <!-- Party location: visible to everyone; only the DM changes it. -->
-    <div class="panel" style="margin-bottom: 16px;">
+    <!-- Party location: DM-only here (players see it on their own sheet, next to
+         the XP bar). This panel is the DM's control to set it. -->
+    <div *ngIf="state.dm" class="panel" style="margin-bottom: 16px;">
       <div class="panel-header" style="margin-bottom: 0;">
         <span class="panel-title">Party Location</span>
         <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
@@ -170,10 +171,6 @@
       [turnSound]="state.turnSound"
       [survivalConditions]="survivalConditions"
     ></app-initiative-panel>
-    <div *ngIf="!showInitiative(state)" class="panel"
-         style="color: var(--text-dim); font-style: italic;">
-      The DM is setting the table — the initiative order appears when the encounter begins.
-    </div>
 
     <app-encounter-loader [state]="state" *ngIf="state.dm" style="display: block; margin-top: 16px;"></app-encounter-loader>
 
