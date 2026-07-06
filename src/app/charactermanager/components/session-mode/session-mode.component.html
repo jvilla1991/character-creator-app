@@ -10,6 +10,9 @@
   ></div>
   <div class="fade-in">
 
+    <!-- DM-only: pinned spell reference cards, ephemeral for this session. -->
+    <app-spell-carousel *ngIf="state.dm"></app-spell-carousel>
+
     <!-- Header -->
     <header class="sheet-header" style="grid-template-columns: 1fr auto;">
       <div class="sheet-id">
