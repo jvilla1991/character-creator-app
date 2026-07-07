@@ -458,6 +458,11 @@ export class DndResourcesService {
     return FEAT_DESCRIPTIONS[featName] ?? '';
   }
 
+  /** All known Origin feat names, alphabetized — backs the grant-form typeahead. */
+  getFeatNames(): string[] {
+    return Object.keys(FEAT_DESCRIPTIONS).sort((a, b) => a.localeCompare(b));
+  }
+
   /** Class skill proficiency choices for step 5 of the wizard. */
   getClassSkillChoices(className: string): { choose: number; from: string[] } {
     return CLASS_SKILL_CHOICES[className.toLowerCase()] ?? { choose: 2, from: [] };
