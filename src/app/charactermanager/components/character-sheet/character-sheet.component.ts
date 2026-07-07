@@ -1,10 +1,13 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
+import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
+import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
+import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
 
 @Component({
   selector: 'app-character-sheet',
@@ -46,6 +49,9 @@ export class CharacterSheetComponent implements OnChanges {
   @Input() sessionLive = false;
   /** The live session id (session embeds only) — tags new character notes. */
   @Input() noteSessionId: number | string | null = null;
+  /** The party's current location (campaign-level), shown at the top of the
+   *  sheet. Set by the DM in Session Mode; null until then. */
+  @Input() location: CampaignLocation | null = null;
   @Output() deleteRequested = new EventEmitter<void>();
   @Output() rollRequested = new EventEmitter<void>();
   @Output() levelUpRequested = new EventEmitter<void>();
@@ -95,8 +101,8 @@ export class CharacterSheetComponent implements OnChanges {
 
   /** Active section tab. The sheet is split so Notes (and Spells/Inventory) get
    *  their own space; on mobile the tab bar is pinned to the bottom of the screen. */
-  activeTab: 'sheet' | 'spells' | 'inventory' | 'notes' = 'sheet';
-  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'notes'): void { this.activeTab = tab; }
+  activeTab: 'sheet' | 'spells' | 'inventory' | 'notes' | 'log' = 'sheet';
+  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'notes' | 'log'): void { this.activeTab = tab; }
 
   editingName = false;
   nameDraft = '';
@@ -119,11 +125,14 @@ export class CharacterSheetComponent implements OnChanges {
    * Persist an updated PC. In editable (DM cross-link) mode this goes through the
    * DM-authorized path so a DM may save another player's character; otherwise it
    * uses the owner path. PCService pushes the result into activePC$, so the sheet
-   * refreshes itself.
+   * refreshes itself. `description`, when given, is a DM-authored log entry that
+   * replaces the backend's automatic before/after diff — only ever passed from
+   * the DM edit modal; every other call site (name/level/conditions/pcChange)
+   * omits it and keeps the auto-diff behavior unchanged.
    */
-  private persist(updated: PC): void {
+  private persist(updated: PC, description: string | null = null): void {
     const save$ = this.editable
-      ? this.pcService.updatePCAsDm(updated)
+      ? this.pcService.updatePCAsDm(updated, description)
       : this.pcService.updatePC(updated);
     save$.subscribe({ error: err => console.error('Failed to save character', err) });
   }
@@ -179,6 +188,39 @@ export class CharacterSheetComponent implements OnChanges {
 
   onLevelCommit(level: number): void {
     this.persist({ ...this.pc, level });
+  }
+
+  /** DM clicked (intercepted) the level number — request the edit modal instead
+   *  of the inline editor. Label matches the backend's own diff vocabulary. */
+  requestLevel(): void {
+    this.onDmEditRequested({
+      label: 'level',
+      value: this.pc.level ?? null,
+      min: 1,
+      max: 20,
+      apply: v => ({ ...this.pc, level: v }),
+    });
+  }
+
+  // ── DM edit modal ────────────────────────────────────────────────────────
+  // Opened when any intercepted app-editable-number on this sheet (level here,
+  // or one bubbled up from vitals-strip/coin-purse/ability-scores) is clicked
+  // in DM cross-link mode, instead of that control's own inline editor.
+
+  dmEdit: DmEditRequest | null = null;
+
+  onDmEditRequested(request: DmEditRequest): void {
+    this.dmEdit = request;
+  }
+
+  onDmEditConfirmed(result: DmEditConfirm): void {
+    if (!this.dmEdit) return;
+    this.persist(this.dmEdit.apply(result.value), result.description);
+    this.dmEdit = null;
+  }
+
+  closeDmEdit(): void {
+    this.dmEdit = null;
   }
 
   // ── Conditions (wired fully in Phase 5) ─────────────────────────────────────

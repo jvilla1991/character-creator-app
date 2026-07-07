@@ -166,4 +166,77 @@ describe('CharacterSheetComponent', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith('Failed to grant item', error);
   });
+
+  // --- persist / onPcChange: DM cross-link vs. player path ---
+
+  it('DM cross-link (editable): onPcChange saves via the 2-arg DM-authorized path with no description', () => {
+    component.editable = true;
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+
+    const updated = makePC({ ac: 16 });
+    component.onPcChange(updated);
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(updated, null);
+    expect(pcService.updatePC).not.toHaveBeenCalled();
+  });
+
+  it('player path (not editable): onPcChange still calls updatePC only — regression guard', () => {
+    component.editable = false;
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    const updated = makePC({ ac: 16 });
+    component.onPcChange(updated);
+
+    expect(pcService.updatePC).toHaveBeenCalledWith(updated);
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  // --- DM edit modal ---
+
+  it('onDmEditRequested stores the request, opening the modal', () => {
+    const request = { label: 'AC', value: 15, min: 0, max: null, apply: (v: number) => makePC({ ac: v }) };
+
+    component.onDmEditRequested(request);
+
+    expect(component.dmEdit).toBe(request);
+  });
+
+  it('onDmEditConfirmed applies the request and persists with the DM-authored description', () => {
+    component.editable = true;
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+    const applied = makePC({ ac: 16 });
+    const request = { label: 'AC', value: 15, min: 0, max: null, apply: (v: number) => applied };
+    component.onDmEditRequested(request);
+
+    component.onDmEditConfirmed({ value: 16, description: 'DM changed AC 15 → 16 for cover' });
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(applied, 'DM changed AC 15 → 16 for cover');
+    expect(component.dmEdit).toBeNull();
+  });
+
+  it('onDmEditConfirmed with a null description still saves (backend falls back to auto-diff)', () => {
+    component.editable = true;
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+    const applied = makePC({ ac: 16 });
+    component.onDmEditRequested({ label: 'AC', value: 15, min: 0, max: null, apply: () => applied });
+
+    component.onDmEditConfirmed({ value: 16, description: null });
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(applied, null);
+  });
+
+  it('onDmEditConfirmed does nothing when no request is pending', () => {
+    component.onDmEditConfirmed({ value: 16, description: 'x' });
+
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  it('closeDmEdit clears the pending request without saving', () => {
+    component.onDmEditRequested({ label: 'AC', value: 15, min: 0, max: null, apply: (v: number) => makePC({ ac: v }) });
+
+    component.closeDmEdit();
+
+    expect(component.dmEdit).toBeNull();
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
 });

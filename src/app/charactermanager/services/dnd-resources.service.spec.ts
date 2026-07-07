@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 
-import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES } from './dnd-resources.service';
+import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS } from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
 
 describe('DndResourcesService', () => {
@@ -90,6 +90,24 @@ describe('DndResourcesService', () => {
 
     it('returns empty string for unknown feat', () => {
       expect(service.getFeatDescription('Super Punch')).toBe('');
+    });
+  });
+
+  // ── Origin feat names ───────────────────────────────────────────────────────
+
+  describe('getFeatNames', () => {
+    it('returns names sorted alphabetically', () => {
+      const names = service.getFeatNames();
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      expect(names).toEqual(sorted);
+    });
+
+    it('contains Alert', () => {
+      expect(service.getFeatNames()).toContain('Alert');
+    });
+
+    it('length matches the number of known feats', () => {
+      expect(service.getFeatNames().length).toBe(Object.keys(FEAT_DESCRIPTIONS).length);
     });
   });
 

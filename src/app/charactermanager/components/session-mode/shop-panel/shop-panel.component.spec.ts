@@ -36,7 +36,7 @@ describe('ShopPanelComponent', () => {
       sessionId: 1, campaignId: 1, status: 'ACTIVE', round: 1, activeParticipantId: null,
       onDeckParticipantId: null, version: 1, dm: false, enemiesHidden: true, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
-      myXp: null, gameTime: null, participants: [], ...over,
+      myXp: null, gameTime: null, location: null, participants: [], ...over,
     };
   }
 

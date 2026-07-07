@@ -88,6 +88,33 @@ describe('CampaignService', () => {
       });
     });
 
+    it('createCampaign sends location as a JSON string and parses a valid one back', done => {
+      http.post.and.returnValue(of({
+        id: 9, name: 'Placed Table',
+        location: JSON.stringify({ name: 'Neverwinter', type: 'Settlement' }),
+      }));
+
+      service.createCampaign({
+        name: 'Placed Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        expect(campaign.location).toEqual({ name: 'Neverwinter', type: 'Settlement' });
+        done();
+      });
+    });
+
+    it('rejects a location with an unrecognized type (→ null)', done => {
+      http.post.and.returnValue(of({
+        id: 9, name: 'Bad Table', location: JSON.stringify({ name: 'X', type: 'Tavern' }),
+      }));
+
+      service.createCampaign({
+        name: 'Bad Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        expect(campaign.location).toBeNull();
+        done();
+      });
+    });
+
     it('setLocalGameTime updates the stored campaign copy', done => {
       http.post.and.returnValue(of({ id: 9, name: 'Timed Table', gameTime: null }));
 

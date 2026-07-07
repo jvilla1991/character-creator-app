@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
 import { PcNote } from '../models/pc-note';
+import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
@@ -9,6 +10,7 @@ import { environment } from 'src/environments/environment';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import {
   DEMO_PCS,
+  DEMO_ACTIVITY_LOGS,
   DEMO_GENERAL_FEATS,
   demoProfBonus,
   demoLevelUpFields,
@@ -180,6 +182,21 @@ export class PCService {
     return this.http.get<PcNote[]>(`${this.pcUrl}${pcId}/notes`);
   }
 
+  // ── Per-character activity log ─────────────────────────────────────────────
+  // Read-only: written by backend mutations (level-up, shop, XP, long rest, DM
+  // edit), never by the client. Demo mode seeds a per-PC log from
+  // DEMO_ACTIVITY_LOGS and appends a LEVEL_UP entry on demo level-up.
+
+  private demoLog: { [pcId: number]: PcActivityLogEntry[] } =
+    JSON.parse(JSON.stringify(DEMO_ACTIVITY_LOGS));
+
+  getLog(pcId: number): Observable<PcActivityLogEntry[]> {
+    if (environment.demoMode) {
+      return of([...(this.demoLog[pcId] ?? [])]).pipe(delay(50));
+    }
+    return this.http.get<PcActivityLogEntry[]>(`${this.pcUrl}${pcId}/log`);
+  }
+
   addNote(pcId: number, body: string, sessionId?: number | string | null): Observable<PcNote> {
     if (environment.demoMode) {
       const note: PcNote = {
@@ -195,13 +212,28 @@ export class PCService {
   /**
    * Persist a DM's edit of a campaign member's PC. Same optimistic local mirror
    * as {@link updatePC}, but hits the DM-authorized backend path (authorized by
-   * campaign-DM ownership, not PC ownership). Demo mode behaves like updatePC.
+   * campaign-DM ownership, not PC ownership). `description`, when given, is a
+   * DM-authored log line that replaces the backend's automatic before/after
+   * diff (see PcActivityLogService#logDmEdit on the backend) — omitted or blank
+   * falls back to the auto-diff, which is what GrantService wants. Demo mode has
+   * no backend diff to fall back to, so it mirrors a DM_EDIT entry into the demo
+   * log itself when a description is given, then behaves like updatePC.
    */
-  updatePCAsDm(pc: PC): Observable<PC> {
+  updatePCAsDm(pc: PC, description: string | null = null): Observable<PC> {
     if (environment.demoMode) {
+      const trimmed = description?.trim();
+      if (trimmed) {
+        const entry: PcActivityLogEntry = {
+          id: 'demo-dmedit-' + Date.now(), pcId: pc.id, actionType: 'DM_EDIT',
+          description: trimmed, createdAt: new Date().toISOString(),
+        };
+        this.demoLog[pc.id] = [entry, ...(this.demoLog[pc.id] ?? [])].slice(0, 10);
+      }
       return this.updatePC(pc);
     }
-    return this.http.put<PC>(`${this.pcUrl}${pc.id}/as-dm`, this.serializePC(pc)).pipe(
+    return this.http.put<PC>(`${this.pcUrl}${pc.id}/as-dm`,
+      { pc: this.serializePC(pc), description: description?.trim() || null }
+    ).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
@@ -355,6 +387,14 @@ export class PCService {
     if (active && active.id === id) {
       this.activePCSubject.next(updated);
     }
+
+    // Mirror the server's level-up log entry so the demo Log tab reflects it too.
+    const entry: PcActivityLogEntry = {
+      id: 'demo-levelup-' + Date.now(), pcId: id, actionType: 'LEVEL_UP',
+      description: 'Leveled up to ' + newLevel, createdAt: new Date().toISOString(),
+    };
+    this.demoLog[id] = [entry, ...(this.demoLog[id] ?? [])].slice(0, 10);
+
     return of(updated);
   }
 

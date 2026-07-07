@@ -1,0 +1,34 @@
+<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+  <div class="modal-title" style="color: var(--celestial-2);">Edit {{ request.label }}</div>
+
+  <div class="field">
+    <label>{{ request.label | titlecase }}</label>
+    <input
+      type="number"
+      [(ngModel)]="valueDraft"
+      [min]="request.min"
+      [max]="request.max"
+      (ngModelChange)="onValueChange()"
+      (keydown.enter)="save()"
+      (keydown.escape)="cancel()"
+      autofocus
+    >
+  </div>
+
+  <div class="field">
+    <label>Log entry (leave blank for the automatic one)</label>
+    <textarea
+      rows="2"
+      [(ngModel)]="descDraft"
+      [maxLength]="descMaxLength"
+      (ngModelChange)="onDescInput()"
+      (keydown.escape)="cancel()"
+      placeholder="What happened…"
+    ></textarea>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn" type="button" (click)="cancel()">Cancel</button>
+    <button class="btn primary" type="button" [disabled]="!canSave" (click)="save()">Save</button>
+  </div>
+</div>

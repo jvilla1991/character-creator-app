@@ -6,13 +6,16 @@
     <div class="vital-value numeric">
       <app-editable-number
         [value]="pc.hp?.cur" [editable]="editable" [min]="0" [max]="pc.hp?.max ?? null"
+        [intercept]="true" (editRequested)="requestHp('cur')"
         label="current HP" (committed)="setHp('cur', $event)"
       >{{ pc.hp?.cur }}</app-editable-number><span class="sub">/<app-editable-number
         [value]="pc.hp?.max" [editable]="editable" [min]="0"
+        [intercept]="true" (editRequested)="requestHp('max')"
         label="max HP" (committed)="setHp('max', $event)"
       >{{ pc.hp?.max }}</app-editable-number></span>
       <span *ngIf="editable || (pc.hp?.temp && pc.hp!.temp > 0)" class="sub" style="color: var(--celestial)"> +<app-editable-number
         [value]="pc.hp?.temp" [editable]="editable" [min]="0"
+        [intercept]="true" (editRequested)="requestHp('temp')"
         label="temporary HP" (committed)="setHp('temp', $event)"
       >{{ pc.hp?.temp ?? 0 }}</app-editable-number></span>
     </div>
@@ -24,9 +27,10 @@
     <span class="eyebrow">Armor Class</span>
     <div class="vital-value numeric"><app-editable-number
       [value]="pc.ac" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('ac')"
       label="armor class" (committed)="setVital('ac', $event)"
     >{{ pc.ac ?? '—' }}</app-editable-number></div>
-    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">plate &amp; shield</div>
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">{{ armorLabel }}</div>
   </div>
 
   <!-- Initiative -->
@@ -34,6 +38,7 @@
     <span class="eyebrow">Initiative</span>
     <div class="vital-value numeric"><app-editable-number
       [value]="pc.init" [editable]="editable" [min]="null"
+      [intercept]="true" (editRequested)="requestVital('init')"
       label="initiative" (committed)="setVital('init', $event)"
     >{{ pc.init != null ? fmtMod(pc.init) : '—' }}</app-editable-number></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">d20 + mod</div>
@@ -44,6 +49,7 @@
     <span class="eyebrow">Speed</span>
     <div class="vital-value numeric"><app-editable-number
       [value]="pc.speed" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('speed')"
       label="speed" (committed)="setVital('speed', $event)"
     >{{ pc.speed ?? '—' }}</app-editable-number><span class="sub" *ngIf="pc.speed">ft</span></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">per round</div>
@@ -54,6 +60,7 @@
     <span class="eyebrow">Proficiency</span>
     <div class="vital-value numeric">+<app-editable-number
       [value]="pc.prof" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('prof')"
       label="proficiency bonus" (committed)="setVital('prof', $event)"
     >{{ pc.prof ?? '—' }}</app-editable-number></div>
     <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">level {{ pc.level }}</div>

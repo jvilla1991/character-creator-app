@@ -27,8 +27,16 @@ export class EditableNumberComponent {
   @Input() max: number | null = null;
   /** Accessible label, also used for the click hint. */
   @Input() label = 'value';
+  /**
+   * Opt-in: when true (and editable), a click emits {@link editRequested}
+   * instead of opening the inline editor — the parent owns a richer edit
+   * surface (e.g. the DM edit modal) instead. Inert when editable is false,
+   * so player flows are completely untouched.
+   */
+  @Input() intercept = false;
 
   @Output() committed = new EventEmitter<number>();
+  @Output() editRequested = new EventEmitter<void>();
 
   @ViewChild('input') inputRef?: ElementRef<HTMLInputElement>;
 
@@ -37,6 +45,10 @@ export class EditableNumberComponent {
 
   start(): void {
     if (!this.editable) return;
+    if (this.intercept) {
+      this.editRequested.emit();
+      return;
+    }
     this.draft = this.value ?? 0;
     this.editing = true;
     // Input renders after this change-detection pass; focus + select on the next tick.

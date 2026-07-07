@@ -147,29 +147,35 @@
     </div>
 
     <div class="main-inner">
-      <!-- Session Mode overlays both Player and DM views while a session is live -->
-      <ng-container *ngIf="(activeSessionId$ | async) as sessionId; else normalView">
-        <app-session-mode [sessionId]="sessionId"></app-session-mode>
-      </ng-container>
-      <ng-template #normalView>
-        <ng-container *ngIf="(role$ | async) === 'player'; else dmMain">
-          <!-- Shown when a DM cross-linked into a member's sheet -->
-          <button *ngIf="dmReturn$ | async" class="btn dm-return-bar" (click)="backToCampaign()"
-                  style="margin-bottom: 16px;">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 style="margin-right: 8px; vertical-align: -2px;">
-              <path d="M10 3L5 8l5 5"/>
-            </svg>
-            Back to Campaign
-          </button>
-          <app-session-live-banner></app-session-live-banner>
-          <router-outlet></router-outlet>
+      <!-- Session Mode overlays both Player and DM views while a session is live —
+           EXCEPT when the DM has cross-linked from the session into a member's
+           sheet (dmReturn), in which case the sheet takes over and the session
+           keeps running underneath (re-entered via the bar below). -->
+      <ng-container *ngIf="{ sessionId: activeSessionId$ | async, dmReturn: dmReturn$ | async } as vm">
+        <ng-container *ngIf="vm.sessionId && !vm.dmReturn; else normalView">
+          <app-session-mode [sessionId]="vm.sessionId"></app-session-mode>
         </ng-container>
-        <ng-template #dmMain>
-          <app-campaign-dashboard></app-campaign-dashboard>
+        <ng-template #normalView>
+          <ng-container *ngIf="(role$ | async) === 'player'; else dmMain">
+            <!-- Shown when a DM cross-linked into a member's sheet, either from the
+                 campaign dashboard or from a live session's initiative panel. -->
+            <button *ngIf="vm.dmReturn" class="btn dm-return-bar" (click)="backToCampaign()"
+                    style="margin-bottom: 16px;">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   style="margin-right: 8px; vertical-align: -2px;">
+                <path d="M10 3L5 8l5 5"/>
+              </svg>
+              {{ vm.sessionId ? 'Back to Session' : 'Back to Campaign' }}
+            </button>
+            <app-session-live-banner *ngIf="!vm.dmReturn"></app-session-live-banner>
+            <router-outlet></router-outlet>
+          </ng-container>
+          <ng-template #dmMain>
+            <app-campaign-dashboard></app-campaign-dashboard>
+          </ng-template>
         </ng-template>
-      </ng-template>
+      </ng-container>
     </div>
   </main>
 

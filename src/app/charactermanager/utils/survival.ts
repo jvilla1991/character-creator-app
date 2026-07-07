@@ -39,17 +39,50 @@ export function survivalOf(pc: PC): PcSurvival {
 
 export const SURVIVAL_STARTING_CHARGES = 5;
 
-/** Add a full Rations box and Waterskin if a live line for each isn't present. */
+// ── Travel supplies (rations / water) ───────────────────────────────────────
+// These two lines live in pc.inventory (so the survival clock can auto-consume
+// them by decrementing qty), but the sheet treats them specially: they show as
+// charges in the Supplies pane — like spell slots — and never count toward the
+// slot-inventory bulk. The qty IS the number of servings left.
+
+export const SUPPLY_KEYS = ['rations', 'waterskin'] as const;
+export type SupplyKey = typeof SUPPLY_KEYS[number];
+
+/** Display labels for the two auto-consumed travel supplies. */
+export const SUPPLY_LABELS: Record<SupplyKey, string> = {
+  rations: 'Ration box',
+  waterskin: 'Water skin',
+};
+
+/** True for a rations/waterskin line — tracked as charges in the Supplies pane. */
+export function isSupplyItem(item: Pick<PcItem, 'catalogKey'>): boolean {
+  return item.catalogKey === 'rations' || item.catalogKey === 'waterskin';
+}
+
+/** Servings you carry for free (the starting box/skin); extras cost bulk. */
+export const SUPPLY_FREE_CHARGES = SURVIVAL_STARTING_CHARGES;
+
+/**
+ * A supply line's bulk: the starting box/skin (up to {@link SUPPLY_FREE_CHARGES}
+ * servings) is weightless; every serving bought beyond that takes 1 slot. A
+ * non-supply item contributes nothing here (the caller bulks it normally).
+ */
+export function supplyBulk(item: PcItem): number {
+  if (!isSupplyItem(item)) return 0;
+  return Math.max(0, (item.qty ?? 0) - SUPPLY_FREE_CHARGES);
+}
+
+/** Add a full Ration box and Water skin if a live line for each isn't present. */
 function seedSupplies(inventory: PcItem[]): PcItem[] {
   const items = inventory.map(i => ({ ...i }));
   const has = (key: string) => items.some(i => i.catalogKey === key && i.status !== 'dropped');
   if (!has('rations')) {
-    items.push({ catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear',
-      qty: SURVIVAL_STARTING_CHARGES, weight: 2, bulk: 1, unitCostCp: 50 });
+    items.push({ catalogKey: 'rations', name: SUPPLY_LABELS.rations, category: 'gear',
+      qty: SURVIVAL_STARTING_CHARGES, weight: 2, unitCostCp: 50 });
   }
   if (!has('waterskin')) {
-    items.push({ catalogKey: 'waterskin', name: 'Waterskin', category: 'gear',
-      qty: SURVIVAL_STARTING_CHARGES, weight: 5, bulk: 1, unitCostCp: 20 });
+    items.push({ catalogKey: 'waterskin', name: SUPPLY_LABELS.waterskin, category: 'gear',
+      qty: SURVIVAL_STARTING_CHARGES, weight: 5, unitCostCp: 20 });
   }
   return items;
 }

@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PC } from '../../models/pc';
+import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
 import { SessionService } from '../../services/session.service';
@@ -24,6 +25,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   survivalConditions = false;
   /** True when the active PC's campaign uses the strict material-components variant. */
   strictComponents = false;
+  /** The active PC's campaign's current party location (null when none). */
+  location: CampaignLocation | null = null;
   isDeleteModalOpen = false;
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
@@ -83,6 +86,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     this.slotInventory = false;
     this.survivalConditions = false;
     this.strictComponents = false;
+    this.location = null;
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.campaignService.getSummary(pc.campaignId)
@@ -94,6 +98,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
             this.slotInventory = !!summary.variantRules?.slotInventory;
             this.survivalConditions = !!summary.variantRules?.survivalConditions;
             this.strictComponents = !!summary.variantRules?.strictComponents;
+            this.location = summary.location ?? null;
           }
         },
         error: () => { /* not a member / offline — keep the standard view */ },

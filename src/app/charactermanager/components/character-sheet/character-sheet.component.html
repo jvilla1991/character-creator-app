@@ -41,31 +41,38 @@
           [value]="pc.level"
           [editable]="editable"
           [min]="1" [max]="20"
+          [intercept]="true" (editRequested)="requestLevel()"
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
-        <span class="dot">✦</span>
+        <ng-container *ngIf="location">
+          <span class="dot">✦</span>
+          <span class="sheet-location-tag"
+                title="Party location">📍 {{ location.name }}({{ location.type }})</span>
+        </ng-container>
+        <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
+          Ready to level up
+        </span>
+      </div>
+
+      <!-- XP progress through the current level, with the XP total beside it -->
+      <div class="xp-row">
+        <div
+          class="xp-track"
+          [class.max]="xpForNextLevel == null"
+          [class.ready]="readyToLevel"
+          [title]="xpForNextLevel != null
+            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
+            : 'Maximum level reached'"
+        >
+          <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
+        </div>
         <span
           class="sheet-xp"
           [title]="xpForNextLevel != null
             ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
             : 'Maximum level reached'"
         >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
-        <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
-          Ready to level up
-        </span>
-      </div>
-
-      <!-- XP progress through the current level -->
-      <div
-        class="xp-track"
-        [class.max]="xpForNextLevel == null"
-        [class.ready]="readyToLevel"
-        [title]="xpForNextLevel != null
-          ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
-          : 'Maximum level reached'"
-      >
-        <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
       </div>
     </div>
 
@@ -125,13 +132,16 @@
             [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
             [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
+            [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
   </nav>
 
   <!-- Vitals stay visible on every tab (HP/AC always matter). -->
   <app-vitals-strip
     [pc]="pc"
     [editable]="editable"
-    (pcChange)="onPcChange($event)">
+    (pcChange)="onPcChange($event)"
+    (editRequested)="onDmEditRequested($event)">
   </app-vitals-strip>
 
   <!-- SHEET TAB: abilities, skills, conditions, survival, features, wealth, bio -->
@@ -140,7 +150,8 @@
       <app-ability-scores
         [pc]="pc"
         [editable]="editable"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (editRequested)="onDmEditRequested($event)">
       </app-ability-scores>
       <app-skills-list    [pc]="pc"></app-skills-list>
     </div>
@@ -149,18 +160,20 @@
         [pc]="pc"
         (conditionToggled)="onConditionToggle($event)">
       </app-conditions-panel>
-      <!-- Survival is DM-managed: the controls show only on the DM's cross-link view. -->
+      <!-- Survival is visible to everyone in a survival campaign; only the DM's
+           cross-link view (editable) gets the steppers to change it. -->
       <app-survival-panel
-        *ngIf="survivalConditions && editable"
+        *ngIf="survivalConditions"
         [pc]="pc"
-        [editable]="true"
+        [editable]="editable"
         (pcChange)="onPcChange($event)">
       </app-survival-panel>
       <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
       <app-coin-purse
         [pc]="pc"
         [editable]="editable"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (editRequested)="onDmEditRequested($event)">
       </app-coin-purse>
       <app-background-story [pc]="pc"></app-background-story>
     </div>
@@ -182,6 +195,14 @@
 
   <!-- INVENTORY TAB -->
   <div class="sheet-tab-panel" *ngIf="activeTab === 'inventory'">
+    <!-- Travel supplies as charges (survival campaigns) — sits above Inventory.
+         Steppers are DM-only (the cross-link `editable`), like the Survival panel. -->
+    <app-supplies-panel
+      *ngIf="survivalConditions"
+      [pc]="pc"
+      [editable]="editable"
+      (pcChange)="onPcChange($event)">
+    </app-supplies-panel>
     <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
     <app-inventory-panel
       [pc]="pc"
@@ -205,4 +226,20 @@
     </app-pc-notes>
   </div>
 
+  <!-- LOG TAB: read-only activity feed (server-authoritative, no write path) -->
+  <div class="sheet-tab-panel" *ngIf="activeTab === 'log'">
+    <app-pc-log [pc]="pc"></app-pc-log>
+  </div>
+
+</div>
+
+<!-- DM edit modal overlay — opened by any intercepted app-editable-number on
+     this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-scores). -->
+<div *ngIf="dmEdit" class="modal-backdrop" (click)="closeDmEdit()">
+  <app-dm-edit-modal
+    [request]="dmEdit"
+    (click)="$event.stopPropagation()"
+    (confirm)="onDmEditConfirmed($event)"
+    (close)="closeDmEdit()">
+  </app-dm-edit-modal>
 </div>

@@ -91,11 +91,26 @@
   border-color: var(--gold, #d9b25f);
 }
 
-// XP progress bar — fills through the current level toward the next.
+// XP bar on one line beneath the subtitle (party location now lives in .sheet-subtitle itself).
+.xp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+// The party location, shown as "Name(Type)" beside the XP bar; matches the
+// Level/class/species subtitle style (inherited — it lives inside .sheet-subtitle).
+.sheet-location-tag {
+  white-space: nowrap;
+}
+
+// XP progress bar — fills through the current level toward the next. Basis keeps
+// its width inside the flex row (it may shrink on narrow sheets); the location
+// tag sits to its right.
 .xp-track {
   position: relative;
   height: 6px;
-  margin-top: 10px;
+  flex: 0 1 280px;
   max-width: 280px;
   background: var(--bg-elev, rgba(255, 255, 255, 0.06));
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));

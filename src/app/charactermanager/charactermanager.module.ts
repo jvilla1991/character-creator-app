@@ -15,7 +15,9 @@ import { ConditionsPanelComponent } from './components/character-sheet/panels/co
 import { EquipmentPanelComponent } from './components/character-sheet/panels/equipment-panel/equipment-panel.component';
 import { InventoryPanelComponent } from './components/character-sheet/panels/inventory-panel/inventory-panel.component';
 import { SurvivalPanelComponent } from './components/character-sheet/panels/survival-panel/survival-panel.component';
+import { SuppliesPanelComponent } from './components/character-sheet/panels/supplies-panel/supplies-panel.component';
 import { PcNotesComponent } from './components/character-sheet/panels/pc-notes/pc-notes.component';
+import { PcLogComponent } from './components/character-sheet/panels/pc-log/pc-log.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -31,6 +33,7 @@ import { SpellsStepComponent } from './components/create-character-modal/steps/s
 import { EquipmentStepComponent } from './components/create-character-modal/steps/equipment-step/equipment-step.component';
 import { ReviewStepComponent } from './components/create-character-modal/steps/review-step/review-step.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
+import { DmEditModalComponent } from './components/character-sheet/dm-edit-modal/dm-edit-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
@@ -53,6 +56,7 @@ import { SessionModeComponent } from './components/session-mode/session-mode.com
 import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
 import { ShopPanelComponent } from './components/session-mode/shop-panel/shop-panel.component';
 import { EncounterLoaderComponent } from './components/session-mode/encounter-loader/encounter-loader.component';
+import { SpellCarouselComponent } from './components/session-mode/spell-carousel/spell-carousel.component';
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
 import { ToastComponent } from './components/toast/toast.component';
 
@@ -81,6 +85,7 @@ const routes: Routes = [
     MainContentComponent,
     SidenavComponent,
     DeleteConfirmationModalComponent,
+    DmEditModalComponent,
     CreateCharacterModalComponent,
     IdentityStepComponent,
     SpeciesStepComponent,
@@ -104,7 +109,9 @@ const routes: Routes = [
     EquipmentPanelComponent,
     InventoryPanelComponent,
     SurvivalPanelComponent,
+    SuppliesPanelComponent,
     PcNotesComponent,
+    PcLogComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,
@@ -124,6 +131,7 @@ const routes: Routes = [
     InitiativePanelComponent,
     ShopPanelComponent,
     EncounterLoaderComponent,
+    SpellCarouselComponent,
     SessionLiveBannerComponent,
     ToastComponent,
   ],

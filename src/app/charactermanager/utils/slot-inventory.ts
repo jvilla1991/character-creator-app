@@ -1,5 +1,6 @@
 import { PC, PcItem } from '../models/pc';
 import { modFromScore } from './character-math';
+import { isSupplyItem, supplyBulk } from './survival';
 
 // ── Darker Dungeons "Active Inventory" (ch. 10) ─────────────────────────────
 // Pure slot/bulk math for campaigns with the slotInventory variant rule.
@@ -25,11 +26,15 @@ export function itemBulk(item: PcItem): number {
   return item.bulk ?? bulkFromWeight(item.weight);
 }
 
-/** Slots filled: Σ bulk × qty over owned (non-dropped) lines, to 1 decimal. */
+/**
+ * Slots filled: Σ bulk × qty over owned (non-dropped) lines, to 1 decimal.
+ * Travel supplies (rations/water) are the exception — the free starting box/skin
+ * is weightless and only servings bought beyond it take a slot ({@link supplyBulk}).
+ */
 export function usedSlots(items: PcItem[] | undefined): number {
   const total = (items ?? [])
     .filter(i => i.status !== 'dropped')
-    .reduce((sum, i) => sum + itemBulk(i) * (i.qty || 1), 0);
+    .reduce((sum, i) => sum + (isSupplyItem(i) ? supplyBulk(i) : itemBulk(i) * (i.qty || 1)), 0);
   return Math.round(total * 10) / 10; // kill 0.2 float drift
 }
 
