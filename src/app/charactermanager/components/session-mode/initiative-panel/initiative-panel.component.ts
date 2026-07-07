@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ParticipantView, SessionStatus } from '../../../models/session';
 import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -39,6 +39,13 @@ export class InitiativePanelComponent {
    *  rows then show compact hunger/thirst/fatigue chips so time can be
    *  advanced with the party's state in view. */
   @Input() survivalConditions = false;
+
+  /**
+   * A DM clicked a PC row's hero cell to open that character's full sheet.
+   * DM-only, PC-only (players' own sheet is already embedded in session mode,
+   * and NPCs have no sheet to open). SessionModeComponent owns the actual open.
+   */
+  @Output() openPc = new EventEmitter<ParticipantView>();
 
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};
@@ -116,6 +123,15 @@ export class InitiativePanelComponent {
     if (this.dm) return true;
     if (!p.ownedByMe) return false;
     return this.status === 'LOBBY' || !p.initRolled;
+  }
+
+  /** DM-only, PC-only: whether clicking this row's hero cell should open the sheet. */
+  canOpenSheet(p: ParticipantView): boolean {
+    return this.dm && !p.npc && p.pcId != null;
+  }
+
+  onHeroClick(p: ParticipantView): void {
+    if (this.canOpenSheet(p)) this.openPc.emit(p);
   }
 
   isActive(p: ParticipantView): boolean {
