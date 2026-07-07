@@ -12,6 +12,7 @@
 // ---------------------------------------------------------------------------
 
 import { PC } from '../models/pc';
+import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 
 // ---------------------------------------------------------------------------
@@ -197,6 +198,42 @@ export const DEMO_PCS: PC[] = [
     notes: 'Familiar: Ash (raven). Bounty in three cities.',
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Demo activity log seed — a few plausible recent entries per demo PC, newest
+// first, so the Log tab isn't empty when the demo boots. Mirrors the backend's
+// pre-rendered display-string convention; not an audit of anything real.
+// ---------------------------------------------------------------------------
+export const DEMO_ACTIVITY_LOGS: { [pcId: number]: PcActivityLogEntry[] } = {
+  1: [
+    { id: 'demo-1-4', pcId: 1, actionType: 'DM_EDIT', description: 'DM changed AC 14 → 15',
+      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+    { id: 'demo-1-3', pcId: 1, actionType: 'PURCHASE', description: 'Bought Potion of Healing for 50 gp',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
+    { id: 'demo-1-2', pcId: 1, actionType: 'XP_AWARD', description: 'Awarded 450 XP',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+    { id: 'demo-1-1', pcId: 1, actionType: 'LEVEL_UP', description: 'Leveled up to 7',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString() },
+  ],
+  2: [
+    { id: 'demo-2-3', pcId: 2, actionType: 'LONG_REST', description: 'Completed a long rest',
+      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
+    { id: 'demo-2-2', pcId: 2, actionType: 'DM_EDIT', description: 'DM added feature Darkvision',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString() },
+    { id: 'demo-2-1', pcId: 2, actionType: 'SALE', description: 'Sold Handaxe for 2 gp 5 sp',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString() },
+  ],
+  5: [
+    { id: 'demo-5-4', pcId: 5, actionType: 'XP_AWARD', description: 'Awarded 300 XP',
+      createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString() },
+    { id: 'demo-5-3', pcId: 5, actionType: 'PURCHASE', description: 'Bought Caltrops (10) for 1 gp',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
+    { id: 'demo-5-2', pcId: 5, actionType: 'LONG_REST', description: 'Completed a long rest',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString() },
+    { id: 'demo-5-1', pcId: 5, actionType: 'LEVEL_UP', description: 'Leveled up to 5',
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Demo-mode level-up shim — pure helpers.
