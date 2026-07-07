@@ -33,6 +33,7 @@ import { SpellsStepComponent } from './components/create-character-modal/steps/s
 import { EquipmentStepComponent } from './components/create-character-modal/steps/equipment-step/equipment-step.component';
 import { ReviewStepComponent } from './components/create-character-modal/steps/review-step/review-step.component';
 import { DeleteConfirmationModalComponent } from './components/main-content/delete-confirmation-modal/delete-confirmation-modal.component';
+import { DmEditModalComponent } from './components/character-sheet/dm-edit-modal/dm-edit-modal.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
@@ -84,6 +85,7 @@ const routes: Routes = [
     MainContentComponent,
     SidenavComponent,
     DeleteConfirmationModalComponent,
+    DmEditModalComponent,
     CreateCharacterModalComponent,
     IdentityStepComponent,
     SpeciesStepComponent,

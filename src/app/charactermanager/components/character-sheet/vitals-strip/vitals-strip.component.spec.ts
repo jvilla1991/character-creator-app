@@ -29,4 +29,69 @@ describe('VitalsStripComponent', () => {
       expect(component.armorLabel).toBe('unarmored');
     });
   });
+
+  // --- DM edit modal requests ---
+
+  describe('requestHp', () => {
+    beforeEach(() => {
+      component.pc = { ...basePc(), hp: { cur: 12, max: 20, temp: 3 } };
+    });
+
+    it('current HP: label, value, min 0, max = hp.max', () => {
+      const req = captureRequest(() => component.requestHp('cur'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'current HP', value: 12, min: 0, max: 20 }));
+    });
+
+    it('max HP: min 0, unbounded max', () => {
+      const req = captureRequest(() => component.requestHp('max'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'max HP', value: 20, min: 0, max: null }));
+    });
+
+    it('temporary HP: min 0, unbounded max', () => {
+      const req = captureRequest(() => component.requestHp('temp'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'temporary HP', value: 3, min: 0, max: null }));
+    });
+
+    it('apply is a pure builder that clamps current within [0, max]', () => {
+      const req = captureRequest(() => component.requestHp('cur'));
+      const result = req.apply(25); // over max
+      expect(result.hp?.cur).toBe(20);
+      expect(component.pc.hp?.cur).toBe(12); // original untouched
+    });
+  });
+
+  describe('requestVital', () => {
+    beforeEach(() => {
+      component.pc = { ...basePc(), ac: 15, init: 2, speed: 30, prof: 3 };
+    });
+
+    it('AC: label matches the backend diff vocabulary, min 0', () => {
+      const req = captureRequest(() => component.requestVital('ac'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'AC', value: 15, min: 0, max: null }));
+    });
+
+    it('initiative: unbounded (min null)', () => {
+      const req = captureRequest(() => component.requestVital('init'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'initiative', value: 2, min: null, max: null }));
+    });
+
+    it('speed: min 0', () => {
+      const req = captureRequest(() => component.requestVital('speed'));
+      expect(req).toEqual(jasmine.objectContaining({ label: 'speed', min: 0 }));
+    });
+
+    it('apply is a pure builder', () => {
+      const req = captureRequest(() => component.requestVital('ac'));
+      const result = req.apply(18);
+      expect(result.ac).toBe(18);
+      expect(component.pc.ac).toBe(15); // original untouched
+    });
+  });
+
+  function captureRequest(trigger: () => void) {
+    let captured: any;
+    component.editRequested.subscribe((r: any) => (captured = r));
+    trigger();
+    return captured;
+  }
 });

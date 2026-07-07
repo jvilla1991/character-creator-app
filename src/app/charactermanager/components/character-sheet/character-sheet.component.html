@@ -41,6 +41,7 @@
           [value]="pc.level"
           [editable]="editable"
           [min]="1" [max]="20"
+          [intercept]="true" (editRequested)="requestLevel()"
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
@@ -139,7 +140,8 @@
   <app-vitals-strip
     [pc]="pc"
     [editable]="editable"
-    (pcChange)="onPcChange($event)">
+    (pcChange)="onPcChange($event)"
+    (editRequested)="onDmEditRequested($event)">
   </app-vitals-strip>
 
   <!-- SHEET TAB: abilities, skills, conditions, survival, features, wealth, bio -->
@@ -148,7 +150,8 @@
       <app-ability-scores
         [pc]="pc"
         [editable]="editable"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (editRequested)="onDmEditRequested($event)">
       </app-ability-scores>
       <app-skills-list    [pc]="pc"></app-skills-list>
     </div>
@@ -169,7 +172,8 @@
       <app-coin-purse
         [pc]="pc"
         [editable]="editable"
-        (pcChange)="onPcChange($event)">
+        (pcChange)="onPcChange($event)"
+        (editRequested)="onDmEditRequested($event)">
       </app-coin-purse>
       <app-background-story [pc]="pc"></app-background-story>
     </div>
@@ -227,4 +231,15 @@
     <app-pc-log [pc]="pc"></app-pc-log>
   </div>
 
+</div>
+
+<!-- DM edit modal overlay — opened by any intercepted app-editable-number on
+     this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-scores). -->
+<div *ngIf="dmEdit" class="modal-backdrop" (click)="closeDmEdit()">
+  <app-dm-edit-modal
+    [request]="dmEdit"
+    (click)="$event.stopPropagation()"
+    (confirm)="onDmEditConfirmed($event)"
+    (close)="closeDmEdit()">
+  </app-dm-edit-modal>
 </div>
