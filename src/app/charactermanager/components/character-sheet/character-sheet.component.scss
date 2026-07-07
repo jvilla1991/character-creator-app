@@ -91,23 +91,17 @@
   border-color: var(--gold, #d9b25f);
 }
 
-// XP bar + party location on one line beneath the subtitle.
+// XP bar on one line beneath the subtitle (party location now lives in .sheet-subtitle itself).
 .xp-row {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 10px;
 }
-// The party location, shown as "Name(Type)" beside the XP bar; tinted by type.
+// The party location, shown as "Name(Type)" beside the XP bar; matches the
+// Level/class/species subtitle style (inherited — it lives inside .sheet-subtitle).
 .sheet-location-tag {
-  font-family: 'Newsreader', serif;
-  font-size: 13px;
   white-space: nowrap;
-  color: var(--text-dim);
-
-  &[data-loc-type='Settlement'] { color: var(--celestial); }
-  &[data-loc-type='Wilderness'] { color: var(--emerald, #4ea36b); }
-  &[data-loc-type='Dungeon']    { color: var(--crimson); }
 }
 
 // XP progress bar — fills through the current level toward the next. Basis keeps
