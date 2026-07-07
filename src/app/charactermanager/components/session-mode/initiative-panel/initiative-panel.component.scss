@@ -243,3 +243,10 @@
     &[disabled] { opacity: 0.45; cursor: not-allowed; }
   }
 }
+
+// DM-only, PC-only cross-link into the full character sheet.
+.board-hero.linkable {
+  cursor: pointer;
+
+  &:hover .board-hero-name { color: var(--celestial); }
+}

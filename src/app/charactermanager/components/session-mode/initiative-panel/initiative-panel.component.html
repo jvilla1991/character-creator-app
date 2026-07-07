@@ -42,7 +42,8 @@
         <ng-template #initRead>{{ p.initRolled ? p.initiative : '—' }}</ng-template>
       </div>
 
-      <div class="board-hero">
+      <div class="board-hero" [class.linkable]="canOpenSheet(p)" (click)="onHeroClick(p)"
+           [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null">
         <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
         <div style="min-width: 0;">
           <div class="board-hero-name">{{ p.name }}</div>

@@ -13,6 +13,7 @@ import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
+import { ParticipantView } from '../../models/session';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -281,6 +282,39 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   close(): void {
     this.sessionService.clear();
     this.uiState.closeSession();
+  }
+
+  /**
+   * DM clicked a PC row in the initiative panel — open that character's full
+   * sheet, editable, while the session keeps running underneath (mirrors
+   * CampaignDashboardComponent.openHero). For the DM's own characters the full
+   * PC is already in the local store; other players' members need the
+   * DM-authorized fetch, since the session snapshot only carries the
+   * privacy-limited projection. The session isn't torn down — sidenav's render
+   * precedence just swaps in the sheet until the DM returns.
+   */
+  openPcSheet(p: ParticipantView): void {
+    if (p.pcId == null) return;
+    const owned = this.pcService.getPCById(p.pcId);
+    if (owned) {
+      this.pcService.setActivePC(owned);
+      this.uiState.viewHeroAsDm();
+      return;
+    }
+    this.pcService.getPCByIdAsDm(p.pcId).subscribe({
+      next: full => {
+        if (!full?.id) {
+          this.notifications.notify('Could not open that character sheet.');
+          return;
+        }
+        this.pcService.setActivePC(full);
+        this.uiState.viewHeroAsDm();
+      },
+      error: err => {
+        console.error('Failed to load full character for DM edit', err);
+        this.notifications.notify('Could not open that character sheet.');
+      },
+    });
   }
 
   /** The requesting player's own participant id in this session, if any. */
