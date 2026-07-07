@@ -1,0 +1,15 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Activity Log</span>
+    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      recent updates to this character
+    </span>
+  </div>
+
+  <div *ngFor="let entry of entries" style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
+    <div>{{ entry.description }}</div>
+    <div class="equip-item-meta" style="margin-top: 2px;">{{ entryDate(entry) }}</div>
+  </div>
+
+  <div *ngIf="!entries.length" class="equip-item-meta">No activity yet.</div>
+</div>

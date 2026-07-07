@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 
 import { PCService } from './pc.service';
 import { PC } from '../models/pc';
+import { DEMO_MODE_KEY } from 'src/environments/environment';
 
 /** Minimal valid PC fixture for serialization tests. */
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -344,4 +345,77 @@ describe('PCService', () => {
     });
   });
 
+});
+
+// ── Demo mode: activity log ────────────────────────────────────────────────
+// demoMode reads localStorage live (see environment.ts), so these run in a
+// separate TestBed with the flag set before the service is constructed —
+// PCService seeds `this.pcs` from DEMO_PCS only when demoMode is already true.
+
+describe('PCService (demo mode)', () => {
+  let service: PCService;
+
+  beforeEach(() => {
+    localStorage.setItem(DEMO_MODE_KEY, 'true');
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [PCService],
+    });
+    service = TestBed.inject(PCService);
+  });
+
+  afterEach(() => localStorage.removeItem(DEMO_MODE_KEY));
+
+  describe('getLog', () => {
+    it('returns the seeded demo log for a known PC', (done) => {
+      service.getLog(1).subscribe(entries => {
+        expect(entries.length).toBeGreaterThan(0);
+        expect(entries[0].pcId).toBe(1);
+        done();
+      });
+    });
+
+    it('returns an empty list for a PC with no seeded log', (done) => {
+      service.getLog(999).subscribe(entries => {
+        expect(entries).toEqual([]);
+        done();
+      });
+    });
+  });
+
+  describe('demo level-up', () => {
+    it('prepends a LEVEL_UP entry to the log', (done) => {
+      service.getLog(1).subscribe(before => {
+        const beforeCount = before.length;
+        service.levelUp(1).subscribe(updated => {
+          service.getLog(1).subscribe(after => {
+            expect(after.length).toBe(Math.min(beforeCount + 1, 10));
+            expect(after[0].actionType).toBe('LEVEL_UP');
+            expect(after[0].description).toBe('Leveled up to ' + updated.level);
+            done();
+          });
+        });
+      });
+    });
+
+    it('caps the demo log at 10 entries', (done) => {
+      // Level up repeatedly past the cap and confirm the log never exceeds 10.
+      const levelUpsNeeded = 12;
+      let completed = 0;
+      const doNext = () => {
+        if (completed === levelUpsNeeded) {
+          service.getLog(1).subscribe(entries => {
+            expect(entries.length).toBeLessThanOrEqual(10);
+            done();
+          });
+          return;
+        }
+        service.levelUp(1).subscribe(() => {
+          completed++;
+          doNext();
+        });
+      };
+      doNext();
+    });
+  });
 });

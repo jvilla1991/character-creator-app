@@ -17,6 +17,7 @@ import { InventoryPanelComponent } from './components/character-sheet/panels/inv
 import { SurvivalPanelComponent } from './components/character-sheet/panels/survival-panel/survival-panel.component';
 import { SuppliesPanelComponent } from './components/character-sheet/panels/supplies-panel/supplies-panel.component';
 import { PcNotesComponent } from './components/character-sheet/panels/pc-notes/pc-notes.component';
+import { PcLogComponent } from './components/character-sheet/panels/pc-log/pc-log.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
@@ -108,6 +109,7 @@ const routes: Routes = [
     SurvivalPanelComponent,
     SuppliesPanelComponent,
     PcNotesComponent,
+    PcLogComponent,
     SpellbookPanelComponent,
     FeaturesListComponent,
     CoinPurseComponent,

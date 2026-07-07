@@ -131,6 +131,8 @@
             [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
             [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
+            [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
   </nav>
 
   <!-- Vitals stay visible on every tab (HP/AC always matter). -->
@@ -218,6 +220,11 @@
       [canWrite]="(showActions || inventoryEditable) && !editable"
       [sessionId]="noteSessionId">
     </app-pc-notes>
+  </div>
+
+  <!-- LOG TAB: read-only activity feed (server-authoritative, no write path) -->
+  <div class="sheet-tab-panel" *ngIf="activeTab === 'log'">
+    <app-pc-log [pc]="pc"></app-pc-log>
   </div>
 
 </div>

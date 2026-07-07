@@ -99,8 +99,8 @@ export class CharacterSheetComponent implements OnChanges {
 
   /** Active section tab. The sheet is split so Notes (and Spells/Inventory) get
    *  their own space; on mobile the tab bar is pinned to the bottom of the screen. */
-  activeTab: 'sheet' | 'spells' | 'inventory' | 'notes' = 'sheet';
-  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'notes'): void { this.activeTab = tab; }
+  activeTab: 'sheet' | 'spells' | 'inventory' | 'notes' | 'log' = 'sheet';
+  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'notes' | 'log'): void { this.activeTab = tab; }
 
   editingName = false;
   nameDraft = '';
