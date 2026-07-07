@@ -7,8 +7,10 @@ describe('FeaturesListComponent', () => {
   let dndResources: jasmine.SpyObj<DndResourcesService>;
 
   beforeEach(() => {
-    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getFeatDescription']);
+    dndResources = jasmine.createSpyObj<DndResourcesService>(
+      'DndResourcesService', ['getFeatDescription', 'getFeatNames']);
     dndResources.getFeatDescription.and.returnValue('Looked-up feat text.');
+    dndResources.getFeatNames.and.returnValue(['Alert', 'Lucky', 'Skilled']);
     component = new FeaturesListComponent(dndResources);
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
@@ -107,5 +109,74 @@ describe('FeaturesListComponent', () => {
     expect(emitted).not.toHaveBeenCalled();
     expect(component.grantFormOpen).toBeFalse();
     expect(component.nameDraft).toBe('');
+  });
+
+  // --- Feat typeahead ---
+
+  it('shows the full feat list when the name draft is blank', () => {
+    component.nameDraft = '';
+    expect(component.filteredFeats).toEqual(['Alert', 'Lucky', 'Skilled']);
+  });
+
+  it('narrows the feat list case-insensitively', () => {
+    component.nameDraft = 'al';
+    expect(component.filteredFeats).toEqual(['Alert']);
+  });
+
+  it('opens the dropdown on focus and input, closes on blur', () => {
+    component.onNameFocus();
+    expect(component.featDropdownOpen).toBeTrue();
+    component.onNameBlur();
+    expect(component.featDropdownOpen).toBeFalse();
+    component.onNameInput();
+    expect(component.featDropdownOpen).toBeTrue();
+  });
+
+  it('selectFeat fills name, source, and description, and closes the dropdown', () => {
+    component.featDropdownOpen = true;
+    component.selectFeat('Alert');
+
+    expect(component.nameDraft).toBe('Alert');
+    expect(component.sourceDraft).toBe('Feat');
+    expect(component.descDraft).toBe('Looked-up feat text.');
+    expect(component.featDropdownOpen).toBeFalse();
+    expect(dndResources.getFeatDescription).toHaveBeenCalledWith('Alert');
+  });
+
+  it('submits non-matching typed text as a custom feat, unchanged', () => {
+    component.addAllowed = true;
+    component.openGrantForm();
+    const emitted = jasmine.createSpy('emitted');
+    component.featureGranted.subscribe(emitted);
+
+    component.nameDraft = 'Homebrew Boon';
+    component.submitGrant();
+
+    expect(emitted).toHaveBeenCalledWith({ name: 'Homebrew Boon', source: 'DM Grant', desc: '' });
+  });
+
+  it('Escape closes the dropdown first, then cancels the form on a second Escape', () => {
+    component.addAllowed = true;
+    component.openGrantForm();
+    component.nameDraft = 'Half-typed';
+    component.featDropdownOpen = true;
+
+    component.onNameEscape();
+    expect(component.featDropdownOpen).toBeFalse();
+    expect(component.grantFormOpen).toBeTrue();
+
+    component.onNameEscape();
+    expect(component.grantFormOpen).toBeFalse();
+    expect(component.nameDraft).toBe('');
+  });
+
+  it('reset (via cancel) closes the dropdown too', () => {
+    component.addAllowed = true;
+    component.openGrantForm();
+    component.featDropdownOpen = true;
+
+    component.cancelGrant();
+
+    expect(component.featDropdownOpen).toBeFalse();
   });
 });

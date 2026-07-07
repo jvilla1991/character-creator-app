@@ -29,3 +29,40 @@
   gap: 8px;
   justify-content: flex-end;
 }
+
+// Name field typeahead — filtered feat list dropdown anchored below the input.
+.feat-combobox {
+  position: relative;
+}
+
+.feat-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.feat-option {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'Newsreader', serif;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { color: var(--gold); }
+}

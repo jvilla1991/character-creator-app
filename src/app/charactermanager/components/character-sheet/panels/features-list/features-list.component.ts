@@ -43,12 +43,52 @@ export class FeaturesListComponent {
   sourceDraft = 'DM Grant';
   descDraft = '';
 
+  /** All known Origin feat names, loaded once — backs the Name field typeahead. */
+  allFeatNames: string[] = this.dndResources.getFeatNames();
+  featDropdownOpen = false;
+
   openGrantForm(): void {
     this.grantFormOpen = true;
   }
 
   cancelGrant(): void {
     this.resetGrantForm();
+  }
+
+  /** Feat names matching the current Name draft; blank query shows the full list. */
+  get filteredFeats(): string[] {
+    const q = this.nameDraft.trim().toLowerCase();
+    if (!q) return this.allFeatNames;
+    return this.allFeatNames.filter(n => n.toLowerCase().includes(q));
+  }
+
+  onNameFocus(): void {
+    this.featDropdownOpen = true;
+  }
+
+  onNameInput(): void {
+    this.featDropdownOpen = true;
+  }
+
+  onNameBlur(): void {
+    this.featDropdownOpen = false;
+  }
+
+  /** Escape closes the dropdown first; a second Escape (dropdown already closed) cancels the form. */
+  onNameEscape(): void {
+    if (this.featDropdownOpen) {
+      this.featDropdownOpen = false;
+      return;
+    }
+    this.cancelGrant();
+  }
+
+  /** Selecting a feat from the dropdown auto-fills Name/Source/Description. */
+  selectFeat(name: string): void {
+    this.nameDraft = name;
+    this.sourceDraft = 'Feat';
+    this.descDraft = this.dndResources.getFeatDescription(name);
+    this.featDropdownOpen = false;
   }
 
   submitGrant(): void {
@@ -65,5 +105,6 @@ export class FeaturesListComponent {
     this.nameDraft = '';
     this.sourceDraft = 'DM Grant';
     this.descDraft = '';
+    this.featDropdownOpen = false;
   }
 }
