@@ -769,14 +769,6 @@ app-root { display: block; height: 100vh; width: 100vw; }
 }
 .supply-name { min-width: 92px; font-size: 14px; }
 .supply-track { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
-/* "depleted", not "empty" — the global .empty empty-state (min-height: 70vh)
-   would balloon the track to most of the screen when charges hit 0. */
-.supply-track.depleted::before {
-  content: 'empty';
-  font-size: 12px;
-  font-style: italic;
-  color: var(--crimson);
-}
 .supply-pip {
   width: 11px; height: 11px;
   border: 1px solid var(--gold);

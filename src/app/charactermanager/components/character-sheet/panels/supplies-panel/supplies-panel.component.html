@@ -5,7 +5,7 @@
 
   <div *ngFor="let row of rows" class="supply-row">
     <span class="supply-name">{{ row.label }}</span>
-    <span class="supply-track" [class.depleted]="row.charges <= 0">
+    <span class="supply-track">
       <span *ngFor="let pip of row.pips" class="supply-pip"
             [class.full]="pip.filled" [class.extra]="pip.extra"></span>
     </span>
