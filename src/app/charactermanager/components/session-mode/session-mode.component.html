@@ -176,6 +176,9 @@
       (openPc)="openPcSheet($event)"
     ></app-initiative-panel>
 
+    <!-- DM-only (gated inside the component): load a curated encounter into the order. -->
+    <app-encounter-loader [state]="state"></app-encounter-loader>
+
     <app-shop-panel [state]="state"></app-shop-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
     <div *ngIf="state.dm" class="panel session-note">
