@@ -96,5 +96,9 @@ export interface SessionState {
   // The party's current location (null until the DM sets it). Broadcast to
   // every viewer; only the DM can change it.
   location: CampaignLocation | null;
+  // The campaign's defined week — the ordered weekday names the clock walks on
+  // each night → morning rollover — or null when the DM never defined one
+  // (free-text weekdays, repetition counts weeks).
+  weekDays: string[] | null;
   participants: ParticipantView[];
 }

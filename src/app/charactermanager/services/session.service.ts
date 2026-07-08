@@ -14,7 +14,7 @@ import {
   applySegmentToPc,
   initialGameTime,
   normalizeGameTime,
-  registerWeekday,
+  setGameTime,
 } from '../utils/survival';
 import { applyCastToPc } from '../utils/spellcasting';
 
@@ -353,10 +353,12 @@ export class SessionService {
   /**
    * DM sets the campaign clock directly — no condition bumps. Sends the free
    * text date labels + weekday; the server owns the week-counter logic (the
-   * demo branch mirrors it via registerWeekday).
+   * demo branch mirrors it via the shared setGameTime). `week` applies only to
+   * campaigns with a defined week — omit it otherwise.
    */
   setTime(sessionId: number | string,
-          time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+          time: { year: string; month: string; day: string; timeOfDay: TimeOfDay;
+                  weekday: string | null; week?: number | null },
   ): Observable<SessionState> {
     if (environment.demoMode) return this.demoSetTime(time);
     return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/time`, time).pipe(
@@ -684,7 +686,7 @@ export class SessionService {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     const campaign = this.campaignService.getLocalCampaign(state.campaignId);
     const current = state.gameTime ?? campaign?.gameTime ?? null;
-    const next = current ? advanceGameTime(current) : initialGameTime();
+    const next = current ? advanceGameTime(current, campaign?.weekDays) : initialGameTime();
     // First click establishes the clock — no bumps. Every segment bumps under
     // the three-segment mapping (morning +H/T, noon +F, night +all).
     const bumps = current != null && !!campaign?.variantRules?.survivalConditions;
@@ -721,18 +723,16 @@ export class SessionService {
   }
 
   private demoSetTime(
-    time: { year: string; month: string; day: string; timeOfDay: TimeOfDay; weekday: string | null },
+    time: { year: string; month: string; day: string; timeOfDay: TimeOfDay;
+            weekday: string | null; week?: number | null },
   ): Observable<SessionState> {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    const current = state.gameTime
-      ?? this.campaignService.getLocalCampaign(state.campaignId)?.gameTime
-      ?? initialGameTime();
-    // Mirror the server: dates apply verbatim, the weekday history drives the
-    // week counter (registerWeekday guards unchanged-weekday corrections).
-    const next = registerWeekday(
-      { ...current, year: time.year, month: time.month, day: time.day, timeOfDay: time.timeOfDay },
-      time.weekday,
-    );
+    const campaign = this.campaignService.getLocalCampaign(state.campaignId);
+    const current = state.gameTime ?? campaign?.gameTime ?? initialGameTime();
+    // Mirror the server via the shared reducer: with a defined week the weekday
+    // is canonicalized and only an explicit week moves the counter; without one
+    // the weekday history drives it (unchanged-weekday corrections guarded).
+    const next = setGameTime(current, time, campaign?.weekDays);
     this.campaignService.setLocalGameTime(state.campaignId, next);
     return of(this.demoPatch({ gameTime: next }));
   }
@@ -777,6 +777,7 @@ export class SessionService {
       myXp: null,
       gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
       location: this.campaignService.getLocalCampaign(campaignId)?.location ?? null,
+      weekDays: this.campaignService.getLocalCampaign(campaignId)?.weekDays ?? null,
       participants,
     };
   }
@@ -787,7 +788,7 @@ export class SessionService {
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
-      gameTime: null, location: null, participants: [],
+      gameTime: null, location: null, weekDays: null, participants: [],
     };
   }
 
@@ -839,6 +840,7 @@ export class SessionService {
       myXp: raw.myXp ?? null,
       gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
       location: this.parseLocation(this.parseJsonObject<CampaignLocation>(raw.location)),
+      weekDays: Array.isArray(raw.weekDays) && raw.weekDays.length ? raw.weekDays : null,
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
     };
   }

@@ -248,6 +248,7 @@ export class CampaignService {
       threads: [],
       variantRules: draft.variantRules ?? {},
       gameTime: draft.gameTime ?? null,
+      weekDays: draft.weekDays ?? null,
     };
 
     if (environment.demoMode) {
@@ -285,6 +286,9 @@ export class CampaignService {
       gameTime: c.gameTime ? JSON.stringify(c.gameTime) : null,
       // null until the DM sets a party location in session.
       location: c.location ? JSON.stringify(c.location) : null,
+      // null (not '[]') when undefined — free-text weekdays until the DM
+      // defines an ordered week.
+      weekDays: c.weekDays?.length ? JSON.stringify(c.weekDays) : null,
     };
   }
 
@@ -307,6 +311,7 @@ export class CampaignService {
       variantRules: this.parseVariantRules(raw.variantRules),
       gameTime: this.parseGameTime(raw.gameTime),
       location: this.parseLocation(raw.location),
+      weekDays: this.parseWeekDays(raw.weekDays),
     };
   }
 
@@ -348,6 +353,41 @@ export class CampaignService {
     const { name, type } = obj as { name?: unknown; type?: unknown };
     if (typeof type !== 'string' || !LOCATION_TYPES.includes(type as CampaignLocation['type'])) return null;
     return { name: typeof name === 'string' ? name : '', type: type as CampaignLocation['type'] };
+  }
+
+  /** Tolerant read of a stored week definition (array passthrough for demo/
+   *  localStorage, JSON string for the backend TEXT column); null = free text. */
+  private parseWeekDays(value: unknown): string[] | null {
+    let arr = value;
+    if (typeof value === 'string') {
+      try { arr = JSON.parse(value); } catch { return null; }
+    }
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr.every(d => typeof d === 'string') ? (arr as string[]) : null;
+  }
+
+  /**
+   * DM defines (or clears) the campaign's week: the ordered weekday names the
+   * clock walks on each night → morning rollover. Null clears the definition,
+   * returning the campaign to free-text weekdays. Patches the local campaign
+   * list so the dashboard and demo session pick the change up immediately.
+   */
+  setWeekDays(campaignId: string | number, days: string[] | null): Observable<Campaign> {
+    const key = String(campaignId);
+    const normalized = days?.length ? days : null;
+    if (environment.demoMode) {
+      const updated = this.campaignsSubject.getValue()
+        .map(c => (c.id === key ? { ...c, weekDays: normalized } : c));
+      this.persistDemo(updated);
+      const campaign = updated.find(c => c.id === key);
+      return campaign ? of(campaign).pipe(delay(50))
+        : throwError(() => new Error('Campaign not found'));
+    }
+    return this.http.put<unknown>(`${this.campaignUrl}/${key}/week-days`, { weekDays: normalized }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(campaign => this.campaignsSubject.next(
+        this.campaignsSubject.getValue().map(c => (c.id === key ? campaign : c)))),
+    );
   }
 
   /** Sync lookup of a campaign already in the local store (demo & session seams). */

@@ -11,7 +11,7 @@ describe('CampaignService', () => {
   let service: CampaignService;
 
   beforeEach(() => {
-    http = jasmine.createSpyObj<HttpClient>('HttpClient', ['get', 'post', 'delete']);
+    http = jasmine.createSpyObj<HttpClient>('HttpClient', ['get', 'post', 'put', 'delete']);
     pcService = jasmine.createSpyObj<PCService>(
       'PCService', ['deserialize', 'patchLocalPC', 'getPCById', 'updatePC']);
     http.get.and.returnValue(of([])); // constructor's refreshCampaigns()
@@ -125,6 +125,68 @@ describe('CampaignService', () => {
                     weekday: 'Sul', weekdaysSeen: ['Sul'], week: 3 };
         service.setLocalGameTime(9, t);
         expect(service.getLocalCampaign(9)?.gameTime).toEqual(t);
+        done();
+      });
+    });
+  });
+
+  describe('week definition (weekDays)', () => {
+    it('createCampaign sends weekDays as a JSON string (null when undefined) and parses it back', done => {
+      http.post.and.returnValue(of({
+        id: 9, name: 'Eberron Table', weekDays: '["Sul","Mol","Zol"]',
+      }));
+
+      service.createCampaign({
+        name: 'Eberron Table', setting: '', tint: 'celestial', variantRules: {},
+        weekDays: ['Sul', 'Mol', 'Zol'],
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['weekDays']).toBe('["Sul","Mol","Zol"]');
+        expect(campaign.weekDays).toEqual(['Sul', 'Mol', 'Zol']);
+        done();
+      });
+    });
+
+    it('createCampaign without a definition sends null; malformed columns parse to null', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Plain Table', weekDays: 'not json' }));
+
+      service.createCampaign({
+        name: 'Plain Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(campaign => {
+        const body = http.post.calls.mostRecent().args[1] as Record<string, unknown>;
+        expect(body['weekDays']).toBeNull();
+        expect(campaign.weekDays).toBeNull();
+        done();
+      });
+    });
+
+    it('setWeekDays PUTs the list and patches the stored campaign copy', done => {
+      http.post.and.returnValue(of({ id: 9, name: 'Timed Table', weekDays: null }));
+      service.createCampaign({
+        name: 'Timed Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(() => {
+        http.put.and.returnValue(of({
+          id: 9, name: 'Timed Table', weekDays: '["Sul","Mol"]',
+        }));
+
+        service.setWeekDays(9, ['Sul', 'Mol']).subscribe(campaign => {
+          expect(http.put).toHaveBeenCalledWith(
+            jasmine.stringMatching(/\/campaign\/9\/week-days$/),
+            { weekDays: ['Sul', 'Mol'] },
+          );
+          expect(campaign.weekDays).toEqual(['Sul', 'Mol']);
+          expect(service.getLocalCampaign(9)?.weekDays).toEqual(['Sul', 'Mol']);
+          done();
+        });
+      });
+    });
+
+    it('setWeekDays with null clears the definition (free-text weekdays resume)', done => {
+      http.put.and.returnValue(of({ id: 9, name: 'Timed Table', weekDays: null }));
+
+      service.setWeekDays(9, null).subscribe(campaign => {
+        expect(http.put).toHaveBeenCalledWith(jasmine.anything(), { weekDays: null });
+        expect(campaign.weekDays).toBeNull();
         done();
       });
     });
