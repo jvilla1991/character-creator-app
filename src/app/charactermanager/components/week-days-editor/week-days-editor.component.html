@@ -1,0 +1,15 @@
+<select [ngModel]="choice" (ngModelChange)="onChoice($event)" aria-label="Week definition">
+  <option value="">No defined week (free text)</option>
+  <option *ngFor="let p of presets" [value]="p.key">{{ p.label }}</option>
+  <option value="custom">Custom…</option>
+</select>
+
+<input *ngIf="choice === 'custom'"
+       [ngModel]="customText" (ngModelChange)="onCustomText($event)"
+       autocomplete="off" placeholder="e.g. Sul, Mol, Zol, …"
+       aria-label="Custom weekday names, comma-separated"
+       style="margin-top: 8px;">
+
+<div *ngIf="preview?.length" class="modal-sub" style="margin-top: 4px;">
+  {{ preview!.join(' · ') }}
+</div>

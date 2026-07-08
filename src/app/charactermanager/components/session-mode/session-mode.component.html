@@ -122,12 +122,24 @@
         </button>
       </div>
       <div *ngIf="state.dm && editingTime"
-           style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 8px; margin-top: 10px; align-items: center;">
+           style="display: grid; gap: 8px; margin-top: 10px; align-items: center;"
+           [style.grid-template-columns]="state.weekDays?.length ? 'repeat(6, 1fr) auto' : 'repeat(5, 1fr) auto'">
         <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
         <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
         <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
-        <input [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
+        <input *ngIf="!state.weekDays?.length"
+               [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
                title="Free text. Re-entering a weekday you have used before marks a completed week.">
+        <!-- The empty option keeps an out-of-list current weekday (definition
+             edited mid-campaign) from being silently coerced to a defined day. -->
+        <select *ngIf="state.weekDays?.length" [(ngModel)]="timeWeekday" aria-label="Weekday"
+                title="One of the campaign's defined days. Advancing past night walks it automatically.">
+          <option value="">Weekday…</option>
+          <option *ngFor="let d of state.weekDays" [value]="d">{{ d }}</option>
+        </select>
+        <input *ngIf="state.weekDays?.length" type="number" min="1"
+               [(ngModel)]="timeWeek" placeholder="Week" aria-label="Week"
+               title="The week counter. Wrapping past the last defined day bumps it automatically.">
         <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
           <option *ngFor="let s of timeSegments" [value]="s">{{ s }}</option>
         </select>

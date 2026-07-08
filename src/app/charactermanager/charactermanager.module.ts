@@ -46,6 +46,8 @@ import { CampaignDashboardComponent } from './components/campaign-dashboard/camp
 import { PartyBoardComponent } from './components/campaign-dashboard/party-board/party-board.component';
 import { PartyTreasuryComponent } from './components/campaign-dashboard/party-treasury/party-treasury.component';
 import { CampaignNotesComponent } from './components/campaign-dashboard/campaign-notes/campaign-notes.component';
+import { CampaignWeekComponent } from './components/campaign-dashboard/campaign-week/campaign-week.component';
+import { WeekDaysEditorComponent } from './components/week-days-editor/week-days-editor.component';
 import { CuratedShopsComponent } from './components/campaign-dashboard/curated-shops/curated-shops.component';
 import { CuratedEncountersComponent } from './components/campaign-dashboard/curated-encounters/curated-encounters.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
@@ -123,6 +125,8 @@ const routes: Routes = [
     PartyBoardComponent,
     PartyTreasuryComponent,
     CampaignNotesComponent,
+    CampaignWeekComponent,
+    WeekDaysEditorComponent,
     CuratedShopsComponent,
     CuratedEncountersComponent,
     CreateCampaignModalComponent,

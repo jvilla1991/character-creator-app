@@ -1,0 +1,23 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Campaign Week</span>
+    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      {{ summary }}
+    </span>
+  </div>
+
+  <div *ngIf="!editing">
+    <button class="btn" (click)="edit()">Edit</button>
+  </div>
+
+  <div *ngIf="editing" style="margin-top: 10px;">
+    <app-week-days-editor [value]="draft" (valueChange)="draft = $event"></app-week-days-editor>
+    <div class="modal-sub" style="margin-top: 8px;">
+      Changing the week does not rename the current weekday — set it from Session Mode if needed.
+    </div>
+    <div style="display: flex; gap: 6px; margin-top: 10px;">
+      <button class="btn primary" [disabled]="saving" (click)="save()">Save</button>
+      <button class="btn" (click)="cancel()">Cancel</button>
+    </div>
+  </div>
+</div>

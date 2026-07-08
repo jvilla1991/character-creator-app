@@ -192,11 +192,57 @@ export function normalizeGameTime(raw: any): CampaignGameTime | null {
   };
 }
 
-/** morning → noon → night → next day's MORNING; the date never changes here. */
-export function advanceGameTime(t: CampaignGameTime): CampaignGameTime {
+/**
+ * morning → noon → night → next day's MORNING; the date never changes here.
+ * With a defined week (`weekDays`), the night → morning rollover also walks the
+ * weekday to the next defined name — wrapping past the last day increments the
+ * week counter. A null or unknown current weekday (definition edited
+ * mid-campaign) leaves the weekday AND week untouched; no definition behaves
+ * exactly as before. Mirrors the server's GameClock.advanceSegment.
+ */
+export function advanceGameTime(t: CampaignGameTime, weekDays?: string[] | null): CampaignGameTime {
   const idx = TIME_SEGMENTS.indexOf(t.timeOfDay);
   const next = TIME_SEGMENTS[(idx + 1) % TIME_SEGMENTS.length];
-  return { ...t, timeOfDay: idx < 0 ? 'morning' : next };
+  const advanced: CampaignGameTime = { ...t, timeOfDay: idx < 0 ? 'morning' : next };
+  const newDay = idx === TIME_SEGMENTS.length - 1; // night wraps to the next morning
+  if (newDay && weekDays?.length && t.weekday) {
+    const dayIdx = weekDays.findIndex(d => d.toLowerCase() === t.weekday!.toLowerCase());
+    if (dayIdx >= 0) {
+      const nextIdx = (dayIdx + 1) % weekDays.length;
+      advanced.weekday = weekDays[nextIdx];
+      if (nextIdx === 0) advanced.week = t.week + 1; // wrapped — a week completed
+    }
+  }
+  return advanced;
+}
+
+/**
+ * Apply the DM's set-date form to the clock (mirror of the server's setTime).
+ * With a defined week: the weekday is canonicalized to the defined casing (the
+ * current one kept when the form leaves it blank; an out-of-list entry is
+ * ignored the same way the server 400s it), the week moves only when the form
+ * carries an explicit number, and weekdaysSeen is frozen. Without a definition
+ * it delegates to {@link registerWeekday} — byte-identical to today.
+ */
+export function setGameTime(
+  current: CampaignGameTime,
+  form: { year: string; month: string; day: string; timeOfDay: TimeOfDay;
+          weekday: string | null; week?: number | null },
+  weekDays?: string[] | null,
+): CampaignGameTime {
+  const dated: CampaignGameTime = {
+    ...current, year: form.year, month: form.month, day: form.day, timeOfDay: form.timeOfDay,
+  };
+  if (!weekDays?.length) return registerWeekday(dated, form.weekday);
+  const entered = form.weekday?.trim() || null;
+  const canonical = entered
+    ? weekDays.find(d => d.toLowerCase() === entered.toLowerCase()) ?? null
+    : null;
+  return {
+    ...dated,
+    weekday: canonical ?? current.weekday,
+    week: form.week != null ? Math.max(1, Math.round(form.week)) : current.week,
+  };
 }
 
 /**

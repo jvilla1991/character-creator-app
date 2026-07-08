@@ -46,12 +46,15 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   strictComponents = false;
 
   // DM's set-the-date form (collapsed by default under the clock bar; opens
-  // automatically when night rolls into a new morning). Free-text labels.
+  // automatically when night rolls into a new morning). Free-text labels;
+  // with a defined week the weekday becomes a select and a week number field
+  // appears (the counter never moves on its own from this form).
   editingTime = false;
   timeYear = '';
   timeMonth = '';
   timeDay = '';
   timeWeekday = '';
+  timeWeek: number | null = null;
   timeSegment: TimeOfDay = 'morning';
   readonly timeSegments: TimeOfDay[] = ['morning', 'noon', 'night'];
 
@@ -181,6 +184,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.timeMonth = t?.month ?? '';
     this.timeDay = t?.day ?? '';
     this.timeWeekday = t?.weekday ?? '';
+    this.timeWeek = state.weekDays?.length ? t?.week ?? 1 : null;
     this.timeSegment = t?.timeOfDay ?? 'morning';
     this.editingTime = true;
   }
@@ -192,6 +196,9 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       day: this.timeDay.trim(),
       timeOfDay: this.timeSegment,
       weekday: this.timeWeekday.trim() || null,
+      // The week field applies only with a defined week — the server ignores
+      // it otherwise, so don't send one.
+      ...(state.weekDays?.length ? { week: this.timeWeek } : {}),
     }).subscribe({
       next: () => { this.editingTime = false; },
       error: () => this.notifications.notify('Could not set the date.'),
