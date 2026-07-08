@@ -1,0 +1,13 @@
+// The global .modal has no height cap, so a custom week's growing stack of
+// day boxes pushed this modal past the bottom of the screen with no way to
+// reach the actions. Cap it to the viewport and let the whole modal scroll
+// (the same 88vh cap create-character-modal uses for its desktop wizard).
+// Deliberately NOT on the global .modal rule: the mobile create-character
+// wizard sets height: 100dvh on .modal.wizard, which a shared max-height
+// would clamp.
+.modal {
+  max-height: 88vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
