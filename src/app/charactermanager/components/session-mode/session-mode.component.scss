@@ -47,6 +47,27 @@
   }
 }
 
+// Campaign Clock + Party Location on one row for the DM (two-up); players get
+// the clock full width. align-items: start keeps the open set-date form from
+// stretching its neighbor. Stacks again on narrow screens.
+.clock-location-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+
+  &.two-up {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 820px) {
+    &.two-up {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
 // In-session DM note composer. Panel chrome is global; only the compose box
 // and confirmation line are styled here.
 .session-note {
