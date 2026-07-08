@@ -19,7 +19,39 @@ export interface Campaign {
   variantRules?: CampaignVariantRules; // creation-time opt-ins, immutable
   gameTime?: CampaignGameTime | null;  // in-world clock; null until set
   location?: CampaignLocation | null;  // party's current place; null until set
+  weekDays?: string[] | null;          // ordered weekday names; null = free-text weekdays
 }
+
+/** A named, ordered week the DM can pick instead of typing custom day names. */
+export interface WeekdayPreset {
+  key: string;
+  label: string;
+  days: string[];
+}
+
+/**
+ * Built-in week templates for the create-campaign modal and the dashboard's
+ * week editor. The DM can also enter a fully custom ordered list.
+ */
+export const WEEKDAY_PRESETS: WeekdayPreset[] = [
+  {
+    key: 'real-world', label: 'Real-world (7 days)',
+    days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  },
+  {
+    key: 'forgotten-realms', label: 'Forgotten Realms tenday',
+    days: ['First-day', 'Second-day', 'Third-day', 'Fourth-day', 'Fifth-day',
+           'Sixth-day', 'Seventh-day', 'Eighth-day', 'Ninth-day', 'Tenth-day'],
+  },
+  {
+    key: 'eberron', label: 'Eberron (7 days)',
+    days: ['Sul', 'Mol', 'Zol', 'Wir', 'Zor', 'Far', 'Sar'],
+  },
+  {
+    key: 'exandria', label: 'Exandria (7 days)',
+    days: ['Miresen', 'Grissen', 'Whelsen', 'Conthsen', 'Folsen', 'Yulisen', "Da'leysen"],
+  },
+];
 
 /** The kinds of place the party can be — drives the type chip on the sheet. */
 export type LocationType = 'Settlement' | 'Wilderness' | 'Dungeon';
@@ -85,6 +117,7 @@ export interface CampaignDraft {
   tint: CampaignTint;
   variantRules: CampaignVariantRules;
   gameTime?: CampaignGameTime;  // optional in-world start date
+  weekDays?: string[] | null;   // optional defined week (editable later)
 }
 
 /** Dice & rolling preferences, persisted to localStorage under `tm_dice`. */

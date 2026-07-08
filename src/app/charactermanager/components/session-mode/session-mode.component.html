@@ -100,8 +100,11 @@
       </div>
     </header>
 
+    <!-- Clock + location share one row for the DM; players (no location panel)
+         get the clock full width. Stacks on narrow screens. -->
+    <div class="clock-location-row" [class.two-up]="state.dm">
     <!-- The campaign clock: visible to everyone; only the DM moves time. -->
-    <div class="panel" style="margin-bottom: 16px;">
+    <div class="panel">
       <div class="panel-header" style="margin-bottom: 0;">
         <span class="panel-title">Campaign Clock</span>
         <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
@@ -122,12 +125,24 @@
         </button>
       </div>
       <div *ngIf="state.dm && editingTime"
-           style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 8px; margin-top: 10px; align-items: center;">
+           style="display: grid; gap: 8px; margin-top: 10px; align-items: center;"
+           [style.grid-template-columns]="state.weekDays?.length ? 'repeat(6, 1fr) auto' : 'repeat(5, 1fr) auto'">
         <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
         <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
         <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
-        <input [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
+        <input *ngIf="!state.weekDays?.length"
+               [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
                title="Free text. Re-entering a weekday you have used before marks a completed week.">
+        <!-- The empty option keeps an out-of-list current weekday (definition
+             edited mid-campaign) from being silently coerced to a defined day. -->
+        <select *ngIf="state.weekDays?.length" [(ngModel)]="timeWeekday" aria-label="Weekday"
+                title="One of the campaign's defined days. Advancing past night walks it automatically.">
+          <option value="">Weekday…</option>
+          <option *ngFor="let d of state.weekDays" [value]="d">{{ d }}</option>
+        </select>
+        <input *ngIf="state.weekDays?.length" type="number" min="1"
+               [(ngModel)]="timeWeek" placeholder="Week" aria-label="Week"
+               title="The week counter. Wrapping past the last defined day bumps it automatically.">
         <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
           <option *ngFor="let s of timeSegments" [value]="s">{{ s }}</option>
         </select>
@@ -137,7 +152,7 @@
 
     <!-- Party location: DM-only here (players see it on their own sheet, next to
          the XP bar). This panel is the DM's control to set it. -->
-    <div *ngIf="state.dm" class="panel" style="margin-bottom: 16px;">
+    <div *ngIf="state.dm" class="panel">
       <div class="panel-header" style="margin-bottom: 0;">
         <span class="panel-title">Party Location</span>
         <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
@@ -175,6 +190,9 @@
       [survivalConditions]="survivalConditions"
       (openPc)="openPcSheet($event)"
     ></app-initiative-panel>
+
+    <!-- DM-only (gated inside the component): load a curated encounter into the order. -->
+    <app-encounter-loader [state]="state"></app-encounter-loader>
 
     <app-shop-panel [state]="state"></app-shop-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->

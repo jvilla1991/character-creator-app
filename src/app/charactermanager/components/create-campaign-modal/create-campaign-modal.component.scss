@@ -1,0 +1,31 @@
+// The global .modal has no height cap, so a custom week's growing stack of
+// day boxes pushed this modal past the bottom of the screen with no way to
+// reach the actions. Cap it to the viewport and let the whole modal scroll
+// (the same 88vh cap create-character-modal uses for its desktop wizard).
+// Deliberately NOT on the global .modal rule: the mobile create-character
+// wizard sets height: 100dvh on .modal.wizard, which a shared max-height
+// would clamp.
+.modal {
+  max-height: 88vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  // The global .modal::before draws the decorative inner frame as an
+  // absolutely positioned box (inset: 6px) — sized to the modal's clamped
+  // height, it scrolls away with the content and its bottom line cuts across
+  // the middle of a long week, reading as a small box that never grows.
+  // Redraw the same 1px var(--border) line 6px in with inset box-shadows
+  // instead (a var(--surface) ring under it masks the 0–6px band): shadows
+  // are glued to the visible box, so the frame always wraps the modal
+  // whatever the scroll position. Same trick the mobile create-character
+  // wizard needed (it hides its ::before when the padding assumptions break).
+  &::before {
+    display: none;
+  }
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    var(--glow-gold),
+    inset 0 0 0 6px var(--surface),
+    inset 0 0 0 7px var(--border);
+}

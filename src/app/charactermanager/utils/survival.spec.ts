@@ -4,9 +4,11 @@ import {
   applySegmentToPc,
   clampStage,
   describeGameTime,
+  incrementDayLabel,
   initialGameTime,
   normalizeGameTime,
   registerWeekday,
+  setGameTime,
   SURVIVAL_LABELS,
   survivalExhaustion,
   survivalOf,
@@ -133,17 +135,50 @@ describe('survival util', () => {
       weekday: null, weekdaysSeen: [], week: 1, ...over,
     });
 
-    it('cycles the three segments and never touches the free-text date', () => {
+    it('cycles the three segments, stepping a numeric day on the rollover', () => {
       expect(initialGameTime().timeOfDay).toBe('morning');
       let t = clock();
       t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('noon');
+      expect(t.day).toBe('3rd');
       t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('night');
-      t = advanceGameTime(t);
-      // night wraps to morning — the DATE stays; the DM edits it by hand
-      expect(t.timeOfDay).toBe('morning');
       expect(t.day).toBe('3rd');
+      t = advanceGameTime(t);
+      // night wraps to morning: a countable day steps forward; month and year
+      // stay — free text is the DM's to edit
+      expect(t.timeOfDay).toBe('morning');
+      expect(t.day).toBe('4th');
+      expect(t.month).toBe('Hammer');
+      expect(t.year).toBe('1492 DR');
+    });
+
+    it('leaves a free-text day alone on the rollover', () => {
+      const t = advanceGameTime(clock({ day: 'Midwinter', timeOfDay: 'night' }));
+      expect(t.timeOfDay).toBe('morning');
+      expect(t.day).toBe('Midwinter'); // the clock can't count it — the DM edits by hand
+    });
+
+    it('incrementDayLabel counts numbers and ordinals, leaving the rest alone', () => {
+      // bare number in → bare number out
+      expect(incrementDayLabel('3')).toBe('4');
+      expect(incrementDayLabel('9')).toBe('10');
+      // ordinal in → correct ordinal out
+      expect(incrementDayLabel('3rd')).toBe('4th');
+      expect(incrementDayLabel('20th')).toBe('21st');
+      expect(incrementDayLabel('21st')).toBe('22nd');
+      expect(incrementDayLabel('22nd')).toBe('23rd');
+      expect(incrementDayLabel('1st')).toBe('2nd');
+      // the 11th–13th family always takes "th"
+      expect(incrementDayLabel('10th')).toBe('11th');
+      expect(incrementDayLabel('11th')).toBe('12th');
+      expect(incrementDayLabel('12th')).toBe('13th');
+      expect(incrementDayLabel('112th')).toBe('113th');
+      // unparseable and blank pass through unchanged
+      expect(incrementDayLabel('Midwinter')).toBe('Midwinter');
+      expect(incrementDayLabel('the third day')).toBe('the third day');
+      expect(incrementDayLabel('  ')).toBe('  ');
+      expect(incrementDayLabel('')).toBe('');
     });
 
     it('normalizes the pre-v2 numeric shape on read', () => {
@@ -168,6 +203,93 @@ describe('survival util', () => {
       const t = clock({ weekday: 'Mol', weekdaysSeen: ['Sul', 'Mol'] });
       expect(registerWeekday(t, 'Mol')).toEqual(t);      // resubmit = no double count
       expect(registerWeekday(t, '  ').weekdaysSeen).toEqual(['Sul', 'Mol']);
+    });
+
+    describe('defined week (weekDays)', () => {
+      const week = ['Sul', 'Mol', 'Zol'];
+
+      it('advanceGameTime walks the weekday on the night → morning rollover', () => {
+        const t = advanceGameTime(clock({ timeOfDay: 'night', weekday: 'Sul' }), week);
+        expect(t.timeOfDay).toBe('morning');
+        expect(t.weekday).toBe('Mol');
+        expect(t.week).toBe(1); // no wrap — the counter holds
+      });
+
+      it('advanceGameTime wraps past the last day and increments the week', () => {
+        // "zol" — case-insensitive match, canonicalized on the way out
+        const t = advanceGameTime(clock({ timeOfDay: 'night', weekday: 'zol', week: 4 }), week);
+        expect(t.weekday).toBe('Sul');
+        expect(t.week).toBe(5);
+      });
+
+      it('advanceGameTime leaves an unknown or null weekday untouched', () => {
+        // definition edited mid-campaign — "Far" is no longer a defined day
+        const orphaned = advanceGameTime(clock({ timeOfDay: 'night', weekday: 'Far', week: 3 }), week);
+        expect(orphaned.weekday).toBe('Far');
+        expect(orphaned.week).toBe(3);
+        const unset = advanceGameTime(clock({ timeOfDay: 'night', week: 3 }), week);
+        expect(unset.weekday).toBeNull();
+        expect(unset.week).toBe(3);
+      });
+
+      it('advanceGameTime never moves the weekday on non-rollover segments', () => {
+        let t = advanceGameTime(clock({ timeOfDay: 'morning', weekday: 'Sul' }), week); // → noon
+        expect(t.weekday).toBe('Sul');
+        t = advanceGameTime(t, week); // → night
+        expect(t.weekday).toBe('Sul');
+        expect(t.week).toBe(1);
+      });
+
+      it('advanceGameTime without a definition behaves exactly as before', () => {
+        const t = advanceGameTime(clock({ timeOfDay: 'night', weekday: 'Sul' }));
+        expect(t.timeOfDay).toBe('morning');
+        expect(t.weekday).toBe('Sul');
+        expect(t.week).toBe(1);
+      });
+
+      it('setGameTime canonicalizes the weekday and freezes weekdaysSeen', () => {
+        const current = clock({ weekday: 'Zol', weekdaysSeen: ['Mol', 'Zol'] });
+        // "mol" repeats a seen weekday — the fallback would tick the week and
+        // reset the history; a defined week must do neither.
+        const t = setGameTime(current,
+          { year: '1', month: '1', day: '10th', timeOfDay: 'morning', weekday: 'mol' }, week);
+        expect(t.weekday).toBe('Mol'); // defined casing
+        expect(t.week).toBe(1);        // never inferred
+        expect(t.weekdaysSeen).toEqual(['Mol', 'Zol']); // frozen, not reset
+      });
+
+      it('setGameTime keeps the current weekday for a blank or out-of-list entry', () => {
+        const current = clock({ weekday: 'Zol' });
+        expect(setGameTime(current,
+          { year: '1', month: '1', day: '10th', timeOfDay: 'morning', weekday: null }, week).weekday)
+          .toBe('Zol');
+        expect(setGameTime(current,
+          { year: '1', month: '1', day: '10th', timeOfDay: 'morning', weekday: 'Far' }, week).weekday)
+          .toBe('Zol'); // mirror of the server's 400 — never coerced
+      });
+
+      it('setGameTime applies an explicit week, floored at 1', () => {
+        const current = clock({ weekday: 'Sul', week: 2 });
+        expect(setGameTime(current,
+          { year: '1', month: '1', day: '1', timeOfDay: 'morning', weekday: 'Sul', week: 7 }, week).week)
+          .toBe(7);
+        expect(setGameTime(current,
+          { year: '1', month: '1', day: '1', timeOfDay: 'morning', weekday: 'Sul', week: -3 }, week).week)
+          .toBe(1);
+        expect(setGameTime(current,
+          { year: '1', month: '1', day: '1', timeOfDay: 'morning', weekday: 'Sul' }, week).week)
+          .toBe(2); // no explicit week — current kept
+      });
+
+      it('setGameTime without a definition delegates to registerWeekday', () => {
+        const current = clock({ weekday: 'Mol', weekdaysSeen: ['Sul', 'Mol'] });
+        // "sul" was seen before → the repetition counter ticks (fallback intact),
+        // and an explicit week is ignored entirely.
+        const t = setGameTime(current,
+          { year: '1', month: '1', day: '10th', timeOfDay: 'morning', weekday: 'sul', week: 9 });
+        expect(t.week).toBe(2);
+        expect(t.weekdaysSeen).toEqual(['sul']);
+      });
     });
 
     it('describes the clock, skipping blank parts', () => {
