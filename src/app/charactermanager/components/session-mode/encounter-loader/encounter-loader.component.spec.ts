@@ -57,6 +57,15 @@ describe('EncounterLoaderComponent', () => {
     expect(component.busy).toBeFalse();
   });
 
+  it('shows an empty list when the campaign has no curated encounters', () => {
+    curated.list.and.returnValue(of([]));
+    component.state = dmState();
+    component.ngOnChanges();
+    expect(component.encounters).toEqual([]);
+    component.load(); // no selection possible — must no-op
+    expect(session.loadEncounter).not.toHaveBeenCalled();
+  });
+
   it('load does nothing without a selection', () => {
     component.state = dmState();
     component.load();
