@@ -13,14 +13,12 @@
            [placeholder]="i === 0 ? 'First day · e.g. Sul' : 'Next day'"
            [attr.aria-label]="'Day ' + (i + 1) + ' of the week'">
   </div>
-  <div style="display: flex; gap: 6px; margin-top: 8px; align-items: center;">
-    <button *ngIf="canAddDay" class="btn" (click)="addDay()"
+  <div *ngIf="canAddDay" style="margin-top: 8px;">
+    <button class="btn" (click)="addDay()"
             aria-label="Add another day" title="Add the next day of the week">+</button>
-    <button class="btn primary" [disabled]="!canInscribe" (click)="inscribe()"
-            title="Lock these days in as the campaign's week">Inscribe</button>
   </div>
-  <div *ngIf="pendingDays.length < minDays" class="modal-sub" style="margin-top: 4px;">
-    A week needs at least {{ minDays }} named days before it can be inscribed.
+  <div *ngIf="incomplete" class="modal-sub" style="margin-top: 4px;">
+    Name at least {{ minDays }} days to define the week.
   </div>
 </div>
 

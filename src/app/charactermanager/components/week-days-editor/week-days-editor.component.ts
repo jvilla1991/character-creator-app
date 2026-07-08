@@ -8,11 +8,13 @@ export const MAX_WEEK_DAYS = 20;
 /**
  * Shared editor for a campaign's defined week — an ordered list of weekday
  * names, or null for "no defined week" (free-text weekdays, repetition counts
- * weeks). A select offers the built-in presets (emitted immediately) plus a
- * Custom… option that builds the week one text box at a time: typing into the
- * last box reveals a "+" that spawns the next, and nothing is emitted until the
- * DM clicks Inscribe — which locks the trimmed, deduped ordered list in as the
- * value. Used by the create-campaign modal and the dashboard's week panel.
+ * weeks). A select offers the built-in presets plus a Custom… option that
+ * builds the week one text box at a time: typing into the last box reveals a
+ * "+" that spawns the next. The editor emits continuously — the ordered,
+ * trimmed, deduped list once at least {@link MIN_WEEK_DAYS} days are named,
+ * null otherwise — and the surrounding screen's own action (the modal's
+ * submit, the dashboard panel's Save) is what locks the days in. Used by the
+ * create-campaign modal and the dashboard's week panel.
  */
 @Component({
   selector: 'app-week-days-editor',
@@ -30,17 +32,17 @@ export class WeekDaysEditorComponent implements OnChanges {
   choice = '';
   /** One entry per text box in custom mode, in week order. */
   customDays: string[] = [];
-  /** True once the custom boxes have been inscribed (locked in) as the value. */
-  inscribed = false;
+
+  /** What was last emitted — undefined until the first emission. */
+  private lastEmitted: string[] | null | undefined;
 
   ngOnChanges(): void {
+    // Live emission echoes straight back here through the parent's binding —
+    // only a genuinely external value change may reset the boxes.
+    if (this.isEcho()) return;
     if (!this.value?.length) {
-      // Choosing Custom… clears the value to null, which echoes straight back
-      // here through the parent's binding — don't wipe the in-progress boxes.
-      if (this.dirty) return;
       this.choice = '';
       this.customDays = [];
-      this.inscribed = false;
       return;
     }
     const preset = this.presets.find(p =>
@@ -48,32 +50,37 @@ export class WeekDaysEditorComponent implements OnChanges {
       p.days.every((d, i) => d === this.value![i]));
     this.choice = preset ? preset.key : 'custom';
     this.customDays = preset ? [] : [...this.value];
-    this.inscribed = !preset; // an existing custom definition IS the locked-in value
+  }
+
+  /** True when the incoming value is just the parent echoing our own emission. */
+  private isEcho(): boolean {
+    if (this.lastEmitted === undefined) return false;
+    if (this.value === this.lastEmitted) return true; // same reference, or both null
+    return Array.isArray(this.value) && Array.isArray(this.lastEmitted)
+      && this.value.length === this.lastEmitted.length
+      && this.value.every((d, i) => d === (this.lastEmitted as string[])[i]);
   }
 
   onChoice(choice: string): void {
     this.choice = choice;
-    this.inscribed = false;
     if (choice === 'custom') {
       // Seed a box per existing day (dashboard edit flow), else one empty box.
       this.customDays = this.value?.length ? [...this.value] : [''];
-      // Custom days aren't the value until inscribed — clear the old definition.
-      this.valueChange.emit(null);
+      this.emitCurrent();
       return;
     }
     this.customDays = [];
     if (choice === '') {
-      this.valueChange.emit(null);
+      this.emit(null);
       return;
     }
     const preset = this.presets.find(p => p.key === choice);
-    this.valueChange.emit(preset ? [...preset.days] : null);
+    this.emit(preset ? [...preset.days] : null);
   }
 
-  /** A box edit re-opens the week — the days stay pending until re-inscribed. */
   onDayInput(index: number, text: string): void {
     this.customDays[index] = text;
-    this.inscribed = false;
+    this.emitCurrent();
   }
 
   /** The "+" under the last box: shown once that box has content, capped at {@link MAX_WEEK_DAYS}. */
@@ -102,31 +109,27 @@ export class WeekDaysEditorComponent implements OnChanges {
     return days;
   }
 
-  get canInscribe(): boolean {
-    return this.choice === 'custom' && !this.inscribed
-      && this.pendingDays.length >= this.minDays
-      && this.pendingDays.length <= this.maxDays;
+  /** True while custom boxes name fewer than the minimum days (nothing usable yet). */
+  get incomplete(): boolean {
+    return this.choice === 'custom' && this.pendingDays.length < this.minDays;
   }
 
-  /** Lock the custom days in — the ONLY point custom mode emits the value. */
-  inscribe(): void {
-    if (!this.canInscribe) return;
-    const days = this.pendingDays;
-    this.customDays = [...days]; // normalize the boxes to what was locked in
-    this.inscribed = true;
-    this.valueChange.emit(days);
-  }
-
-  /** True while custom boxes hold edits that haven't been inscribed yet. */
-  get dirty(): boolean {
-    return this.choice === 'custom' && !this.inscribed;
-  }
-
-  /** The locked-in days for the "Sul · Mol · …" preview (null while pending). */
+  /** The days the current selection resolves to, for the "Sul · Mol · …" preview. */
   get preview(): string[] | null {
-    if (this.choice === 'custom') return this.inscribed ? this.pendingDays : null;
+    if (this.choice === 'custom') return this.incomplete ? null : this.pendingDays;
     if (this.choice === '') return null;
     return this.presets.find(p => p.key === this.choice)?.days ?? null;
+  }
+
+  /** Emit the boxes' current value: the named days once valid, null otherwise. */
+  private emitCurrent(): void {
+    const days = this.pendingDays;
+    this.emit(days.length >= this.minDays && days.length <= this.maxDays ? days : null);
+  }
+
+  private emit(days: string[] | null): void {
+    this.lastEmitted = days;
+    this.valueChange.emit(days);
   }
 
   trackByIndex(index: number): number {
