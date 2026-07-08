@@ -100,8 +100,11 @@
       </div>
     </header>
 
+    <!-- Clock + location share one row for the DM; players (no location panel)
+         get the clock full width. Stacks on narrow screens. -->
+    <div class="clock-location-row" [class.two-up]="state.dm">
     <!-- The campaign clock: visible to everyone; only the DM moves time. -->
-    <div class="panel" style="margin-bottom: 16px;">
+    <div class="panel">
       <div class="panel-header" style="margin-bottom: 0;">
         <span class="panel-title">Campaign Clock</span>
         <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
@@ -137,7 +140,7 @@
 
     <!-- Party location: DM-only here (players see it on their own sheet, next to
          the XP bar). This panel is the DM's control to set it. -->
-    <div *ngIf="state.dm" class="panel" style="margin-bottom: 16px;">
+    <div *ngIf="state.dm" class="panel">
       <div class="panel-header" style="margin-bottom: 0;">
         <span class="panel-title">Party Location</span>
         <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
@@ -157,6 +160,7 @@
         </select>
         <button class="btn primary" (click)="commitLocation(state)">Set</button>
       </div>
+    </div>
     </div>
 
     <!-- Players see the tracker only during an encounter: it appears at Start
