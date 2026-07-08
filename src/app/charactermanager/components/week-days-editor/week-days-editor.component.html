@@ -4,11 +4,23 @@
   <option value="custom">Custom…</option>
 </select>
 
-<input *ngIf="choice === 'custom'"
-       [ngModel]="customText" (ngModelChange)="onCustomText($event)"
-       autocomplete="off" placeholder="e.g. Sul, Mol, Zol, …"
-       aria-label="Custom weekday names, comma-separated"
-       style="margin-top: 8px;">
+<div *ngIf="choice === 'custom'" style="margin-top: 8px;">
+  <!-- One box per day, in week order; the "+" under the last box spawns the next. -->
+  <div style="display: grid; gap: 6px;">
+    <input *ngFor="let day of customDays; let i = index; trackBy: trackByIndex"
+           [ngModel]="customDays[i]" (ngModelChange)="onDayInput(i, $event)"
+           autocomplete="off" maxlength="40"
+           [placeholder]="i === 0 ? 'First day · e.g. Sul' : 'Next day'"
+           [attr.aria-label]="'Day ' + (i + 1) + ' of the week'">
+  </div>
+  <div *ngIf="canAddDay" style="margin-top: 8px;">
+    <button class="btn" (click)="addDay()"
+            aria-label="Add another day" title="Add the next day of the week">+</button>
+  </div>
+  <div *ngIf="incomplete" class="modal-sub" style="margin-top: 4px;">
+    Name at least {{ minDays }} days to define the week.
+  </div>
+</div>
 
 <div *ngIf="preview?.length" class="modal-sub" style="margin-top: 4px;">
   {{ preview!.join(' · ') }}

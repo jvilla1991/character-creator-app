@@ -5,6 +5,7 @@ import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/camp
 @Component({
   selector: 'app-create-campaign-modal',
   templateUrl: './create-campaign-modal.component.html',
+  styleUrls: ['./create-campaign-modal.component.scss'],
 })
 export class CreateCampaignModalComponent {
   name = '';

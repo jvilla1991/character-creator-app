@@ -193,24 +193,55 @@ export function normalizeGameTime(raw: any): CampaignGameTime | null {
 }
 
 /**
- * morning → noon → night → next day's MORNING; the date never changes here.
- * With a defined week (`weekDays`), the night → morning rollover also walks the
- * weekday to the next defined name — wrapping past the last day increments the
- * week counter. A null or unknown current weekday (definition edited
- * mid-campaign) leaves the weekday AND week untouched; no definition behaves
- * exactly as before. Mirrors the server's GameClock.advanceSegment.
+ * The next day's label, when the current one is numeric: "3" → "4" and "3rd" →
+ * "4th" — ordinal in, correct ordinal out (11th/12th/13th included); bare
+ * number in, bare number out. Labels the clock can't count ("Midwinter"), and
+ * blanks, return unchanged: months are free text with unknown lengths, so the
+ * DM stays in charge of those (and there is deliberately no month/year
+ * rollover). Mirrors the server's GameClock.incrementDayLabel.
+ */
+export function incrementDayLabel(day: string): string {
+  const m = /^(\d{1,8})(st|nd|rd|th)?$/i.exec(day?.trim() ?? '');
+  if (!m) return day;
+  const next = parseInt(m[1], 10) + 1;
+  return m[2] ? `${next}${ordinalSuffix(next)}` : String(next);
+}
+
+/** st/nd/rd/th for a day number, with the 11th–13th special cases. */
+function ordinalSuffix(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+/**
+ * morning → noon → night → next day's MORNING. The rollover steps a numeric
+ * day label forward ({@link incrementDayLabel}); the rest of the date is free
+ * text the DM curates. With a defined week (`weekDays`), the rollover also
+ * walks the weekday to the next defined name — wrapping past the last day
+ * increments the week counter. A null or unknown current weekday (definition
+ * edited mid-campaign) leaves the weekday AND week untouched. Mirrors the
+ * server's GameClock.advanceSegment.
  */
 export function advanceGameTime(t: CampaignGameTime, weekDays?: string[] | null): CampaignGameTime {
   const idx = TIME_SEGMENTS.indexOf(t.timeOfDay);
   const next = TIME_SEGMENTS[(idx + 1) % TIME_SEGMENTS.length];
   const advanced: CampaignGameTime = { ...t, timeOfDay: idx < 0 ? 'morning' : next };
   const newDay = idx === TIME_SEGMENTS.length - 1; // night wraps to the next morning
-  if (newDay && weekDays?.length && t.weekday) {
-    const dayIdx = weekDays.findIndex(d => d.toLowerCase() === t.weekday!.toLowerCase());
-    if (dayIdx >= 0) {
-      const nextIdx = (dayIdx + 1) % weekDays.length;
-      advanced.weekday = weekDays[nextIdx];
-      if (nextIdx === 0) advanced.week = t.week + 1; // wrapped — a week completed
+  if (newDay) {
+    advanced.day = incrementDayLabel(t.day);
+    if (weekDays?.length && t.weekday) {
+      const dayIdx = weekDays.findIndex(d => d.toLowerCase() === t.weekday!.toLowerCase());
+      if (dayIdx >= 0) {
+        const nextIdx = (dayIdx + 1) % weekDays.length;
+        advanced.weekday = weekDays[nextIdx];
+        if (nextIdx === 0) advanced.week = t.week + 1; // wrapped — a week completed
+      }
     }
   }
   return advanced;

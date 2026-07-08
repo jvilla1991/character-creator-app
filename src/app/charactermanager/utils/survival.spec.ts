@@ -4,6 +4,7 @@ import {
   applySegmentToPc,
   clampStage,
   describeGameTime,
+  incrementDayLabel,
   initialGameTime,
   normalizeGameTime,
   registerWeekday,
@@ -134,17 +135,50 @@ describe('survival util', () => {
       weekday: null, weekdaysSeen: [], week: 1, ...over,
     });
 
-    it('cycles the three segments and never touches the free-text date', () => {
+    it('cycles the three segments, stepping a numeric day on the rollover', () => {
       expect(initialGameTime().timeOfDay).toBe('morning');
       let t = clock();
       t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('noon');
+      expect(t.day).toBe('3rd');
       t = advanceGameTime(t);
       expect(t.timeOfDay).toBe('night');
-      t = advanceGameTime(t);
-      // night wraps to morning — the DATE stays; the DM edits it by hand
-      expect(t.timeOfDay).toBe('morning');
       expect(t.day).toBe('3rd');
+      t = advanceGameTime(t);
+      // night wraps to morning: a countable day steps forward; month and year
+      // stay — free text is the DM's to edit
+      expect(t.timeOfDay).toBe('morning');
+      expect(t.day).toBe('4th');
+      expect(t.month).toBe('Hammer');
+      expect(t.year).toBe('1492 DR');
+    });
+
+    it('leaves a free-text day alone on the rollover', () => {
+      const t = advanceGameTime(clock({ day: 'Midwinter', timeOfDay: 'night' }));
+      expect(t.timeOfDay).toBe('morning');
+      expect(t.day).toBe('Midwinter'); // the clock can't count it — the DM edits by hand
+    });
+
+    it('incrementDayLabel counts numbers and ordinals, leaving the rest alone', () => {
+      // bare number in → bare number out
+      expect(incrementDayLabel('3')).toBe('4');
+      expect(incrementDayLabel('9')).toBe('10');
+      // ordinal in → correct ordinal out
+      expect(incrementDayLabel('3rd')).toBe('4th');
+      expect(incrementDayLabel('20th')).toBe('21st');
+      expect(incrementDayLabel('21st')).toBe('22nd');
+      expect(incrementDayLabel('22nd')).toBe('23rd');
+      expect(incrementDayLabel('1st')).toBe('2nd');
+      // the 11th–13th family always takes "th"
+      expect(incrementDayLabel('10th')).toBe('11th');
+      expect(incrementDayLabel('11th')).toBe('12th');
+      expect(incrementDayLabel('12th')).toBe('13th');
+      expect(incrementDayLabel('112th')).toBe('113th');
+      // unparseable and blank pass through unchanged
+      expect(incrementDayLabel('Midwinter')).toBe('Midwinter');
+      expect(incrementDayLabel('the third day')).toBe('the third day');
+      expect(incrementDayLabel('  ')).toBe('  ');
+      expect(incrementDayLabel('')).toBe('');
     });
 
     it('normalizes the pre-v2 numeric shape on read', () => {

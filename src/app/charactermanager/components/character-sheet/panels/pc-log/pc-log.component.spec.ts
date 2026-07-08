@@ -53,38 +53,31 @@ describe('PcLogComponent', () => {
   });
 
   describe('entryDate', () => {
-    let realDateNow: () => number;
-
+    // Pin the whole clock: the component calls `new Date()`, which a bare
+    // Date.now stub does NOT affect — jasmine's mockDate covers both, so
+    // these labels stay deterministic whatever the real calendar date is.
     beforeEach(() => {
-      realDateNow = Date.now;
+      jasmine.clock().install();
+      jasmine.clock().mockDate(new Date('2026-07-07T18:00:00Z'));
     });
 
     afterEach(() => {
-      Date.now = realDateNow;
+      jasmine.clock().uninstall();
     });
 
     it('labels an entry from today as "Today, <time>"', () => {
-      const now = new Date('2026-07-07T18:00:00Z');
-      Date.now = () => now.getTime();
-
       const result = component.entryDate(entry(1, 'x', new Date('2026-07-07T12:00:00Z').toISOString()));
 
       expect(result).toContain('Today,');
     });
 
     it('labels an entry from yesterday as "Yesterday, <time>"', () => {
-      const now = new Date('2026-07-07T18:00:00Z');
-      Date.now = () => now.getTime();
-
       const result = component.entryDate(entry(1, 'x', new Date('2026-07-06T09:00:00Z').toISOString()));
 
       expect(result).toContain('Yesterday,');
     });
 
     it('shows a short date for older entries', () => {
-      const now = new Date('2026-07-07T18:00:00Z');
-      Date.now = () => now.getTime();
-
       const result = component.entryDate(entry(1, 'x', new Date('2026-06-01T09:00:00Z').toISOString()));
 
       expect(result).not.toContain('Today');

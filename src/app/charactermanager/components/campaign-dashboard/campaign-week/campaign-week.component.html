@@ -11,12 +11,16 @@
   </div>
 
   <div *ngIf="editing" style="margin-top: 10px;">
-    <app-week-days-editor [value]="draft" (valueChange)="draft = $event"></app-week-days-editor>
+    <app-week-days-editor #weekEditor [value]="draft" (valueChange)="draft = $event"></app-week-days-editor>
     <div class="modal-sub" style="margin-top: 8px;">
       Changing the week does not rename the current weekday — set it from Session Mode if needed.
     </div>
+    <!-- A half-typed custom week (under 2 days) can't be saved; clearing the
+         definition ("No defined week") stays reachable — that emits null with
+         the editor NOT in custom mode. -->
     <div style="display: flex; gap: 6px; margin-top: 10px;">
-      <button class="btn primary" [disabled]="saving" (click)="save()">Save</button>
+      <button class="btn primary" [disabled]="saving || weekEditor.incomplete" (click)="save()"
+              title="Save the week definition">Save</button>
       <button class="btn" (click)="cancel()">Cancel</button>
     </div>
   </div>
