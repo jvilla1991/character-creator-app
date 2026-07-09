@@ -774,6 +774,8 @@ export class SessionService {
       shopOpen: false,
       shopForMe: false,
       shopCategory: null,
+      lootStatus: null,
+      lootName: null,
       myXp: null,
       gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
       location: this.campaignService.getLocalCampaign(campaignId)?.location ?? null,
@@ -787,7 +789,8 @@ export class SessionService {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
-      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
+      shopOpen: false, shopForMe: false, shopCategory: null,
+      lootStatus: null, lootName: null, myXp: null,
       gameTime: null, location: null, weekDays: null, participants: [],
     };
   }
@@ -837,6 +840,8 @@ export class SessionService {
       shopOpen: !!raw.shopOpen,
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
+      lootStatus: raw.lootStatus ?? null,
+      lootName: raw.lootName ?? null,
       myXp: raw.myXp ?? null,
       gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
       location: this.parseLocation(this.parseJsonObject<CampaignLocation>(raw.location)),
