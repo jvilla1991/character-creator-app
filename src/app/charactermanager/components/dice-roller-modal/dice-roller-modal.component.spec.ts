@@ -1,15 +1,23 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { of } from 'rxjs';
 import { DiceRollerModalComponent } from './dice-roller-modal.component';
+import { SessionService } from '../../services/session.service';
+import { SessionState } from '../../models/session';
 
 describe('DiceRollerModalComponent', () => {
   let component: DiceRollerModalComponent;
   let fixture: ComponentFixture<DiceRollerModalComponent>;
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   beforeEach(async () => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['logRoll']);
+    sessionService.logRoll.and.returnValue(of({} as SessionState));
+
     await TestBed.configureTestingModule({
       declarations: [DiceRollerModalComponent],
       imports: [DragDropModule],
+      providers: [{ provide: SessionService, useValue: sessionService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DiceRollerModalComponent);
@@ -79,4 +87,41 @@ describe('DiceRollerModalComponent', () => {
     component.cancel();
     expect(closed).toBeTrue();
   });
+
+  it('logs the roll to the session when sessionId and participantId are set', fakeAsync(() => {
+    component.sessionId = 42;
+    component.participantId = 7;
+    component.addDie(6);
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).toHaveBeenCalledTimes(1);
+    const [sessionId, participantId, groups] = sessionService.logRoll.calls.mostRecent().args;
+    expect(sessionId).toBe(42);
+    expect(participantId).toBe(7);
+    expect(groups.length).toBe(1);
+    expect(groups[0].sides).toBe(6);
+    expect(groups[0].rolls.length).toBe(2);
+  }));
+
+  it('does not log when sessionId is null (standalone/no-session roll)', fakeAsync(() => {
+    component.sessionId = null;
+    component.participantId = 7;
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).not.toHaveBeenCalled();
+  }));
+
+  it('does not log when participantId is null', fakeAsync(() => {
+    component.sessionId = 42;
+    component.participantId = null;
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).not.toHaveBeenCalled();
+  }));
 });

@@ -38,6 +38,8 @@
      (click)="closeRollModal()">
   <app-dice-roller-modal
     [pc]="pc"
+    [sessionId]="activeRollSessionId"
+    [participantId]="activeRollParticipantId"
     (click)="$event.stopPropagation()"
     (close)="closeRollModal()">
   </app-dice-roller-modal>

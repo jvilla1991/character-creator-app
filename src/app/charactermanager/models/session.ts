@@ -59,6 +59,32 @@ export interface XpAwardResult {
   awarded: XpAwardEntry[];
 }
 
+/**
+ * One die-type group within a logged roll (mirrors the dice modal's
+ * `breakdown` getter). `sides` is kept as a plain number here to avoid a
+ * cross-component import from dice-roller-modal into models/.
+ */
+export interface SessionRollGroup {
+  sides: number;
+  rolls: number[];
+  subtotal: number;
+}
+
+/**
+ * One row in the Roll Log panel. Arrives already newest-first and already
+ * filtered server-side (DM sees every roll; a player sees only their own) —
+ * `mine` lets the DM's all-rolls view style "your roll" differently.
+ */
+export interface SessionRollView {
+  rollId: number;
+  participantId: number;
+  rollerName: string;
+  mine: boolean;
+  groups: SessionRollGroup[];
+  grandTotal: number;
+  createdAt: string; // ISO instant
+}
+
 export interface SessionState {
   // Numeric in real mode; a string sentinel in demo mode.
   sessionId: number | string;
@@ -101,4 +127,7 @@ export interface SessionState {
   // (free-text weekdays, repetition counts weeks).
   weekDays: string[] | null;
   participants: ParticipantView[];
+  // Roll Log feed: newest-first, capped at 50, server-filtered per viewer (DM
+  // sees every roll made this session; a player sees only their own).
+  rolls: SessionRollView[];
 }

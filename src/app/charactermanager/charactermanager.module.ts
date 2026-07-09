@@ -59,6 +59,7 @@ import { InitiativePanelComponent } from './components/session-mode/initiative-p
 import { ShopPanelComponent } from './components/session-mode/shop-panel/shop-panel.component';
 import { EncounterLoaderComponent } from './components/session-mode/encounter-loader/encounter-loader.component';
 import { SpellCarouselComponent } from './components/session-mode/spell-carousel/spell-carousel.component';
+import { RollLogPanelComponent } from './components/session-mode/roll-log-panel/roll-log-panel.component';
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
 import { ToastComponent } from './components/toast/toast.component';
 
@@ -138,6 +139,7 @@ const routes: Routes = [
     SpellCarouselComponent,
     SessionLiveBannerComponent,
     ToastComponent,
+    RollLogPanelComponent,
   ],
   imports: [
     CommonModule,

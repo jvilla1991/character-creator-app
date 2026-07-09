@@ -78,6 +78,13 @@
   margin-bottom: 10px;
 }
 
+// Player Roll button, directly below the initiative table — full width, same
+// width as the table (the surrounding .panel-width layout every other
+// full-width control in this template uses).
+.roll-launch {
+  margin-top: 10px;
+}
+
 // In-session DM note composer. Panel chrome is global; only the compose box
 // and confirmation line are styled here.
 .session-note {
