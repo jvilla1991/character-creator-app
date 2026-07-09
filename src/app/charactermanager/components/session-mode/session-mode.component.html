@@ -24,17 +24,6 @@
       </div>
       <div class="sheet-actions">
         <button
-          *ngIf="state.dm && state.status === 'ACTIVE'"
-          class="btn"
-          (click)="endEncounter(state)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <rect x="4" y="4" width="8" height="8" rx="1"/>
-          </svg>
-          End Encounter
-        </button>
-        <button
           *ngIf="!state.dm && state.status === 'ACTIVE' && isMyTurn(state)"
           class="btn primary"
           (click)="advanceTurn(state)"
@@ -171,6 +160,7 @@
       <button
         *ngIf="state.status === 'ACTIVE'"
         class="btn primary"
+        style="flex: 2;"
         (click)="advanceTurn(state)"
       >
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -178,6 +168,18 @@
           <path d="M3 8h10M9 4l4 4-4 4"/>
         </svg>
         Next Turn
+      </button>
+      <button
+        *ngIf="state.status === 'ACTIVE'"
+        class="btn"
+        style="flex: 1;"
+        (click)="endEncounter(state)"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <rect x="4" y="4" width="8" height="8" rx="1"/>
+        </svg>
+        End Encounter
       </button>
     </div>
     <app-initiative-panel
