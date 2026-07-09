@@ -24,18 +24,6 @@
       </div>
       <div class="sheet-actions">
         <button
-          *ngIf="state.dm && state.status === 'LOBBY'"
-          class="btn primary"
-          (click)="startEncounter(state)"
-          [disabled]="!state.participants.length"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M4 2l9 6-9 6V2z"/>
-          </svg>
-          Start Encounter
-        </button>
-        <button
           *ngIf="state.dm && state.status === 'ACTIVE'"
           class="btn primary"
           (click)="advanceTurn(state)"
@@ -178,6 +166,19 @@
     <!-- Players see the tracker only during an encounter: it appears at Start
          Encounter and disappears at End Encounter (status back to LOBBY).
          The DM always sees it (it hosts their setup controls). -->
+    <div *ngIf="state.dm && state.status === 'LOBBY'" class="start-encounter-row">
+      <button
+        class="btn primary"
+        (click)="startEncounter(state)"
+        [disabled]="!state.participants.length"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M4 2l9 6-9 6V2z"/>
+        </svg>
+        Start Encounter
+      </button>
+    </div>
     <app-initiative-panel
       *ngIf="showInitiative(state)"
       [participants]="state.participants"
@@ -200,9 +201,6 @@
     <div *ngIf="state.dm" class="panel session-note">
       <div class="panel-header">
         <span class="panel-title">Session Note</span>
-        <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-          saved to the campaign log
-        </span>
       </div>
       <div class="note-compose">
         <textarea

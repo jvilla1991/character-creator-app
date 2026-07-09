@@ -78,25 +78,32 @@
 
     <!-- Action buttons -->
     <div class="sheet-actions" *ngIf="showActions">
-      <!-- Connect: enabled for campaign members; disabled with a hint otherwise -->
-      <div class="connect-wrap">
-        <span *ngIf="!inCampaign" class="connect-hint" [class.show]="connectHintPinned">
-          This character is not part of a campaign yet
-        </span>
-        <button
-          class="btn play"
-          [class.is-disabled]="!inCampaign"
-          [attr.aria-disabled]="!inCampaign"
-          [title]="inCampaign ? 'Connect to your campaign session' : 'This character is not part of a campaign yet'"
-          (click)="onConnectClick()"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M4 2.5v11l9-5.5z"/>
-          </svg>
-          Connect
-        </button>
-      </div>
+      <!-- Campaign members connect to the live session; unbound characters
+           get a Join Campaign button instead (opens the join modal). -->
+      <button
+        *ngIf="inCampaign"
+        class="btn play"
+        title="Connect to your campaign session"
+        (click)="onConnectClick()"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M4 2.5v11l9-5.5z"/>
+        </svg>
+        Connect
+      </button>
+      <button
+        *ngIf="!inCampaign"
+        class="btn play"
+        title="This character is not part of a campaign yet — join one"
+        (click)="joinCampaignRequested.emit()"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M4 2.5v11l9-5.5z"/>
+        </svg>
+        Join Campaign
+      </button>
       <button class="btn" title="Roll dice" (click)="rollRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">

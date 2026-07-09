@@ -57,6 +57,8 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() levelUpRequested = new EventEmitter<void>();
   /** Player asks to connect to their campaign's live session. */
   @Output() connectRequested = new EventEmitter<void>();
+  /** Character has no campaign — player asks to join one (opens the join modal). */
+  @Output() joinCampaignRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
@@ -87,16 +89,8 @@ export class CharacterSheetComponent implements OnChanges {
     return xpProgressPct(this.pc?.level ?? 1, this.pc?.xp ?? 0);
   }
 
-  /** Briefly shows the "not in a campaign" hint after a click (hover shows it via CSS). */
-  connectHintPinned = false;
-
   onConnectClick(): void {
-    if (this.inCampaign) {
-      this.connectRequested.emit();
-      return;
-    }
-    this.connectHintPinned = true;
-    setTimeout(() => (this.connectHintPinned = false), 2500);
+    this.connectRequested.emit();
   }
 
   /** Active section tab. The sheet is split so Notes (and Spells/Inventory) get

@@ -9,6 +9,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
+import { JoinModalService } from '../../services/join-modal.service';
 
 @Component({
   selector: 'app-main-content',
@@ -40,7 +41,13 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private uiState: UiStateService,
     private notifications: NotificationService,
     private campaignService: CampaignService,
+    private joinModal: JoinModalService,
   ) {}
+
+  /** Sheet's Join Campaign button — open the join modal with this PC preselected. */
+  openJoinModal(): void {
+    this.joinModal.open(this.pc?.id);
+  }
 
   // ── Session connect ────────────────────────────────────────────────────────
   // Join this character's campaign session if the DM has one live, then open the
