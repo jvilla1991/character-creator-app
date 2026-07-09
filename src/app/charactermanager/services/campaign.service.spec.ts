@@ -13,7 +13,7 @@ describe('CampaignService', () => {
   beforeEach(() => {
     http = jasmine.createSpyObj<HttpClient>('HttpClient', ['get', 'post', 'put', 'delete']);
     pcService = jasmine.createSpyObj<PCService>(
-      'PCService', ['deserialize', 'patchLocalPC', 'getPCById', 'updatePC']);
+      'PCService', ['deserialize', 'patchLocalPC', 'getPCById', 'updatePC', 'refreshPCs']);
     http.get.and.returnValue(of([])); // constructor's refreshCampaigns()
     service = new CampaignService(http, pcService);
     http.get.calls.reset();
@@ -200,6 +200,26 @@ describe('CampaignService', () => {
         expect(http.get).toHaveBeenCalledWith(jasmine.stringMatching(/invite\/VEIL23\/preview$/));
         expect(preview.variantRules).toEqual({});
         done();
+      });
+    });
+  });
+
+  describe('deleteCampaign', () => {
+    it('DELETEs the campaign, removes it from the store and refetches PCs (SET NULL unbind)', done => {
+      // Seed the store with a created campaign first.
+      http.post.and.returnValue(of({ id: 9, name: 'Doomed Table' }));
+      service.createCampaign({
+        name: 'Doomed Table', setting: '', tint: 'celestial', variantRules: {},
+      }).subscribe(() => {
+        expect(service.getLocalCampaign(9)).toBeDefined();
+        http.delete.and.returnValue(of(void 0));
+
+        service.deleteCampaign(9).subscribe(() => {
+          expect(http.delete).toHaveBeenCalledWith(jasmine.stringMatching(/\/campaign\/9$/));
+          expect(service.getLocalCampaign(9)).toBeUndefined();
+          expect(pcService.refreshPCs).toHaveBeenCalled();
+          done();
+        });
       });
     });
   });
