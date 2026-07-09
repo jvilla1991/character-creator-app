@@ -44,6 +44,7 @@ import { CampaignDraft } from './models/campaign';
       <app-join-campaign-modal
         [consent]="joinConsent"
         [error]="joinError"
+        [preselectPcId]="joinPreselectPcId"
         (confirm)="onJoin($event)"
         (acceptConsent)="joinModal.acceptConsent()"
         (declineConsent)="joinModal.declineConsent()"
@@ -67,6 +68,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   isSettingsOpen = false;
   joinConsent: JoinConsentState | null = null;
   joinError: string | null = null;
+  joinPreselectPcId: number | null = null;
 
   private subs: Subscription[] = [];
 
@@ -92,6 +94,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
       this.joinModal.isOpen$.subscribe(open => { this.isJoinModalOpen = open; }),
       this.joinModal.consent$.subscribe(consent => { this.joinConsent = consent; }),
       this.joinModal.error$.subscribe(error => { this.joinError = error; }),
+      this.joinModal.preselectPcId$.subscribe(id => { this.joinPreselectPcId = id; }),
       this.uiState.settingsOpen$.subscribe(open => { this.isSettingsOpen = open; }),
 
       this.router.events

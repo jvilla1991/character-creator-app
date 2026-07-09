@@ -95,4 +95,32 @@ describe('JoinModalService', () => {
 
     expect(currentError()).toBe('This campaign requires accepting the inventory conversion.');
   });
+
+  // --- preselected character (opened from a character sheet) ---
+
+  function currentPreselect() {
+    let value: unknown = 'unset';
+    service.preselectPcId$.subscribe(v => (value = v)).unsubscribe();
+    return value;
+  }
+
+  it('open(7) publishes the character to preselect', () => {
+    service.open(7);
+
+    expect(currentPreselect()).toBe(7);
+  });
+
+  it('open() with no argument publishes no preselect (sidenav path stays source-compatible)', () => {
+    service.open(7);
+    service.open();
+
+    expect(currentPreselect()).toBeNull();
+  });
+
+  it('close() clears the preselect', () => {
+    service.open(7);
+    service.close();
+
+    expect(currentPreselect()).toBeNull();
+  });
 });

@@ -21,6 +21,32 @@ describe('CharacterSheetComponent', () => {
     component.pc = makePC();
   });
 
+  // --- Connect / Join Campaign ---
+
+  it('onConnectClick emits connectRequested', () => {
+    const emitted = spyOn(component.connectRequested, 'emit');
+
+    component.onConnectClick();
+
+    expect(emitted).toHaveBeenCalled();
+  });
+
+  it('joinCampaignRequested is emittable (template binds it for characters not in a campaign)', () => {
+    const emitted = spyOn(component.joinCampaignRequested, 'emit');
+
+    component.joinCampaignRequested.emit();
+
+    expect(emitted).toHaveBeenCalled();
+  });
+
+  it('inCampaign reflects the pc campaign binding', () => {
+    component.pc = makePC({ campaignId: 3 });
+    expect(component.inCampaign).toBeTrue();
+
+    component.pc = makePC({ campaignId: undefined });
+    expect(component.inCampaign).toBeFalse();
+  });
+
   // --- DM feature grants ---
 
   it('grants a feature via GrantService using this PC\'s id', () => {
