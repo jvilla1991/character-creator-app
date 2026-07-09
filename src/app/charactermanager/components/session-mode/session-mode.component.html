@@ -25,17 +25,6 @@
       <div class="sheet-actions">
         <button
           *ngIf="state.dm && state.status === 'ACTIVE'"
-          class="btn primary"
-          (click)="advanceTurn(state)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M3 8h10M9 4l4 4-4 4"/>
-          </svg>
-          Next Turn
-        </button>
-        <button
-          *ngIf="state.dm && state.status === 'ACTIVE'"
           class="btn"
           (click)="endEncounter(state)"
         >
@@ -166,8 +155,9 @@
     <!-- Players see the tracker only during an encounter: it appears at Start
          Encounter and disappears at End Encounter (status back to LOBBY).
          The DM always sees it (it hosts their setup controls). -->
-    <div *ngIf="state.dm && state.status === 'LOBBY'" class="start-encounter-row">
+    <div *ngIf="state.dm && (state.status === 'LOBBY' || state.status === 'ACTIVE')" class="turn-controls-row">
       <button
+        *ngIf="state.status === 'LOBBY'"
         class="btn primary"
         (click)="startEncounter(state)"
         [disabled]="!state.participants.length"
@@ -177,6 +167,17 @@
           <path d="M4 2l9 6-9 6V2z"/>
         </svg>
         Start Encounter
+      </button>
+      <button
+        *ngIf="state.status === 'ACTIVE'"
+        class="btn primary"
+        (click)="advanceTurn(state)"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+             style="margin-right: 6px; vertical-align: -2px;">
+          <path d="M3 8h10M9 4l4 4-4 4"/>
+        </svg>
+        Next Turn
       </button>
     </div>
     <app-initiative-panel

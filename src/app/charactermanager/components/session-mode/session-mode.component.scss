@@ -69,9 +69,12 @@
 }
 
 // Start Encounter sits directly above the initiative order it kicks off.
-.start-encounter-row {
+// Turn controls sit just above the initiative order: Start Encounter in the
+// lobby, Next Turn once the encounter is live (room for a Previous Turn later).
+.turn-controls-row {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
