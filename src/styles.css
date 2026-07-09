@@ -776,16 +776,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   background: transparent;
 }
 .supply-pip.full { background: var(--gold); box-shadow: var(--glow-gold); }
-/* Servings beyond the free box/skin — square off + tint to signal they cost a slot. */
-.supply-pip.extra { border-color: var(--crimson); border-radius: 2px; }
-.supply-pip.extra.full { background: var(--crimson); box-shadow: none; }
-.supply-count { min-width: 18px; text-align: right; color: var(--text-dim); font-size: 13px; }
-.supply-slots {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--crimson);
-  white-space: nowrap;
-}
+.supply-count { min-width: 34px; text-align: right; color: var(--text-dim); font-size: 13px; }
 .supply-steppers { display: inline-flex; gap: 4px; }
 .supply-steppers .btn { padding: 0 8px; line-height: 20px; }
 .supply-note { margin-top: 8px; }

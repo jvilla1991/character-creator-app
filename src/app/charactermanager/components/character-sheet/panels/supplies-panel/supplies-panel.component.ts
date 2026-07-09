@@ -3,40 +3,42 @@ import { PC } from '../../../../models/pc';
 import {
   SUPPLY_KEYS,
   SUPPLY_LABELS,
-  SUPPLY_FREE_CHARGES,
   SupplyKey,
-  SURVIVAL_STARTING_CHARGES,
+  normalizeSupplies,
+  supplyCapacity,
+  supplyChargeLine,
+  supplyCharges,
 } from '../../../../utils/survival';
 
-/** One pip in a supply track: filled = a serving in hand; extra = a bought
- *  serving beyond the free box/skin, so it costs an inventory slot. */
+/** One pip in a supply track: filled = a serving in hand. */
 interface SupplyPip {
   filled: boolean;
-  extra: boolean;
 }
 
-/** A single supply row as rendered: label, remaining charges, and the pip track. */
+/** A single supply row as rendered: label, charges/capacity, and the pip track. */
 interface SupplyRow {
   key: SupplyKey;
   label: string;
   charges: number;
-  /** Servings beyond the free box/skin — each costs one inventory slot. */
-  slots: number;
-  /** One entry per pip. Empty when the count is too large to draw as pips
-   *  (the numeric count is always shown too). */
+  /** Total servings the containers can hold (containers × 5). */
+  capacity: number;
+  /** One entry per pip — the track IS the capacity. Empty when the capacity is
+   *  too large to draw as pips (the numeric count is always shown too). */
   pips: SupplyPip[];
 }
 
-/** Beyond this many charges we stop drawing pips and lean on the numeric count. */
-const MAX_PIPS = 12;
+/** Beyond this many pips we stop drawing them and lean on the numeric count. */
+const MAX_PIPS = 15;
 
 /**
- * Travel supplies as charges — the Ration box and Water skin, shown like spell
- * slots. The charges live as `qty` on the rations/waterskin inventory lines (so
- * the survival clock can auto-consume them); this pane just reads them and,
- * when editable, lets the owner/DM spend or restock a serving. Display-only
- * otherwise — matching how players see spell slots. Shown only in campaigns
- * with the survivalConditions variant (gated by the host).
+ * Travel supplies under the container model: ration boxes and waterskins are
+ * containers (bought at the shop) whose count sets each track's capacity —
+ * 5 servings per container. The charges live as `qty` on the rations/water
+ * inventory lines (so the survival clock can auto-consume them); this pane
+ * reads them and, when editable, lets the owner/DM spend or restock a serving.
+ * Restock is capped at capacity — buy another container to raise it. Legacy
+ * supply data is container-normalized on read and on the first edit. Shown
+ * only in campaigns with the survivalConditions variant (gated by the host).
  */
 @Component({
   selector: 'app-supplies-panel',
@@ -48,38 +50,36 @@ export class SuppliesPanelComponent {
   @Input() editable = false;
   @Output() pcChange = new EventEmitter<PC>();
 
-  private chargesFor(key: SupplyKey): number {
-    const line = (this.pc?.inventory ?? []).find(i => i.catalogKey === key && i.status !== 'dropped');
-    return Math.max(0, line?.qty ?? 0);
-  }
-
   get rows(): SupplyRow[] {
+    // Read through the normalizer so legacy data displays under the container
+    // model without waiting for a server write.
+    const inventory = normalizeSupplies(this.pc?.inventory ?? []);
     return SUPPLY_KEYS.map(key => {
-      const charges = this.chargesFor(key);
-      const capacity = Math.max(charges, SURVIVAL_STARTING_CHARGES);
-      const pips = capacity <= MAX_PIPS
-        ? Array.from({ length: capacity }, (_, i) => ({ filled: i < charges, extra: i >= SUPPLY_FREE_CHARGES }))
+      const charges = supplyCharges(inventory, key);
+      const capacity = supplyCapacity(inventory, key);
+      const track = Math.max(capacity, charges); // odd data: still show every serving
+      const pips = track <= MAX_PIPS
+        ? Array.from({ length: track }, (_, i) => ({ filled: i < charges }))
         : [];
-      return {
-        key,
-        label: SUPPLY_LABELS[key],
-        charges,
-        slots: Math.max(0, charges - SUPPLY_FREE_CHARGES),
-        pips,
-      };
+      return { key, label: SUPPLY_LABELS[key], charges, capacity, pips };
     });
   }
 
-  /** Spend (−1) or restock (+1) a serving. Creates the line on the first +. */
+  /**
+   * Spend (−1) or restock (+1) a serving. Restock stops at capacity (containers
+   * × 5); spending floors at 0 and keeps the line (an empty box persists).
+   */
   adjust(key: SupplyKey, delta: number): void {
-    const inventory = (this.pc.inventory ?? []).map(i => ({ ...i }));
+    const inventory = normalizeSupplies(this.pc.inventory ?? []);
+    const capacity = supplyCapacity(inventory, key);
     const line = inventory.find(i => i.catalogKey === key && i.status !== 'dropped');
-    const next = Math.max(0, (line?.qty ?? 0) + delta);
+    const current = Math.max(0, line?.qty ?? 0);
+    const next = Math.min(capacity, Math.max(0, current + delta));
+    if (next === current && line) return; // at a bound — nothing to persist
     if (line) {
       line.qty = next;
     } else {
-      if (next === 0) return;
-      inventory.push({ catalogKey: key, name: SUPPLY_LABELS[key], category: 'gear', qty: next });
+      inventory.push(supplyChargeLine(key, next));
     }
     this.pcChange.emit({ ...this.pc, inventory });
   }

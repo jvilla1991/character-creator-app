@@ -6,9 +6,13 @@ import {
   describeGameTime,
   incrementDayLabel,
   initialGameTime,
+  isSupplyItem,
   normalizeGameTime,
+  normalizeSupplies,
   registerWeekday,
   setGameTime,
+  supplyBulk,
+  supplyCapacity,
   SURVIVAL_LABELS,
   survivalExhaustion,
   survivalOf,
@@ -47,20 +51,27 @@ describe('survival util', () => {
     });
   });
 
-  describe('applySegmentToPc (auto-consume)', () => {
-    const rations: PcItem = { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 5 };
-    const waterskin: PcItem = { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 5 };
+  describe('applySegmentToPc (auto-consume, container model)', () => {
+    const kit: PcItem[] = [
+      { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
+      { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
+      { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 5, bulk: 0.2 },
+      { catalogKey: 'water', name: 'Water', category: 'gear', qty: 5, bulk: 0 },
+    ];
     const fedPc = (over: Partial<PC> = {}): PC => basePC({
       survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true },
-      inventory: [{ ...rations }, { ...waterskin }],
+      inventory: kit.map(i => ({ ...i })),
       ...over,
     });
 
-    it('morning: eats/drinks to hold hunger & thirst, decrementing supplies', () => {
+    it('morning: eats/drinks to hold hunger & thirst, decrementing the charge lines', () => {
       const after = applySegmentToPc(fedPc(), 'morning');
       expect(after.survival).toEqual({ hunger: 2, thirst: 2, fatigue: 2, seeded: true });
       expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(4);
-      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(4);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(4);
+      // the containers themselves are never consumed
+      expect(after.inventory!.find(i => i.catalogKey === 'ration-box')!.qty).toBe(1);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(1);
     });
 
     it('noon: raises fatigue only and consumes nothing', () => {
@@ -74,24 +85,98 @@ describe('survival util', () => {
       expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 5, seeded: true });
     });
 
-    it('raises hunger/thirst once the supplies run out', () => {
+    it('raises hunger/thirst once the charges run out', () => {
       const pc = basePC({ survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true }, inventory: [] });
       const after = applySegmentToPc(pc, 'night');
       expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 3, seeded: true });
     });
 
-    it('seeds the starting supplies once for an unseeded character', () => {
+    it('consumes a line down to 0 and KEEPS it — empty containers persist', () => {
+      const pc = fedPc({
+        inventory: [
+          { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
+          { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
+          { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 1, bulk: 0.2 },
+          { catalogKey: 'water', name: 'Water', category: 'gear', qty: 1, bulk: 0 },
+        ],
+      });
+      const after = applySegmentToPc(pc, 'morning');
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(0);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(0);
+      expect(after.inventory!.filter(i => i.catalogKey === 'rations').length).toBe(1);
+    });
+
+    it('seeds the starting kit once for an unseeded character', () => {
       const pc = basePC({ inventory: [] }); // no survival → unseeded
       const after = applySegmentToPc(pc, 'noon'); // noon consumes nothing, so 5 remain
       expect(after.survival!.seeded).toBeTrue();
+      expect(after.inventory!.find(i => i.catalogKey === 'ration-box')!.qty).toBe(1);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(1);
       expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
-      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(5);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(5);
+    });
+
+    it('normalizes legacy supply data: implied box added, waterskin charges become water', () => {
+      // Old model: waterskin qty WAS the water servings (here 7); no box line.
+      const pc = basePC({
+        survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true },
+        inventory: [
+          { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 3 },
+          { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 7 },
+        ],
+      });
+      const after = applySegmentToPc(pc, 'noon'); // noon consumes nothing
+      expect(after.inventory!.find(i => i.catalogKey === 'ration-box')!.qty).toBe(1);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(7);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(2); // ceil(7/5)
     });
 
     it('does not mutate the input PC', () => {
       const pc = fedPc();
       applySegmentToPc(pc, 'night');
       expect(pc.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
+      expect(pc.inventory!.length).toBe(4);
+    });
+  });
+
+  describe('supply bulk & capacity (container model)', () => {
+    it('supplyBulk charges 1 per container and nothing for the servings', () => {
+      expect(supplyBulk({ catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 2 })).toBe(2);
+      expect(supplyBulk({ catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1 })).toBe(1);
+      expect(supplyBulk({ catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 10 })).toBe(0);
+      expect(supplyBulk({ catalogKey: 'water', name: 'Water', category: 'gear', qty: 10 })).toBe(0);
+      expect(supplyBulk({ name: 'Rope', category: 'gear', qty: 1 })).toBe(0);
+    });
+
+    it('isSupplyItem covers charges and containers — water never shows as a normal row', () => {
+      expect(isSupplyItem({ catalogKey: 'rations' })).toBeTrue();
+      expect(isSupplyItem({ catalogKey: 'water' })).toBeTrue();
+      expect(isSupplyItem({ catalogKey: 'ration-box' })).toBeTrue();
+      expect(isSupplyItem({ catalogKey: 'waterskin' })).toBeTrue();
+      expect(isSupplyItem({ catalogKey: 'rope' })).toBeFalse();
+    });
+
+    it('supplyCapacity is containers × 5 per track', () => {
+      const inv: PcItem[] = [
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 2 },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1 },
+      ];
+      expect(supplyCapacity(inv, 'rations')).toBe(10);
+      expect(supplyCapacity(inv, 'water')).toBe(5);
+      expect(supplyCapacity([], 'rations')).toBe(0);
+    });
+
+    it('normalizeSupplies is idempotent and leaves converted data alone', () => {
+      const converted: PcItem[] = [
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 2 },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1 },
+        { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 4 },
+        { catalogKey: 'water', name: 'Water', category: 'gear', qty: 4 },
+      ];
+      const out = normalizeSupplies(converted);
+      expect(out.length).toBe(4);
+      expect(out.find(i => i.catalogKey === 'waterskin')!.qty).toBe(1);
+      expect(out.find(i => i.catalogKey === 'water')!.qty).toBe(4);
     });
   });
 

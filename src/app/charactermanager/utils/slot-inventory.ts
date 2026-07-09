@@ -28,8 +28,8 @@ export function itemBulk(item: PcItem): number {
 
 /**
  * Slots filled: Σ bulk × qty over owned (non-dropped) lines, to 1 decimal.
- * Travel supplies (rations/water) are the exception — the free starting box/skin
- * is weightless and only servings bought beyond it take a slot ({@link supplyBulk}).
+ * Travel supplies are the exception — each CONTAINER (ration box / waterskin)
+ * takes 1 slot and the charges inside it are weightless ({@link supplyBulk}).
  */
 export function usedSlots(items: PcItem[] | undefined): number {
   const total = (items ?? [])

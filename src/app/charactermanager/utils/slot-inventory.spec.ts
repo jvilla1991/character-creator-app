@@ -62,20 +62,24 @@ describe('slot-inventory util', () => {
       expect(usedSlots(undefined)).toBe(0);
     });
 
-    it('gives the free starting box/skin no bulk but 1 slot per extra serving', () => {
-      // Starting supplies: rations & water at 5 each — weightless despite bulk: 1.
+    it('bulks each supply CONTAINER at 1 slot and keeps the charges weightless', () => {
+      // Starting kit: 1 box + 1 skin (1 bulk each); the servings inside are free.
       const starting: PcItem[] = [
-        { catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 5, bulk: 1 },
-        { catalogKey: 'waterskin', name: 'Water skin', category: 'gear', qty: 5, bulk: 1 },
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
+        { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 5, bulk: 0.2 },
+        { catalogKey: 'water', name: 'Water', category: 'gear', qty: 5, bulk: 0 },
       ];
-      expect(usedSlots(starting)).toBe(0);
+      expect(usedSlots(starting)).toBe(2);
 
-      // Bought extras: 8 rations (3 over) + 6 water (1 over) = 4 slots.
+      // More containers = more slots; charge counts never matter.
       const stocked: PcItem[] = [
-        { catalogKey: 'rations', name: 'Ration box', category: 'gear', qty: 8, bulk: 1 },
-        { catalogKey: 'waterskin', name: 'Water skin', category: 'gear', qty: 6, bulk: 1 },
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 2, bulk: 1 },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 3, bulk: 1 },
+        { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 10, bulk: 0.2 },
+        { catalogKey: 'water', name: 'Water', category: 'gear', qty: 15, bulk: 0 },
       ];
-      expect(usedSlots(stocked)).toBe(4);
+      expect(usedSlots(stocked)).toBe(5);
     });
   });
 

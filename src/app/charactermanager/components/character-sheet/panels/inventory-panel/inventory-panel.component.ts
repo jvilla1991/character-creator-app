@@ -76,7 +76,7 @@ export class InventoryPanelComponent {
 
   get usedSlots(): number {
     // Full inventory, not `items` — supplies are hidden from the list but their
-    // over-the-free-allowance servings still count toward slots.
+    // containers (ration boxes / waterskins, 1 bulk each) still count toward slots.
     return usedSlots(this.pc?.inventory ?? []);
   }
 
