@@ -1,0 +1,156 @@
+<section class="loot-panel" *ngIf="state && (state.dm || state.lootStatus === 'DROPPED')">
+
+  <!-- ===================== DM view ===================== -->
+  <ng-container *ngIf="state.dm; else playerView">
+
+    <!-- No pool yet: the prepare form -->
+    <div class="loot-card" *ngIf="!loot">
+      <div class="eyebrow">Loot</div>
+      <h2 class="loot-title">Prepare loot</h2>
+
+      <div class="field-label">Loot source</div>
+      <div class="seg" role="radiogroup">
+        <button type="button" class="seg-btn" [class.active]="source === 'encounter'"
+                (click)="source = 'encounter'">From encounter</button>
+        <button type="button" class="seg-btn" [class.active]="source === 'scratch'"
+                (click)="source = 'scratch'">From scratch</button>
+      </div>
+
+      <ng-container *ngIf="source === 'encounter'">
+        <div class="field-label">Which encounter's loot?</div>
+        <select class="text-input" [(ngModel)]="encounterId" *ngIf="encounters.length; else noEncounters">
+          <option [ngValue]="null" disabled>Choose a curated encounter…</option>
+          <option *ngFor="let e of encounters" [ngValue]="e.id">{{ e.name }}</option>
+        </select>
+        <ng-template #noEncounters>
+          <div class="muted">No curated encounters yet — build one on the campaign dashboard.</div>
+        </ng-template>
+      </ng-container>
+
+      <label class="field">
+        <span class="field-label">Label (optional)</span>
+        <input class="text-input" type="text" [(ngModel)]="nameDraft"
+               placeholder="e.g. Goblin Ambush spoils" />
+      </label>
+
+      <button class="btn primary" [disabled]="!canPrepare" (click)="prepare()">Prepare Loot</button>
+    </div>
+
+    <!-- Pool exists: draft (invisible) or dropped (players claiming) -->
+    <div class="loot-card" *ngIf="loot">
+      <div class="loot-head">
+        <div>
+          <div class="eyebrow">{{ lootTitle(loot) }} · {{ loot.dropped ? 'Dropped — players can claim' : 'Draft — invisible to players' }}</div>
+          <h2 class="loot-title">Loot</h2>
+        </div>
+        <div class="head-actions">
+          <button class="btn primary" *ngIf="!loot.dropped" (click)="drop()">Drop Loot</button>
+          <button class="btn danger" (click)="close()">{{ loot.dropped ? 'Close' : 'Discard' }}</button>
+        </div>
+      </div>
+
+      <div class="coin-line">
+        <span class="item-meta">Coin pile · {{ formatCp(loot.coinCpRemaining) }}<ng-container *ngIf="loot.coinCpRemaining !== loot.coinCpTotal"> of {{ formatCp(loot.coinCpTotal) }}</ng-container></span>
+        <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
+               placeholder="gp" title="Total gold in the pile" />
+        <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveCoins()">Set coins</button>
+      </div>
+
+      <div class="add-form">
+        <select class="text-input mode-select" [ngModel]="lootMode"
+                (ngModelChange)="setLootMode($event)" title="Item source">
+          <option value="catalog">Catalog</option>
+          <option value="custom">Custom</option>
+        </select>
+        <ng-container *ngIf="lootMode === 'catalog'; else customLoot">
+          <select class="text-input" [(ngModel)]="lootCategory" (ngModelChange)="onLootCategoryChange()"
+                  title="Catalog category">
+            <option *ngFor="let c of lootCategories" [value]="c.value">{{ c.label }}</option>
+          </select>
+          <select class="text-input" [(ngModel)]="lootItemKey" title="Catalog item">
+            <option value="" disabled>Pick an item…</option>
+            <option *ngFor="let i of lootCatalog" [value]="i.itemKey">{{ i.name }}</option>
+          </select>
+        </ng-container>
+        <ng-template #customLoot>
+          <input class="text-input" type="text" [(ngModel)]="lootCustomName"
+                 placeholder="Item name (e.g. Cloak of Elvenkind)" />
+          <input class="text-input" type="text" [(ngModel)]="lootCustomNotes"
+                 placeholder="Notes (optional)" />
+        </ng-template>
+        <input class="num-input" type="number" min="1" [(ngModel)]="lootQty" placeholder="Qty" title="Quantity" />
+        <button class="btn primary" (click)="addItem()"
+                [disabled]="lootMode === 'catalog' ? !lootItemKey : !lootCustomName.trim()">Add</button>
+      </div>
+
+      <ul class="catalog" *ngIf="loot.items.length; else emptyPool">
+        <li class="catalog-row" *ngFor="let item of loot.items; trackBy: trackById">
+          <div class="item-main">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-meta">
+              <ng-container *ngIf="item.custom">{{ item.customNotes || 'Custom item' }} · </ng-container>
+              {{ item.qtyRemaining }} of {{ item.qty }} left
+            </span>
+          </div>
+          <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
+                 (ngModelChange)="changeQty(item, $event)" title="Quantity" />
+          <button class="btn-x" title="Remove" (click)="removeItem(item)">✕</button>
+        </li>
+      </ul>
+      <ng-template #emptyPool>
+        <div class="muted">Nothing in the pool yet. Add items above.</div>
+      </ng-template>
+    </div>
+  </ng-container>
+
+  <!-- ===================== Player view ===================== -->
+  <ng-template #playerView>
+    <div class="loot-card" *ngIf="loot">
+      <div class="loot-head">
+        <div>
+          <div class="eyebrow">{{ lootTitle(loot) }}</div>
+          <h2 class="loot-title">Loot — first come, first served</h2>
+        </div>
+      </div>
+
+      <div class="coin-line" *ngIf="loot.coinCpTotal > 0">
+        <span class="item-meta">Coin pile · {{ formatCp(loot.coinCpRemaining) }} left</span>
+        <ng-container *ngIf="myParticipant && loot.coinCpRemaining > 0">
+          <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="takeGp"
+                 placeholder="gp" title="Gold to take" />
+          <button class="btn buy" [disabled]="busyCoins || !takeGp || takeGp <= 0" (click)="takeCoins()">
+            {{ busyCoins ? '…' : 'Take' }}
+          </button>
+        </ng-container>
+      </div>
+
+      <ul class="catalog" *ngIf="loot.items.length">
+        <li class="catalog-row" *ngFor="let item of loot.items; trackBy: trackById">
+          <div class="item-main">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-meta">
+              <ng-container *ngIf="item.custom && item.customNotes">{{ item.customNotes }} · </ng-container>
+              {{ item.qtyRemaining > 0 ? item.qtyRemaining + ' left' : 'All claimed' }}
+            </span>
+          </div>
+          <ng-container *ngIf="myParticipant && item.qtyRemaining > 0; else claimedOut">
+            <input class="num-input qty-input" type="number" min="1" [max]="item.qtyRemaining"
+                   *ngIf="item.qtyRemaining > 1"
+                   [(ngModel)]="claimQty[item.id]" placeholder="1" title="How many" />
+            <button class="btn buy" [disabled]="busyItemId != null" (click)="claim(item)">
+              {{ busyItemId === item.id ? '…' : 'Claim' }}
+            </button>
+          </ng-container>
+          <ng-template #claimedOut><span class="claimed">—</span></ng-template>
+        </li>
+      </ul>
+
+      <div class="muted" *ngIf="!loot.items.length && loot.coinCpTotal === 0">
+        The pool is empty.
+      </div>
+    </div>
+
+    <div class="loot-card muted" *ngIf="!loot && loading">Sizing up the spoils…</div>
+  </ng-template>
+
+</section>

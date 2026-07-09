@@ -177,29 +177,54 @@
   gap: 8px;
   justify-content: center;
   padding: 0 16px;
+
+  // Grab-and-throw target: the cluster itself. touch-action: none stops
+  // mobile scroll/pinch from hijacking the drag; the transform follows the
+  // pointer via --cluster-x/--cluster-y, eased back home when not actively
+  // dragging (the drop-in-place / snap-back feel).
+  touch-action: none;
+  cursor: grab;
+  transform: translate(var(--cluster-x, 0px), var(--cluster-y, 0px));
+  transition: transform .15s ease-out;
+
+  &.grabbing {
+    cursor: grabbing;
+    transition: none; // no lag between finger/mouse and cluster while actively dragging
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--gold) 70%, transparent);
+    outline-offset: 4px;
+  }
 }
 
 .arena-die {
-  cursor: pointer;
+  pointer-events: none; // the shelf itself is the drag/tap target, not individual dice
   will-change: transform;
 
   &.flying {
     animation: diceFlight 1.15s cubic-bezier(0.45, 0, 0.3, 1) both;
     animation-delay: var(--delay, 0ms);
-    cursor: default;
   }
 
   &.landed {
-    cursor: default;
     .die-shape { box-shadow: inset 0 2px 5px rgba(255,255,255,0.4),
                              inset 0 -3px 6px rgba(0,0,0,0.35),
                              0 0 14px color-mix(in oklch, var(--gold) 45%, transparent); }
   }
+}
 
-  &:not(.flying):not(.landed):hover .die-shape {
-    outline: 2px solid color-mix(in oklch, var(--crimson) 60%, transparent);
-    outline-offset: 2px;
-  }
+// Spinning tumble while the cluster is held (not yet thrown) — reuses the
+// same die-shape visual language as .flying but loops instead of playing
+// once. .grabbing (staging) and .flying (rolling) are phase-exclusive, so
+// these two animation rules on .arena-die never actually compete at runtime.
+.dice-shelf.grabbing .arena-die {
+  animation: diceHeld 0.6s linear infinite;
+}
+@keyframes diceHeld {
+  0%   { transform: rotate(0deg) scale(1.04); }
+  50%  { transform: rotate(180deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(1.04); }
 }
 
 // Launch up, smack the ceiling, tumble, settle mid-field showing the number.
@@ -274,106 +299,20 @@
 .breakdown-rolls { flex: 1; color: var(--text-2); }
 .breakdown-sub   { color: var(--gold); font-weight: 600; }
 
-// ── Throw bar / pokéball orb ─────────────────────────────────────────────────
+// ── Throw bar ──────────────────────────────────────────────────────────────
 
 .dice-throwbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border-soft);
 }
 
-.orb-stage {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 10px;
-}
-
-.power-gauge {
-  width: 8px;
-  height: 56px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  background: color-mix(in oklch, var(--bg) 60%, #000);
-  opacity: 0.35;
-  transition: opacity .15s;
-
-  &.active { opacity: 1; }
-}
-.power-fill {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: linear-gradient(180deg, var(--crimson), var(--gold));
-  transition: height .05s linear;
-}
-// keep the fill anchored inside the gauge box
-.power-gauge { position: relative; }
-
-.throw-orb {
-  position: relative;
-  width: 58px;
-  height: 58px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: grab;
-  transform: translateY(var(--lift, 0));
-  transition: transform .08s linear, filter .15s;
-  touch-action: none;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
-
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
-  &.charging { cursor: grabbing; filter: drop-shadow(0 0 14px color-mix(in oklch, var(--gold) 80%, transparent)); }
-  &.spent { animation: orbToss .5s ease-in forwards; }
-}
-
-// d20 throwing die icon
-.orb-d20 {
-  display: block;
-  width: 100%;
-  height: 100%;
-
-  .orb-d20-body {
-    fill: var(--d20-color, #e8c98a);
-    stroke: #14151b;
-    stroke-width: 3;
-    stroke-linejoin: round;
-  }
-  .orb-d20-face {
-    fill: color-mix(in oklch, var(--d20-color, #e8c98a) 78%, #000);
-  }
-  .orb-d20-facets line {
-    stroke: rgba(20, 21, 27, 0.55);
-    stroke-width: 2;
-  }
-  .orb-d20-num {
-    fill: #14151b;
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    font-size: 26px;
-    text-anchor: middle;
-  }
-}
-.throw-orb.charging .orb-d20 {
-  .orb-d20-body { fill: var(--gold-2, #e8c98a); }
-  .orb-d20-face { fill: color-mix(in oklch, var(--gold) 85%, #000); }
-}
-
-@keyframes orbToss {
-  0%   { transform: translateY(var(--lift, 0)) scale(1) rotate(0); opacity: 1; }
-  40%  { transform: translateY(-120px) scale(0.7) rotate(220deg); opacity: 1; }
-  60%  { transform: translateY(-180px) scale(0.4) rotate(420deg); opacity: 0.6; }
-  100% { transform: translateY(-220px) scale(0.2) rotate(680deg); opacity: 0; }
-}
-
 // ── Reduced motion: keep it usable, skip the acrobatics ──────────────────────
 @media (prefers-reduced-motion: reduce) {
   .arena-die.flying { animation: none; }
-  .throw-orb.spent { animation: none; }
+  .dice-shelf.grabbing .arena-die { animation: none; }
+  .dice-shelf { transition: none; } // no eased snap-back either
 }

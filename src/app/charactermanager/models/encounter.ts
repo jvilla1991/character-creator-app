@@ -21,10 +21,22 @@ export interface EncounterCreature {
   quantity: number;         // expands into that many numbered combatants on load
 }
 
+/** One prepped loot line — a catalog item or a custom free-hand item. */
+export interface EncounterLootItem {
+  id: number;
+  catalogItemKey: string | null; // null for custom items
+  name: string;                  // resolved: catalog name or custom name
+  custom: boolean;
+  customNotes: string | null;
+  qty: number;
+}
+
 export interface Encounter {
   id: number;
   campaignId: number;
   name: string;
   notes: string | null;
   creatures: EncounterCreature[];
+  lootCoinCp: number;            // prepped coin pile, in copper
+  lootItems: EncounterLootItem[];
 }

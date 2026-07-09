@@ -112,6 +112,12 @@ export interface SessionState {
   shopOpen: boolean;
   shopForMe: boolean;
   shopCategory: string | null;
+  // Loot signal (post-combat loot): null = no pool visible to this caller,
+  // 'DRAFT' = the DM's unpublished pool (DM only), 'DROPPED' = claimable. The
+  // pool itself is fetched from the loot endpoint, re-keyed on every version
+  // change — claims mutate the pool under a stable status.
+  lootStatus: 'DRAFT' | 'DROPPED' | null;
+  lootName: string | null;
   // Caller-scoped: the requester's own seated PC's current XP total, or null if
   // they're the DM or have no PC seated. Not on ParticipantView — that's broadcast
   // to every participant, and XP shouldn't leak between players.

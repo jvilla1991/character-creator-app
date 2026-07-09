@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CuratedEncountersComponent } from './curated-encounters.component';
 import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterSummary } from '../../../models/encounter';
@@ -7,19 +7,24 @@ import { Encounter, EncounterSummary } from '../../../models/encounter';
 describe('CuratedEncountersComponent', () => {
   let component: CuratedEncountersComponent;
   let service: any;
+  let shopService: any;
 
   const campaign = { id: '1', name: 'The Veiled Compass' } as unknown as Campaign;
 
   const encounter: Encounter = {
     id: 5, campaignId: 1, name: 'Goblin Ambush', notes: 'They wait in the trees.',
     creatures: [{ id: 9, name: 'Goblin', dexModifier: 2, hpMax: 7, quantity: 4 }],
+    lootCoinCp: 0, lootItems: [],
   };
 
   beforeEach(() => {
     service = jasmine.createSpyObj('CuratedEncounterService',
-      ['list', 'create', 'get', 'update', 'delete', 'addCreature', 'updateCreature', 'removeCreature']);
+      ['list', 'create', 'get', 'update', 'delete', 'addCreature', 'updateCreature', 'removeCreature',
+       'addLootItem', 'updateLootItem', 'removeLootItem', 'setLootCoins', 'importLoot']);
     service.list.and.returnValue(of([] as EncounterSummary[]));
-    component = new CuratedEncountersComponent(service);
+    shopService = jasmine.createSpyObj('ShopService', ['getCatalog']);
+    shopService.getCatalog.and.returnValue(of([]));
+    component = new CuratedEncountersComponent(service, shopService);
     component.campaign = campaign;
   });
 
@@ -113,5 +118,82 @@ describe('CuratedEncountersComponent', () => {
     expect(service.delete).toHaveBeenCalledWith(5);
     expect(component.selected).toBeNull();
     expect(service.list).toHaveBeenCalled(); // back() reloads
+  });
+
+  // ── Loot editor ────────────────────────────────────────────────────────────
+
+  it('addLootItem posts a catalog line and resets the form', () => {
+    component.selected = encounter;
+    component.lootMode = 'catalog';
+    component.lootItemKey = 'longsword';
+    component.lootQty = 2;
+    const after = { ...encounter, lootItems: [
+      { id: 1, catalogItemKey: 'longsword', name: 'Longsword', custom: false, customNotes: null, qty: 2 }] };
+    service.addLootItem.and.returnValue(of(after));
+    component.addLootItem();
+    expect(service.addLootItem).toHaveBeenCalledWith(5, 'longsword', null, null, 2);
+    expect(component.selected!.lootItems.length).toBe(1);
+    expect(component.lootItemKey).toBe('');
+    expect(component.lootQty).toBe(1);
+  });
+
+  it('addLootItem posts a custom line with notes', () => {
+    component.selected = encounter;
+    component.lootMode = 'custom';
+    component.lootCustomName = '  Cloak of Elvenkind ';
+    component.lootCustomNotes = ' Advantage on Stealth. ';
+    service.addLootItem.and.returnValue(of(encounter));
+    component.addLootItem();
+    expect(service.addLootItem).toHaveBeenCalledWith(5, null, 'Cloak of Elvenkind', 'Advantage on Stealth.', 1);
+  });
+
+  it('addLootItem requires a selection for its mode', () => {
+    component.selected = encounter;
+    component.lootMode = 'catalog';
+    component.lootItemKey = '';
+    component.addLootItem();
+    component.lootMode = 'custom';
+    component.lootCustomName = '   ';
+    component.addLootItem();
+    expect(service.addLootItem).not.toHaveBeenCalled();
+  });
+
+  it('saveLootCoins sends the gp draft and reselects', () => {
+    component.selected = encounter;
+    component.coinGpDraft = 125.5;
+    const after = { ...encounter, lootCoinCp: 12550 };
+    service.setLootCoins.and.returnValue(of(after));
+    component.saveLootCoins();
+    expect(service.setLootCoins).toHaveBeenCalledWith(5, 125.5);
+    expect(component.coinGpDraft).toBe(125.5); // re-derived from the response
+  });
+
+  it('importLoot rejects malformed JSON client-side', () => {
+    component.selected = encounter;
+    component.lootImportDraft = '{not json';
+    component.importLoot();
+    expect(service.importLoot).not.toHaveBeenCalled();
+    expect(component.lootImportError).toContain('Not valid JSON');
+  });
+
+  it('importLoot posts a parsed payload and closes the import box', () => {
+    component.selected = encounter;
+    component.lootImportOpen = true;
+    component.lootImportDraft = JSON.stringify({ coinGp: 10, items: [{ key: 'longsword' }] });
+    service.importLoot.and.returnValue(of(encounter));
+    component.importLoot();
+    expect(service.importLoot).toHaveBeenCalledWith(5, {
+      coinGp: 10, items: [{ key: 'longsword', name: null, notes: null, qty: null }] });
+    expect(component.lootImportOpen).toBeFalse();
+    expect(component.lootImportDraft).toBe('');
+  });
+
+  it('importLoot surfaces the server message on failure', () => {
+    component.selected = encounter;
+    component.lootImportDraft = JSON.stringify({ items: [{ key: 'vorpal-blade' }] });
+    service.importLoot.and.returnValue(
+      throwError(() => ({ error: { message: 'Unknown catalog keys: vorpal-blade' } })));
+    component.importLoot();
+    expect(component.lootImportError).toBe('Unknown catalog keys: vorpal-blade');
   });
 });

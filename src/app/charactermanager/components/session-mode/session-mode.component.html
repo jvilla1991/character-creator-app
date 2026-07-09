@@ -210,6 +210,8 @@
     <app-encounter-loader [state]="state"></app-encounter-loader>
 
     <app-shop-panel [state]="state"></app-shop-panel>
+    <!-- Post-combat loot: DM drafts/drops a pool; players claim from it. -->
+    <app-loot-panel [state]="state"></app-loot-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
     <div *ngIf="state.dm" class="panel session-note">
       <div class="panel-header">

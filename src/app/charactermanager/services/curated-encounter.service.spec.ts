@@ -55,4 +55,45 @@ describe('CuratedEncounterService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
+
+  it('addLootItem POSTs the loot line', () => {
+    service.addLootItem(5, 'longsword', null, null, 2).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/loot`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(
+      { catalogItemKey: 'longsword', customName: null, customNotes: null, qty: 2 });
+    req.flush({});
+  });
+
+  it('updateLootItem PUTs the line fields', () => {
+    service.updateLootItem(5, 9, 3, null, null).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/loot/9`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ qty: 3, customName: null, customNotes: null });
+    req.flush({});
+  });
+
+  it('removeLootItem DELETEs the line', () => {
+    service.removeLootItem(5, 9).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/loot/9`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('setLootCoins PUTs the gp amount', () => {
+    service.setLootCoins(5, 125.5).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/loot-coins`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ coinGp: 125.5 });
+    req.flush({});
+  });
+
+  it('importLoot POSTs the payload verbatim', () => {
+    const payload = { coinGp: 10, items: [{ key: 'longsword', name: null, notes: null, qty: null }] };
+    service.importLoot(5, payload).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/loot/import`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({});
+  });
 });

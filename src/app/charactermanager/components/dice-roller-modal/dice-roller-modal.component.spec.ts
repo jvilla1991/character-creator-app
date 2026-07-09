@@ -38,13 +38,6 @@ describe('DiceRollerModalComponent', () => {
     expect(component.countOf(6)).toBe(1);
   });
 
-  it('removes a die only while staging', () => {
-    component.addDie(8);
-    const id = component.staged[0].id;
-    component.removeDie(id);
-    expect(component.totalDice).toBe(0);
-  });
-
   it('cannot throw with an empty field', () => {
     expect(component.canThrow).toBeFalse();
     component.addDie(12);
