@@ -265,6 +265,8 @@ export class LootPanelComponent implements OnChanges {
   private setLoot(view: LootView): void {
     this.loot = view;
     this.coinGpDraft = view.coinCpTotal > 0 ? view.coinCpTotal / 100 : null;
+    // The DM's add form starts in catalog mode — make sure it has items to pick.
+    if (this.state?.dm && !this.lootCatalog.length) this.loadLootCatalog();
   }
 
   private fetchLoot(): void {

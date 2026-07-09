@@ -278,5 +278,7 @@ export class CuratedEncountersComponent implements OnChanges {
     this.selected = encounter;
     this.notesDraft = encounter.notes ?? '';
     this.coinGpDraft = encounter.lootCoinCp > 0 ? encounter.lootCoinCp / 100 : null;
+    // The loot picker starts in catalog mode — make sure it has items to pick.
+    if (!this.lootCatalog.length) this.loadLootCatalog();
   }
 }
