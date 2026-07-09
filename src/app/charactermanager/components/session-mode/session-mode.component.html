@@ -196,6 +196,16 @@
       (openPc)="openPcSheet($event)"
     ></app-initiative-panel>
 
+    <!-- Player: opens the dice modal wired to this live session so rolls stream to the DM. -->
+    <div *ngIf="!state.dm && myPc(state) as pc" class="roll-launch">
+      <button class="btn primary" style="width: 100%;" (click)="openRoll(pc)">
+        Roll
+      </button>
+    </div>
+
+    <!-- Roll Log: server already filtered (DM sees all, player sees own) — shown to both. -->
+    <app-roll-log-panel [rolls]="state.rolls" [dm]="state.dm"></app-roll-log-panel>
+
     <!-- DM-only (gated inside the component): load a curated encounter into the order. -->
     <app-encounter-loader [state]="state"></app-encounter-loader>
 
@@ -249,6 +259,17 @@
           <button class="btn" (click)="cancelLongRest()">Cancel</button>
         </div>
       </div>
+    </div>
+
+    <!-- Player Roll modal: wired to this live session so a settled roll logs to the DM. -->
+    <div *ngIf="rollModalOpen && rollPc" class="modal-backdrop" (click)="closeRoll()">
+      <app-dice-roller-modal
+        [pc]="rollPc"
+        [sessionId]="state.sessionId"
+        [participantId]="myParticipantId(state)"
+        (click)="$event.stopPropagation()"
+        (close)="closeRoll()">
+      </app-dice-roller-modal>
     </div>
   </div>
 </ng-container>

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { PC } from '../../models/pc';
+import { SessionService } from '../../services/session.service';
 
 /** The seven polyhedral dice a player can summon. */
 export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
@@ -40,9 +41,15 @@ export class DiceRollerModalComponent implements OnDestroy {
   /** Optional — only used to personalise the title. */
   @Input() pc: PC | null = null;
 
+  /** When both are set, a settled roll is logged to this live session's Roll Log. */
+  @Input() sessionId: number | string | null = null;
+  @Input() participantId: number | null = null;
+
   @Output() close = new EventEmitter<void>();
 
   @ViewChild('arenaEl') arenaRef?: ElementRef<HTMLElement>;
+
+  constructor(private sessionService: SessionService) {}
 
   /** The dice palette shown across the top of the modal. */
   readonly dieTypes: DieSides[] = [4, 6, 8, 10, 12, 20, 100];
@@ -319,7 +326,22 @@ export class DiceRollerModalComponent implements OnDestroy {
       // Lock every face to its rolled value.
       this.staged = this.staged.map(d => ({ ...d, display: d.value ?? d.display }));
       this.phase = 'result';
+      this.logRollToSession();
     }, lastDelay + flightMs);
+  }
+
+  /**
+   * Fire-and-forget log of the settled roll to this live session's Roll Log —
+   * only when the caller supplied both a session and a participant (a
+   * standalone/no-session roll never posts anywhere). A failed log never
+   * blocks or reverts the result the player already saw.
+   */
+  private logRollToSession(): void {
+    if (this.sessionId == null || this.participantId == null) return;
+    const groups = this.breakdown.map(row => ({ sides: row.sides, rolls: row.rolls }));
+    this.sessionService.logRoll(this.sessionId, this.participantId, groups).subscribe({
+      error: err => console.error('Failed to log roll', err),
+    });
   }
 
   // ── Results ────────────────────────────────────────────────────────────────
@@ -329,7 +351,7 @@ export class DiceRollerModalComponent implements OnDestroy {
   }
 
   /** One summary line per die type, e.g. "3d6 → 4, 2, 6". */
-  get breakdown(): { label: string; rolls: number[]; subtotal: number }[] {
+  get breakdown(): { label: string; sides: DieSides; rolls: number[]; subtotal: number }[] {
     const groups = new Map<DieSides, number[]>();
     for (const d of this.staged) {
       if (d.value === undefined) continue;
@@ -343,6 +365,7 @@ export class DiceRollerModalComponent implements OnDestroy {
         const rolls = groups.get(s)!;
         return {
           label: `${rolls.length}d${s}`,
+          sides: s,
           rolls,
           subtotal: rolls.reduce((a, b) => a + b, 0),
         };

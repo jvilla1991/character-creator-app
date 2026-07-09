@@ -100,3 +100,29 @@ describe('SessionModeComponent.openPcSheet', () => {
     expect(uiState.viewHeroAsDm).not.toHaveBeenCalled();
   });
 });
+
+describe('SessionModeComponent.openRoll / closeRoll', () => {
+  const sessionServiceStub = { state$: of(null) } as never;
+  let component: SessionModeComponent;
+
+  beforeEach(() => {
+    component = new SessionModeComponent(
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never);
+  });
+
+  it('openRoll sets the pc and opens the modal', () => {
+    const pc = { id: 7, name: 'Aria' } as PC;
+    component.openRoll(pc);
+
+    expect(component.rollModalOpen).toBeTrue();
+    expect(component.rollPc).toBe(pc);
+  });
+
+  it('closeRoll clears the pc and closes the modal', () => {
+    component.openRoll({ id: 7, name: 'Aria' } as PC);
+    component.closeRoll();
+
+    expect(component.rollModalOpen).toBeFalse();
+    expect(component.rollPc).toBeNull();
+  });
+});
