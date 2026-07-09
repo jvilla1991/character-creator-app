@@ -1106,6 +1106,26 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border-color: var(--gold);
   box-shadow: var(--glow-gold);
 }
+/* Form-control baseline: themed backdrop for any control no component styles.
+   :where() keeps specificity at (0,0,1) so every existing class rule
+   (.field input, .search input, component styles, …) still wins. */
+input:where(:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=button]):not([type=submit])),
+textarea,
+select {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
+input:where(:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=button]):not([type=submit])):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--celestial);
+}
 .input-reveal {
   position: relative;
   display: flex;
