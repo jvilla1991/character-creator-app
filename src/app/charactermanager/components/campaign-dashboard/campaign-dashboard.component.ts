@@ -150,6 +150,33 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // --- Delete campaign ------------------------------------------------------
+  // Confirmation modal; the delete erases sessions/encounters/shops/notes and
+  // RELEASES member characters (backend SET NULL — they are never deleted).
+
+  deleteCampaignOpen = false;
+  deletingCampaign = false;
+
+  openDeleteCampaign(): void { this.deleteCampaignOpen = true; }
+  closeDeleteCampaign(): void { this.deleteCampaignOpen = false; }
+
+  confirmDeleteCampaign(campaign: Campaign): void {
+    this.deletingCampaign = true;
+    this.campaignService.deleteCampaign(campaign.id).subscribe({
+      next: () => {
+        this.deletingCampaign = false;
+        this.closeDeleteCampaign();
+        // Back to the "No Campaign Chosen" empty state; the sidebar row
+        // disappears reactively via campaigns$.
+        this.uiState.setActiveCampaign(null);
+      },
+      error: err => {
+        this.deletingCampaign = false;
+        console.error('Failed to delete campaign', err);
+      },
+    });
+  }
+
   // --- Manage Party (bind/unbind characters) -------------------------------
 
   openManageParty(): void { this.managePartyOpen = true; }
