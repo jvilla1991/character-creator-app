@@ -150,3 +150,20 @@
   font-size: 0.8rem;
   color: var(--muted, rgba(255, 255, 255, 0.6));
 }
+
+.loot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+
+  .loot-actions { display: flex; gap: 14px; }
+}
+
+// Loot lines add a qty column between the item and the remove button.
+.catalog-row.loot-line { grid-template-columns: 1fr 70px 28px; }
+.qty-input { width: 70px; }
+
+// Keep the source/category dropdowns compact next to the flexing item picker.
+.mode-select { flex: 0 0 110px; }
+.coin-form .num-input { width: 110px; }

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Encounter, EncounterSummary } from '../models/encounter';
+import { LootImportPayload } from '../models/loot';
 
 /**
  * DM-curated encounter management client. Talks to the campaign-scoped
@@ -64,6 +65,40 @@ export class CuratedEncounterService {
   removeCreature(encounterId: number, creatureId: number): Observable<Encounter> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.delete<Encounter>(`${this.base}/encounters/${encounterId}/creatures/${creatureId}`);
+  }
+
+  /** Add a prepped loot line — a catalog item (key) or a custom item (name + notes). */
+  addLootItem(encounterId: number, catalogItemKey: string | null, customName: string | null,
+              customNotes: string | null, qty: number): Observable<Encounter> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.post<Encounter>(`${this.base}/encounters/${encounterId}/loot`,
+      { catalogItemKey, customName, customNotes, qty });
+  }
+
+  /** Update a loot line's qty (and, for custom lines, name/notes). */
+  updateLootItem(encounterId: number, lootItemId: number, qty: number,
+                 customName: string | null, customNotes: string | null): Observable<Encounter> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.put<Encounter>(`${this.base}/encounters/${encounterId}/loot/${lootItemId}`,
+      { qty, customName, customNotes });
+  }
+
+  /** Remove a loot line from the encounter. */
+  removeLootItem(encounterId: number, lootItemId: number): Observable<Encounter> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.delete<Encounter>(`${this.base}/encounters/${encounterId}/loot/${lootItemId}`);
+  }
+
+  /** Set the encounter's prepped coin pile, in gold (fractions allowed). */
+  setLootCoins(encounterId: number, coinGp: number): Observable<Encounter> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.put<Encounter>(`${this.base}/encounters/${encounterId}/loot-coins`, { coinGp });
+  }
+
+  /** Bulk-add loot lines from pasted JSON (appends; coinGp adds to the pile). */
+  importLoot(encounterId: number, payload: LootImportPayload): Observable<Encounter> {
+    if (environment.demoMode) return this.demoUnsupported();
+    return this.http.post<Encounter>(`${this.base}/encounters/${encounterId}/loot/import`, payload);
   }
 
   private demoUnsupported<T>(): Observable<T> {

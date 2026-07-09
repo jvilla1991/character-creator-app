@@ -70,5 +70,75 @@
     <div class="total-line" *ngIf="encounter.creatures.length">
       Loads {{ totalCombatants(encounter) }} combatant{{ totalCombatants(encounter) === 1 ? '' : 's' }} into a session.
     </div>
+
+    <!-- ===== Loot (dropped as a claimable pool in Session Mode) ===== -->
+    <div class="field-label loot-head">
+      Loot
+      <span class="loot-actions">
+        <button class="btn link" (click)="copyLootJson()">{{ lootCopied ? 'Copied ✓' : 'Copy JSON' }}</button>
+        <button class="btn link" (click)="toggleLootImport()">{{ lootImportOpen ? 'Cancel import' : 'Import JSON' }}</button>
+      </span>
+    </div>
+
+    <div *ngIf="lootImportOpen" style="margin: 10px 0;">
+      <textarea [(ngModel)]="lootImportDraft" rows="7" style="width: 100%; font-family: monospace;"
+                [placeholder]="lootImportExample" aria-label="Loot JSON"></textarea>
+      <div class="muted" style="margin-top: 4px;">
+        Each item has either a "key" (an SRD slug like "longsword") or a "name" (a custom item, with
+        optional "notes"); "coinGp" adds to the coin pile. Importing appends to the loot below.
+      </div>
+      <div *ngIf="lootImportError" style="color: var(--crimson); margin-top: 4px;">{{ lootImportError }}</div>
+      <button class="btn primary" style="margin-top: 6px;"
+              [disabled]="!lootImportDraft.trim() || busy" (click)="importLoot()">Import loot</button>
+    </div>
+
+    <div class="creature-form coin-form">
+      <span class="item-meta">Coin pile</span>
+      <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
+             placeholder="gp" title="Gold in the pile (fractions allowed)" />
+      <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveLootCoins()">Save coins</button>
+    </div>
+
+    <div class="creature-form loot-form">
+      <select class="text-input mode-select" [ngModel]="lootMode"
+              (ngModelChange)="setLootMode($event)" title="Item source">
+        <option value="catalog">Catalog</option>
+        <option value="custom">Custom</option>
+      </select>
+      <ng-container *ngIf="lootMode === 'catalog'; else customLoot">
+        <select class="text-input" [(ngModel)]="lootCategory" (ngModelChange)="onLootCategoryChange()"
+                title="Catalog category">
+          <option *ngFor="let c of lootCategories" [value]="c.value">{{ c.label }}</option>
+        </select>
+        <select class="text-input" [(ngModel)]="lootItemKey" title="Catalog item">
+          <option value="" disabled>Pick an item…</option>
+          <option *ngFor="let i of lootCatalog" [value]="i.itemKey">{{ i.name }} ({{ formatCp(i.costCp) }})</option>
+        </select>
+      </ng-container>
+      <ng-template #customLoot>
+        <input class="text-input" type="text" [(ngModel)]="lootCustomName"
+               placeholder="Item name (e.g. Cloak of Elvenkind)" />
+        <input class="text-input" type="text" [(ngModel)]="lootCustomNotes"
+               placeholder="Notes (optional)" />
+      </ng-template>
+      <input class="num-input" type="number" min="1" [(ngModel)]="lootQty" placeholder="Qty" title="Quantity" />
+      <button class="btn primary" (click)="addLootItem()"
+              [disabled]="busy || (lootMode === 'catalog' ? !lootItemKey : !lootCustomName.trim())">Add</button>
+    </div>
+
+    <ul class="catalog" *ngIf="encounter.lootItems.length; else emptyLoot">
+      <li class="catalog-row loot-line" *ngFor="let item of encounter.lootItems; trackBy: trackById">
+        <div class="item-main">
+          <span class="item-name">{{ item.name }}</span>
+          <span class="item-meta" *ngIf="item.custom">{{ item.customNotes || 'Custom item' }}</span>
+        </div>
+        <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
+               (ngModelChange)="changeLootQty(item, $event)" title="Quantity" />
+        <button class="btn-x" title="Remove" (click)="removeLootItem(item)">✕</button>
+      </li>
+    </ul>
+    <ng-template #emptyLoot>
+      <div class="muted">No loot yet. Add items above or import JSON — drop it to players from Session Mode.</div>
+    </ng-template>
   </ng-container>
 </section>
