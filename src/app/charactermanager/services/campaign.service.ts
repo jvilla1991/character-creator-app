@@ -390,6 +390,37 @@ export class CampaignService {
     );
   }
 
+  /**
+   * DM deletes a campaign. The backend cascades sessions/encounters/shops/notes
+   * and unbinds member characters (`pc.campaign_id` SET NULL) — characters are
+   * released, never deleted. Real mode refetches PCs to pick up the unbind
+   * rather than hand-mirroring the cascade; demo mode mirrors it locally.
+   */
+  deleteCampaign(campaignId: string | number): Observable<void> {
+    const key = String(campaignId);
+    if (environment.demoMode) {
+      // Release the campaign's demo PCs (in-memory store) before dropping it.
+      let pcs: PC[] = [];
+      this.pcService.pcs$.pipe(take(1)).subscribe(list => (pcs = list));
+      pcs.filter(p => p.campaignId != null && String(p.campaignId) === key)
+        .forEach(p => this.pcService.patchLocalPC(p.id, { campaignId: null }));
+      this.persistDemo(this.campaignsSubject.getValue().filter(c => c.id !== key));
+      const notes = this.loadDemoNotes();
+      delete notes[key];
+      this.persistDemoNotes(notes);
+      this.summaryCache.delete(key);
+      return of(void 0).pipe(delay(50));
+    }
+    return this.http.delete<void>(`${this.campaignUrl}/${key}`).pipe(
+      tap(() => {
+        this.campaignsSubject.next(this.campaignsSubject.getValue().filter(c => c.id !== key));
+        this.summaryCache.delete(key);
+        // The backend SET NULLed members' campaignId — refetch instead of mirroring.
+        this.pcService.refreshPCs();
+      }),
+    );
+  }
+
   /** Sync lookup of a campaign already in the local store (demo & session seams). */
   getLocalCampaign(campaignId: string | number): Campaign | undefined {
     const key = String(campaignId);

@@ -39,60 +39,134 @@ export function survivalOf(pc: PC): PcSurvival {
 
 export const SURVIVAL_STARTING_CHARGES = 5;
 
-// ── Travel supplies (rations / water) ───────────────────────────────────────
-// These two lines live in pc.inventory (so the survival clock can auto-consume
-// them by decrementing qty), but the sheet treats them specially: they show as
-// charges in the Supplies pane — like spell slots — and never count toward the
-// slot-inventory bulk. The qty IS the number of servings left.
+// ── Travel supplies: the container model ────────────────────────────────────
+// Ration boxes and waterskins are CONTAINERS (1 bulk each, never auto-
+// consumed); each holds 5 servings. The servings are separate charge lines —
+// 'rations' (purchasable, 1 sp each) and 'water' (never sold; refilled free) —
+// whose qty the survival clock decrements. Charges are weightless inside their
+// containers and capped at containers × 5 everywhere. Mirrors the server's
+// SurvivalSupplies so demo mode behaves identically.
 
-export const SUPPLY_KEYS = ['rations', 'waterskin'] as const;
+/** One container (ration box / waterskin) holds this many servings. */
+export const SERVINGS_PER_CONTAINER = 5;
+
+/** The charge lines shown as tracks in the Supplies pane. */
+export const SUPPLY_KEYS = ['rations', 'water'] as const;
 export type SupplyKey = typeof SUPPLY_KEYS[number];
 
-/** Display labels for the two auto-consumed travel supplies. */
+/** The container lines that set each charge track's capacity. */
+export const SUPPLY_CONTAINER_KEYS = ['ration-box', 'waterskin'] as const;
+
+/** Display labels for the two consumable charge tracks. */
 export const SUPPLY_LABELS: Record<SupplyKey, string> = {
-  rations: 'Ration box',
-  waterskin: 'Water skin',
+  rations: 'Rations',
+  water: 'Water',
 };
 
-/** True for a rations/waterskin line — tracked as charges in the Supplies pane. */
-export function isSupplyItem(item: Pick<PcItem, 'catalogKey'>): boolean {
-  return item.catalogKey === 'rations' || item.catalogKey === 'waterskin';
-}
-
-/** Servings you carry for free (the starting box/skin); extras cost bulk. */
-export const SUPPLY_FREE_CHARGES = SURVIVAL_STARTING_CHARGES;
+/** Which container holds each charge line. */
+export const CONTAINER_FOR: Record<SupplyKey, string> = {
+  rations: 'ration-box',
+  water: 'waterskin',
+};
 
 /**
- * A supply line's bulk: the starting box/skin (up to {@link SUPPLY_FREE_CHARGES}
- * servings) is weightless; every serving bought beyond that takes 1 slot. A
- * non-supply item contributes nothing here (the caller bulks it normally).
+ * True for any supply line — charges (rations/water) or containers (ration
+ * box/waterskin). These never render as ordinary inventory rows: the Supplies
+ * pane shows charges as pips and containers as capacity.
  */
-export function supplyBulk(item: PcItem): number {
-  if (!isSupplyItem(item)) return 0;
-  return Math.max(0, (item.qty ?? 0) - SUPPLY_FREE_CHARGES);
+export function isSupplyItem(item: Pick<PcItem, 'catalogKey'>): boolean {
+  return item.catalogKey === 'rations' || item.catalogKey === 'water'
+      || item.catalogKey === 'ration-box' || item.catalogKey === 'waterskin';
 }
 
-/** Add a full Ration box and Water skin if a live line for each isn't present. */
-function seedSupplies(inventory: PcItem[]): PcItem[] {
-  const items = inventory.map(i => ({ ...i }));
-  const has = (key: string) => items.some(i => i.catalogKey === key && i.status !== 'dropped');
-  if (!has('rations')) {
-    items.push({ catalogKey: 'rations', name: SUPPLY_LABELS.rations, category: 'gear',
-      qty: SURVIVAL_STARTING_CHARGES, weight: 2, unitCostCp: 50 });
+/** Summed qty of every live line with this catalog key. */
+function liveCount(inventory: PcItem[], catalogKey: string): number {
+  return inventory
+    .filter(i => i.catalogKey === catalogKey && i.status !== 'dropped')
+    .reduce((sum, i) => sum + Math.max(0, i.qty ?? 0), 0);
+}
+
+/** Total servings a charge track can hold: its containers × 5. */
+export function supplyCapacity(inventory: PcItem[], key: SupplyKey): number {
+  return liveCount(inventory, CONTAINER_FOR[key]) * SERVINGS_PER_CONTAINER;
+}
+
+/** Servings currently in hand for a charge track. */
+export function supplyCharges(inventory: PcItem[], key: SupplyKey): number {
+  return liveCount(inventory, key);
+}
+
+/**
+ * A supply line's bulk: each CONTAINER (ration box / waterskin) is 1 bulk;
+ * the charges inside are weightless. A non-supply item contributes nothing
+ * here (the caller bulks it normally).
+ */
+export function supplyBulk(item: PcItem): number {
+  if (item.catalogKey === 'ration-box' || item.catalogKey === 'waterskin') {
+    return Math.max(0, item.qty ?? 0);
   }
-  if (!has('waterskin')) {
-    items.push({ catalogKey: 'waterskin', name: SUPPLY_LABELS.waterskin, category: 'gear',
-      qty: SURVIVAL_STARTING_CHARGES, weight: 5, unitCostCp: 20 });
+  return 0;
+}
+
+/** A fresh charge line for the pane/seed — mirrors the server's line shapes. */
+export function supplyChargeLine(key: SupplyKey, qty: number): PcItem {
+  return key === 'rations'
+    ? { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear',
+        qty, weight: 0.2, bulk: 0.2, unitCostCp: 10 }
+    : { catalogKey: 'water', name: 'Water', category: 'gear', qty, weight: 0, bulk: 0 };
+}
+
+/** A fresh container line — 1 bulk each, never auto-consumed. */
+function containerLine(catalogKey: string, name: string, costCp: number, qty: number): PcItem {
+  return { catalogKey, name, category: 'gear', qty, weight: 1, bulk: 1, unitCostCp: costCp };
+}
+
+/**
+ * Lazily migrate legacy (pre-container) supply data — mirror of the server's
+ * SurvivalSupplies.normalize:
+ * - no live ration-box line → add one (qty 1), the old model's implied free box;
+ * - no live water line but a live waterskin line → the skin's qty WAS the
+ *   water charges: move it to a new water line and turn the skin into
+ *   max(1, ceil(oldQty / 5)) containers.
+ * Returns a new array; the input is untouched.
+ */
+export function normalizeSupplies(inventory: PcItem[]): PcItem[] {
+  const items = inventory.map(i => ({ ...i }));
+  const live = (key: string) => items.find(i => i.catalogKey === key && i.status !== 'dropped');
+  if (!live('ration-box')) {
+    items.push(containerLine('ration-box', 'Ration box', 50, 1));
+  }
+  const skin = live('waterskin');
+  if (skin && !live('water')) {
+    const oldQty = Math.max(0, skin.qty ?? 0);
+    items.push(supplyChargeLine('water', oldQty));
+    skin.qty = Math.max(1, Math.ceil(oldQty / SERVINGS_PER_CONTAINER));
+    skin.weight = 1;
+    skin.bulk = 1;
   }
   return items;
 }
 
-/** Decrement one unit of the first live line with this key; returns [items, consumed]. */
+/** Seed the starting kit: 1 ration box, 1 waterskin, 5 rations, 5 water. */
+function seedSupplies(inventory: PcItem[]): PcItem[] {
+  const items = inventory.map(i => ({ ...i }));
+  const has = (key: string) => items.some(i => i.catalogKey === key && i.status !== 'dropped');
+  if (!has('ration-box')) items.push(containerLine('ration-box', 'Ration box', 50, 1));
+  if (!has('waterskin')) items.push(containerLine('waterskin', 'Waterskin', 20, 1));
+  if (!has('rations')) items.push(supplyChargeLine('rations', SURVIVAL_STARTING_CHARGES));
+  if (!has('water')) items.push(supplyChargeLine('water', SURVIVAL_STARTING_CHARGES));
+  return items;
+}
+
+/**
+ * Decrement one unit of the first live line with this key; returns
+ * [items, consumed]. The line is KEPT at qty 0 — an empty box/skin persists
+ * for refilling (no more line removal). Mirrors the server's tryConsume.
+ */
 function tryConsume(inventory: PcItem[], key: string): [PcItem[], boolean] {
   const items = inventory.map(i => ({ ...i }));
   const line = items.find(i => i.catalogKey === key && i.status !== 'dropped' && (i.qty ?? 0) > 0);
   if (!line) return [items, false];
-  if (line.qty === 1) return [items.filter(i => i !== line), true];
   line.qty -= 1;
   return [items, true];
 }
@@ -100,12 +174,14 @@ function tryConsume(inventory: PcItem[], key: string): [PcItem[], boolean] {
 /**
  * Advance one PC by a day-segment — the demo/local mirror of the server. The
  * party auto-eats/drinks their supplies: hunger and thirst hold while a
- * ration/water serving lasts and rise only when the box runs out; fatigue
- * always climbs on its steps. Starting supplies are seeded once (seeded flag).
+ * ration/water serving lasts and rise only when the charges run out; fatigue
+ * always climbs on its steps. Legacy supply lines are container-normalized
+ * first; starting supplies are seeded once (seeded flag). Water is drunk from
+ * the 'water' charge line — never from the skin itself.
  * Returns a new PC; the input is untouched.
  */
 export function applySegmentToPc(pc: PC, segment: TimeOfDay): PC {
-  let inventory: PcItem[] = pc.inventory ?? [];
+  let inventory: PcItem[] = normalizeSupplies(pc.inventory ?? []);
   if (pc.survival?.seeded !== true) inventory = seedSupplies(inventory);
 
   const s = survivalOf(pc);
@@ -114,7 +190,7 @@ export function applySegmentToPc(pc: PC, segment: TimeOfDay): PC {
   let drank = false;
   if (supplyStep) {
     [inventory, ate] = tryConsume(inventory, 'rations');
-    [inventory, drank] = tryConsume(inventory, 'waterskin');
+    [inventory, drank] = tryConsume(inventory, 'water');
   }
   const survival: PcSurvival = {
     hunger: supplyStep && !ate ? clampStage(s.hunger + 1) : s.hunger,

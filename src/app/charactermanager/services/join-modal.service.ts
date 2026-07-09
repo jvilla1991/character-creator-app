@@ -22,17 +22,24 @@ export class JoinModalService {
   private consentSubject = new BehaviorSubject<JoinConsentState | null>(null);
   consent$ = this.consentSubject.asObservable();
 
+  // The character to preselect in the modal's PC picker (e.g. opened from
+  // that character's own sheet). Cleared on close.
+  private preselectPcIdSubject = new BehaviorSubject<number | null>(null);
+  preselectPcId$ = this.preselectPcIdSubject.asObservable();
+
   constructor(private campaignService: CampaignService, private pcService: PCService) {}
 
-  open(): void {
+  open(preselectPcId?: number): void {
     this.errorSubject.next(null);
     this.consentSubject.next(null);
+    this.preselectPcIdSubject.next(preselectPcId ?? null);
     this.openSubject.next(true);
   }
 
   close(): void {
     this.openSubject.next(false);
     this.consentSubject.next(null);
+    this.preselectPcIdSubject.next(null);
   }
 
   onJoin(req: JoinRequest): void {

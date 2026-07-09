@@ -68,6 +68,13 @@
   }
 }
 
+// Start Encounter sits directly above the initiative order it kicks off.
+.start-encounter-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
 // In-session DM note composer. Panel chrome is global; only the compose box
 // and confirmation line are styled here.
 .session-note {
