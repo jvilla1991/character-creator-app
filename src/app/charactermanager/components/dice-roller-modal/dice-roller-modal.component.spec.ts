@@ -180,4 +180,40 @@ describe('DiceRollerModalComponent', () => {
     // dt is floored at 1ms — must not throw or return Infinity/NaN
     expect(Number.isFinite(component.computeVelocity(samples, { x: 5, y: 0, t: 100 }))).toBeTrue();
   });
+  it('logs the roll to the session when sessionId and participantId are set', fakeAsync(() => {
+    component.sessionId = 42;
+    component.participantId = 7;
+    component.addDie(6);
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).toHaveBeenCalledTimes(1);
+    const [sessionId, participantId, groups] = sessionService.logRoll.calls.mostRecent().args;
+    expect(sessionId).toBe(42);
+    expect(participantId).toBe(7);
+    expect(groups.length).toBe(1);
+    expect(groups[0].sides).toBe(6);
+    expect(groups[0].rolls.length).toBe(2);
+  }));
+
+  it('does not log when sessionId is null (standalone/no-session roll)', fakeAsync(() => {
+    component.sessionId = null;
+    component.participantId = 7;
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).not.toHaveBeenCalled();
+  }));
+
+  it('does not log when participantId is null', fakeAsync(() => {
+    component.sessionId = 42;
+    component.participantId = null;
+    component.addDie(6);
+    component.throwButton();
+    tick(5000);
+
+    expect(sessionService.logRoll).not.toHaveBeenCalled();
+  }));
 });
