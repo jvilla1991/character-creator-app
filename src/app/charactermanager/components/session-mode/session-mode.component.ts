@@ -245,6 +245,14 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   openLongRest(): void { this.longRestModalOpen = true; }
   cancelLongRest(): void { this.longRestModalOpen = false; }
 
+  // ── Player Roll button (opens the dice modal wired to this live session) ───
+
+  rollModalOpen = false;
+  rollPc: PC | null = null;
+
+  openRoll(pc: PC): void { this.rollPc = pc; this.rollModalOpen = true; }
+  closeRoll(): void { this.rollModalOpen = false; this.rollPc = null; }
+
   confirmLongRest(undisturbed: boolean, state: SessionState): void {
     this.longRestModalOpen = false;
     this.sessionService.longRest(state.sessionId, undisturbed).subscribe({

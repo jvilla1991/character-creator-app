@@ -19,13 +19,6 @@
         </div>
       </div>
       <div class="sheet-actions">
-        <button class="btn" (click)="openManageParty()">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <circle cx="8" cy="5" r="2.6"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
-          </svg>
-          Manage Party
-        </button>
         <button *ngIf="!vm.liveSession" class="btn play" (click)="startSession(vm.campaign)">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
                style="margin-right: 6px; vertical-align: -2px;">
@@ -40,19 +33,24 @@
           </svg>
           Resume Session
         </button>
+        <button class="btn" (click)="openManageParty()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+               style="margin-right: 6px; vertical-align: -2px;">
+            <circle cx="8" cy="5" r="2.6"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+          </svg>
+          Manage Party
+        </button>
         <button
-          class="btn danger"
+          class="btn danger icon"
           (click)="openDeleteCampaign()"
           [disabled]="!!vm.liveSession"
           [title]="vm.liveSession
             ? 'A session is live — end it before deleting the campaign'
             : 'Delete this campaign'"
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-               style="margin-right: 6px; vertical-align: -2px;">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
             <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
           </svg>
-          Delete Campaign
         </button>
       </div>
     </header>
@@ -93,13 +91,14 @@
 
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
 
-    <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
-
-    <app-campaign-week [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-week>
-
     <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
 
     <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
+
+    <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
+
+    <!-- Campaign week definition lives at the bottom: it's set-once-and-rarely-touched. -->
+    <app-campaign-week [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-week>
 
   </div>
 

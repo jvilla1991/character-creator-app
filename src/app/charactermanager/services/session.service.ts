@@ -3,7 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { ParticipantView, SessionState, XpAwardEntry, XpAwardResult } from '../models/session';
+import {
+  ParticipantView,
+  SessionRollGroup,
+  SessionRollView,
+  SessionState,
+  XpAwardEntry,
+  XpAwardResult,
+} from '../models/session';
 import { PC, PcItem, PcSurvival } from '../models/pc';
 import { CampaignGameTime, CampaignLocation, LocationType, LOCATION_TYPES, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
@@ -400,6 +407,45 @@ export class SessionService {
     );
   }
 
+  /**
+   * Log a roll made during this live session (from the in-sheet dice modal or
+   * the Session Mode Roll button). Fire-and-forget from the caller's
+   * perspective — errors are handled by the caller, not here, so a failed log
+   * never blocks the dice animation the player already saw.
+   */
+  logRoll(sessionId: number | string, participantId: number,
+          groups: { sides: number; rolls: number[] }[]): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoLogRoll(participantId, groups));
+    return this.http.post<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/rolls`, { groups },
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** Demo mirror of the roll log: synthesize a row and push it onto the in-memory state. */
+  private demoLogRoll(participantId: number, groups: { sides: number; rolls: number[] }[]): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const p = state.participants.find(x => x.participantId === participantId);
+    const rollGroups: SessionRollGroup[] = groups.map(g => ({
+      sides: g.sides,
+      rolls: g.rolls,
+      subtotal: g.rolls.reduce((a, b) => a + b, 0),
+    }));
+    const roll: SessionRollView = {
+      rollId: Date.now(),
+      participantId,
+      rollerName: p?.name ?? 'Unknown',
+      mine: true,
+      groups: rollGroups,
+      grandTotal: rollGroups.reduce((a, g) => a + g.subtotal, 0),
+      createdAt: new Date().toISOString(),
+    };
+    const rolls = [roll, ...state.rolls];
+    return this.demoPatch({ rolls });
+  }
+
   /** Keep the campaign list's copy of the clock fresh after a session change. */
   private mirrorGameTime(state: SessionState): void {
     if (state.gameTime) {
@@ -774,11 +820,14 @@ export class SessionService {
       shopOpen: false,
       shopForMe: false,
       shopCategory: null,
+      lootStatus: null,
+      lootName: null,
       myXp: null,
       gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
       location: this.campaignService.getLocalCampaign(campaignId)?.location ?? null,
       weekDays: this.campaignService.getLocalCampaign(campaignId)?.weekDays ?? null,
       participants,
+      rolls: [],
     };
   }
 
@@ -788,7 +837,7 @@ export class SessionService {
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
-      gameTime: null, location: null, weekDays: null, participants: [],
+      gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
     };
   }
 
@@ -837,11 +886,30 @@ export class SessionService {
       shopOpen: !!raw.shopOpen,
       shopForMe: !!raw.shopForMe,
       shopCategory: raw.shopCategory ?? null,
+      lootStatus: raw.lootStatus ?? null,
+      lootName: raw.lootName ?? null,
       myXp: raw.myXp ?? null,
       gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
       location: this.parseLocation(this.parseJsonObject<CampaignLocation>(raw.location)),
       weekDays: Array.isArray(raw.weekDays) && raw.weekDays.length ? raw.weekDays : null,
       participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
+      rolls: (raw.rolls ?? []).map((r: any) => this.deserializeRoll(r)),
+    };
+  }
+
+  private deserializeRoll(r: any): SessionRollView {
+    return {
+      rollId: r.rollId,
+      participantId: r.participantId,
+      rollerName: r.rollerName,
+      mine: !!r.mine,
+      groups: (r.groups ?? []).map((g: any) => ({
+        sides: g.sides,
+        rolls: g.rolls ?? [],
+        subtotal: g.subtotal ?? (g.rolls ?? []).reduce((a: number, b: number) => a + b, 0),
+      })),
+      grandTotal: r.grandTotal,
+      createdAt: r.createdAt,
     };
   }
 

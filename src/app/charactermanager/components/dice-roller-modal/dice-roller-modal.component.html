@@ -4,7 +4,7 @@
 
   <div class="modal-title">Cast The Bones</div>
   <div class="modal-sub">
-    Drag dice into the field, then wind up the orb and let them fly.
+    Drag dice into the field, then grab the cluster and flick it to throw.
   </div>
 
   <!-- ── Palette: pick die types from the top ─────────────────────────────── -->
@@ -43,8 +43,24 @@
       Your dice field is empty — drag dice here.
     </p>
 
-    <!-- Resting / flying dice live on the shelf at the bottom of the arena -->
-    <div class="dice-shelf">
+    <!-- Resting / flying dice live on the shelf at the bottom of the arena.
+         The shelf itself is the grab target: drag to reposition (clamped to
+         the arena), release with a flick to throw. Tap, Enter, or Space rolls. -->
+    <div
+      class="dice-shelf"
+      #shelfEl
+      tabindex="0"
+      role="button"
+      aria-label="Roll the dice"
+      [class.grabbing]="dragging"
+      [style.--cluster-x.px]="clusterX"
+      [style.--cluster-y.px]="clusterY"
+      (pointerdown)="onClusterPointerDown($event)"
+      (pointermove)="onClusterPointerMove($event)"
+      (pointerup)="onClusterPointerUp($event)"
+      (pointercancel)="onClusterPointerCancel()"
+      (keydown.enter)="throwButton()"
+      (keydown.space)="throwButton()">
       <span
         *ngFor="let d of staged; trackBy: trackById"
         class="arena-die"
@@ -56,8 +72,7 @@
         [style.--rest.px]="d.rest"
         [style.--spin.deg]="d.spin"
         [style.--delay.ms]="d.delay"
-        (click)="removeDie(d.id)"
-        title="{{ phase === 'staging' ? 'Click to remove' : 'd' + d.sides }}">
+        title="d{{ d.sides }}">
         <span class="die-shape" [attr.data-die]="'d' + d.sides">
           <span class="die-face">{{ d.display }}</span>
         </span>
@@ -80,7 +95,7 @@
     </div>
   </div>
 
-  <!-- ── Throw bar: the pokéball-style orb ────────────────────────────────── -->
+  <!-- ── Throw bar: Clear + the keyboard/click Roll fallback ──────────────── -->
   <div class="dice-throwbar">
     <button
       type="button"
@@ -90,45 +105,14 @@
       Clear
     </button>
 
-    <div class="orb-stage">
-      <div class="power-gauge" [class.active]="charging">
-        <div class="power-fill" [style.height.%]="power * 100"></div>
-      </div>
-
-      <button
-        type="button"
-        class="throw-orb"
-        [class.charging]="charging"
-        [class.spent]="phase === 'rolling'"
-        [style.--lift.px]="-(charging ? power * 40 : 0)"
-        [disabled]="!canThrow"
-        (pointerdown)="onBallDown($event)"
-        (keydown.enter)="throwButton()"
-        (keydown.space)="throwButton()"
-        title="Hold and flick the die upward to throw — or press Enter">
-        <svg class="orb-d20" viewBox="0 0 100 100" aria-hidden="true">
-          <!-- d20 silhouette: outer hexagon + central triangular face -->
-          <polygon class="orb-d20-body" points="50,3 91,26 91,74 50,97 9,74 9,26" />
-          <polygon class="orb-d20-face" points="50,30 74,70 26,70" />
-          <g class="orb-d20-facets">
-            <line x1="50" y1="3"  x2="50" y2="30" />
-            <line x1="9"  y1="26" x2="50" y2="30" />
-            <line x1="91" y1="26" x2="50" y2="30" />
-            <line x1="9"  y1="74" x2="26" y2="70" />
-            <line x1="91" y1="74" x2="74" y2="70" />
-            <line x1="50" y1="97" x2="50" y2="70" />
-          </g>
-          <text class="orb-d20-num" x="50" y="60">20</text>
-        </svg>
-      </button>
-    </div>
-
     <button
       type="button"
-      class="btn sm"
+      class="btn primary"
       [disabled]="!canThrow"
-      (click)="throwButton()">
-      Throw
+      (click)="throwButton()"
+      (keydown.enter)="throwButton()"
+      (keydown.space)="throwButton()">
+      Roll
     </button>
   </div>
 
