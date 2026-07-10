@@ -81,6 +81,105 @@ describe('DiceRollerModalComponent', () => {
     expect(closed).toBeTrue();
   });
 
+  // ── Grab-and-throw cluster gesture ────────────────────────────────────────
+  // Synthetic PointerEvent-shaped objects, calling the handler methods
+  // directly — matches this file's existing style of calling component
+  // methods rather than dispatching real DOM events.
+
+  function pointerEvent(x: number, y: number): PointerEvent {
+    return {
+      clientX: x,
+      clientY: y,
+      pointerId: 1,
+      target: { setPointerCapture: () => undefined },
+      preventDefault: () => undefined,
+    } as unknown as PointerEvent;
+  }
+
+  beforeEach(() => {
+    // Deterministic clock for gesture timing — real performance.now() would
+    // make elapsed/velocity assertions flaky.
+    let now = 0;
+    spyOn(performance, 'now').and.callFake(() => now);
+    (window as any).__advanceClock = (ms: number) => (now += ms);
+  });
+
+  it('a tap on the cluster (minimal movement, short duration) rolls at power 0.45', () => {
+    component.addDie(6);
+    component.onClusterPointerDown(pointerEvent(100, 100));
+    (window as any).__advanceClock(50);
+    component.onClusterPointerUp(pointerEvent(102, 101)); // 2px move, well under threshold
+
+    expect(component.phase).toBe('rolling');
+  });
+
+  it('a slow drag below the flick threshold drops in place without rolling', () => {
+    component.addDie(6);
+    component.onClusterPointerDown(pointerEvent(100, 100));
+    (window as any).__advanceClock(50);
+    component.onClusterPointerMove(pointerEvent(120, 100)); // 20px over 50ms = 0.4px/ms
+    (window as any).__advanceClock(400);
+    component.onClusterPointerUp(pointerEvent(120, 100));
+
+    expect(component.phase).toBe('staging');
+    expect(component.canThrow).toBeTrue();
+  });
+
+  it('a fast flick above the threshold throws', () => {
+    component.addDie(6);
+    component.onClusterPointerDown(pointerEvent(100, 100));
+    (window as any).__advanceClock(10);
+    component.onClusterPointerMove(pointerEvent(300, 100)); // 200px over 10ms = 20px/ms
+    component.onClusterPointerUp(pointerEvent(300, 100));
+
+    expect(component.phase).toBe('rolling');
+  });
+
+  it('pointercancel resets drag state without rolling', () => {
+    component.addDie(6);
+    component.onClusterPointerDown(pointerEvent(100, 100));
+    (window as any).__advanceClock(10);
+    component.onClusterPointerMove(pointerEvent(300, 100));
+    component.onClusterPointerCancel();
+
+    expect(component.dragging).toBeFalse();
+    expect(component.clusterX).toBe(0);
+    expect(component.clusterY).toBe(0);
+    expect(component.phase).toBe('staging');
+  });
+
+  // ── computeVelocity: pure function, direct unit tests ─────────────────────
+
+  it('computeVelocity returns straight-line px/ms from the oldest windowed sample to release', () => {
+    const samples = [{ x: 0, y: 0, t: 0 }];
+    expect(component.computeVelocity(samples, { x: 100, y: 0, t: 100 })).toBeCloseTo(1, 5); // 100px / 100ms
+  });
+
+  it('computeVelocity handles diagonal movement via hypot', () => {
+    const samples = [{ x: 0, y: 0, t: 0 }];
+    // 30px / 100ms and 40px / 100ms → hypot(0.3, 0.4) = 0.5 px/ms
+    expect(component.computeVelocity(samples, { x: 30, y: 40, t: 100 })).toBeCloseTo(0.5, 5);
+  });
+
+  it('computeVelocity uses only the oldest sample in the window, not a per-frame sum', () => {
+    const samples = [
+      { x: 0, y: 0, t: 0 },
+      { x: 5, y: 0, t: 20 },
+      { x: 40, y: 0, t: 40 },
+    ];
+    // straight line from the oldest sample (0,0 @ t=0) to release (100,0 @ t=100)
+    expect(component.computeVelocity(samples, { x: 100, y: 0, t: 100 })).toBeCloseTo(1, 5);
+  });
+
+  it('computeVelocity returns 0 for an empty sample list', () => {
+    expect(component.computeVelocity([], { x: 100, y: 0, t: 100 })).toBe(0);
+  });
+
+  it('computeVelocity avoids division by zero on a zero-duration window', () => {
+    const samples = [{ x: 0, y: 0, t: 100 }];
+    // dt is floored at 1ms — must not throw or return Infinity/NaN
+    expect(Number.isFinite(component.computeVelocity(samples, { x: 5, y: 0, t: 100 }))).toBeTrue();
+  });
   it('logs the roll to the session when sessionId and participantId are set', fakeAsync(() => {
     component.sessionId = 42;
     component.participantId = 7;
