@@ -950,6 +950,17 @@ app-root { display: block; height: 100vh; width: 100vw; }
   color: var(--text-dim);
   margin-top: 2px;
 }
+/* Full name on desktop, 2-letter code on narrow screens — "Electrum" cannot
+   fit a ~60px box at 375px wide, so the label swaps instead of overflowing. */
+.coin-name-abbr { display: none; text-transform: uppercase; }
+@media (max-width: 480px) {
+  .currency { gap: 5px; }
+  .coin { padding: 8px 2px; min-width: 0; }
+  .coin-amt { font-size: 15px; }
+  .coin-name { letter-spacing: 0.1em; }
+  .coin-name-full { display: none; }
+  .coin-name-abbr { display: inline; }
+}
 .coin.cp { --tint: #b87444; }
 .coin.sp { --tint: #c0c5d0; }
 .coin.ep { --tint: #d4cfa8; }
