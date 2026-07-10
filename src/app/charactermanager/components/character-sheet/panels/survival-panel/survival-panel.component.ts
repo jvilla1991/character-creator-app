@@ -3,6 +3,7 @@ import { PC, PcSurvival } from '../../../../models/pc';
 import {
   SURVIVAL_KEYS,
   SURVIVAL_LABELS,
+  SurvivalAction,
   SurvivalKey,
   clampStage,
   survivalExhaustion,
@@ -15,10 +16,11 @@ import {
  * view). Three stage rows plus the improvement actions.
  *
  * Two write paths, following the sell/inventory precedent:
- *  - steppers emit `pcChange` (the sheet persists via updatePC/AsDm);
- *  - Eat/Drink/Sleep emit `actionRequested` — the HOST decides: on the plain
- *    sheet it applies the reducer locally, in Session Mode it calls the
- *    server-authoritative consume endpoint so every viewer sees the change.
+ *  - DM steppers emit `pcChange` (the sheet persists via updatePC/AsDm);
+ *  - the owner's Eat/Drink buttons emit `actionRequested` — the HOST decides:
+ *    on the plain sheet it applies the reducer locally, in Session Mode it
+ *    calls the server-authoritative consume endpoint so every viewer sees the
+ *    change. (Sleep relief is the DM's Long Rest, not a player button.)
  *
  * The exhaustion badge is computed live and never written to pc.conditions.
  */
@@ -28,9 +30,13 @@ import {
 })
 export class SurvivalPanelComponent {
   @Input() pc!: PC;
-  /** Steppers active (own sheet, or a DM viewing a member). */
+  /** Steppers active (the DM's cross-link view). */
   @Input() editable = false;
+  /** The viewing player owns this sheet — reveals the Eat/Drink actions. */
+  @Input() ownControls = false;
   @Output() pcChange = new EventEmitter<PC>();
+  /** Owner clicked Eat/Drink — the host applies it (locally or via the session). */
+  @Output() actionRequested = new EventEmitter<SurvivalAction>();
 
   readonly keys = SURVIVAL_KEYS;
 

@@ -61,6 +61,10 @@ export interface PC {
   // Experience points. Accumulates only (DM awards in Session Mode); level-up
   // stays the explicit player-driven flow. Backend column defaults to 0.
   xp?: number;
+  // DM-granted level-up permission: lets the character level once without
+  // meeting the XP threshold; the backend clears it when the level-up is
+  // applied. Server-owned — generic PC updates never change it.
+  pendingLevelGrant?: boolean;
   playerName: string; // kept for backend compat; new field is `player`
 
   // --- Rich fields (client-side for now; migrate backend after Phase 1) ---

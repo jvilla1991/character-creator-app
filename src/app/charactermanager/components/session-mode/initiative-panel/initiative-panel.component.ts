@@ -34,6 +34,8 @@ export class InitiativePanelComponent {
   @Input() activeParticipantId: number | null = null;
   @Input() onDeckParticipantId: number | null = null;
   @Input() enemiesHidden = true;
+  /** Enemies visible but their health withheld (server nulls player-side HP). */
+  @Input() enemyHpHidden = false;
   @Input() turnSound: string | null = null;
   /** True when the campaign runs the survival-conditions variant — the DM's
    *  rows then show compact hunger/thirst/fatigue chips so time can be
@@ -161,11 +163,26 @@ export class InitiativePanelComponent {
     });
   }
 
-  /** The checkbox says "players can SEE enemies" — the inverse of the flag. */
-  onVisibilityChange(playersSeeEnemies: boolean): void {
-    this.sessionService.setVisibility(this.sessionId, !playersSeeEnemies).subscribe({
+  /** The DM's three-way enemy visibility, derived from the two session flags. */
+  get visibilityMode(): 'hidden' | 'no-hp' | 'full' {
+    if (this.enemiesHidden) return 'hidden';
+    return this.enemyHpHidden ? 'no-hp' : 'full';
+  }
+
+  /** DM picked a visibility mode — mapped back onto the two session flags. */
+  onVisibilityChange(mode: string): void {
+    const enemiesHidden = mode === 'hidden';
+    const enemyHpHidden = mode === 'no-hp';
+    this.sessionService.setVisibility(this.sessionId, enemiesHidden, enemyHpHidden).subscribe({
       error: err => console.error('Failed to set enemy visibility', err),
     });
+  }
+
+  /** True when this row's health should render as withheld (an enemy row whose
+   *  HP the server nulled — the "see enemies, hide health" state — or an enemy
+   *  the DM never gave HP). PCs always show their bar. */
+  hpWithheld(p: ParticipantView): boolean {
+    return p.npc && p.hpMax == null;
   }
 
   /** DM picks the encounter cue; preview it immediately so they hear the choice. */
