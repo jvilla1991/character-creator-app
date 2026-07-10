@@ -837,7 +837,7 @@ export class SessionService {
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, turnSound: null,
       lootStatus: null, lootName: null, myXp: null,
-      shopOpen: false, shopForMe: false, shopCategory: null, myXp: null,
+      shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
     };
   }
