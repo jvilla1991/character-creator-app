@@ -1,15 +1,23 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { of } from 'rxjs';
 import { DiceRollerModalComponent } from './dice-roller-modal.component';
+import { SessionService } from '../../services/session.service';
+import { SessionState } from '../../models/session';
 
 describe('DiceRollerModalComponent', () => {
   let component: DiceRollerModalComponent;
   let fixture: ComponentFixture<DiceRollerModalComponent>;
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   beforeEach(async () => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['logRoll']);
+    sessionService.logRoll.and.returnValue(of({} as SessionState));
+
     await TestBed.configureTestingModule({
       declarations: [DiceRollerModalComponent],
       imports: [DragDropModule],
+      providers: [{ provide: SessionService, useValue: sessionService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DiceRollerModalComponent);

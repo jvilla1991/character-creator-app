@@ -57,8 +57,10 @@ import { JoinCampaignModalComponent } from './components/join-campaign-modal/joi
 import { SessionModeComponent } from './components/session-mode/session-mode.component';
 import { InitiativePanelComponent } from './components/session-mode/initiative-panel/initiative-panel.component';
 import { ShopPanelComponent } from './components/session-mode/shop-panel/shop-panel.component';
+import { LootPanelComponent } from './components/session-mode/loot-panel/loot-panel.component';
 import { EncounterLoaderComponent } from './components/session-mode/encounter-loader/encounter-loader.component';
 import { SpellCarouselComponent } from './components/session-mode/spell-carousel/spell-carousel.component';
+import { RollLogPanelComponent } from './components/session-mode/roll-log-panel/roll-log-panel.component';
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
 import { ToastComponent } from './components/toast/toast.component';
 
@@ -134,10 +136,12 @@ const routes: Routes = [
     SessionModeComponent,
     InitiativePanelComponent,
     ShopPanelComponent,
+    LootPanelComponent,
     EncounterLoaderComponent,
     SpellCarouselComponent,
     SessionLiveBannerComponent,
     ToastComponent,
+    RollLogPanelComponent,
   ],
   imports: [
     CommonModule,

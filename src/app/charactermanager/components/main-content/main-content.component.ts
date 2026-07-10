@@ -32,6 +32,14 @@ export class MainContentComponent implements OnInit, OnDestroy {
   isRollModalOpen = false;
   isLevelUpModalOpen = false;
 
+  /**
+   * When the active PC is currently seated in a live (non-ENDED) session, the
+   * session/participant id to wire into the dice modal so a roll logs to the
+   * DM's Roll Log — null otherwise (standalone roll, nothing to log to).
+   */
+  activeRollSessionId: number | string | null = null;
+  activeRollParticipantId: number | null = null;
+
   private readonly destroy$ = new Subject<void>();
 
   constructor(
@@ -76,6 +84,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
       .subscribe(pc => {
         this.pc = pc;
         this.resolveVariants(pc);
+        this.refreshSessionContext(pc);
       });
 
     this.uiState.dmReturn$
@@ -109,6 +118,32 @@ export class MainContentComponent implements OnInit, OnDestroy {
           }
         },
         error: () => { /* not a member / offline — keep the standard view */ },
+      });
+  }
+
+  /**
+   * One-shot check (on PC load/switch, not a poll): is the active PC currently
+   * seated in a live session? If so, wire the dice modal's sessionId/
+   * participantId so a settled roll logs to the DM's Roll Log — same as the
+   * Session Mode Roll button, but discovered independently since this
+   * standalone sheet has no ambient SessionService.state$ (that only starts
+   * once Session Mode is entered). Known gap: a session started while the
+   * sheet is already open isn't picked up until the next PC load/switch.
+   */
+  private refreshSessionContext(pc: PC | null): void {
+    this.activeRollSessionId = null;
+    this.activeRollParticipantId = null;
+    if (!pc || pc.campaignId == null) return;
+    const pcId = pc.id;
+    this.sessionService.getActiveForCampaign(String(pc.campaignId))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => {
+        if (this.pc?.id !== pcId || !state) return; // guard stale response after PC switch
+        const mine = state.participants.find(p => p.pcId === pcId && p.ownedByMe);
+        if (mine) {
+          this.activeRollSessionId = state.sessionId;
+          this.activeRollParticipantId = mine.participantId;
+        }
       });
   }
 
