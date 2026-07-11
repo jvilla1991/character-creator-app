@@ -34,8 +34,8 @@ describe('ShopPanelComponent', () => {
   function state(over: Partial<SessionState>): SessionState {
     return {
       sessionId: 1, campaignId: 1, status: 'ACTIVE', round: 1, activeParticipantId: null,
-      onDeckParticipantId: null, version: 1, dm: false, enemiesHidden: true, turnSound: null,
-      shopOpen: false, shopForMe: false, shopCategory: null,
+      onDeckParticipantId: null, version: 1, dm: false, enemiesHidden: true, enemyHpHidden: false, turnSound: null,
+      shopOpen: false, shopForMe: false, shopCategory: null, lootStatus: null, lootName: null,
       myXp: null, gameTime: null, location: null, weekDays: null, participants: [], rolls: [], ...over,
     };
   }

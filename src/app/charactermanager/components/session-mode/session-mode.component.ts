@@ -10,7 +10,7 @@ import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { formatCp } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
-import { advanceGameTime, describeGameTime } from '../../utils/survival';
+import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
 import { ParticipantView } from '../../models/session';
@@ -259,6 +259,20 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       next: () => this.notifications.notify(
         undisturbed ? 'The party rests soundly.' : 'The party rests, but fitfully.'),
       error: () => this.notifications.notify('Could not rest the party. Try again.'),
+    });
+  }
+
+  /**
+   * The player eats/drinks from the embedded sheet — server-authoritative so
+   * the supply charge is spent on the canonical row and every viewer sees the
+   * new stages via the version bump. The result patches the local PC (same
+   * pattern as the sell/cast flows).
+   */
+  onSurvivalAction(action: SurvivalAction, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.consumeSurvival(state.sessionId, mine.pcId, action).subscribe({
+      error: () => this.notifications.notify('Could not do that right now. Try again.'),
     });
   }
 

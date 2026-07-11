@@ -232,7 +232,7 @@ describe('InventoryPanelComponent', () => {
       expect('weight' in emitted[0]).toBeFalse();
     });
 
-    it('grants an ad-hoc custom item with no catalogKey/cost/bulk', () => {
+    it('grants an ad-hoc custom item with no catalogKey/cost — bulk stamped at the unknown-weight default', () => {
       component.openGrantForm();
       component.setGrantTab('custom');
       component.customName = '  Cracked Dragon Fang  ';
@@ -243,7 +243,7 @@ describe('InventoryPanelComponent', () => {
 
       component.grantCustomItem();
 
-      expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1 });
+      expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1, bulk: 1 });
     });
 
     it('carries value/weight and the category stat on a custom grant', () => {
@@ -261,7 +261,8 @@ describe('InventoryPanelComponent', () => {
 
       expect(emitted[0]).toEqual({
         name: 'Flametongue', category: 'weapon', qty: 1,
-        unitCostCp: 5000, weight: 3, damage: '1d8 slashing + 2d6 fire',
+        unitCostCp: 5000, weight: 3, bulk: 2, // 3 lb → the ≤5 lb band, same as a conversion
+        damage: '1d8 slashing + 2d6 fire',
       });
     });
 
@@ -274,7 +275,7 @@ describe('InventoryPanelComponent', () => {
 
       component.grantCustomItem();
 
-      expect(emitted[0]).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, armorClass: '18' });
+      expect(emitted[0]).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, bulk: 1, armorClass: '18' });
     });
 
     it('blocks a custom grant with a blank name', () => {

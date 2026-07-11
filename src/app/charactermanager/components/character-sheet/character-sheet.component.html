@@ -53,6 +53,10 @@
         <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
           Ready to level up
         </span>
+        <span *ngIf="!readyToLevel && dmGrantedLevel" class="level-ready-badge"
+              title="Your DM granted a level-up — use Level Up">
+          Level-up granted
+        </span>
       </div>
 
       <!-- XP progress through the current level, with the XP total beside it -->
@@ -112,12 +116,22 @@
         </svg>
         Roll
       </button>
-      <button class="btn" [class.ready]="readyToLevel" title="Advance a level" (click)="levelUpRequested.emit()">
+      <button class="btn" [class.ready]="canLevelUp" [disabled]="!canLevelUp"
+              [title]="levelUpHint" (click)="levelUpRequested.emit()">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
              style="margin-right: 6px; vertical-align: -2px;">
           <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
         </svg>
         Level Up
+      </button>
+      <!-- DM cross-link: grant (or revoke) a level-up the player may spend
+           without meeting the XP threshold. -->
+      <button *ngIf="editable" class="btn" [class.on]="dmGrantedLevel"
+              (click)="toggleLevelGrant()"
+              [title]="dmGrantedLevel
+                ? 'Revoke the granted level-up'
+                : 'Let this character level up without the XP threshold'">
+        {{ dmGrantedLevel ? 'Revoke Level-Up' : 'Grant Level-Up' }}
       </button>
       <button class="btn danger icon" (click)="deleteRequested.emit()" title="Delete character">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
@@ -143,8 +157,10 @@
             [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
   </nav>
 
-  <!-- Vitals stay visible on every tab (HP/AC always matter). -->
+  <!-- Vitals (HP/AC/…) belong to the main Sheet tab only — they were following
+       the player onto Spells/Inventory/Notes and crowding those tabs. -->
   <app-vitals-strip
+    *ngIf="activeTab === 'sheet'"
     [pc]="pc"
     [editable]="editable"
     (pcChange)="onPcChange($event)"
@@ -173,7 +189,9 @@
         *ngIf="survivalConditions"
         [pc]="pc"
         [editable]="editable"
-        (pcChange)="onPcChange($event)">
+        [ownControls]="ownSheet"
+        (pcChange)="onPcChange($event)"
+        (actionRequested)="onSurvivalAction($event)">
       </app-survival-panel>
       <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
       <app-coin-purse

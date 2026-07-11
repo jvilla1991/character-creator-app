@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
-import { CatalogItem, ShopCategory, categoryLabelFor, formatCp } from '../../../../models/shop';
+import { CatalogItem, ShopCategory, categoryLabelFor, formatCp, pcItemFromCatalog } from '../../../../models/shop';
 import { ShopService } from '../../../../services/shop.service';
 import { environment } from '../../../../../../environments/environment';
 import { withRecomputedAc } from '../../../../utils/armor-math';
 import {
   ENCUMBERED_PENALTY,
+  bulkFromWeight,
   isEncumbered,
   itemBulk,
   slotCapacity,
@@ -214,32 +215,23 @@ export class InventoryPanelComponent {
     return q ? this.catalogItems.filter(i => i.name.toLowerCase().includes(q)) : this.catalogItems;
   }
 
-  /** Grant the selected catalog item, denormalized like the backend's
-   *  ShopService#newInventoryEntry (base fields first, then the catalog details
-   *  flattened in without overwriting them). No coins are deducted — it's a grant. */
+  /** Grant the selected catalog item, denormalized through the shared
+   *  {@link pcItemFromCatalog} — the same normalization/bulk stamping every
+   *  catalog→inventory path uses. No coins are deducted — it's a grant. */
   grantCatalogItem(): void {
     const item = this.catalogItems.find(i => i.itemKey === this.catalogSelectedKey);
     if (!item) return;
     const qty = Math.max(1, Math.floor(this.catalogQty || 1));
-    const entry: PcItem = {
-      catalogKey: item.itemKey,
-      name: item.name,
-      category: categoryLabelFor(item.category),
-      qty,
-      unitCostCp: item.costCp, // catalog price snapshot; no coins are deducted (grant)
-      ...(item.weight != null ? { weight: item.weight } : {}),
-      bulk: item.bulk,
-    };
-    for (const [k, v] of Object.entries(item.details ?? {})) {
-      if (!(k in entry)) (entry as any)[k] = v; // putIfAbsent — base fields win
-    }
-    this.itemGranted.emit(entry);
+    this.itemGranted.emit(pcItemFromCatalog(item, qty));
     this.resetGrantForm();
   }
 
   /** Grant an ad-hoc homebrew line. Beyond name/category/qty, the DM may set a
    *  value (gp → unitCostCp), weight, and the category-specific stat (weapon
-   *  damage or armor class) — each added only when provided. */
+   *  damage or armor class) — each added only when provided. Bulk is stamped
+   *  at grant time from the canonical weight bands (unknown weight → 1), the
+   *  same rating a join-time conversion would compute — the line's bulk never
+   *  drifts if its weight is later edited or lost. */
   grantCustomItem(): void {
     const name = this.customName.trim();
     if (!name) return;
@@ -254,6 +246,7 @@ export class InventoryPanelComponent {
     if (this.customWeight != null && this.customWeight >= 0) {
       entry.weight = this.customWeight;
     }
+    entry.bulk = bulkFromWeight(entry.weight);
     const damage = this.customDamage.trim();
     if (this.customCategory === 'weapon' && damage) entry.damage = damage;
     const armorClass = this.customArmorClass.trim();

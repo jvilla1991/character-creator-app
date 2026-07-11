@@ -1,5 +1,6 @@
 import {
   advanceGameTime,
+  applyConsumeToPc,
   applyLongRestToPc,
   applySegmentToPc,
   clampStage,
@@ -51,7 +52,7 @@ describe('survival util', () => {
     });
   });
 
-  describe('applySegmentToPc (auto-consume, container model)', () => {
+  describe('applySegmentToPc (time always worsens; container model)', () => {
     const kit: PcItem[] = [
       { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
       { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
@@ -64,46 +65,31 @@ describe('survival util', () => {
       ...over,
     });
 
-    it('morning: eats/drinks to hold hunger & thirst, decrementing the charge lines', () => {
+    it('morning (dawn boundary): raises hunger & thirst without touching the supplies', () => {
       const after = applySegmentToPc(fedPc(), 'morning');
-      expect(after.survival).toEqual({ hunger: 2, thirst: 2, fatigue: 2, seeded: true });
-      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(4);
-      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(4);
-      // the containers themselves are never consumed
-      expect(after.inventory!.find(i => i.catalogKey === 'ration-box')!.qty).toBe(1);
-      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(1);
+      expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 2, seeded: true });
+      // supplies are relief for the explicit Eat/Drink action, never auto-eaten
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(5);
     });
 
-    it('noon: raises fatigue only and consumes nothing', () => {
+    it('noon: raises fatigue only', () => {
       const after = applySegmentToPc(fedPc(), 'noon');
       expect(after.survival!.fatigue).toBe(3);
+      expect(after.survival!.hunger).toBe(2);
       expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
     });
 
-    it('night: holds hunger/thirst when fed but always raises fatigue', () => {
+    it('night: raises all three stages', () => {
       const after = applySegmentToPc(fedPc({ survival: { hunger: 3, thirst: 3, fatigue: 4, seeded: true } }), 'night');
-      expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 5, seeded: true });
+      expect(after.survival).toEqual({ hunger: 4, thirst: 4, fatigue: 5, seeded: true });
     });
 
-    it('raises hunger/thirst once the charges run out', () => {
-      const pc = basePC({ survival: { hunger: 2, thirst: 2, fatigue: 2, seeded: true }, inventory: [] });
-      const after = applySegmentToPc(pc, 'night');
-      expect(after.survival).toEqual({ hunger: 3, thirst: 3, fatigue: 3, seeded: true });
-    });
-
-    it('consumes a line down to 0 and KEEPS it — empty containers persist', () => {
-      const pc = fedPc({
-        inventory: [
-          { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
-          { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
-          { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 1, bulk: 0.2 },
-          { catalogKey: 'water', name: 'Water', category: 'gear', qty: 1, bulk: 0 },
-        ],
-      });
-      const after = applySegmentToPc(pc, 'morning');
-      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(0);
-      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(0);
-      expect(after.inventory!.filter(i => i.catalogKey === 'rations').length).toBe(1);
+    it('a full day of advances applies BOTH daily hunger/thirst bumps (night + dawn)', () => {
+      let pc = fedPc({ survival: { hunger: 0, thirst: 0, fatigue: 0, seeded: true } });
+      pc = applySegmentToPc(pc, 'night');    // noon → night
+      pc = applySegmentToPc(pc, 'morning');  // night → next day's morning
+      expect(pc.survival).toEqual({ hunger: 2, thirst: 2, fatigue: 1, seeded: true });
     });
 
     it('seeds the starting kit once for an unseeded character', () => {
@@ -134,8 +120,53 @@ describe('survival util', () => {
     it('does not mutate the input PC', () => {
       const pc = fedPc();
       applySegmentToPc(pc, 'night');
-      expect(pc.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(5);
+      expect(pc.survival!.hunger).toBe(2);
       expect(pc.inventory!.length).toBe(4);
+    });
+  });
+
+  describe('applyConsumeToPc (player Eat/Drink relief)', () => {
+    const reliefKit: PcItem[] = [
+      { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
+      { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
+      { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 2, bulk: 0.2 },
+      { catalogKey: 'water', name: 'Water', category: 'gear', qty: 1, bulk: 0 },
+    ];
+    const hungryPc = (): PC => basePC({
+      survival: { hunger: 4, thirst: 4, fatigue: 4, seeded: true },
+      inventory: reliefKit.map(i => ({ ...i })),
+    });
+
+    it('EAT spends a ration charge and relieves 1 hunger, preserving seeded', () => {
+      const after = applyConsumeToPc(hungryPc(), 'EAT');
+      expect(after.survival).toEqual({ hunger: 3, thirst: 4, fatigue: 4, seeded: true });
+      expect(after.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(1);
+    });
+
+    it('DRINK spends a water charge — never the skin — and keeps the empty line', () => {
+      const after = applyConsumeToPc(hungryPc(), 'DRINK');
+      expect(after.survival!.thirst).toBe(3);
+      expect(after.inventory!.find(i => i.catalogKey === 'water')!.qty).toBe(0);
+      expect(after.inventory!.find(i => i.catalogKey === 'waterskin')!.qty).toBe(1);
+      expect(after.inventory!.filter(i => i.catalogKey === 'water').length).toBe(1);
+    });
+
+    it('still relieves the stage with no charge left (forage; the DM arbitrates)', () => {
+      const pc = basePC({ survival: { hunger: 4, thirst: 2, fatigue: 2 }, inventory: [] });
+      const after = applyConsumeToPc(pc, 'EAT');
+      expect(after.survival!.hunger).toBe(3);
+    });
+
+    it('sleep actions adjust fatigue only', () => {
+      expect(applyConsumeToPc(hungryPc(), 'SLEEP_GOOD').survival!.fatigue).toBe(1);
+      expect(applyConsumeToPc(hungryPc(), 'SLEEP_DISTURBED').survival!.fatigue).toBe(3);
+    });
+
+    it('does not mutate the input PC', () => {
+      const pc = hungryPc();
+      applyConsumeToPc(pc, 'EAT');
+      expect(pc.survival!.hunger).toBe(4);
+      expect(pc.inventory!.find(i => i.catalogKey === 'rations')!.qty).toBe(2);
     });
   });
 

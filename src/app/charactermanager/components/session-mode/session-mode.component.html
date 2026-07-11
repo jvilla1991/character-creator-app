@@ -191,6 +191,7 @@
       [activeParticipantId]="state.activeParticipantId"
       [onDeckParticipantId]="state.onDeckParticipantId"
       [enemiesHidden]="state.enemiesHidden"
+      [enemyHpHidden]="state.enemyHpHidden"
       [turnSound]="state.turnSound"
       [survivalConditions]="survivalConditions"
       (openPc)="openPcSheet($event)"
@@ -239,6 +240,7 @@
                            [location]="state.location"
                            [sessionLive]="true"
                            (castRequested)="onCast($event, state)"
+                           (survivalActionRequested)="onSurvivalAction($event, state)"
                            (sellRequested)="sell($event, state)"></app-character-sheet>
     </ng-container>
 

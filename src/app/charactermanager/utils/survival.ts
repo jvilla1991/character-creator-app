@@ -173,32 +173,60 @@ function tryConsume(inventory: PcItem[], key: string): [PcItem[], boolean] {
 
 /**
  * Advance one PC by a day-segment — the demo/local mirror of the server. The
- * party auto-eats/drinks their supplies: hunger and thirst hold while a
- * ration/water serving lasts and rise only when the charges run out; fatigue
- * always climbs on its steps. Legacy supply lines are container-normalized
- * first; starting supplies are seeded once (seeded flag). Water is drunk from
- * the 'water' charge line — never from the skin itself.
- * Returns a new PC; the input is untouched.
+ * passage of time ALWAYS worsens the party (morning +1 hunger +1 thirst, noon
+ * +1 fatigue, night +1 all three — two hunger/thirst bumps per day, at dawn
+ * and at night); relief is the explicit Eat/Drink action
+ * ({@link applyConsumeToPc}) and the DM long rest, never automatic. Legacy
+ * supply lines are container-normalized first; starting supplies are seeded
+ * once (seeded flag). Returns a new PC; the input is untouched.
  */
 export function applySegmentToPc(pc: PC, segment: TimeOfDay): PC {
   let inventory: PcItem[] = normalizeSupplies(pc.inventory ?? []);
   if (pc.survival?.seeded !== true) inventory = seedSupplies(inventory);
 
   const s = survivalOf(pc);
-  const supplyStep = segment === 'morning' || segment === 'night';
-  let ate = false;
-  let drank = false;
-  if (supplyStep) {
-    [inventory, ate] = tryConsume(inventory, 'rations');
-    [inventory, drank] = tryConsume(inventory, 'water');
-  }
+  const htStep = segment === 'morning' || segment === 'night';
   const survival: PcSurvival = {
-    hunger: supplyStep && !ate ? clampStage(s.hunger + 1) : s.hunger,
-    thirst: supplyStep && !drank ? clampStage(s.thirst + 1) : s.thirst,
+    hunger: htStep ? clampStage(s.hunger + 1) : s.hunger,
+    thirst: htStep ? clampStage(s.thirst + 1) : s.thirst,
     fatigue: segment === 'noon' || segment === 'night' ? clampStage(s.fatigue + 1) : s.fatigue,
     seeded: true,
   };
   return { ...pc, inventory, survival };
+}
+
+// ── Player relief actions (Eat / Drink / Sleep) ─────────────────────────────
+
+export type SurvivalAction = 'EAT' | 'DRINK' | 'SLEEP_GOOD' | 'SLEEP_DISTURBED';
+
+/** Eat −1 hunger · drink −1 thirst · good sleep −3 fatigue · disturbed −1. */
+export function applyAction(s: PcSurvival, action: SurvivalAction): PcSurvival {
+  const out = { ...s };
+  switch (action) {
+    case 'EAT': out.hunger = clampStage(out.hunger - 1); break;
+    case 'DRINK': out.thirst = clampStage(out.thirst - 1); break;
+    case 'SLEEP_GOOD': out.fatigue = clampStage(out.fatigue - 3); break;
+    case 'SLEEP_DISTURBED': out.fatigue = clampStage(out.fatigue - 1); break;
+  }
+  return out;
+}
+
+/**
+ * Apply a consume action to a whole PC — the out-of-session (and demo) mirror
+ * of the server's consume endpoint: EAT decrements a live 'rations' charge and
+ * DRINK a live 'water' charge (lines kept at qty 0 for refilling; no charge
+ * left still relieves the stage — the party can forage, the DM arbitrates).
+ * The seeded flag is preserved. Returns a new PC; the input is untouched.
+ */
+export function applyConsumeToPc(pc: PC, action: SurvivalAction): PC {
+  let inventory = pc.inventory ?? [];
+  if (action === 'EAT') [inventory] = tryConsume(inventory, 'rations');
+  if (action === 'DRINK') [inventory] = tryConsume(inventory, 'water');
+  return {
+    ...pc,
+    inventory,
+    survival: { ...applyAction(survivalOf(pc), action), seeded: pc.survival?.seeded },
+  };
 }
 
 /**
