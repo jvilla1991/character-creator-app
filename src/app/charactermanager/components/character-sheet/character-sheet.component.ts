@@ -4,6 +4,7 @@ import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
+import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
@@ -61,6 +62,9 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() joinCampaignRequested = new EventEmitter<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
   @Output() sellRequested = new EventEmitter<number>();
+  /** In-session survival action (eat/drink); bubbled from the survival panel so
+   *  the host can call the server-authoritative consume endpoint. */
+  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
   @Output() castRequested = new EventEmitter<CastRequest>();
 
@@ -82,6 +86,32 @@ export class CharacterSheetComponent implements OnChanges {
   /** True once total XP has crossed the next 2024 PHB threshold. */
   get readyToLevel(): boolean {
     return isReadyToLevel(this.pc?.level ?? 1, this.pc?.xp ?? 0);
+  }
+
+  /** The DM granted a level-up this character hasn't spent yet. */
+  get dmGrantedLevel(): boolean {
+    return this.pc?.pendingLevelGrant === true;
+  }
+
+  /** Leveling is gated: enough XP for the next level OR a DM grant. The
+   *  backend enforces the same rule (409); this only drives the button. */
+  get canLevelUp(): boolean {
+    return this.readyToLevel || this.dmGrantedLevel;
+  }
+
+  /** Tooltip for the Level Up button, explaining a disabled state. */
+  get levelUpHint(): string {
+    if (this.canLevelUp) return 'Advance a level';
+    return this.xpForNextLevel == null
+      ? 'Maximum level reached'
+      : 'Not enough XP yet — reach ' + this.xpForNextLevel + ' XP or ask your DM to grant a level';
+  }
+
+  /** DM cross-link: toggle the pending level-up grant for this character. */
+  toggleLevelGrant(): void {
+    this.pcService.grantLevelUp(this.pc.id, !this.dmGrantedLevel).subscribe({
+      error: err => console.error('Failed to change the level-up grant', err),
+    });
   }
 
   /** Fill % (0–100) of the XP bar — progress through the current level. */
@@ -134,6 +164,25 @@ export class CharacterSheetComponent implements OnChanges {
   /** A child panel emitted a fully-updated PC (e.g. an ability score changed). */
   onPcChange(updated: PC): void {
     this.persist(updated);
+  }
+
+  /** Whether the viewer owns this sheet — drives the survival Eat/Drink buttons.
+   *  Mirrors the pc-notes canWrite rule: interactive contexts minus DM cross-link. */
+  get ownSheet(): boolean {
+    return (this.showActions || this.inventoryEditable) && !this.editable;
+  }
+
+  /**
+   * A survival action from the panel. In a live session the host owns it (the
+   * server decrements the supply charge and bumps the poll version); on the
+   * plain sheet the local reducer applies the same rules and persists.
+   */
+  onSurvivalAction(action: SurvivalAction): void {
+    if (this.sessionLive) {
+      this.survivalActionRequested.emit(action);
+      return;
+    }
+    this.persist(applyConsumeToPc(this.pc, action));
   }
 
   /**
@@ -259,8 +308,17 @@ export class CharacterSheetComponent implements OnChanges {
         // unequipped, so there's no AC to recompute.
         const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
         const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
-        if (line) line.qty = (line.qty ?? 0) + (item.qty ?? 1);
-        else inventory.push(item);
+        if (line) {
+          line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+          // Backfill the catalog bulk/weight onto a pre-slot-variant line that
+          // never got stamped — otherwise the stack keeps deriving its bulk
+          // from a weight band that can disagree with the official rating.
+          // Never overwrites an existing value (same rule as the conversion).
+          if (line.bulk == null && item.bulk != null) line.bulk = item.bulk;
+          if (line.weight == null && item.weight != null) line.weight = item.weight;
+        } else {
+          inventory.push(item);
+        }
         return { ...fresh, inventory };
       })
       .subscribe({ error: err => console.error('Failed to grant item', err) });

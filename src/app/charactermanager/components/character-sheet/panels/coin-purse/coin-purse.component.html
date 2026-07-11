@@ -12,7 +12,9 @@
         [intercept]="true" (editRequested)="requestCoin(coin.key)"
         [label]="coin.label + ' coins'" (committed)="setCoin(coin.key, $event)"
       >{{ coinAmt(coin.key) }}</app-editable-number></div>
-      <div class="coin-name">{{ coin.label }}</div>
+      <div class="coin-name" [title]="coin.label">
+        <span class="coin-name-full">{{ coin.label }}</span><span class="coin-name-abbr">{{ coin.key }}</span>
+      </div>
     </div>
   </div>
 </div>

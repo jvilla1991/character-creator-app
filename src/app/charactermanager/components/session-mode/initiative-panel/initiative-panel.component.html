@@ -54,12 +54,19 @@
         </div>
       </div>
 
-      <div class="board-hp" [class.bloodied]="bloodied(p)">
-        <div class="hp-text">
-          <span>{{ p.hpCurrent }}/{{ p.hpMax }}<ng-container *ngIf="p.hpTemp"> +{{ p.hpTemp }}</ng-container></span>
-          <span>{{ hpPct(p) | number:'1.0-0' }}%</span>
-        </div>
-        <div class="vital-bar"><span [style.width.%]="hpPct(p)"></span></div>
+      <div class="board-hp" [class.bloodied]="!hpWithheld(p) && bloodied(p)">
+        <ng-container *ngIf="!hpWithheld(p); else hpHidden">
+          <div class="hp-text">
+            <span>{{ p.hpCurrent }}/{{ p.hpMax }}<ng-container *ngIf="p.hpTemp"> +{{ p.hpTemp }}</ng-container></span>
+            <span>{{ hpPct(p) | number:'1.0-0' }}%</span>
+          </div>
+          <div class="vital-bar"><span [style.width.%]="hpPct(p)"></span></div>
+        </ng-container>
+        <ng-template #hpHidden>
+          <div class="hp-text" title="The DM keeps this creature's health hidden">
+            <span style="color: var(--text-dim); font-style: italic;">—</span>
+          </div>
+        </ng-template>
       </div>
 
       <div class="board-num lit">{{ p.ac }}</div>
@@ -143,12 +150,13 @@
       >Add Enemy</button>
     </div>
     <label class="visibility-toggle">
-      <input
-        type="checkbox"
-        [checked]="!enemiesHidden"
-        (change)="onVisibilityChange($any($event.target).checked)"
-      />
-      Players see enemies
+      Players see
+      <select [ngModel]="visibilityMode" (ngModelChange)="onVisibilityChange($event)"
+              aria-label="Enemy visibility">
+        <option value="hidden">No enemies</option>
+        <option value="no-hp">Enemies, health hidden</option>
+        <option value="full">Enemies &amp; health</option>
+      </select>
     </label>
     <label class="sound-picker">
       Turn cue

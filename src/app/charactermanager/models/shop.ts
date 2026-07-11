@@ -5,6 +5,7 @@
  */
 
 import { PcItem } from './pc';
+import { bulkFromWeight } from '../utils/slot-inventory';
 
 export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR';
 
@@ -35,6 +36,34 @@ export function categoryLabelFor(backendCategory: string): PcItem['category'] {
     case 'MATERIAL_COMPONENT': return 'material-component';
     default: return backendCategory.toLowerCase() as PcItem['category'];
   }
+}
+
+/**
+ * Denormalize a raw catalog item into a self-contained owned inventory line —
+ * the client-side twin of the backend's InventoryEntries.newCatalogEntry
+ * (base fields first, then the catalog details flattened in without
+ * overwriting them). Bulk is stamped with the same effective rating the
+ * backend uses (catalog rating, weight-band fallback), so every path that
+ * turns a catalog entry into an owned item — DM grant today, anything later —
+ * produces the same line a shop purchase or join-time conversion would.
+ * No coins move here; the caller owns any payment.
+ */
+export function pcItemFromCatalog(item: CatalogItem, qty: number): PcItem {
+  const entry: PcItem = {
+    catalogKey: item.itemKey,
+    name: item.name,
+    category: categoryLabelFor(item.category),
+    qty,
+    unitCostCp: item.costCp,
+    ...(item.weight != null ? { weight: item.weight } : {}),
+    // Defensive ?? — the backend already sends the effective bulk, but a
+    // missing rating must fall back to the SAME weight bands it would use.
+    bulk: item.bulk ?? bulkFromWeight(item.weight ?? undefined),
+  };
+  for (const [k, v] of Object.entries(item.details ?? {})) {
+    if (!(k in entry)) (entry as any)[k] = v; // putIfAbsent — base fields win
+  }
+  return entry;
 }
 
 export interface ShopItem {

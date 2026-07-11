@@ -16,7 +16,9 @@ import { CampaignGameTime, CampaignLocation, LocationType, LOCATION_TYPES, TimeO
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
 import {
+  SurvivalAction,
   advanceGameTime,
+  applyConsumeToPc,
   applyLongRestToPc,
   applySegmentToPc,
   initialGameTime,
@@ -334,10 +336,17 @@ export class SessionService {
     );
   }
 
-  /** DM toggles whether players can see enemy combatants at all. */
-  setVisibility(sessionId: number | string, enemiesHidden: boolean): Observable<SessionState> {
-    if (environment.demoMode) return of(this.demoPatch({ enemiesHidden }));
-    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/visibility`, { enemiesHidden }).pipe(
+  /**
+   * DM sets enemy visibility: hidden entirely, visible, or visible with health
+   * hidden. `enemyHpHidden` rides along on every call so the two flags stay in
+   * one request (the server treats a null as "leave unchanged" for old clients).
+   */
+  setVisibility(sessionId: number | string, enemiesHidden: boolean,
+                enemyHpHidden = false): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoPatch({ enemiesHidden, enemyHpHidden }));
+    return this.http.put<unknown>(
+      `${this.sessionBase}/${sessionId}/visibility`, { enemiesHidden, enemyHpHidden },
+    ).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
@@ -405,6 +414,43 @@ export class SessionService {
         inventory: result.inventory ?? [],
       })),
     );
+  }
+
+  /**
+   * A player improves their own seated PC's survival condition (Eat/Drink).
+   * Server-authoritative: the supply charge is spent on the canonical pc row
+   * and the version bump shows every viewer the new stages. The result patches
+   * the local PC store so the open sheet updates without a refetch (same
+   * pattern as the sell/cast flows). Demo mirrors it locally.
+   */
+  consumeSurvival(sessionId: number | string, pcId: number, action: SurvivalAction):
+      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
+    if (environment.demoMode) return this.demoConsumeSurvival(pcId, action);
+    return this.http.post<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }>(
+      `${this.sessionBase}/${sessionId}/survival/consume`, { pcId, action },
+    ).pipe(
+      tap(result => this.pcService.patchLocalPC(pcId, {
+        survival: result.survival,
+        inventory: result.inventory ?? [],
+      })),
+    );
+  }
+
+  /** Demo mirror of the consume endpoint (shared reducer, local persistence + version bump). */
+  private demoConsumeSurvival(pcId: number, action: SurvivalAction):
+      Observable<{ pcId: number; survival: PcSurvival; inventory: PcItem[] }> {
+    const pc = this.pcService.getPCById(pcId);
+    if (!pc) return throwError(() => new Error('Character not found'));
+    const updated = applyConsumeToPc(pc, action);
+    this.pcService.patchLocalPC(pcId, { survival: updated.survival, inventory: updated.inventory ?? [] });
+
+    const state = this.stateSubject.getValue();
+    if (state) {
+      const participants = state.participants.map(p =>
+        p.pcId === pcId ? { ...p, survival: updated.survival ?? null } : p);
+      this.demoPatch({ participants });
+    }
+    return of({ pcId, survival: updated.survival!, inventory: updated.inventory ?? [] });
   }
 
   /**
@@ -816,6 +862,7 @@ export class SessionService {
       version: 0,
       dm: true,
       enemiesHidden: true,
+      enemyHpHidden: false,
       turnSound: null,
       shopOpen: false,
       shopForMe: false,
@@ -835,7 +882,7 @@ export class SessionService {
     return {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
-      enemiesHidden: true, turnSound: null,
+      enemiesHidden: true, enemyHpHidden: false, turnSound: null,
       lootStatus: null, lootName: null, myXp: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
@@ -883,6 +930,7 @@ export class SessionService {
       version: raw.version,
       dm: !!raw.dm,
       enemiesHidden: !!raw.enemiesHidden,
+      enemyHpHidden: !!raw.enemyHpHidden,
       turnSound: raw.turnSound ?? null,
       shopOpen: !!raw.shopOpen,
       shopForMe: !!raw.shopForMe,

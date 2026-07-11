@@ -246,6 +246,30 @@ export class PCService {
     );
   }
 
+  /**
+   * DM grants (or revokes) a pending level-up for a campaign member — the
+   * campaign-DM-authorized endpoint (like updatePCAsDm). The updated PC is
+   * mirrored into pcs$/activePC$ so the open sheet reflects the flag at once.
+   * Demo mode flips the flag on the in-memory character.
+   */
+  grantLevelUp(pcId: number, granted: boolean): Observable<PC> {
+    if (environment.demoMode) {
+      this.patchLocalPC(pcId, { pendingLevelGrant: granted });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.put<PC>(`${this.pcUrl}${pcId}/level-grant`, { granted }).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => {
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      })
+    );
+  }
+
   // ── Level-up (server-authoritative) ────────────────────────────────────────
   // The D&D rules engine lives in the backend (manager-service LevelUpService). These
   // methods are a thin client: preview fetches the computed deltas to show before the

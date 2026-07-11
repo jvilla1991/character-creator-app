@@ -103,6 +103,10 @@ export interface SessionState {
   dm: boolean;
   // DM checkbox: hidden enemies are omitted from player snapshots entirely.
   enemiesHidden: boolean;
+  // Middle visibility state: enemies visible but their health withheld — a
+  // player's enemy rows arrive with the HP fields nulled server-side. The DM
+  // still receives full health. Ignored while enemiesHidden.
+  enemyHpHidden: boolean;
   // Encounter-level turn-cue key set by the DM (null = silent); each device can
   // still mute locally.
   turnSound: string | null;

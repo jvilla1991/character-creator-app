@@ -172,6 +172,24 @@ describe('CharacterSheetComponent', () => {
     expect(fresh.inventory![0].qty).toBe(1);
   });
 
+  it('backfills bulk/weight onto an unstamped line when stacking, without overwriting stamped values', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    component.onItemGrant({ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1, weight: 3, bulk: 3 });
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    // A pre-slot-variant line: never stamped, weight-band display would say 2.
+    const unstamped: PC = makePC({ inventory: [{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1, weight: 3 }] });
+    expect(mutate(unstamped).inventory).toEqual([
+      { catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 2, weight: 3, bulk: 3 },
+    ]);
+
+    // An already-stamped line keeps its own rating.
+    component.onItemGrant({ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1, weight: 3, bulk: 3 });
+    const mutate2 = grantService.grantToPc.calls.mostRecent().args[1];
+    const stamped: PC = makePC({ inventory: [{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1, weight: 3, bulk: 9 }] });
+    expect(mutate2(stamped).inventory![0].bulk).toBe(9);
+  });
+
   it('appends an ad-hoc granted item (no catalogKey) rather than stacking', () => {
     grantService.grantToPc.and.returnValue(of(makePC()));
     const granted = { name: 'Cracked Fang', category: 'gear' as const, qty: 1 };

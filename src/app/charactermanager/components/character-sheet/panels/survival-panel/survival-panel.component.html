@@ -24,4 +24,13 @@
               [attr.aria-label]="'Raise ' + key">+</button>
     </span>
   </div>
+
+  <!-- Owner relief actions: eating/drinking consumes a supply charge and
+       improves the stage. Sleep relief is the DM's Long Rest in Session Mode. -->
+  <div *ngIf="ownControls" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+    <button class="btn" (click)="actionRequested.emit('EAT')"
+            title="Consume a ration: −1 hunger">Eat</button>
+    <button class="btn" (click)="actionRequested.emit('DRINK')"
+            title="Drink from your waterskin: −1 thirst">Drink</button>
+  </div>
 </div>
