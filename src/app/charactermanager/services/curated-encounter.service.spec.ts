@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
 import { CuratedEncounterService } from './curated-encounter.service';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('CuratedEncounterService', () => {
   let service: CuratedEncounterService;
@@ -10,9 +11,9 @@ describe('CuratedEncounterService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [CuratedEncounterService],
-    });
+    imports: [],
+    providers: [CuratedEncounterService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+});
     service = TestBed.inject(CuratedEncounterService);
     httpMock = TestBed.inject(HttpTestingController);
   });
