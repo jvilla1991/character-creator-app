@@ -81,7 +81,7 @@
           <span class="lvl-gain-label">Spell Slots</span>
           <span class="lvl-gain-value">
             <span class="slot-grid">
-              @for (s of slotRows; track s) {
+              @for (s of slotRows; track s.level) {
                 <span class="slot-pip" [class.slot-up]="s.gained">
                   <span class="slot-lvl">L{{ s.level }}</span>
                   <span class="slot-count">

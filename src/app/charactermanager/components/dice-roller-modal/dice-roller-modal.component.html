@@ -94,7 +94,7 @@
         <span class="result-total-label">Total</span>
       </div>
       <div class="result-breakdown">
-        @for (row of breakdown; track row) {
+        @for (row of breakdown; track row.sides) {
           <div class="breakdown-row">
             <span class="breakdown-label">{{ row.label }}</span>
             <span class="breakdown-rolls">{{ row.rolls.join(', ') }}</span>

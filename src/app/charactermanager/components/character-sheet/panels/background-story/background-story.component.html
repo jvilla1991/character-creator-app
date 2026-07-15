@@ -16,7 +16,7 @@
   <!-- Traits -->
   @if (traitEntries.length > 0) {
     <dl class="traits">
-      @for (t of traitEntries; track t) {
+      @for (t of traitEntries; track t.key) {
         <dt>{{ t.key }}</dt>
         <dd>"{{ t.value }}"</dd>
       }

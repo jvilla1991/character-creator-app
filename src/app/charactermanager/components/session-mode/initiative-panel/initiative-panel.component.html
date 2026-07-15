@@ -87,7 +87,7 @@
           <!-- DM only: the party's survival stages at a glance (variant campaigns).
           Muted while fine; the chip goes crimson at stage 5-6. -->
           @if (dm && survivalConditions) {
-            @for (chip of survivalChips(p); track chip) {
+            @for (chip of survivalChips(p); track chip.text) {
               <span class="board-cond"
                 [class.calm]="!chip.dire"
               [title]="chip.title">{{ chip.text }}</span>
@@ -96,7 +96,7 @@
           <!-- DM only: a caster's remaining spell slots at a glance; dire when a
           level is fully spent. Casting mid-session keeps these live. -->
           @if (dm) {
-            @for (chip of slotChips(p); track chip) {
+            @for (chip of slotChips(p); track chip.text) {
               <span class="board-cond slot-chip"
                 [class.calm]="!chip.dire"
               [title]="chip.title">{{ chip.text }}</span>

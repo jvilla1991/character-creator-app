@@ -3,11 +3,11 @@
     <span class="panel-title">Supplies</span>
   </div>
 
-  @for (row of rows; track row) {
+  @for (row of rows; track row.key) {
     <div class="supply-row">
       <span class="supply-name">{{ row.label }}</span>
       <span class="supply-track">
-        @for (pip of row.pips; track pip) {
+        @for (pip of row.pips; track $index) {
           <span class="supply-pip"
           [class.full]="pip.filled"></span>
         }
