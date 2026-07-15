@@ -14,9 +14,10 @@ import { DndSpell } from '../../models/dnd-api.types';
  * selected at once.
  */
 @Component({
-  selector: 'app-spell-picker',
-  templateUrl: './spell-picker.component.html',
-  styleUrls: ['./spell-picker.component.scss'],
+    selector: 'app-spell-picker',
+    templateUrl: './spell-picker.component.html',
+    styleUrls: ['./spell-picker.component.scss'],
+    standalone: false
 })
 export class SpellPickerComponent {
   @Input() spells: DndSpell[] = [];

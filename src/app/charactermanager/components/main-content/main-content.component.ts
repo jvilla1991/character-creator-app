@@ -12,9 +12,10 @@ import { CampaignService } from '../../services/campaign.service';
 import { JoinModalService } from '../../services/join-modal.service';
 
 @Component({
-  selector: 'app-main-content',
-  templateUrl: './main-content.component.html',
-  styleUrls: ['./main-content.component.scss']
+    selector: 'app-main-content',
+    templateUrl: './main-content.component.html',
+    styleUrls: ['./main-content.component.scss'],
+    standalone: false
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;

@@ -18,9 +18,10 @@ export interface DmEditConfirm {
  * description sends `null` so the backend computes its usual diff instead.
  */
 @Component({
-  selector: 'app-dm-edit-modal',
-  templateUrl: './dm-edit-modal.component.html',
-  styleUrls: ['./dm-edit-modal.component.scss'],
+    selector: 'app-dm-edit-modal',
+    templateUrl: './dm-edit-modal.component.html',
+    styleUrls: ['./dm-edit-modal.component.scss'],
+    standalone: false
 })
 export class DmEditModalComponent implements OnChanges {
   @Input() request!: DmEditRequest;

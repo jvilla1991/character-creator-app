@@ -12,10 +12,11 @@ interface AbilityRow {
 }
 
 @Component({
-  selector: 'app-ability-scores',
-  templateUrl: './ability-scores.component.html',
-  styleUrls: ['./ability-scores.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-ability-scores',
+    templateUrl: './ability-scores.component.html',
+    styleUrls: ['./ability-scores.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class AbilityScoresComponent implements OnChanges {
   @Input() pc!: PC;

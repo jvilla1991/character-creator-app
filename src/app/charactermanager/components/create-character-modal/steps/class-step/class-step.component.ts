@@ -7,9 +7,10 @@ import { DndClass } from '../../../../models/dnd-api.types';
  * fetch and passes the derived saving-throws string and subclass list in.
  */
 @Component({
-  selector: 'app-class-step',
-  templateUrl: './class-step.component.html',
-  styleUrls: ['./class-step.component.scss'],
+    selector: 'app-class-step',
+    templateUrl: './class-step.component.html',
+    styleUrls: ['./class-step.component.scss'],
+    standalone: false
 })
 export class ClassStepComponent {
   @Input() classList: string[] = [];

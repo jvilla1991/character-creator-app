@@ -19,8 +19,9 @@ interface ThemeSwatch {
  * swatches and dice preferences. Opened from the sidebar account-row gear.
  */
 @Component({
-  selector: 'app-settings-panel',
-  templateUrl: './settings-panel.component.html',
+    selector: 'app-settings-panel',
+    templateUrl: './settings-panel.component.html',
+    standalone: false
 })
 export class SettingsPanelComponent {
   user = this.currentUser.getUser();

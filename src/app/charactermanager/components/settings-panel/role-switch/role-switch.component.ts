@@ -6,8 +6,9 @@ import { UiStateService, Role } from '../../../services/ui-state.service';
  * app-level role is switched (per the DM-mode handoff).
  */
 @Component({
-  selector: 'app-role-switch',
-  templateUrl: './role-switch.component.html',
+    selector: 'app-role-switch',
+    templateUrl: './role-switch.component.html',
+    standalone: false
 })
 export class RoleSwitchComponent {
   role$ = this.uiState.role$;

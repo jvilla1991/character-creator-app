@@ -17,8 +17,9 @@ export const MAX_WEEK_DAYS = 20;
  * create-campaign modal and the dashboard's week panel.
  */
 @Component({
-  selector: 'app-week-days-editor',
-  templateUrl: './week-days-editor.component.html',
+    selector: 'app-week-days-editor',
+    templateUrl: './week-days-editor.component.html',
+    standalone: false
 })
 export class WeekDaysEditorComponent implements OnChanges {
   @Input() value: string[] | null = null;

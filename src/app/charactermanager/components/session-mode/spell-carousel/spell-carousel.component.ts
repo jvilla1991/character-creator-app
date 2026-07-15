@@ -20,9 +20,10 @@ import { DndResourcesService } from '../../../services/dnd-resources.service';
  * rule). Cards are removed only via their own "x". Reorder is CDK drag-and-drop.
  */
 @Component({
-  selector: 'app-spell-carousel',
-  templateUrl: './spell-carousel.component.html',
-  styleUrls: ['./spell-carousel.component.scss'],
+    selector: 'app-spell-carousel',
+    templateUrl: './spell-carousel.component.html',
+    styleUrls: ['./spell-carousel.component.scss'],
+    standalone: false
 })
 export class SpellCarouselComponent implements OnInit {
   /** Ordered, de-duplicated pinned spells. Ephemeral — session only. */

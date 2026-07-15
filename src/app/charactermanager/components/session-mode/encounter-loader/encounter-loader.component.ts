@@ -12,9 +12,10 @@ import { NotificationService } from '../../../services/notification.service';
  * per campaign, and loading appends enemies (the DM then rolls their initiative).
  */
 @Component({
-  selector: 'app-encounter-loader',
-  templateUrl: './encounter-loader.component.html',
-  styleUrls: ['./encounter-loader.component.scss'],
+    selector: 'app-encounter-loader',
+    templateUrl: './encounter-loader.component.html',
+    styleUrls: ['./encounter-loader.component.scss'],
+    standalone: false
 })
 export class EncounterLoaderComponent implements OnChanges {
   @Input() state!: SessionState;

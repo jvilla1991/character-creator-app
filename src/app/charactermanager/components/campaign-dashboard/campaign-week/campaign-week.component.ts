@@ -9,8 +9,9 @@ import { CampaignService } from '../../../services/campaign.service';
  * clock keeps its free-text weekday whose repetition counts weeks.
  */
 @Component({
-  selector: 'app-campaign-week',
-  templateUrl: './campaign-week.component.html',
+    selector: 'app-campaign-week',
+    templateUrl: './campaign-week.component.html',
+    standalone: false
 })
 export class CampaignWeekComponent implements OnChanges {
   @Input() campaign!: Campaign;

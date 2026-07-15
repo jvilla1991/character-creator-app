@@ -14,9 +14,10 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
  * the Standard-Array [(ngModel)] writes land directly on parent state.
  */
 @Component({
-  selector: 'app-ability-scores-step',
-  templateUrl: './ability-scores-step.component.html',
-  styleUrls: ['./ability-scores-step.component.scss'],
+    selector: 'app-ability-scores-step',
+    templateUrl: './ability-scores-step.component.html',
+    styleUrls: ['./ability-scores-step.component.scss'],
+    standalone: false
 })
 export class AbilityScoresStepComponent {
   @Input() abilityMethod: 'standard' | 'point-buy' = 'standard';

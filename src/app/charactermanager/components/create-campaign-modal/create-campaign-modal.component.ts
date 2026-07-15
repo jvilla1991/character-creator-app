@@ -3,9 +3,10 @@ import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/camp
 
 /** "Open a New Campaign" modal — mirrors the create-character modal chrome. */
 @Component({
-  selector: 'app-create-campaign-modal',
-  templateUrl: './create-campaign-modal.component.html',
-  styleUrls: ['./create-campaign-modal.component.scss'],
+    selector: 'app-create-campaign-modal',
+    templateUrl: './create-campaign-modal.component.html',
+    styleUrls: ['./create-campaign-modal.component.scss'],
+    standalone: false
 })
 export class CreateCampaignModalComponent {
   name = '';

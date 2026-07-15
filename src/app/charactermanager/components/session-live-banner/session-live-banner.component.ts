@@ -21,9 +21,10 @@ interface LiveSession {
  * multi-client discovery there) and whenever no session is live.
  */
 @Component({
-  selector: 'app-session-live-banner',
-  templateUrl: './session-live-banner.component.html',
-  styleUrls: ['./session-live-banner.component.scss'],
+    selector: 'app-session-live-banner',
+    templateUrl: './session-live-banner.component.html',
+    styleUrls: ['./session-live-banner.component.scss'],
+    standalone: false
 })
 export class SessionLiveBannerComponent implements OnInit, OnDestroy {
   live: LiveSession | null = null;

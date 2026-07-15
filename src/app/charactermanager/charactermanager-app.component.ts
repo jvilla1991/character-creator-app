@@ -12,8 +12,8 @@ import { CurrentUserService } from './services/current-user.service';
 import { CampaignDraft } from './models/campaign';
 
 @Component({
-  selector: 'app-charactermanager-app',
-  template: `
+    selector: 'app-charactermanager-app',
+    template: `
     <app-sidenav [pcs]="pcs"></app-sidenav>
 
     <!-- Create-character overlay — position: fixed, inset 0, blurred backdrop -->
@@ -58,7 +58,8 @@ import { CampaignDraft } from './models/campaign';
     <!-- App-wide transient notifications (e.g. the DM ended the session) -->
     <app-toast></app-toast>
   `,
-  styles: []
+    styles: [],
+    standalone: false
 })
 export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   pcs: PC[] = [];

@@ -20,9 +20,10 @@ import { NotificationService } from '../../../services/notification.service';
  * view directly so the DM's controls respond without waiting for the next poll.
  */
 @Component({
-  selector: 'app-shop-panel',
-  templateUrl: './shop-panel.component.html',
-  styleUrls: ['./shop-panel.component.scss'],
+    selector: 'app-shop-panel',
+    templateUrl: './shop-panel.component.html',
+    styleUrls: ['./shop-panel.component.scss'],
+    standalone: false
 })
 export class ShopPanelComponent implements OnChanges {
   @Input() state!: SessionState;
