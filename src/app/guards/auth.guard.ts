@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Router, UrlTree } from '@angular/router';
 import { AuthService } from '../charactermanager/services/auth.service';
 
 /**
@@ -8,7 +8,7 @@ import { AuthService } from '../charactermanager/services/auth.service';
  * browser Back button can never land on a screen the auth state forbids.
  */
 @Injectable({ providedIn: 'root' })
-export class AuthGuard implements CanActivate {
+export class AuthGuard  {
   constructor(private auth: AuthService, private router: Router) {}
 
   canActivate(): boolean | UrlTree {

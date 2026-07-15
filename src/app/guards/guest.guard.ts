@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Router, UrlTree } from '@angular/router';
 import { AuthService } from '../charactermanager/services/auth.service';
 
 /**
@@ -9,7 +9,7 @@ import { AuthService } from '../charactermanager/services/auth.service';
  * shown to someone who is already logged in.
  */
 @Injectable({ providedIn: 'root' })
-export class GuestGuard implements CanActivate {
+export class GuestGuard  {
   constructor(private auth: AuthService, private router: Router) {}
 
   canActivate(): boolean | UrlTree {
