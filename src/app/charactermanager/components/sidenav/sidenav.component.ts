@@ -24,11 +24,11 @@ export class SidenavComponent implements OnInit, OnDestroy {
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
   activePC$ = this.pcService.activePC$;
-  role$ = this.uiState.role$;
+  readonly role = this.uiState.role;
   // When set, Session Mode takes over the main content area for everyone.
-  activeSessionId$ = this.uiState.activeSessionId$;
+  readonly activeSessionId = this.uiState.activeSessionId;
   // True while a DM is viewing a campaign member's sheet — shows the back bar.
-  dmReturn$ = this.uiState.dmReturn$;
+  readonly dmReturn = this.uiState.dmReturn;
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];

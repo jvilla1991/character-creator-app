@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 
 export type Role = 'player' | 'dm';
 
@@ -21,6 +20,8 @@ type Overlay = 'session' | 'settings' | 'dmHero';
 /**
  * Holds app-level UI state that is *not* a route: the Player/DM role, which
  * campaign is selected in DM mode, and whether the settings slide-over is open.
+ * Each piece of state is a signal — components read them directly in templates
+ * (`uiState.role()`), no async pipe or subscription needed.
  *
  * The active *character* deliberately stays in PCService (single source of
  * truth); the DM→player cross-link just calls PCService.setActivePC together
@@ -33,19 +34,24 @@ type Overlay = 'session' | 'settings' | 'dmHero';
  */
 @Injectable({ providedIn: 'root' })
 export class UiStateService {
-  private roleSubject = new BehaviorSubject<Role>('player');
-  role$ = this.roleSubject.asObservable();
+  private readonly _role = signal<Role>('player');
+  readonly role = this._role.asReadonly();
 
-  private activeCampaignIdSubject = new BehaviorSubject<string | null>(null);
-  activeCampaignId$ = this.activeCampaignIdSubject.asObservable();
+  private readonly _activeCampaignId = signal<string | null>(null);
+  readonly activeCampaignId = this._activeCampaignId.asReadonly();
 
-  private settingsOpenSubject = new BehaviorSubject<boolean>(false);
-  settingsOpen$ = this.settingsOpenSubject.asObservable();
+  private readonly _settingsOpen = signal(false);
+  readonly settingsOpen = this._settingsOpen.asReadonly();
 
   // The live session currently open as a full-screen overlay (null = none).
   // Drives Session Mode, which layers over both the Player and DM views.
-  private activeSessionIdSubject = new BehaviorSubject<string | null>(null);
-  activeSessionId$ = this.activeSessionIdSubject.asObservable();
+  private readonly _activeSessionId = signal<string | null>(null);
+  readonly activeSessionId = this._activeSessionId.asReadonly();
+
+  // True while a DM is viewing one of their campaign members' sheets (reached by
+  // clicking a hero on the campaign dashboard). Drives the "back to campaign" bar.
+  private readonly _dmReturn = signal(false);
+  readonly dmReturn = this._dmReturn.asReadonly();
 
   // Overlays we've pushed a browser-history entry for, oldest first. Mirrors the
   // history entries we created so that Back and our own close buttons stay in
@@ -64,9 +70,9 @@ export class UiStateService {
   private rehydrate(): void {
     try {
       const campaign = localStorage.getItem(UI_ACTIVE_CAMPAIGN_KEY);
-      if (campaign) this.activeCampaignIdSubject.next(campaign);
+      if (campaign) this._activeCampaignId.set(campaign);
       const role = localStorage.getItem(UI_ROLE_KEY);
-      if (role === 'dm' || role === 'player') this.roleSubject.next(role);
+      if (role === 'dm' || role === 'player') this._role.set(role);
     } catch { /* storage unavailable — fall back to the player default */ }
   }
 
@@ -76,22 +82,16 @@ export class UiStateService {
       else localStorage.setItem(key, value);
     } catch { /* ignore — persistence is best-effort */ }
   }
-  // True while a DM is viewing one of their campaign members' sheets (reached by
-  // clicking a hero on the campaign dashboard). Drives the "back to campaign" bar.
-  private dmReturnSubject = new BehaviorSubject<boolean>(false);
-  dmReturn$ = this.dmReturnSubject.asObservable();
-
-  get role(): Role { return this.roleSubject.getValue(); }
 
   setRole(role: Role): void {
     // A manual role switch ends any campaign cross-link.
-    this.dmReturnSubject.next(false);
-    this.roleSubject.next(role);
+    this._dmReturn.set(false);
+    this._role.set(role);
     this.persist(UI_ROLE_KEY, role);
   }
 
   setActiveCampaign(id: string | null): void {
-    this.activeCampaignIdSubject.next(id);
+    this._activeCampaignId.set(id);
     this.persist(UI_ACTIVE_CAMPAIGN_KEY, id);
   }
 
@@ -103,27 +103,27 @@ export class UiStateService {
 
   // ── Settings slide-over ───────────────────────────────────────────────────
   openSettings(): void {
-    if (this.settingsOpenSubject.getValue()) return;     // guard a double-open
-    this.settingsOpenSubject.next(true);
+    if (this._settingsOpen()) return;                    // guard a double-open
+    this._settingsOpen.set(true);
     this.pushOverlay('settings');
   }
 
   closeSettings(): void {
-    if (!this.settingsOpenSubject.getValue()) return;
-    this.settingsOpenSubject.next(false);
+    if (!this._settingsOpen()) return;
+    this._settingsOpen.set(false);
     this.unwind('settings');
   }
 
   // ── Live session overlay ──────────────────────────────────────────────────
   openSession(sessionId: string): void {
-    const firstOpen = this.activeSessionIdSubject.getValue() === null;
-    this.activeSessionIdSubject.next(sessionId);
+    const firstOpen = this._activeSessionId() === null;
+    this._activeSessionId.set(sessionId);
     if (firstOpen) this.pushOverlay('session');          // guard against re-push
   }
 
   closeSession(): void {
-    if (this.activeSessionIdSubject.getValue() === null) return;
-    this.activeSessionIdSubject.next(null);
+    if (this._activeSessionId() === null) return;
+    this._activeSessionId.set(null);
     this.unwind('session');
   }
 
@@ -134,8 +134,8 @@ export class UiStateService {
    * campaign dashboard rather than leaving the app.
    */
   viewHeroAsDm(): void {
-    this.dmReturnSubject.next(true);     // show the in-app "back to campaign" bar
-    this.roleSubject.next('player');
+    this._dmReturn.set(true);            // show the in-app "back to campaign" bar
+    this._role.set('player');
     if (this.overlayStack[this.overlayStack.length - 1] !== 'dmHero') {
       this.pushOverlay('dmHero');        // and let the browser Back button return too
     }
@@ -147,8 +147,8 @@ export class UiStateService {
    * also unwind the matching history entry so the browser stays in lock-step.
    */
   returnToCampaign(): void {
-    this.dmReturnSubject.next(false);
-    this.roleSubject.next('dm');
+    this._dmReturn.set(false);
+    this._role.set('dm');
     this.unwind('dmHero');
   }
 
@@ -159,8 +159,8 @@ export class UiStateService {
    */
   resetOverlays(): void {
     this.overlayStack = [];
-    this.settingsOpenSubject.next(false);
-    this.activeSessionIdSubject.next(null);
+    this._settingsOpen.set(false);
+    this._activeSessionId.set(null);
   }
 
   // ── history plumbing ──────────────────────────────────────────────────────
@@ -204,18 +204,18 @@ export class UiStateService {
   private applyClose(kind: Overlay): void {
     switch (kind) {
       case 'settings':
-        this.settingsOpenSubject.next(false);
+        this._settingsOpen.set(false);
         break;
       case 'session':
         // SessionMode's ngOnDestroy stops polling and clears the snapshot when
         // the overlay leaves the DOM; we only drop the route-level flag here.
-        this.activeSessionIdSubject.next(null);
+        this._activeSessionId.set(null);
         break;
       case 'dmHero':
         // Back from a cross-linked hero sheet returns the DM to their dashboard
         // and hides the in-app "back to campaign" bar.
-        this.dmReturnSubject.next(false);
-        this.roleSubject.next('dm');
+        this._dmReturn.set(false);
+        this._role.set('dm');
         break;
     }
   }

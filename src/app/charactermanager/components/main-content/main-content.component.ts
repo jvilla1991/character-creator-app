@@ -20,7 +20,7 @@ import { JoinModalService } from '../../services/join-modal.service';
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   /** True while a DM is viewing a campaign member's sheet → numbers are editable. */
-  editable = false;
+  get editable(): boolean { return this.uiState.dmReturn(); }
   /** True when the active PC's campaign uses the slot-based inventory variant. */
   slotInventory = false;
   /** True when the active PC's campaign uses the survival-conditions variant. */
@@ -87,10 +87,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
         this.resolveVariants(pc);
         this.refreshSessionContext(pc);
       });
-
-    this.uiState.dmReturn$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isDmViewing => { this.editable = isDmViewing; });
   }
 
   ngOnDestroy(): void {

@@ -59,7 +59,7 @@ import { CampaignDraft } from './models/campaign';
     }
     
     <!-- Settings slide-over (its own fixed backdrop + panel) -->
-    @if (isSettingsOpen) {
+    @if (isSettingsOpen()) {
       <app-settings-panel></app-settings-panel>
     }
     
@@ -74,7 +74,7 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   isCreateModalOpen = false;
   isCampaignModalOpen = false;
   isJoinModalOpen = false;
-  isSettingsOpen = false;
+  readonly isSettingsOpen = this.uiState.settingsOpen;
   joinConsent: JoinConsentState | null = null;
   joinError: string | null = null;
   joinPreselectPcId: number | null = null;
@@ -104,7 +104,6 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
       this.joinModal.consent$.subscribe(consent => { this.joinConsent = consent; }),
       this.joinModal.error$.subscribe(error => { this.joinError = error; }),
       this.joinModal.preselectPcId$.subscribe(id => { this.joinPreselectPcId = id; }),
-      this.uiState.settingsOpen$.subscribe(open => { this.isSettingsOpen = open; }),
 
       this.router.events
         .pipe(filter(e => e instanceof NavigationEnd))

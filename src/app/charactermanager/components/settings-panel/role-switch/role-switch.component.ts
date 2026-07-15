@@ -11,7 +11,7 @@ import { UiStateService, Role } from '../../../services/ui-state.service';
     standalone: false
 })
 export class RoleSwitchComponent {
-  role$ = this.uiState.role$;
+  readonly role = this.uiState.role;
 
   constructor(private uiState: UiStateService) {}
 
