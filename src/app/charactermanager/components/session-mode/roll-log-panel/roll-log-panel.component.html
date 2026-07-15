@@ -3,19 +3,27 @@
     <span class="panel-title">Roll Log</span>
     <span class="collapse-caret" [class.open]="!collapsed">▾</span>
   </div>
-  <div class="roll-log-body" *ngIf="!collapsed">
-    <p *ngIf="!rolls.length" class="roll-log-empty">No rolls yet this session.</p>
-    <div *ngFor="let r of rolls" class="roll-row" [class.mine]="r.mine">
-      <div class="roll-row-head">
-        <span class="roll-who">{{ r.rollerName }}</span>
-        <span class="roll-total">{{ r.grandTotal }}</span>
-      </div>
-      <div class="roll-breakdown">
-        <span *ngFor="let g of r.groups" class="roll-group">
-          {{ g.rolls.length }}d{{ g.sides }} → {{ g.rolls.join(', ') }}
-        </span>
-      </div>
-      <div class="roll-time">{{ r.createdAt | date:'shortTime' }}</div>
+  @if (!collapsed) {
+    <div class="roll-log-body">
+      @if (!rolls.length) {
+        <p class="roll-log-empty">No rolls yet this session.</p>
+      }
+      @for (r of rolls; track r) {
+        <div class="roll-row" [class.mine]="r.mine">
+          <div class="roll-row-head">
+            <span class="roll-who">{{ r.rollerName }}</span>
+            <span class="roll-total">{{ r.grandTotal }}</span>
+          </div>
+          <div class="roll-breakdown">
+            @for (g of r.groups; track g) {
+              <span class="roll-group">
+                {{ g.rolls.length }}d{{ g.sides }} → {{ g.rolls.join(', ') }}
+              </span>
+            }
+          </div>
+          <div class="roll-time">{{ r.createdAt | date:'shortTime' }}</div>
+        </div>
+      }
     </div>
-  </div>
+  }
 </div>

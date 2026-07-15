@@ -2,8 +2,8 @@
 
   <!-- Ruleset selector — 2014 option is planned but not yet available -->
   <div class="ruleset-bar"
-       matTooltip="2014 5e rules support is planned for a future update."
-       matTooltipPosition="below">
+    matTooltip="2014 5e rules support is planned for a future update."
+    matTooltipPosition="below">
     <span class="ruleset-active">2024 PHB</span>
     <mat-slide-toggle
       [disabled]="true"
@@ -17,167 +17,191 @@
 
   <!-- Step indicator -->
   <div class="wizard-steps">
-    <div *ngFor="let n of stepRange"
-         class="step-dot"
-         [class.active]="step === n"
-         [class.done]="step > n">
-      <span *ngIf="step <= n">{{ n }}</span>
-      <span *ngIf="step > n">✓</span>
-    </div>
+    @for (n of stepRange; track n) {
+      <div
+        class="step-dot"
+        [class.active]="step === n"
+        [class.done]="step > n">
+        @if (step <= n) {
+          <span>{{ n }}</span>
+        }
+        @if (step > n) {
+          <span>✓</span>
+        }
+      </div>
+    }
   </div>
 
   <!-- Scrollable step body (on mobile this scrolls between the sticky step
-       header and the sticky action bar; on desktop it's a plain wrapper). -->
+  header and the sticky action bar; on desktop it's a plain wrapper). -->
   <div class="wizard-body">
 
-  <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
-  <app-identity-step *ngIf="step === 1"
-    [(name)]="name"
-    [player]="player"
-    (next)="next()"
-    (cancel)="cancel()">
-  </app-identity-step>
+    <!-- ── Step 1: Identity ─────────────────────────────────────────────── -->
+    @if (step === 1) {
+      <app-identity-step
+        [(name)]="name"
+        [player]="player"
+        (next)="next()"
+        (cancel)="cancel()">
+      </app-identity-step>
+    }
 
-  <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
-  <app-species-step *ngIf="step === 2"
-    [speciesList]="speciesList"
-    [species]="species"
-    [loadingSpecies]="loadingSpecies"
-    [loadingSpeciesDetail]="loadingSpeciesDetail"
-    [speciesDetail]="speciesDetail"
-    [speciesSubspeciesNames]="speciesSubspeciesNames"
-    (toggle)="toggleSpecies($event)">
-  </app-species-step>
+    <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
+    @if (step === 2) {
+      <app-species-step
+        [speciesList]="speciesList"
+        [species]="species"
+        [loadingSpecies]="loadingSpecies"
+        [loadingSpeciesDetail]="loadingSpeciesDetail"
+        [speciesDetail]="speciesDetail"
+        [speciesSubspeciesNames]="speciesSubspeciesNames"
+        (toggle)="toggleSpecies($event)">
+      </app-species-step>
+    }
 
-  <!-- ── Step 3: Class ───────────────────────────────────────────────── -->
-  <app-class-step *ngIf="step === 3"
-    [classList]="classList"
-    [clazz]="clazz"
-    [classDetail]="classDetail"
-    [loadingClassList]="loadingClassList"
-    [loadingClassDetail]="loadingClassDetail"
-    [classSavingThrows]="classSavingThrows"
-    [requiresLevel1Subclass]="requiresLevel1Subclass"
-    [availableSubclasses]="availableSubclasses"
-    [(selectedSubclass)]="selectedSubclass"
-    (toggle)="toggleClass($event)">
-  </app-class-step>
+    <!-- ── Step 3: Class ───────────────────────────────────────────────── -->
+    @if (step === 3) {
+      <app-class-step
+        [classList]="classList"
+        [clazz]="clazz"
+        [classDetail]="classDetail"
+        [loadingClassList]="loadingClassList"
+        [loadingClassDetail]="loadingClassDetail"
+        [classSavingThrows]="classSavingThrows"
+        [requiresLevel1Subclass]="requiresLevel1Subclass"
+        [availableSubclasses]="availableSubclasses"
+        [(selectedSubclass)]="selectedSubclass"
+        (toggle)="toggleClass($event)">
+      </app-class-step>
+    }
 
-  <!-- ── Step 4: Background ──────────────────────────────────────────── -->
-  <app-background-step *ngIf="step === 4"
-    [backgroundGroups]="backgroundGroups"
-    [enabledSources]="enabledSources"
-    [activeBackgroundGroups]="activeBackgroundGroups"
-    [background]="background"
-    [backgroundDetail]="backgroundDetail"
-    [loadingBackgroundDetail]="loadingBackgroundDetail"
-    [backgroundAbilityNames]="backgroundAbilityNames"
-    [backgroundProficiencyNames]="backgroundProficiencyNames"
-    [backgroundFeatName]="backgroundFeatName"
-    [backgroundFeatDescription]="backgroundFeatDescription"
-    (toggleSource)="toggleSource($event)"
-    (toggleBackground)="toggleBackground($event)">
-  </app-background-step>
+    <!-- ── Step 4: Background ──────────────────────────────────────────── -->
+    @if (step === 4) {
+      <app-background-step
+        [backgroundGroups]="backgroundGroups"
+        [enabledSources]="enabledSources"
+        [activeBackgroundGroups]="activeBackgroundGroups"
+        [background]="background"
+        [backgroundDetail]="backgroundDetail"
+        [loadingBackgroundDetail]="loadingBackgroundDetail"
+        [backgroundAbilityNames]="backgroundAbilityNames"
+        [backgroundProficiencyNames]="backgroundProficiencyNames"
+        [backgroundFeatName]="backgroundFeatName"
+        [backgroundFeatDescription]="backgroundFeatDescription"
+        (toggleSource)="toggleSource($event)"
+        (toggleBackground)="toggleBackground($event)">
+      </app-background-step>
+    }
 
-  <!-- ── Step 5: Proficiencies & Languages ──────────────────────────────── -->
-  <app-proficiencies-step *ngIf="step === 5"
-    [clazz]="clazz"
-    [classSkillConfig]="classSkillConfig"
-    [selectedSkills]="selectedSkills"
-    [classSkillsFull]="classSkillsFull"
-    [backgroundDetail]="backgroundDetail"
-    [background]="background"
-    [backgroundSkillProfs]="backgroundSkillProfs"
-    [backgroundToolProfs]="backgroundToolProfs"
-    [(languageChoice)]="languageChoice"
-    [standardLanguages]="standardLanguages"
-    (toggleSkill)="toggleSkillProf($event)">
-  </app-proficiencies-step>
+    <!-- ── Step 5: Proficiencies & Languages ──────────────────────────────── -->
+    @if (step === 5) {
+      <app-proficiencies-step
+        [clazz]="clazz"
+        [classSkillConfig]="classSkillConfig"
+        [selectedSkills]="selectedSkills"
+        [classSkillsFull]="classSkillsFull"
+        [backgroundDetail]="backgroundDetail"
+        [background]="background"
+        [backgroundSkillProfs]="backgroundSkillProfs"
+        [backgroundToolProfs]="backgroundToolProfs"
+        [(languageChoice)]="languageChoice"
+        [standardLanguages]="standardLanguages"
+        (toggleSkill)="toggleSkillProf($event)">
+      </app-proficiencies-step>
+    }
 
-  <!-- ── Step 6: Ability Scores ──────────────────────────────────────── -->
-  <app-ability-scores-step *ngIf="step === 6"
-    [(abilityMethod)]="abilityMethod"
-    [abilities]="abilities"
-    [assignments]="assignments"
-    [pointBuyScores]="pointBuyScores"
-    [(bonusPlus2)]="bonusPlus2"
-    [(bonusPlus1)]="bonusPlus1"
-    [bonusAbilities]="bonusAbilities"
-    [backgroundDetail]="backgroundDetail"
-    [background]="background"
-    [pointBuyBudget]="POINT_BUY_BUDGET"
-    [pointBuySpent]="pointBuySpent"
-    [pointBuyRemaining]="pointBuyRemaining"
-    [finalScore]="finalScore"
-    [modifier]="modifier"
-    [availableFor]="availableFor"
-    [canIncreaseScore]="canIncreaseScore"
-    [canDecreaseScore]="canDecreaseScore"
-    (increase)="increaseScore($event)"
-    (decrease)="decreaseScore($event)">
-  </app-ability-scores-step>
+    <!-- ── Step 6: Ability Scores ──────────────────────────────────────── -->
+    @if (step === 6) {
+      <app-ability-scores-step
+        [(abilityMethod)]="abilityMethod"
+        [abilities]="abilities"
+        [assignments]="assignments"
+        [pointBuyScores]="pointBuyScores"
+        [(bonusPlus2)]="bonusPlus2"
+        [(bonusPlus1)]="bonusPlus1"
+        [bonusAbilities]="bonusAbilities"
+        [backgroundDetail]="backgroundDetail"
+        [background]="background"
+        [pointBuyBudget]="POINT_BUY_BUDGET"
+        [pointBuySpent]="pointBuySpent"
+        [pointBuyRemaining]="pointBuyRemaining"
+        [finalScore]="finalScore"
+        [modifier]="modifier"
+        [availableFor]="availableFor"
+        [canIncreaseScore]="canIncreaseScore"
+        [canDecreaseScore]="canDecreaseScore"
+        (increase)="increaseScore($event)"
+        (decrease)="decreaseScore($event)">
+      </app-ability-scores-step>
+    }
 
-  <!-- ── Step 7: Spells (spellcasting classes only) ────────────────── -->
-  <app-spells-step *ngIf="step === 7 && isSpellcastingClass"
-    [filteredSpellList]="filteredSpellList"
-    [loadingSpells]="loadingSpells"
-    [maxCantrips]="maxCantrips"
-    [maxKnownSpells]="maxKnownSpells"
-    [selectedCantrips]="selectedCantrips"
-    [selectedLeveled]="selectedLeveled"
-    [(spellLevelFilter)]="spellLevelFilter"
-    [(spellSearch)]="spellSearch"
-    [selectedSpells]="selectedSpells"
-    [expandedSpellName]="expandedSpellName"
-    (toggleDesc)="toggleSpellDesc($event)"
-    (toggleSpell)="toggleSpell($event)">
-  </app-spells-step>
+    <!-- ── Step 7: Spells (spellcasting classes only) ────────────────── -->
+    @if (step === 7 && isSpellcastingClass) {
+      <app-spells-step
+        [filteredSpellList]="filteredSpellList"
+        [loadingSpells]="loadingSpells"
+        [maxCantrips]="maxCantrips"
+        [maxKnownSpells]="maxKnownSpells"
+        [selectedCantrips]="selectedCantrips"
+        [selectedLeveled]="selectedLeveled"
+        [(spellLevelFilter)]="spellLevelFilter"
+        [(spellSearch)]="spellSearch"
+        [selectedSpells]="selectedSpells"
+        [expandedSpellName]="expandedSpellName"
+        (toggleDesc)="toggleSpellDesc($event)"
+        (toggleSpell)="toggleSpell($event)">
+      </app-spells-step>
+    }
 
-  <!-- ── Step 7/8: Starting Equipment ──────────────────────────────── -->
-  <app-equipment-step *ngIf="step === equipmentStep"
-    [loadingEquipment]="loadingEquipment"
-    [currentClassEquipment]="currentClassEquipment"
-    [(equipmentChoice)]="equipmentChoice"
-    [background]="background"
-    [backgroundStartingGold]="backgroundStartingGold">
-  </app-equipment-step>
+    <!-- ── Step 7/8: Starting Equipment ──────────────────────────────── -->
+    @if (step === equipmentStep) {
+      <app-equipment-step
+        [loadingEquipment]="loadingEquipment"
+        [currentClassEquipment]="currentClassEquipment"
+        [(equipmentChoice)]="equipmentChoice"
+        [background]="background"
+        [backgroundStartingGold]="backgroundStartingGold">
+      </app-equipment-step>
+    }
 
-  <!-- ── Review Step ────────────────────────────────────────────────── -->
-  <app-review-step *ngIf="step === reviewStep"
-    [reviewHp]="reviewHp"
-    [reviewAc]="reviewAc"
-    [reviewInitiative]="reviewInitiative"
-    [name]="name"
-    [player]="player"
-    [species]="species"
-    [speciesDetail]="speciesDetail"
-    [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
-    [clazz]="clazz"
-    [selectedSubclass]="selectedSubclass"
-    [classDetail]="classDetail"
-    [classSavingThrows]="classSavingThrows"
-    [background]="background"
-    [backgroundFeatName]="backgroundFeatName"
-    [bonusPlus2]="bonusPlus2"
-    [bonusPlus1]="bonusPlus1"
-    [reviewAllSkills]="reviewAllSkills"
-    [backgroundToolProfs]="backgroundToolProfs"
-    [languageChoice]="languageChoice"
-    [abilities]="abilities"
-    [finalScore]="finalScore"
-    [modifier]="modifier"
-    [isSpellcastingClass]="isSpellcastingClass"
-    [selectedSpells]="selectedSpells"
-    [reviewCantripNames]="reviewCantripNames"
-    [reviewLeveledSpellNames]="reviewLeveledSpellNames"
-    [equipmentChoice]="equipmentChoice"
-    [equipmentStep]="equipmentStep"
-    [currentClassEquipment]="currentClassEquipment"
-    [reviewWeaponNames]="reviewWeaponNames"
-    [reviewGearNames]="reviewGearNames"
-    [reviewStartingGp]="reviewStartingGp"
-    (edit)="goToStep($event)">
-  </app-review-step>
+    <!-- ── Review Step ────────────────────────────────────────────────── -->
+    @if (step === reviewStep) {
+      <app-review-step
+        [reviewHp]="reviewHp"
+        [reviewAc]="reviewAc"
+        [reviewInitiative]="reviewInitiative"
+        [name]="name"
+        [player]="player"
+        [species]="species"
+        [speciesDetail]="speciesDetail"
+        [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
+        [clazz]="clazz"
+        [selectedSubclass]="selectedSubclass"
+        [classDetail]="classDetail"
+        [classSavingThrows]="classSavingThrows"
+        [background]="background"
+        [backgroundFeatName]="backgroundFeatName"
+        [bonusPlus2]="bonusPlus2"
+        [bonusPlus1]="bonusPlus1"
+        [reviewAllSkills]="reviewAllSkills"
+        [backgroundToolProfs]="backgroundToolProfs"
+        [languageChoice]="languageChoice"
+        [abilities]="abilities"
+        [finalScore]="finalScore"
+        [modifier]="modifier"
+        [isSpellcastingClass]="isSpellcastingClass"
+        [selectedSpells]="selectedSpells"
+        [reviewCantripNames]="reviewCantripNames"
+        [reviewLeveledSpellNames]="reviewLeveledSpellNames"
+        [equipmentChoice]="equipmentChoice"
+        [equipmentStep]="equipmentStep"
+        [currentClassEquipment]="currentClassEquipment"
+        [reviewWeaponNames]="reviewWeaponNames"
+        [reviewGearNames]="reviewGearNames"
+        [reviewStartingGp]="reviewStartingGp"
+        (edit)="goToStep($event)">
+      </app-review-step>
+    }
 
   </div><!-- end .wizard-body -->
 
@@ -186,16 +210,20 @@
     <button class="btn" type="button" (click)="step > 1 ? back() : cancel()">
       {{ step > 1 ? 'Back' : 'Cancel' }}
     </button>
-    <button *ngIf="step < totalSteps"
-            class="btn primary"
-            type="button"
-            [disabled]="!canAdvance"
-            (click)="next()">Next →</button>
-    <button *ngIf="step === totalSteps"
-            class="btn primary"
-            type="button"
-            [disabled]="!canAdvance"
-            (click)="submit()">Inscribe</button>
+    @if (step < totalSteps) {
+      <button
+        class="btn primary"
+        type="button"
+        [disabled]="!canAdvance"
+      (click)="next()">Next →</button>
+    }
+    @if (step === totalSteps) {
+      <button
+        class="btn primary"
+        type="button"
+        [disabled]="!canAdvance"
+      (click)="submit()">Inscribe</button>
+    }
   </div>
 
 </div>

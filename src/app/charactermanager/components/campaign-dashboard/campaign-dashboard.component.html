@@ -1,6 +1,5 @@
-<ng-container *ngIf="vm$ | async as vm; else empty">
+@if (vm$ | async; as vm) {
   <div class="fade-in">
-
     <!-- Header -->
     <header class="sheet-header" style="grid-template-columns: 1fr auto;">
       <div class="sheet-id">
@@ -9,33 +8,41 @@
         <div class="sheet-subtitle">
           {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
         </div>
-        <div class="invite-chip" *ngIf="vm.campaign.inviteCode" title="Share this code so players can seat their characters">
-          <span class="eyebrow">Invite</span>
-          <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
-        </div>
-        <div class="invite-chip" *ngIf="vm.campaign.gameTime" title="The in-world clock — advance it from Session Mode">
-          <span class="eyebrow">Clock</span>
-          <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
-        </div>
+        @if (vm.campaign.inviteCode) {
+          <div class="invite-chip" title="Share this code so players can seat their characters">
+            <span class="eyebrow">Invite</span>
+            <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
+          </div>
+        }
+        @if (vm.campaign.gameTime) {
+          <div class="invite-chip" title="The in-world clock — advance it from Session Mode">
+            <span class="eyebrow">Clock</span>
+            <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
+          </div>
+        }
       </div>
       <div class="sheet-actions">
-        <button *ngIf="!vm.liveSession" class="btn play" (click)="startSession(vm.campaign)">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M4 2.5v11l9-5.5z"/>
-          </svg>
-          Start Session
-        </button>
-        <button *ngIf="vm.liveSession" class="btn play" (click)="resumeSession(vm.campaign)">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M4 2.5v11l9-5.5z"/>
-          </svg>
-          Resume Session
-        </button>
+        @if (!vm.liveSession) {
+          <button class="btn play" (click)="startSession(vm.campaign)">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M4 2.5v11l9-5.5z"/>
+            </svg>
+            Start Session
+          </button>
+        }
+        @if (vm.liveSession) {
+          <button class="btn play" (click)="resumeSession(vm.campaign)">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M4 2.5v11l9-5.5z"/>
+            </svg>
+            Resume Session
+          </button>
+        }
         <button class="btn" (click)="openManageParty()">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-               style="margin-right: 6px; vertical-align: -2px;">
+            style="margin-right: 6px; vertical-align: -2px;">
             <circle cx="8" cy="5" r="2.6"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
           </svg>
           Manage Party
@@ -47,14 +54,13 @@
           [title]="vm.liveSession
             ? 'A session is live — end it before deleting the campaign'
             : 'Delete this campaign'"
-        >
+          >
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
             <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
           </svg>
         </button>
       </div>
     </header>
-
     <!-- Aggregate vitals strip -->
     <div class="vitals" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
       <div class="vital">
@@ -80,88 +86,83 @@
         <div class="vital-caption">active now</div>
       </div>
     </div>
-
     <div style="display: flex; justify-content: flex-end; margin-bottom: -8px;">
       <button class="btn" (click)="refreshMembers()"
-              title="Reload the party list — new joins also load automatically when you return to this tab">
+        title="Reload the party list — new joins also load automatically when you return to this tab">
         ↻ Refresh party
       </button>
     </div>
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
-
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
-
     <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
-
     <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
-
     <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
-
     <!-- Campaign week definition lives at the bottom: it's set-once-and-rarely-touched. -->
     <app-campaign-week [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-week>
-
   </div>
-
   <!-- Manage Party — bind/unbind your characters to this campaign -->
-  <div *ngIf="managePartyOpen" class="modal-backdrop" (click)="closeManageParty()">
-    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-      <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
-      <div class="modal-sub">
-        Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em>.
-        Toggle a hero on to seat them at this table.
-      </div>
-
-      <div class="manage-list">
-        <div class="manage-row" *ngFor="let pc of allPcs$ | async">
-          <div class="manage-hero">
-            <div class="portrait" [style.background]="boundTint(pc)">{{ initialsFor(pc) }}</div>
-            <div style="min-width: 0;">
-              <div class="board-hero-name">{{ pc.name }}</div>
-              <div class="board-hero-sub">{{ pc.race }} {{ pc.clazz }} {{ pc.level }}</div>
+  @if (managePartyOpen) {
+    <div class="modal-backdrop" (click)="closeManageParty()">
+      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+        <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
+        <div class="modal-sub">
+          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em>.
+          Toggle a hero on to seat them at this table.
+        </div>
+        <div class="manage-list">
+          @for (pc of allPcs$ | async; track pc) {
+            <div class="manage-row">
+              <div class="manage-hero">
+                <div class="portrait" [style.background]="boundTint(pc)">{{ initialsFor(pc) }}</div>
+                <div style="min-width: 0;">
+                  <div class="board-hero-name">{{ pc.name }}</div>
+                  <div class="board-hero-sub">{{ pc.race }} {{ pc.clazz }} {{ pc.level }}</div>
+                </div>
+              </div>
+              <button
+                class="toggle"
+                [class.on]="isBound(pc, vm.campaign)"
+                (click)="toggleMembership(pc, vm.campaign)"
+                [attr.aria-pressed]="isBound(pc, vm.campaign)"
+                [attr.aria-label]="'Toggle ' + pc.name"
+              ></button>
             </div>
-          </div>
-          <button
-            class="toggle"
-            [class.on]="isBound(pc, vm.campaign)"
-            (click)="toggleMembership(pc, vm.campaign)"
-            [attr.aria-pressed]="isBound(pc, vm.campaign)"
-            [attr.aria-label]="'Toggle ' + pc.name"
-          ></button>
+          }
+          @if ((allPcs$ | async)?.length === 0) {
+            <div
+              style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+              You have no characters to assign yet.
+            </div>
+          }
         </div>
-        <div *ngIf="(allPcs$ | async)?.length === 0"
-             style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
-          You have no characters to assign yet.
+        <div class="modal-actions">
+          <button class="btn primary" style="flex: none;" (click)="closeManageParty()">Done</button>
         </div>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn primary" style="flex: none;" (click)="closeManageParty()">Done</button>
       </div>
     </div>
-  </div>
-
+  }
   <!-- Delete Campaign — confirmation -->
-  <div *ngIf="deleteCampaignOpen" class="modal-backdrop" (click)="closeDeleteCampaign()">
-    <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()">
-      <div class="modal-title" style="color: var(--crimson);">Delete Campaign</div>
-      <div class="modal-sub">
-        <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em> will be erased —
-        its sessions, encounters, shops and notes go with it. Its characters are
-        <strong>released, not deleted</strong>: they return to their players, unbound.
-        This cannot be undone.
-      </div>
-      <div class="modal-actions">
-        <button class="btn" style="flex: none;" (click)="closeDeleteCampaign()">Cancel</button>
-        <button class="btn danger" style="flex: none;" [disabled]="deletingCampaign"
-                (click)="confirmDeleteCampaign(vm.campaign)">
-          Delete Campaign
-        </button>
+  @if (deleteCampaignOpen) {
+    <div class="modal-backdrop" (click)="closeDeleteCampaign()">
+      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()">
+        <div class="modal-title" style="color: var(--crimson);">Delete Campaign</div>
+        <div class="modal-sub">
+          <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em> will be erased —
+          its sessions, encounters, shops and notes go with it. Its characters are
+          <strong>released, not deleted</strong>: they return to their players, unbound.
+          This cannot be undone.
+        </div>
+        <div class="modal-actions">
+          <button class="btn" style="flex: none;" (click)="closeDeleteCampaign()">Cancel</button>
+          <button class="btn danger" style="flex: none;" [disabled]="deletingCampaign"
+            (click)="confirmDeleteCampaign(vm.campaign)">
+            Delete Campaign
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-</ng-container>
-
-<ng-template #empty>
+  }
+} @else {
   <div class="empty">
     <div class="empty-sigil">
       <!-- SigilEmpty -->
@@ -178,4 +179,5 @@
       <div class="empty-sub">Select a campaign from the chronicle to survey your table.</div>
     </div>
   </div>
-</ng-template>
+}
+

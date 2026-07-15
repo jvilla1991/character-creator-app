@@ -3,178 +3,221 @@
   <div class="modal-title" style="color: var(--celestial);">Ascend a Level</div>
 
   <!-- Loading the server-computed preview -->
-  <div *ngIf="loading" class="modal-sub">Consulting the chronicle…</div>
+  @if (loading) {
+    <div class="modal-sub">Consulting the chronicle…</div>
+  }
 
   <!-- Could not compute (e.g. already max level) -->
-  <div *ngIf="!loading && error && !preview" class="modal-sub" style="color: var(--crimson);">
-    {{ error }}
-  </div>
+  @if (!loading && error && !preview) {
+    <div class="modal-sub" style="color: var(--crimson);">
+      {{ error }}
+    </div>
+  }
 
   <!-- The gains for this level -->
-  <ng-container *ngIf="preview as p">
+  @if (preview; as p) {
     <div class="modal-sub">
       <em style="color: var(--text); font-style: normal;">{{ pc.name }}</em>
       advances from level {{ p.currentLevel }} to
       <em style="color: var(--text); font-style: normal;">level {{ p.newLevel }}</em>.
     </div>
-
     <ul class="lvl-gains">
       <li class="lvl-gain">
         <span class="lvl-gain-label">Hit Points</span>
         <span class="lvl-gain-value">
           +{{ p.hpGained }}
-          <span class="lvl-gain-note" *ngIf="hpMode === 'AVERAGE'">
-            (d{{ p.hitDie }} avg {{ fmtMod(p.conModifier) }} CON) → max {{ p.newHpMax }}
-          </span>
-          <span class="lvl-gain-note" *ngIf="hpMode === 'ROLL'">
-            (roll d{{ p.hitDie }} {{ fmtMod(p.conModifier) }} CON, rolled on confirm — avg {{ p.hpGained }} shown)
-          </span>
+          @if (hpMode === 'AVERAGE') {
+            <span class="lvl-gain-note">
+              (d{{ p.hitDie }} avg {{ fmtMod(p.conModifier) }} CON) → max {{ p.newHpMax }}
+            </span>
+          }
+          @if (hpMode === 'ROLL') {
+            <span class="lvl-gain-note">
+              (roll d{{ p.hitDie }} {{ fmtMod(p.conModifier) }} CON, rolled on confirm — avg {{ p.hpGained }} shown)
+            </span>
+          }
         </span>
       </li>
-
       <!-- HP mode: take the fixed average (default) or roll the hit die (server rolls on confirm) -->
       <li class="lvl-gain">
         <span class="lvl-gain-label">HP Method</span>
         <span class="lvl-gain-value">
           <span class="milestone-toggle hp-mode-toggle">
             <button type="button" class="milestone-tab" [class.is-active]="hpMode === 'AVERAGE'"
-                    (click)="hpMode = 'AVERAGE'">Average</button>
+            (click)="hpMode = 'AVERAGE'">Average</button>
             <button type="button" class="milestone-tab" [class.is-active]="hpMode === 'ROLL'"
-                    (click)="hpMode = 'ROLL'">Roll</button>
+            (click)="hpMode = 'ROLL'">Roll</button>
           </span>
         </span>
       </li>
-
       <li class="lvl-gain" [class.is-bump]="profChanged">
         <span class="lvl-gain-label">Proficiency Bonus</span>
         <span class="lvl-gain-value">
           {{ fmtMod(p.currentProfBonus) }}
-          <ng-container *ngIf="profChanged">→ {{ fmtMod(p.newProfBonus) }}</ng-container>
-          <span class="lvl-gain-note" *ngIf="!profChanged">(unchanged)</span>
+          @if (profChanged) {
+            → {{ fmtMod(p.newProfBonus) }}
+          }
+          @if (!profChanged) {
+            <span class="lvl-gain-note">(unchanged)</span>
+          }
         </span>
       </li>
-
-      <li class="lvl-gain" *ngIf="showCantrips" [class.is-bump]="cantripsChanged">
-        <span class="lvl-gain-label">Cantrips Known</span>
-        <span class="lvl-gain-value">
-          {{ p.currentCantripsKnown }}
-          <ng-container *ngIf="cantripsChanged">→ {{ p.newCantripsKnown }}</ng-container>
-          <span class="lvl-gain-note" *ngIf="!cantripsChanged">(unchanged)</span>
-        </span>
-      </li>
-
-      <li class="lvl-gain" *ngIf="slotRows.length" [class.is-bump]="hasSlotChanges">
-        <span class="lvl-gain-label">Spell Slots</span>
-        <span class="lvl-gain-value">
-          <span class="slot-grid">
-            <span class="slot-pip" *ngFor="let s of slotRows" [class.slot-up]="s.gained">
-              <span class="slot-lvl">L{{ s.level }}</span>
-              <span class="slot-count">
-                <ng-container *ngIf="s.gained">{{ s.current }}→</ng-container>{{ s.next }}
+      @if (showCantrips) {
+        <li class="lvl-gain" [class.is-bump]="cantripsChanged">
+          <span class="lvl-gain-label">Cantrips Known</span>
+          <span class="lvl-gain-value">
+            {{ p.currentCantripsKnown }}
+            @if (cantripsChanged) {
+              → {{ p.newCantripsKnown }}
+            }
+            @if (!cantripsChanged) {
+              <span class="lvl-gain-note">(unchanged)</span>
+            }
+          </span>
+        </li>
+      }
+      @if (slotRows.length) {
+        <li class="lvl-gain" [class.is-bump]="hasSlotChanges">
+          <span class="lvl-gain-label">Spell Slots</span>
+          <span class="lvl-gain-value">
+            <span class="slot-grid">
+              @for (s of slotRows; track s) {
+                <span class="slot-pip" [class.slot-up]="s.gained">
+                  <span class="slot-lvl">L{{ s.level }}</span>
+                  <span class="slot-count">
+                    @if (s.gained) {
+                      {{ s.current }}→
+                      }{{ s.next }}
+                    </span>
+                  </span>
+                }
               </span>
+              @if (!hasSlotChanges) {
+                <span class="lvl-gain-note">(unchanged)</span>
+              }
             </span>
-          </span>
-          <span class="lvl-gain-note" *ngIf="!hasSlotChanges">(unchanged)</span>
-        </span>
-      </li>
-    </ul>
-
-    <!-- Milestone choice: Ability Score Improvement OR a feat (shown at ASI levels) -->
-    <div *ngIf="needsAsi" class="asi-pick">
-      <div class="milestone-toggle">
-        <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'asi'"
-                (click)="milestoneMode = 'asi'">Ability Scores</button>
-        <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'feat'"
-                (click)="milestoneMode = 'feat'">Feat</button>
-      </div>
-
-      <ng-container *ngIf="milestoneMode === 'asi'">
-        <div class="asi-label">
-          <span class="asi-remaining">{{ asiRemaining }} point{{ asiRemaining === 1 ? '' : 's' }} left</span>
+          </li>
+        }
+      </ul>
+      <!-- Milestone choice: Ability Score Improvement OR a feat (shown at ASI levels) -->
+      @if (needsAsi) {
+        <div class="asi-pick">
+          <div class="milestone-toggle">
+            <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'asi'"
+            (click)="milestoneMode = 'asi'">Ability Scores</button>
+            <button type="button" class="milestone-tab" [class.is-active]="milestoneMode === 'feat'"
+            (click)="milestoneMode = 'feat'">Feat</button>
+          </div>
+          @if (milestoneMode === 'asi') {
+            <div class="asi-label">
+              <span class="asi-remaining">{{ asiRemaining }} point{{ asiRemaining === 1 ? '' : 's' }} left</span>
+            </div>
+            @for (ability of abilities; track ability) {
+              <div class="asi-row" [class.is-raised]="asiAllocation[ability] > 0">
+                <span class="asi-ability">{{ ability }}</span>
+                <span class="asi-score">
+                  {{ currentScore(ability) }}
+                  @if (asiAllocation[ability] > 0) {
+                    → {{ newScore(ability) }}
+                  }
+                </span>
+                <span class="asi-steppers">
+                  <button type="button" class="asi-step" (click)="decAsi(ability)" [disabled]="!canDec(ability)">−</button>
+                  <span class="asi-alloc">+{{ asiAllocation[ability] }}</span>
+                  <button type="button" class="asi-step" (click)="incAsi(ability)" [disabled]="!canInc(ability)">+</button>
+                </span>
+              </div>
+            }
+            @if (asiRaisesCon) {
+              <div class="asi-note">Raising Constitution will increase your hit points further.</div>
+            }
+          }
+          @if (milestoneMode === 'feat') {
+            @for (option of featOptions; track option) {
+              <label class="subclass-option"
+                [class.is-selected]="selectedFeat === option">
+                <input type="radio" name="feat" [value]="option" [(ngModel)]="selectedFeat">
+                <span class="feat-text">
+                  <span class="feat-name">{{ option }}</span>
+                  <span class="feat-desc">{{ featDescription(option) }}</span>
+                </span>
+              </label>
+            }
+          }
         </div>
-        <div class="asi-row" *ngFor="let ability of abilities" [class.is-raised]="asiAllocation[ability] > 0">
-          <span class="asi-ability">{{ ability }}</span>
-          <span class="asi-score">
-            {{ currentScore(ability) }}
-            <ng-container *ngIf="asiAllocation[ability] > 0">→ {{ newScore(ability) }}</ng-container>
-          </span>
-          <span class="asi-steppers">
-            <button type="button" class="asi-step" (click)="decAsi(ability)" [disabled]="!canDec(ability)">−</button>
-            <span class="asi-alloc">+{{ asiAllocation[ability] }}</span>
-            <button type="button" class="asi-step" (click)="incAsi(ability)" [disabled]="!canInc(ability)">+</button>
-          </span>
+      }
+      <!-- Subclass selection (shown only when a choice is due and options exist) -->
+      @if (needsSubclass) {
+        <div class="subclass-pick">
+          <div class="subclass-label">Choose your subclass</div>
+          @for (option of p.subclassOptions; track option) {
+            <label class="subclass-option"
+              [class.is-selected]="selectedSubclass === option">
+              <input type="radio" name="subclass" [value]="option" [(ngModel)]="selectedSubclass">
+              <span>{{ option }}</span>
+            </label>
+          }
         </div>
-        <div class="asi-note" *ngIf="asiRaisesCon">Raising Constitution will increase your hit points further.</div>
-      </ng-container>
-
-      <ng-container *ngIf="milestoneMode === 'feat'">
-        <label class="subclass-option" *ngFor="let option of featOptions"
-               [class.is-selected]="selectedFeat === option">
-          <input type="radio" name="feat" [value]="option" [(ngModel)]="selectedFeat">
-          <span class="feat-text">
-            <span class="feat-name">{{ option }}</span>
-            <span class="feat-desc">{{ featDescription(option) }}</span>
-          </span>
-        </label>
-      </ng-container>
-    </div>
-
-    <!-- Subclass selection (shown only when a choice is due and options exist) -->
-    <div *ngIf="needsSubclass" class="subclass-pick">
-      <div class="subclass-label">Choose your subclass</div>
-      <label class="subclass-option" *ngFor="let option of p.subclassOptions"
-             [class.is-selected]="selectedSubclass === option">
-        <input type="radio" name="subclass" [value]="option" [(ngModel)]="selectedSubclass">
-        <span>{{ option }}</span>
-      </label>
-    </div>
-
-    <!-- Learn new cantrips/spells (casters who gain them this level) -->
-    <div *ngIf="showSpellPicker" class="spell-pick">
-      <div class="spell-label">
-        Learn Spells
-        <span class="spell-counts">
-          <ng-container *ngIf="cantripDelta">Cantrips {{ selectedCantripCount }}/{{ cantripDelta }}</ng-container>
-          <ng-container *ngIf="cantripDelta && spellDelta"> · </ng-container>
-          <ng-container *ngIf="spellDelta">Spells {{ selectedSpellCount }}/{{ spellDelta }}</ng-container>
-        </span>
+      }
+      <!-- Learn new cantrips/spells (casters who gain them this level) -->
+      @if (showSpellPicker) {
+        <div class="spell-pick">
+          <div class="spell-label">
+            Learn Spells
+            <span class="spell-counts">
+              @if (cantripDelta) {
+                Cantrips {{ selectedCantripCount }}/{{ cantripDelta }}
+              }
+              @if (cantripDelta && spellDelta) {
+                ·
+              }
+              @if (spellDelta) {
+                Spells {{ selectedSpellCount }}/{{ spellDelta }}
+              }
+            </span>
+          </div>
+          <app-spell-picker
+            [spells]="spellList"
+            [selected]="selectedSpells"
+            [cantripLimit]="cantripDelta"
+            [spellLimit]="spellDelta"
+            [loading]="loadingSpells"
+            (selectedChange)="selectedSpells = $event">
+          </app-spell-picker>
+        </div>
+      }
+      <!-- Class features automatically gained this level (read-only) -->
+      @if (featuresGained.length) {
+        <div class="features-gained">
+          <div class="features-label">New Features</div>
+          @for (f of featuresGained; track f) {
+            <div class="feature-item">
+              <span class="feature-name">{{ f.name }}</span>
+              <span class="feature-desc">{{ f.desc }}</span>
+            </div>
+          }
+        </div>
+      }
+      <!-- A commit-time failure (e.g. raced to max level) -->
+      @if (error && preview) {
+        <div class="modal-sub" style="color: var(--crimson);">
+          {{ error }}
+        </div>
+      }
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="cancel()" [disabled]="submitting">Not Yet</button>
+        <button class="btn" type="button" (click)="confirm()" [disabled]="submitting || !canConfirm"
+          style="border-color: var(--celestial); color: var(--celestial);">
+          {{ submitting ? 'Ascending…' : 'Level Up' }}
+        </button>
       </div>
-      <app-spell-picker
-        [spells]="spellList"
-        [selected]="selectedSpells"
-        [cantripLimit]="cantripDelta"
-        [spellLimit]="spellDelta"
-        [loading]="loadingSpells"
-        (selectedChange)="selectedSpells = $event">
-      </app-spell-picker>
-    </div>
+    }
 
-    <!-- Class features automatically gained this level (read-only) -->
-    <div *ngIf="featuresGained.length" class="features-gained">
-      <div class="features-label">New Features</div>
-      <div class="feature-item" *ngFor="let f of featuresGained">
-        <span class="feature-name">{{ f.name }}</span>
-        <span class="feature-desc">{{ f.desc }}</span>
+    <!-- Preview failed entirely: only offer a way out -->
+    @if (!loading && !preview) {
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="cancel()">Close</button>
       </div>
-    </div>
+    }
 
-    <!-- A commit-time failure (e.g. raced to max level) -->
-    <div *ngIf="error && preview" class="modal-sub" style="color: var(--crimson);">
-      {{ error }}
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn" type="button" (click)="cancel()" [disabled]="submitting">Not Yet</button>
-      <button class="btn" type="button" (click)="confirm()" [disabled]="submitting || !canConfirm"
-              style="border-color: var(--celestial); color: var(--celestial);">
-        {{ submitting ? 'Ascending…' : 'Level Up' }}
-      </button>
-    </div>
-  </ng-container>
-
-  <!-- Preview failed entirely: only offer a way out -->
-  <div *ngIf="!loading && !preview" class="modal-actions">
-    <button class="btn" type="button" (click)="cancel()">Close</button>
   </div>
-
-</div>

@@ -15,13 +15,14 @@
   <div class="field">
     <label>Banner Hue</label>
     <div class="class-picker" style="grid-template-columns: repeat(5, 1fr);">
-      <button
-        *ngFor="let c of tints"
-        class="class-pick"
-        [class.active]="tint === c"
-        style="text-transform: capitalize;"
-        (click)="tint = c"
-      >{{ c }}</button>
+      @for (c of tints; track c) {
+        <button
+          class="class-pick"
+          [class.active]="tint === c"
+          style="text-transform: capitalize;"
+          (click)="tint = c"
+        >{{ c }}</button>
+      }
     </div>
   </div>
 
@@ -70,12 +71,18 @@
       <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · e.g. 3rd" maxlength="40">
       <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · e.g. Hammer" maxlength="40">
       <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · e.g. 1492 DR" maxlength="40">
-      <input *ngIf="!weekDays?.length"
-             [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
-      <select *ngIf="weekDays?.length" [(ngModel)]="startWeekday" aria-label="Weekday">
-        <option value="">Weekday…</option>
-        <option *ngFor="let d of weekDays" [value]="d">{{ d }}</option>
-      </select>
+      @if (!weekDays?.length) {
+        <input
+          [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
+      }
+      @if (weekDays?.length) {
+        <select [(ngModel)]="startWeekday" aria-label="Weekday">
+          <option value="">Weekday…</option>
+          @for (d of weekDays; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        </select>
+      }
     </div>
     <div class="modal-sub" style="margin-top: 4px;">
       Free text — any calendar works. The clock starts at morning of this day; the DM advances time

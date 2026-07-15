@@ -6,15 +6,17 @@
     </span>
   </div>
   <div class="currency">
-    <div *ngFor="let coin of coinTypes" class="coin {{ coin.key }}">
-      <div class="coin-amt numeric"><app-editable-number
-        [value]="coinAmt(coin.key)" [editable]="editable" [min]="0"
-        [intercept]="true" (editRequested)="requestCoin(coin.key)"
-        [label]="coin.label + ' coins'" (committed)="setCoin(coin.key, $event)"
-      >{{ coinAmt(coin.key) }}</app-editable-number></div>
-      <div class="coin-name" [title]="coin.label">
-        <span class="coin-name-full">{{ coin.label }}</span><span class="coin-name-abbr">{{ coin.key }}</span>
+    @for (coin of coinTypes; track coin) {
+      <div class="coin {{ coin.key }}">
+        <div class="coin-amt numeric"><app-editable-number
+          [value]="coinAmt(coin.key)" [editable]="editable" [min]="0"
+          [intercept]="true" (editRequested)="requestCoin(coin.key)"
+          [label]="coin.label + ' coins'" (committed)="setCoin(coin.key, $event)"
+        >{{ coinAmt(coin.key) }}</app-editable-number></div>
+        <div class="coin-name" [title]="coin.label">
+          <span class="coin-name-full">{{ coin.label }}</span><span class="coin-name-abbr">{{ coin.key }}</span>
+        </div>
       </div>
-    </div>
+    }
   </div>
 </div>

@@ -7,76 +7,85 @@
       class="chevron-btn"
       [attr.aria-expanded]="!collapsed"
       [attr.aria-label]="collapsed ? 'Expand spell references' : 'Collapse spell references'"
-    >
+      >
       <span class="chevron" [class.collapsed]="collapsed">▾</span>
     </button>
     <span class="carousel-title">Spells ({{ pinned.length }})</span>
   </div>
 
   <!-- Wrapping card row + trailing "+" silhouette; hidden while collapsed. -->
-  <div
-    class="card-row"
-    *ngIf="!collapsed"
-    cdkDropList
-    cdkDropListOrientation="horizontal"
-    (cdkDropListDropped)="drop($event)"
-  >
+  @if (!collapsed) {
     <div
-      class="spell-card"
-      *ngFor="let s of pinned; trackBy: trackByName"
-      cdkDrag
-      #cardEl
-      [class.is-focused]="focusedName === s.name"
-    >
-      <button type="button" class="card-remove" (click)="remove(s)" aria-label="Remove spell">×</button>
-      <span class="card-handle" cdkDragHandle title="Drag to reorder">⠿</span>
-
-      <div class="card-head">
-        <span class="card-name">{{ s.name }}</span>
-        <span class="card-sub">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school | titlecase }}</span>
-      </div>
-
-      <dl class="card-stats">
-        <div><dt>Casting Time</dt><dd>{{ (s.castingTime || s.actionType) | titlecase }}</dd></div>
-        <div><dt>Range</dt><dd>{{ s.range }}</dd></div>
-        <div><dt>Components</dt><dd>{{ componentLabel(s) }}</dd></div>
-        <div><dt>Duration</dt><dd>{{ s.concentration ? 'Concentration, ' : '' }}{{ s.duration }}</dd></div>
-      </dl>
-
-      <div class="card-tags" *ngIf="s.ritual || s.concentration">
-        <span class="tag" *ngIf="s.concentration">Concentration</span>
-        <span class="tag" *ngIf="s.ritual">Ritual</span>
-      </div>
-
-      <p class="card-desc">{{ s.description }}</p>
-      <p class="card-note" *ngIf="s.higherLevelSlot"><em>At Higher Levels.</em> {{ s.higherLevelSlot }}</p>
-      <p class="card-note" *ngIf="s.cantripUpgrade"><em>Cantrip Upgrade.</em> {{ s.cantripUpgrade }}</p>
+      class="card-row"
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="drop($event)"
+      >
+      @for (s of pinned; track trackByName($index, s)) {
+        <div
+          class="spell-card"
+          cdkDrag
+          #cardEl
+          [class.is-focused]="focusedName === s.name"
+          >
+          <button type="button" class="card-remove" (click)="remove(s)" aria-label="Remove spell">×</button>
+          <span class="card-handle" cdkDragHandle title="Drag to reorder">⠿</span>
+          <div class="card-head">
+            <span class="card-name">{{ s.name }}</span>
+            <span class="card-sub">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school | titlecase }}</span>
+          </div>
+          <dl class="card-stats">
+            <div><dt>Casting Time</dt><dd>{{ (s.castingTime || s.actionType) | titlecase }}</dd></div>
+            <div><dt>Range</dt><dd>{{ s.range }}</dd></div>
+            <div><dt>Components</dt><dd>{{ componentLabel(s) }}</dd></div>
+            <div><dt>Duration</dt><dd>{{ s.concentration ? 'Concentration, ' : '' }}{{ s.duration }}</dd></div>
+          </dl>
+          @if (s.ritual || s.concentration) {
+            <div class="card-tags">
+              @if (s.concentration) {
+                <span class="tag">Concentration</span>
+              }
+              @if (s.ritual) {
+                <span class="tag">Ritual</span>
+              }
+            </div>
+          }
+          <p class="card-desc">{{ s.description }}</p>
+          @if (s.higherLevelSlot) {
+            <p class="card-note"><em>At Higher Levels.</em> {{ s.higherLevelSlot }}</p>
+          }
+          @if (s.cantripUpgrade) {
+            <p class="card-note"><em>Cantrip Upgrade.</em> {{ s.cantripUpgrade }}</p>
+          }
+        </div>
+      }
+      <!-- Trailing silhouette: always the last item in the row. -->
+      <button type="button" class="add-silhouette" (click)="openSearch()" aria-label="Add a spell reference">
+        <span class="plus">+</span>
+        <span class="add-label">Add spell</span>
+      </button>
     </div>
-
-    <!-- Trailing silhouette: always the last item in the row. -->
-    <button type="button" class="add-silhouette" (click)="openSearch()" aria-label="Add a spell reference">
-      <span class="plus">+</span>
-      <span class="add-label">Add spell</span>
-    </button>
-  </div>
+  }
 
   <!-- Search overlay: reuses the shared spell picker; pinned = selected. -->
-  <div class="search-overlay" *ngIf="searchOpen">
-    <div class="search-backdrop" (click)="closeSearch()"></div>
-    <div class="search-panel">
-      <div class="search-panel-head">
-        <span class="search-panel-title">Add a spell reference</span>
-        <button type="button" class="btn sm" (click)="closeSearch()">Close</button>
+  @if (searchOpen) {
+    <div class="search-overlay">
+      <div class="search-backdrop" (click)="closeSearch()"></div>
+      <div class="search-panel">
+        <div class="search-panel-head">
+          <span class="search-panel-title">Add a spell reference</span>
+          <button type="button" class="btn sm" (click)="closeSearch()">Close</button>
+        </div>
+        <app-spell-picker
+          [spells]="allSpells"
+          [selected]="pinned"
+          [cantripLimit]="null"
+          [spellLimit]="null"
+          [loading]="loadingSpells"
+          (selectedChange)="onSelectionChange($event)"
+        ></app-spell-picker>
       </div>
-      <app-spell-picker
-        [spells]="allSpells"
-        [selected]="pinned"
-        [cantripLimit]="null"
-        [spellLimit]="null"
-        [loading]="loadingSpells"
-        (selectedChange)="onSelectionChange($event)"
-      ></app-spell-picker>
     </div>
-  </div>
+  }
 
 </div>

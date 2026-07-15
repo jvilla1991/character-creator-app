@@ -1,18 +1,18 @@
-<ng-container *ngIf="state$ | async as state; else loading">
+@if (state$ | async; as state) {
   <!-- Whole-device turn vignette: the viewport border glows green on the
-       viewer's own turn, gold when they're on deck. Driven by the same
-       per-viewer snapshot ids as the row glow, so a hidden enemy's turn never
-       lights a player's screen. pointer-events: none — purely ambient. -->
+  viewer's own turn, gold when they're on deck. Driven by the same
+  per-viewer snapshot ids as the row glow, so a hidden enemy's turn never
+  lights a player's screen. pointer-events: none — purely ambient. -->
   <div
     class="turn-vignette"
     [class.my-turn]="isMyTurn(state)"
     [class.on-deck]="!isMyTurn(state) && isMyOnDeck(state)"
   ></div>
   <div class="fade-in">
-
     <!-- DM-only: pinned spell reference cards, ephemeral for this session. -->
-    <app-spell-carousel *ngIf="state.dm"></app-spell-carousel>
-
+    @if (state.dm) {
+      <app-spell-carousel></app-spell-carousel>
+    }
     <!-- Header -->
     <header class="sheet-header" style="grid-template-columns: 1fr auto;">
       <div class="sheet-id">
@@ -23,264 +23,298 @@
         </div>
       </div>
       <div class="sheet-actions">
-        <button
-          *ngIf="!state.dm && state.status === 'ACTIVE' && isMyTurn(state)"
-          class="btn primary"
-          (click)="advanceTurn(state)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M3 8h10M9 4l4 4-4 4"/>
-          </svg>
-          End Turn
-        </button>
-        <button
-          *ngIf="state.dm"
-          class="btn danger"
-          (click)="endSession(state)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <rect x="3" y="3" width="10" height="10" rx="1"/>
-          </svg>
-          End Session
-        </button>
-        <button
-          *ngIf="!state.dm && myParticipantId(state) != null"
-          class="btn"
-          (click)="leave(state)"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6"/>
-          </svg>
-          Leave
-        </button>
+        @if (!state.dm && state.status === 'ACTIVE' && isMyTurn(state)) {
+          <button
+            class="btn primary"
+            (click)="advanceTurn(state)"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+            End Turn
+          </button>
+        }
+        @if (state.dm) {
+          <button
+            class="btn danger"
+            (click)="endSession(state)"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <rect x="3" y="3" width="10" height="10" rx="1"/>
+            </svg>
+            End Session
+          </button>
+        }
+        @if (!state.dm && myParticipantId(state) != null) {
+          <button
+            class="btn"
+            (click)="leave(state)"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6"/>
+            </svg>
+            Leave
+          </button>
+        }
         <button class="btn" (click)="close()">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-               style="margin-right: 6px; vertical-align: -2px;">
+            style="margin-right: 6px; vertical-align: -2px;">
             <path d="M4 4l8 8M12 4l-8 8"/>
           </svg>
           Close
         </button>
       </div>
     </header>
-
     <!-- Clock + location share one row for the DM; players (no location panel)
-         get the clock full width. Stacks on narrow screens. -->
+    get the clock full width. Stacks on narrow screens. -->
     <div class="clock-location-row" [class.two-up]="state.dm">
-    <!-- The campaign clock: visible to everyone; only the DM moves time. -->
-    <div class="panel">
-      <div class="panel-header" style="margin-bottom: 0;">
-        <span class="panel-title">Campaign Clock</span>
-        <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-          {{ describeTime(state) }}
-        </span>
-      </div>
-      <div *ngIf="state.dm" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
-        <button class="btn primary" (click)="advanceTime(state)"
-                [title]="survivalConditions ? 'Time passes: the party eats its supplies; hunger, thirst and fatigue shift' : 'Moves the in-world clock'">
-          {{ advanceTimeLabel(state) }}
-        </button>
-        <button class="btn" (click)="toggleTimeEdit(state)">
-          {{ editingTime ? 'Cancel' : 'Set date' }}
-        </button>
-        <button class="btn" (click)="openLongRest()"
-                title="Rest the party: recover spell slots and (in survival campaigns) shed fatigue">
-          Long Rest
-        </button>
-      </div>
-      <div *ngIf="state.dm && editingTime"
-           style="display: grid; gap: 8px; margin-top: 10px; align-items: center;"
-           [style.grid-template-columns]="state.weekDays?.length ? 'repeat(6, 1fr) auto' : 'repeat(5, 1fr) auto'">
-        <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
-        <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
-        <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
-        <input *ngIf="!state.weekDays?.length"
-               [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
-               title="Free text. Re-entering a weekday you have used before marks a completed week.">
-        <!-- The empty option keeps an out-of-list current weekday (definition
-             edited mid-campaign) from being silently coerced to a defined day. -->
-        <select *ngIf="state.weekDays?.length" [(ngModel)]="timeWeekday" aria-label="Weekday"
+      <!-- The campaign clock: visible to everyone; only the DM moves time. -->
+      <div class="panel">
+        <div class="panel-header" style="margin-bottom: 0;">
+          <span class="panel-title">Campaign Clock</span>
+          <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+            {{ describeTime(state) }}
+          </span>
+        </div>
+        @if (state.dm) {
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+            <button class="btn primary" (click)="advanceTime(state)"
+              [title]="survivalConditions ? 'Time passes: the party eats its supplies; hunger, thirst and fatigue shift' : 'Moves the in-world clock'">
+              {{ advanceTimeLabel(state) }}
+            </button>
+            <button class="btn" (click)="toggleTimeEdit(state)">
+              {{ editingTime ? 'Cancel' : 'Set date' }}
+            </button>
+            <button class="btn" (click)="openLongRest()"
+              title="Rest the party: recover spell slots and (in survival campaigns) shed fatigue">
+              Long Rest
+            </button>
+          </div>
+        }
+        @if (state.dm && editingTime) {
+          <div
+            style="display: grid; gap: 8px; margin-top: 10px; align-items: center;"
+            [style.grid-template-columns]="state.weekDays?.length ? 'repeat(6, 1fr) auto' : 'repeat(5, 1fr) auto'">
+            <input [(ngModel)]="timeDay" placeholder="Day · e.g. 3rd" maxlength="40" aria-label="Day">
+            <input [(ngModel)]="timeMonth" placeholder="Month · e.g. Hammer" maxlength="40" aria-label="Month">
+            <input [(ngModel)]="timeYear" placeholder="Year · e.g. 1492 DR" maxlength="40" aria-label="Year">
+            @if (!state.weekDays?.length) {
+              <input
+                [(ngModel)]="timeWeekday" placeholder="Weekday" maxlength="40" aria-label="Weekday"
+                title="Free text. Re-entering a weekday you have used before marks a completed week.">
+            }
+            <!-- The empty option keeps an out-of-list current weekday (definition
+            edited mid-campaign) from being silently coerced to a defined day. -->
+            @if (state.weekDays?.length) {
+              <select [(ngModel)]="timeWeekday" aria-label="Weekday"
                 title="One of the campaign's defined days. Advancing past night walks it automatically.">
-          <option value="">Weekday…</option>
-          <option *ngFor="let d of state.weekDays" [value]="d">{{ d }}</option>
-        </select>
-        <input *ngIf="state.weekDays?.length" type="number" min="1"
-               [(ngModel)]="timeWeek" placeholder="Week" aria-label="Week"
-               title="The week counter. Wrapping past the last defined day bumps it automatically.">
-        <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
-          <option *ngFor="let s of timeSegments" [value]="s">{{ s }}</option>
-        </select>
-        <button class="btn primary" (click)="commitTime(state)">Set</button>
+                <option value="">Weekday…</option>
+                @for (d of state.weekDays; track d) {
+                  <option [value]="d">{{ d }}</option>
+                }
+              </select>
+            }
+            @if (state.weekDays?.length) {
+              <input type="number" min="1"
+                [(ngModel)]="timeWeek" placeholder="Week" aria-label="Week"
+                title="The week counter. Wrapping past the last defined day bumps it automatically.">
+            }
+            <select [(ngModel)]="timeSegment" aria-label="Time of day" style="text-transform: capitalize;">
+              @for (s of timeSegments; track s) {
+                <option [value]="s">{{ s }}</option>
+              }
+            </select>
+            <button class="btn primary" (click)="commitTime(state)">Set</button>
+          </div>
+        }
       </div>
+      <!-- Party location: DM-only here (players see it on their own sheet, next to
+      the XP bar). This panel is the DM's control to set it. -->
+      @if (state.dm) {
+        <div class="panel">
+          <div class="panel-header" style="margin-bottom: 0;">
+            <span class="panel-title">Party Location</span>
+            <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+              {{ describeLocation(state) }}
+            </span>
+          </div>
+          @if (state.dm) {
+            <div style="margin-top: 10px;">
+              <button class="btn" (click)="toggleLocationEdit(state)">
+                {{ editingLocation ? 'Cancel' : 'Set location' }}
+              </button>
+            </div>
+          }
+          @if (state.dm && editingLocation) {
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 10px; align-items: center;">
+              <input [(ngModel)]="locationName" placeholder="Location name · e.g. Neverwinter" maxlength="60" aria-label="Location name">
+              <select [(ngModel)]="locationType" aria-label="Location type">
+                @for (t of locationTypes; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+              <button class="btn primary" (click)="commitLocation(state)">Set</button>
+            </div>
+          }
+        </div>
+      }
     </div>
-
-    <!-- Party location: DM-only here (players see it on their own sheet, next to
-         the XP bar). This panel is the DM's control to set it. -->
-    <div *ngIf="state.dm" class="panel">
-      <div class="panel-header" style="margin-bottom: 0;">
-        <span class="panel-title">Party Location</span>
-        <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-          {{ describeLocation(state) }}
-        </span>
+    <!-- Players see the tracker only during an encounter: it appears at Start
+    Encounter and disappears at End Encounter (status back to LOBBY).
+    The DM always sees it (it hosts their setup controls). -->
+    @if (state.dm && (state.status === 'LOBBY' || state.status === 'ACTIVE')) {
+      <div class="turn-controls-row">
+        @if (state.status === 'LOBBY') {
+          <button
+            class="btn primary"
+            (click)="startEncounter(state)"
+            [disabled]="!state.participants.length"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M4 2l9 6-9 6V2z"/>
+            </svg>
+            Start Encounter
+          </button>
+        }
+        @if (state.status === 'ACTIVE') {
+          <button
+            class="btn primary"
+            style="flex: 2;"
+            (click)="advanceTurn(state)"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+            Next Turn
+          </button>
+        }
+        @if (state.status === 'ACTIVE') {
+          <button
+            class="btn"
+            style="flex: 1;"
+            (click)="endEncounter(state)"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <rect x="4" y="4" width="8" height="8" rx="1"/>
+            </svg>
+            End Encounter
+          </button>
+        }
       </div>
-      <div *ngIf="state.dm" style="margin-top: 10px;">
-        <button class="btn" (click)="toggleLocationEdit(state)">
-          {{ editingLocation ? 'Cancel' : 'Set location' }}
+    }
+    @if (showInitiative(state)) {
+      <app-initiative-panel
+        [participants]="state.participants"
+        [sessionId]="state.sessionId"
+        [dm]="state.dm"
+        [status]="state.status"
+        [activeParticipantId]="state.activeParticipantId"
+        [onDeckParticipantId]="state.onDeckParticipantId"
+        [enemiesHidden]="state.enemiesHidden"
+        [enemyHpHidden]="state.enemyHpHidden"
+        [turnSound]="state.turnSound"
+        [survivalConditions]="survivalConditions"
+        (openPc)="openPcSheet($event)"
+      ></app-initiative-panel>
+    }
+    <!-- Player: opens the dice modal wired to this live session so rolls stream to the DM. -->
+    @if (!state.dm && myPc(state); as pc) {
+      <div class="roll-launch">
+        <button class="btn primary" style="width: 100%;" (click)="openRoll(pc)">
+          Roll
         </button>
       </div>
-      <div *ngIf="state.dm && editingLocation"
-           style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 10px; align-items: center;">
-        <input [(ngModel)]="locationName" placeholder="Location name · e.g. Neverwinter" maxlength="60" aria-label="Location name">
-        <select [(ngModel)]="locationType" aria-label="Location type">
-          <option *ngFor="let t of locationTypes" [value]="t">{{ t }}</option>
-        </select>
-        <button class="btn primary" (click)="commitLocation(state)">Set</button>
-      </div>
-    </div>
-    </div>
-
-    <!-- Players see the tracker only during an encounter: it appears at Start
-         Encounter and disappears at End Encounter (status back to LOBBY).
-         The DM always sees it (it hosts their setup controls). -->
-    <div *ngIf="state.dm && (state.status === 'LOBBY' || state.status === 'ACTIVE')" class="turn-controls-row">
-      <button
-        *ngIf="state.status === 'LOBBY'"
-        class="btn primary"
-        (click)="startEncounter(state)"
-        [disabled]="!state.participants.length"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M4 2l9 6-9 6V2z"/>
-        </svg>
-        Start Encounter
-      </button>
-      <button
-        *ngIf="state.status === 'ACTIVE'"
-        class="btn primary"
-        style="flex: 2;"
-        (click)="advanceTurn(state)"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M3 8h10M9 4l4 4-4 4"/>
-        </svg>
-        Next Turn
-      </button>
-      <button
-        *ngIf="state.status === 'ACTIVE'"
-        class="btn"
-        style="flex: 1;"
-        (click)="endEncounter(state)"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <rect x="4" y="4" width="8" height="8" rx="1"/>
-        </svg>
-        End Encounter
-      </button>
-    </div>
-    <app-initiative-panel
-      *ngIf="showInitiative(state)"
-      [participants]="state.participants"
-      [sessionId]="state.sessionId"
-      [dm]="state.dm"
-      [status]="state.status"
-      [activeParticipantId]="state.activeParticipantId"
-      [onDeckParticipantId]="state.onDeckParticipantId"
-      [enemiesHidden]="state.enemiesHidden"
-      [enemyHpHidden]="state.enemyHpHidden"
-      [turnSound]="state.turnSound"
-      [survivalConditions]="survivalConditions"
-      (openPc)="openPcSheet($event)"
-    ></app-initiative-panel>
-
-    <!-- Player: opens the dice modal wired to this live session so rolls stream to the DM. -->
-    <div *ngIf="!state.dm && myPc(state) as pc" class="roll-launch">
-      <button class="btn primary" style="width: 100%;" (click)="openRoll(pc)">
-        Roll
-      </button>
-    </div>
-
+    }
     <!-- Roll Log: server already filtered (DM sees all, player sees own) — shown to both. -->
     <app-roll-log-panel [rolls]="state.rolls" [dm]="state.dm"></app-roll-log-panel>
-
     <!-- DM-only (gated inside the component): load a curated encounter into the order. -->
     <app-encounter-loader [state]="state"></app-encounter-loader>
-
     <app-shop-panel [state]="state"></app-shop-panel>
     <!-- Post-combat loot: DM drafts/drops a pool; players claim from it. -->
     <app-loot-panel [state]="state"></app-loot-panel>
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
-    <div *ngIf="state.dm" class="panel session-note">
-      <div class="panel-header">
-        <span class="panel-title">Session Note</span>
+    @if (state.dm) {
+      <div class="panel session-note">
+        <div class="panel-header">
+          <span class="panel-title">Session Note</span>
+        </div>
+        <div class="note-compose">
+          <textarea
+            [(ngModel)]="noteDraft"
+            rows="2"
+            placeholder="Log a ruling, a roll, or a moment from this session…"
+            (keydown.control.enter)="addNote(state)"
+          ></textarea>
+          <button class="btn primary" [disabled]="!noteDraft.trim() || savingNote" (click)="addNote(state)">Add Note</button>
+        </div>
+        @if (noteSaved) {
+          <div class="note-saved">Saved to the campaign log.</div>
+        }
       </div>
-      <div class="note-compose">
-        <textarea
-          [(ngModel)]="noteDraft"
-          rows="2"
-          placeholder="Log a ruling, a roll, or a moment from this session…"
-          (keydown.control.enter)="addNote(state)"
-        ></textarea>
-        <button class="btn primary" [disabled]="!noteDraft.trim() || savingNote" (click)="addNote(state)">Add Note</button>
-      </div>
-      <div *ngIf="noteSaved" class="note-saved">Saved to the campaign log.</div>
-    </div>
-
+    }
     <!-- Player: their own character sheet (read-only) for reference at the table -->
-    <ng-container *ngIf="!state.dm && myPc(state) as pc">
+    @if (!state.dm && myPc(state); as pc) {
       <div class="eyebrow" style="margin: 24px 0 8px;">Your Character</div>
       <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
-                           [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
-                           [slotInventory]="slotInventory"
-                           [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
-                           [location]="state.location"
-                           [sessionLive]="true"
-                           (castRequested)="onCast($event, state)"
-                           (survivalActionRequested)="onSurvivalAction($event, state)"
-                           (sellRequested)="sell($event, state)"></app-character-sheet>
-    </ng-container>
-
+        [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
+        [slotInventory]="slotInventory"
+        [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
+        [location]="state.location"
+        [sessionLive]="true"
+        (castRequested)="onCast($event, state)"
+        (survivalActionRequested)="onSurvivalAction($event, state)"
+      (sellRequested)="sell($event, state)"></app-character-sheet>
+    }
     <!-- Long rest modal (DM): was the rest undisturbed? -->
-    <div *ngIf="state.dm && longRestModalOpen" class="modal-backdrop" (click)="cancelLongRest()">
-      <div class="panel" style="max-width: 420px;" (click)="$event.stopPropagation()">
-        <div class="panel-header"><span class="panel-title">Long Rest</span></div>
-        <p>The party settles in to rest — spell slots recover for everyone.
-          <ng-container *ngIf="survivalConditions">Was the rest undisturbed?</ng-container>
-        </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
-          <button class="btn primary" (click)="confirmLongRest(true, state)">
-            {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
-          </button>
-          <button *ngIf="survivalConditions" class="btn" (click)="confirmLongRest(false, state)">
-            Disturbed (−1 fatigue)
-          </button>
-          <button class="btn" (click)="cancelLongRest()">Cancel</button>
+    @if (state.dm && longRestModalOpen) {
+      <div class="modal-backdrop" (click)="cancelLongRest()">
+        <div class="panel" style="max-width: 420px;" (click)="$event.stopPropagation()">
+          <div class="panel-header"><span class="panel-title">Long Rest</span></div>
+          <p>The party settles in to rest — spell slots recover for everyone.
+            @if (survivalConditions) {
+              Was the rest undisturbed?
+            }
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+            <button class="btn primary" (click)="confirmLongRest(true, state)">
+              {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
+            </button>
+            @if (survivalConditions) {
+              <button class="btn" (click)="confirmLongRest(false, state)">
+                Disturbed (−1 fatigue)
+              </button>
+            }
+            <button class="btn" (click)="cancelLongRest()">Cancel</button>
+          </div>
         </div>
       </div>
-    </div>
-
+    }
     <!-- Player Roll modal: wired to this live session so a settled roll logs to the DM. -->
-    <div *ngIf="rollModalOpen && rollPc" class="modal-backdrop" (click)="closeRoll()">
-      <app-dice-roller-modal
-        [pc]="rollPc"
-        [sessionId]="state.sessionId"
-        [participantId]="myParticipantId(state)"
-        (click)="$event.stopPropagation()"
-        (close)="closeRoll()">
-      </app-dice-roller-modal>
-    </div>
+    @if (rollModalOpen && rollPc) {
+      <div class="modal-backdrop" (click)="closeRoll()">
+        <app-dice-roller-modal
+          [pc]="rollPc"
+          [sessionId]="state.sessionId"
+          [participantId]="myParticipantId(state)"
+          (click)="$event.stopPropagation()"
+          (close)="closeRoll()">
+        </app-dice-roller-modal>
+      </div>
+    }
   </div>
-</ng-container>
-
-<ng-template #loading>
+} @else {
   <div class="empty">
     <div>
       <div class="empty-title">Summoning the initiative order…</div>
       <div class="empty-sub">Reaching the table.</div>
     </div>
   </div>
-</ng-template>
+}
+

@@ -3,22 +3,28 @@
     <span class="panel-title">Supplies</span>
   </div>
 
-  <div *ngFor="let row of rows" class="supply-row">
-    <span class="supply-name">{{ row.label }}</span>
-    <span class="supply-track">
-      <span *ngFor="let pip of row.pips" class="supply-pip"
-            [class.full]="pip.filled"></span>
-    </span>
-    <span class="supply-count numeric"
-          [title]="row.label + ': ' + row.charges + ' of ' + row.capacity + ' servings — each container holds 5'">
-      {{ row.charges }}/{{ row.capacity }}
-    </span>
-    <span *ngIf="editable" class="supply-steppers">
-      <button type="button" class="btn" [disabled]="row.charges <= 0"
-              (click)="adjust(row.key, -1)" [attr.aria-label]="'Use one ' + row.label">−</button>
-      <button type="button" class="btn" [disabled]="row.charges >= row.capacity"
-              [title]="row.charges >= row.capacity ? 'At capacity — buy another container to carry more' : ''"
-              (click)="adjust(row.key, 1)" [attr.aria-label]="'Restock ' + row.label">+</button>
-    </span>
-  </div>
+  @for (row of rows; track row) {
+    <div class="supply-row">
+      <span class="supply-name">{{ row.label }}</span>
+      <span class="supply-track">
+        @for (pip of row.pips; track pip) {
+          <span class="supply-pip"
+          [class.full]="pip.filled"></span>
+        }
+      </span>
+      <span class="supply-count numeric"
+        [title]="row.label + ': ' + row.charges + ' of ' + row.capacity + ' servings — each container holds 5'">
+        {{ row.charges }}/{{ row.capacity }}
+      </span>
+      @if (editable) {
+        <span class="supply-steppers">
+          <button type="button" class="btn" [disabled]="row.charges <= 0"
+          (click)="adjust(row.key, -1)" [attr.aria-label]="'Use one ' + row.label">−</button>
+          <button type="button" class="btn" [disabled]="row.charges >= row.capacity"
+            [title]="row.charges >= row.capacity ? 'At capacity — buy another container to carry more' : ''"
+          (click)="adjust(row.key, 1)" [attr.aria-label]="'Restock ' + row.label">+</button>
+        </span>
+      }
+    </div>
+  }
 </div>

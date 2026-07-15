@@ -10,78 +10,84 @@
           <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="0.4" opacity="0.3"/>
           <path d="M40 4v72M4 40h72M12 12l56 56M68 12L12 68" stroke="currentColor" stroke-width="0.6" opacity="0.7"/>
           <polygon points="40,22 44,36 58,36 47,45 51,59 40,50 29,59 33,45 22,36 36,36"
-                   stroke="currentColor" stroke-width="0.6" fill="none" opacity="0.8"/>
-        </svg>
-      </div>
-      <div class="login-brand-name">Table Mimic</div>
-      <div class="login-brand-sub">Arcane Character Compendium</div>
-    </div>
-
-    <div class="login-divider"></div>
-
-    <!-- Form -->
-    <form (ngSubmit)="login()" #loginForm="ngForm">
-      <div class="field">
-        <label for="username">Username</label>
-        <input
-          type="text"
-          id="username"
-          [(ngModel)]="userName"
-          name="username"
-          required
-          placeholder="Enter your username"
-          autocomplete="username"
-          (keydown.enter)="login()">
+            stroke="currentColor" stroke-width="0.6" fill="none" opacity="0.8"/>
+          </svg>
+        </div>
+        <div class="login-brand-name">Table Mimic</div>
+        <div class="login-brand-sub">Arcane Character Compendium</div>
       </div>
 
-      <div class="field">
-        <label for="password">Password</label>
-        <div class="input-reveal">
+      <div class="login-divider"></div>
+
+      <!-- Form -->
+      <form (ngSubmit)="login()" #loginForm="ngForm">
+        <div class="field">
+          <label for="username">Username</label>
           <input
-            [type]="showPassword ? 'text' : 'password'"
-            id="password"
-            [(ngModel)]="password"
-            name="password"
+            type="text"
+            id="username"
+            [(ngModel)]="userName"
+            name="username"
             required
-            placeholder="Enter your password"
-            autocomplete="current-password">
-          <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
+            placeholder="Enter your username"
+            autocomplete="username"
+            (keydown.enter)="login()">
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="input-reveal">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                [(ngModel)]="password"
+                name="password"
+                required
+                placeholder="Enter your password"
+                autocomplete="current-password">
+                <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
                   [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
-            <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
-              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
+                  @if (!showPassword) {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  }
+                  @if (showPassword) {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            </div>
+
+            @if (errorMessage) {
+              <div class="login-error">
+                {{ errorMessage }}
+              </div>
+            }
+
+            <button
+              type="submit"
+              class="btn primary login-submit"
+              [disabled]="loginForm.invalid">
+              Enter the Vault
+            </button>
+          </form>
+
+          <div class="auth-or"><span>or</span></div>
+
+          <button type="button" class="btn demo-submit" (click)="enterDemo()">
+            Enter in Demo Mode
           </button>
+
+          <div class="auth-footer">
+            New to Table Mimic?
+            <a routerLink="/register" class="auth-link">Create an account</a>
+          </div>
+
         </div>
       </div>
-
-      <div class="login-error" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
-
-      <button
-        type="submit"
-        class="btn primary login-submit"
-        [disabled]="loginForm.invalid">
-        Enter the Vault
-      </button>
-    </form>
-
-    <div class="auth-or"><span>or</span></div>
-
-    <button type="button" class="btn demo-submit" (click)="enterDemo()">
-      Enter in Demo Mode
-    </button>
-
-    <div class="auth-footer">
-      New to Table Mimic?
-      <a routerLink="/register" class="auth-link">Create an account</a>
-    </div>
-
-  </div>
-</div>

@@ -133,7 +133,4 @@ export class WeekDaysEditorComponent implements OnChanges {
     this.valueChange.emit(days);
   }
 
-  trackByIndex(index: number): number {
-    return index;
-  }
 }

@@ -14,20 +14,23 @@
     #palette="cdkDropList"
     [cdkDropListConnectedTo]="[arena]"
     [cdkDropListSortingDisabled]="true">
-    <button
-      *ngFor="let sides of dieTypes"
-      type="button"
-      class="palette-die"
-      [attr.data-die]="'d' + sides"
-      cdkDrag
-      [cdkDragData]="sides"
-      (click)="addDie(sides)"
-      title="Add a d{{ sides }} (or drag it down into the field)">
-      <span class="die-shape" [attr.data-die]="'d' + sides">
-        <span class="die-label">d{{ sides }}</span>
-      </span>
-      <span class="die-count" *ngIf="countOf(sides) as n">{{ n }}</span>
-    </button>
+    @for (sides of dieTypes; track sides) {
+      <button
+        type="button"
+        class="palette-die"
+        [attr.data-die]="'d' + sides"
+        cdkDrag
+        [cdkDragData]="sides"
+        (click)="addDie(sides)"
+        title="Add a d{{ sides }} (or drag it down into the field)">
+        <span class="die-shape" [attr.data-die]="'d' + sides">
+          <span class="die-label">d{{ sides }}</span>
+        </span>
+        @if (countOf(sides); as n) {
+          <span class="die-count">{{ n }}</span>
+        }
+      </button>
+    }
   </div>
 
   <!-- ── Arena: the rolling field (drop target) ───────────────────────────── -->
@@ -39,13 +42,15 @@
     (cdkDropListDropped)="onDrop($event)">
     <span class="arena-ceiling"></span>
 
-    <p class="arena-hint" *ngIf="staged.length === 0">
-      Your dice field is empty — drag dice here.
-    </p>
+    @if (staged.length === 0) {
+      <p class="arena-hint">
+        Your dice field is empty — drag dice here.
+      </p>
+    }
 
     <!-- Resting / flying dice live on the shelf at the bottom of the arena.
-         The shelf itself is the grab target: drag to reposition (clamped to
-         the arena), release with a flick to throw. Tap, Enter, or Space rolls. -->
+    The shelf itself is the grab target: drag to reposition (clamped to
+    the arena), release with a flick to throw. Tap, Enter, or Space rolls. -->
     <div
       class="dice-shelf"
       #shelfEl
@@ -61,39 +66,44 @@
       (pointercancel)="onClusterPointerCancel()"
       (keydown.enter)="throwButton()"
       (keydown.space)="throwButton()">
-      <span
-        *ngFor="let d of staged; trackBy: trackById"
-        class="arena-die"
-        [class.flying]="phase === 'rolling'"
-        [class.landed]="phase === 'result'"
-        [attr.data-die]="'d' + d.sides"
-        [style.--dx.px]="d.dx"
-        [style.--peak.px]="d.peak"
-        [style.--rest.px]="d.rest"
-        [style.--spin.deg]="d.spin"
-        [style.--delay.ms]="d.delay"
-        title="d{{ d.sides }}">
-        <span class="die-shape" [attr.data-die]="'d' + d.sides">
-          <span class="die-face">{{ d.display }}</span>
+      @for (d of staged; track trackById($index, d)) {
+        <span
+          class="arena-die"
+          [class.flying]="phase === 'rolling'"
+          [class.landed]="phase === 'result'"
+          [attr.data-die]="'d' + d.sides"
+          [style.--dx.px]="d.dx"
+          [style.--peak.px]="d.peak"
+          [style.--rest.px]="d.rest"
+          [style.--spin.deg]="d.spin"
+          [style.--delay.ms]="d.delay"
+          title="d{{ d.sides }}">
+          <span class="die-shape" [attr.data-die]="'d' + d.sides">
+            <span class="die-face">{{ d.display }}</span>
+          </span>
         </span>
-      </span>
+      }
     </div>
   </div>
 
   <!-- ── Result readout ───────────────────────────────────────────────────── -->
-  <div class="dice-result" *ngIf="phase === 'result'">
-    <div class="result-total">
-      <span class="result-total-num">{{ grandTotal }}</span>
-      <span class="result-total-label">Total</span>
-    </div>
-    <div class="result-breakdown">
-      <div class="breakdown-row" *ngFor="let row of breakdown">
-        <span class="breakdown-label">{{ row.label }}</span>
-        <span class="breakdown-rolls">{{ row.rolls.join(', ') }}</span>
-        <span class="breakdown-sub">{{ row.subtotal }}</span>
+  @if (phase === 'result') {
+    <div class="dice-result">
+      <div class="result-total">
+        <span class="result-total-num">{{ grandTotal }}</span>
+        <span class="result-total-label">Total</span>
+      </div>
+      <div class="result-breakdown">
+        @for (row of breakdown; track row) {
+          <div class="breakdown-row">
+            <span class="breakdown-label">{{ row.label }}</span>
+            <span class="breakdown-rolls">{{ row.rolls.join(', ') }}</span>
+            <span class="breakdown-sub">{{ row.subtotal }}</span>
+          </div>
+        }
       </div>
     </div>
-  </div>
+  }
 
   <!-- ── Throw bar: Clear + the keyboard/click Roll fallback ──────────────── -->
   <div class="dice-throwbar">

@@ -15,49 +15,57 @@ import { CampaignDraft } from './models/campaign';
     selector: 'app-charactermanager-app',
     template: `
     <app-sidenav [pcs]="pcs"></app-sidenav>
-
+    
     <!-- Create-character overlay — position: fixed, inset 0, blurred backdrop -->
-    <div *ngIf="isCreateModalOpen"
-         class="modal-backdrop"
-         (click)="closeCreate()">
-      <app-create-character-modal
-        (click)="$event.stopPropagation()"
-        (confirm)="onCreate($event)"
-        (close)="closeCreate()">
-      </app-create-character-modal>
-    </div>
-
+    @if (isCreateModalOpen) {
+      <div
+        class="modal-backdrop"
+        (click)="closeCreate()">
+        <app-create-character-modal
+          (click)="$event.stopPropagation()"
+          (confirm)="onCreate($event)"
+          (close)="closeCreate()">
+        </app-create-character-modal>
+      </div>
+    }
+    
     <!-- Create-campaign overlay (DM mode) -->
-    <div *ngIf="isCampaignModalOpen"
-         class="modal-backdrop"
-         (click)="closeCampaign()">
-      <app-create-campaign-modal
-        (confirm)="onCreateCampaign($event)"
-        (close)="closeCampaign()">
-      </app-create-campaign-modal>
-    </div>
-
+    @if (isCampaignModalOpen) {
+      <div
+        class="modal-backdrop"
+        (click)="closeCampaign()">
+        <app-create-campaign-modal
+          (confirm)="onCreateCampaign($event)"
+          (close)="closeCampaign()">
+        </app-create-campaign-modal>
+      </div>
+    }
+    
     <!-- Join-campaign overlay (player mode) -->
-    <div *ngIf="isJoinModalOpen"
-         class="modal-backdrop"
-         (click)="closeJoin()">
-      <app-join-campaign-modal
-        [consent]="joinConsent"
-        [error]="joinError"
-        [preselectPcId]="joinPreselectPcId"
-        (confirm)="onJoin($event)"
-        (acceptConsent)="joinModal.acceptConsent()"
-        (declineConsent)="joinModal.declineConsent()"
-        (close)="closeJoin()">
-      </app-join-campaign-modal>
-    </div>
-
+    @if (isJoinModalOpen) {
+      <div
+        class="modal-backdrop"
+        (click)="closeJoin()">
+        <app-join-campaign-modal
+          [consent]="joinConsent"
+          [error]="joinError"
+          [preselectPcId]="joinPreselectPcId"
+          (confirm)="onJoin($event)"
+          (acceptConsent)="joinModal.acceptConsent()"
+          (declineConsent)="joinModal.declineConsent()"
+          (close)="closeJoin()">
+        </app-join-campaign-modal>
+      </div>
+    }
+    
     <!-- Settings slide-over (its own fixed backdrop + panel) -->
-    <app-settings-panel *ngIf="isSettingsOpen"></app-settings-panel>
-
+    @if (isSettingsOpen) {
+      <app-settings-panel></app-settings-panel>
+    }
+    
     <!-- App-wide transient notifications (e.g. the DM ended the session) -->
     <app-toast></app-toast>
-  `,
+    `,
     styles: [],
     standalone: false
 })
