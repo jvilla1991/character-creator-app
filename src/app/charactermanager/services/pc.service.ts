@@ -488,15 +488,15 @@ export class PCService {
    * Public hook so other services (e.g. CampaignService member projections)
    * can reuse the flat backend → nested PC mapping.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deserialize(raw: any): PC {
+  deserialize(raw: unknown): PC {
     return this.deserializePC(raw);
   }
 
   /** Reconstruct a full PC from the flat backend representation. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private deserializePC(raw: any): PC {
-    const pc = raw as any;
+  private deserializePC(raw: unknown): PC {
+    // The wire row is PC-shaped plus the flat backend columns (species,
+    // abilityStr, hpCurrent, …) folded in below via bracket access.
+    const pc = raw as PC & Record<string, unknown>;
     return {
       ...pc,
       race: (pc['species'] as string) ?? pc.race,

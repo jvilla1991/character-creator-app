@@ -23,7 +23,7 @@ export interface CuratedShopItem {
   priceOverrideCp: number | null; // null = inherit catalog price
   effectiveCostCp: number;        // what buyers pay
   weight?: number | null;
-  details: { [key: string]: any };
+  details: { [key: string]: unknown };
 }
 
 export interface CuratedShop {

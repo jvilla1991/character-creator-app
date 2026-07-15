@@ -42,7 +42,7 @@ export class SettingsPanelComponent {
   ) {}
 
   /** Background tint for the header portrait, reusing the shared util. */
-  get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
+  get userTint(): string { return tintFor({ portraitTint: this.user.tint }); }
 
   close(): void { this.uiState.closeSettings(); }
 

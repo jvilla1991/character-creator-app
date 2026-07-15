@@ -293,25 +293,25 @@ export class CampaignService {
   }
 
   /** Backend row → frontend Campaign (id→string, nextSession→next, threads parse). */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private deserialize(raw: any): Campaign {
+  private deserialize(raw: unknown): Campaign {
+    const dto = raw as CampaignDto;
     return {
-      id: String(raw.id),
-      name: raw.name,
-      party: raw.party ?? raw.name,
-      setting: raw.setting ?? '',
-      session: raw.session ?? 1,
-      next: raw.nextSession ?? 'Unscheduled',
-      arc: raw.arc ?? '',
-      tint: raw.tint ?? 'celestial',
-      chronicle: raw.chronicle ?? '',
-      secrets: raw.secrets ?? '',
-      threads: this.parseThreads(raw.threads),
-      inviteCode: raw.inviteCode ?? undefined,
-      variantRules: this.parseVariantRules(raw.variantRules),
-      gameTime: this.parseGameTime(raw.gameTime),
-      location: this.parseLocation(raw.location),
-      weekDays: this.parseWeekDays(raw.weekDays),
+      id: String(dto.id),
+      name: dto.name,
+      party: dto.party ?? dto.name,
+      setting: dto.setting ?? '',
+      session: dto.session ?? 1,
+      next: dto.nextSession ?? 'Unscheduled',
+      arc: dto.arc ?? '',
+      tint: dto.tint ?? 'celestial',
+      chronicle: dto.chronicle ?? '',
+      secrets: dto.secrets ?? '',
+      threads: this.parseThreads(dto.threads),
+      inviteCode: dto.inviteCode ?? undefined,
+      variantRules: this.parseVariantRules(dto.variantRules),
+      gameTime: this.parseGameTime(dto.gameTime),
+      location: this.parseLocation(dto.location),
+      weekDays: this.parseWeekDays(dto.weekDays),
     };
   }
 
@@ -538,13 +538,13 @@ export class CampaignService {
     return this.http.delete<void>(`${this.campaignUrl}/${campaignId}/notes/${noteId}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private deserializeNote(raw: any): SessionNote {
+  private deserializeNote(raw: unknown): SessionNote {
+    const dto = raw as SessionNoteDto;
     return {
-      id: raw.id,
-      body: raw.body ?? '',
-      createdAt: raw.createdAt ?? new Date().toISOString(),
-      sessionId: raw.sessionId ?? null,
+      id: dto.id,
+      body: dto.body ?? '',
+      createdAt: dto.createdAt ?? new Date().toISOString(),
+      sessionId: dto.sessionId ?? null,
     };
   }
 
@@ -565,4 +565,35 @@ export class CampaignService {
       // Storage unavailable — keep in-memory only.
     }
   }
+}
+
+// --- wire DTOs --------------------------------------------------------------
+
+/** Raw backend campaign row — numeric id, `nextSession` naming, JSON-string
+ *  TEXT columns (threads, variantRules, gameTime, location, weekDays). */
+interface CampaignDto {
+  id: number | string;
+  name: string;
+  party?: string | null;
+  setting?: string | null;
+  session?: number | null;
+  nextSession?: string | null;
+  arc?: string | null;
+  tint?: Campaign['tint'] | null;
+  chronicle?: string | null;
+  secrets?: string | null;
+  threads?: unknown;
+  inviteCode?: string | null;
+  variantRules?: unknown;
+  gameTime?: unknown;
+  location?: unknown;
+  weekDays?: unknown;
+}
+
+/** Raw backend SessionNoteView row. */
+interface SessionNoteDto {
+  id: SessionNote['id'];
+  body?: string | null;
+  createdAt?: string | null;
+  sessionId?: number | string | null;
 }

@@ -276,23 +276,24 @@ export function initialGameTime(): CampaignGameTime {
  * Tolerant read of any stored clock, including the pre-v2 numeric shape
  * (numbers → strings, dawn → morning, dusk/night → night, week fields filled).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function normalizeGameTime(raw: any): CampaignGameTime | null {
+export function normalizeGameTime(raw: unknown): CampaignGameTime | null {
   if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
   const label = (v: unknown, fallback: string): string =>
     typeof v === 'string' && v.trim() ? v : typeof v === 'number' ? String(v) : fallback;
   const segment: TimeOfDay =
-    raw.timeOfDay === 'morning' || raw.timeOfDay === 'dawn' ? 'morning'
-      : raw.timeOfDay === 'noon' ? 'noon'
+    obj['timeOfDay'] === 'morning' || obj['timeOfDay'] === 'dawn' ? 'morning'
+      : obj['timeOfDay'] === 'noon' ? 'noon'
       : 'night'; // night, dusk, or anything malformed
+  const weekday = obj['weekday'];
   return {
-    year: label(raw.year, '1'),
-    month: label(raw.month, '1'),
-    day: label(raw.day, '1'),
+    year: label(obj['year'], '1'),
+    month: label(obj['month'], '1'),
+    day: label(obj['day'], '1'),
     timeOfDay: segment,
-    weekday: typeof raw.weekday === 'string' && raw.weekday.trim() ? raw.weekday : null,
-    weekdaysSeen: Array.isArray(raw.weekdaysSeen) ? raw.weekdaysSeen : [],
-    week: typeof raw.week === 'number' ? Math.max(1, Math.round(raw.week)) : 1,
+    weekday: typeof weekday === 'string' && weekday.trim() ? weekday : null,
+    weekdaysSeen: Array.isArray(obj['weekdaysSeen']) ? obj['weekdaysSeen'] : [],
+    week: typeof obj['week'] === 'number' ? Math.max(1, Math.round(obj['week'])) : 1,
   };
 }
 

@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
 
+type CoinKey = keyof NonNullable<PC['coins']>;
+
 @Component({
     selector: 'app-coin-purse',
     templateUrl: './coin-purse.component.html',
@@ -16,7 +18,7 @@ export class CoinPurseComponent {
   /** A DM clicked an intercepted coin amount — the parent opens the DM edit modal. */
   @Output() editRequested = new EventEmitter<DmEditRequest>();
 
-  readonly coinTypes = [
+  readonly coinTypes: Array<{ key: CoinKey; label: string }> = [
     { key: 'cp', label: 'Copper' },
     { key: 'sp', label: 'Silver' },
     { key: 'ep', label: 'Electrum' },
@@ -30,26 +32,26 @@ export class CoinPurseComponent {
     return (cp / 100 + sp / 10 + ep / 2 + gp + pp * 10).toFixed(2);
   }
 
-  coinAmt(key: string): number {
-    return (this.pc.coins as any)?.[key] ?? 0;
+  coinAmt(key: CoinKey): number {
+    return this.pc.coins?.[key] ?? 0;
   }
 
   /** Pure builder: apply one coin denomination. */
-  private buildCoin(key: string, value: number): PC {
+  private buildCoin(key: CoinKey, value: number): PC {
     const coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...(this.pc.coins ?? {}) };
-    (coins as any)[key] = value;
+    coins[key] = value;
     return { ...this.pc, coins };
   }
 
   /** Edit one coin denomination; the gp-equivalent recomputes on the refresh. */
-  setCoin(key: string, value: number): void {
+  setCoin(key: CoinKey, value: number): void {
     this.pcChange.emit(this.buildCoin(key, value));
   }
 
   /** DM clicked (intercepted) a coin amount — request the edit modal instead of the inline editor.
    *  Label is the denomination key itself (cp/sp/ep/gp/pp) — the backend's own diff only ever
    *  summarizes the whole purse ("DM changed coins X → Y"), never a single denomination. */
-  requestCoin(key: string): void {
+  requestCoin(key: CoinKey): void {
     this.editRequested.emit({
       label: key,
       value: this.coinAmt(key),
