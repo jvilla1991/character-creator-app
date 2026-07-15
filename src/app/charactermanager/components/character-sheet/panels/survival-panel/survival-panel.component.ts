@@ -25,8 +25,9 @@ import {
  * The exhaustion badge is computed live and never written to pc.conditions.
  */
 @Component({
-  selector: 'app-survival-panel',
-  templateUrl: './survival-panel.component.html',
+    selector: 'app-survival-panel',
+    templateUrl: './survival-panel.component.html',
+    standalone: false
 })
 export class SurvivalPanelComponent {
   @Input() pc!: PC;

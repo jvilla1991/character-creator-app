@@ -25,9 +25,10 @@ import { NotificationService } from '../../../services/notification.service';
  * the session version, not just on the status flipping.
  */
 @Component({
-  selector: 'app-loot-panel',
-  templateUrl: './loot-panel.component.html',
-  styleUrls: ['./loot-panel.component.scss'],
+    selector: 'app-loot-panel',
+    templateUrl: './loot-panel.component.html',
+    styleUrls: ['./loot-panel.component.scss'],
+    standalone: false
 })
 export class LootPanelComponent implements OnChanges {
   @Input() state!: SessionState;

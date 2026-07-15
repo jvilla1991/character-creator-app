@@ -24,9 +24,10 @@ import { ParticipantView } from '../../models/session';
  * damage) arrive in a later feature.
  */
 @Component({
-  selector: 'app-session-mode',
-  templateUrl: './session-mode.component.html',
-  styleUrls: ['./session-mode.component.scss'],
+    selector: 'app-session-mode',
+    templateUrl: './session-mode.component.html',
+    styleUrls: ['./session-mode.component.scss'],
+    standalone: false
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   @Input() sessionId!: string;

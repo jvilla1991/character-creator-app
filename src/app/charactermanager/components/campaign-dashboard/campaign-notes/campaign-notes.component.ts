@@ -9,9 +9,10 @@ import { CampaignService } from '../../../services/campaign.service';
  * in-session composer (Session Mode) writes to the same backend log.
  */
 @Component({
-  selector: 'app-campaign-notes',
-  templateUrl: './campaign-notes.component.html',
-  styleUrls: ['./campaign-notes.component.scss'],
+    selector: 'app-campaign-notes',
+    templateUrl: './campaign-notes.component.html',
+    styleUrls: ['./campaign-notes.component.scss'],
+    standalone: false
 })
 export class CampaignNotesComponent implements OnChanges {
   @Input() campaign!: Campaign;

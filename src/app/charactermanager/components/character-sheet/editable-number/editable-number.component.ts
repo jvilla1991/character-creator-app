@@ -14,10 +14,11 @@ import {
  * renders the projected content unchanged — no affordance, no behaviour.
  */
 @Component({
-  selector: 'app-editable-number',
-  templateUrl: './editable-number.component.html',
-  styleUrls: ['./editable-number.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-editable-number',
+    templateUrl: './editable-number.component.html',
+    styleUrls: ['./editable-number.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class EditableNumberComponent {
   @Input() value: number | null | undefined = 0;

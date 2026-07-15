@@ -14,9 +14,10 @@ const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
 type Ability = typeof ABILITIES[number];
 
 @Component({
-  selector: 'app-create-character-modal',
-  templateUrl: './create-character-modal.component.html',
-  styleUrls: ['./create-character-modal.component.scss']
+    selector: 'app-create-character-modal',
+    templateUrl: './create-character-modal.component.html',
+    styleUrls: ['./create-character-modal.component.scss'],
+    standalone: false
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 

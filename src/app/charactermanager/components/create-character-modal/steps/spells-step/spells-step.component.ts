@@ -9,9 +9,10 @@ import { DndSpell } from '../../../../models/dnd-api.types';
  * predicates over the inputs, and reports filter changes and toggles via events.
  */
 @Component({
-  selector: 'app-spells-step',
-  templateUrl: './spells-step.component.html',
-  styleUrls: ['./spells-step.component.scss'],
+    selector: 'app-spells-step',
+    templateUrl: './spells-step.component.html',
+    styleUrls: ['./spells-step.component.scss'],
+    standalone: false
 })
 export class SpellsStepComponent {
   @Input() filteredSpellList: DndSpell[] = [];

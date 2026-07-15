@@ -3,12 +3,13 @@
     <span class="panel-title">Conditions</span>
   </div>
   <div class="conditions">
-    <button
-      *ngFor="let c of conditions"
-      class="condition"
-      [class.active]="isActive(c)"
-      [class.exhaustion]="c === 'exhaustion'"
-      (click)="conditionToggled.emit(c)"
-    >{{ c }}</button>
+    @for (c of conditions; track c) {
+      <button
+        class="condition"
+        [class.active]="isActive(c)"
+        [class.exhaustion]="c === 'exhaustion'"
+        (click)="conditionToggled.emit(c)"
+      >{{ c }}</button>
+    }
   </div>
 </div>

@@ -15,8 +15,9 @@ interface CampaignRow {
 
 /** DM-mode sidebar: a "Your Campaigns" list (mirrors PlayerRoster). */
 @Component({
-  selector: 'app-campaign-sidebar',
-  templateUrl: './campaign-sidebar.component.html',
+    selector: 'app-campaign-sidebar',
+    templateUrl: './campaign-sidebar.component.html',
+    standalone: false
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {
   activeCampaignId$ = this.uiState.activeCampaignId$;

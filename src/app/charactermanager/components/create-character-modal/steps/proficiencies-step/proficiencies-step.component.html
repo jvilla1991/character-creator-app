@@ -13,32 +13,42 @@
     </span>
   </div>
   <div class="skill-chips">
-    <button *ngFor="let skill of classSkillConfig.from; trackBy: trackByName"
-            type="button"
-            class="class-pick"
-            [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
-            [class.locked]="isSkillLocked(skill)"
-            [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
-            [disabled]="isSkillLocked(skill)"
-            (click)="toggleSkill.emit(skill)">{{ skill }}</button>
+    @for (skill of classSkillConfig.from; track trackByName($index, skill)) {
+      <button
+        type="button"
+        class="class-pick"
+        [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
+        [class.locked]="isSkillLocked(skill)"
+        [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
+        [disabled]="isSkillLocked(skill)"
+      (click)="toggleSkill.emit(skill)">{{ skill }}</button>
+    }
   </div>
 </div>
 
 <!-- Background proficiencies (read-only) -->
-<div *ngIf="backgroundDetail" class="prof-section">
-  <div class="prof-section-header">
-    <span class="eyebrow">{{ background }} Proficiencies</span>
-  </div>
-  <div *ngIf="backgroundSkillProfs.length" class="skill-chips">
-    <span *ngFor="let skill of backgroundSkillProfs"
-          class="class-pick locked"
+@if (backgroundDetail) {
+  <div class="prof-section">
+    <div class="prof-section-header">
+      <span class="eyebrow">{{ background }} Proficiencies</span>
+    </div>
+    @if (backgroundSkillProfs.length) {
+      <div class="skill-chips">
+        @for (skill of backgroundSkillProfs; track skill) {
+          <span
+            class="class-pick locked"
           title="Granted by background">{{ skill }}</span>
+        }
+      </div>
+    }
+    @if (backgroundToolProfs.length) {
+      <div class="prof-tool-list">
+        <span class="detail-label">Tools &amp; Equipment</span>
+        <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
+      </div>
+    }
   </div>
-  <div *ngIf="backgroundToolProfs.length" class="prof-tool-list">
-    <span class="detail-label">Tools &amp; Equipment</span>
-    <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
-  </div>
-</div>
+}
 
 <!-- Language selection -->
 <div class="prof-section">
@@ -51,7 +61,9 @@
       <label>Additional Language</label>
       <select [ngModel]="languageChoice" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">
         <option value="">— choose a language —</option>
-        <option *ngFor="let lang of standardLanguages" [value]="lang">{{ lang }}</option>
+        @for (lang of standardLanguages; track lang) {
+          <option [value]="lang">{{ lang }}</option>
+        }
       </select>
     </div>
   </div>

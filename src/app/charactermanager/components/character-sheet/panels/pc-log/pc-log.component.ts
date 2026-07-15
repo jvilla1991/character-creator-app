@@ -13,8 +13,9 @@ import { PCService } from '../../../../services/pc.service';
  * the pc-notes panel's data-flow pattern.
  */
 @Component({
-  selector: 'app-pc-log',
-  templateUrl: './pc-log.component.html',
+    selector: 'app-pc-log',
+    templateUrl: './pc-log.component.html',
+    standalone: false
 })
 export class PcLogComponent implements OnChanges {
   @Input() pc!: PC;

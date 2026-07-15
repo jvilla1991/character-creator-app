@@ -8,8 +8,9 @@ import { JoinConsentState, JoinRequest } from '../../services/join-modal.service
  * passes a consent state and the modal swaps to a conversion consent pane.
  */
 @Component({
-  selector: 'app-join-campaign-modal',
-  templateUrl: './join-campaign-modal.component.html',
+    selector: 'app-join-campaign-modal',
+    templateUrl: './join-campaign-modal.component.html',
+    standalone: false
 })
 export class JoinCampaignModalComponent implements OnChanges {
   pcs$ = this.pcService.pcs$;

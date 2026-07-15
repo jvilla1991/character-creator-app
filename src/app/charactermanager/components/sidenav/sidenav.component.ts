@@ -10,9 +10,10 @@ import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
 
 @Component({
-  selector: 'app-sidenav',
-  templateUrl: './sidenav.component.html',
-  styleUrls: ['./sidenav.component.scss']
+    selector: 'app-sidenav',
+    templateUrl: './sidenav.component.html',
+    styleUrls: ['./sidenav.component.scss'],
+    standalone: false
 })
 export class SidenavComponent implements OnInit, OnDestroy {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.

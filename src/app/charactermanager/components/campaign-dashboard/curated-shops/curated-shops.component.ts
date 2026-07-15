@@ -11,9 +11,10 @@ import { CuratedShopService } from '../../../services/curated-shop.service';
  * Mirrors the campaign-notes panel: reloads when the selected campaign changes.
  */
 @Component({
-  selector: 'app-curated-shops',
-  templateUrl: './curated-shops.component.html',
-  styleUrls: ['./curated-shops.component.scss'],
+    selector: 'app-curated-shops',
+    templateUrl: './curated-shops.component.html',
+    styleUrls: ['./curated-shops.component.scss'],
+    standalone: false
 })
 export class CuratedShopsComponent implements OnChanges {
   @Input() campaign!: Campaign;

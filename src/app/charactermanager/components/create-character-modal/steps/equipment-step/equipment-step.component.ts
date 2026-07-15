@@ -7,9 +7,10 @@ import { ClassEquipment } from '../../../../models/dnd-api.types';
  * the child renders the two cards and emits the selection.
  */
 @Component({
-  selector: 'app-equipment-step',
-  templateUrl: './equipment-step.component.html',
-  styleUrls: ['./equipment-step.component.scss'],
+    selector: 'app-equipment-step',
+    templateUrl: './equipment-step.component.html',
+    styleUrls: ['./equipment-step.component.scss'],
+    standalone: false
 })
 export class EquipmentStepComponent {
   @Input() loadingEquipment = false;

@@ -29,8 +29,9 @@ interface DashboardVm {
  * DM-scoped projection, so the board includes other players' bound characters.
  */
 @Component({
-  selector: 'app-campaign-dashboard',
-  templateUrl: './campaign-dashboard.component.html',
+    selector: 'app-campaign-dashboard',
+    templateUrl: './campaign-dashboard.component.html',
+    standalone: false
 })
 export class CampaignDashboardComponent implements OnInit, OnDestroy {
   /** In-world clock label for the header chip (campaigns$ keeps it fresh). */

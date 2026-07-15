@@ -10,8 +10,9 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
  * component needs no styles of its own.
  */
 @Component({
-  selector: 'app-identity-step',
-  templateUrl: './identity-step.component.html',
+    selector: 'app-identity-step',
+    templateUrl: './identity-step.component.html',
+    standalone: false
 })
 export class IdentityStepComponent {
   /** Hero name (two-way bound: [(name)] on the parent). */

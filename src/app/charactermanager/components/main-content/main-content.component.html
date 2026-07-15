@@ -1,57 +1,65 @@
 <router-outlet></router-outlet>
 
-<app-character-sheet
-  *ngIf="pc"
-  [pc]="pc"
-  [editable]="editable"
-  [slotInventory]="slotInventory"
-  [survivalConditions]="survivalConditions"
-  [strictComponents]="strictComponents"
-  [location]="location"
-  (deleteRequested)="openDeleteModal()"
-  (rollRequested)="openRollModal()"
-  (levelUpRequested)="openLevelUpModal()"
-  (connectRequested)="connectToSession()"
-  (joinCampaignRequested)="openJoinModal()">
-</app-character-sheet>
+@if (pc) {
+  <app-character-sheet
+    [pc]="pc"
+    [editable]="editable"
+    [slotInventory]="slotInventory"
+    [survivalConditions]="survivalConditions"
+    [strictComponents]="strictComponents"
+    [location]="location"
+    (deleteRequested)="openDeleteModal()"
+    (rollRequested)="openRollModal()"
+    (levelUpRequested)="openLevelUpModal()"
+    (connectRequested)="connectToSession()"
+    (joinCampaignRequested)="openJoinModal()">
+  </app-character-sheet>
+}
 
-<app-empty-state
-  *ngIf="!pc"
-  (forgeHero)="openCreateModal()">
-</app-empty-state>
+@if (!pc) {
+  <app-empty-state
+    (forgeHero)="openCreateModal()">
+  </app-empty-state>
+}
 
 <!-- Delete confirmation overlay -->
-<div *ngIf="isDeleteModalOpen && pc"
-     class="modal-backdrop"
-     (click)="closeDeleteModal()">
-  <app-delete-confirmation-modal
-    [pc]="pc"
-    (click)="$event.stopPropagation()"
-    (confirm)="onDeleteConfirm()"
-    (close)="closeDeleteModal()">
-  </app-delete-confirmation-modal>
-</div>
+@if (isDeleteModalOpen && pc) {
+  <div
+    class="modal-backdrop"
+    (click)="closeDeleteModal()">
+    <app-delete-confirmation-modal
+      [pc]="pc"
+      (click)="$event.stopPropagation()"
+      (confirm)="onDeleteConfirm()"
+      (close)="closeDeleteModal()">
+    </app-delete-confirmation-modal>
+  </div>
+}
 
 <!-- Dice roller overlay -->
-<div *ngIf="isRollModalOpen"
-     class="modal-backdrop"
-     (click)="closeRollModal()">
-  <app-dice-roller-modal
-    [pc]="pc"
-    [sessionId]="activeRollSessionId"
-    [participantId]="activeRollParticipantId"
-    (click)="$event.stopPropagation()"
-    (close)="closeRollModal()">
-  </app-dice-roller-modal>
-</div>
+@if (isRollModalOpen) {
+  <div
+    class="modal-backdrop"
+    (click)="closeRollModal()">
+    <app-dice-roller-modal
+      [pc]="pc"
+      [sessionId]="activeRollSessionId"
+      [participantId]="activeRollParticipantId"
+      (click)="$event.stopPropagation()"
+      (close)="closeRollModal()">
+    </app-dice-roller-modal>
+  </div>
+}
 
 <!-- Level-up overlay -->
-<div *ngIf="isLevelUpModalOpen && pc"
-     class="modal-backdrop"
-     (click)="closeLevelUpModal()">
-  <app-level-up-modal
-    [pc]="pc"
-    (click)="$event.stopPropagation()"
-    (close)="closeLevelUpModal()">
-  </app-level-up-modal>
-</div>
+@if (isLevelUpModalOpen && pc) {
+  <div
+    class="modal-backdrop"
+    (click)="closeLevelUpModal()">
+    <app-level-up-modal
+      [pc]="pc"
+      (click)="$event.stopPropagation()"
+      (close)="closeLevelUpModal()">
+    </app-level-up-modal>
+  </div>
+}

@@ -37,10 +37,12 @@
       <span class="review-label">Name</span>
       <span class="review-value">{{ name }}</span>
     </div>
-    <div *ngIf="player" class="review-row">
-      <span class="review-label">Player</span>
-      <span class="review-value">{{ player }}</span>
-    </div>
+    @if (player) {
+      <div class="review-row">
+        <span class="review-label">Player</span>
+        <span class="review-value">{{ player }}</span>
+      </div>
+    }
   </div>
 
   <!-- Species -->
@@ -53,14 +55,18 @@
       <span class="review-label">Species</span>
       <span class="review-value">{{ species }}</span>
     </div>
-    <div *ngIf="speciesDetail" class="review-row">
-      <span class="review-label">Size / Speed</span>
-      <span class="review-value">{{ speciesDetail.size }}, {{ speciesDetail.speed }} ft.</span>
-    </div>
-    <div *ngIf="reviewSpeciesTraitNames" class="review-row">
-      <span class="review-label">Traits</span>
-      <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames }}</span>
-    </div>
+    @if (speciesDetail) {
+      <div class="review-row">
+        <span class="review-label">Size / Speed</span>
+        <span class="review-value">{{ speciesDetail.size }}, {{ speciesDetail.speed }} ft.</span>
+      </div>
+    }
+    @if (reviewSpeciesTraitNames) {
+      <div class="review-row">
+        <span class="review-label">Traits</span>
+        <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames }}</span>
+      </div>
+    }
   </div>
 
   <!-- Class -->
@@ -73,14 +79,18 @@
       <span class="review-label">Class</span>
       <span class="review-value">{{ clazz }}</span>
     </div>
-    <div *ngIf="selectedSubclass" class="review-row">
-      <span class="review-label">Subclass</span>
-      <span class="review-value">{{ selectedSubclass }}</span>
-    </div>
-    <div *ngIf="classDetail" class="review-row">
-      <span class="review-label">Hit Die</span>
-      <span class="review-value">d{{ classDetail.hit_die }}</span>
-    </div>
+    @if (selectedSubclass) {
+      <div class="review-row">
+        <span class="review-label">Subclass</span>
+        <span class="review-value">{{ selectedSubclass }}</span>
+      </div>
+    }
+    @if (classDetail) {
+      <div class="review-row">
+        <span class="review-label">Hit Die</span>
+        <span class="review-value">d{{ classDetail.hit_die }}</span>
+      </div>
+    }
     <div class="review-row">
       <span class="review-label">Saving Throws</span>
       <span class="review-value">{{ classSavingThrows }}</span>
@@ -97,14 +107,18 @@
       <span class="review-label">Background</span>
       <span class="review-value">{{ background }}</span>
     </div>
-    <div *ngIf="backgroundFeatName" class="review-row">
-      <span class="review-label">Origin Feat</span>
-      <span class="review-value">{{ backgroundFeatName }}</span>
-    </div>
-    <div *ngIf="bonusPlus2 && bonusPlus1" class="review-row">
-      <span class="review-label">Ability Bonuses</span>
-      <span class="review-value">+2 {{ bonusPlus2 }}, +1 {{ bonusPlus1 }}</span>
-    </div>
+    @if (backgroundFeatName) {
+      <div class="review-row">
+        <span class="review-label">Origin Feat</span>
+        <span class="review-value">{{ backgroundFeatName }}</span>
+      </div>
+    }
+    @if (bonusPlus2 && bonusPlus1) {
+      <div class="review-row">
+        <span class="review-label">Ability Bonuses</span>
+        <span class="review-value">+2 {{ bonusPlus2 }}, +1 {{ bonusPlus1 }}</span>
+      </div>
+    }
   </div>
 
   <!-- Proficiencies & Languages -->
@@ -117,10 +131,12 @@
       <span class="review-label">Skills</span>
       <span class="review-value review-value--wrap">{{ reviewAllSkills.join(', ') || '—' }}</span>
     </div>
-    <div *ngIf="backgroundToolProfs.length" class="review-row">
-      <span class="review-label">Tools</span>
-      <span class="review-value review-value--wrap">{{ backgroundToolProfs.join(', ') }}</span>
-    </div>
+    @if (backgroundToolProfs.length) {
+      <div class="review-row">
+        <span class="review-label">Tools</span>
+        <span class="review-value review-value--wrap">{{ backgroundToolProfs.join(', ') }}</span>
+      </div>
+    }
     <div class="review-row">
       <span class="review-label">Languages</span>
       <span class="review-value">Common{{ languageChoice ? ', ' + languageChoice : '' }}</span>
@@ -134,34 +150,42 @@
       <button type="button" class="btn review-edit-btn" (click)="edit.emit(6)">Edit</button>
     </div>
     <div class="review-ability-grid">
-      <div *ngFor="let ability of abilities" class="review-ability">
-        <span class="review-ability-label">{{ ability }}</span>
-        <span class="review-ability-score">{{ finalScore(ability) }}</span>
-        <span class="review-ability-mod">{{ modifier(finalScore(ability)) }}</span>
-      </div>
+      @for (ability of abilities; track ability) {
+        <div class="review-ability">
+          <span class="review-ability-label">{{ ability }}</span>
+          <span class="review-ability-score">{{ finalScore(ability) }}</span>
+          <span class="review-ability-mod">{{ modifier(finalScore(ability)) }}</span>
+        </div>
+      }
     </div>
   </div>
 
   <!-- Spells (casters only) -->
-  <div *ngIf="isSpellcastingClass" class="review-section">
-    <div class="review-section-header">
-      <span class="review-section-title">Spells</span>
-      <button type="button" class="btn review-edit-btn" (click)="edit.emit(7)">Edit</button>
-    </div>
-    <ng-container *ngIf="selectedSpells.length === 0">
-      <div class="review-row">
-        <span class="review-value review-value--muted">No spells selected yet</span>
+  @if (isSpellcastingClass) {
+    <div class="review-section">
+      <div class="review-section-header">
+        <span class="review-section-title">Spells</span>
+        <button type="button" class="btn review-edit-btn" (click)="edit.emit(7)">Edit</button>
       </div>
-    </ng-container>
-    <div *ngIf="reviewCantripNames" class="review-row">
-      <span class="review-label">Cantrips</span>
-      <span class="review-value review-value--wrap">{{ reviewCantripNames }}</span>
+      @if (selectedSpells.length === 0) {
+        <div class="review-row">
+          <span class="review-value review-value--muted">No spells selected yet</span>
+        </div>
+      }
+      @if (reviewCantripNames) {
+        <div class="review-row">
+          <span class="review-label">Cantrips</span>
+          <span class="review-value review-value--wrap">{{ reviewCantripNames }}</span>
+        </div>
+      }
+      @if (reviewLeveledSpellNames) {
+        <div class="review-row">
+          <span class="review-label">1st Level</span>
+          <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames }}</span>
+        </div>
+      }
     </div>
-    <div *ngIf="reviewLeveledSpellNames" class="review-row">
-      <span class="review-label">1st Level</span>
-      <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames }}</span>
-    </div>
-  </div>
+  }
 
   <!-- Starting Equipment -->
   <div class="review-section">
@@ -169,20 +193,26 @@
       <span class="review-section-title">Starting Equipment</span>
       <button type="button" class="btn review-edit-btn" (click)="edit.emit(equipmentStep)">Edit</button>
     </div>
-    <ng-container *ngIf="equipmentChoice === 'A' && currentClassEquipment">
-      <div *ngIf="reviewWeaponNames" class="review-row">
-        <span class="review-label">Weapons</span>
-        <span class="review-value review-value--wrap">{{ reviewWeaponNames }}</span>
+    @if (equipmentChoice === 'A' && currentClassEquipment) {
+      @if (reviewWeaponNames) {
+        <div class="review-row">
+          <span class="review-label">Weapons</span>
+          <span class="review-value review-value--wrap">{{ reviewWeaponNames }}</span>
+        </div>
+      }
+      @if (reviewGearNames) {
+        <div class="review-row">
+          <span class="review-label">Gear</span>
+          <span class="review-value review-value--wrap">{{ reviewGearNames }}</span>
+        </div>
+      }
+    }
+    @if (equipmentChoice === 'B') {
+      <div class="review-row">
+        <span class="review-label">Gold Budget</span>
+        <span class="review-value">{{ currentClassEquipment?.optionB?.gp ?? 0 }} gp to spend</span>
       </div>
-      <div *ngIf="reviewGearNames" class="review-row">
-        <span class="review-label">Gear</span>
-        <span class="review-value review-value--wrap">{{ reviewGearNames }}</span>
-      </div>
-    </ng-container>
-    <div *ngIf="equipmentChoice === 'B'" class="review-row">
-      <span class="review-label">Gold Budget</span>
-      <span class="review-value">{{ currentClassEquipment?.optionB?.gp ?? 0 }} gp to spend</span>
-    </div>
+    }
     <div class="review-row">
       <span class="review-label">Starting Gold</span>
       <span class="review-value">{{ reviewStartingGp }} gp total</span>

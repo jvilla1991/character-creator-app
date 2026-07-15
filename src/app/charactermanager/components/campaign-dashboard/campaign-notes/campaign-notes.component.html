@@ -16,17 +16,20 @@
     <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="add()">Add Note</button>
   </div>
 
-  <div class="note-list" *ngIf="notes.length; else noNotes">
-    <div class="note" *ngFor="let n of notes; trackBy: trackById">
-      <p class="note-body">{{ n.body }}</p>
-      <div class="note-foot">
-        <span class="note-time">{{ n.createdAt | date:'MMM d, y · h:mm a' }}</span>
-        <button class="note-del" (click)="remove(n)" [attr.aria-label]="'Delete note'" title="Delete note">✕</button>
-      </div>
+  @if (notes.length) {
+    <div class="note-list">
+      @for (n of notes; track trackById($index, n)) {
+        <div class="note">
+          <p class="note-body">{{ n.body }}</p>
+          <div class="note-foot">
+            <span class="note-time">{{ n.createdAt | date:'MMM d, y · h:mm a' }}</span>
+            <button class="note-del" (click)="remove(n)" [attr.aria-label]="'Delete note'" title="Delete note">✕</button>
+          </div>
+        </div>
+      }
     </div>
-  </div>
-
-  <ng-template #noNotes>
+  } @else {
     <div class="note-empty">No notes yet. Capture the first ruling or revelation.</div>
-  </ng-template>
+  }
+
 </div>

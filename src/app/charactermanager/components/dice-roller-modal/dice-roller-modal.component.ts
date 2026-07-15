@@ -33,9 +33,10 @@ interface StagedDie {
 type Phase = 'staging' | 'rolling' | 'result';
 
 @Component({
-  selector: 'app-dice-roller-modal',
-  templateUrl: './dice-roller-modal.component.html',
-  styleUrls: ['./dice-roller-modal.component.scss'],
+    selector: 'app-dice-roller-modal',
+    templateUrl: './dice-roller-modal.component.html',
+    styleUrls: ['./dice-roller-modal.component.scss'],
+    standalone: false
 })
 export class DiceRollerModalComponent implements OnDestroy {
   /** Optional — only used to personalise the title. */

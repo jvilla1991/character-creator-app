@@ -11,9 +11,10 @@ import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
 import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
 
 @Component({
-  selector: 'app-character-sheet',
-  templateUrl: './character-sheet.component.html',
-  styleUrls: ['./character-sheet.component.scss']
+    selector: 'app-character-sheet',
+    templateUrl: './character-sheet.component.html',
+    styleUrls: ['./character-sheet.component.scss'],
+    standalone: false
 })
 export class CharacterSheetComponent implements OnChanges {
   @Input() pc!: PC;

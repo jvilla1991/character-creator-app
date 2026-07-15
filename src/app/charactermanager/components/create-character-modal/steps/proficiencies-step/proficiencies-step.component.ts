@@ -8,9 +8,10 @@ import { DndBackground } from '../../../../models/dnd-api.types';
  * checks over those arrays, reimplemented here for display.
  */
 @Component({
-  selector: 'app-proficiencies-step',
-  templateUrl: './proficiencies-step.component.html',
-  styleUrls: ['./proficiencies-step.component.scss'],
+    selector: 'app-proficiencies-step',
+    templateUrl: './proficiencies-step.component.html',
+    styleUrls: ['./proficiencies-step.component.scss'],
+    standalone: false
 })
 export class ProficienciesStepComponent {
   @Input() clazz = '';

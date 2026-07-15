@@ -8,9 +8,10 @@ import { BackgroundGroup, DndBackground } from '../../../../models/dnd-api.types
  * display strings in.
  */
 @Component({
-  selector: 'app-background-step',
-  templateUrl: './background-step.component.html',
-  styleUrls: ['./background-step.component.scss'],
+    selector: 'app-background-step',
+    templateUrl: './background-step.component.html',
+    styleUrls: ['./background-step.component.scss'],
+    standalone: false
 })
 export class BackgroundStepComponent {
   @Input() backgroundGroups: BackgroundGroup[] = [];

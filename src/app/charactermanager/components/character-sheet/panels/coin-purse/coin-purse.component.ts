@@ -3,9 +3,10 @@ import { PC } from '../../../../models/pc';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
 
 @Component({
-  selector: 'app-coin-purse',
-  templateUrl: './coin-purse.component.html',
-  styleUrls: ['./coin-purse.component.scss']
+    selector: 'app-coin-purse',
+    templateUrl: './coin-purse.component.html',
+    styleUrls: ['./coin-purse.component.scss'],
+    standalone: false
 })
 export class CoinPurseComponent {
   @Input() pc!: PC;

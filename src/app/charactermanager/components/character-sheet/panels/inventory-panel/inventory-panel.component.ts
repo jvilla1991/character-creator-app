@@ -26,9 +26,10 @@ import { isSupplyItem } from '../../../../utils/survival';
  * display flag only — it does not recompute AC or any derived stat.
  */
 @Component({
-  selector: 'app-inventory-panel',
-  templateUrl: './inventory-panel.component.html',
-  styleUrls: ['./inventory-panel.component.scss']
+    selector: 'app-inventory-panel',
+    templateUrl: './inventory-panel.component.html',
+    styleUrls: ['./inventory-panel.component.scss'],
+    standalone: false
 })
 export class InventoryPanelComponent {
   @Input() pc!: PC;

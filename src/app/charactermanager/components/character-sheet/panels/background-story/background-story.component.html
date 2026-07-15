@@ -7,36 +7,47 @@
   </div>
 
   <!-- Bio with drop cap -->
-  <p *ngIf="pc.bio" class="prose">
-    <span class="drop">{{ bioFirst }}</span>{{ bioRest }}
-  </p>
+  @if (pc.bio) {
+    <p class="prose">
+      <span class="drop">{{ bioFirst }}</span>{{ bioRest }}
+    </p>
+  }
 
   <!-- Traits -->
-  <dl *ngIf="traitEntries.length > 0" class="traits">
-    <ng-container *ngFor="let t of traitEntries">
-      <dt>{{ t.key }}</dt>
-      <dd>"{{ t.value }}"</dd>
-    </ng-container>
-  </dl>
+  @if (traitEntries.length > 0) {
+    <dl class="traits">
+      @for (t of traitEntries; track t.key) {
+        <dt>{{ t.key }}</dt>
+        <dd>"{{ t.value }}"</dd>
+      }
+    </dl>
+  }
 
   <!-- Languages & Tool Proficiencies -->
-  <div *ngIf="hasProficiencies" class="story-proficiencies">
-    <div *ngIf="languages.length > 0" class="story-prof-row">
-      <span class="story-prof-label">Languages</span>
-      <span class="story-prof-value">{{ languages.join(', ') }}</span>
+  @if (hasProficiencies) {
+    <div class="story-proficiencies">
+      @if (languages.length > 0) {
+        <div class="story-prof-row">
+          <span class="story-prof-label">Languages</span>
+          <span class="story-prof-value">{{ languages.join(', ') }}</span>
+        </div>
+      }
+      @if (toolProficiencies.length > 0) {
+        <div class="story-prof-row">
+          <span class="story-prof-label">Tool Proficiencies</span>
+          <span class="story-prof-value">{{ toolProficiencies.join(', ') }}</span>
+        </div>
+      }
     </div>
-    <div *ngIf="toolProficiencies.length > 0" class="story-prof-row">
-      <span class="story-prof-label">Tool Proficiencies</span>
-      <span class="story-prof-value">{{ toolProficiencies.join(', ') }}</span>
-    </div>
-  </div>
+  }
 
   <!-- DM Notes -->
-  <div
-    *ngIf="pc.notes"
+  @if (pc.notes) {
+    <div
     style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-soft);
            font-family: 'Newsreader', serif; font-style: italic; color: var(--text-dim); font-size: 13.5px;"
-  >
-    <span class="eyebrow" style="margin-right: 10px;">DM Notes</span>{{ pc.notes }}
-  </div>
+      >
+      <span class="eyebrow" style="margin-right: 10px;">DM Notes</span>{{ pc.notes }}
+    </div>
+  }
 </div>

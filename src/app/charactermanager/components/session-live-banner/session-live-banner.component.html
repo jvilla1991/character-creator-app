@@ -1,52 +1,57 @@
 <!-- Live-session banner (player view). Hidden when no session is live. -->
-<div class="session-banner" *ngIf="live">
-  <div class="session-banner-glyph" aria-hidden="true">
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
-      <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/><path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
-    </svg>
+@if (live) {
+  <div class="session-banner">
+    <div class="session-banner-glyph" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/><path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
+      </svg>
+    </div>
+    <div class="session-banner-text">
+      <span class="session-banner-title">A session is live</span>
+      <span class="session-banner-sub">{{ live.campaignName }} · take your place in the order</span>
+    </div>
+    <button class="btn primary" (click)="openPicker()">Join Session</button>
   </div>
-  <div class="session-banner-text">
-    <span class="session-banner-title">A session is live</span>
-    <span class="session-banner-sub">{{ live.campaignName }} · take your place in the order</span>
-  </div>
-  <button class="btn primary" (click)="openPicker()">Join Session</button>
-</div>
+}
 
 <!-- PC picker (reuses the join-campaign-modal pattern) -->
-<div *ngIf="pickerOpen" class="modal-backdrop" (click)="closePicker()">
-  <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-    <div class="modal-title" style="color: var(--celestial-2);">Join the Session</div>
-    <div class="modal-sub">
-      Choose which hero takes the field in
-      <em style="color: var(--text); font-style: normal;">{{ live?.campaignName }}</em>.
-    </div>
-
-    <div class="field" *ngIf="eligiblePcs.length; else noHeroes">
-      <label>Character</label>
-      <select [(ngModel)]="selectedPcId">
-        <option *ngFor="let pc of eligiblePcs" [ngValue]="pc.id">
-          {{ pc.name }} — {{ pc.race }} {{ pc.clazz }}
-        </option>
-      </select>
-    </div>
-
-    <ng-template #noHeroes>
-      <div class="modal-sub" style="color: var(--text-dim); font-style: italic;">
-        None of your heroes are seated at this campaign yet. Join the campaign first.
+@if (pickerOpen) {
+  <div class="modal-backdrop" (click)="closePicker()">
+    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+      <div class="modal-title" style="color: var(--celestial-2);">Join the Session</div>
+      <div class="modal-sub">
+        Choose which hero takes the field in
+        <em style="color: var(--text); font-style: normal;">{{ live?.campaignName }}</em>.
       </div>
-    </ng-template>
-
-    <div class="login-error" *ngIf="error" style="margin-top: 8px;">{{ error }}</div>
-
-    <div class="modal-actions">
-      <button class="btn" (click)="closePicker()">Cancel</button>
-      <button
-        class="btn primary"
-        (click)="join()"
-        [disabled]="selectedPcId == null || joining"
-      >
-        {{ joining ? 'Joining…' : 'Take the Field' }}
-      </button>
+      @if (eligiblePcs.length) {
+        <div class="field">
+          <label>Character</label>
+          <select [(ngModel)]="selectedPcId">
+            @for (pc of eligiblePcs; track pc) {
+              <option [ngValue]="pc.id">
+                {{ pc.name }} — {{ pc.race }} {{ pc.clazz }}
+              </option>
+            }
+          </select>
+        </div>
+      } @else {
+        <div class="modal-sub" style="color: var(--text-dim); font-style: italic;">
+          None of your heroes are seated at this campaign yet. Join the campaign first.
+        </div>
+      }
+      @if (error) {
+        <div class="login-error" style="margin-top: 8px;">{{ error }}</div>
+      }
+      <div class="modal-actions">
+        <button class="btn" (click)="closePicker()">Cancel</button>
+        <button
+          class="btn primary"
+          (click)="join()"
+          [disabled]="selectedPcId == null || joining"
+          >
+          {{ joining ? 'Joining…' : 'Take the Field' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
+}

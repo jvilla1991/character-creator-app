@@ -7,32 +7,34 @@
     <!-- Weapons -->
     <div class="equip-section">
       <div class="eyebrow" style="margin-bottom: 10px;">Weapons</div>
-      <ng-container *ngIf="pc.weapons && pc.weapons.length > 0; else noWeapons">
-        <div *ngFor="let w of pc.weapons" class="equip-item equipped">
-          <span class="equip-item-name">
-            <span [class.magic]="w.magic">{{ w.name }}</span>
-          </span>
-          <span class="equip-item-meta">{{ w.dmg }}</span>
-        </div>
-      </ng-container>
-      <ng-template #noWeapons>
+      @if (pc.weapons && pc.weapons.length > 0) {
+        @for (w of pc.weapons; track w) {
+          <div class="equip-item equipped">
+            <span class="equip-item-name">
+              <span [class.magic]="w.magic">{{ w.name }}</span>
+            </span>
+            <span class="equip-item-meta">{{ w.dmg }}</span>
+          </div>
+        }
+      } @else {
         <div style="color: var(--text-dim); font-style: italic; font-size: 13px;">No weapons drawn.</div>
-      </ng-template>
+      }
     </div>
 
     <!-- Gear -->
     <div class="equip-section">
       <div class="eyebrow" style="margin-bottom: 10px;">Worn &amp; Carried</div>
-      <div
-        *ngFor="let g of pc.gear"
-        class="equip-item"
-        [class.equipped]="g.equipped"
-      >
-        <span class="equip-item-name">
-          <span [class.magic]="g.magic">{{ g.name }}</span>
-        </span>
-        <span class="equip-item-meta">{{ g.notes || '' }}</span>
-      </div>
+      @for (g of pc.gear; track g) {
+        <div
+          class="equip-item"
+          [class.equipped]="g.equipped"
+          >
+          <span class="equip-item-name">
+            <span [class.magic]="g.magic">{{ g.name }}</span>
+          </span>
+          <span class="equip-item-meta">{{ g.notes || '' }}</span>
+        </div>
+      }
     </div>
 
   </div>

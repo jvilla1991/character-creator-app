@@ -11,9 +11,10 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
  * finalScore/modifier as bound function inputs (single-sourced math).
  */
 @Component({
-  selector: 'app-review-step',
-  templateUrl: './review-step.component.html',
-  styleUrls: ['./review-step.component.scss'],
+    selector: 'app-review-step',
+    templateUrl: './review-step.component.html',
+    styleUrls: ['./review-step.component.scss'],
+    standalone: false
 })
 export class ReviewStepComponent {
   // Combat banner
