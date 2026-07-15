@@ -70,7 +70,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule } from '@angular/material/dialog';
 
 const routes: Routes = [
   {
@@ -149,7 +148,6 @@ const routes: Routes = [
     DragDropModule,
     HttpClientModule,
     FormsModule,
-    MatDialogModule,
     RouterModule.forChild(routes)
   ],
   providers: [

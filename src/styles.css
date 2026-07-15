@@ -1244,13 +1244,6 @@ select:focus {
   background: rgba(0, 0, 0, 0.65) !important;
   backdrop-filter: blur(8px) !important;
 }
-.arcane-modal-panel .mat-dialog-container {
-  background:  transparent !important;
-  box-shadow:  none !important;
-  padding:     0 !important;
-  overflow:    visible !important;
-  border-radius: 0 !important;
-}
 
 /* === AUTH PAGES (login + register) ===
    Shared card chrome used by both auth routes. */
