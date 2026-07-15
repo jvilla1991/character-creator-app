@@ -66,7 +66,6 @@ import { ToastComponent } from './components/toast/toast.component';
 
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { CharacterModalService } from './services/character-modal.service';
 import { FormsModule } from '@angular/forms';
@@ -147,6 +146,5 @@ const routes: Routes = [
         RouterModule.forChild(routes)], providers: [
         AuthService,
         CharacterModalService,
-        provideHttpClient(withInterceptorsFromDi()),
     ] })
 export class CharactermanagerModule { }
