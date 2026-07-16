@@ -23,7 +23,7 @@ export interface CatalogItem {
   costCp: number;
   weight?: number | null;
   bulk: number;
-  details: { [key: string]: any };
+  details: { [key: string]: unknown };
 }
 
 /** Map a backend catalog category ('WEAPON') to the lowercase inventory label
@@ -49,7 +49,8 @@ export function categoryLabelFor(backendCategory: string): PcItem['category'] {
  * No coins move here; the caller owns any payment.
  */
 export function pcItemFromCatalog(item: CatalogItem, qty: number): PcItem {
-  const entry: PcItem = {
+  // Intersection with a string index so the details flatten-in below is typed.
+  const entry: PcItem & Record<string, unknown> = {
     catalogKey: item.itemKey,
     name: item.name,
     category: categoryLabelFor(item.category),
@@ -61,7 +62,7 @@ export function pcItemFromCatalog(item: CatalogItem, qty: number): PcItem {
     bulk: item.bulk ?? bulkFromWeight(item.weight ?? undefined),
   };
   for (const [k, v] of Object.entries(item.details ?? {})) {
-    if (!(k in entry)) (entry as any)[k] = v; // putIfAbsent — base fields win
+    if (!(k in entry)) entry[k] = v; // putIfAbsent — base fields win
   }
   return entry;
 }
@@ -72,7 +73,7 @@ export interface ShopItem {
   category: string;
   costCp: number;
   weight?: number | null;
-  details: { [key: string]: any };
+  details: { [key: string]: unknown };
   stock: number | null; // null = unlimited (standard shops, Phase 1)
 }
 

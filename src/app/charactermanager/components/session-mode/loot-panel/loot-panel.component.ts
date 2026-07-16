@@ -290,10 +290,12 @@ export class LootPanelComponent implements OnChanges {
     this.fetchLoot();
   }
 
-  private errMsg(err: any, fallback: string): string {
-    if (err?.status === 409) return err?.error?.message || 'Someone got there first.';
-    if (err?.status === 403) return 'That character can’t claim from this loot.';
-    return err?.error?.message || fallback;
+  private errMsg(err: unknown, fallback: string): string {
+    // HttpErrorResponse in real mode; a plain Error in demo mode.
+    const e = err as { status?: number; error?: { message?: string } } | null;
+    if (e?.status === 409) return e?.error?.message || 'Someone got there first.';
+    if (e?.status === 403) return 'That character can’t claim from this loot.';
+    return e?.error?.message || fallback;
   }
 
   trackById(_: number, item: LootItem): number {

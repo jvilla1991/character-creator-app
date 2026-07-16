@@ -258,7 +258,7 @@ export class InitiativePanelComponent {
   }
 
   tintFor(p: ParticipantView): string {
-    return tintFor({ portraitTint: p.portraitTint } as any);
+    return tintFor({ portraitTint: p.portraitTint });
   }
 
   initialsFor(p: ParticipantView): string {

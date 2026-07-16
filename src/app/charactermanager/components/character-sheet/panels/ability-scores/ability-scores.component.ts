@@ -28,7 +28,7 @@ export class AbilityScoresComponent implements OnChanges {
 
   rows: AbilityRow[] = [];
 
-  private static readonly ORDER = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+  private static readonly ORDER = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
   private static readonly LABELS: Record<string, string> = {
     STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution',
     INT: 'Intelligence', WIS: 'Wisdom',   CHA: 'Charisma',
@@ -36,13 +36,13 @@ export class AbilityScoresComponent implements OnChanges {
 
   ngOnChanges(): void {
     this.rows = AbilityScoresComponent.ORDER.map(key => {
-      const score = this.pc.stats?.[key as keyof typeof this.pc.stats] ?? 10;
+      const score = this.pc.stats?.[key] ?? 10;
       return {
         key,
         label:      AbilityScoresComponent.LABELS[key],
         score,
         mod:        fmtMod(modFromScore(score)),
-        isSaveProf: this.pc.saves?.includes(key as any) ?? false,
+        isSaveProf: this.pc.saves?.includes(key) ?? false,
       };
     });
   }

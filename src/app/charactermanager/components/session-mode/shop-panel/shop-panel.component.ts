@@ -112,7 +112,8 @@ export class ShopPanelComponent implements OnChanges {
 
   detail(item: ShopItem, key: string): string {
     const v = item.details?.[key];
-    return Array.isArray(v) ? v.join(', ') : (v ?? '');
+    if (Array.isArray(v)) return v.join(', ');
+    return typeof v === 'string' ? v : v != null ? String(v) : '';
   }
 
   /** The descriptive line under an item, by category. */
@@ -227,10 +228,12 @@ export class ShopPanelComponent implements OnChanges {
     });
   }
 
-  private errMsg(err: any, fallback: string): string {
-    if (err?.status === 409) return 'Not enough coin for that purchase.';
-    if (err?.status === 403) return 'That character isn’t at this shop.';
-    return err?.error?.message || fallback;
+  private errMsg(err: unknown, fallback: string): string {
+    // HttpErrorResponse in real mode; a plain Error in demo mode.
+    const e = err as { status?: number; error?: { message?: string } } | null;
+    if (e?.status === 409) return 'Not enough coin for that purchase.';
+    if (e?.status === 403) return 'That character isn’t at this shop.';
+    return e?.error?.message || fallback;
   }
 
   trackByKey(_: number, item: ShopItem): string {

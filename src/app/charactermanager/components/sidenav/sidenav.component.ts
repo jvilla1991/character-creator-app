@@ -90,7 +90,7 @@ export class SidenavComponent implements OnInit, OnDestroy {
   joinCampaign(): void { this.closeDrawer(); this.joinModal.open(); }
 
   /** Account-row tint, reusing the shared portrait util. */
-  get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
+  get userTint(): string { return tintFor({ portraitTint: this.user.tint }); }
 
   openSettings(): void { this.closeDrawer(); this.uiState.openSettings(); }
 

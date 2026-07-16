@@ -919,50 +919,51 @@ export class SessionService {
 
   // --- serialize / deserialize seam ----------------------------------------
 
-  private deserialize(raw: any): SessionState {
+  private deserialize(raw: unknown): SessionState {
+    const dto = raw as SessionStateDto;
     return {
-      sessionId: raw.sessionId,
-      campaignId: raw.campaignId,
-      status: raw.status,
-      round: raw.round,
-      activeParticipantId: raw.activeParticipantId ?? null,
-      onDeckParticipantId: raw.onDeckParticipantId ?? null,
-      version: raw.version,
-      dm: !!raw.dm,
-      enemiesHidden: !!raw.enemiesHidden,
-      enemyHpHidden: !!raw.enemyHpHidden,
-      turnSound: raw.turnSound ?? null,
-      shopOpen: !!raw.shopOpen,
-      shopForMe: !!raw.shopForMe,
-      shopCategory: raw.shopCategory ?? null,
-      lootStatus: raw.lootStatus ?? null,
-      lootName: raw.lootName ?? null,
-      myXp: raw.myXp ?? null,
-      gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(raw.gameTime)),
-      location: this.parseLocation(this.parseJsonObject<CampaignLocation>(raw.location)),
-      weekDays: Array.isArray(raw.weekDays) && raw.weekDays.length ? raw.weekDays : null,
-      participants: (raw.participants ?? []).map((p: any) => this.deserializeParticipant(p)),
-      rolls: (raw.rolls ?? []).map((r: any) => this.deserializeRoll(r)),
+      sessionId: dto.sessionId,
+      campaignId: dto.campaignId,
+      status: dto.status,
+      round: dto.round,
+      activeParticipantId: dto.activeParticipantId ?? null,
+      onDeckParticipantId: dto.onDeckParticipantId ?? null,
+      version: dto.version,
+      dm: !!dto.dm,
+      enemiesHidden: !!dto.enemiesHidden,
+      enemyHpHidden: !!dto.enemyHpHidden,
+      turnSound: dto.turnSound ?? null,
+      shopOpen: !!dto.shopOpen,
+      shopForMe: !!dto.shopForMe,
+      shopCategory: dto.shopCategory ?? null,
+      lootStatus: dto.lootStatus ?? null,
+      lootName: dto.lootName ?? null,
+      myXp: dto.myXp ?? null,
+      gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(dto.gameTime)),
+      location: this.parseLocation(this.parseJsonObject<CampaignLocation>(dto.location)),
+      weekDays: Array.isArray(dto.weekDays) && dto.weekDays.length ? dto.weekDays : null,
+      participants: (dto.participants ?? []).map(p => this.deserializeParticipant(p)),
+      rolls: (dto.rolls ?? []).map(r => this.deserializeRoll(r)),
     };
   }
 
-  private deserializeRoll(r: any): SessionRollView {
+  private deserializeRoll(r: SessionRollDto): SessionRollView {
     return {
       rollId: r.rollId,
       participantId: r.participantId,
       rollerName: r.rollerName,
       mine: !!r.mine,
-      groups: (r.groups ?? []).map((g: any) => ({
+      groups: (r.groups ?? []).map(g => ({
         sides: g.sides,
         rolls: g.rolls ?? [],
-        subtotal: g.subtotal ?? (g.rolls ?? []).reduce((a: number, b: number) => a + b, 0),
+        subtotal: g.subtotal ?? (g.rolls ?? []).reduce((a, b) => a + b, 0),
       })),
       grandTotal: r.grandTotal,
       createdAt: r.createdAt,
     };
   }
 
-  private deserializeParticipant(p: any): ParticipantView {
+  private deserializeParticipant(p: ParticipantDto): ParticipantView {
     return {
       participantId: p.participantId,
       pcId: p.pcId ?? null,
@@ -999,7 +1000,7 @@ export class SessionService {
   }
 
   /** Tolerates an object, a JSON-string TEXT column, or null (→ null). */
-  private parseJsonObject<T>(raw: any): T | null {
+  private parseJsonObject<T>(raw: unknown): T | null {
     if (raw && typeof raw === 'object') return raw as T;
     if (typeof raw === 'string' && raw.trim()) {
       try { return (JSON.parse(raw) ?? null) as T | null; } catch { return null; }
@@ -1008,7 +1009,7 @@ export class SessionService {
   }
 
   /** Backend sends conditions as a JSON string (PC.conditions); normalize to an array. */
-  private parseConditions(raw: any): string[] {
+  private parseConditions(raw: unknown): string[] {
     if (Array.isArray(raw)) return raw;
     if (typeof raw === 'string' && raw.trim()) {
       try {
@@ -1020,4 +1021,71 @@ export class SessionService {
     }
     return [];
   }
+}
+
+// --- wire DTOs --------------------------------------------------------------
+// Raw shapes of the backend SessionStateView / ParticipantView / roll payloads
+// BEFORE the deserializer runs: JSON-string TEXT columns (gameTime, location,
+// conditions, survival, spellSlots) are still unparsed, and most fields may be
+// absent — the deserializer supplies the defaults.
+
+interface SessionStateDto {
+  sessionId: SessionState['sessionId'];
+  campaignId: SessionState['campaignId'];
+  status: SessionState['status'];
+  round: number;
+  activeParticipantId?: number | null;
+  onDeckParticipantId?: number | null;
+  version: number;
+  dm?: boolean;
+  enemiesHidden?: boolean;
+  enemyHpHidden?: boolean;
+  turnSound?: string | null;
+  shopOpen?: boolean;
+  shopForMe?: boolean;
+  shopCategory?: string | null;
+  lootStatus?: SessionState['lootStatus'];
+  lootName?: string | null;
+  myXp?: number | null;
+  gameTime?: unknown;
+  location?: unknown;
+  weekDays?: string[] | null;
+  participants?: ParticipantDto[];
+  rolls?: SessionRollDto[];
+}
+
+interface ParticipantDto {
+  participantId: number;
+  pcId?: number | null;
+  npc?: boolean;
+  ownedByMe?: boolean;
+  currentTurn?: boolean;
+  name: string;
+  clazz?: string | null;
+  level?: number | null;
+  portraitTint?: string | null;
+  portraitInitials?: string | null;
+  initiative?: number | null;
+  initRolled?: boolean;
+  dexModifier?: number | null;
+  orderIndex?: number | null;
+  hpMax?: number | null;
+  hpCurrent?: number | null;
+  hpTemp?: number | null;
+  ac?: number | null;
+  conditions?: unknown;
+  survival?: unknown;
+  spellSlots?: unknown;
+  deathSaveSuccesses?: number | null;
+  deathSaveFailures?: number | null;
+}
+
+interface SessionRollDto {
+  rollId: number;
+  participantId: number;
+  rollerName: string;
+  mine?: boolean;
+  groups?: Array<{ sides: number; rolls?: number[]; subtotal?: number }>;
+  grandTotal: number;
+  createdAt: string;
 }
