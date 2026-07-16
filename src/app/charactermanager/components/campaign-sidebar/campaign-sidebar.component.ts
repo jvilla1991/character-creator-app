@@ -20,7 +20,7 @@ interface CampaignRow {
     standalone: false
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {
-  activeCampaignId$ = this.uiState.activeCampaignId$;
+  readonly activeCampaignId = this.uiState.activeCampaignId;
 
   // Refetch valve: fired on window refocus so a player joining while the DM
   // was in another tab shows up without a manual reload. No background polling.

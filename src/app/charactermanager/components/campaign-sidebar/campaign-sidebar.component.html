@@ -10,7 +10,7 @@
     @for (row of rows$ | async; track row) {
       <div
         class="campaign-item"
-        [class.active]="(activeCampaignId$ | async) === row.campaign.id"
+        [class.active]="activeCampaignId() === row.campaign.id"
         (click)="select(row.campaign.id)"
         >
         <!-- IconBanner crest -->

@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { CampaignSidebarComponent } from './campaign-sidebar.component';
 import { CampaignService } from '../../services/campaign.service';
@@ -28,7 +29,7 @@ describe('CampaignSidebarComponent', () => {
       { campaigns$: campaigns$.asObservable() });
     pcService = { pcs$: pcs$.asObservable() } as Partial<PCService>;
     uiState = jasmine.createSpyObj<UiStateService>('UiStateService', ['setActiveCampaign'],
-      { activeCampaignId$: of(null) });
+      { activeCampaignId: signal<string | null>(null).asReadonly() });
   });
 
   function build(): CampaignSidebarComponent {

@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
@@ -40,8 +41,10 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
   // Bump to re-pull the member projection (after a bind/unbind).
   private membersRefresh$ = new BehaviorSubject<void>(undefined);
 
+  // The rest of this chain is genuinely reactive RxJS (switchMap over HTTP),
+  // so the campaign-id signal is bridged in with toObservable.
   vm$: Observable<DashboardVm | null> = combineLatest([
-    this.uiState.activeCampaignId$,
+    toObservable(this.uiState.activeCampaignId),
     this.campaignService.campaigns$,
     this.membersRefresh$,
   ]).pipe(
