@@ -14,9 +14,10 @@ const VITAL_LABELS: Record<'ac' | 'init' | 'speed' | 'prof', string> = {
 };
 
 @Component({
-  selector: 'app-vitals-strip',
-  templateUrl: './vitals-strip.component.html',
-  styleUrls: ['./vitals-strip.component.scss']
+    selector: 'app-vitals-strip',
+    templateUrl: './vitals-strip.component.html',
+    styleUrls: ['./vitals-strip.component.scss'],
+    standalone: false
 })
 export class VitalsStripComponent {
   @Input() pc!: PC;

@@ -6,21 +6,27 @@
     </span>
   </div>
 
-  <div *ngIf="canWrite" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 10px;">
-    <textarea
-      [(ngModel)]="draft"
-      rows="5"
-      placeholder="Log a memory, a clue, a grudge…"
-      style="width: 100%; resize: vertical;"
-      (keydown.control.enter)="addNote()"
-    ></textarea>
-    <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="addNote()">Add</button>
-  </div>
+  @if (canWrite) {
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 10px;">
+      <textarea
+        [(ngModel)]="draft"
+        rows="5"
+        placeholder="Log a memory, a clue, a grudge…"
+        style="width: 100%; resize: vertical;"
+        (keydown.control.enter)="addNote()"
+      ></textarea>
+      <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="addNote()">Add</button>
+    </div>
+  }
 
-  <div *ngFor="let note of notes" style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
-    <div style="white-space: pre-wrap;">{{ note.body }}</div>
-    <div class="equip-item-meta" style="margin-top: 2px;">
-      {{ noteDate(note) }}<span *ngIf="note.sessionId"> · in session</span>
+  @for (note of notes; track note) {
+    <div style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
+      <div style="white-space: pre-wrap;">{{ note.body }}</div>
+      <div class="equip-item-meta" style="margin-top: 2px;">
+        {{ noteDate(note) }}@if (note.sessionId) {
+        <span> · in session</span>
+      }
     </div>
   </div>
+}
 </div>

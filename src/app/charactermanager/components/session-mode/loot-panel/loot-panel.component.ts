@@ -25,9 +25,10 @@ import { NotificationService } from '../../../services/notification.service';
  * the session version, not just on the status flipping.
  */
 @Component({
-  selector: 'app-loot-panel',
-  templateUrl: './loot-panel.component.html',
-  styleUrls: ['./loot-panel.component.scss'],
+    selector: 'app-loot-panel',
+    templateUrl: './loot-panel.component.html',
+    styleUrls: ['./loot-panel.component.scss'],
+    standalone: false
 })
 export class LootPanelComponent implements OnChanges {
   @Input() state!: SessionState;
@@ -289,10 +290,12 @@ export class LootPanelComponent implements OnChanges {
     this.fetchLoot();
   }
 
-  private errMsg(err: any, fallback: string): string {
-    if (err?.status === 409) return err?.error?.message || 'Someone got there first.';
-    if (err?.status === 403) return 'That character can’t claim from this loot.';
-    return err?.error?.message || fallback;
+  private errMsg(err: unknown, fallback: string): string {
+    // HttpErrorResponse in real mode; a plain Error in demo mode.
+    const e = err as { status?: number; error?: { message?: string } } | null;
+    if (e?.status === 409) return e?.error?.message || 'Someone got there first.';
+    if (e?.status === 403) return 'That character can’t claim from this loot.';
+    return e?.error?.message || fallback;
   }
 
   trackById(_: number, item: LootItem): number {

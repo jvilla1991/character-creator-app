@@ -18,9 +18,10 @@ import { ShopService } from '../../../services/shop.service';
  * edited inline here, or bulk-added from pasted JSON (mirroring the shop import).
  */
 @Component({
-  selector: 'app-curated-encounters',
-  templateUrl: './curated-encounters.component.html',
-  styleUrls: ['./curated-encounters.component.scss'],
+    selector: 'app-curated-encounters',
+    templateUrl: './curated-encounters.component.html',
+    styleUrls: ['./curated-encounters.component.scss'],
+    standalone: false
 })
 export class CuratedEncountersComponent implements OnChanges {
   @Input() campaign!: Campaign;

@@ -22,9 +22,10 @@ import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survi
  * and the turn-sound picker. Everyone gets a local mute toggle.
  */
 @Component({
-  selector: 'app-initiative-panel',
-  templateUrl: './initiative-panel.component.html',
-  styleUrls: ['./initiative-panel.component.scss'],
+    selector: 'app-initiative-panel',
+    templateUrl: './initiative-panel.component.html',
+    styleUrls: ['./initiative-panel.component.scss'],
+    standalone: false
 })
 export class InitiativePanelComponent {
   @Input() participants: ParticipantView[] = [];
@@ -257,7 +258,7 @@ export class InitiativePanelComponent {
   }
 
   tintFor(p: ParticipantView): string {
-    return tintFor({ portraitTint: p.portraitTint } as any);
+    return tintFor({ portraitTint: p.portraitTint });
   }
 
   initialsFor(p: ParticipantView): string {

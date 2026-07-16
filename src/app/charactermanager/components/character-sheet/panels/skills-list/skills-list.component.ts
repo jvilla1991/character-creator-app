@@ -10,10 +10,11 @@ interface SkillRow {
 }
 
 @Component({
-  selector: 'app-skills-list',
-  templateUrl: './skills-list.component.html',
-  styleUrls: ['./skills-list.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-skills-list',
+    templateUrl: './skills-list.component.html',
+    styleUrls: ['./skills-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SkillsListComponent implements OnChanges {
   @Input() pc!: PC;

@@ -21,8 +21,10 @@ export const PORTRAIT_TINTS: Record<string, string> = {
   emerald:   'color-mix(in oklch, var(--emerald) 24%, var(--surface-3))',
 };
 
-export function tintFor(pc: PC): string {
-  return PORTRAIT_TINTS[pc.portraitTint ?? 'celestial'] ?? PORTRAIT_TINTS['celestial'];
+/** Accepts anything carrying a portrait tint key — a PC, a session participant
+ *  row, or the account row's user — and falls back to celestial for unknown keys. */
+export function tintFor(owner: { portraitTint?: string | null }): string {
+  return PORTRAIT_TINTS[owner.portraitTint ?? 'celestial'] ?? PORTRAIT_TINTS['celestial'];
 }
 
 // ── Hit dice ────────────────────────────────────────────────────────────────

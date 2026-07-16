@@ -11,8 +11,9 @@ import { PCService } from '../../../../services/pc.service';
  * that own their data flow.
  */
 @Component({
-  selector: 'app-pc-notes',
-  templateUrl: './pc-notes.component.html',
+    selector: 'app-pc-notes',
+    templateUrl: './pc-notes.component.html',
+    standalone: false
 })
 export class PcNotesComponent implements OnChanges {
   @Input() pc!: PC;

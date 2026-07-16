@@ -1,8 +1,8 @@
 <div class="fade-in">
 
   <!-- ═══════════════════════════════════════════════
-       SHEET HEADER: portrait · identity · actions
-       ═══════════════════════════════════════════════ -->
+  SHEET HEADER: portrait · identity · actions
+  ═══════════════════════════════════════════════ -->
   <header class="sheet-header">
 
     <!-- XL portrait circle -->
@@ -15,21 +15,23 @@
       <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
 
       <!-- Editable hero name -->
-      <input
-        *ngIf="editingName"
-        class="sheet-name sheet-name-edit"
-        [(ngModel)]="nameDraft"
-        (blur)="commitName()"
-        (keydown.enter)="commitName()"
-        (keydown.escape)="cancelNameEdit()"
-        autofocus
-      >
-      <h1
-        *ngIf="!editingName"
-        class="sheet-name"
-        (dblclick)="startNameEdit()"
-        title="Double-click to rename"
-      >{{ pc.name }}</h1>
+      @if (editingName) {
+        <input
+          class="sheet-name sheet-name-edit"
+          [(ngModel)]="nameDraft"
+          (blur)="commitName()"
+          (keydown.enter)="commitName()"
+          (keydown.escape)="cancelNameEdit()"
+          autofocus
+          >
+      }
+      @if (!editingName) {
+        <h1
+          class="sheet-name"
+          (dblclick)="startNameEdit()"
+          title="Double-click to rename"
+        >{{ pc.name }}</h1>
+      }
 
       <div class="sheet-subtitle">
         {{ pc.race }}
@@ -45,18 +47,22 @@
           label="level"
           (committed)="onLevelCommit($event)"
         >{{ pc.level }}</app-editable-number>
-        <ng-container *ngIf="location">
+        @if (location) {
           <span class="dot">✦</span>
           <span class="sheet-location-tag"
-                title="Party location">📍 {{ location.name }}({{ location.type }})</span>
-        </ng-container>
-        <span *ngIf="readyToLevel" class="level-ready-badge" title="Enough XP to advance — use Level Up">
-          Ready to level up
-        </span>
-        <span *ngIf="!readyToLevel && dmGrantedLevel" class="level-ready-badge"
-              title="Your DM granted a level-up — use Level Up">
-          Level-up granted
-        </span>
+          title="Party location">📍 {{ location.name }}({{ location.type }})</span>
+        }
+        @if (readyToLevel) {
+          <span class="level-ready-badge" title="Enough XP to advance — use Level Up">
+            Ready to level up
+          </span>
+        }
+        @if (!readyToLevel && dmGrantedLevel) {
+          <span class="level-ready-badge"
+            title="Your DM granted a level-up — use Level Up">
+            Level-up granted
+          </span>
+        }
       </div>
 
       <!-- XP progress through the current level, with the XP total beside it -->
@@ -68,7 +74,7 @@
           [title]="xpForNextLevel != null
             ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
             : 'Maximum level reached'"
-        >
+          >
           <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
         </div>
         <span
@@ -76,195 +82,220 @@
           [title]="xpForNextLevel != null
             ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
             : 'Maximum level reached'"
-        >{{ pc.xp || 0 }}<ng-container *ngIf="xpForNextLevel != null"> / {{ xpForNextLevel }}</ng-container> XP</span>
+          >{{ pc.xp || 0 }}@if (xpForNextLevel != null) {
+          / {{ xpForNextLevel }}
+        } XP</span>
       </div>
     </div>
 
     <!-- Action buttons -->
-    <div class="sheet-actions" *ngIf="showActions">
-      <!-- Campaign members connect to the live session; unbound characters
-           get a Join Campaign button instead (opens the join modal). -->
-      <button
-        *ngIf="inCampaign"
-        class="btn play"
-        title="Connect to your campaign session"
-        (click)="onConnectClick()"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M4 2.5v11l9-5.5z"/>
-        </svg>
-        Connect
-      </button>
-      <button
-        *ngIf="!inCampaign"
-        class="btn play"
-        title="This character is not part of a campaign yet — join one"
-        (click)="joinCampaignRequested.emit()"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M4 2.5v11l9-5.5z"/>
-        </svg>
-        Join Campaign
-      </button>
-      <button class="btn" title="Roll dice" (click)="rollRequested.emit()">
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/>
-          <path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
-        </svg>
-        Roll
-      </button>
-      <button class="btn" [class.ready]="canLevelUp" [disabled]="!canLevelUp"
-              [title]="levelUpHint" (click)="levelUpRequested.emit()">
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-             style="margin-right: 6px; vertical-align: -2px;">
-          <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
-        </svg>
-        Level Up
-      </button>
-      <!-- DM cross-link: grant (or revoke) a level-up the player may spend
-           without meeting the XP threshold. -->
-      <button *ngIf="editable" class="btn" [class.on]="dmGrantedLevel"
-              (click)="toggleLevelGrant()"
+    @if (showActions) {
+      <div class="sheet-actions">
+        <!-- Campaign members connect to the live session; unbound characters
+        get a Join Campaign button instead (opens the join modal). -->
+        @if (inCampaign) {
+          <button
+            class="btn play"
+            title="Connect to your campaign session"
+            (click)="onConnectClick()"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M4 2.5v11l9-5.5z"/>
+            </svg>
+            Connect
+          </button>
+        }
+        @if (!inCampaign) {
+          <button
+            class="btn play"
+            title="This character is not part of a campaign yet — join one"
+            (click)="joinCampaignRequested.emit()"
+            >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
+              style="margin-right: 6px; vertical-align: -2px;">
+              <path d="M4 2.5v11l9-5.5z"/>
+            </svg>
+            Join Campaign
+          </button>
+        }
+        <button class="btn" title="Roll dice" (click)="rollRequested.emit()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+            style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M8 1l6 3.5v7L8 15l-6-3.5v-7L8 1z"/>
+            <path d="M8 1v14M2 4.5l6 3.5 6-3.5"/>
+          </svg>
+          Roll
+        </button>
+        <button class="btn" [class.ready]="canLevelUp" [disabled]="!canLevelUp"
+          [title]="levelUpHint" (click)="levelUpRequested.emit()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+            style="margin-right: 6px; vertical-align: -2px;">
+            <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
+          </svg>
+          Level Up
+        </button>
+        <!-- DM cross-link: grant (or revoke) a level-up the player may spend
+        without meeting the XP threshold. -->
+        @if (editable) {
+          <button class="btn" [class.on]="dmGrantedLevel"
+            (click)="toggleLevelGrant()"
               [title]="dmGrantedLevel
                 ? 'Revoke the granted level-up'
                 : 'Let this character level up without the XP threshold'">
-        {{ dmGrantedLevel ? 'Revoke Level-Up' : 'Grant Level-Up' }}
-      </button>
-      <button class="btn danger icon" (click)="deleteRequested.emit()" title="Delete character">
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
-          <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
-        </svg>
-      </button>
-    </div>
+            {{ dmGrantedLevel ? 'Revoke Level-Up' : 'Grant Level-Up' }}
+          </button>
+        }
+        <button class="btn danger icon" (click)="deleteRequested.emit()" title="Delete character">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
+          </svg>
+        </button>
+      </div>
+    }
 
   </header>
 
   <!-- Section tabs. Desktop: a bar under the header. Mobile: fixed to the
-       bottom of the screen and follows the player as they scroll (see SCSS). -->
+  bottom of the screen and follows the player as they scroll (see SCSS). -->
   <nav class="sheet-tabs" role="tablist">
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'sheet'"
-            [attr.aria-selected]="activeTab === 'sheet'" (click)="setTab('sheet')">Sheet</button>
+    [attr.aria-selected]="activeTab === 'sheet'" (click)="setTab('sheet')">Sheet</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'spells'"
-            [attr.aria-selected]="activeTab === 'spells'" (click)="setTab('spells')">Spells</button>
+    [attr.aria-selected]="activeTab === 'spells'" (click)="setTab('spells')">Spells</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'inventory'"
-            [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
+    [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
-            [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
+    [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
-            [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
+    [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
   </nav>
 
   <!-- Vitals (HP/AC/…) belong to the main Sheet tab only — they were following
-       the player onto Spells/Inventory/Notes and crowding those tabs. -->
-  <app-vitals-strip
-    *ngIf="activeTab === 'sheet'"
-    [pc]="pc"
-    [editable]="editable"
-    (pcChange)="onPcChange($event)"
-    (editRequested)="onDmEditRequested($event)">
-  </app-vitals-strip>
+  the player onto Spells/Inventory/Notes and crowding those tabs. -->
+  @if (activeTab === 'sheet') {
+    <app-vitals-strip
+      [pc]="pc"
+      [editable]="editable"
+      (pcChange)="onPcChange($event)"
+      (editRequested)="onDmEditRequested($event)">
+    </app-vitals-strip>
+  }
 
   <!-- SHEET TAB: abilities, skills, conditions, survival, features, wealth, bio -->
-  <div class="sheet-grid" *ngIf="activeTab === 'sheet'">
-    <div class="col-left">
-      <app-ability-scores
-        [pc]="pc"
-        [editable]="editable"
-        (pcChange)="onPcChange($event)"
-        (editRequested)="onDmEditRequested($event)">
-      </app-ability-scores>
-      <app-skills-list    [pc]="pc"></app-skills-list>
+  @if (activeTab === 'sheet') {
+    <div class="sheet-grid">
+      <div class="col-left">
+        <app-ability-scores
+          [pc]="pc"
+          [editable]="editable"
+          (pcChange)="onPcChange($event)"
+          (editRequested)="onDmEditRequested($event)">
+        </app-ability-scores>
+        <app-skills-list    [pc]="pc"></app-skills-list>
+      </div>
+      <div class="col-right">
+        <app-conditions-panel
+          [pc]="pc"
+          (conditionToggled)="onConditionToggle($event)">
+        </app-conditions-panel>
+        <!-- Survival is visible to everyone in a survival campaign; only the DM's
+        cross-link view (editable) gets the steppers to change it. -->
+        @if (survivalConditions) {
+          <app-survival-panel
+            [pc]="pc"
+            [editable]="editable"
+            [ownControls]="ownSheet"
+            (pcChange)="onPcChange($event)"
+            (actionRequested)="onSurvivalAction($event)">
+          </app-survival-panel>
+        }
+        <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
+        <app-coin-purse
+          [pc]="pc"
+          [editable]="editable"
+          (pcChange)="onPcChange($event)"
+          (editRequested)="onDmEditRequested($event)">
+        </app-coin-purse>
+        <app-background-story [pc]="pc"></app-background-story>
+      </div>
     </div>
-    <div class="col-right">
-      <app-conditions-panel
-        [pc]="pc"
-        (conditionToggled)="onConditionToggle($event)">
-      </app-conditions-panel>
-      <!-- Survival is visible to everyone in a survival campaign; only the DM's
-           cross-link view (editable) gets the steppers to change it. -->
-      <app-survival-panel
-        *ngIf="survivalConditions"
-        [pc]="pc"
-        [editable]="editable"
-        [ownControls]="ownSheet"
-        (pcChange)="onPcChange($event)"
-        (actionRequested)="onSurvivalAction($event)">
-      </app-survival-panel>
-      <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
-      <app-coin-purse
-        [pc]="pc"
-        [editable]="editable"
-        (pcChange)="onPcChange($event)"
-        (editRequested)="onDmEditRequested($event)">
-      </app-coin-purse>
-      <app-background-story [pc]="pc"></app-background-story>
-    </div>
-  </div>
+  }
 
   <!-- SPELLS TAB -->
-  <div class="sheet-tab-panel" *ngIf="activeTab === 'spells'">
-    <app-spellbook-panel
-      [pc]="pc"
-      [editable]="editable"
-      [strictComponents]="strictComponents"
-      [castable]="sessionLive"
-      [addAllowed]="editable"
-      (castRequested)="onCastRequested($event)"
-      (pcChange)="onPcChange($event)"
-      (spellsGranted)="onSpellsGrant($event)">
-    </app-spellbook-panel>
-  </div>
+  @if (activeTab === 'spells') {
+    <div class="sheet-tab-panel">
+      <app-spellbook-panel
+        [pc]="pc"
+        [editable]="editable"
+        [strictComponents]="strictComponents"
+        [castable]="sessionLive"
+        [addAllowed]="editable"
+        (castRequested)="onCastRequested($event)"
+        (pcChange)="onPcChange($event)"
+        (spellsGranted)="onSpellsGrant($event)">
+      </app-spellbook-panel>
+    </div>
+  }
 
   <!-- INVENTORY TAB -->
-  <div class="sheet-tab-panel" *ngIf="activeTab === 'inventory'">
-    <!-- Travel supplies as charges (survival campaigns) — sits above Inventory.
-         Steppers are DM-only (the cross-link `editable`), like the Survival panel. -->
-    <app-supplies-panel
-      *ngIf="survivalConditions"
-      [pc]="pc"
-      [editable]="editable"
-      (pcChange)="onPcChange($event)">
-    </app-supplies-panel>
-    <app-equipment-panel *ngIf="!slotInventory" [pc]="pc"></app-equipment-panel>
-    <app-inventory-panel
-      [pc]="pc"
-      [editable]="showActions || inventoryEditable"
-      [addAllowed]="editable"
-      [shopOpenForMe]="shopOpenForMe"
-      [shopCategory]="shopCategory"
-      [slotInventory]="slotInventory"
-      (pcChange)="onPcChange($event)"
-      (itemGranted)="onItemGrant($event)"
-      (sellRequested)="sellRequested.emit($event)">
-    </app-inventory-panel>
-  </div>
+  @if (activeTab === 'inventory') {
+    <div class="sheet-tab-panel">
+      <!-- Travel supplies as charges (survival campaigns) — sits above Inventory.
+      Steppers are DM-only (the cross-link `editable`), like the Survival panel. -->
+      @if (survivalConditions) {
+        <app-supplies-panel
+          [pc]="pc"
+          [editable]="editable"
+          (pcChange)="onPcChange($event)">
+        </app-supplies-panel>
+      }
+      @if (!slotInventory) {
+        <app-equipment-panel [pc]="pc"></app-equipment-panel>
+      }
+      <app-inventory-panel
+        [pc]="pc"
+        [editable]="showActions || inventoryEditable"
+        [addAllowed]="editable"
+        [shopOpenForMe]="shopOpenForMe"
+        [shopCategory]="shopCategory"
+        [slotInventory]="slotInventory"
+        (pcChange)="onPcChange($event)"
+        (itemGranted)="onItemGrant($event)"
+        (sellRequested)="sellRequested.emit($event)">
+      </app-inventory-panel>
+    </div>
+  }
 
   <!-- NOTES TAB -->
-  <div class="sheet-tab-panel" *ngIf="activeTab === 'notes'">
-    <app-pc-notes
-      [pc]="pc"
-      [canWrite]="(showActions || inventoryEditable) && !editable"
-      [sessionId]="noteSessionId">
-    </app-pc-notes>
-  </div>
+  @if (activeTab === 'notes') {
+    <div class="sheet-tab-panel">
+      <app-pc-notes
+        [pc]="pc"
+        [canWrite]="(showActions || inventoryEditable) && !editable"
+        [sessionId]="noteSessionId">
+      </app-pc-notes>
+    </div>
+  }
 
   <!-- LOG TAB: read-only activity feed (server-authoritative, no write path) -->
-  <div class="sheet-tab-panel" *ngIf="activeTab === 'log'">
-    <app-pc-log [pc]="pc"></app-pc-log>
-  </div>
+  @if (activeTab === 'log') {
+    <div class="sheet-tab-panel">
+      <app-pc-log [pc]="pc"></app-pc-log>
+    </div>
+  }
 
 </div>
 
 <!-- DM edit modal overlay — opened by any intercepted app-editable-number on
-     this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-scores). -->
-<div *ngIf="dmEdit" class="modal-backdrop" (click)="closeDmEdit()">
-  <app-dm-edit-modal
-    [request]="dmEdit"
-    (click)="$event.stopPropagation()"
-    (confirm)="onDmEditConfirmed($event)"
-    (close)="closeDmEdit()">
-  </app-dm-edit-modal>
-</div>
+this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-scores). -->
+@if (dmEdit) {
+  <div class="modal-backdrop" (click)="closeDmEdit()">
+    <app-dm-edit-modal
+      [request]="dmEdit"
+      (click)="$event.stopPropagation()"
+      (confirm)="onDmEditConfirmed($event)"
+      (close)="closeDmEdit()">
+    </app-dm-edit-modal>
+  </div>
+}

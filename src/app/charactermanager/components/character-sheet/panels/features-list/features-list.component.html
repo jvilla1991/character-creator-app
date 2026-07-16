@@ -1,46 +1,58 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Class Features</span>
-    <button *ngIf="addAllowed && !grantFormOpen" class="btn sm" (click)="openGrantForm()">+ Grant</button>
+    @if (addAllowed && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrantForm()">+ Grant</button>
+    }
   </div>
 
-  <div *ngIf="grantFormOpen" class="grant-form">
-    <div class="field feat-combobox">
-      <label>Name</label>
-      <input type="text" [(ngModel)]="nameDraft" placeholder="e.g. Blessing of the Old Gods"
-             role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="featDropdownOpen"
-             (focus)="onNameFocus()" (input)="onNameInput()" (blur)="onNameBlur()"
-             (keydown.enter)="submitGrant()" (keydown.escape)="onNameEscape()" autofocus>
-      <ul class="feat-options" role="listbox" *ngIf="featDropdownOpen && filteredFeats.length">
-        <li *ngFor="let n of filteredFeats" role="option">
-          <button type="button" class="feat-option" (mousedown)="$event.preventDefault(); selectFeat(n)">{{ n }}</button>
-        </li>
-      </ul>
-    </div>
-    <div class="field">
-      <label>Source</label>
-      <input type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
-    </div>
-    <div class="field">
-      <label>Description (optional)</label>
-      <textarea rows="2" [(ngModel)]="descDraft"
-                placeholder="What it does…"></textarea>
-    </div>
-    <div class="grant-form-actions">
-      <button class="btn primary sm" [disabled]="!nameDraft.trim()" (click)="submitGrant()">Add</button>
-      <button class="btn sm" (click)="cancelGrant()">Cancel</button>
-    </div>
-  </div>
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <div class="field feat-combobox">
+        <label>Name</label>
+        <input type="text" [(ngModel)]="nameDraft" placeholder="e.g. Blessing of the Old Gods"
+          role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="featDropdownOpen"
+          (focus)="onNameFocus()" (input)="onNameInput()" (blur)="onNameBlur()"
+          (keydown.enter)="submitGrant()" (keydown.escape)="onNameEscape()" autofocus>
+          @if (featDropdownOpen && filteredFeats.length) {
+            <ul class="feat-options" role="listbox">
+              @for (n of filteredFeats; track n) {
+                <li role="option">
+                  <button type="button" class="feat-option" (mousedown)="$event.preventDefault(); selectFeat(n)">{{ n }}</button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        <div class="field">
+          <label>Source</label>
+          <input type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
+        </div>
+        <div class="field">
+          <label>Description (optional)</label>
+          <textarea rows="2" [(ngModel)]="descDraft"
+          placeholder="What it does…"></textarea>
+        </div>
+        <div class="grant-form-actions">
+          <button class="btn primary sm" [disabled]="!nameDraft.trim()" (click)="submitGrant()">Add</button>
+          <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+        </div>
+      </div>
+    }
 
-  <div *ngFor="let f of pc.features" class="feature">
-    <div class="feature-head">
-      <span class="feature-name">{{ f.name }}</span>
-      <span class="feature-source">{{ f.source }}</span>
-    </div>
-    <div class="feature-desc">{{ descFor(f) }}</div>
+    @for (f of pc.features; track f) {
+      <div class="feature">
+        <div class="feature-head">
+          <span class="feature-name">{{ f.name }}</span>
+          <span class="feature-source">{{ f.source }}</span>
+        </div>
+        <div class="feature-desc">{{ descFor(f) }}</div>
+      </div>
+    }
+    @if (!pc.features || pc.features.length === 0) {
+      <div
+        style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+        No features recorded.
+      </div>
+    }
   </div>
-  <div *ngIf="!pc.features || pc.features.length === 0"
-       style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
-    No features recorded.
-  </div>
-</div>

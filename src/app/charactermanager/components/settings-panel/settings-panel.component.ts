@@ -19,8 +19,9 @@ interface ThemeSwatch {
  * swatches and dice preferences. Opened from the sidebar account-row gear.
  */
 @Component({
-  selector: 'app-settings-panel',
-  templateUrl: './settings-panel.component.html',
+    selector: 'app-settings-panel',
+    templateUrl: './settings-panel.component.html',
+    standalone: false
 })
 export class SettingsPanelComponent {
   user = this.currentUser.getUser();
@@ -41,7 +42,7 @@ export class SettingsPanelComponent {
   ) {}
 
   /** Background tint for the header portrait, reusing the shared util. */
-  get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
+  get userTint(): string { return tintFor({ portraitTint: this.user.tint }); }
 
   close(): void { this.uiState.closeSettings(); }
 

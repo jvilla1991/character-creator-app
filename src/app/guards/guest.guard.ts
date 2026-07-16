@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../charactermanager/services/auth.service';
 
 /**
@@ -8,11 +8,7 @@ import { AuthService } from '../charactermanager/services/auth.service';
  * redirects an authenticated user back into the app, so the login form is never
  * shown to someone who is already logged in.
  */
-@Injectable({ providedIn: 'root' })
-export class GuestGuard implements CanActivate {
-  constructor(private auth: AuthService, private router: Router) {}
-
-  canActivate(): boolean | UrlTree {
-    return this.auth.isAuthenticated() ? this.router.parseUrl('/charactermanager') : true;
-  }
-}
+export const guestGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  return auth.isAuthenticated() ? inject(Router).parseUrl('/charactermanager') : true;
+};

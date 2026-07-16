@@ -1,120 +1,178 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Inventory</span>
-    <span *ngIf="slotInventory" class="inv-slots" [class.over]="encumbered"
-          style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-      <span *ngIf="encumbered" class="inv-encumbered" [title]="encumberedPenalty"
-            style="color: var(--crimson); font-style: normal; font-weight: 600; margin-right: 8px;">Encumbered</span>
-      Slots {{ usedSlots }} / {{ slotCapacity }}
-    </span>
-    <span *ngIf="!slotInventory && items.length" style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-      {{ totalWeight }} lb
-    </span>
-    <button type="button" *ngIf="addAllowed && !grantFormOpen" class="inv-btn grant" (click)="openGrantForm()">+ Grant item</button>
+    @if (slotInventory) {
+      <span class="inv-slots" [class.over]="encumbered"
+        style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+        @if (encumbered) {
+          <span class="inv-encumbered" [title]="encumberedPenalty"
+          style="color: var(--crimson); font-style: normal; font-weight: 600; margin-right: 8px;">Encumbered</span>
+        }
+        Slots {{ usedSlots }} / {{ slotCapacity }}
+      </span>
+    }
+    @if (!slotInventory && items.length) {
+      <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+        {{ totalWeight }} lb
+      </span>
+    }
+    @if (addAllowed && !grantFormOpen) {
+      <button type="button" class="inv-btn grant" (click)="openGrantForm()">+ Grant item</button>
+    }
   </div>
 
   <!-- DM grant form -->
-  <div *ngIf="grantFormOpen" class="grant-form">
-    <div class="grant-tabs">
-      <button type="button" *ngIf="!demoMode" class="grant-tab" [class.on]="grantTab === 'catalog'"
-              (click)="setGrantTab('catalog')">Catalog</button>
-      <button type="button" class="grant-tab" [class.on]="grantTab === 'custom'"
-              (click)="setGrantTab('custom')">Custom</button>
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <div class="grant-tabs">
+        @if (!demoMode) {
+          <button type="button" class="grant-tab" [class.on]="grantTab === 'catalog'"
+          (click)="setGrantTab('catalog')">Catalog</button>
+        }
+        <button type="button" class="grant-tab" [class.on]="grantTab === 'custom'"
+        (click)="setGrantTab('custom')">Custom</button>
+      </div>
+      @if (demoMode) {
+        <p class="grant-hint">The demo has no catalog — grant a custom item below.</p>
+      }
+      <!-- Catalog tab -->
+      @if (grantTab === 'catalog' && !demoMode) {
+        <div class="grant-body">
+          <div class="grant-row">
+            <select [(ngModel)]="grantCategory" (ngModelChange)="loadCatalog()" aria-label="Category">
+              @for (c of grantCategories; track c) {
+                <option [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
+              }
+            </select>
+            <input type="number" min="1" [(ngModel)]="catalogQty" class="grant-qty" aria-label="Quantity">
+          </div>
+          <input type="text" [(ngModel)]="catalogSearch" class="grant-search" placeholder="Search items…">
+          @if (loadingCatalog) {
+            <div class="grant-hint">Loading catalog…</div>
+          }
+          @if (!loadingCatalog) {
+            <div class="grant-list">
+              @for (item of filteredCatalog; track item) {
+                <label class="grant-option" [class.on]="catalogSelectedKey === item.itemKey">
+                  <input type="radio" name="catalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
+                  <span class="grant-option-name">{{ item.name }}</span>
+                  <span class="grant-option-meta">{{ formatCp(item.costCp) }}</span>
+                </label>
+              }
+              @if (!filteredCatalog.length) {
+                <div class="grant-hint">No matching items.</div>
+              }
+            </div>
+          }
+          <div class="grant-actions">
+            <button type="button" class="inv-btn" [disabled]="!catalogSelectedKey" (click)="grantCatalogItem()">Add</button>
+            <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
+          </div>
+        </div>
+      }
+      <!-- Custom tab -->
+      @if (grantTab === 'custom') {
+        <div class="grant-body">
+          <input type="text" [(ngModel)]="customName" class="grant-search" placeholder="Item name">
+          <div class="grant-row">
+            <select [(ngModel)]="customCategory" aria-label="Category">
+              <option value="weapon">Weapon</option>
+              <option value="armor">Armor</option>
+              <option value="material-component">Material</option>
+              <option value="gear">Gear</option>
+            </select>
+            <input type="number" min="1" [(ngModel)]="customQty" class="grant-qty" aria-label="Quantity">
+          </div>
+          <div class="grant-row">
+            <input type="number" min="0" [(ngModel)]="customValueGp" class="grant-qty" placeholder="Value (gp)" aria-label="Value in gold">
+            <input type="number" min="0" [(ngModel)]="customWeight" class="grant-qty" placeholder="Weight (lb)" aria-label="Weight in pounds">
+          </div>
+          @if (customCategory === 'weapon') {
+            <input type="text" [(ngModel)]="customDamage" class="grant-search"
+              placeholder="Damage (e.g. 1d8 slashing)">
+          }
+          @if (customCategory === 'armor') {
+            <input type="text" [(ngModel)]="customArmorClass" class="grant-search"
+              placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
+          }
+          <div class="grant-actions">
+            <button type="button" class="inv-btn" [disabled]="!customName.trim()" (click)="grantCustomItem()">Add</button>
+            <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
+          </div>
+        </div>
+      }
     </div>
+  }
 
-    <p *ngIf="demoMode" class="grant-hint">The demo has no catalog — grant a custom item below.</p>
-
-    <!-- Catalog tab -->
-    <div *ngIf="grantTab === 'catalog' && !demoMode" class="grant-body">
-      <div class="grant-row">
-        <select [(ngModel)]="grantCategory" (ngModelChange)="loadCatalog()" aria-label="Category">
-          <option *ngFor="let c of grantCategories" [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
-        </select>
-        <input type="number" min="1" [(ngModel)]="catalogQty" class="grant-qty" aria-label="Quantity">
-      </div>
-      <input type="text" [(ngModel)]="catalogSearch" class="grant-search" placeholder="Search items…">
-      <div *ngIf="loadingCatalog" class="grant-hint">Loading catalog…</div>
-      <div *ngIf="!loadingCatalog" class="grant-list">
-        <label *ngFor="let item of filteredCatalog" class="grant-option" [class.on]="catalogSelectedKey === item.itemKey">
-          <input type="radio" name="catalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
-          <span class="grant-option-name">{{ item.name }}</span>
-          <span class="grant-option-meta">{{ formatCp(item.costCp) }}</span>
-        </label>
-        <div *ngIf="!filteredCatalog.length" class="grant-hint">No matching items.</div>
-      </div>
-      <div class="grant-actions">
-        <button type="button" class="inv-btn" [disabled]="!catalogSelectedKey" (click)="grantCatalogItem()">Add</button>
-        <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
-      </div>
+  @if (slotInventory && encumbered) {
+    <div class="inv-empty" style="color: var(--crimson);">
+      Over capacity — {{ encumberedPenalty }}.
     </div>
-
-    <!-- Custom tab -->
-    <div *ngIf="grantTab === 'custom'" class="grant-body">
-      <input type="text" [(ngModel)]="customName" class="grant-search" placeholder="Item name">
-      <div class="grant-row">
-        <select [(ngModel)]="customCategory" aria-label="Category">
-          <option value="weapon">Weapon</option>
-          <option value="armor">Armor</option>
-          <option value="material-component">Material</option>
-          <option value="gear">Gear</option>
-        </select>
-        <input type="number" min="1" [(ngModel)]="customQty" class="grant-qty" aria-label="Quantity">
-      </div>
-      <div class="grant-row">
-        <input type="number" min="0" [(ngModel)]="customValueGp" class="grant-qty" placeholder="Value (gp)" aria-label="Value in gold">
-        <input type="number" min="0" [(ngModel)]="customWeight" class="grant-qty" placeholder="Weight (lb)" aria-label="Weight in pounds">
-      </div>
-      <input *ngIf="customCategory === 'weapon'" type="text" [(ngModel)]="customDamage" class="grant-search"
-             placeholder="Damage (e.g. 1d8 slashing)">
-      <input *ngIf="customCategory === 'armor'" type="text" [(ngModel)]="customArmorClass" class="grant-search"
-             placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
-      <div class="grant-actions">
-        <button type="button" class="inv-btn" [disabled]="!customName.trim()" (click)="grantCustomItem()">Add</button>
-        <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div *ngIf="slotInventory && encumbered" class="inv-empty" style="color: var(--crimson);">
-    Over capacity — {{ encumberedPenalty }}.
-  </div>
+  }
 
   <div class="inv-list">
-    <div *ngIf="!items.length" class="inv-empty">
-      No items yet — buy equipment at a shop during a session and it will appear here.
-    </div>
-
-    <div *ngFor="let item of items; let i = index" class="inv-item"
-         [class.equipped]="item.equipped" [class.dropped]="item.status === 'dropped'">
-      <div class="inv-item-info">
-        <span class="equip-item-name">
-          <span>{{ item.name }}</span>
-          <span *ngIf="item.qty > 1" class="numeric" style="color: var(--text-dim);"> ×{{ item.qty }}</span>
-          <span *ngIf="item.equipped" class="inv-equipped-tag">equipped</span>
-          <span *ngIf="item.status === 'dropped'" class="inv-equipped-tag">dropped</span>
-        </span>
-        <span class="equip-item-meta">
-          <span>{{ categoryLabel(item.category) }}</span>
-          <span *ngIf="item.damage"> · {{ item.damage }}</span>
-          <span *ngIf="item.armorClass"> · AC {{ item.armorClass }}</span>
-          <span *ngIf="slotInventory"> · {{ bulkFor(item) }} bulk</span>
-          <span *ngIf="!slotInventory && item.weight != null"> · {{ item.weight }} lb</span>
-          <span *ngIf="item.unitCostCp != null"> · {{ formatCp(item.unitCostCp) }}</span>
-        </span>
+    @if (!items.length) {
+      <div class="inv-empty">
+        No items yet — buy equipment at a shop during a session and it will appear here.
       </div>
+    }
 
-      <div *ngIf="editable" class="inv-controls">
-        <button type="button" *ngIf="canSell(item)" class="inv-btn sell" (click)="sell(i)"
-                [attr.aria-label]="'Sell ' + item.name" title="Sell to the shop">Sell</button>
-        <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
-                [attr.aria-label]="(item.equipped ? 'Unequip ' : 'Equip ') + item.name">
-          {{ item.equipped ? 'Unequip' : 'Equip' }}
-        </button>
-        <button type="button" *ngIf="item.status !== 'dropped'" class="inv-btn danger" (click)="dropItem(i)"
-                [attr.aria-label]="'Drop ' + item.name" title="Drop this item">Drop</button>
-        <button type="button" *ngIf="item.status === 'dropped'" class="inv-btn danger" (click)="discardItem(i)"
-                [attr.aria-label]="'Discard ' + item.name" title="Remove this item for good">Discard</button>
+    @for (item of items; track item; let i = $index) {
+      <div class="inv-item"
+        [class.equipped]="item.equipped" [class.dropped]="item.status === 'dropped'">
+        <div class="inv-item-info">
+          <span class="equip-item-name">
+            <span>{{ item.name }}</span>
+            @if (item.qty > 1) {
+              <span class="numeric" style="color: var(--text-dim);"> ×{{ item.qty }}</span>
+            }
+            @if (item.equipped) {
+              <span class="inv-equipped-tag">equipped</span>
+            }
+            @if (item.status === 'dropped') {
+              <span class="inv-equipped-tag">dropped</span>
+            }
+          </span>
+          <span class="equip-item-meta">
+            <span>{{ categoryLabel(item.category) }}</span>
+            @if (item.damage) {
+              <span> · {{ item.damage }}</span>
+            }
+            @if (item.armorClass) {
+              <span> · AC {{ item.armorClass }}</span>
+            }
+            @if (slotInventory) {
+              <span> · {{ bulkFor(item) }} bulk</span>
+            }
+            @if (!slotInventory && item.weight != null) {
+              <span> · {{ item.weight }} lb</span>
+            }
+            @if (item.unitCostCp != null) {
+              <span> · {{ formatCp(item.unitCostCp) }}</span>
+            }
+          </span>
+        </div>
+        @if (editable) {
+          <div class="inv-controls">
+            @if (canSell(item)) {
+              <button type="button" class="inv-btn sell" (click)="sell(i)"
+              [attr.aria-label]="'Sell ' + item.name" title="Sell to the shop">Sell</button>
+            }
+            <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
+              [attr.aria-label]="(item.equipped ? 'Unequip ' : 'Equip ') + item.name">
+              {{ item.equipped ? 'Unequip' : 'Equip' }}
+            </button>
+            @if (item.status !== 'dropped') {
+              <button type="button" class="inv-btn danger" (click)="dropItem(i)"
+              [attr.aria-label]="'Drop ' + item.name" title="Drop this item">Drop</button>
+            }
+            @if (item.status === 'dropped') {
+              <button type="button" class="inv-btn danger" (click)="discardItem(i)"
+              [attr.aria-label]="'Discard ' + item.name" title="Remove this item for good">Discard</button>
+            }
+          </div>
+        }
       </div>
-    </div>
+    }
   </div>
 </div>

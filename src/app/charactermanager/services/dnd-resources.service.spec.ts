@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS } from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('DndResourcesService', () => {
   let service: DndResourcesService;
@@ -10,9 +11,9 @@ describe('DndResourcesService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [DndResourcesService],
-    });
+    imports: [],
+    providers: [DndResourcesService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+});
     service = TestBed.inject(DndResourcesService);
     httpMock = TestBed.inject(HttpTestingController);
   });

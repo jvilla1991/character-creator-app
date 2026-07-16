@@ -5,6 +5,17 @@ import { catchError, delay, Observable, of, tap } from 'rxjs';
 import { environment, DEMO_MODE_KEY } from '../../../environments/environment';
 import { UiStateService } from './ui-state.service';
 
+/**
+ * Response from the auth service's /authenticate and /register endpoints.
+ * `token` is present on success; `error` carries the raw failure from a
+ * failed registration (the caller only branches on `success`).
+ */
+export interface AuthResponse {
+  success: boolean;
+  token?: string;
+  error?: unknown;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,7 +24,7 @@ export class AuthService {
 
   constructor(private router: Router, private http: HttpClient, private uiState: UiStateService) {}
 
-  login(userName: string, password: string): Observable<any> {
+  login(userName: string, password: string): Observable<AuthResponse> {
     if (environment.demoMode) {
       const mockResponse = {
         success: true,
@@ -24,10 +35,10 @@ export class AuthService {
       return of(mockResponse);
     }
 
-    return this.http.post<any>(this.authUrl + '/authenticate', { userName, password }).pipe(
+    return this.http.post<AuthResponse>(this.authUrl + '/authenticate', { userName, password }).pipe(
       tap(response => {
         console.log(response);
-        if (response.success) {
+        if (response.success && response.token) {
           localStorage.setItem('token', response.token);
           localStorage.setItem('username', userName);
         }
@@ -36,10 +47,10 @@ export class AuthService {
     );
   }
 
-  register(firstName: string, lastName: string, email: string, userName: string, password: string): Observable<any> {
-    return this.http.post<any>(this.authUrl + '/register', { firstName, lastName, email, userName, password }).pipe(
+  register(firstName: string, lastName: string, email: string, userName: string, password: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(this.authUrl + '/register', { firstName, lastName, email, userName, password }).pipe(
       tap(response => {
-        if (response?.success) {
+        if (response?.success && response.token) {
           localStorage.setItem('token', response.token);
           localStorage.setItem('username', userName);
         }

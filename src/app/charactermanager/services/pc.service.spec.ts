@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { PCService } from './pc.service';
 import { PC } from '../models/pc';
 import { DEMO_MODE_KEY } from 'src/environments/environment';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 /** Minimal valid PC fixture for serialization tests. */
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -43,9 +44,9 @@ describe('PCService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [PCService],
-    });
+    imports: [],
+    providers: [PCService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+});
     service = TestBed.inject(PCService);
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -358,9 +359,9 @@ describe('PCService (demo mode)', () => {
   beforeEach(() => {
     localStorage.setItem(DEMO_MODE_KEY, 'true');
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [PCService],
-    });
+    imports: [],
+    providers: [PCService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+});
     service = TestBed.inject(PCService);
   });
 

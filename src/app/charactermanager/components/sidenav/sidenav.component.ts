@@ -10,9 +10,10 @@ import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
 
 @Component({
-  selector: 'app-sidenav',
-  templateUrl: './sidenav.component.html',
-  styleUrls: ['./sidenav.component.scss']
+    selector: 'app-sidenav',
+    templateUrl: './sidenav.component.html',
+    styleUrls: ['./sidenav.component.scss'],
+    standalone: false
 })
 export class SidenavComponent implements OnInit, OnDestroy {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
@@ -23,11 +24,11 @@ export class SidenavComponent implements OnInit, OnDestroy {
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
   activePC$ = this.pcService.activePC$;
-  role$ = this.uiState.role$;
+  readonly role = this.uiState.role;
   // When set, Session Mode takes over the main content area for everyone.
-  activeSessionId$ = this.uiState.activeSessionId$;
+  readonly activeSessionId = this.uiState.activeSessionId;
   // True while a DM is viewing a campaign member's sheet — shows the back bar.
-  dmReturn$ = this.uiState.dmReturn$;
+  readonly dmReturn = this.uiState.dmReturn;
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];
@@ -89,7 +90,7 @@ export class SidenavComponent implements OnInit, OnDestroy {
   joinCampaign(): void { this.closeDrawer(); this.joinModal.open(); }
 
   /** Account-row tint, reusing the shared portrait util. */
-  get userTint(): string { return tintFor({ portraitTint: this.user.tint } as any); }
+  get userTint(): string { return tintFor({ portraitTint: this.user.tint }); }
 
   openSettings(): void { this.closeDrawer(); this.uiState.openSettings(); }
 

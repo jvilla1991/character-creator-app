@@ -7,76 +7,101 @@
 <!-- Filter bar -->
 <div class="spell-filter-bar">
   <button type="button" class="spell-level-tab"
-          [class.active]="spellLevelFilter === 'all'"
-          (click)="spellLevelFilterChange.emit('all')">All</button>
+    [class.active]="spellLevelFilter === 'all'"
+  (click)="spellLevelFilterChange.emit('all')">All</button>
   <button type="button" class="spell-level-tab"
-          [class.active]="spellLevelFilter === 0"
-          (click)="spellLevelFilterChange.emit(0)">Cantrip</button>
+    [class.active]="spellLevelFilter === 0"
+  (click)="spellLevelFilterChange.emit(0)">Cantrip</button>
   <button type="button" class="spell-level-tab"
-          [class.active]="spellLevelFilter === 1"
-          (click)="spellLevelFilterChange.emit(1)">1st</button>
+    [class.active]="spellLevelFilter === 1"
+  (click)="spellLevelFilterChange.emit(1)">1st</button>
   <input class="spell-search" type="text" placeholder="Search…"
-         [ngModel]="spellSearch" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
-</div>
+    [ngModel]="spellSearch" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
+  </div>
 
-<div *ngIf="loadingSpells" class="loading">Loading spells…</div>
+  @if (loadingSpells) {
+    <div class="loading">Loading spells…</div>
+  }
 
-<!-- Spell tile list -->
-<div *ngIf="!loadingSpells" class="spell-scroll">
-  <div *ngFor="let s of filteredSpellList; trackBy: trackBySpellName" class="spell-row">
-    <!-- Click the spell to expand/collapse its description -->
-    <button type="button"
+  <!-- Spell tile list -->
+  @if (!loadingSpells) {
+    <div class="spell-scroll">
+      @for (s of filteredSpellList; track trackBySpellName($index, s)) {
+        <div class="spell-row">
+          <!-- Click the spell to expand/collapse its description -->
+          <button type="button"
             class="spell-pick"
             [class.active]="isSpellSelected(s)"
             [class.open]="isSpellDescOpen(s)"
             (click)="toggleDesc.emit(s)">
-      <span class="spell-pick-name">
-        {{ s.name }}
-        <span *ngIf="isSpellSelected(s)" class="spell-selected-badge">Selected</span>
-      </span>
-      <span class="spell-pick-meta">
-        {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
-        · {{ s.school }} · {{ s.actionType }}
-        <span *ngIf="s.concentration" class="spell-pick-badge">C</span>
-        <span *ngIf="s.ritual"        class="spell-pick-badge">R</span>
-      </span>
-    </button>
-
-    <!-- Collapsible spell description, with the add/remove action -->
-    <div *ngIf="isSpellDescOpen(s)" class="spell-desc">
-      <p class="spell-desc-text">{{ s.description || 'No description available.' }}</p>
-      <div class="spell-desc-props">
-        <span *ngIf="s.range"><strong>Range</strong> {{ s.range }}</span>
-        <span *ngIf="s.duration"><strong>Duration</strong> {{ s.duration }}</span>
-        <span *ngIf="s.material"><strong>Material</strong> {{ s.material }}</span>
-      </div>
-      <p *ngIf="s.higherLevelSlot" class="spell-desc-upcast">
-        <strong>At Higher Levels</strong> {{ s.higherLevelSlot }}
-      </p>
-      <p *ngIf="s.cantripUpgrade" class="spell-desc-upcast">
-        <strong>Cantrip Upgrade</strong> {{ s.cantripUpgrade }}
-      </p>
-      <div class="spell-desc-actions">
-        <button type="button"
-                class="btn sm"
-                [class.primary]="!isSpellSelected(s)"
-                [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
-                (click)="toggleSpell.emit(s)">
-          {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
-        </button>
-      </div>
+            <span class="spell-pick-name">
+              {{ s.name }}
+              @if (isSpellSelected(s)) {
+                <span class="spell-selected-badge">Selected</span>
+              }
+            </span>
+            <span class="spell-pick-meta">
+              {{ s.level === 0 ? 'Cantrip' : (s.level + (s.level === 1 ? 'st' : s.level === 2 ? 'nd' : s.level === 3 ? 'rd' : 'th') + ' level') }}
+              · {{ s.school }} · {{ s.actionType }}
+              @if (s.concentration) {
+                <span class="spell-pick-badge">C</span>
+              }
+              @if (s.ritual) {
+                <span        class="spell-pick-badge">R</span>
+              }
+            </span>
+          </button>
+          <!-- Collapsible spell description, with the add/remove action -->
+          @if (isSpellDescOpen(s)) {
+            <div class="spell-desc">
+              <p class="spell-desc-text">{{ s.description || 'No description available.' }}</p>
+              <div class="spell-desc-props">
+                @if (s.range) {
+                  <span><strong>Range</strong> {{ s.range }}</span>
+                }
+                @if (s.duration) {
+                  <span><strong>Duration</strong> {{ s.duration }}</span>
+                }
+                @if (s.material) {
+                  <span><strong>Material</strong> {{ s.material }}</span>
+                }
+              </div>
+              @if (s.higherLevelSlot) {
+                <p class="spell-desc-upcast">
+                  <strong>At Higher Levels</strong> {{ s.higherLevelSlot }}
+                </p>
+              }
+              @if (s.cantripUpgrade) {
+                <p class="spell-desc-upcast">
+                  <strong>Cantrip Upgrade</strong> {{ s.cantripUpgrade }}
+                </p>
+              }
+              <div class="spell-desc-actions">
+                <button type="button"
+                  class="btn sm"
+                  [class.primary]="!isSpellSelected(s)"
+                  [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
+                  (click)="toggleSpell.emit(s)">
+                  {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+      @if (filteredSpellList.length === 0) {
+        <div class="loading">No spells match your search.</div>
+      }
     </div>
-  </div>
-  <div *ngIf="filteredSpellList.length === 0" class="loading">No spells match your search.</div>
-</div>
+  }
 
-<!-- Selection counter -->
-<div class="spell-counter">
-  <span [class.complete]="selectedCantrips === maxCantrips">
-    {{ selectedCantrips }}/{{ maxCantrips }} cantrips
-  </span>
-  <span class="spell-counter-sep">·</span>
-  <span [class.complete]="selectedLeveled === maxKnownSpells">
-    {{ selectedLeveled }}/{{ maxKnownSpells }} spells
-  </span>
-</div>
+  <!-- Selection counter -->
+  <div class="spell-counter">
+    <span [class.complete]="selectedCantrips === maxCantrips">
+      {{ selectedCantrips }}/{{ maxCantrips }} cantrips
+    </span>
+    <span class="spell-counter-sep">·</span>
+    <span [class.complete]="selectedLeveled === maxKnownSpells">
+      {{ selectedLeveled }}/{{ maxKnownSpells }} spells
+    </span>
+  </div>

@@ -7,8 +7,9 @@ import { passiveScore, tintFor } from '../../../utils/character-math';
  * Perception/Insight and conditions. Clicking a row opens that hero's sheet.
  */
 @Component({
-  selector: 'app-party-board',
-  templateUrl: './party-board.component.html',
+    selector: 'app-party-board',
+    templateUrl: './party-board.component.html',
+    standalone: false
 })
 export class PartyBoardComponent {
   @Input() members: PC[] = [];

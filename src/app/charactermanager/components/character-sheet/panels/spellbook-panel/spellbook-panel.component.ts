@@ -20,10 +20,11 @@ export interface CastRequest {
 }
 
 @Component({
-  selector: 'app-spellbook-panel',
-  templateUrl: './spellbook-panel.component.html',
-  styleUrls: ['./spellbook-panel.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-spellbook-panel',
+    templateUrl: './spellbook-panel.component.html',
+    styleUrls: ['./spellbook-panel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SpellbookPanelComponent implements OnChanges {
   @Input() pc!: PC;

@@ -7,22 +7,23 @@
   </div>
 
   <div style="padding-top: 4px;">
-    <div
-      *ngFor="let row of rows$ | async"
-      class="campaign-item"
-      [class.active]="(activeCampaignId$ | async) === row.campaign.id"
-      (click)="select(row.campaign.id)"
-    >
-      <!-- IconBanner crest -->
-      <div class="campaign-crest">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
-          <path d="M6 3h12v15l-6-3.5L6 18V3z" stroke-linejoin="round"/><path d="M9 8h6M9 11h6"/>
-        </svg>
+    @for (row of rows$ | async; track row) {
+      <div
+        class="campaign-item"
+        [class.active]="activeCampaignId() === row.campaign.id"
+        (click)="select(row.campaign.id)"
+        >
+        <!-- IconBanner crest -->
+        <div class="campaign-crest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M6 3h12v15l-6-3.5L6 18V3z" stroke-linejoin="round"/><path d="M9 8h6M9 11h6"/>
+          </svg>
+        </div>
+        <div style="min-width: 0;">
+          <div class="campaign-name">{{ row.campaign.name }}</div>
+          <div class="campaign-meta">{{ row.heroes }} heroes · {{ row.range }}</div>
+        </div>
       </div>
-      <div style="min-width: 0;">
-        <div class="campaign-name">{{ row.campaign.name }}</div>
-        <div class="campaign-meta">{{ row.heroes }} heroes · {{ row.range }}</div>
-      </div>
-    </div>
+    }
   </div>
 </div>

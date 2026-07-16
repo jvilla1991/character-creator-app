@@ -9,9 +9,10 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
  * lookup, so the child resolves them via DndResourcesService directly.
  */
 @Component({
-  selector: 'app-species-step',
-  templateUrl: './species-step.component.html',
-  styleUrls: ['./species-step.component.scss'],
+    selector: 'app-species-step',
+    templateUrl: './species-step.component.html',
+    styleUrls: ['./species-step.component.scss'],
+    standalone: false
 })
 export class SpeciesStepComponent {
   @Input() speciesList: string[] = [];

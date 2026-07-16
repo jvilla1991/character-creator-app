@@ -5,9 +5,10 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 type Feature = { name: string; source: string; desc: string };
 
 @Component({
-  selector: 'app-features-list',
-  templateUrl: './features-list.component.html',
-  styleUrls: ['./features-list.component.scss']
+    selector: 'app-features-list',
+    templateUrl: './features-list.component.html',
+    styleUrls: ['./features-list.component.scss'],
+    standalone: false
 })
 export class FeaturesListComponent {
   @Input() pc!: PC;

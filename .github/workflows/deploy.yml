@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  NODE_VERSION: "18"  # Angular 14 requires Node 14-18
+  NODE_VERSION: "24"  # Angular 21 requires Node 20.19+ / 22 / 24
 
 jobs:
   build-and-deploy:
@@ -73,14 +73,14 @@ jobs:
       - name: Sync dist/ to S3
         run: |
           # Long-cache all hashed assets (Angular adds content hash to filenames)
-          aws s3 sync dist/character-creator/ "s3://${{ secrets.S3_BUCKET }}/" \
+          aws s3 sync dist/character-creator/browser/ "s3://${{ secrets.S3_BUCKET }}/" \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html" \
             --region "$AWS_REGION"
 
           # Short-cache index.html so new deploys are picked up immediately
-          aws s3 cp dist/character-creator/index.html \
+          aws s3 cp dist/character-creator/browser/index.html \
             "s3://${{ secrets.S3_BUCKET }}/index.html" \
             --cache-control "public, max-age=0, must-revalidate" \
             --region "$AWS_REGION"

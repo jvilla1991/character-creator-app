@@ -1,123 +1,133 @@
-<section class="shop-panel" *ngIf="state && (state.dm || state.shopForMe)">
-
-  <!-- ===================== DM view ===================== -->
-  <ng-container *ngIf="state.dm; else playerView">
-
-    <!-- No shop open yet: the open form -->
-    <div class="shop-card" *ngIf="!shop">
-      <div class="eyebrow">Shop</div>
-      <h2 class="shop-title">Open a shop</h2>
-
-      <div class="field-label">Shop source</div>
-      <div class="seg" role="radiogroup">
-        <button type="button" class="seg-btn" [class.active]="source === 'standard'"
-                (click)="source = 'standard'">Standard</button>
-        <button type="button" class="seg-btn" [class.active]="source === 'curated'"
-                (click)="source = 'curated'">Curated</button>
-      </div>
-
-      <!-- Standard: pick a catalog category -->
-      <ng-container *ngIf="source === 'standard'">
-        <div class="field-label">What does it sell?</div>
-        <div class="seg" role="radiogroup">
-          <button type="button" class="seg-btn" *ngFor="let c of categories"
+@if (state && (state.dm || state.shopForMe)) {
+  <section class="shop-panel">
+    <!-- ===================== DM view ===================== -->
+    @if (state.dm) {
+      <!-- No shop open yet: the open form -->
+      @if (!shop) {
+        <div class="shop-card">
+          <div class="eyebrow">Shop</div>
+          <h2 class="shop-title">Open a shop</h2>
+          <div class="field-label">Shop source</div>
+          <div class="seg" role="radiogroup">
+            <button type="button" class="seg-btn" [class.active]="source === 'standard'"
+            (click)="source = 'standard'">Standard</button>
+            <button type="button" class="seg-btn" [class.active]="source === 'curated'"
+            (click)="source = 'curated'">Curated</button>
+          </div>
+          <!-- Standard: pick a catalog category -->
+          @if (source === 'standard') {
+            <div class="field-label">What does it sell?</div>
+            <div class="seg" role="radiogroup">
+              @for (c of categories; track c) {
+                <button type="button" class="seg-btn"
                   [class.active]="category === c.value"
-                  (click)="category = c.value">{{ c.label }}</button>
-        </div>
-      </ng-container>
-
-      <!-- Curated: pick one of the DM's pre-built shops -->
-      <ng-container *ngIf="source === 'curated'">
-        <div class="field-label">Which shop?</div>
-        <select class="text-input" [(ngModel)]="curatedShopId" *ngIf="curatedShops.length; else noCurated">
-          <option [ngValue]="null" disabled>Choose a curated shop…</option>
-          <option *ngFor="let cs of curatedShops" [ngValue]="cs.id">
-            {{ cs.name }}{{ cs.settlement ? ' · ' + cs.settlement : '' }} ({{ cs.itemCount }})
-          </option>
-        </select>
-        <ng-template #noCurated>
-          <div class="muted">No curated shops yet — build one on the campaign dashboard.</div>
-        </ng-template>
-      </ng-container>
-
-      <label class="field">
-        <span class="field-label">Settlement</span>
-        <input class="text-input" type="text" [(ngModel)]="settlement"
-               placeholder="e.g. Phandalin" />
-      </label>
-
-      <div class="field-label">Who's at the shop?</div>
-      <div class="roster" *ngIf="roster.length; else noRoster">
-        <label class="roster-row" *ngFor="let p of roster">
-          <input type="checkbox" [(ngModel)]="selected[p.pcId!]" />
-          <span>{{ p.name }}</span>
-        </label>
-      </div>
-      <ng-template #noRoster>
-        <div class="muted">No characters are seated in this session yet.</div>
-      </ng-template>
-
-      <button class="btn primary" [disabled]="!canOpen" (click)="openShop()">Open Shop</button>
-    </div>
-
-    <!-- Shop open: manage attendees + browse the stock -->
-    <div class="shop-card" *ngIf="shop">
-      <div class="shop-head">
-        <div>
-          <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
-          <h2 class="shop-title">Stock</h2>
-        </div>
-        <button class="btn danger" (click)="closeShop()">Close Shop</button>
-      </div>
-
-      <div class="field-label">At the shop</div>
-      <div class="roster">
-        <label class="roster-row" *ngFor="let p of roster">
-          <input type="checkbox" [checked]="isAttendee(p.pcId!)" (change)="toggleAttendee(p.pcId!)" />
-          <span>{{ p.name }}</span>
-        </label>
-      </div>
-
-      <ul class="catalog">
-        <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
-          <div class="item-main">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-meta">{{ itemMeta(item) }}</span>
+                (click)="category = c.value">{{ c.label }}</button>
+              }
+            </div>
+          }
+          <!-- Curated: pick one of the DM's pre-built shops -->
+          @if (source === 'curated') {
+            <div class="field-label">Which shop?</div>
+            @if (curatedShops.length) {
+              <select class="text-input" [(ngModel)]="curatedShopId">
+                <option [ngValue]="null" disabled>Choose a curated shop…</option>
+                @for (cs of curatedShops; track cs) {
+                  <option [ngValue]="cs.id">
+                    {{ cs.name }}{{ cs.settlement ? ' · ' + cs.settlement : '' }} ({{ cs.itemCount }})
+                  </option>
+                }
+              </select>
+            } @else {
+              <div class="muted">No curated shops yet — build one on the campaign dashboard.</div>
+            }
+          }
+          <label class="field">
+            <span class="field-label">Settlement</span>
+            <input class="text-input" type="text" [(ngModel)]="settlement"
+              placeholder="e.g. Phandalin" />
+            </label>
+            <div class="field-label">Who's at the shop?</div>
+            @if (roster.length) {
+              <div class="roster">
+                @for (p of roster; track p) {
+                  <label class="roster-row">
+                    <input type="checkbox" [(ngModel)]="selected[p.pcId!]" />
+                    <span>{{ p.name }}</span>
+                  </label>
+                }
+              </div>
+            } @else {
+              <div class="muted">No characters are seated in this session yet.</div>
+            }
+            <button class="btn primary" [disabled]="!canOpen" (click)="openShop()">Open Shop</button>
           </div>
-          <span class="item-price">{{ formatCp(item.costCp) }}</span>
-        </li>
-      </ul>
-    </div>
-  </ng-container>
-
-  <!-- ===================== Player view ===================== -->
-  <ng-template #playerView>
-    <div class="shop-card" *ngIf="shop">
-      <div class="shop-head">
-        <div>
-          <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
-          <h2 class="shop-title">Browse &amp; buy</h2>
-        </div>
-        <span class="purse" *ngIf="myPc">{{ formatCp(myCoinsCp) }}</span>
-      </div>
-
-      <ul class="catalog">
-        <li class="catalog-row" *ngFor="let item of shop.items; trackBy: trackByKey">
-          <div class="item-main">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-meta">{{ itemMeta(item) }}</span>
+        }
+        <!-- Shop open: manage attendees + browse the stock -->
+        @if (shop) {
+          <div class="shop-card">
+            <div class="shop-head">
+              <div>
+                <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+                <h2 class="shop-title">Stock</h2>
+              </div>
+              <button class="btn danger" (click)="closeShop()">Close Shop</button>
+            </div>
+            <div class="field-label">At the shop</div>
+            <div class="roster">
+              @for (p of roster; track p) {
+                <label class="roster-row">
+                  <input type="checkbox" [checked]="isAttendee(p.pcId!)" (change)="toggleAttendee(p.pcId!)" />
+                  <span>{{ p.name }}</span>
+                </label>
+              }
+            </div>
+            <ul class="catalog">
+              @for (item of shop.items; track trackByKey($index, item)) {
+                <li class="catalog-row">
+                  <div class="item-main">
+                    <span class="item-name">{{ item.name }}</span>
+                    <span class="item-meta">{{ itemMeta(item) }}</span>
+                  </div>
+                  <span class="item-price">{{ formatCp(item.costCp) }}</span>
+                </li>
+              }
+            </ul>
           </div>
-          <span class="item-price">{{ formatCp(item.costCp) }}</span>
-          <button class="btn buy"
-                  [disabled]="!canAfford(item) || busyItem === item.itemKey"
-                  (click)="buy(item)">
-            {{ busyItem === item.itemKey ? '…' : (canAfford(item) ? 'Buy' : 'Too costly') }}
-          </button>
-        </li>
-      </ul>
-    </div>
-
-    <div class="shop-card muted" *ngIf="!shop && loading">Reaching the shop…</div>
-  </ng-template>
-
-</section>
+        }
+      } @else {
+        @if (shop) {
+          <div class="shop-card">
+            <div class="shop-head">
+              <div>
+                <div class="eyebrow">{{ shopTitle(shop) }}{{ shop.settlement ? ' · ' + shop.settlement : '' }}</div>
+                <h2 class="shop-title">Browse &amp; buy</h2>
+              </div>
+              @if (myPc) {
+                <span class="purse">{{ formatCp(myCoinsCp) }}</span>
+              }
+            </div>
+            <ul class="catalog">
+              @for (item of shop.items; track trackByKey($index, item)) {
+                <li class="catalog-row">
+                  <div class="item-main">
+                    <span class="item-name">{{ item.name }}</span>
+                    <span class="item-meta">{{ itemMeta(item) }}</span>
+                  </div>
+                  <span class="item-price">{{ formatCp(item.costCp) }}</span>
+                  <button class="btn buy"
+                    [disabled]="!canAfford(item) || busyItem === item.itemKey"
+                    (click)="buy(item)">
+                    {{ busyItem === item.itemKey ? '…' : (canAfford(item) ? 'Buy' : 'Too costly') }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+        @if (!shop && loading) {
+          <div class="shop-card muted">Reaching the shop…</div>
+        }
+      }
+      <!-- ===================== Player view ===================== -->
+    </section>
+  }

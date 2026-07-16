@@ -41,8 +41,9 @@ const MAX_PIPS = 15;
  * only in campaigns with the survivalConditions variant (gated by the host).
  */
 @Component({
-  selector: 'app-supplies-panel',
-  templateUrl: './supplies-panel.component.html',
+    selector: 'app-supplies-panel',
+    templateUrl: './supplies-panel.component.html',
+    standalone: false
 })
 export class SuppliesPanelComponent {
   @Input() pc!: PC;

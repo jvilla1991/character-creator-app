@@ -11,15 +11,16 @@ import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
 import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
 
 @Component({
-  selector: 'app-character-sheet',
-  templateUrl: './character-sheet.component.html',
-  styleUrls: ['./character-sheet.component.scss']
+    selector: 'app-character-sheet',
+    templateUrl: './character-sheet.component.html',
+    styleUrls: ['./character-sheet.component.scss'],
+    standalone: false
 })
 export class CharacterSheetComponent implements OnChanges {
   @Input() pc!: PC;
   /**
    * When true, the sheet's numbers become click-to-edit and changes persist via
-   * the DM-authorized path. Driven by UiState.dmReturn$ — i.e. a DM viewing one
+   * the DM-authorized path. Driven by the UiState.dmReturn signal — i.e. a DM viewing one
    * of their campaign members (cross-linked from the dashboard).
    */
   @Input() editable = false;

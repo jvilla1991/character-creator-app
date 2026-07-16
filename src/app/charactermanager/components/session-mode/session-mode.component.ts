@@ -17,16 +17,17 @@ import { ParticipantView } from '../../models/session';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
- * Player/DM views via UiState.activeSessionId$) showing the live initiative
+ * Player/DM views via the UiState.activeSessionId signal) showing the live initiative
  * order. Subscribes to the server-authoritative snapshot and polls while open.
  *
  * This feature renders the read-only order; DM controls (initiative entry,
  * damage) arrive in a later feature.
  */
 @Component({
-  selector: 'app-session-mode',
-  templateUrl: './session-mode.component.html',
-  styleUrls: ['./session-mode.component.scss'],
+    selector: 'app-session-mode',
+    templateUrl: './session-mode.component.html',
+    styleUrls: ['./session-mode.component.scss'],
+    standalone: false
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   @Input() sessionId!: string;

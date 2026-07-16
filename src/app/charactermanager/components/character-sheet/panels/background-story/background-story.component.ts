@@ -2,9 +2,10 @@ import { Component, Input } from '@angular/core';
 import { PC } from '../../../../models/pc';
 
 @Component({
-  selector: 'app-background-story',
-  templateUrl: './background-story.component.html',
-  styleUrls: ['./background-story.component.scss']
+    selector: 'app-background-story',
+    templateUrl: './background-story.component.html',
+    styleUrls: ['./background-story.component.scss'],
+    standalone: false
 })
 export class BackgroundStoryComponent {
   @Input() pc!: PC;

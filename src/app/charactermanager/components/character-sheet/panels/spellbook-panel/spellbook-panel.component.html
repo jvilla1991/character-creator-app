@@ -1,113 +1,150 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
-    <button *ngIf="addAllowed && !grantFormOpen" class="btn sm" (click)="openGrantForm()">Grant spells</button>
+    @if (addAllowed && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrantForm()">Grant spells</button>
+    }
   </div>
 
   <!-- DM grant form -->
-  <div *ngIf="grantFormOpen" class="grant-form">
-    <label class="all-classes-toggle">
-      <input type="checkbox" [checked]="allClasses" (change)="toggleAllClasses(!allClasses)">
-      All classes
-    </label>
-    <app-spell-picker
-      [spells]="grantCandidates"
-      [selected]="grantSelection"
-      [cantripLimit]="null"
-      [spellLimit]="null"
-      [loading]="loadingGrantSpells"
-      (selectedChange)="grantSelection = $event">
-    </app-spell-picker>
-    <div class="grant-form-actions">
-      <button class="btn primary sm" [disabled]="!grantSelection.length" (click)="confirmGrant()">Add</button>
-      <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <label class="all-classes-toggle">
+        <input type="checkbox" [checked]="allClasses" (change)="toggleAllClasses(!allClasses)">
+        All classes
+      </label>
+      <app-spell-picker
+        [spells]="grantCandidates"
+        [selected]="grantSelection"
+        [cantripLimit]="null"
+        [spellLimit]="null"
+        [loading]="loadingGrantSpells"
+        (selectedChange)="grantSelection = $event">
+      </app-spell-picker>
+      <div class="grant-form-actions">
+        <button class="btn primary sm" [disabled]="!grantSelection.length" (click)="confirmGrant()">Add</button>
+        <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- No spells -->
-  <div
-    *ngIf="!hasSpells"
-    style="color: var(--text-dim); font-style: italic; text-align: center; padding: 16px;"
-  >
-    {{ pc.name.split(' ')[0] }} wields no magic — only steel and conviction.
-  </div>
+  @if (!hasSpells) {
+    <div
+      style="color: var(--text-dim); font-style: italic; text-align: center; padding: 16px;"
+      >
+      {{ pc.name.split(' ')[0] }} wields no magic — only steel and conviction.
+    </div>
+  }
 
   <!-- Spell levels -->
-  <ng-container *ngIf="hasSpells">
-    <div *ngFor="let level of spellsByLevel; trackBy: trackByLvl" class="spell-level">
-
-      <div class="spell-level-header">
-        <span class="spell-level-name">{{ level.label }}</span>
-        <div *ngIf="level.slots" class="spell-slots">
-          <ng-container *ngIf="!editable">
-            <!-- Display-only for players: slots are spent by casting (in session),
-                 never toggled by hand. The DM edits them via the numbers below. -->
-            <span
-              *ngFor="let i of level.slotIndices"
-              class="spell-slot"
-              [class.used]="i < level.slots!.used"
-              [title]="i < level.slots!.used ? 'Slot expended' : 'Slot available'"
-            ></span>
-          </ng-container>
-          <span *ngIf="editable" class="slot-edit">
-            <app-editable-number
-              [value]="level.slots!.used" [editable]="true" [min]="0" [max]="level.slots!.max"
-              label="slots used" (committed)="setSlot(level.lvl, 'used', $event)"
-            >{{ level.slots!.used }}</app-editable-number>
-            <span class="slot-edit-sep">/</span>
-            <app-editable-number
-              [value]="level.slots!.max" [editable]="true" [min]="0"
-              label="slots max" (committed)="setSlot(level.lvl, 'max', $event)"
-            >{{ level.slots!.max }}</app-editable-number>
-          </span>
+  @if (hasSpells) {
+    @for (level of spellsByLevel; track trackByLvl($index, level)) {
+      <div class="spell-level">
+        <div class="spell-level-header">
+          <span class="spell-level-name">{{ level.label }}</span>
+          @if (level.slots) {
+            <div class="spell-slots">
+              @if (!editable) {
+                <!-- Display-only for players: slots are spent by casting (in session),
+                never toggled by hand. The DM edits them via the numbers below. -->
+                @for (i of level.slotIndices; track i) {
+                  <span
+                    class="spell-slot"
+                    [class.used]="i < level.slots!.used"
+                    [title]="i < level.slots!.used ? 'Slot expended' : 'Slot available'"
+                  ></span>
+                }
+              }
+              @if (editable) {
+                <span class="slot-edit">
+                  <app-editable-number
+                    [value]="level.slots!.used" [editable]="true" [min]="0" [max]="level.slots!.max"
+                    label="slots used" (committed)="setSlot(level.lvl, 'used', $event)"
+                  >{{ level.slots!.used }}</app-editable-number>
+                  <span class="slot-edit-sep">/</span>
+                  <app-editable-number
+                    [value]="level.slots!.max" [editable]="true" [min]="0"
+                    label="slots max" (committed)="setSlot(level.lvl, 'max', $event)"
+                  >{{ level.slots!.max }}</app-editable-number>
+                </span>
+              }
+            </div>
+          }
         </div>
-      </div>
-
-      <div *ngFor="let s of level.spells">
-        <div class="spell-row" (click)="toggleExpand(s.name)" style="cursor:pointer">
-          <span class="spell-name" [class.prepared]="s.prepared">{{ s.name }}</span>
-          <span class="spell-badge conc"   *ngIf="s.concentration" title="Concentration">C</span>
-          <span class="spell-badge ritual" *ngIf="s.ritual"        title="Ritual">R</span>
-          <span class="spell-school">{{ s.school }}</span>
-          <span class="spell-time">{{ s.time }}</span>
-          <span class="spell-range" *ngIf="s.range">{{ s.range }}</span>
-          <button
-            *ngIf="!editable && s.prepared && castable"
-            class="spell-cast-btn"
-            [disabled]="!canCast(s)"
-            [title]="castTitle(s)"
-            (click)="onCastClick(s, $event)"
-          >Cast</button>
-        </div>
-
-        <!-- Upcast: pick which slot level to spend -->
-        <div class="spell-cast-strip" *ngIf="pickerFor === s.name">
-          <span class="spell-cast-note">Cast at:</span>
-          <button *ngFor="let lvl of levelsFor(s)" class="spell-cast-level"
+        @for (s of level.spells; track s) {
+          <div>
+            <div class="spell-row" (click)="toggleExpand(s.name)" style="cursor:pointer">
+              <span class="spell-name" [class.prepared]="s.prepared">{{ s.name }}</span>
+              @if (s.concentration) {
+                <span class="spell-badge conc"   title="Concentration">C</span>
+              }
+              @if (s.ritual) {
+                <span class="spell-badge ritual"        title="Ritual">R</span>
+              }
+              <span class="spell-school">{{ s.school }}</span>
+              <span class="spell-time">{{ s.time }}</span>
+              @if (s.range) {
+                <span class="spell-range">{{ s.range }}</span>
+              }
+              @if (!editable && s.prepared && castable) {
+                <button
+                  class="spell-cast-btn"
+                  [disabled]="!canCast(s)"
+                  [title]="castTitle(s)"
+                  (click)="onCastClick(s, $event)"
+                >Cast</button>
+              }
+            </div>
+            <!-- Upcast: pick which slot level to spend -->
+            @if (pickerFor === s.name) {
+              <div class="spell-cast-strip">
+                <span class="spell-cast-note">Cast at:</span>
+                @for (lvl of levelsFor(s); track lvl) {
+                  <button class="spell-cast-level"
                   (click)="pickLevel(s, lvl, $event)">{{ ordinal(lvl) }}</button>
-        </div>
-
-        <!-- Missing costly component: the table decides (strict campaigns block instead) -->
-        <div class="spell-cast-strip warn" *ngIf="pendingCast?.spellName === s.name">
-          <span class="spell-cast-note">{{ pendingCast!.message }}</span>
-          <button class="spell-cast-level" (click)="confirmPendingCast($event)">Cast anyway</button>
-          <button class="spell-cast-level dim" (click)="cancelPendingCast($event)">Cancel</button>
-        </div>
-        <div class="spell-cast-strip blocked" *ngIf="blockedFor?.spellName === s.name">
-          <span class="spell-cast-note">{{ blockedFor!.message }}</span>
-        </div>
-
-        <div class="spell-expand" *ngIf="isExpanded(s.name)">
-          <p class="spell-desc"     *ngIf="s.description">{{ s.description }}</p>
-          <p class="spell-higher"   *ngIf="s.higherLevelSlot"><em>At higher levels:</em> {{ s.higherLevelSlot }}</p>
-          <p class="spell-material" *ngIf="s.material"><em>Materials:</em> {{ s.material }}</p>
-          <div class="spell-expand-meta" *ngIf="s.components?.length || s.duration">
-            <span *ngIf="s.components?.length">{{ s.components?.join(', ')?.toUpperCase() }}</span>
-            <span *ngIf="s.duration">{{ s.duration }}</span>
+                }
+              </div>
+            }
+            <!-- Missing costly component: the table decides (strict campaigns block instead) -->
+            @if (pendingCast?.spellName === s.name) {
+              <div class="spell-cast-strip warn">
+                <span class="spell-cast-note">{{ pendingCast!.message }}</span>
+                <button class="spell-cast-level" (click)="confirmPendingCast($event)">Cast anyway</button>
+                <button class="spell-cast-level dim" (click)="cancelPendingCast($event)">Cancel</button>
+              </div>
+            }
+            @if (blockedFor?.spellName === s.name) {
+              <div class="spell-cast-strip blocked">
+                <span class="spell-cast-note">{{ blockedFor!.message }}</span>
+              </div>
+            }
+            @if (isExpanded(s.name)) {
+              <div class="spell-expand">
+                @if (s.description) {
+                  <p class="spell-desc"    >{{ s.description }}</p>
+                }
+                @if (s.higherLevelSlot) {
+                  <p class="spell-higher"  ><em>At higher levels:</em> {{ s.higherLevelSlot }}</p>
+                }
+                @if (s.material) {
+                  <p class="spell-material"><em>Materials:</em> {{ s.material }}</p>
+                }
+                @if (s.components?.length || s.duration) {
+                  <div class="spell-expand-meta">
+                    @if (s.components?.length) {
+                      <span>{{ s.components?.join(', ')?.toUpperCase() }}</span>
+                    }
+                    @if (s.duration) {
+                      <span>{{ s.duration }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
-
-    </div>
-  </ng-container>
+    }
+  }
 </div>

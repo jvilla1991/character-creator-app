@@ -3,9 +3,10 @@ import { PC } from '../../../../models/pc';
 import { CONDITIONS_LIST } from '../../../../utils/character-math';
 
 @Component({
-  selector: 'app-conditions-panel',
-  templateUrl: './conditions-panel.component.html',
-  styleUrls: ['./conditions-panel.component.scss']
+    selector: 'app-conditions-panel',
+    templateUrl: './conditions-panel.component.html',
+    styleUrls: ['./conditions-panel.component.scss'],
+    standalone: false
 })
 export class ConditionsPanelComponent {
   @Input() pc!: PC;

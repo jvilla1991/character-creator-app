@@ -4,6 +4,13 @@ import { environment } from '../../../environments/environment';
 import { CurrentUser } from '../models/campaign';
 import { AuthService } from './auth.service';
 
+/** Response from the auth service's /authorize endpoint (field naming varies). */
+interface AuthorizeResponse {
+  email?: string;
+  userName?: string;
+  username?: string;
+}
+
 /**
  * The signed-in user shown in the account row / settings header.
  *
@@ -45,7 +52,7 @@ export class CurrentUserService {
     const token = this.auth.getToken();
     if (!token) return;
     // The auth interceptor skips /api/v1/auth/* URLs, so attach the token here.
-    this.http.get<any>(`${environment.authApiUrl}/api/v1/auth/authorize`, {
+    this.http.get<AuthorizeResponse>(`${environment.authApiUrl}/api/v1/auth/authorize`, {
       headers: { Authorization: `Bearer ${token}` },
     }).subscribe({
       next: dto => {

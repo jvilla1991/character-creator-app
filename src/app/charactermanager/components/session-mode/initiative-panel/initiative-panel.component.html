@@ -13,176 +13,200 @@
       <span>Hit Points</span>
       <span class="num">AC</span>
       <span>Conditions</span>
-      <span *ngIf="dm" class="num">Adjust</span>
+      @if (dm) {
+        <span class="num">Adjust</span>
+      }
     </div>
 
-    <div *ngIf="participants.length === 0"
-         style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
-      No combatants yet — players join to take their place in the order.
-    </div>
-
-    <div
-      *ngFor="let p of participants; trackBy: trackByParticipant"
-      class="board-row member"
-      [class.current-turn]="isActive(p)"
-      [class.on-deck]="isOnDeck(p)"
-      [style.grid-template-columns]="columns"
-      style="cursor: default;"
-    >
-      <div class="board-num lit numeric">
-        <input
-          *ngIf="canEditInitiative(p); else initRead"
-          type="number"
-          class="init-input"
-          placeholder="0"
-          [ngModel]="p.initRolled ? p.initiative : null"
-          (change)="onInitiative(p, $any($event.target).value)"
-          aria-label="Initiative"
-        />
-        <ng-template #initRead>{{ p.initRolled ? p.initiative : '—' }}</ng-template>
+    @if (participants.length === 0) {
+      <div
+        style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
+        No combatants yet — players join to take their place in the order.
       </div>
+    }
 
-      <div class="board-hero" [class.linkable]="canOpenSheet(p)" (click)="onHeroClick(p)"
-           [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null">
-        <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
-        <div style="min-width: 0;">
-          <div class="board-hero-name">{{ p.name }}</div>
-          <div class="board-hero-sub">
-            <ng-container *ngIf="!p.npc; else npcTag">{{ p.clazz }} {{ p.level }}</ng-container>
-            <ng-template #npcTag>NPC</ng-template>
+    @for (p of participants; track trackByParticipant($index, p)) {
+      <div
+        class="board-row member"
+        [class.current-turn]="isActive(p)"
+        [class.on-deck]="isOnDeck(p)"
+        [style.grid-template-columns]="columns"
+        style="cursor: default;"
+        >
+        <div class="board-num lit numeric">
+          @if (canEditInitiative(p)) {
+            <input
+              type="number"
+              class="init-input"
+              placeholder="0"
+              [ngModel]="p.initRolled ? p.initiative : null"
+              (change)="onInitiative(p, $any($event.target).value)"
+              aria-label="Initiative"
+              />
+          } @else {
+            {{ p.initRolled ? p.initiative : '—' }}
+          }
+        </div>
+        <div class="board-hero" [class.linkable]="canOpenSheet(p)" (click)="onHeroClick(p)"
+          [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null">
+          <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
+          <div style="min-width: 0;">
+            <div class="board-hero-name">{{ p.name }}</div>
+            <div class="board-hero-sub">
+              @if (!p.npc) {
+                {{ p.clazz }} {{ p.level }}
+              } @else {
+                NPC
+              }
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="board-hp" [class.bloodied]="!hpWithheld(p) && bloodied(p)">
-        <ng-container *ngIf="!hpWithheld(p); else hpHidden">
-          <div class="hp-text">
-            <span>{{ p.hpCurrent }}/{{ p.hpMax }}<ng-container *ngIf="p.hpTemp"> +{{ p.hpTemp }}</ng-container></span>
-            <span>{{ hpPct(p) | number:'1.0-0' }}%</span>
-          </div>
-          <div class="vital-bar"><span [style.width.%]="hpPct(p)"></span></div>
-        </ng-container>
-        <ng-template #hpHidden>
-          <div class="hp-text" title="The DM keeps this creature's health hidden">
-            <span style="color: var(--text-dim); font-style: italic;">—</span>
-          </div>
-        </ng-template>
-      </div>
-
-      <div class="board-num lit">{{ p.ac }}</div>
-
-      <div class="board-conditions">
-        <span *ngIf="!p.conditions?.length" class="board-cond calm">steady</span>
-        <span *ngFor="let c of p.conditions" class="board-cond">{{ c }}</span>
-        <!-- DM only: the party's survival stages at a glance (variant campaigns).
-             Muted while fine; the chip goes crimson at stage 5-6. -->
-        <ng-container *ngIf="dm && survivalConditions">
-          <span *ngFor="let chip of survivalChips(p)" class="board-cond"
+        <div class="board-hp" [class.bloodied]="!hpWithheld(p) && bloodied(p)">
+          @if (!hpWithheld(p)) {
+            <div class="hp-text">
+              <span>{{ p.hpCurrent }}/{{ p.hpMax }}@if (p.hpTemp) {
+                +{{ p.hpTemp }}
+              }</span>
+              <span>{{ hpPct(p) | number:'1.0-0' }}%</span>
+            </div>
+            <div class="vital-bar"><span [style.width.%]="hpPct(p)"></span></div>
+          } @else {
+            <div class="hp-text" title="The DM keeps this creature's health hidden">
+              <span style="color: var(--text-dim); font-style: italic;">—</span>
+            </div>
+          }
+        </div>
+        <div class="board-num lit">{{ p.ac }}</div>
+        <div class="board-conditions">
+          @if (!p.conditions?.length) {
+            <span class="board-cond calm">steady</span>
+          }
+          @for (c of p.conditions; track c) {
+            <span class="board-cond">{{ c }}</span>
+          }
+          <!-- DM only: the party's survival stages at a glance (variant campaigns).
+          Muted while fine; the chip goes crimson at stage 5-6. -->
+          @if (dm && survivalConditions) {
+            @for (chip of survivalChips(p); track chip.text) {
+              <span class="board-cond"
                 [class.calm]="!chip.dire"
-                [title]="chip.title">{{ chip.text }}</span>
-        </ng-container>
-        <!-- DM only: a caster's remaining spell slots at a glance; dire when a
-             level is fully spent. Casting mid-session keeps these live. -->
-        <ng-container *ngIf="dm">
-          <span *ngFor="let chip of slotChips(p)" class="board-cond slot-chip"
+              [title]="chip.title">{{ chip.text }}</span>
+            }
+          }
+          <!-- DM only: a caster's remaining spell slots at a glance; dire when a
+          level is fully spent. Casting mid-session keeps these live. -->
+          @if (dm) {
+            @for (chip of slotChips(p); track chip.text) {
+              <span class="board-cond slot-chip"
                 [class.calm]="!chip.dire"
-                [title]="chip.title">{{ chip.text }}</span>
-        </ng-container>
+              [title]="chip.title">{{ chip.text }}</span>
+            }
+          }
+        </div>
+        @if (dm) {
+          <div class="dm-adjust" (click)="$event.stopPropagation()">
+            <div class="adjust-row">
+              <input
+                type="number"
+                class="dmg-input"
+                min="0"
+                placeholder="HP"
+                [(ngModel)]="amounts[p.participantId]"
+                aria-label="HP amount"
+                />
+                <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
+                <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
+              </div>
+              @if (!p.npc) {
+                <div class="adjust-row">
+                  <input
+                    type="number"
+                    class="dmg-input"
+                    placeholder="XP"
+                    [(ngModel)]="xpAmounts[p.participantId]"
+                    aria-label="XP amount"
+                    />
+                    <button class="btn-mini xp" (click)="giveXp(p)" title="Award XP">+XP</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
       </div>
 
-      <div *ngIf="dm" class="dm-adjust" (click)="$event.stopPropagation()">
-        <div class="adjust-row">
-          <input
-            type="number"
-            class="dmg-input"
-            min="0"
-            placeholder="HP"
-            [(ngModel)]="amounts[p.participantId]"
-            aria-label="HP amount"
-          />
-          <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
-          <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
-        </div>
-        <div class="adjust-row" *ngIf="!p.npc">
-          <input
-            type="number"
-            class="dmg-input"
-            placeholder="XP"
-            [(ngModel)]="xpAmounts[p.participantId]"
-            aria-label="XP amount"
-          />
-          <button class="btn-mini xp" (click)="giveXp(p)" title="Award XP">+XP</button>
-        </div>
-      </div>
-    </div>
-  </div>
+      <!-- DM encounter controls: add enemy, enemy visibility, turn cue. -->
+      @if (dm) {
+        <div class="encounter-bar">
+          <div class="enemy-form">
+            <input
+              type="text"
+              class="enemy-input name"
+              placeholder="Enemy name"
+              [(ngModel)]="enemyName"
+              aria-label="Enemy name"
+              />
+              <input
+                type="number"
+                class="enemy-input"
+                placeholder="DEX"
+                title="DEX modifier (you calculate it)"
+                [(ngModel)]="enemyDexMod"
+                aria-label="Enemy DEX modifier"
+                />
+                <input
+                  type="number"
+                  class="enemy-input"
+                  min="1"
+                  placeholder="HP"
+                  [(ngModel)]="enemyHp"
+                  aria-label="Enemy max HP"
+                  />
+                  <button
+                    class="btn-mini xp"
+                    (click)="addEnemy()"
+                    [disabled]="!enemyName.trim() || enemyDexMod == null || addingEnemy"
+                  >Add Enemy</button>
+                </div>
+                <label class="visibility-toggle">
+                  Players see
+                  <select [ngModel]="visibilityMode" (ngModelChange)="onVisibilityChange($event)"
+                    aria-label="Enemy visibility">
+                    <option value="hidden">No enemies</option>
+                    <option value="no-hp">Enemies, health hidden</option>
+                    <option value="full">Enemies &amp; health</option>
+                  </select>
+                </label>
+                <label class="sound-picker">
+                  Turn cue
+                  <select [ngModel]="turnSound || ''" (ngModelChange)="onSoundChange($event)" aria-label="Turn sound">
+                    <option value="">None</option>
+                    @for (s of soundOptions; track s) {
+                      <option [value]="s.key">{{ s.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
 
-  <!-- DM encounter controls: add enemy, enemy visibility, turn cue. -->
-  <div *ngIf="dm" class="encounter-bar">
-    <div class="enemy-form">
-      <input
-        type="text"
-        class="enemy-input name"
-        placeholder="Enemy name"
-        [(ngModel)]="enemyName"
-        aria-label="Enemy name"
-      />
-      <input
-        type="number"
-        class="enemy-input"
-        placeholder="DEX"
-        title="DEX modifier (you calculate it)"
-        [(ngModel)]="enemyDexMod"
-        aria-label="Enemy DEX modifier"
-      />
-      <input
-        type="number"
-        class="enemy-input"
-        min="1"
-        placeholder="HP"
-        [(ngModel)]="enemyHp"
-        aria-label="Enemy max HP"
-      />
-      <button
-        class="btn-mini xp"
-        (click)="addEnemy()"
-        [disabled]="!enemyName.trim() || enemyDexMod == null || addingEnemy"
-      >Add Enemy</button>
-    </div>
-    <label class="visibility-toggle">
-      Players see
-      <select [ngModel]="visibilityMode" (ngModelChange)="onVisibilityChange($event)"
-              aria-label="Enemy visibility">
-        <option value="hidden">No enemies</option>
-        <option value="no-hp">Enemies, health hidden</option>
-        <option value="full">Enemies &amp; health</option>
-      </select>
-    </label>
-    <label class="sound-picker">
-      Turn cue
-      <select [ngModel]="turnSound || ''" (ngModelChange)="onSoundChange($event)" aria-label="Turn sound">
-        <option value="">None</option>
-        <option *ngFor="let s of soundOptions" [value]="s.key">{{ s.label }}</option>
-      </select>
-    </label>
-  </div>
+            <!-- Everyone: local mute for the turn cue (this device only). -->
+            <div class="cue-mute">
+              <button class="btn-mini" (click)="toggleMute()">
+                {{ muted ? 'Unmute turn cue' : 'Mute turn cue' }}
+              </button>
+            </div>
 
-  <!-- Everyone: local mute for the turn cue (this device only). -->
-  <div class="cue-mute">
-    <button class="btn-mini" (click)="toggleMute()">
-      {{ muted ? 'Unmute turn cue' : 'Mute turn cue' }}
-    </button>
-  </div>
-
-  <div *ngIf="dm" class="xp-all-bar">
-    <span class="xp-all-label">Award XP to all</span>
-    <input
-      type="number"
-      class="dmg-input"
-      placeholder="XP"
-      [(ngModel)]="xpAll"
-      aria-label="XP for all combatants"
-    />
-    <button class="btn-mini xp" (click)="giveXpToAll()" [disabled]="!participants.length">Give to all</button>
-  </div>
-</div>
+            @if (dm) {
+              <div class="xp-all-bar">
+                <span class="xp-all-label">Award XP to all</span>
+                <input
+                  type="number"
+                  class="dmg-input"
+                  placeholder="XP"
+                  [(ngModel)]="xpAll"
+                  aria-label="XP for all combatants"
+                  />
+                  <button class="btn-mini xp" (click)="giveXpToAll()" [disabled]="!participants.length">Give to all</button>
+                </div>
+              }
+            </div>

@@ -9,9 +9,10 @@ import { SessionRollView } from '../../../models/session';
  * client-side trust boundary to get wrong.
  */
 @Component({
-  selector: 'app-roll-log-panel',
-  templateUrl: './roll-log-panel.component.html',
-  styleUrls: ['./roll-log-panel.component.scss'],
+    selector: 'app-roll-log-panel',
+    templateUrl: './roll-log-panel.component.html',
+    styleUrls: ['./roll-log-panel.component.scss'],
+    standalone: false
 })
 export class RollLogPanelComponent {
   @Input() rolls: SessionRollView[] = [];

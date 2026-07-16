@@ -18,9 +18,10 @@ import { toPcSpell } from '../../utils/spell-mapping';
  * features) extend this with additional choice steps; the load-preview → confirm flow stays.
  */
 @Component({
-  selector: 'app-level-up-modal',
-  templateUrl: './level-up-modal.component.html',
-  styleUrls: ['./level-up-modal.component.scss'],
+    selector: 'app-level-up-modal',
+    templateUrl: './level-up-modal.component.html',
+    styleUrls: ['./level-up-modal.component.scss'],
+    standalone: false
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
