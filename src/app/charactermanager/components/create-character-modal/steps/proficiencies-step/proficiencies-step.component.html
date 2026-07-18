@@ -58,10 +58,19 @@
   <div class="language-row">
     <span class="lang-chip locked">Common</span>
     <div class="field lang-field">
-      <label>Additional Language</label>
+      <label>Additional Language 1</label>
       <select [ngModel]="languageChoice" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">
         <option value="">— choose a language —</option>
-        @for (lang of standardLanguages; track lang) {
+        @for (lang of firstLanguageOptions; track lang) {
+          <option [value]="lang">{{ lang }}</option>
+        }
+      </select>
+    </div>
+    <div class="field lang-field">
+      <label>Additional Language 2</label>
+      <select [ngModel]="languageChoice2" (ngModelChange)="languageChoice2Change.emit($event)" name="languageChoice2">
+        <option value="">— choose a language —</option>
+        @for (lang of secondLanguageOptions; track lang) {
           <option [value]="lang">{{ lang }}</option>
         }
       </select>

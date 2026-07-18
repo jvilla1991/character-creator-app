@@ -108,7 +108,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Step 5: Proficiencies & Languages ───────────────────────────────────
   /** Skills chosen by the player from the class list (excludes locked background skills) */
   selectedSkills: string[] = [];
+  // 2024 PHB: every character knows Common plus TWO chosen standard languages
   languageChoice = '';
+  languageChoice2 = '';
   readonly standardLanguages = STANDARD_LANGUAGES;
 
   get classSkillConfig(): { choose: number; from: string[] } {
@@ -648,7 +650,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       feat:             this.backgroundFeatName || undefined,
       skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
-      languages:        ['Common', ...(this.languageChoice ? [this.languageChoice] : [])],
+      languages:        ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))],
       coins:            this.buildStartingCoins(),
       weapons:          this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.weapons ?? [])
