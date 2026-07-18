@@ -3,13 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Encounter, EncounterSummary } from '../models/encounter';
-import { LootImportPayload } from '../models/loot';
 
 /**
  * DM-curated encounter management client. Talks to the campaign-scoped
  * curated-encounter API; the DM builds reusable encounters out of session, then
- * loads them into Session Mode. Demo mode has no backend, so reads return empty
- * and writes are rejected.
+ * loads them into Session Mode. Prepped loot lives on standalone curated loot
+ * lists (CuratedLootService), not on encounters. Demo mode has no backend, so
+ * reads return empty and writes are rejected.
  */
 @Injectable({ providedIn: 'root' })
 export class CuratedEncounterService {
@@ -48,57 +48,24 @@ export class CuratedEncounterService {
     return this.http.delete<void>(`${this.base}/encounters/${encounterId}`);
   }
 
-  addCreature(encounterId: number, name: string, dexModifier: number,
+  /** Add a creature line. `armorClass` is optional reference info (null = unknown AC). */
+  addCreature(encounterId: number, name: string, armorClass: number | null,
               hpMax: number | null, quantity: number): Observable<Encounter> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<Encounter>(`${this.base}/encounters/${encounterId}/creatures`,
-      { name, dexModifier, hpMax, quantity });
+      { name, armorClass, hpMax, quantity });
   }
 
-  updateCreature(encounterId: number, creatureId: number, name: string, dexModifier: number,
+  updateCreature(encounterId: number, creatureId: number, name: string, armorClass: number | null,
                  hpMax: number | null, quantity: number): Observable<Encounter> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.put<Encounter>(`${this.base}/encounters/${encounterId}/creatures/${creatureId}`,
-      { name, dexModifier, hpMax, quantity });
+      { name, armorClass, hpMax, quantity });
   }
 
   removeCreature(encounterId: number, creatureId: number): Observable<Encounter> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.delete<Encounter>(`${this.base}/encounters/${encounterId}/creatures/${creatureId}`);
-  }
-
-  /** Add a prepped loot line — a catalog item (key) or a custom item (name + notes). */
-  addLootItem(encounterId: number, catalogItemKey: string | null, customName: string | null,
-              customNotes: string | null, qty: number): Observable<Encounter> {
-    if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<Encounter>(`${this.base}/encounters/${encounterId}/loot`,
-      { catalogItemKey, customName, customNotes, qty });
-  }
-
-  /** Update a loot line's qty (and, for custom lines, name/notes). */
-  updateLootItem(encounterId: number, lootItemId: number, qty: number,
-                 customName: string | null, customNotes: string | null): Observable<Encounter> {
-    if (environment.demoMode) return this.demoUnsupported();
-    return this.http.put<Encounter>(`${this.base}/encounters/${encounterId}/loot/${lootItemId}`,
-      { qty, customName, customNotes });
-  }
-
-  /** Remove a loot line from the encounter. */
-  removeLootItem(encounterId: number, lootItemId: number): Observable<Encounter> {
-    if (environment.demoMode) return this.demoUnsupported();
-    return this.http.delete<Encounter>(`${this.base}/encounters/${encounterId}/loot/${lootItemId}`);
-  }
-
-  /** Set the encounter's prepped coin pile, in gold (fractions allowed). */
-  setLootCoins(encounterId: number, coinGp: number): Observable<Encounter> {
-    if (environment.demoMode) return this.demoUnsupported();
-    return this.http.put<Encounter>(`${this.base}/encounters/${encounterId}/loot-coins`, { coinGp });
-  }
-
-  /** Bulk-add loot lines from pasted JSON (appends; coinGp adds to the pile). */
-  importLoot(encounterId: number, payload: LootImportPayload): Observable<Encounter> {
-    if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<Encounter>(`${this.base}/encounters/${encounterId}/loot/import`, payload);
   }
 
   private demoUnsupported<T>(): Observable<T> {

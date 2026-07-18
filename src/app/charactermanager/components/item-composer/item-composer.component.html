@@ -1,0 +1,89 @@
+<div class="composer">
+  <div class="composer-tabs">
+    @if (!demoMode) {
+      <button type="button" class="composer-tab" [class.on]="tab === 'catalog'"
+      (click)="setTab('catalog')">Catalog</button>
+    }
+    <button type="button" class="composer-tab" [class.on]="tab === 'custom'"
+    (click)="setTab('custom')">Custom</button>
+  </div>
+  @if (demoMode) {
+    <p class="composer-hint">The demo has no catalog — author a custom item below.</p>
+  }
+
+  <!-- Catalog tab: pick a real SRD item -->
+  @if (tab === 'catalog' && !demoMode) {
+    <div class="composer-body">
+      <div class="composer-row">
+        <select [(ngModel)]="catalogCategory" (ngModelChange)="loadCatalog()" aria-label="Category">
+          @for (c of categories; track c) {
+            <option [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
+          }
+        </select>
+        <input type="number" min="1" [(ngModel)]="catalogQty" class="composer-qty" aria-label="Quantity">
+      </div>
+      <input type="text" [(ngModel)]="catalogSearch" class="composer-text" placeholder="Search items…">
+      @if (loadingCatalog) {
+        <div class="composer-hint">Loading catalog…</div>
+      }
+      @if (!loadingCatalog) {
+        <div class="composer-list">
+          @for (item of filteredCatalog; track item.itemKey) {
+            <label class="composer-option" [class.on]="catalogSelectedKey === item.itemKey">
+              <input type="radio" name="composerCatalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
+              <span class="composer-option-name">{{ item.name }}</span>
+              <span class="composer-option-meta">{{ formatCp(item.costCp) }}</span>
+            </label>
+          }
+          @if (!filteredCatalog.length) {
+            <div class="composer-hint">No matching items.</div>
+          }
+        </div>
+      }
+      <div class="composer-actions">
+        <button type="button" class="composer-btn primary" [disabled]="!catalogSelectedKey"
+        (click)="confirmCatalog()">{{ confirmLabel }}</button>
+        @if (cancellable) {
+          <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Custom tab: free-hand homebrew with the full attribute set -->
+  @if (tab === 'custom') {
+    <div class="composer-body">
+      <input type="text" [(ngModel)]="customName" class="composer-text" placeholder="Item name">
+      <div class="composer-row">
+        <select [(ngModel)]="customCategory" aria-label="Category">
+          <option value="weapon">Weapon</option>
+          <option value="armor">Armor</option>
+          <option value="material-component">Material</option>
+          <option value="gear">Gear</option>
+        </select>
+        <input type="number" min="1" [(ngModel)]="customQty" class="composer-qty" aria-label="Quantity">
+      </div>
+      <div class="composer-row">
+        <input type="number" min="0" [(ngModel)]="customValueGp" class="composer-qty" placeholder="Value (gp)" aria-label="Value in gold">
+        <input type="number" min="0" [(ngModel)]="customWeight" class="composer-qty" placeholder="Weight (lb)" aria-label="Weight in pounds">
+      </div>
+      @if (customCategory === 'weapon') {
+        <input type="text" [(ngModel)]="customDamage" class="composer-text"
+          placeholder="Damage (e.g. 1d8 slashing)">
+      }
+      @if (customCategory === 'armor') {
+        <input type="text" [(ngModel)]="customArmorClass" class="composer-text"
+          placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
+      }
+      <input type="text" [(ngModel)]="customNotes" class="composer-text"
+        placeholder="Notes (optional)" aria-label="Notes">
+      <div class="composer-actions">
+        <button type="button" class="composer-btn primary" [disabled]="!customName.trim()"
+        (click)="confirmCustom()">{{ confirmLabel }}</button>
+        @if (cancellable) {
+          <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -23,13 +23,12 @@ export interface ParticipantView {
   portraitInitials: string | null;
   initiative: number | null;
   initRolled: boolean;
-  // DM-entered DEX modifier for an enemy row (the initiative tie-breaker);
-  // null for PCs, whose modifier lives on the canonical character.
-  dexModifier: number | null;
   orderIndex: number;
   hpMax: number | null;
   hpCurrent: number | null;
   hpTemp: number | null;
+  // Armor class: the canonical PC's AC, or the DM-entered AC for an enemy row
+  // (reference info only — initiative ties resolve by insertion order).
   ac: number | null;
   conditions: string[];
   // Darker Dungeons survival stages from the canonical PC row (parsed from the

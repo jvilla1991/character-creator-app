@@ -1,21 +1,23 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { SessionState, ParticipantView } from '../../../models/session';
 import { LootItem, LootView } from '../../../models/loot';
-import { EncounterSummary } from '../../../models/encounter';
-import { CatalogItem, formatCp } from '../../../models/shop';
+import { CuratedLootSummary } from '../../../models/curated-loot';
+import { formatCp } from '../../../models/shop';
 import { PC } from '../../../models/pc';
+import { AuthoredItem } from '../../item-composer/authored-item';
 import { LootService } from '../../../services/loot.service';
-import { CuratedEncounterService } from '../../../services/curated-encounter.service';
-import { ShopService } from '../../../services/shop.service';
+import { CuratedLootService } from '../../../services/curated-loot.service';
 import { PCService } from '../../../services/pc.service';
 import { NotificationService } from '../../../services/notification.service';
 
 /**
- * Session Mode post-combat loot. The DM prepares a pool — seeded from a curated
- * encounter's prepped loot or built from scratch — edits it as an invisible
- * draft, then drops it; players claim items and take coins first-come-first-
- * served. Visibility is driven by the session poll (`lootStatus` on the
- * snapshot): players render nothing until it reads 'DROPPED'.
+ * Session Mode post-combat loot. The DM prepares a pool — seeded from one of
+ * the campaign's curated loot lists or built from scratch — edits it as an
+ * invisible draft, then drops it; players claim items and take coins first-
+ * come-first-served. Line authoring goes through the shared
+ * ItemComposerComponent, so custom items carry the full attribute set.
+ * Visibility is driven by the session poll (`lootStatus` on the snapshot):
+ * players render nothing until it reads 'DROPPED'.
  *
  * State stays server-authoritative: a claim hits the backend (inventory/coins
  * written to the pc row under a lock, pool decremented) and the returned
@@ -39,19 +41,11 @@ export class LootPanelComponent implements OnChanges {
   busyCoins = false;
 
   // DM prepare form
-  source: 'encounter' | 'scratch' = 'encounter';
-  encounterId: number | null = null;
-  encounters: EncounterSummary[] = [];
+  source: 'list' | 'scratch' = 'list';
+  lootListId: number | null = null;
+  lootLists: CuratedLootSummary[] = [];
   nameDraft = '';
 
-  // DM add-item form (draft or live), mirroring the curated loot editor.
-  lootMode: 'catalog' | 'custom' = 'catalog';
-  lootCategory = 'WEAPON';
-  lootCatalog: CatalogItem[] = [];
-  lootItemKey = '';
-  lootCustomName = '';
-  lootCustomNotes = '';
-  lootQty = 1;
   /** The DM's coin pile input, in gp. */
   coinGpDraft: number | null = null;
 
@@ -60,28 +54,20 @@ export class LootPanelComponent implements OnChanges {
   /** Coins to take from the pile, in gp. */
   takeGp: number | null = null;
 
-  readonly lootCategories: ReadonlyArray<{ value: string; label: string }> = [
-    { value: 'WEAPON', label: 'Weapons' },
-    { value: 'ARMOR', label: 'Armor' },
-    { value: 'MATERIAL_COMPONENT', label: 'Components' },
-    { value: 'GEAR', label: 'Gear' },
-  ];
-
   /**
    * Guards re-fetching on every 2s poll. Includes the version: claims and DM
    * edits mutate the pool under a stable lootStatus, and every one of them
    * bumps the session version.
    */
   private fetchedKey: string | null = null;
-  /** Guards re-loading the DM's curated encounter list per campaign. */
-  private encountersLoadedFor: string | null = null;
+  /** Guards re-loading the DM's curated loot lists per campaign. */
+  private listsLoadedFor: string | null = null;
 
   readonly formatCp = formatCp;
 
   constructor(
     private lootService: LootService,
-    private curatedEncounterService: CuratedEncounterService,
-    private shopService: ShopService,
+    private curatedLootService: CuratedLootService,
     private pcService: PCService,
     private notifications: NotificationService,
   ) {}
@@ -99,12 +85,12 @@ export class LootPanelComponent implements OnChanges {
       this.loot = null;
       this.fetchedKey = null;
     }
-    // The DM can seed the pool from a curated encounter — load the list once.
-    if (s.dm && `${s.campaignId}` !== this.encountersLoadedFor) {
-      this.encountersLoadedFor = `${s.campaignId}`;
-      this.curatedEncounterService.list(s.campaignId).subscribe({
-        next: encounters => (this.encounters = encounters),
-        error: () => (this.encounters = []),
+    // The DM can seed the pool from a curated loot list — load them once.
+    if (s.dm && `${s.campaignId}` !== this.listsLoadedFor) {
+      this.listsLoadedFor = `${s.campaignId}`;
+      this.curatedLootService.list(s.campaignId).subscribe({
+        next: lists => (this.lootLists = lists),
+        error: () => (this.lootLists = []),
       });
     }
   }
@@ -126,12 +112,12 @@ export class LootPanelComponent implements OnChanges {
   // --- DM actions ------------------------------------------------------------
 
   get canPrepare(): boolean {
-    return this.source === 'scratch' || this.encounterId != null;
+    return this.source === 'scratch' || this.lootListId != null;
   }
 
   prepare(): void {
-    const encounterId = this.source === 'encounter' ? this.encounterId : null;
-    this.lootService.open(this.state.sessionId, encounterId, this.nameDraft.trim() || null).subscribe({
+    const lootId = this.source === 'list' ? this.lootListId : null;
+    this.lootService.open(this.state.sessionId, lootId, this.nameDraft.trim() || null).subscribe({
       next: view => this.setLoot(view),
       error: err => this.notifications.notify(this.errMsg(err, 'Could not prepare the loot.')),
     });
@@ -154,41 +140,11 @@ export class LootPanelComponent implements OnChanges {
     });
   }
 
-  onLootCategoryChange(): void {
-    this.lootItemKey = '';
-    this.loadLootCatalog();
-  }
-
-  setLootMode(mode: 'catalog' | 'custom'): void {
-    this.lootMode = mode;
-    if (mode === 'catalog' && !this.lootCatalog.length) this.loadLootCatalog();
-  }
-
-  private loadLootCatalog(): void {
-    this.shopService.getCatalog(this.lootCategory).subscribe({
-      next: items => (this.lootCatalog = items),
-      error: () => (this.lootCatalog = []),
-    });
-  }
-
-  addItem(): void {
+  /** The shared composer authored a line — append it to the pool (draft or live). */
+  onItemAuthored(item: AuthoredItem): void {
     if (!this.loot) return;
-    const qty = this.lootQty && this.lootQty >= 1 ? Math.floor(this.lootQty) : 1;
-    const catalog = this.lootMode === 'catalog';
-    if (catalog && !this.lootItemKey) return;
-    if (!catalog && !this.lootCustomName.trim()) return;
-    this.lootService.addItem(this.state.sessionId,
-      catalog ? this.lootItemKey : null,
-      catalog ? null : this.lootCustomName.trim(),
-      catalog ? null : (this.lootCustomNotes.trim() || null),
-      qty).subscribe({
-      next: view => {
-        this.setLoot(view);
-        this.lootItemKey = '';
-        this.lootCustomName = '';
-        this.lootCustomNotes = '';
-        this.lootQty = 1;
-      },
+    this.lootService.addItem(this.state.sessionId, item).subscribe({
+      next: view => this.setLoot(view),
       error: err => this.notifications.notify(this.errMsg(err, 'Could not add the item.')),
     });
   }
@@ -266,8 +222,6 @@ export class LootPanelComponent implements OnChanges {
   private setLoot(view: LootView): void {
     this.loot = view;
     this.coinGpDraft = view.coinCpTotal > 0 ? view.coinCpTotal / 100 : null;
-    // The DM's add form starts in catalog mode — make sure it has items to pick.
-    if (this.state?.dm && !this.lootCatalog.length) this.loadLootCatalog();
   }
 
   private fetchLoot(): void {

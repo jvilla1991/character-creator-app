@@ -94,15 +94,12 @@
   .num-input { width: 110px; }
 }
 
+/* Hosts the shared <app-item-composer>; the composer lays itself out. */
 .add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  display: block;
   margin-bottom: 8px;
 
-  .text-input { flex: 1; max-width: none; }
-  .mode-select { flex: 0 0 110px; }
+  app-item-composer { display: block; }
 }
 
 .catalog {

@@ -50,6 +50,8 @@ import { CampaignWeekComponent } from './components/campaign-dashboard/campaign-
 import { WeekDaysEditorComponent } from './components/week-days-editor/week-days-editor.component';
 import { CuratedShopsComponent } from './components/campaign-dashboard/curated-shops/curated-shops.component';
 import { CuratedEncountersComponent } from './components/campaign-dashboard/curated-encounters/curated-encounters.component';
+import { CuratedLootComponent } from './components/campaign-dashboard/curated-loot/curated-loot.component';
+import { ItemComposerComponent } from './components/item-composer/item-composer.component';
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 
@@ -128,6 +130,8 @@ const routes: Routes = [
         WeekDaysEditorComponent,
         CuratedShopsComponent,
         CuratedEncountersComponent,
+        CuratedLootComponent,
+        ItemComposerComponent,
         CreateCampaignModalComponent,
         JoinCampaignModalComponent,
         SessionModeComponent,
