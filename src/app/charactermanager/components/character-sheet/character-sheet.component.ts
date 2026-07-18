@@ -301,6 +301,18 @@ export class CharacterSheetComponent implements OnChanges {
       .subscribe({ error: err => console.error('Failed to grant spells', err) });
   }
 
+  onLanguageGrant(language: string): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => {
+        // Dedupe against the FRESH copy — the player may have gained the language
+        // between the form opening and the DM confirming the grant.
+        const known = new Set((fresh.languages ?? []).map(l => l.toLowerCase()));
+        if (known.has(language.toLowerCase())) return fresh;
+        return { ...fresh, languages: [...(fresh.languages ?? []), language] };
+      })
+      .subscribe({ error: err => console.error('Failed to grant language', err) });
+  }
+
   onItemGrant(item: PcItem): void {
     this.grantService
       .grantToPc(this.pc.id, fresh => {

@@ -217,7 +217,7 @@
           (pcChange)="onPcChange($event)"
           (editRequested)="onDmEditRequested($event)">
         </app-coin-purse>
-        <app-background-story [pc]="pc"></app-background-story>
+        <app-background-story [pc]="pc" [addAllowed]="editable" (languageGranted)="onLanguageGrant($event)"></app-background-story>
       </div>
     </div>
   }
