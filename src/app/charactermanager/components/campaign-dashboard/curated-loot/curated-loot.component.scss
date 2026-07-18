@@ -1,3 +1,6 @@
+/* Mirrors the curated-encounters/shops card styling; loot-specific bits at the
+   bottom (qty column on lines, compact coin input). */
+
 .curated-card {
   display: block;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
@@ -145,8 +148,17 @@
   padding: 6px 0;
 }
 
-.total-line {
-  margin-top: 12px;
-  font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+.loot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+
+  .loot-actions { display: flex; gap: 14px; }
 }
+
+// Loot lines add a qty column between the item and the remove button.
+.catalog-row.loot-line { grid-template-columns: 1fr 70px 28px; }
+.qty-input { width: 70px; }
+
+.coin-form .num-input { width: 110px; }

@@ -8,8 +8,7 @@ import { PC } from '../../../models/pc';
 describe('LootPanelComponent', () => {
   let component: LootPanelComponent;
   let lootService: jasmine.SpyObj<any>;
-  let curatedEncounterService: jasmine.SpyObj<any>;
-  let shopService: jasmine.SpyObj<any>;
+  let curatedLootService: jasmine.SpyObj<any>;
   let pcService: jasmine.SpyObj<any>;
   let notifications: jasmine.SpyObj<any>;
 
@@ -17,7 +16,7 @@ describe('LootPanelComponent', () => {
     return {
       participantId: 1, pcId: 7, npc: false, ownedByMe: false, currentTurn: false,
       name: 'Aria', clazz: 'Fighter', level: 3, portraitTint: null, portraitInitials: null,
-      initiative: null, initRolled: false, dexModifier: null, orderIndex: 0, hpMax: null,
+      initiative: null, initRolled: false, orderIndex: 0, hpMax: null,
       hpCurrent: null, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
       ...over,
@@ -47,14 +46,12 @@ describe('LootPanelComponent', () => {
     lootService = jasmine.createSpyObj('LootService',
       ['open', 'drop', 'close', 'addItem', 'updateItem', 'removeItem', 'setCoins',
        'getLoot', 'claimItem', 'claimCoins']);
-    curatedEncounterService = jasmine.createSpyObj('CuratedEncounterService', ['list']);
-    curatedEncounterService.list.and.returnValue(of([]));
-    shopService = jasmine.createSpyObj('ShopService', ['getCatalog']);
-    shopService.getCatalog.and.returnValue(of([]));
+    curatedLootService = jasmine.createSpyObj('CuratedLootService', ['list']);
+    curatedLootService.list.and.returnValue(of([]));
     pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
     component = new LootPanelComponent(
-      lootService, curatedEncounterService, shopService, pcService, notifications);
+      lootService, curatedLootService, pcService, notifications);
   });
 
   // ── poll-driven fetch ───────────────────────────────────────────────────────
@@ -84,35 +81,49 @@ describe('LootPanelComponent', () => {
     expect(component.loot).toBeNull();
   });
 
-  it('loads the DM curated-encounter list once per campaign', () => {
+  it('loads the DM curated loot lists once per campaign', () => {
     lootService.getLoot.and.returnValue(of(null));
     component.state = state({ dm: true, lootStatus: null });
     component.ngOnChanges();
     component.ngOnChanges();
-    expect(curatedEncounterService.list).toHaveBeenCalledTimes(1);
+    expect(curatedLootService.list).toHaveBeenCalledTimes(1);
   });
 
   // ── DM flows ────────────────────────────────────────────────────────────────
 
-  it('prepare seeds from the chosen encounter', () => {
+  it('prepare seeds from the chosen curated loot list', () => {
     const draft = pool({ dropped: false });
     lootService.open.and.returnValue(of(draft));
     component.state = state({ dm: true });
-    component.source = 'encounter';
-    component.encounterId = 5;
+    component.source = 'list';
+    component.lootListId = 5;
     component.prepare();
     expect(lootService.open).toHaveBeenCalledWith(1, 5, null);
     expect(component.loot).toBe(draft);
     expect(component.coinGpDraft).toBe(125.5);
   });
 
-  it('prepare from scratch sends no encounter', () => {
+  it('prepare from scratch sends no loot list', () => {
     lootService.open.and.returnValue(of(pool({ dropped: false, coinCpTotal: 0, coinCpRemaining: 0, items: [] })));
     component.state = state({ dm: true });
     component.source = 'scratch';
     component.nameDraft = ' Bandit spoils ';
     component.prepare();
     expect(lootService.open).toHaveBeenCalledWith(1, null, 'Bandit spoils');
+  });
+
+  it('onItemAuthored forwards the composer payload to the pool add endpoint', () => {
+    const updated = pool();
+    lootService.addItem.and.returnValue(of(updated));
+    component.state = state({ dm: true });
+    component.loot = pool({ items: [] });
+
+    const authored = { kind: 'custom' as const, name: 'Flametongue', category: 'weapon' as const,
+      qty: 1, valueGp: 50, weight: 3, damage: '1d8 slashing + 2d6 fire' };
+    component.onItemAuthored(authored);
+
+    expect(lootService.addItem).toHaveBeenCalledWith(1, authored);
+    expect(component.loot).toBe(updated);
   });
 
   it('drop publishes the pool', () => {

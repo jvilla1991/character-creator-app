@@ -20,10 +20,29 @@
     <div class="note-list">
       @for (n of notes; track trackById($index, n)) {
         <div class="note">
-          <p class="note-body">{{ n.body }}</p>
+          @if (editingId === n.id) {
+            <div class="note-compose" style="margin-bottom: 6px;">
+              <textarea [(ngModel)]="editDraft" rows="2" aria-label="Edit note"
+              (keydown.control.enter)="saveEdit(n)"></textarea>
+              <button class="btn primary" [disabled]="!editDraft.trim() || saving" (click)="saveEdit(n)">Save</button>
+              <button class="btn" (click)="cancelEdit()">Cancel</button>
+            </div>
+          } @else {
+            <p class="note-body">{{ n.body }}</p>
+          }
           <div class="note-foot">
-            <span class="note-time">{{ n.createdAt | date:'MMM d, y · h:mm a' }}</span>
-            <button class="note-del" (click)="remove(n)" [attr.aria-label]="'Delete note'" title="Delete note">✕</button>
+            <span class="note-time">
+              {{ n.createdAt | date:'MMM d, y · h:mm a' }}@if (n.updatedAt) {
+              <em> · edited</em>
+            }
+            </span>
+            <span class="note-actions">
+              @if (editingId !== n.id) {
+                <button class="note-del" (click)="startEdit(n)" [attr.aria-label]="'Edit note'"
+                title="Edit note">✎</button>
+              }
+              <button class="note-del" (click)="remove(n)" [attr.aria-label]="'Delete note'" title="Delete note">✕</button>
+            </span>
           </div>
         </div>
       }

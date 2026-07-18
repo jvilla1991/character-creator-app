@@ -8,5 +8,8 @@ export interface SessionNote {
   id: number | string;
   body: string;
   createdAt: string;                       // ISO-8601 timestamp
+  // Set once the note has been edited (null/absent = never edited) — lets the
+  // list mark edited entries.
+  updatedAt?: string | null;
   sessionId?: number | string | null;
 }

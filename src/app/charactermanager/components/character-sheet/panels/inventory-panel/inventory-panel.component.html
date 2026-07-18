@@ -21,86 +21,12 @@
     }
   </div>
 
-  <!-- DM grant form -->
+  <!-- DM grant form — the shared item composer authors the item; this panel
+       maps the payload onto the unchanged itemGranted contract. -->
   @if (grantFormOpen) {
     <div class="grant-form">
-      <div class="grant-tabs">
-        @if (!demoMode) {
-          <button type="button" class="grant-tab" [class.on]="grantTab === 'catalog'"
-          (click)="setGrantTab('catalog')">Catalog</button>
-        }
-        <button type="button" class="grant-tab" [class.on]="grantTab === 'custom'"
-        (click)="setGrantTab('custom')">Custom</button>
-      </div>
-      @if (demoMode) {
-        <p class="grant-hint">The demo has no catalog — grant a custom item below.</p>
-      }
-      <!-- Catalog tab -->
-      @if (grantTab === 'catalog' && !demoMode) {
-        <div class="grant-body">
-          <div class="grant-row">
-            <select [(ngModel)]="grantCategory" (ngModelChange)="loadCatalog()" aria-label="Category">
-              @for (c of grantCategories; track c) {
-                <option [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
-              }
-            </select>
-            <input type="number" min="1" [(ngModel)]="catalogQty" class="grant-qty" aria-label="Quantity">
-          </div>
-          <input type="text" [(ngModel)]="catalogSearch" class="grant-search" placeholder="Search items…">
-          @if (loadingCatalog) {
-            <div class="grant-hint">Loading catalog…</div>
-          }
-          @if (!loadingCatalog) {
-            <div class="grant-list">
-              @for (item of filteredCatalog; track item) {
-                <label class="grant-option" [class.on]="catalogSelectedKey === item.itemKey">
-                  <input type="radio" name="catalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
-                  <span class="grant-option-name">{{ item.name }}</span>
-                  <span class="grant-option-meta">{{ formatCp(item.costCp) }}</span>
-                </label>
-              }
-              @if (!filteredCatalog.length) {
-                <div class="grant-hint">No matching items.</div>
-              }
-            </div>
-          }
-          <div class="grant-actions">
-            <button type="button" class="inv-btn" [disabled]="!catalogSelectedKey" (click)="grantCatalogItem()">Add</button>
-            <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
-          </div>
-        </div>
-      }
-      <!-- Custom tab -->
-      @if (grantTab === 'custom') {
-        <div class="grant-body">
-          <input type="text" [(ngModel)]="customName" class="grant-search" placeholder="Item name">
-          <div class="grant-row">
-            <select [(ngModel)]="customCategory" aria-label="Category">
-              <option value="weapon">Weapon</option>
-              <option value="armor">Armor</option>
-              <option value="material-component">Material</option>
-              <option value="gear">Gear</option>
-            </select>
-            <input type="number" min="1" [(ngModel)]="customQty" class="grant-qty" aria-label="Quantity">
-          </div>
-          <div class="grant-row">
-            <input type="number" min="0" [(ngModel)]="customValueGp" class="grant-qty" placeholder="Value (gp)" aria-label="Value in gold">
-            <input type="number" min="0" [(ngModel)]="customWeight" class="grant-qty" placeholder="Weight (lb)" aria-label="Weight in pounds">
-          </div>
-          @if (customCategory === 'weapon') {
-            <input type="text" [(ngModel)]="customDamage" class="grant-search"
-              placeholder="Damage (e.g. 1d8 slashing)">
-          }
-          @if (customCategory === 'armor') {
-            <input type="text" [(ngModel)]="customArmorClass" class="grant-search"
-              placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
-          }
-          <div class="grant-actions">
-            <button type="button" class="inv-btn" [disabled]="!customName.trim()" (click)="grantCustomItem()">Add</button>
-            <button type="button" class="inv-btn" (click)="cancelGrant()">Cancel</button>
-          </div>
-        </div>
-      }
+      <app-item-composer (itemAuthored)="onAuthored($event)" (cancelled)="onGrantCancelled()">
+      </app-item-composer>
     </div>
   }
 

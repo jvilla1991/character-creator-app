@@ -35,11 +35,18 @@ describe('CuratedEncounterService', () => {
     req.flush({});
   });
 
-  it('addCreature POSTs the creature fields', () => {
-    service.addCreature(5, 'Goblin', 2, 7, 4).subscribe();
+  it('addCreature POSTs the creature fields (armorClass, not dex)', () => {
+    service.addCreature(5, 'Goblin', 15, 7, 4).subscribe();
     const req = httpMock.expectOne(`${base}/encounters/5/creatures`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ name: 'Goblin', dexModifier: 2, hpMax: 7, quantity: 4 });
+    expect(req.request.body).toEqual({ name: 'Goblin', armorClass: 15, hpMax: 7, quantity: 4 });
+    req.flush({});
+  });
+
+  it('addCreature allows an unknown AC (null)', () => {
+    service.addCreature(5, 'Mysterious Figure', null, null, 1).subscribe();
+    const req = httpMock.expectOne(`${base}/encounters/5/creatures`);
+    expect(req.request.body).toEqual({ name: 'Mysterious Figure', armorClass: null, hpMax: null, quantity: 1 });
     req.flush({});
   });
 
@@ -57,44 +64,4 @@ describe('CuratedEncounterService', () => {
     req.flush(null);
   });
 
-  it('addLootItem POSTs the loot line', () => {
-    service.addLootItem(5, 'longsword', null, null, 2).subscribe();
-    const req = httpMock.expectOne(`${base}/encounters/5/loot`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(
-      { catalogItemKey: 'longsword', customName: null, customNotes: null, qty: 2 });
-    req.flush({});
-  });
-
-  it('updateLootItem PUTs the line fields', () => {
-    service.updateLootItem(5, 9, 3, null, null).subscribe();
-    const req = httpMock.expectOne(`${base}/encounters/5/loot/9`);
-    expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ qty: 3, customName: null, customNotes: null });
-    req.flush({});
-  });
-
-  it('removeLootItem DELETEs the line', () => {
-    service.removeLootItem(5, 9).subscribe();
-    const req = httpMock.expectOne(`${base}/encounters/5/loot/9`);
-    expect(req.request.method).toBe('DELETE');
-    req.flush({});
-  });
-
-  it('setLootCoins PUTs the gp amount', () => {
-    service.setLootCoins(5, 125.5).subscribe();
-    const req = httpMock.expectOne(`${base}/encounters/5/loot-coins`);
-    expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ coinGp: 125.5 });
-    req.flush({});
-  });
-
-  it('importLoot POSTs the payload verbatim', () => {
-    const payload = { coinGp: 10, items: [{ key: 'longsword', name: null, notes: null, qty: null }] };
-    service.importLoot(5, payload).subscribe();
-    const req = httpMock.expectOne(`${base}/encounters/5/loot/import`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(payload);
-    req.flush({});
-  });
 });

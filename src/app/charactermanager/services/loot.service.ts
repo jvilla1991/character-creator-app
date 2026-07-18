@@ -3,11 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ClaimResult, LootView } from '../models/loot';
+import { AuthoredItem } from '../components/item-composer/authored-item';
+import { toAddLootItemRequest } from './curated-loot.service';
 
 /**
  * Post-combat loot client for Session Mode. Real mode talks to
  * character-manager-service; the DM opens a pool (optionally seeded from a
- * curated encounter), edits it as a draft, drops it, and players claim items
+ * curated loot list), edits it as a draft, drops it, and players claim items
  * and coins first-come-first-served. Discovery happens through the session poll
  * (the `lootStatus` flag on SessionState); this service fetches the pool and
  * runs claims. Demo mode has no backend, so getLoot returns null and writes
@@ -20,10 +22,10 @@ export class LootService {
 
   constructor(private http: HttpClient) {}
 
-  /** DM opens a loot pool as a draft (replaces any existing). encounterId seeds it from curated loot. */
-  open(sessionId: number | string, encounterId: number | null, name: string | null): Observable<LootView> {
+  /** DM opens a loot pool as a draft (replaces any existing). lootId seeds it from a curated loot list. */
+  open(sessionId: number | string, lootId: number | null, name: string | null): Observable<LootView> {
     if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<LootView>(`${this.base}/${sessionId}/loot`, { encounterId, name });
+    return this.http.post<LootView>(`${this.base}/${sessionId}/loot`, { lootId, name });
   }
 
   /** DM drops the loot — players can now see and claim. */
@@ -38,12 +40,15 @@ export class LootService {
     return this.http.delete<void>(`${this.base}/${sessionId}/loot`);
   }
 
-  /** DM adds a line — a catalog item (key) or a custom item (name + notes). */
-  addItem(sessionId: number | string, catalogItemKey: string | null, customName: string | null,
-          customNotes: string | null, qty: number): Observable<LootView> {
+  /**
+   * DM adds a line from the shared item composer's payload — a catalog item or
+   * a custom item with the full attribute set (same wire shape the curated
+   * loot editor uses, so the two flows can't drift).
+   */
+  addItem(sessionId: number | string, item: AuthoredItem): Observable<LootView> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<LootView>(`${this.base}/${sessionId}/loot/items`,
-      { catalogItemKey, customName, customNotes, qty });
+      toAddLootItemRequest(item));
   }
 
   /** DM edits a line (qty shifts the remaining count by the same delta). */

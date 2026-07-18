@@ -9,22 +9,22 @@
           <h2 class="loot-title">Prepare loot</h2>
           <div class="field-label">Loot source</div>
           <div class="seg" role="radiogroup">
-            <button type="button" class="seg-btn" [class.active]="source === 'encounter'"
-            (click)="source = 'encounter'">From encounter</button>
+            <button type="button" class="seg-btn" [class.active]="source === 'list'"
+            (click)="source = 'list'">From loot list</button>
             <button type="button" class="seg-btn" [class.active]="source === 'scratch'"
             (click)="source = 'scratch'">From scratch</button>
           </div>
-          @if (source === 'encounter') {
-            <div class="field-label">Which encounter's loot?</div>
-            @if (encounters.length) {
-              <select class="text-input" [(ngModel)]="encounterId">
-                <option [ngValue]="null" disabled>Choose a curated encounter…</option>
-                @for (e of encounters; track e) {
-                  <option [ngValue]="e.id">{{ e.name }}</option>
+          @if (source === 'list') {
+            <div class="field-label">Which loot list?</div>
+            @if (lootLists.length) {
+              <select class="text-input" [(ngModel)]="lootListId">
+                <option [ngValue]="null" disabled>Choose a curated loot list…</option>
+                @for (l of lootLists; track l.id) {
+                  <option [ngValue]="l.id">{{ l.name }} ({{ l.itemCount }} item{{ l.itemCount === 1 ? '' : 's' }})</option>
                 }
               </select>
             } @else {
-              <div class="muted">No curated encounters yet — build one on the campaign dashboard.</div>
+              <div class="muted">No curated loot lists yet — prep one on the campaign dashboard.</div>
             }
           }
           <label class="field">
@@ -59,34 +59,9 @@
                 <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveCoins()">Set coins</button>
               </div>
               <div class="add-form">
-                <select class="text-input mode-select" [ngModel]="lootMode"
-                  (ngModelChange)="setLootMode($event)" title="Item source">
-                  <option value="catalog">Catalog</option>
-                  <option value="custom">Custom</option>
-                </select>
-                @if (lootMode === 'catalog') {
-                  <select class="text-input" [(ngModel)]="lootCategory" (ngModelChange)="onLootCategoryChange()"
-                    title="Catalog category">
-                    @for (c of lootCategories; track c) {
-                      <option [value]="c.value">{{ c.label }}</option>
-                    }
-                  </select>
-                  <select class="text-input" [(ngModel)]="lootItemKey" title="Catalog item">
-                    <option value="" disabled>Pick an item…</option>
-                    @for (i of lootCatalog; track i) {
-                      <option [value]="i.itemKey">{{ i.name }}</option>
-                    }
-                  </select>
-                } @else {
-                  <input class="text-input" type="text" [(ngModel)]="lootCustomName"
-                    placeholder="Item name (e.g. Cloak of Elvenkind)" />
-                    <input class="text-input" type="text" [(ngModel)]="lootCustomNotes"
-                      placeholder="Notes (optional)" />
-                    }
-                    <input class="num-input" type="number" min="1" [(ngModel)]="lootQty" placeholder="Qty" title="Quantity" />
-                    <button class="btn primary" (click)="addItem()"
-                    [disabled]="lootMode === 'catalog' ? !lootItemKey : !lootCustomName.trim()">Add</button>
-                  </div>
+                <app-item-composer [cancellable]="false"
+                (itemAuthored)="onItemAuthored($event)"></app-item-composer>
+              </div>
                   @if (loot.items.length) {
                     <ul class="catalog">
                       @for (item of loot.items; track trackById($index, item)) {

@@ -24,7 +24,7 @@ describe('ShopPanelComponent', () => {
     return {
       participantId: 1, pcId: 7, npc: false, ownedByMe: false, currentTurn: false,
       name: 'Aria', clazz: 'Fighter', level: 3, portraitTint: null, portraitInitials: null,
-      initiative: null, initRolled: false, dexModifier: null, orderIndex: 0, hpMax: null,
+      initiative: null, initRolled: false, orderIndex: 0, hpMax: null,
       hpCurrent: null, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
       ...over,
