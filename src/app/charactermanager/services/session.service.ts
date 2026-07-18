@@ -309,12 +309,12 @@ export class SessionService {
     );
   }
 
-  /** DM adds an enemy (DM-calculated DEX modifier, optional HP); it parks at the bottom. */
-  addEnemy(sessionId: number | string, name: string, dexModifier: number,
+  /** DM adds an enemy (optional AC — reference info — and optional HP); it parks at the bottom. */
+  addEnemy(sessionId: number | string, name: string, armorClass: number | null,
            hpMax: number | null): Observable<SessionState> {
-    if (environment.demoMode) return of(this.demoAddEnemy(name, dexModifier, hpMax));
+    if (environment.demoMode) return of(this.demoAddEnemy(name, armorClass, hpMax));
     return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/enemies`, {
-      name, dexModifier, hpMax,
+      name, armorClass, hpMax,
     }).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
@@ -589,9 +589,9 @@ export class SessionService {
 
   /**
    * Demo: set a participant's initiative and re-sort the order locally, using
-   * the backend's comparator (initiative desc, unset last → DEX modifier desc →
-   * stable id). The pointer is an id, so it survives the re-sort untouched —
-   * same late-entry semantics as the real server.
+   * the backend's comparator (initiative desc, unset last → stable id). The
+   * pointer is an id, so it survives the re-sort untouched — same late-entry
+   * semantics as the real server.
    */
   private demoSetInitiative(participantId: number, value: number): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
@@ -603,11 +603,11 @@ export class SessionService {
     return next;
   }
 
-  /** The backend's turn-order comparator, mirrored for demo mode. */
+  /** The backend's turn-order comparator, mirrored for demo mode: initiative
+   *  desc (unset last), then insertion (id) order — no DEX tie-break layer. */
   private demoSort(participants: ParticipantView[]): ParticipantView[] {
     const sorted = [...participants].sort((a, b) =>
       ((b.initiative ?? -999) - (a.initiative ?? -999))
-      || ((b.dexModifier ?? -999) - (a.dexModifier ?? -999))
       || (a.participantId - b.participantId),
     );
     sorted.forEach((p, i) => (p.orderIndex = i));
@@ -700,13 +700,13 @@ export class SessionService {
   }
 
   /** Demo: add an enemy with no initiative — it parks at the bottom of the order. */
-  private demoAddEnemy(name: string, dexModifier: number, hpMax: number | null): SessionState {
+  private demoAddEnemy(name: string, armorClass: number | null, hpMax: number | null): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     const enemy: ParticipantView = {
       participantId: Date.now(), pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name, clazz: null, level: null, portraitTint: null, portraitInitials: null,
-      initiative: null, initRolled: false, dexModifier, orderIndex: state.participants.length,
-      hpMax, hpCurrent: hpMax, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
+      initiative: null, initRolled: false, orderIndex: state.participants.length,
+      hpMax, hpCurrent: hpMax, hpTemp: null, ac: armorClass, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     };
     const participants = this.demoSort([...state.participants, enemy]);
@@ -722,8 +722,8 @@ export class SessionService {
     const goblins: ParticipantView[] = [1, 2, 3].map((n, i) => ({
       participantId: base + i, pcId: null, npc: true, ownedByMe: false, currentTurn: false,
       name: `Goblin ${n}`, clazz: null, level: null, portraitTint: null, portraitInitials: null,
-      initiative: null, initRolled: false, dexModifier: 2, orderIndex: state.participants.length + i,
-      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
+      initiative: null, initRolled: false, orderIndex: state.participants.length + i,
+      hpMax: 7, hpCurrent: 7, hpTemp: null, ac: 15, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
     }));
     const participants = this.demoSort([...state.participants, ...goblins]);
@@ -903,7 +903,6 @@ export class SessionService {
       portraitInitials: pc.portraitInitials ?? null,
       initiative: pc.init ?? null,
       initRolled: pc.init != null,
-      dexModifier: null,
       orderIndex: index,
       hpMax: pc.hp?.max ?? null,
       hpCurrent: pc.hp?.cur ?? null,
@@ -977,7 +976,6 @@ export class SessionService {
       portraitInitials: p.portraitInitials ?? null,
       initiative: p.initiative ?? null,
       initRolled: !!p.initRolled,
-      dexModifier: p.dexModifier ?? null,
       orderIndex: p.orderIndex ?? 0,
       hpMax: p.hpMax ?? null,
       hpCurrent: p.hpCurrent ?? null,
@@ -1067,7 +1065,6 @@ interface ParticipantDto {
   portraitInitials?: string | null;
   initiative?: number | null;
   initRolled?: boolean;
-  dexModifier?: number | null;
   orderIndex?: number | null;
   hpMax?: number | null;
   hpCurrent?: number | null;

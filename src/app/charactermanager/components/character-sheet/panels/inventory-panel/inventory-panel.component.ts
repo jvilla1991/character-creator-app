@@ -1,12 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
-import { CatalogItem, ShopCategory, categoryLabelFor, formatCp, pcItemFromCatalog } from '../../../../models/shop';
-import { ShopService } from '../../../../services/shop.service';
-import { environment } from '../../../../../../environments/environment';
+import { categoryLabelFor, formatCp } from '../../../../models/shop';
+import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
 import { withRecomputedAc } from '../../../../utils/armor-math';
 import {
   ENCUMBERED_PENALTY,
-  bulkFromWeight,
   isEncumbered,
   itemBulk,
   slotCapacity,
@@ -56,8 +54,6 @@ export class InventoryPanelComponent {
    *  host can route it through GrantService's refetch-merge-save rather than
    *  PUTting this panel's possibly-stale PC copy. */
   @Output() itemGranted = new EventEmitter<PcItem>();
-
-  constructor(private shopService: ShopService) {}
 
   readonly formatCp = formatCp;
 
@@ -159,117 +155,24 @@ export class InventoryPanelComponent {
   }
 
   // ── DM grant form ──────────────────────────────────────────────────────────
-  // Two ways to grant: pick a real SRD catalog item (denormalized exactly like a
-  // shop purchase, but with no coin deduction), or type an ad-hoc homebrew line.
-  // Demo mode has no catalog, so only the custom tab is offered there.
-
-  readonly demoMode = environment.demoMode;
-  readonly grantCategories: ShopCategory[] = ['WEAPON', 'ARMOR', 'MATERIAL_COMPONENT', 'GEAR'];
-  readonly categoryLabelFor = categoryLabelFor;
+  // The shared ItemComposerComponent authors the item (catalog pick or custom
+  // homebrew with the full attribute set); this panel only maps its payload
+  // onto the unchanged `itemGranted: PcItem` contract via pcItemFromAuthored —
+  // the same denormalization every catalog→inventory path uses. No coins are
+  // deducted — it's a grant.
 
   grantFormOpen = false;
-  grantTab: 'catalog' | 'custom' = 'catalog';
-
-  // Catalog tab
-  grantCategory: ShopCategory = 'WEAPON';
-  catalogItems: CatalogItem[] = [];
-  catalogSearch = '';
-  catalogSelectedKey: string | null = null;
-  catalogQty = 1;
-  loadingCatalog = false;
-
-  // Custom tab
-  customName = '';
-  customCategory: PcItem['category'] = 'gear';
-  customQty = 1;
-  customValueGp: number | null = null;   // value in gold, converted to unitCostCp
-  customWeight: number | null = null;    // pounds (feeds bulk in slot campaigns)
-  customDamage = '';                     // weapons, e.g. "1d8 slashing"
-  customArmorClass = '';                 // armor, e.g. "14 + Dex modifier (max 2)"
 
   openGrantForm(): void {
     this.grantFormOpen = true;
-    this.grantTab = this.demoMode ? 'custom' : 'catalog';
-    if (!this.demoMode) this.loadCatalog();
   }
 
-  cancelGrant(): void {
-    this.resetGrantForm();
-  }
-
-  setGrantTab(tab: 'catalog' | 'custom'): void {
-    this.grantTab = tab;
-    if (tab === 'catalog' && !this.catalogItems.length) this.loadCatalog();
-  }
-
-  loadCatalog(): void {
-    this.loadingCatalog = true;
-    this.catalogSelectedKey = null;
-    this.shopService.getCatalog(this.grantCategory).subscribe({
-      next: items => { this.catalogItems = items; this.loadingCatalog = false; },
-      error: () => { this.catalogItems = []; this.loadingCatalog = false; },
-    });
-  }
-
-  get filteredCatalog(): CatalogItem[] {
-    const q = this.catalogSearch.trim().toLowerCase();
-    return q ? this.catalogItems.filter(i => i.name.toLowerCase().includes(q)) : this.catalogItems;
-  }
-
-  /** Grant the selected catalog item, denormalized through the shared
-   *  {@link pcItemFromCatalog} — the same normalization/bulk stamping every
-   *  catalog→inventory path uses. No coins are deducted — it's a grant. */
-  grantCatalogItem(): void {
-    const item = this.catalogItems.find(i => i.itemKey === this.catalogSelectedKey);
-    if (!item) return;
-    const qty = Math.max(1, Math.floor(this.catalogQty || 1));
-    this.itemGranted.emit(pcItemFromCatalog(item, qty));
-    this.resetGrantForm();
-  }
-
-  /** Grant an ad-hoc homebrew line. Beyond name/category/qty, the DM may set a
-   *  value (gp → unitCostCp), weight, and the category-specific stat (weapon
-   *  damage or armor class) — each added only when provided. Bulk is stamped
-   *  at grant time from the canonical weight bands (unknown weight → 1), the
-   *  same rating a join-time conversion would compute — the line's bulk never
-   *  drifts if its weight is later edited or lost. */
-  grantCustomItem(): void {
-    const name = this.customName.trim();
-    if (!name) return;
-    const entry: PcItem = {
-      name,
-      category: this.customCategory,
-      qty: Math.max(1, Math.floor(this.customQty || 1)),
-    };
-    if (this.customValueGp != null && this.customValueGp >= 0) {
-      entry.unitCostCp = Math.round(this.customValueGp * 100);
-    }
-    if (this.customWeight != null && this.customWeight >= 0) {
-      entry.weight = this.customWeight;
-    }
-    entry.bulk = bulkFromWeight(entry.weight);
-    const damage = this.customDamage.trim();
-    if (this.customCategory === 'weapon' && damage) entry.damage = damage;
-    const armorClass = this.customArmorClass.trim();
-    if (this.customCategory === 'armor' && armorClass) entry.armorClass = armorClass;
-    this.itemGranted.emit(entry);
-    this.resetGrantForm();
-  }
-
-  private resetGrantForm(): void {
+  onAuthored(item: AuthoredItem): void {
+    this.itemGranted.emit(pcItemFromAuthored(item));
     this.grantFormOpen = false;
-    this.grantTab = 'catalog';
-    this.grantCategory = 'WEAPON';
-    this.catalogItems = [];
-    this.catalogSearch = '';
-    this.catalogSelectedKey = null;
-    this.catalogQty = 1;
-    this.customName = '';
-    this.customCategory = 'gear';
-    this.customQty = 1;
-    this.customValueGp = null;
-    this.customWeight = null;
-    this.customDamage = '';
-    this.customArmorClass = '';
+  }
+
+  onGrantCancelled(): void {
+    this.grantFormOpen = false;
   }
 }

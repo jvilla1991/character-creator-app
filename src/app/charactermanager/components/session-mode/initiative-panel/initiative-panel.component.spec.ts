@@ -30,7 +30,6 @@ describe('InitiativePanelComponent', () => {
     portraitInitials: null,
     initiative: null,
     initRolled: false,
-    dexModifier: null,
     orderIndex: 0,
     hpMax: 20,
     hpCurrent: 20,

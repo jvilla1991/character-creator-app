@@ -527,6 +527,27 @@ export class CampaignService {
     );
   }
 
+  /** Edit a note's body. Real mode PUTs the DM-only endpoint (same ownership
+   *  guard as creation); demo mode rewrites the stored note in place and
+   *  stamps `updatedAt` so the list can mark it edited. */
+  updateNote(campaignId: string, noteId: number | string, body: string): Observable<SessionNote> {
+    const trimmed = body.trim();
+    if (environment.demoMode) {
+      const all = this.loadDemoNotes();
+      const notes = all[campaignId] ?? [];
+      const idx = notes.findIndex(n => String(n.id) === String(noteId));
+      if (idx < 0) return throwError(() => new Error('Note not found'));
+      const updated: SessionNote = { ...notes[idx], body: trimmed, updatedAt: new Date().toISOString() };
+      notes[idx] = updated;
+      all[campaignId] = notes;
+      this.persistDemoNotes(all);
+      return of(updated).pipe(delay(50));
+    }
+    return this.http.put<unknown>(`${this.campaignUrl}/${campaignId}/notes/${noteId}`, { body: trimmed }).pipe(
+      map(raw => this.deserializeNote(raw)),
+    );
+  }
+
   /** Remove a note from a campaign. */
   deleteNote(campaignId: string, noteId: number | string): Observable<void> {
     if (environment.demoMode) {
@@ -544,6 +565,7 @@ export class CampaignService {
       id: dto.id,
       body: dto.body ?? '',
       createdAt: dto.createdAt ?? new Date().toISOString(),
+      updatedAt: dto.updatedAt ?? null,
       sessionId: dto.sessionId ?? null,
     };
   }
@@ -595,5 +617,6 @@ interface SessionNoteDto {
   id: SessionNote['id'];
   body?: string | null;
   createdAt?: string | null;
+  updatedAt?: string | null;
   sessionId?: number | string | null;
 }

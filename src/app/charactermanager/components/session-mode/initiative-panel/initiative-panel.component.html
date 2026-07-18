@@ -76,7 +76,7 @@
             </div>
           }
         </div>
-        <div class="board-num lit">{{ p.ac }}</div>
+        <div class="board-num lit">{{ p.ac != null ? p.ac : '—' }}</div>
         <div class="board-conditions">
           @if (!p.conditions?.length) {
             <span class="board-cond calm">steady</span>
@@ -149,10 +149,11 @@
               <input
                 type="number"
                 class="enemy-input"
-                placeholder="DEX"
-                title="DEX modifier (you calculate it)"
-                [(ngModel)]="enemyDexMod"
-                aria-label="Enemy DEX modifier"
+                min="1"
+                placeholder="AC"
+                title="Armor Class (optional)"
+                [(ngModel)]="enemyAc"
+                aria-label="Enemy armor class"
                 />
                 <input
                   type="number"
@@ -165,7 +166,7 @@
                   <button
                     class="btn-mini xp"
                     (click)="addEnemy()"
-                    [disabled]="!enemyName.trim() || enemyDexMod == null || addingEnemy"
+                    [disabled]="!enemyName.trim() || addingEnemy"
                   >Add Enemy</button>
                 </div>
                 <label class="visibility-toggle">

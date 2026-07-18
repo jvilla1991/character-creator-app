@@ -44,10 +44,10 @@
       <div class="creature-form">
         <input class="text-input" type="text" [(ngModel)]="cName" placeholder="Name (e.g. Goblin)"
           (keyup.enter)="addCreature()" />
-          <input class="num-input" type="number" [(ngModel)]="cDex" placeholder="DEX mod" title="DEX modifier" />
+          <input class="num-input" type="number" min="1" [(ngModel)]="cAc" placeholder="AC" title="Armor Class (optional)" />
           <input class="num-input" type="number" min="1" [(ngModel)]="cHp" placeholder="HP" title="Max HP (optional)" />
           <input class="num-input" type="number" min="1" [(ngModel)]="cQty" placeholder="Qty" title="Quantity" />
-          <button class="btn primary" [disabled]="!cName.trim() || cDex == null || busy" (click)="addCreature()">Add</button>
+          <button class="btn primary" [disabled]="!cName.trim() || busy" (click)="addCreature()">Add</button>
         </div>
         @if (encounter.creatures.length) {
           <ul class="catalog">
@@ -56,7 +56,7 @@
                 <div class="item-main">
                   <span class="item-name">{{ c.quantity > 1 ? c.quantity + '× ' : '' }}{{ c.name }}</span>
                   <span class="item-meta">
-                    DEX {{ c.dexModifier >= 0 ? '+' : '' }}{{ c.dexModifier }}@if (c.hpMax != null) {
+                    AC {{ c.armorClass != null ? c.armorClass : '—' }}@if (c.hpMax != null) {
                     · {{ c.hpMax }} HP
                   }
                 </span>
@@ -73,82 +73,5 @@
           Loads {{ totalCombatants(encounter) }} combatant{{ totalCombatants(encounter) === 1 ? '' : 's' }} into a session.
         </div>
       }
-      <!-- ===== Loot (dropped as a claimable pool in Session Mode) ===== -->
-      <div class="field-label loot-head">
-        Loot
-        <span class="loot-actions">
-          <button class="btn link" (click)="copyLootJson()">{{ lootCopied ? 'Copied ✓' : 'Copy JSON' }}</button>
-          <button class="btn link" (click)="toggleLootImport()">{{ lootImportOpen ? 'Cancel import' : 'Import JSON' }}</button>
-        </span>
-      </div>
-      @if (lootImportOpen) {
-        <div style="margin: 10px 0;">
-          <textarea [(ngModel)]="lootImportDraft" rows="7" style="width: 100%; font-family: monospace;"
-          [placeholder]="lootImportExample" aria-label="Loot JSON"></textarea>
-          <div class="muted" style="margin-top: 4px;">
-            Each item has either a "key" (an SRD slug like "longsword") or a "name" (a custom item, with
-            optional "notes"); "coinGp" adds to the coin pile. Importing appends to the loot below.
-          </div>
-          @if (lootImportError) {
-            <div style="color: var(--crimson); margin-top: 4px;">{{ lootImportError }}</div>
-          }
-          <button class="btn primary" style="margin-top: 6px;"
-          [disabled]="!lootImportDraft.trim() || busy" (click)="importLoot()">Import loot</button>
-        </div>
-      }
-      <div class="creature-form coin-form">
-        <span class="item-meta">Coin pile</span>
-        <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
-          placeholder="gp" title="Gold in the pile (fractions allowed)" />
-          <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveLootCoins()">Save coins</button>
-        </div>
-        <div class="creature-form loot-form">
-          <select class="text-input mode-select" [ngModel]="lootMode"
-            (ngModelChange)="setLootMode($event)" title="Item source">
-            <option value="catalog">Catalog</option>
-            <option value="custom">Custom</option>
-          </select>
-          @if (lootMode === 'catalog') {
-            <select class="text-input" [(ngModel)]="lootCategory" (ngModelChange)="onLootCategoryChange()"
-              title="Catalog category">
-              @for (c of lootCategories; track c) {
-                <option [value]="c.value">{{ c.label }}</option>
-              }
-            </select>
-            <select class="text-input" [(ngModel)]="lootItemKey" title="Catalog item">
-              <option value="" disabled>Pick an item…</option>
-              @for (i of lootCatalog; track i) {
-                <option [value]="i.itemKey">{{ i.name }} ({{ formatCp(i.costCp) }})</option>
-              }
-            </select>
-          } @else {
-            <input class="text-input" type="text" [(ngModel)]="lootCustomName"
-              placeholder="Item name (e.g. Cloak of Elvenkind)" />
-              <input class="text-input" type="text" [(ngModel)]="lootCustomNotes"
-                placeholder="Notes (optional)" />
-              }
-              <input class="num-input" type="number" min="1" [(ngModel)]="lootQty" placeholder="Qty" title="Quantity" />
-              <button class="btn primary" (click)="addLootItem()"
-              [disabled]="busy || (lootMode === 'catalog' ? !lootItemKey : !lootCustomName.trim())">Add</button>
-            </div>
-            @if (encounter.lootItems.length) {
-              <ul class="catalog">
-                @for (item of encounter.lootItems; track trackById($index, item)) {
-                  <li class="catalog-row loot-line">
-                    <div class="item-main">
-                      <span class="item-name">{{ item.name }}</span>
-                      @if (item.custom) {
-                        <span class="item-meta">{{ item.customNotes || 'Custom item' }}</span>
-                      }
-                    </div>
-                    <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
-                      (ngModelChange)="changeLootQty(item, $event)" title="Quantity" />
-                      <button class="btn-x" title="Remove" (click)="removeLootItem(item)">✕</button>
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <div class="muted">No loot yet. Add items above or import JSON — drop it to players from Session Mode.</div>
-              }
-            }
-          </section>
+    }
+  </section>

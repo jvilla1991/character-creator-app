@@ -1,22 +1,15 @@
-import { of } from 'rxjs';
-
 import { InventoryPanelComponent } from './inventory-panel.component';
 import { PC, PcItem } from '../../../../models/pc';
 import { CatalogItem } from '../../../../models/shop';
-import { ShopService } from '../../../../services/shop.service';
-import { environment } from '../../../../../../environments/environment';
 
 describe('InventoryPanelComponent', () => {
   let component: InventoryPanelComponent;
-  let shopService: jasmine.SpyObj<ShopService>;
 
   const basePc = (inventory: PcItem[] = []): PC =>
     ({ id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P', inventory } as PC);
 
   beforeEach(() => {
-    shopService = jasmine.createSpyObj<ShopService>('ShopService', ['getCatalog']);
-    shopService.getCatalog.and.returnValue(of([]));
-    component = new InventoryPanelComponent(shopService);
+    component = new InventoryPanelComponent();
     component.editable = true;
   });
 
@@ -155,9 +148,9 @@ describe('InventoryPanelComponent', () => {
     expect(spy).toHaveBeenCalledWith(2);
   });
 
-  // --- DM grants ---
+  // --- DM grants (the shared composer authors; this panel maps → PcItem) ---
 
-  describe('grant form', () => {
+  describe('grant via the shared composer', () => {
     const catalogLongsword: CatalogItem = {
       itemKey: 'longsword', name: 'Longsword', category: 'WEAPON', costCp: 1500,
       weight: 3, bulk: 2, details: { damage: '1d8 slashing', properties: ['versatile (1d10)'] },
@@ -165,25 +158,14 @@ describe('InventoryPanelComponent', () => {
 
     beforeEach(() => {
       component.pc = basePc([]);
+      component.grantFormOpen = true;
     });
 
-    it('loads the catalog for the default category on open', () => {
-      shopService.getCatalog.and.returnValue(of([catalogLongsword]));
-      component.openGrantForm();
-      expect(shopService.getCatalog).toHaveBeenCalledWith('WEAPON');
-      expect(component.grantTab).toBe('catalog');
-      expect(component.catalogItems).toEqual([catalogLongsword]);
-    });
-
-    it('denormalizes a catalog item like the backend, flattening details without clobbering base fields', () => {
-      shopService.getCatalog.and.returnValue(of([catalogLongsword]));
-      component.openGrantForm();
-      component.catalogSelectedKey = 'longsword';
-      component.catalogQty = 2;
+    it('emits a denormalized catalog PcItem — details flattened, base fields win', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));
 
-      component.grantCatalogItem();
+      component.onAuthored({ kind: 'catalog', item: catalogLongsword, qty: 2 });
 
       expect(emitted.length).toBe(1);
       expect(emitted[0]).toEqual({
@@ -197,107 +179,42 @@ describe('InventoryPanelComponent', () => {
         damage: '1d8 slashing',
         properties: ['versatile (1d10)'],
       });
-      expect(component.grantFormOpen).toBeFalse();
+      expect(component.grantFormOpen).toBeFalse(); // form closes after the grant
     });
 
-    it('does not let details keys overwrite base fields (putIfAbsent semantics)', () => {
-      const sneaky: CatalogItem = {
-        itemKey: 'trap', name: 'Real Name', category: 'GEAR', costCp: 10, weight: 1, bulk: 1,
-        details: { name: 'HACKED', category: 'weapon', qty: 999, extra: 'ok' },
-      };
-      shopService.getCatalog.and.returnValue(of([sneaky]));
-      component.openGrantForm();
-      component.catalogSelectedKey = 'trap';
+    it('emits a fully stat’d custom PcItem — value → unitCostCp, weight-band bulk, damage, notes', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));
 
-      component.grantCatalogItem();
-
-      expect(emitted[0].name).toBe('Real Name');
-      expect(emitted[0].category).toBe('gear');
-      expect(emitted[0].qty).toBe(1);
-      expect((emitted[0] as any).extra).toBe('ok');
-    });
-
-    it('omits weight when the catalog item has none', () => {
-      const weightless: CatalogItem = { itemKey: 'gem', name: 'Gem', category: 'GEAR', costCp: 5000, weight: null, bulk: 1, details: {} };
-      shopService.getCatalog.and.returnValue(of([weightless]));
-      component.openGrantForm();
-      component.catalogSelectedKey = 'gem';
-      const emitted: PcItem[] = [];
-      component.itemGranted.subscribe(i => emitted.push(i));
-
-      component.grantCatalogItem();
-
-      expect('weight' in emitted[0]).toBeFalse();
-    });
-
-    it('grants an ad-hoc custom item with no catalogKey/cost — bulk stamped at the unknown-weight default', () => {
-      component.openGrantForm();
-      component.setGrantTab('custom');
-      component.customName = '  Cracked Dragon Fang  ';
-      component.customCategory = 'gear';
-      component.customQty = 1;
-      const emitted: PcItem[] = [];
-      component.itemGranted.subscribe(i => emitted.push(i));
-
-      component.grantCustomItem();
-
-      expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1, bulk: 1 });
-    });
-
-    it('carries value/weight and the category stat on a custom grant', () => {
-      component.customName = 'Flametongue';
-      component.customCategory = 'weapon';
-      component.customQty = 1;
-      component.customValueGp = 50;      // → 5000 cp
-      component.customWeight = 3;
-      component.customDamage = '1d8 slashing + 2d6 fire';
-      component.customArmorClass = 'ignored for a weapon';
-      const emitted: PcItem[] = [];
-      component.itemGranted.subscribe(i => emitted.push(i));
-
-      component.grantCustomItem();
+      component.onAuthored({
+        kind: 'custom', name: 'Flametongue', category: 'weapon', qty: 1,
+        valueGp: 50, weight: 3, damage: '1d8 slashing + 2d6 fire', notes: 'Ignites.',
+      });
 
       expect(emitted[0]).toEqual({
         name: 'Flametongue', category: 'weapon', qty: 1,
         unitCostCp: 5000, weight: 3, bulk: 2, // 3 lb → the ≤5 lb band, same as a conversion
-        damage: '1d8 slashing + 2d6 fire',
+        damage: '1d8 slashing + 2d6 fire', notes: 'Ignites.',
       });
     });
 
-    it('carries armor class on a custom armor grant', () => {
-      component.customName = 'Mithral Plate';
-      component.customCategory = 'armor';
-      component.customArmorClass = '18';
+    it('emits a bare custom PcItem with the unknown-weight bulk default', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));
 
-      component.grantCustomItem();
+      component.onAuthored({ kind: 'custom', name: 'Cracked Dragon Fang', category: 'gear', qty: 1 });
 
-      expect(emitted[0]).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, bulk: 1, armorClass: '18' });
+      expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1, bulk: 1 });
     });
 
-    it('blocks a custom grant with a blank name', () => {
+    it('cancel closes the form without emitting', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));
-      component.customName = '   ';
 
-      component.grantCustomItem();
+      component.onGrantCancelled();
 
+      expect(component.grantFormOpen).toBeFalse();
       expect(emitted.length).toBe(0);
-    });
-
-    it('opens straight to the custom tab in demo mode (no catalog)', () => {
-      // demoMode is captured at construction; build a component that reads it as true.
-      spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
-      const demoComponent = new InventoryPanelComponent(shopService);
-      demoComponent.pc = basePc([]);
-
-      demoComponent.openGrantForm();
-
-      expect(demoComponent.grantTab).toBe('custom');
-      expect(shopService.getCatalog).not.toHaveBeenCalled();
     });
   });
 });

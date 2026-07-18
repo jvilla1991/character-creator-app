@@ -18,7 +18,7 @@ import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survi
  * Initiative entry: the DM edits anyone anytime; a player edits their own row
  * freely in the lobby, and once the encounter is active only while theirs is
  * still unset (late joiner). The DM also gets an encounter bar: add enemy
- * (name + DM-calculated DEX mod + optional HP), the enemy-visibility checkbox,
+ * (name + optional AC + optional HP), the enemy-visibility checkbox,
  * and the turn-sound picker. Everyone gets a local mute toggle.
  */
 @Component({
@@ -59,9 +59,9 @@ export class InitiativePanelComponent {
   /** Amount typed into the panel-level "award XP to all" box. */
   xpAll: number | null = null;
 
-  // Add-enemy form (DM encounter bar).
+  // Add-enemy form (DM encounter bar). AC is optional reference info.
   enemyName = '';
-  enemyDexMod: number | null = null;
+  enemyAc: number | null = null;
   enemyHp: number | null = null;
   addingEnemy = false;
 
@@ -148,12 +148,12 @@ export class InitiativePanelComponent {
   /** DM adds an enemy; it parks at the bottom until it gets an initiative. */
   addEnemy(): void {
     const name = this.enemyName.trim();
-    if (!name || this.enemyDexMod == null || this.addingEnemy) return;
+    if (!name || this.addingEnemy) return;
     this.addingEnemy = true;
-    this.sessionService.addEnemy(this.sessionId, name, this.enemyDexMod, this.enemyHp).subscribe({
+    this.sessionService.addEnemy(this.sessionId, name, this.enemyAc, this.enemyHp).subscribe({
       next: () => {
         this.enemyName = '';
-        this.enemyDexMod = null;
+        this.enemyAc = null;
         this.enemyHp = null;
         this.addingEnemy = false;
       },

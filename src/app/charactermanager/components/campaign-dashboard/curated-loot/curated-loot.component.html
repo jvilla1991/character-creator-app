@@ -1,0 +1,99 @@
+<section class="curated-card">
+  <div class="eyebrow">DM · Loot</div>
+
+  <!-- ===== Loot list index ===== -->
+  @if (!selected) {
+    <h2 class="curated-title">Curated Loot</h2>
+    <div class="new-shop">
+      <input class="text-input" type="text" [(ngModel)]="newName"
+        placeholder="New loot list name (e.g. Goblin Ambush spoils)"
+        (keyup.enter)="createList()" />
+        <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createList()">Create</button>
+      </div>
+      @if (lists.length) {
+        <ul class="shop-list">
+          @for (l of lists; track trackById($index, l)) {
+            <li class="shop-row" (click)="open(l)">
+              <div>
+                <div class="shop-name">{{ l.name }}</div>
+                <div class="shop-sub">
+                  {{ l.itemCount }} item{{ l.itemCount === 1 ? '' : 's' }}@if (l.coinCp > 0) {
+                  · {{ formatCp(l.coinCp) }}
+                }
+              </div>
+            </div>
+            <span class="chevron">›</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="muted">No loot lists yet. Create one, fill it with spoils, then drop it from Session Mode.</div>
+    }
+  }
+
+  <!-- ===== Loot list editor ===== -->
+  @if (selected; as loot) {
+    <div class="editor-head">
+      <button class="btn link" (click)="back()">‹ All loot</button>
+      <button class="btn danger" (click)="deleteList()">Delete list</button>
+    </div>
+    <h2 class="curated-title">{{ loot.name }}</h2>
+    <div class="field-label">Notes</div>
+    <textarea class="text-input notes" rows="2" [(ngModel)]="notesDraft"
+    placeholder="Where this hoard waits, who guards it…"></textarea>
+    <div class="notes-actions">
+      <button class="btn" [disabled]="notesDraft === (loot.notes ?? '')" (click)="saveNotes()">Save notes</button>
+    </div>
+
+    <div class="field-label loot-head">
+      Loot
+      <span class="loot-actions">
+        <button class="btn link" (click)="copyLootJson()">{{ lootCopied ? 'Copied ✓' : 'Copy JSON' }}</button>
+        <button class="btn link" (click)="toggleLootImport()">{{ lootImportOpen ? 'Cancel import' : 'Import JSON' }}</button>
+      </span>
+    </div>
+    @if (lootImportOpen) {
+      <div style="margin: 10px 0;">
+        <textarea [(ngModel)]="lootImportDraft" rows="7" style="width: 100%; font-family: monospace;"
+        [placeholder]="lootImportExample" aria-label="Loot JSON"></textarea>
+        <div class="muted" style="margin-top: 4px;">
+          Each item has either a "key" (an SRD slug like "longsword") or a "name" (a custom item, with
+          optional "notes", "category", "valueGp", "weight", and "damage"/"armorClass" for weapons/armor);
+          "coinGp" adds to the coin pile. Importing appends to the loot below.
+        </div>
+        @if (lootImportError) {
+          <div style="color: var(--crimson); margin-top: 4px;">{{ lootImportError }}</div>
+        }
+        <button class="btn primary" style="margin-top: 6px;"
+        [disabled]="!lootImportDraft.trim() || busy" (click)="importLoot()">Import loot</button>
+      </div>
+    }
+    <div class="creature-form coin-form">
+      <span class="item-meta">Coin pile</span>
+      <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
+        placeholder="gp" title="Gold in the pile (fractions allowed)" />
+        <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveCoins()">Save coins</button>
+      </div>
+
+      <div class="field-label">Add an item</div>
+      <app-item-composer [cancellable]="false" (itemAuthored)="onItemAuthored($event)"></app-item-composer>
+
+      @if (loot.items.length) {
+        <ul class="catalog">
+          @for (item of loot.items; track trackById($index, item)) {
+            <li class="catalog-row loot-line">
+              <div class="item-main">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-meta">{{ itemMeta(item) }}</span>
+              </div>
+              <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
+                (ngModelChange)="changeQty(item, $event)" title="Quantity" />
+                <button class="btn-x" title="Remove" (click)="removeItem(item)">✕</button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="muted">No loot yet. Add items above or import JSON — drop the list to players from Session Mode.</div>
+        }
+      }
+    </section>
