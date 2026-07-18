@@ -21,6 +21,10 @@ export class CampaignNotesComponent implements OnChanges {
   draft = '';
   saving = false;
 
+  /** The note currently in edit mode (null = none) and its textarea draft. */
+  editingId: SessionNote['id'] | null = null;
+  editDraft = '';
+
   constructor(private campaignService: CampaignService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -47,6 +51,35 @@ export class CampaignNotesComponent implements OnChanges {
       },
       error: err => {
         console.error('Failed to add session note', err);
+        this.saving = false;
+      },
+    });
+  }
+
+  /** Open the inline editor for a note (one at a time; mirrors the compose box). */
+  startEdit(note: SessionNote): void {
+    this.editingId = note.id;
+    this.editDraft = note.body;
+  }
+
+  cancelEdit(): void {
+    this.editingId = null;
+    this.editDraft = '';
+  }
+
+  /** Save the edited body; the returned note (with updatedAt) replaces the row. */
+  saveEdit(note: SessionNote): void {
+    const body = this.editDraft.trim();
+    if (!body || this.saving) return;
+    this.saving = true;
+    this.campaignService.updateNote(this.campaign.id, note.id, body).subscribe({
+      next: updated => {
+        this.notes = this.notes.map(n => (n.id === note.id ? updated : n));
+        this.cancelEdit();
+        this.saving = false;
+      },
+      error: err => {
+        console.error('Failed to update session note', err);
         this.saving = false;
       },
     });
