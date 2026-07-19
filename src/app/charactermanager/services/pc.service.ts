@@ -11,7 +11,7 @@ import { hitDieFor, modFromScore } from '../utils/character-math';
 import {
   DEMO_PCS,
   DEMO_ACTIVITY_LOGS,
-  DEMO_GENERAL_FEATS,
+  demoFeatOptions,
   demoProfBonus,
   demoLevelUpFields,
   demoSlotsFor,
@@ -386,7 +386,7 @@ export class PCService {
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
-      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? [...DEMO_GENERAL_FEATS] : [],
+      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       currentCantripsKnown: demoCantripsKnown(pc.clazz, current),

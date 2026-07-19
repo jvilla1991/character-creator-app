@@ -107,6 +107,14 @@ describe('DndResourcesService', () => {
       expect(service.getFeatNames()).toContain('Alert');
     });
 
+    it('covers all four 2024 PHB feat categories', () => {
+      const names = service.getFeatNames();
+      expect(names).toContain('Alert');            // Origin
+      expect(names).toContain('Weapon Master');    // General
+      expect(names).toContain('Archery');          // Fighting Style
+      expect(names).toContain('Boon of Fate');     // Epic Boon
+    });
+
     it('length matches the number of known feats', () => {
       expect(service.getFeatNames().length).toBe(Object.keys(FEAT_DESCRIPTIONS).length);
     });
