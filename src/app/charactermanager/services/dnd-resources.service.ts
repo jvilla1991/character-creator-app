@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, shareReplay, throwError } from 'rxjs';
+import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 
@@ -436,19 +436,25 @@ export class DndResourcesService {
 
   // ── Spell methods — loaded lazily from asset, cached for the session ────────
 
-  /** All 339 SRD 5.2 spells. Fetched once on first call; cached via shareReplay. */
+  /**
+   * The full 2024 spell list: 339 SRD 5.2 spells plus the 52 remaining 2024 PHB
+   * spells from the supplement file (SRD entries first). Fetched once on first
+   * call; cached via shareReplay.
+   */
   getSpells(): Observable<DndSpell[]> {
     if (!this.spells$) {
-      this.spells$ = this.http
-        .get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json')
-        .pipe(
-          retry(1),
-          // Don't let a transient failure (e.g. a dev-server blip) poison the
-          // cache — drop it so the next request re-fetches instead of replaying
-          // the error forever.
-          catchError(err => { this.spells$ = null; return throwError(() => err); }),
-          shareReplay(1),
-        );
+      this.spells$ = forkJoin([
+        this.http.get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json'),
+        this.http.get<DndSpell[]>('/assets/data/spells/phb-2024-supplement.json'),
+      ]).pipe(
+        map(([srd, supplement]) => [...srd, ...supplement]),
+        retry(1),
+        // Don't let a transient failure (e.g. a dev-server blip) poison the
+        // cache — drop it so the next request re-fetches instead of replaying
+        // the error forever.
+        catchError(err => { this.spells$ = null; return throwError(() => err); }),
+        shareReplay(1),
+      );
     }
     return this.spells$;
   }
