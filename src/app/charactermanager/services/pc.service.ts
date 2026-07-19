@@ -514,6 +514,10 @@ export class PCService {
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
         : null,
+      // null (not 0) when never tracked — the backend preserves the stored
+      // value on a null (same rule as survival below), so a payload built from
+      // a source without the field can't reset a real exhaustion level.
+      exhaustion: pc.exhaustion ?? null,
       // JSON-stringify all arrays and objects stored as TEXT
       spells: JSON.stringify(pc.spells ?? []),
       spellSlots: JSON.stringify(pc.spellSlots ?? {}),

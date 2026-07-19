@@ -12,4 +12,28 @@
       >{{ c }}</button>
     }
   </div>
+
+  <!-- 2024 PHB exhaustion tracker: pip N = level N; re-click the top pip to
+  step back down. Persisted via the host like a condition toggle. -->
+  <div class="exhaustion-tracker" [class.fatal]="exhaustionFatal" [title]="exhaustionTooltip">
+    <span class="exhaustion-label">Exhaustion</span>
+    <span class="exhaustion-pips">
+      @for (lvl of exhaustionLevels; track lvl) {
+        <button
+          type="button"
+          class="exhaustion-pip"
+          [class.filled]="exhaustion >= lvl"
+          [attr.aria-label]="'Set exhaustion to level ' + lvl"
+          [attr.aria-pressed]="exhaustion >= lvl"
+          (click)="setExhaustion(lvl)"
+        >{{ lvl }}</button>
+      }
+    </span>
+    @if (exhaustion > 0 && !exhaustionFatal) {
+      <span class="exhaustion-effect">−{{ 2 * exhaustion }} d20 Tests · −{{ 5 * exhaustion }} ft Speed</span>
+    }
+    @if (exhaustionFatal) {
+      <span class="exhaustion-effect dead">dead</span>
+    }
+  </div>
 </div>

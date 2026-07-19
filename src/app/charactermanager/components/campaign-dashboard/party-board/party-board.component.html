@@ -49,11 +49,17 @@
         <div class="board-num">{{ passivePerception(pc) }}</div>
         <div class="board-num">{{ passiveInsight(pc) }}</div>
         <div class="board-conditions">
-          @if (!pc.conditions?.length) {
+          @if (!pc.conditions?.length && !pc.exhaustion) {
             <span class="board-cond calm">steady</span>
           }
           @for (c of pc.conditions; track c) {
             <span class="board-cond">{{ c }}</span>
+          }
+          <!-- 2024 PHB exhaustion level (tracked on the sheet, not a chip condition) -->
+          @if (pc.exhaustion) {
+            <span class="board-cond"
+              title="−2 to all d20 Tests and −5 ft Speed per level; death at level 6"
+            >exhaustion {{ pc.exhaustion }}</span>
           }
         </div>
         <!-- IconChevron rotated -->

@@ -289,6 +289,13 @@ export class CharacterSheetComponent implements OnChanges {
     this.persist({ ...this.pc, conditions: next });
   }
 
+  /** Exhaustion tracker (conditions panel, 2024 PHB levels 0–6). Clamped here
+   *  and persisted exactly like a condition toggle: owner path on the player's
+   *  own sheet, DM-authorized path in cross-link mode. */
+  onExhaustionChange(level: number): void {
+    this.persist({ ...this.pc, exhaustion: Math.max(0, Math.min(6, level)) });
+  }
+
   // ── DM grants ────────────────────────────────────────────────────────────
   // Grants go through GrantService's refetch-merge-save rather than persist() —
   // the sheet's `pc` copy can be stale by the time the DM submits the form, and

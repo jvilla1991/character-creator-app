@@ -66,6 +66,41 @@ describe('CharacterSheetComponent', () => {
     expect(component.canLevelUp).toBeTrue();
   });
 
+  // --- Exhaustion (conditions panel tracker) ---
+
+  it('persists a new exhaustion level via the owner path on the player\'s own sheet', () => {
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    component.onExhaustionChange(3);
+
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 7, exhaustion: 3 }));
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  it('persists exhaustion via the DM-authorized path in cross-link mode', () => {
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+    component.editable = true;
+
+    component.onExhaustionChange(6);
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 7, exhaustion: 6 }), null);
+    expect(pcService.updatePC).not.toHaveBeenCalled();
+  });
+
+  it('clamps the exhaustion level to the 0–6 range', () => {
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    component.onExhaustionChange(9);
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ exhaustion: 6 }));
+
+    component.onExhaustionChange(-2);
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ exhaustion: 0 }));
+  });
+
   // --- DM feature grants ---
 
   it('grants a feature via GrantService using this PC\'s id', () => {

@@ -201,7 +201,8 @@
       <div class="col-right">
         <app-conditions-panel
           [pc]="pc"
-          (conditionToggled)="onConditionToggle($event)">
+          (conditionToggled)="onConditionToggle($event)"
+          (exhaustionChanged)="onExhaustionChange($event)">
         </app-conditions-panel>
         <!-- Survival is visible to everyone in a survival campaign; only the DM's
         cross-link view (editable) gets the steppers to change it. -->
