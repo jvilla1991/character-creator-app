@@ -240,32 +240,33 @@ describe('SpellbookPanelComponent — DM grants', () => {
     component.pc = makePC();
   });
 
-  it('loads the class spell list by default and excludes already-known spells (case-insensitive)', () => {
+  it('loads the full spell list by default ("All classes" pre-checked) and excludes already-known spells (case-insensitive)', () => {
     component.pc = makePC({ spells: [{ lvl: 0, name: 'fire bolt', school: 'Evocation', time: 'action', prepared: true }] });
-    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Fire Bolt' }), makeSpell({ name: 'Mage Hand' })]));
+    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Fire Bolt' }), makeSpell({ name: 'Cure Wounds', classes: ['cleric'] })]));
 
     component.openGrantForm();
-
-    expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Wizard');
-    expect(dndResources.getSpells).not.toHaveBeenCalled();
-    expect(component.grantCandidates.map(s => s.name)).toEqual(['Mage Hand']);
-    expect(component.loadingGrantSpells).toBeFalse();
-  });
-
-  it('reloads the full SRD list unfiltered by class when "All classes" is toggled on', () => {
-    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Mage Hand' })]));
-    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Cure Wounds', classes: ['cleric'] })]));
-    component.openGrantForm();
-
-    component.toggleAllClasses(true);
 
     expect(component.allClasses).toBeTrue();
     expect(dndResources.getSpells).toHaveBeenCalled();
+    expect(dndResources.getSpellsForClass).not.toHaveBeenCalled();
     expect(component.grantCandidates.map(s => s.name)).toEqual(['Cure Wounds']);
+    expect(component.loadingGrantSpells).toBeFalse();
+  });
+
+  it('narrows to the PC\'s class list when "All classes" is unticked', () => {
+    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Cure Wounds', classes: ['cleric'] })]));
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Mage Hand' })]));
+    component.openGrantForm();
+
+    component.toggleAllClasses(false);
+
+    expect(component.allClasses).toBeFalse();
+    expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Wizard');
+    expect(component.grantCandidates.map(s => s.name)).toEqual(['Mage Hand']);
   });
 
   it('emits the selection mapped to PcSpell and resets the form on confirm', () => {
-    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Mage Hand', level: 0 })]));
+    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Mage Hand', level: 0 })]));
     const emitted: any[] = [];
     component.spellsGranted.subscribe(v => emitted.push(v));
     component.openGrantForm();
@@ -291,9 +292,11 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(emitted.length).toBe(0);
   });
 
-  it('collapses and clears the form on cancel', () => {
+  it('collapses and clears the form on cancel, restoring the all-classes default', () => {
+    dndResources.getSpells.and.returnValue(of([makeSpell()]));
     dndResources.getSpellsForClass.and.returnValue(of([makeSpell()]));
     component.openGrantForm();
+    component.toggleAllClasses(false);
     component.grantSelection = [makeSpell()];
 
     component.cancelGrant();
@@ -301,6 +304,6 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(component.grantFormOpen).toBeFalse();
     expect(component.grantCandidates).toEqual([]);
     expect(component.grantSelection).toEqual([]);
-    expect(component.allClasses).toBeFalse();
+    expect(component.allClasses).toBeTrue();
   });
 });

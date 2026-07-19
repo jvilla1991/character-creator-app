@@ -247,13 +247,14 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   // ── DM grant form ────────────────────────────────────────────────────────
-  // Defaults to the PC's own class list; "All classes" widens the candidate pool to
-  // the full SRD list. Either way, candidates already known to the PC are excluded
-  // (case-insensitive, matching the level-up modal's rule) so grants can't duplicate
-  // a spell the player already has.
+  // Defaults to "All classes" (the full spell list) — DM grants are usually
+  // off-list rewards; unticking narrows to the PC's own class list. Either way,
+  // candidates already known to the PC are excluded (case-insensitive, matching
+  // the level-up modal's rule) so grants can't duplicate a spell the player
+  // already has.
 
   grantFormOpen = false;
-  allClasses = false;
+  allClasses = true;
   loadingGrantSpells = false;
   grantCandidates: DndSpell[] = [];
   grantSelection: DndSpell[] = [];
@@ -298,7 +299,7 @@ export class SpellbookPanelComponent implements OnChanges {
 
   private resetGrantForm(): void {
     this.grantFormOpen = false;
-    this.allClasses = false;
+    this.allClasses = true;
     this.grantCandidates = [];
     this.grantSelection = [];
   }
