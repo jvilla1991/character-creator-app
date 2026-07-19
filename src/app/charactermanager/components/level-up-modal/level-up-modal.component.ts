@@ -74,13 +74,26 @@ export class LevelUpModalComponent implements OnInit {
   private loadSpells(): void {
     this.loadingSpells = true;
     const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    const maxLevel = this.maxLearnableSpellLevel;
     this.dndResources.getSpellsForClass(this.pc.clazz).subscribe({
       next: spells => {
-        this.spellList = spells.filter(s => !known.has(s.name.toLowerCase()));
+        this.spellList = spells.filter(s =>
+          !known.has(s.name.toLowerCase()) && (s.level === 0 || s.level <= maxLevel));
         this.loadingSpells = false;
       },
       error: () => { this.loadingSpells = false; },
     });
+  }
+
+  /**
+   * Highest spell level the character can learn at the NEW level — the top of the
+   * server-computed slot table (covers full casters and warlock pact slots). Per the
+   * 2024 rules you may only learn spells you have slots to cast; cantrips (level 0)
+   * are separate and stay count-gated. The backend enforces the same cap on commit.
+   */
+  get maxLearnableSpellLevel(): number {
+    const slots = this.preview?.newSpellSlots ?? {};
+    return Object.keys(slots).reduce((max, k) => Math.max(max, Number(k)), 0);
   }
 
   /** How many new cantrips / leveled spells the player may learn this level. */
