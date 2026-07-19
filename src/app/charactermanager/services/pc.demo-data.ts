@@ -300,11 +300,12 @@ export function demoSubclassLevel(clazz: string): number {
   return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
 }
 
-// DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names).
+// DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names,
+// plus Twilight Domain from Tasha's Cauldron of Everything).
 const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
   bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
-  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'War Domain'],
+  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
   druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
   fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
   monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
