@@ -73,6 +73,9 @@ describe('CreateCharacterModalComponent — logic', () => {
   let auth: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
+    // ngOnDestroy persists a wizard draft (disconnect recovery) — purge it so
+    // one test's state never restores into the next test's ngOnInit.
+    localStorage.removeItem('tm_pc_draft:tester');
     dndResources = makeMockDndResources();
     auth = jasmine.createSpyObj<AuthService>('AuthService', ['getUsername']);
     auth.getUsername.and.returnValue('tester');
@@ -80,7 +83,10 @@ describe('CreateCharacterModalComponent — logic', () => {
     component.ngOnInit();
   });
 
-  afterEach(() => component.ngOnDestroy());
+  afterEach(() => {
+    component.ngOnDestroy();
+    localStorage.removeItem('tm_pc_draft:tester');
+  });
 
   // ── Step count ────────────────────────────────────────────────────────────
 
