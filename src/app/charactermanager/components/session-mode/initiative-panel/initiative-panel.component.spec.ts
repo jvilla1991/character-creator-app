@@ -40,6 +40,9 @@ describe('InitiativePanelComponent', () => {
     spellSlots: null,
     deathSaveSuccesses: 0,
     deathSaveFailures: 0,
+    hitDiceUsed: null,
+    inspirationPips: null,
+    heroicInspiration: null,
     ...overrides,
   });
 

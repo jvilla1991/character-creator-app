@@ -1,1 +1,20 @@
-/* All vitals-strip rules come from global styles.css */
+/* Most vitals-strip rules come from global styles.css; only the short-rest
+   Spend Hit Die button (session-only) is styled here. */
+
+.spend-die-btn {
+  margin-top: 8px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--emerald, #4caf7d);
+  background: rgba(76, 175, 125, 0.08);
+  border: 1px solid var(--emerald, #4caf7d);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not([disabled]) { background: rgba(76, 175, 125, 0.18); }
+  &[disabled] { opacity: 0.45; cursor: not-allowed; }
+}
