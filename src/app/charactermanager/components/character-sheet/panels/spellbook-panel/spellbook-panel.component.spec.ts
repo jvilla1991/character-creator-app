@@ -108,6 +108,104 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     expect(panel.canCast(panel.pc.spells![0])).toBeFalse();
     expect(panel.castTitle(panel.pc.spells![0])).toBe('No slots available');
   });
+
+  it('disables casting an unprepared spell even when slots are free', () => {
+    const panel = makePanel({ spells: [spell({ prepared: false })] }); // L1/L2 slots free
+    const emitted: unknown[] = [];
+    panel.castRequested.subscribe(e => emitted.push(e));
+
+    expect(panel.canCast(panel.pc.spells![0])).toBeFalse();
+    expect(panel.castTitle(panel.pc.spells![0])).toBe('Cure Wounds is not prepared');
+
+    panel.onCastClick(panel.pc.spells![0], stop());
+    expect(emitted.length).toBe(0);
+  });
+});
+
+describe('SpellbookPanelComponent — spell preparation', () => {
+  it('reads the prepared cap from the 2024 class table and counts leveled spells only', () => {
+    const panel = makePanel({
+      clazz: 'Wizard', level: 5, // wizard 5 → cap 9
+      spells: [
+        spell({ lvl: 0, name: 'Fire Bolt' }),               // cantrip: never counts
+        spell({ lvl: 1, name: 'Shield' }),
+        spell({ lvl: 2, name: 'Invisibility', prepared: false }),
+      ],
+    });
+    expect(panel.preparedCap).toBe(9);
+    expect(panel.preparedCount).toBe(1);
+  });
+
+  it('treats a missing prepared flag (pre-feature data) as prepared', () => {
+    const legacy = { lvl: 1, name: 'Sleep', school: 'Enchantment', time: '1 action' } as PcSpell;
+    const panel = makePanel({ spells: [legacy] });
+    expect(panel.isPrepared(legacy)).toBeTrue();
+    expect(panel.preparedCount).toBe(1);
+    expect(panel.canCast(legacy)).toBeTrue(); // older characters keep casting
+  });
+
+  it('unprepares a spell via pcChange, leaving other spells untouched', () => {
+    const shield = spell({ lvl: 1, name: 'Shield' });
+    const panel = makePanel({ spells: [spell({ name: 'Cure Wounds' }), shield] });
+    const emitted: PC[] = [];
+    panel.pcChange.subscribe(p => emitted.push(p));
+
+    panel.togglePrepared(shield, stop());
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].spells).toEqual([
+      jasmine.objectContaining({ name: 'Cure Wounds', prepared: true }),
+      jasmine.objectContaining({ name: 'Shield', prepared: false }),
+    ]);
+  });
+
+  it('blocks preparing beyond the class cap, but always allows unpreparing', () => {
+    // Sorcerer 1 → cap 2; two prepared already, a third waiting.
+    const waiting = spell({ lvl: 1, name: 'Sleep', prepared: false });
+    const panel = makePanel({
+      clazz: 'Sorcerer', level: 1,
+      spells: [spell({ name: 'Shield' }), spell({ name: 'Magic Missile' }), waiting],
+    });
+    const emitted: PC[] = [];
+    panel.pcChange.subscribe(p => emitted.push(p));
+
+    expect(panel.preparedCap).toBe(2);
+    expect(panel.canTogglePrepared(waiting)).toBeFalse();
+    expect(panel.prepareTitle(waiting)).toContain('cap');
+    panel.togglePrepared(waiting, stop());
+    expect(emitted.length).toBe(0); // at cap — nothing emitted
+
+    // Prepared spells can still be unprepared at cap.
+    expect(panel.canTogglePrepared(panel.pc.spells![0])).toBeTrue();
+
+    // One under cap: preparing works again.
+    const panel2 = makePanel({
+      clazz: 'Sorcerer', level: 1,
+      spells: [spell({ name: 'Shield' }), waiting],
+    });
+    panel2.pcChange.subscribe(p => emitted.push(p));
+    panel2.togglePrepared(waiting, stop());
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].spells![1]).toEqual(jasmine.objectContaining({ name: 'Sleep', prepared: true }));
+  });
+
+  it('ignores toggle attempts on cantrips — they are always prepared', () => {
+    const cantrip = spell({ lvl: 0, name: 'Fire Bolt', prepared: false }); // stray flag
+    const panel = makePanel({ spells: [cantrip] });
+    const emitted: unknown[] = [];
+    panel.pcChange.subscribe(p => emitted.push(p));
+
+    expect(panel.isPrepared(cantrip)).toBeTrue();
+    panel.togglePrepared(cantrip, stop());
+    expect(emitted.length).toBe(0);
+  });
+
+  it('enforces no cap for classes without a 2024 prepared table', () => {
+    const waiting = spell({ lvl: 1, name: 'Sleep', prepared: false });
+    const panel = makePanel({ clazz: 'Fighter', level: 3, spells: [waiting] });
+    expect(panel.preparedCap).toBeNull();
+    expect(panel.canTogglePrepared(waiting)).toBeTrue();
+  });
 });
 
 function makeSpell(overrides: Partial<DndSpell> = {}): DndSpell {

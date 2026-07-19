@@ -235,6 +235,7 @@
         [strictComponents]="strictComponents"
         [castable]="sessionLive"
         [addAllowed]="editable"
+        [preparable]="ownSheet || editable"
         (castRequested)="onCastRequested($event)"
         (pcChange)="onPcChange($event)"
         (spellsGranted)="onSpellsGrant($event)">

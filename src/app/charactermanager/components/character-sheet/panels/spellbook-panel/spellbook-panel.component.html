@@ -1,6 +1,13 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
+    @if (preparable && hasLeveledSpells && preparedCap != null) {
+      <span
+        class="prepared-counter"
+        [class.at-cap]="preparedCount >= preparedCap!"
+        title="Leveled spells prepared vs the 2024 class-table cap (cantrips are always available)"
+      >Prepared {{ preparedCount }} / {{ preparedCap }}</span>
+    }
     @if (addAllowed && !grantFormOpen) {
       <button class="btn sm" (click)="openGrantForm()">Grant spells</button>
     }
@@ -74,8 +81,8 @@
         </div>
         @for (s of level.spells; track s) {
           <div>
-            <div class="spell-row" (click)="toggleExpand(s.name)" style="cursor:pointer">
-              <span class="spell-name" [class.prepared]="s.prepared">{{ s.name }}</span>
+            <div class="spell-row" [class.unprepared]="!isPrepared(s)" (click)="toggleExpand(s.name)" style="cursor:pointer">
+              <span class="spell-name" [class.prepared]="isPrepared(s)">{{ s.name }}</span>
               @if (s.concentration) {
                 <span class="spell-badge conc"   title="Concentration">C</span>
               }
@@ -87,7 +94,16 @@
               @if (s.range) {
                 <span class="spell-range">{{ s.range }}</span>
               }
-              @if (!editable && s.prepared && castable) {
+              @if (preparable && s.lvl > 0) {
+                <button
+                  class="spell-prep-btn"
+                  [class.active]="isPrepared(s)"
+                  [disabled]="!canTogglePrepared(s)"
+                  [title]="prepareTitle(s)"
+                  (click)="togglePrepared(s, $event)"
+                >{{ isPrepared(s) ? 'Prepared' : 'Prepare' }}</button>
+              }
+              @if (!editable && castable) {
                 <button
                   class="spell-cast-btn"
                   [disabled]="!canCast(s)"
