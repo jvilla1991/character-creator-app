@@ -11,6 +11,14 @@
   &.at-cap { color: var(--gold); }
 }
 
+// Casting math readout in the panel header ("Save DC 15 · Spell Atk +7").
+.spell-dc {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--celestial, #8fb4ff);
+  white-space: nowrap;
+}
+
 // Unprepared spells stay listed but read as dormant.
 .spell-row.unprepared { opacity: 0.5; }
 .spell-row.unprepared:hover { opacity: 0.75; }

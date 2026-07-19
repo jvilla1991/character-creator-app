@@ -5,6 +5,7 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 import { toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
+import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
 export interface SpellLevel {
   lvl: number;
@@ -64,6 +65,11 @@ export class SpellbookPanelComponent implements OnChanges {
   preparedCount = 0;
   preparedCap: number | null = null;
   hasLeveledSpells = false;
+  /** 8 + prof + casting-ability mod; null for non-casters/unknown classes —
+   *  the header then simply omits the "Save DC · Spell Atk" readout. */
+  saveDc: number | null = null;
+  /** "+7"-style spell attack bonus, pre-formatted; null with saveDc. */
+  spellAtk: string | null = null;
 
   ngOnChanges(): void {
     // A new PC snapshot (including the one a cast produces) closes any open
@@ -77,6 +83,9 @@ export class SpellbookPanelComponent implements OnChanges {
     this.preparedCount = countPreparedSpells(spells);
     this.preparedCap = preparedSpellCap(this.pc.clazz, this.pc.level);
     this.hasLeveledSpells = spells.some(s => s.lvl > 0);
+    this.saveDc = spellSaveDc(this.pc);
+    const atk = spellAttackBonus(this.pc);
+    this.spellAtk = atk == null ? null : fmtMod(atk);
 
     if (!this.hasSpells) { this.spellsByLevel = []; return; }
 

@@ -1,6 +1,14 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
+    <!-- Casting math at a glance: DC = 8 + prof + casting mod, Atk = prof + mod.
+    Omitted for non-casters (no casting ability to compute from). -->
+    @if (hasSpells && saveDc != null) {
+      <span class="spell-dc"
+        title="Spell save DC (8 + proficiency + casting ability) · spell attack bonus (proficiency + casting ability)">
+        Save DC {{ saveDc }} · Spell Atk {{ spellAtk }}
+      </span>
+    }
     @if (preparable && hasLeveledSpells && preparedCap != null) {
       <span
         class="prepared-counter"
