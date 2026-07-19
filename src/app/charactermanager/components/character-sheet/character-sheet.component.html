@@ -192,7 +192,11 @@
           (pcChange)="onPcChange($event)"
           (editRequested)="onDmEditRequested($event)">
         </app-ability-scores>
-        <app-skills-list    [pc]="pc"></app-skills-list>
+        <app-skills-list
+          [pc]="pc"
+          [editable]="editable"
+          (skillChanged)="onSkillProfChange($event)">
+        </app-skills-list>
       </div>
       <div class="col-right">
         <app-conditions-panel

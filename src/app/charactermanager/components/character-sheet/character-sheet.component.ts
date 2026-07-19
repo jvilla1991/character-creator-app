@@ -6,6 +6,7 @@ import { GrantService } from '../../services/grant.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
+import { SkillProfChange } from './panels/skills-list/skills-list.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
 import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
@@ -155,8 +156,9 @@ export class CharacterSheetComponent implements OnChanges {
    * uses the owner path. PCService pushes the result into activePC$, so the sheet
    * refreshes itself. `description`, when given, is a DM-authored log entry that
    * replaces the backend's automatic before/after diff — only ever passed from
-   * the DM edit modal; every other call site (name/level/conditions/pcChange)
-   * omits it and keeps the auto-diff behavior unchanged.
+   * the DM edit modal and the skills-panel proficiency toggle; every other call
+   * site (name/level/conditions/pcChange) omits it and keeps the auto-diff
+   * behavior unchanged.
    */
   private persist(updated: PC, description: string | null = null): void {
     const save$ = this.editable
@@ -168,6 +170,13 @@ export class CharacterSheetComponent implements OnChanges {
   /** A child panel emitted a fully-updated PC (e.g. an ability score changed). */
   onPcChange(updated: PC): void {
     this.persist(updated);
+  }
+
+  /** DM cycled a skill's proficiency marker (skills panel, cross-link mode only).
+   *  The panel supplies the log line — a skills-map change has no readable
+   *  auto-diff on the backend, so we pass the description through. */
+  onSkillProfChange(change: SkillProfChange): void {
+    this.persist(change.pc, change.description);
   }
 
   /** Whether the viewer owns this sheet — drives the survival Eat/Drink buttons.
