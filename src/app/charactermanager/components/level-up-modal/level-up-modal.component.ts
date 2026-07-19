@@ -25,6 +25,12 @@ import { toPcSpell } from '../../utils/spell-mapping';
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
+  /**
+   * True when a DM levels up a campaign member from the cross-link view — the
+   * preview and commit then use the campaign-DM-authorized endpoints (the
+   * owner-scoped ones would 403). The flow is otherwise identical.
+   */
+  @Input() asDm = false;
   @Output() close = new EventEmitter<void>();
 
   preview: LevelUpPreview | null = null;
@@ -56,7 +62,10 @@ export class LevelUpModalComponent implements OnInit {
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
-    this.pcService.levelUpPreview(this.pc.id).subscribe({
+    const preview$ = this.asDm
+      ? this.pcService.levelUpPreviewAsDm(this.pc.id)
+      : this.pcService.levelUpPreview(this.pc.id);
+    preview$.subscribe({
       next: preview => {
         this.preview = preview;
         this.loading = false;
@@ -258,7 +267,10 @@ export class LevelUpModalComponent implements OnInit {
       choices.newSpells = this.selectedSpells.map(toPcSpell);
     }
 
-    this.pcService.levelUp(this.pc.id, choices).subscribe({
+    const commit$ = this.asDm
+      ? this.pcService.levelUpAsDm(this.pc.id, choices)
+      : this.pcService.levelUp(this.pc.id, choices);
+    commit$.subscribe({
       next: () => this.close.emit(),
       error: err => {
         this.error = this.messageFrom(err, 'Level-up failed. Please try again.');

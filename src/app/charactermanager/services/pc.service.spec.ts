@@ -215,6 +215,63 @@ describe('PCService', () => {
     });
   });
 
+  describe('levelUpPreviewAsDm', () => {
+    it('GETs the DM-authorized preview endpoint', (done) => {
+      service.levelUpPreviewAsDm(42).subscribe(preview => {
+        expect(preview.newLevel).toBe(5);
+        done();
+      });
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up/preview/as-dm');
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        currentLevel: 4, newLevel: 5, hitDie: 8, conModifier: 2,
+        hpGained: 7, newHpMax: 39, currentProfBonus: 2, newProfBonus: 3,
+        currentSpellSlots: {}, newSpellSlots: {},
+        subclassDue: false, subclassOptions: [],
+      });
+    });
+  });
+
+  describe('levelUpAsDm', () => {
+    it('POSTs the choices to the DM-authorized level-up endpoint and mirrors the PC', (done) => {
+      service.levelUpAsDm(42, { subclass: 'Life Domain' }).subscribe(updated => {
+        expect(updated.level).toBe(5);
+        done();
+      });
+
+      const req = httpMock.expectOne(service.pcUrl + '42/level-up/as-dm');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ subclass: 'Life Domain' });
+      req.flush({
+        id: 42, name: 'Aelindra', clazz: 'Cleric', level: 5,
+        hpMax: 39, hpCurrent: 39, hpTemp: 0, profBonus: 3,
+        spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+        conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+        features: '[]', languages: '[]', toolProfs: '[]',
+      });
+    });
+
+    it('pushes the updated PC into the active stream when it is the active PC', (done) => {
+      service.setActivePC(makePC({ id: 42, level: 4 }));
+
+      service.levelUpAsDm(42).subscribe(() => {
+        service.activePC$.subscribe(active => {
+          expect(active?.level).toBe(5);
+          done();
+        });
+      });
+
+      httpMock.expectOne(service.pcUrl + '42/level-up/as-dm').flush({
+        id: 42, name: 'Aelindra', clazz: 'Wizard', level: 5,
+        hpMax: 39, hpCurrent: 39, hpTemp: 0, profBonus: 3,
+        spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+        conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+        features: '[]', languages: '[]', toolProfs: '[]',
+      });
+    });
+  });
+
   describe('levelUp', () => {
     it('sends the chosen subclass in the POST body when provided', () => {
       service.levelUp(42, { subclass: 'Life Domain' }).subscribe();

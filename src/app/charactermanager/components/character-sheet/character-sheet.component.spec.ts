@@ -47,6 +47,25 @@ describe('CharacterSheetComponent', () => {
     expect(component.inCampaign).toBeFalse();
   });
 
+  // --- Level Up gating ---
+
+  it('canLevelUp is false without XP, a grant, or DM cross-link mode', () => {
+    component.pc = makePC({ level: 4, xp: 0 });
+    expect(component.canLevelUp).toBeFalse();
+  });
+
+  it('canLevelUp is always true in DM cross-link (editable) mode', () => {
+    component.pc = makePC({ level: 4, xp: 0 });
+    component.editable = true;
+    expect(component.canLevelUp).toBeTrue();
+    expect(component.levelUpHint).toContain('no XP threshold');
+  });
+
+  it('canLevelUp is true when the DM granted a pending level-up', () => {
+    component.pc = makePC({ level: 4, xp: 0, pendingLevelGrant: true });
+    expect(component.canLevelUp).toBeTrue();
+  });
+
   // --- DM feature grants ---
 
   it('grants a feature via GrantService using this PC\'s id', () => {

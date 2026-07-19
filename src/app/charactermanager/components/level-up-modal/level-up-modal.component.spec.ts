@@ -6,9 +6,10 @@ import { DndResourcesService } from '../../services/dnd-resources.service';
 import { PC } from '../../models/pc';
 import { LevelUpPreview } from '../../models/level-up';
 
-/** A SpyObj PCService — the modal only touches levelUpPreview / levelUp. */
+/** A SpyObj PCService — the modal only touches the preview/commit pairs (owner + as-dm). */
 function makePcServiceSpy(): jasmine.SpyObj<PCService> {
-  return jasmine.createSpyObj<PCService>('PCService', ['levelUpPreview', 'levelUp']);
+  return jasmine.createSpyObj<PCService>('PCService',
+    ['levelUpPreview', 'levelUp', 'levelUpPreviewAsDm', 'levelUpAsDm']);
 }
 
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -312,6 +313,36 @@ describe('LevelUpModalComponent', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview({ currentCantripsKnown: 0, newCantripsKnown: 0 })));
     component.ngOnInit();
     expect(component.showCantrips).toBeFalse();
+  });
+
+  // --- DM cross-link mode (asDm) ---
+
+  it('uses the DM-authorized preview and commit when asDm is set', () => {
+    pcService.levelUpPreviewAsDm.and.returnValue(of(makePreview()));
+    pcService.levelUpAsDm.and.returnValue(of(makePC({ level: 5 })));
+    const closeSpy = jasmine.createSpy('close');
+    component.close.subscribe(closeSpy);
+
+    component.asDm = true;
+    component.ngOnInit();
+    component.confirm();
+
+    expect(pcService.levelUpPreviewAsDm).toHaveBeenCalledWith(7);
+    expect(pcService.levelUpPreview).not.toHaveBeenCalled();
+    expect(pcService.levelUpAsDm).toHaveBeenCalledWith(7, {});
+    expect(pcService.levelUp).not.toHaveBeenCalled();
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it('uses the owner path when asDm is not set (regression guard)', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview()));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+
+    component.ngOnInit();
+    component.confirm();
+
+    expect(pcService.levelUpPreviewAsDm).not.toHaveBeenCalled();
+    expect(pcService.levelUpAsDm).not.toHaveBeenCalled();
   });
 
   it('keeps the modal open and shows an error if the commit fails', () => {

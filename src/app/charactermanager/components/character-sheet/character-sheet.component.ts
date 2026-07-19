@@ -94,14 +94,17 @@ export class CharacterSheetComponent implements OnChanges {
     return this.pc?.pendingLevelGrant === true;
   }
 
-  /** Leveling is gated: enough XP for the next level OR a DM grant. The
-   *  backend enforces the same rule (409); this only drives the button. */
+  /** Leveling is gated: enough XP for the next level OR a DM grant. In DM
+   *  cross-link mode the DM may always level the character (the DM-authorized
+   *  path has no XP gate — acting is the authorization). The backend enforces
+   *  the same rules (409 / as-dm); this only drives the button. */
   get canLevelUp(): boolean {
-    return this.readyToLevel || this.dmGrantedLevel;
+    return this.editable || this.readyToLevel || this.dmGrantedLevel;
   }
 
   /** Tooltip for the Level Up button, explaining a disabled state. */
   get levelUpHint(): string {
+    if (this.editable) return 'Level up this character (no XP threshold required)';
     if (this.canLevelUp) return 'Advance a level';
     return this.xpForNextLevel == null
       ? 'Maximum level reached'

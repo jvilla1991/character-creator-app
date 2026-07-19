@@ -308,11 +308,38 @@ export class PCService {
   }
 
   /**
+   * Same preview via the campaign-DM-authorized path (like updatePCAsDm) — used
+   * by the level-up modal in DM cross-link mode, where the owner-scoped preview
+   * endpoint would 403. Demo mode reads the same local store either way.
+   */
+  levelUpPreviewAsDm(id: number): Observable<LevelUpPreview> {
+    if (environment.demoMode) {
+      return of(this.computeDemoPreview(id)).pipe(delay(200));
+    }
+    return this.http.get<LevelUpPreview>(`${this.pcUrl}${id}/level-up/preview/as-dm`);
+  }
+
+  /**
    * Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$.
    * `choices` carries the only client-supplied inputs (subclass, ASI allocation); the server
    * computes and validates everything else.
    */
   levelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
+    return this.commitLevelUp(id, choices, `${this.pcUrl}${id}/level-up`);
+  }
+
+  /**
+   * Commit a level-up via the campaign-DM-authorized path (like updatePCAsDm) —
+   * the DM performs the level-up on a member directly; the server skips the
+   * XP/grant gate and consumes any pending grant. Same local mirroring as
+   * levelUp; demo mode applies the same in-memory advance.
+   */
+  levelUpAsDm(id: number, choices?: LevelUpChoices): Observable<PC> {
+    return this.commitLevelUp(id, choices, `${this.pcUrl}${id}/level-up/as-dm`);
+  }
+
+  /** Shared tail of levelUp/levelUpAsDm: build the body, POST, mirror the result. */
+  private commitLevelUp(id: number, choices: LevelUpChoices | undefined, url: string): Observable<PC> {
     if (environment.demoMode) {
       return this.applyDemoLevelUp(id, choices).pipe(delay(150));
     }
@@ -323,7 +350,7 @@ export class PCService {
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
     // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
     if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
-    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
+    return this.http.post<PC>(url, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
