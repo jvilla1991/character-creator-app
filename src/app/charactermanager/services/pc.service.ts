@@ -62,6 +62,30 @@ export class PCService {
     });
   }
 
+  /**
+   * Refetch one PC from the backend and mirror it into pcs$/activePC$ — used by
+   * the standalone sheet to pick up server-side changes made from another
+   * client (e.g. the DM granting a pending level-up), which otherwise stay
+   * invisible until a full page reload. Demo mode is single-client, so the
+   * local store is already authoritative and this is a no-op.
+   */
+  refreshPC(pcId: number): void {
+    if (environment.demoMode) return;
+    this.http.get<PC>(this.pcUrl + 'find/' + pcId).subscribe({
+      next: raw => {
+        const updated = this.deserializePC(raw);
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      },
+      // Offline or not authorized (e.g. a DM cross-link view) — keep the local copy.
+      error: () => { /* intentional no-op */ },
+    });
+  }
+
   getPCs() {
     if (environment.demoMode) {
       return of(this.pcs).pipe(delay(300));

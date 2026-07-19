@@ -291,6 +291,44 @@ describe('PCService', () => {
     });
   });
 
+  // ── refreshPC (cross-client freshness) ─────────────────────────────────────
+
+  describe('refreshPC', () => {
+    it('GETs the PC and pushes the fresh copy into the active stream', (done) => {
+      service.setActivePC(makePC({ id: 42 }));
+      service.refreshPC(42);
+
+      const req = httpMock.expectOne(service.pcUrl + 'find/42');
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        id: 42, name: 'Aelindra', clazz: 'Wizard', level: 4,
+        pendingLevelGrant: true,
+        spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+        conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+        features: '[]', languages: '[]', toolProfs: '[]',
+      });
+
+      service.activePC$.subscribe(active => {
+        expect(active?.pendingLevelGrant).toBeTrue();
+        done();
+      });
+    });
+
+    it('keeps the local copy when the fetch fails (e.g. DM cross-link)', (done) => {
+      service.setActivePC(makePC({ id: 42, pendingLevelGrant: false }));
+      service.refreshPC(42);
+
+      httpMock.expectOne(service.pcUrl + 'find/42')
+        .flush('nope', { status: 403, statusText: 'Forbidden' });
+
+      service.activePC$.subscribe(active => {
+        expect(active?.id).toBe(42);
+        expect(active?.pendingLevelGrant).toBeFalse();
+        done();
+      });
+    });
+  });
+
   // ── deletePC ────────────────────────────────────────────────────────────────
 
   describe('deletePC', () => {
