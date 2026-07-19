@@ -127,6 +127,54 @@ describe('CharacterSheetComponent', () => {
     expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
   });
 
+  // --- DM "other feature" grants (Other Features panel) ---
+
+  it('grants an other-feature via GrantService, stamping category other onto the entry', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const granted = { name: 'Darkvision', source: 'Species', desc: 'See in the dark.' };
+
+    component.onOtherFeatureGrant(granted);
+
+    expect(grantService.grantToPc).toHaveBeenCalledWith(7, jasmine.any(Function));
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const fresh: PC = makePC({
+      features: [{ name: 'Rage', source: 'Barbarian 1', desc: 'Reckless fury.' }],
+    });
+
+    const result = mutate(fresh);
+
+    expect(result.features).toEqual([
+      { name: 'Rage', source: 'Barbarian 1', desc: 'Reckless fury.' },
+      { name: 'Darkvision', source: 'Species', desc: 'See in the dark.', category: 'other' },
+    ]);
+    // Purity: the fresh copy must not be mutated in place.
+    expect(fresh.features?.length).toBe(1);
+    expect(result).not.toBe(fresh);
+  });
+
+  it('appends an other-feature to an undefined features list on the fresh pc', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+
+    component.onOtherFeatureGrant({ name: 'Stone Sense', source: 'Boon', desc: '' });
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const result = mutate(makePC({ features: undefined }));
+
+    expect(result.features).toEqual([
+      { name: 'Stone Sense', source: 'Boon', desc: '', category: 'other' },
+    ]);
+  });
+
+  it('logs an error if the other-feature grant fails', () => {
+    const error = new Error('network down');
+    grantService.grantToPc.and.returnValue(throwError(() => error));
+    const consoleSpy = spyOn(console, 'error');
+
+    component.onOtherFeatureGrant({ name: 'Darkvision', source: 'Species', desc: '' });
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
+  });
+
   // --- DM spell grants ---
 
   it('grants spells, deduping against the FRESH pc so a concurrently-learned spell is not re-added', () => {

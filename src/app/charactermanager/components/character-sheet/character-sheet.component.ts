@@ -300,6 +300,18 @@ export class CharacterSheetComponent implements OnChanges {
       .subscribe({ error: err => console.error('Failed to grant feature', err) });
   }
 
+  /** Same refetch-merge-save as onFeatureGrant, but the entry lands in the
+   *  Other Features panel — tagged category 'other' here (the single place the
+   *  tag is stamped) so the panels can split one features array cleanly. */
+  onOtherFeatureGrant(f: { name: string; source: string; desc: string }): void {
+    this.grantService
+      .grantToPc(this.pc.id, fresh => ({
+        ...fresh,
+        features: [...(fresh.features ?? []), { ...f, category: 'other' as const }],
+      }))
+      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+  }
+
   onSpellsGrant(granted: PcSpell[]): void {
     this.grantService
       .grantToPc(this.pc.id, fresh => {

@@ -107,7 +107,11 @@ export interface PC {
   inventory?: PcItem[];
 
   // Narrative
-  features?: Array<{ name: string; source: string; desc: string }>;
+  // One array, two panels: entries tagged category 'other' (species traits,
+  // boons, magic-item properties, story rewards) render in the Other Features
+  // panel; absent/'class' = Class Features (so all pre-existing data stays put).
+  // The column is opaque JSON end-to-end, so the extra key round-trips freely.
+  features?: Array<{ name: string; source: string; desc: string; category?: 'class' | 'other' }>;
   traits?: { Personality: string; Ideals: string; Bonds: string; Flaws: string };
   bio?: string;
   notes?: string; // DM-only notes

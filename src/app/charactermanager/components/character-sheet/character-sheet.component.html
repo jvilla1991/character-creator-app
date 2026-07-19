@@ -215,6 +215,7 @@
           </app-survival-panel>
         }
         <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
+        <app-other-features   [pc]="pc" [addAllowed]="editable" (featureGranted)="onOtherFeatureGrant($event)"></app-other-features>
         <app-coin-purse
           [pc]="pc"
           [editable]="editable"

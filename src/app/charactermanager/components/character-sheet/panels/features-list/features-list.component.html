@@ -40,7 +40,7 @@
       </div>
     }
 
-    @for (f of pc.features; track f) {
+    @for (f of classFeatures; track f) {
       <div class="feature">
         <div class="feature-head">
           <span class="feature-name">{{ f.name }}</span>
@@ -49,7 +49,7 @@
         <div class="feature-desc">{{ descFor(f) }}</div>
       </div>
     }
-    @if (!pc.features || pc.features.length === 0) {
+    @if (classFeatures.length === 0) {
       <div
         style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
         No features recorded.

@@ -20,6 +20,7 @@ import { PcNotesComponent } from './components/character-sheet/panels/pc-notes/p
 import { PcLogComponent } from './components/character-sheet/panels/pc-log/pc-log.component';
 import { SpellbookPanelComponent } from './components/character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { FeaturesListComponent } from './components/character-sheet/panels/features-list/features-list.component';
+import { OtherFeaturesComponent } from './components/character-sheet/panels/other-features/other-features.component';
 import { CoinPurseComponent } from './components/character-sheet/panels/coin-purse/coin-purse.component';
 import { BackgroundStoryComponent } from './components/character-sheet/panels/background-story/background-story.component';
 import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
@@ -117,6 +118,7 @@ const routes: Routes = [
         PcLogComponent,
         SpellbookPanelComponent,
         FeaturesListComponent,
+        OtherFeaturesComponent,
         CoinPurseComponent,
         BackgroundStoryComponent,
         SettingsPanelComponent,
