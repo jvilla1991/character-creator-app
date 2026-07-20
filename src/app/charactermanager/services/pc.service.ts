@@ -294,6 +294,54 @@ export class PCService {
     );
   }
 
+  // ── Heroic Inspiration meter ───────────────────────────────────────────────
+
+  /**
+   * DM awards one inspiration pip to a campaign member (campaign-DM-authorized,
+   * like grantLevelUp). The fifth pip converts into Heroic Inspiration
+   * server-side (meter resets, badge lights). The updated PC is mirrored into
+   * pcs$/activePC$ so the open sheet shows the meter at once.
+   */
+  awardInspirationPip(pcId: number): Observable<PC> {
+    if (environment.demoMode) {
+      const pc = this.getPCById(pcId);
+      const pips = (pc?.inspirationPips ?? 0) + 1;
+      this.patchLocalPC(pcId, pips >= 5
+        ? { inspirationPips: 0, heroicInspiration: true }
+        : { inspirationPips: pips });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.post<PC>(`${this.pcUrl}${pcId}/inspiration/pip`, {}).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /**
+   * Spend Heroic Inspiration — the owner (or the campaign's DM) clears the
+   * badge after using the reroll. The server 409s when there is none.
+   */
+  useInspiration(pcId: number): Observable<PC> {
+    if (environment.demoMode) {
+      this.patchLocalPC(pcId, { heroicInspiration: false });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.post<PC>(`${this.pcUrl}${pcId}/inspiration/use`, {}).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /** Mirror a server-returned PC into pcs$ and (when active) activePC$. */
+  private mirrorPC(updated: PC): void {
+    this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (active && active.id === updated.id) {
+      this.activePCSubject.next(updated);
+    }
+  }
+
   // ── Level-up (server-authoritative) ────────────────────────────────────────
   // The D&D rules engine lives in the backend (manager-service LevelUpService). These
   // methods are a thin client: preview fetches the computed deltas to show before the

@@ -257,6 +257,32 @@ export class InitiativePanelComponent {
     return n >= 0 ? `+${n}` : `${n}`;
   }
 
+  /** DM awards one inspiration pip; the fifth converts into Heroic Inspiration. */
+  giveInspiration(p: ParticipantView): void {
+    this.sessionService.awardInspiration(this.sessionId, p.participantId).subscribe({
+      next: state => {
+        const row = state.participants.find(x => x.participantId === p.participantId);
+        const heroicNow = !!row?.heroicInspiration && !p.heroicInspiration;
+        this.notifications.notify(heroicNow
+          ? `${p.name} gains Heroic Inspiration!`
+          : `${p.name}: inspiration ${row?.inspirationPips ?? 0}/5`);
+      },
+      error: err => console.error('Failed to award inspiration', err),
+    });
+  }
+
+  /**
+   * DM disconnects a combatant from the session — same endpoint a player's own
+   * Leave uses (the server authorizes the DM to remove anyone). PC rows get a
+   * confirm (kicking a player is disruptive); enemy rows remove immediately.
+   */
+  removeParticipant(p: ParticipantView): void {
+    if (!p.npc && !window.confirm(`Remove ${p.name} from the session?`)) return;
+    this.sessionService.leave(this.sessionId, p.participantId).subscribe({
+      error: err => console.error('Failed to remove participant', err),
+    });
+  }
+
   tintFor(p: ParticipantView): string {
     return tintFor({ portraitTint: p.portraitTint });
   }

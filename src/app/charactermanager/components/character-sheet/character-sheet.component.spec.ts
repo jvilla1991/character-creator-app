@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { CharacterSheetComponent } from './character-sheet.component';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
+import { SessionService } from '../../services/session.service';
 import { PC } from '../../models/pc';
 
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -13,11 +14,14 @@ describe('CharacterSheetComponent', () => {
   let component: CharacterSheetComponent;
   let pcService: jasmine.SpyObj<PCService>;
   let grantService: jasmine.SpyObj<GrantService>;
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   beforeEach(() => {
-    pcService = jasmine.createSpyObj<PCService>('PCService', ['updatePC', 'updatePCAsDm']);
+    pcService = jasmine.createSpyObj<PCService>('PCService',
+      ['updatePC', 'updatePCAsDm', 'awardInspirationPip', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
-    component = new CharacterSheetComponent(pcService, grantService);
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
+    component = new CharacterSheetComponent(pcService, grantService, sessionService);
     component.pc = makePC();
   });
 

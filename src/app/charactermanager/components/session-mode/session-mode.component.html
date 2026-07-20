@@ -92,6 +92,12 @@
               title="Rest the party: recover spell slots and (in survival campaigns) shed fatigue">
               Long Rest
             </button>
+            <button class="btn" [class.primary]="state.shortRestOpen" (click)="shortRest(state)"
+              [title]="state.shortRestOpen
+                ? 'The short rest is open — players may spend hit dice. Click to end it.'
+                : 'Announce a short rest — players may then spend hit dice to heal'">
+              {{ state.shortRestOpen ? 'End Short Rest' : 'Short Rest' }}
+            </button>
           </div>
         }
         @if (state.dm && editingTime) {
@@ -268,8 +274,10 @@
         [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
         [location]="state.location"
         [sessionLive]="true"
+        [shortRestOpen]="state.shortRestOpen"
         (castRequested)="onCast($event, state)"
         (survivalActionRequested)="onSurvivalAction($event, state)"
+        (spendHitDieRequested)="onSpendHitDie(state)"
       (sellRequested)="sell($event, state)"></app-character-sheet>
     }
     <!-- Long rest modal (DM): was the rest undisturbed? -->

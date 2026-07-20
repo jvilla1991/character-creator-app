@@ -82,9 +82,39 @@
           [title]="xpForNextLevel != null
             ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
             : 'Maximum level reached'"
-          >{{ pc.xp || 0 }}@if (xpForNextLevel != null) {
+          ><app-editable-number
+            [value]="pc.xp ?? 0"
+            [editable]="editable"
+            [min]="0"
+            [intercept]="true" (editRequested)="requestXp()"
+            label="XP"
+            (committed)="onXpCommit($event)"
+          >{{ pc.xp || 0 }}</app-editable-number>@if (xpForNextLevel != null) {
           / {{ xpForNextLevel }}
         } XP</span>
+      </div>
+
+      <!-- Heroic Inspiration: five pips fill to grant the glowing badge. The DM
+      awards pips (cross-link mode); the owner spends the badge after a reroll. -->
+      <div class="inspiration-row">
+        <span class="insp-label">Inspiration</span>
+        <span class="insp-pips"
+          [title]="(pc.inspirationPips ?? 0) + ' / 5 pips — the fifth grants Heroic Inspiration'">
+          @for (i of inspirationSlots; track i) {
+            <span class="insp-pip" [class.filled]="i < (pc.inspirationPips ?? 0)"></span>
+          }
+        </span>
+        @if (editable) {
+          <button class="insp-btn" (click)="addInspirationPip()" [disabled]="inspirationBusy"
+            title="Award an inspiration pip — the fifth grants Heroic Inspiration">+</button>
+        }
+        @if (pc.heroicInspiration) {
+          <span class="inspired-badge" title="Heroic Inspiration — reroll any d20 Test">Inspired</span>
+          @if (ownSheet || editable) {
+            <button class="insp-btn use" (click)="useInspiration()" [disabled]="inspirationBusy"
+              title="Spend Heroic Inspiration">Use</button>
+          }
+        }
       </div>
     </div>
 
@@ -177,6 +207,8 @@
     <app-vitals-strip
       [pc]="pc"
       [editable]="editable"
+      [canSpendHitDie]="sessionLive && shortRestOpen && ownSheet"
+      (spendHitDie)="onSpendHitDie()"
       (pcChange)="onPcChange($event)"
       (editRequested)="onDmEditRequested($event)">
     </app-vitals-strip>

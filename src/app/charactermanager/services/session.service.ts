@@ -26,6 +26,7 @@ import {
   setGameTime,
 } from '../utils/survival';
 import { applyCastToPc } from '../utils/spellcasting';
+import { hitDieFor, modFromScore } from '../utils/character-math';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -133,6 +134,21 @@ export class SessionService {
   stopPolling(): void {
     this.pollSub?.unsubscribe();
     this.pollSub = undefined;
+  }
+
+  /**
+   * Force-refetch the current session snapshot outside the poll cadence. Used
+   * after actions that change PC-derived participant fields WITHOUT bumping the
+   * session version (e.g. spending Heroic Inspiration via the PC endpoint) —
+   * the poll's sinceVersion short-circuit would otherwise 204 forever and the
+   * stale value would stick. No-op with no active session or in demo mode.
+   */
+  refresh(): void {
+    const current = this.stateSubject.getValue();
+    if (!current || environment.demoMode) return;
+    this.getState(current.sessionId).pipe(take(1)).subscribe({
+      error: () => { /* next poll will catch up */ },
+    });
   }
 
   /** Stop polling and clear local state — used when leaving the session screen. */
@@ -394,6 +410,109 @@ export class SessionService {
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
+  }
+
+  /**
+   * DM announces (or calls off) a short rest — toggles the session's
+   * shortRestOpen window, during which seated players may spend hit dice.
+   * Server-authoritative and version-bumped so every sheet sees the window.
+   */
+  shortRest(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoShortRest());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/short-rest`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** Demo mirror: flip the short-rest window on the in-memory state. */
+  private demoShortRest(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    return this.demoPatch({ shortRestOpen: !state.shortRestOpen });
+  }
+
+  /**
+   * A player spends one of their own seated PC's hit dice while the DM's
+   * short-rest window is open. The server rolls 1d[hitDie] + CON mod (healing
+   * floored at 1, capped at max HP), increments the spent count (max = level),
+   * and bumps the version. The result patches the local PC store so the open
+   * sheet updates without a refetch (same pattern as cast/consume).
+   */
+  spendHitDie(sessionId: number | string, pcId: number):
+      Observable<{ roll: number; healed: number; hpCurrent: number; hitDiceUsed: number }> {
+    if (environment.demoMode) return this.demoSpendHitDie(pcId);
+    return this.http.post<{ roll: number; healed: number; hpCurrent: number; hitDiceUsed: number }>(
+      `${this.sessionBase}/${sessionId}/hit-dice/spend`, { pcId },
+    ).pipe(
+      tap(result => {
+        const pc = this.pcService.getPCById(pcId);
+        this.pcService.patchLocalPC(pcId, {
+          hitDiceUsed: result.hitDiceUsed,
+          ...(pc?.hp ? { hp: { ...pc.hp, cur: result.hpCurrent } } : {}),
+        });
+      }),
+    );
+  }
+
+  /** Demo mirror of the hit-die spend: same rules, rolled locally. */
+  private demoSpendHitDie(pcId: number):
+      Observable<{ roll: number; healed: number; hpCurrent: number; hitDiceUsed: number }> {
+    const state = this.stateSubject.getValue();
+    if (!state?.shortRestOpen) return throwError(() => new Error('No short rest is in progress'));
+    const pc = this.pcService.getPCById(pcId);
+    if (!pc) return throwError(() => new Error('Character not found'));
+    const level = pc.level ?? 1;
+    const used = pc.hitDiceUsed ?? 0;
+    if (used >= level) return throwError(() => new Error('No hit dice remaining'));
+
+    const hitDie = hitDieFor(pc.clazz);
+    const roll = Math.floor(Math.random() * hitDie) + 1;
+    const heal = Math.max(1, roll + modFromScore(pc.stats?.CON ?? 10));
+    const cur = pc.hp?.cur ?? 0;
+    const max = pc.hp?.max ?? cur + heal;
+    const hpCurrent = Math.min(cur + heal, max);
+    const healed = hpCurrent - cur;
+    const hitDiceUsed = used + 1;
+
+    this.pcService.patchLocalPC(pcId, {
+      hitDiceUsed,
+      hp: { cur: hpCurrent, max: pc.hp?.max ?? hpCurrent, temp: pc.hp?.temp ?? 0 },
+    });
+    const participants = state.participants.map(p =>
+      p.pcId === pcId ? { ...p, hpCurrent, hitDiceUsed } : p);
+    this.demoPatch({ participants });
+    return of({ roll, healed, hpCurrent, hitDiceUsed });
+  }
+
+  /**
+   * DM awards one inspiration pip to a seated PC — the fifth pip converts into
+   * Heroic Inspiration server-side (meter resets, badge lights). The refreshed
+   * snapshot carries the new meter for every viewer.
+   */
+  awardInspiration(sessionId: number | string, participantId: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoAwardInspiration(participantId));
+    return this.http.post<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/inspiration`, {},
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** Demo mirror of the pip award: +1 pip; the fifth converts to Heroic Inspiration. */
+  private demoAwardInspiration(participantId: number): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants.map(p => {
+      if (p.participantId !== participantId || p.pcId == null) return p;
+      const pips = (p.inspirationPips ?? 0) + 1;
+      const filled = pips >= 5;
+      const patch = filled
+        ? { inspirationPips: 0, heroicInspiration: true }
+        : { inspirationPips: pips };
+      this.pcService.patchLocalPC(p.pcId, patch);
+      return { ...p, ...patch };
+    });
+    return this.demoPatch({ participants });
   }
 
   /**
@@ -708,6 +827,7 @@ export class SessionService {
       initiative: null, initRolled: false, orderIndex: state.participants.length,
       hpMax, hpCurrent: hpMax, hpTemp: null, ac: armorClass, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
+      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null,
     };
     const participants = this.demoSort([...state.participants, enemy]);
     const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
@@ -725,6 +845,7 @@ export class SessionService {
       initiative: null, initRolled: false, orderIndex: state.participants.length + i,
       hpMax: 7, hpCurrent: 7, hpTemp: null, ac: 15, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
+      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null,
     }));
     const participants = this.demoSort([...state.participants, ...goblins]);
     const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
@@ -863,6 +984,7 @@ export class SessionService {
       dm: true,
       enemiesHidden: true,
       enemyHpHidden: false,
+      shortRestOpen: false,
       turnSound: null,
       shopOpen: false,
       shopForMe: false,
@@ -882,7 +1004,7 @@ export class SessionService {
     return {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
-      enemiesHidden: true, enemyHpHidden: false, turnSound: null,
+      enemiesHidden: true, enemyHpHidden: false, shortRestOpen: false, turnSound: null,
       lootStatus: null, lootName: null, myXp: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
@@ -913,6 +1035,9 @@ export class SessionService {
       spellSlots: pc.spellSlots ?? null,
       deathSaveSuccesses: 0,
       deathSaveFailures: 0,
+      hitDiceUsed: pc.hitDiceUsed ?? null,
+      inspirationPips: pc.inspirationPips ?? null,
+      heroicInspiration: pc.heroicInspiration ?? null,
     };
   }
 
@@ -931,6 +1056,7 @@ export class SessionService {
       dm: !!dto.dm,
       enemiesHidden: !!dto.enemiesHidden,
       enemyHpHidden: !!dto.enemyHpHidden,
+      shortRestOpen: !!dto.shortRestOpen,
       turnSound: dto.turnSound ?? null,
       shopOpen: !!dto.shopOpen,
       shopForMe: !!dto.shopForMe,
@@ -986,6 +1112,9 @@ export class SessionService {
       spellSlots: this.parseJsonObject<PC['spellSlots']>(p.spellSlots),
       deathSaveSuccesses: p.deathSaveSuccesses ?? 0,
       deathSaveFailures: p.deathSaveFailures ?? 0,
+      hitDiceUsed: p.hitDiceUsed ?? null,
+      inspirationPips: p.inspirationPips ?? null,
+      heroicInspiration: p.heroicInspiration ?? null,
     };
   }
 
@@ -1038,6 +1167,7 @@ interface SessionStateDto {
   dm?: boolean;
   enemiesHidden?: boolean;
   enemyHpHidden?: boolean;
+  shortRestOpen?: boolean;
   turnSound?: string | null;
   shopOpen?: boolean;
   shopForMe?: boolean;
@@ -1075,6 +1205,9 @@ interface ParticipantDto {
   spellSlots?: unknown;
   deathSaveSuccesses?: number | null;
   deathSaveFailures?: number | null;
+  hitDiceUsed?: number | null;
+  inspirationPips?: number | null;
+  heroicInspiration?: boolean | null;
 }
 
 interface SessionRollDto {

@@ -3,6 +3,7 @@ import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
+import { SessionService } from '../../services/session.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
@@ -52,6 +53,9 @@ export class CharacterSheetComponent implements OnChanges {
   @Input() sessionLive = false;
   /** The live session id (session embeds only) — tags new character notes. */
   @Input() noteSessionId: number | string | null = null;
+  /** True while the DM's short-rest window is open (session embeds only) —
+   *  reveals the vitals strip's Spend Hit Die button on the player's sheet. */
+  @Input() shortRestOpen = false;
   /** The party's current location (campaign-level), shown at the top of the
    *  sheet. Set by the DM in Session Mode; null until then. */
   @Input() location: CampaignLocation | null = null;
@@ -69,6 +73,9 @@ export class CharacterSheetComponent implements OnChanges {
   @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
   @Output() castRequested = new EventEmitter<CastRequest>();
+  /** In-session hit-die spend (short rest); bubbled from the vitals strip so the
+   *  host can call the server-authoritative spend endpoint. */
+  @Output() spendHitDieRequested = new EventEmitter<void>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -138,7 +145,11 @@ export class CharacterSheetComponent implements OnChanges {
   editingLevel = false;
   levelDraft: number | null = null;
 
-  constructor(private pcService: PCService, private grantService: GrantService) {}
+  constructor(
+    private pcService: PCService,
+    private grantService: GrantService,
+    private sessionService: SessionService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['pc']) {
@@ -256,6 +267,70 @@ export class CharacterSheetComponent implements OnChanges {
       max: 20,
       apply: v => ({ ...this.pc, level: v }),
     });
+  }
+
+  // ── XP editing (DM cross-link) ──────────────────────────────────────────────
+  // XP normally accumulates via session awards; this is the DM's correction
+  // path on the member sheet — same intercepted-edit-modal flow as the level.
+
+  onXpCommit(xp: number): void {
+    this.persist({ ...this.pc, xp: Math.max(0, xp) });
+  }
+
+  /** DM clicked (intercepted) the XP total — request the edit modal instead of
+   *  the inline editor. Label matches the backend's own diff vocabulary. */
+  requestXp(): void {
+    this.onDmEditRequested({
+      label: 'XP',
+      value: this.pc.xp ?? 0,
+      min: 0,
+      max: null,
+      apply: v => ({ ...this.pc, xp: v }),
+    });
+  }
+
+  // ── Heroic Inspiration meter ────────────────────────────────────────────────
+  // Server-owned fields: the DM adds pips (the fifth converts into Heroic
+  // Inspiration), the owner (or DM) spends the badge. In a live session the
+  // snapshot carries these fields but a use doesn't bump the session version,
+  // so we force one off-cadence refresh to keep every viewer honest.
+
+  readonly inspirationSlots = [0, 1, 2, 3, 4];
+  inspirationBusy = false;
+
+  /** DM cross-link: award one pip (the fifth grants Heroic Inspiration). */
+  addInspirationPip(): void {
+    if (this.inspirationBusy) return;
+    this.inspirationBusy = true;
+    this.pcService.awardInspirationPip(this.pc.id).subscribe({
+      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      error: err => {
+        this.inspirationBusy = false;
+        console.error('Failed to award an inspiration pip', err);
+      },
+    });
+  }
+
+  /** Owner (or DM) spends Heroic Inspiration after using the reroll. */
+  useInspiration(): void {
+    if (this.inspirationBusy) return;
+    this.inspirationBusy = true;
+    this.pcService.useInspiration(this.pc.id).subscribe({
+      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      error: err => {
+        this.inspirationBusy = false;
+        console.error('Failed to use Heroic Inspiration', err);
+      },
+    });
+  }
+
+  private refreshSessionIfLive(): void {
+    if (this.sessionLive) this.sessionService.refresh();
+  }
+
+  /** In-session: the player spends a hit die (short-rest window open). */
+  onSpendHitDie(): void {
+    this.spendHitDieRequested.emit();
   }
 
   // ── DM edit modal ────────────────────────────────────────────────────────

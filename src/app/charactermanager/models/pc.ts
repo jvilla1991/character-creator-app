@@ -95,6 +95,14 @@ export interface PC {
   // update body carries null (like survival), so a payload built from a
   // projection that lacks the field can never wipe a real level.
   exhaustion?: number;
+  // Spent hit dice (max = level). Server-owned: only the session short-rest
+  // spend / long-rest restore endpoints mutate it — generic PC updates never
+  // change it, so it rides read-only through the serialize seam.
+  hitDiceUsed?: number;
+  // Heroic Inspiration meter (server-owned like hitDiceUsed): the DM awards
+  // pips one at a time; the fifth pip empties the meter and lights the badge.
+  inspirationPips?: number;
+  heroicInspiration?: boolean;
   // Darker Dungeons survival stages (0–6 each); only meaningful in campaigns
   // with the survivalConditions variant. Absent = never tracked (all zeros).
   survival?: PcSurvival;

@@ -263,6 +263,40 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Short rest (DM window + player hit-die spends) ─────────────────────────
+
+  /** DM announces (or calls off) a short rest — toggles the spend window. */
+  shortRest(state: SessionState): void {
+    this.sessionService.shortRest(state.sessionId).subscribe({
+      next: next => this.notifications.notify(next.shortRestOpen
+        ? 'Short rest — the party may spend hit dice.'
+        : 'The short rest ends.'),
+      error: () => this.notifications.notify('Could not toggle the short rest.'),
+    });
+  }
+
+  /**
+   * The player spends one hit die (bubbled up from their embedded sheet's
+   * vitals strip). Server-rolled 1d[hitDie] + CON; the toast reports the roll
+   * and the healing actually applied.
+   */
+  onSpendHitDie(state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.spendHitDie(state.sessionId, mine.pcId).subscribe({
+      next: r => this.notifications.notify(
+        `Rolled ${r.roll} — healed ${r.healed} HP (${r.hitDiceUsed} of your dice spent).`),
+      error: err => this.notifications.notify(this.spendHitDieError(err)),
+    });
+  }
+
+  /** Prefer the server's message (e.g. "No hit dice remaining"), else a generic hint. */
+  private spendHitDieError(err: unknown): string {
+    const serverMessage = (err as { error?: { message?: string } })?.error?.message;
+    if (serverMessage) return serverMessage;
+    return 'Could not spend a hit die. Try again.';
+  }
+
   /**
    * The player eats/drinks from the embedded sheet — server-authoritative so
    * the supply charge is spent on the canonical row and every viewer sees the
@@ -381,6 +415,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       survival: mine.survival ?? pc.survival,
       spellSlots: mine.spellSlots ?? pc.spellSlots,
       xp: state.myXp ?? pc.xp,
+      // Short-rest / inspiration state rides the snapshot (spends and DM pip
+      // awards bump the version), so the embedded sheet stays live like slots.
+      hitDiceUsed: mine.hitDiceUsed ?? pc.hitDiceUsed,
+      inspirationPips: mine.inspirationPips ?? pc.inspirationPips,
+      heroicInspiration: mine.heroicInspiration ?? pc.heroicInspiration,
     };
   }
 

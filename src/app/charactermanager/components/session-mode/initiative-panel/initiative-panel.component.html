@@ -129,6 +129,16 @@
                     <button class="btn-mini xp" (click)="giveXp(p)" title="Award XP">+XP</button>
                   </div>
                 }
+                <div class="adjust-row">
+                  @if (!p.npc) {
+                    <button class="btn-mini xp insp" (click)="giveInspiration(p)"
+                      [title]="'Award an inspiration pip (' + ((p.inspirationPips ?? 0)) + '/5 — the fifth grants Heroic Inspiration)'">
+                      +Insp
+                    </button>
+                  }
+                  <button class="btn-mini dmg remove" (click)="removeParticipant(p)"
+                    title="Remove from session">✕</button>
+                </div>
               </div>
             }
           </div>
