@@ -1,0 +1,47 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Other Features</span>
+    @if (addAllowed && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrantForm()">+ Grant</button>
+    }
+  </div>
+
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" [(ngModel)]="nameDraft" placeholder="e.g. Darkvision"
+          (keydown.enter)="submitGrant()" (keydown.escape)="cancelGrant()" autofocus>
+      </div>
+      <div class="field">
+        <label>Source</label>
+        <input type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
+      </div>
+      <div class="field">
+        <label>Description (optional)</label>
+        <textarea rows="2" [(ngModel)]="descDraft"
+        placeholder="What it does…"></textarea>
+      </div>
+      <div class="grant-form-actions">
+        <button class="btn primary sm" [disabled]="!nameDraft.trim()" (click)="submitGrant()">Add</button>
+        <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+      </div>
+    </div>
+  }
+
+  @for (f of otherFeatures; track f) {
+    <div class="feature">
+      <div class="feature-head">
+        <span class="feature-name">{{ f.name }}</span>
+        <span class="feature-source">{{ f.source }}</span>
+      </div>
+      <div class="feature-desc">{{ f.desc }}</div>
+    </div>
+  }
+  @if (otherFeatures.length === 0) {
+    <div
+      style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+      No other features yet — species traits, boons, and magic-item properties land here.
+    </div>
+  }
+</div>

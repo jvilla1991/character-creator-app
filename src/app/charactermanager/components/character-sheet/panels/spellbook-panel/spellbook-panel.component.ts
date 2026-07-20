@@ -4,6 +4,8 @@ import { DndSpell } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
+import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
+import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
 export interface SpellLevel {
   lvl: number;
@@ -39,6 +41,11 @@ export class SpellbookPanelComponent implements OnChanges {
   /** DM cross-link: reveals the "Grant spells" control. Distinct from `editable`
    *  (slot editing) — a DM may be able to grant spells without also editing slots. */
   @Input() addAllowed = false;
+  /** The viewer may toggle spells prepared/unprepared: the character's owner on
+   *  their own sheet, or the DM cross-link. Swap timing (long-rest-only, etc.)
+   *  is deliberately not enforced — tables manage that socially; only the 2024
+   *  PHB prepared-count cap is. */
+  @Input() preparable = false;
   @Output() pcChange = new EventEmitter<PC>();
   /** A cast resolved to a slot level — the host forwards it to the live session. */
   @Output() castRequested = new EventEmitter<CastRequest>();
@@ -54,6 +61,15 @@ export class SpellbookPanelComponent implements OnChanges {
 
   hasSpells   = false;
   spellsByLevel: SpellLevel[] = [];
+  /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
+  preparedCount = 0;
+  preparedCap: number | null = null;
+  hasLeveledSpells = false;
+  /** 8 + prof + casting-ability mod; null for non-casters/unknown classes —
+   *  the header then simply omits the "Save DC · Spell Atk" readout. */
+  saveDc: number | null = null;
+  /** "+7"-style spell attack bonus, pre-formatted; null with saveDc. */
+  spellAtk: string | null = null;
 
   ngOnChanges(): void {
     // A new PC snapshot (including the one a cast produces) closes any open
@@ -64,6 +80,12 @@ export class SpellbookPanelComponent implements OnChanges {
 
     const spells = this.pc.spells ?? [];
     this.hasSpells = spells.length > 0;
+    this.preparedCount = countPreparedSpells(spells);
+    this.preparedCap = preparedSpellCap(this.pc.clazz, this.pc.level);
+    this.hasLeveledSpells = spells.some(s => s.lvl > 0);
+    this.saveDc = spellSaveDc(this.pc);
+    const atk = spellAttackBonus(this.pc);
+    this.spellAtk = atk == null ? null : fmtMod(atk);
 
     if (!this.hasSpells) { this.spellsByLevel = []; return; }
 
@@ -119,15 +141,18 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   canCast(spell: PcSpell): boolean {
+    if (!this.isPrepared(spell)) return false;
     return spell.lvl === 0 || this.levelsFor(spell).length > 0;
   }
 
   castTitle(spell: PcSpell): string {
+    if (!this.isPrepared(spell)) return `${spell.name} is not prepared`;
     return this.canCast(spell) ? `Cast ${spell.name}` : 'No slots available';
   }
 
   onCastClick(spell: PcSpell, event: Event): void {
     event.stopPropagation(); // don't toggle the detail expand
+    if (!this.isPrepared(spell)) return; // button is disabled; belt and braces
     this.pickerFor = null;
     this.pendingCast = null;
     this.blockedFor = null;
@@ -185,6 +210,39 @@ export class SpellbookPanelComponent implements OnChanges {
     return `${lvl}${suffix}`;
   }
 
+  // ── Spell preparation (2024 PHB) ─────────────────────────────────────────
+  // Owner/DM toggling of the per-spell `prepared` flag, capped by the class
+  // table's Prepared Spells column. Cantrips are always prepared and exempt.
+  // Deliberately no long-rest-only swap timing — the cap is the only rule.
+
+  /** Missing flag (pre-feature data) and cantrips both count as prepared. */
+  isPrepared(spell: PcSpell): boolean {
+    return isSpellPrepared(spell);
+  }
+
+  /** Unpreparing is always allowed; preparing is blocked at the class cap. */
+  canTogglePrepared(spell: PcSpell): boolean {
+    if (this.isPrepared(spell)) return true;
+    return this.preparedCap == null || this.preparedCount < this.preparedCap;
+  }
+
+  prepareTitle(spell: PcSpell): string {
+    if (this.isPrepared(spell)) return `Unprepare ${spell.name}`;
+    return this.canTogglePrepared(spell)
+      ? `Prepare ${spell.name}`
+      : `Prepared spells are at the ${this.pc.clazz} cap (${this.preparedCap}) — unprepare another spell first`;
+  }
+
+  togglePrepared(spell: PcSpell, event: Event): void {
+    event.stopPropagation(); // don't toggle the detail expand
+    if (spell.lvl === 0) return;                 // cantrips have no toggle
+    const preparing = !this.isPrepared(spell);
+    if (preparing && !this.canTogglePrepared(spell)) return; // at cap; belt and braces
+    const spells = (this.pc.spells ?? []).map(s =>
+      s === spell ? { ...s, prepared: preparing } : s);
+    this.pcChange.emit({ ...this.pc, spells });
+  }
+
   // ── DM slot editing ──────────────────────────────────────────────────────
   // Edit a spell level's used/max slot counts, keeping used within [0, max].
 
@@ -198,13 +256,14 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   // ── DM grant form ────────────────────────────────────────────────────────
-  // Defaults to the PC's own class list; "All classes" widens the candidate pool to
-  // the full SRD list. Either way, candidates already known to the PC are excluded
-  // (case-insensitive, matching the level-up modal's rule) so grants can't duplicate
-  // a spell the player already has.
+  // Defaults to "All classes" (the full spell list) — DM grants are usually
+  // off-list rewards; unticking narrows to the PC's own class list. Either way,
+  // candidates already known to the PC are excluded (case-insensitive, matching
+  // the level-up modal's rule) so grants can't duplicate a spell the player
+  // already has.
 
   grantFormOpen = false;
-  allClasses = false;
+  allClasses = true;
   loadingGrantSpells = false;
   grantCandidates: DndSpell[] = [];
   grantSelection: DndSpell[] = [];
@@ -249,7 +308,7 @@ export class SpellbookPanelComponent implements OnChanges {
 
   private resetGrantForm(): void {
     this.grantFormOpen = false;
-    this.allClasses = false;
+    this.allClasses = true;
     this.grantCandidates = [];
     this.grantSelection = [];
   }

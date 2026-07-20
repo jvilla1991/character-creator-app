@@ -1,1 +1,16 @@
-/* Rules in global styles.css */
+/* Rules in global styles.css. Below: DM cross-link toggle affordance only. */
+
+.skill.togglable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.skill.togglable:hover .skill-dot,
+.skill.togglable:focus-visible .skill-dot {
+  border-color: var(--gold);
+}
+
+.skill.togglable:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -1px;
+}

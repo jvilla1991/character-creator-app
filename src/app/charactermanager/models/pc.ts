@@ -89,6 +89,20 @@ export interface PC {
   saves?: Array<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'>;
   skills?: { [skillName: string]: 'prof' | 'expert' };
   conditions?: string[];
+  // 2024 PHB Exhaustion level, 0–6: each level is −2 to all d20 Tests and
+  // −5 ft Speed; level 6 kills the character. Absent/null = 0 (never tracked).
+  // Kept nullable end-to-end — the backend preserves the stored value when an
+  // update body carries null (like survival), so a payload built from a
+  // projection that lacks the field can never wipe a real level.
+  exhaustion?: number;
+  // Spent hit dice (max = level). Server-owned: only the session short-rest
+  // spend / long-rest restore endpoints mutate it — generic PC updates never
+  // change it, so it rides read-only through the serialize seam.
+  hitDiceUsed?: number;
+  // Heroic Inspiration meter (server-owned like hitDiceUsed): the DM awards
+  // pips one at a time; the fifth pip empties the meter and lights the badge.
+  inspirationPips?: number;
+  heroicInspiration?: boolean;
   // Darker Dungeons survival stages (0–6 each); only meaningful in campaigns
   // with the survivalConditions variant. Absent = never tracked (all zeros).
   survival?: PcSurvival;
@@ -107,7 +121,11 @@ export interface PC {
   inventory?: PcItem[];
 
   // Narrative
-  features?: Array<{ name: string; source: string; desc: string }>;
+  // One array, two panels: entries tagged category 'other' (species traits,
+  // boons, magic-item properties, story rewards) render in the Other Features
+  // panel; absent/'class' = Class Features (so all pre-existing data stays put).
+  // The column is opaque JSON end-to-end, so the extra key round-trips freely.
+  features?: Array<{ name: string; source: string; desc: string; category?: 'class' | 'other' }>;
   traits?: { Personality: string; Ideals: string; Bonds: string; Flaws: string };
   bio?: string;
   notes?: string; // DM-only notes

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subject } from 'rxjs';
 import { catchError, switchMap, takeUntil } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -12,6 +12,32 @@ import { fmtMod, modFromScore } from '../../utils/character-math';
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
 type Ability = typeof ABILITIES[number];
+
+/**
+ * Snapshot of the wizard's player-entered state, persisted to localStorage so a
+ * player who disconnects mid-creation resumes where they left off. Loaded data
+ * (lists, details) is NOT stored — it reloads from its source on restore.
+ */
+interface WizardDraft {
+  v: 1;
+  step: number;
+  name: string;
+  species: string;
+  clazz: string;
+  selectedSubclass: string;
+  background: string;
+  enabledSources: Record<string, boolean>;
+  selectedSkills: string[];
+  languageChoice: string;
+  languageChoice2: string;
+  abilityMethod: 'standard' | 'point-buy';
+  pointBuyScores: Record<Ability, number>;
+  assignments: Record<Ability, number | null>;
+  bonusPlus2: Ability | '';
+  bonusPlus1: Ability | '';
+  equipmentChoice: 'A' | 'B' | '';
+  selectedSpells: DndSpell[];
+}
 
 @Component({
     selector: 'app-create-character-modal',
@@ -108,7 +134,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Step 5: Proficiencies & Languages ───────────────────────────────────
   /** Skills chosen by the player from the class list (excludes locked background skills) */
   selectedSkills: string[] = [];
+  // 2024 PHB: every character knows Common plus TWO chosen standard languages
   languageChoice = '';
+  languageChoice2 = '';
   readonly standardLanguages = STANDARD_LANGUAGES;
 
   get classSkillConfig(): { choose: number; from: string[] } {
@@ -335,17 +363,29 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
     this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
       this.backgroundGroups = groups;
-      // Enable Player's Handbook by default
-      this.enabledSources = Object.fromEntries(
-        groups.map(g => [g.source, g.source === "Player's Handbook"])
-      );
+      // Enable Player's Handbook by default; a restored draft's source picks win.
+      this.enabledSources = {
+        ...Object.fromEntries(groups.map(g => [g.source, g.source === "Player's Handbook"])),
+        ...(this.restoredEnabledSources ?? {}),
+      };
       // No default — the player must choose a background (gates Next).
     });
+
+    this.restoreDraft();
   }
 
   ngOnDestroy(): void {
+    // The modal can be destroyed without an explicit Cancel (SPA navigation,
+    // logout) — treat that like a disconnect and keep the draft.
+    this.saveDraft();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /** Tab/window closing mid-creation — the disconnect case the draft exists for. */
+  @HostListener('window:beforeunload')
+  onBeforeUnload(): void {
+    this.saveDraft();
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -378,6 +418,23 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   next(): void {
     if (!this.canAdvance) return;
     this.step++;
+    this.ensureStepData();
+    this.saveDraft();
+  }
+
+  back(): void {
+    if (this.step > 1) this.step--;
+    this.saveDraft();
+  }
+
+  /** Jump directly to any step — used by Edit buttons in the review step. */
+  goToStep(n: number): void {
+    this.step = n;
+    this.saveDraft();
+  }
+
+  /** Lazy loads owed to the current (or any earlier) step — used on advance and on draft restore. */
+  private ensureStepData(): void {
     // Safety: fire triggers if detail not yet loaded when entering a step
     if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
     if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
@@ -391,8 +448,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
           error: () => { this.loadingSpells = false; },
         });
     }
-    // Load equipment data when entering the equipment step
-    if (this.step === this.equipmentStep && !this.classEquipmentData) {
+    // Load equipment data when entering (or restoring past) the equipment step
+    if (this.step >= this.equipmentStep && !this.classEquipmentData && !this.loadingEquipment) {
       this.loadingEquipment = true;
       this.dndResources.getClassEquipment()
         .pipe(takeUntil(this.destroy$))
@@ -402,11 +459,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         });
     }
   }
-
-  back(): void { if (this.step > 1) this.step--; }
-
-  /** Jump directly to any step — used by Edit buttons in the review step. */
-  goToStep(n: number): void { this.step = n; }
 
   // ── Review step computed properties ──────────────────────────────────────
 
@@ -648,7 +700,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       feat:             this.backgroundFeatName || undefined,
       skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
-      languages:        ['Common', ...(this.languageChoice ? [this.languageChoice] : [])],
+      languages:        ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))],
       coins:            this.buildStartingCoins(),
       weapons:          this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.weapons ?? [])
@@ -683,7 +735,108 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     };
 
     this.confirm.emit(draft);
+    this.clearDraft();
   }
 
-  cancel(): void { this.close.emit(); }
+  cancel(): void {
+    // An explicit Cancel is a deliberate abandon — discard the draft. Only a
+    // silent exit (disconnect, tab close, navigation) keeps it.
+    this.clearDraft();
+    this.close.emit();
+  }
+
+  // ── Draft persistence ────────────────────────────────────────────────────
+  // A player who disconnects mid-creation should not lose their progress: the
+  // wizard's entered state is snapshotted to localStorage on every step change
+  // and on unload/destroy, and restored when the wizard next opens. Inscribing
+  // or explicitly cancelling discards the draft.
+
+  /** Set once the wizard concludes (inscribe/cancel) — stops the unload/destroy saves. */
+  private draftFinished = false;
+  /** Draft source-book toggles, applied over the defaults when the groups load. */
+  private restoredEnabledSources: Record<string, boolean> | null = null;
+
+  private get draftKey(): string {
+    return `tm_pc_draft:${this.auth.getUsername() ?? 'anon'}`;
+  }
+
+  /** An untouched wizard (nothing chosen yet) is not worth a draft. */
+  private get draftDirty(): boolean {
+    return !!(this.name.trim() || this.species || this.clazz || this.background);
+  }
+
+  private saveDraft(): void {
+    if (this.draftFinished || !this.draftDirty) return;
+    const draft: WizardDraft = {
+      v: 1,
+      step: this.step,
+      name: this.name,
+      species: this.species,
+      clazz: this.clazz,
+      selectedSubclass: this.selectedSubclass,
+      background: this.background,
+      enabledSources: this.enabledSources,
+      selectedSkills: this.selectedSkills,
+      languageChoice: this.languageChoice,
+      languageChoice2: this.languageChoice2,
+      abilityMethod: this.abilityMethod,
+      pointBuyScores: this.pointBuyScores,
+      assignments: this.assignments,
+      bonusPlus2: this.bonusPlus2,
+      bonusPlus1: this.bonusPlus1,
+      equipmentChoice: this.equipmentChoice,
+      selectedSpells: this.selectedSpells,
+    };
+    try {
+      localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    } catch { /* storage unavailable/full — the draft is best-effort */ }
+  }
+
+  private restoreDraft(): void {
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(this.draftKey);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw) as Partial<WizardDraft>;
+      if (d?.v !== 1) return;
+      this.step             = d.step ?? 1;
+      this.name             = d.name ?? '';
+      this.species          = d.species ?? '';
+      this.clazz            = d.clazz ?? '';
+      this.selectedSubclass = d.selectedSubclass ?? '';
+      this.background       = d.background ?? '';
+      this.selectedSkills   = d.selectedSkills ?? [];
+      this.languageChoice   = d.languageChoice ?? '';
+      this.languageChoice2  = d.languageChoice2 ?? '';
+      this.abilityMethod    = d.abilityMethod ?? 'standard';
+      this.pointBuyScores   = { ...this.pointBuyScores, ...(d.pointBuyScores ?? {}) };
+      this.assignments      = { ...this.assignments, ...(d.assignments ?? {}) };
+      this.bonusPlus2       = d.bonusPlus2 ?? '';
+      this.bonusPlus1       = d.bonusPlus1 ?? '';
+      this.equipmentChoice  = d.equipmentChoice ?? '';
+      this.selectedSpells   = d.selectedSpells ?? [];
+      this.restoredEnabledSources = d.enabledSources ?? null;
+      if (this.restoredEnabledSources && Object.keys(this.enabledSources).length) {
+        this.enabledSources = { ...this.enabledSources, ...this.restoredEnabledSources };
+      }
+    } catch {
+      return; // corrupt draft — start fresh
+    }
+    // Reload the data the restored selections depend on (details are not stored).
+    if (this.species)    this.speciesTrigger$.next(this.species);
+    if (this.clazz)      this.classTrigger$.next(this.clazz);
+    if (this.background) this.backgroundTrigger$.next(this.background);
+    this.ensureStepData();
+  }
+
+  private clearDraft(): void {
+    this.draftFinished = true;
+    try {
+      localStorage.removeItem(this.draftKey);
+    } catch { /* nothing to do */ }
+  }
 }

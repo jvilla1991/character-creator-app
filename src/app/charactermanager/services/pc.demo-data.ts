@@ -300,11 +300,12 @@ export function demoSubclassLevel(clazz: string): number {
   return ['sorcerer', 'warlock'].includes((clazz ?? '').trim().toLowerCase()) ? 1 : 3;
 }
 
-// DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names).
+// DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names,
+// plus Twilight Domain from Tasha's Cauldron of Everything).
 const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
   bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
-  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'War Domain'],
+  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
   druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
   fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
   monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
@@ -327,11 +328,48 @@ export function demoIsAsiLevel(clazz: string, level: number): boolean {
   return levels.includes(level);
 }
 
-// DEMO-ONLY mirror of the server general-feat catalog (FeatCatalog), sorted.
+// DEMO-ONLY mirror of the server feat catalog (FeatCatalog).
 export const DEMO_GENERAL_FEATS = [
-  'Great Weapon Master', 'Inspiring Leader', 'Mage Slayer', 'Polearm Master', 'Resilient',
-  'Sentinel', 'Sharpshooter', 'Skill Expert', 'Speedy', 'War Caster',
+  'Actor', 'Athlete', 'Charger', 'Chef', 'Crossbow Expert', 'Crusher',
+  'Defensive Duelist', 'Dual Wielder', 'Durable', 'Elemental Adept', 'Fey Touched',
+  'Grappler', 'Great Weapon Master', 'Heavily Armored', 'Heavy Armor Master',
+  'Inspiring Leader', 'Keen Mind', 'Lightly Armored', 'Mage Slayer',
+  'Martial Weapon Training', 'Medium Armor Master', 'Moderately Armored',
+  'Mounted Combatant', 'Observant', 'Piercer', 'Poisoner', 'Polearm Master',
+  'Resilient', 'Ritual Caster', 'Sentinel', 'Shadow Touched', 'Sharpshooter',
+  'Shield Master', 'Skill Expert', 'Skulker', 'Slasher', 'Speedy', 'Spell Sniper',
+  'Telekinetic', 'Telepathic', 'War Caster', 'Weapon Master',
 ];
+
+// DEMO-ONLY mirror of the server Fighting Style feat list (classes with the
+// Fighting Style feature: fighter, paladin, ranger).
+export const DEMO_FIGHTING_STYLE_FEATS = [
+  'Archery', 'Blind Fighting', 'Defense', 'Dueling', 'Great Weapon Fighting',
+  'Interception', 'Protection', 'Thrown Weapon Fighting', 'Two-Weapon Fighting',
+  'Unarmed Fighting',
+];
+
+// DEMO-ONLY mirror of the server Epic Boon feat list (level 19+).
+export const DEMO_EPIC_BOONS = [
+  'Boon of Combat Prowess', 'Boon of Dimensional Travel', 'Boon of Energy Resistance',
+  'Boon of Fate', 'Boon of Fortitude', 'Boon of Irresistible Offense',
+  'Boon of Recovery', 'Boon of Skill', 'Boon of Speed', 'Boon of Spell Recall',
+  'Boon of Truesight', 'Boon of the Night Spirit',
+];
+
+// DEMO-ONLY mirror of FeatCatalog.featOptions: General feats always, Fighting
+// Style feats for classes with the Fighting Style feature, Epic Boons at 19+.
+export function demoFeatOptions(clazz: string, newLevel: number): string[] {
+  const key = (clazz ?? '').trim().toLowerCase();
+  const options = [...DEMO_GENERAL_FEATS];
+  if (key === 'fighter' || key === 'paladin' || key === 'ranger') {
+    options.push(...DEMO_FIGHTING_STYLE_FEATS);
+  }
+  if (newLevel >= 19) {
+    options.push(...DEMO_EPIC_BOONS);
+  }
+  return options.sort((a, b) => a.localeCompare(b));
+}
 
 // DEMO-ONLY mirror of the server cantrips-known formula (base +1 at L4 +1 at L10).
 export function demoCantripsKnown(clazz: string, level: number): number {

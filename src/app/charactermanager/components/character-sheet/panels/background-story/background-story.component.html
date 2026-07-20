@@ -4,7 +4,38 @@
     <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
       {{ pc.background }} · {{ pc.alignment }}
     </span>
+    @if (addAllowed && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrantForm()">+ Grant language</button>
+    }
   </div>
+
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <div class="field lang-combobox">
+        <label>Language</label>
+        <input type="text" [(ngModel)]="languageDraft" placeholder="e.g. Draconic, Abyssal, Druidic…"
+          role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="languageDropdownOpen"
+          (focus)="onLanguageFocus()" (input)="onLanguageInput()" (blur)="onLanguageBlur()"
+          (keydown.enter)="submitGrant()" (keydown.escape)="onLanguageEscape()" autofocus>
+        @if (languageDropdownOpen && filteredLanguages.length) {
+          <ul class="lang-options" role="listbox">
+            @for (n of filteredLanguages; track n) {
+              <li role="option">
+                <button type="button" class="lang-option" (mousedown)="$event.preventDefault(); selectLanguage(n)">{{ n }}</button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+      @if (draftAlreadyKnown) {
+        <div class="grant-known-note">{{ pc.name }} already knows {{ languageDraft.trim() }}.</div>
+      }
+      <div class="grant-form-actions">
+        <button class="btn primary sm" [disabled]="!languageDraft.trim() || draftAlreadyKnown" (click)="submitGrant()">Add</button>
+        <button class="btn sm" (click)="cancelGrant()">Cancel</button>
+      </div>
+    </div>
+  }
 
   <!-- Bio with drop cap -->
   @if (pc.bio) {

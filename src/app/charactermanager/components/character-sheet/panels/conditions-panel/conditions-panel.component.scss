@@ -1,1 +1,75 @@
 /* Rules in global styles.css */
+
+/* ── Exhaustion tracker (2024 PHB) ─────────────────────────────────────────
+   Six numbered pips under the condition chips; filled up to the current
+   level. Level 6 turns the row crimson — the character is dead. */
+
+.exhaustion-tracker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.exhaustion-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.exhaustion-pips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.exhaustion-pip {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  cursor: pointer;
+  transition: all .15s;
+
+  &:hover { color: var(--gold); border-color: var(--gold); }
+
+  &.filled {
+    background: color-mix(in oklch, var(--violet) 18%, var(--bg-2));
+    border-color: var(--violet);
+    color: var(--violet);
+  }
+}
+
+.exhaustion-effect {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* Level 6 — dead: the whole tracker shifts crimson, quietly. */
+.exhaustion-tracker.fatal {
+  .exhaustion-pip.filled {
+    background: color-mix(in oklch, var(--crimson) 18%, var(--bg-2));
+    border-color: var(--crimson);
+    color: var(--crimson);
+  }
+
+  .exhaustion-effect.dead {
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--crimson);
+  }
+}

@@ -70,11 +70,27 @@
   <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">level {{ pc.level }}</div>
 </div>
 
-<!-- Hit Dice -->
+<!-- Hit Dice: remaining of the level-sized pool. Spends happen in a live
+session while the DM's short-rest window is open; a long rest restores half. -->
 <div class="vital">
   <span class="eyebrow">Hit Dice</span>
-  <div class="vital-value numeric">{{ pc.level }}<span class="sub">d{{ hitDie }}</span></div>
-  <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">long rest pool</div>
+  <div class="vital-value numeric"
+    [title]="hitDiceRemaining + ' of ' + pc.level + ' hit dice remaining'">
+    {{ hitDiceRemaining }}<span class="sub">/{{ pc.level }} d{{ hitDie }}</span>
+  </div>
+  @if (canSpendHitDie) {
+    <button class="spend-die-btn" (click)="spendHitDie.emit()"
+      [disabled]="hitDiceRemaining === 0"
+      [title]="hitDiceRemaining === 0
+        ? 'No hit dice left — a long rest restores half'
+        : 'Roll 1d' + hitDie + ' + CON and heal (short rest)'">
+      Spend Hit Die (1d{{ hitDie }}+CON)
+    </button>
+  } @else {
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">
+      short rest to spend
+    </div>
+  }
 </div>
 
 </div>

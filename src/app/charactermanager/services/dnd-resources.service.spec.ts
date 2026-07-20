@@ -107,6 +107,14 @@ describe('DndResourcesService', () => {
       expect(service.getFeatNames()).toContain('Alert');
     });
 
+    it('covers all four 2024 PHB feat categories', () => {
+      const names = service.getFeatNames();
+      expect(names).toContain('Alert');            // Origin
+      expect(names).toContain('Weapon Master');    // General
+      expect(names).toContain('Archery');          // Fighting Style
+      expect(names).toContain('Boon of Fate');     // Epic Boon
+    });
+
     it('length matches the number of known feats', () => {
       expect(service.getFeatNames().length).toBe(Object.keys(FEAT_DESCRIPTIONS).length);
     });
@@ -211,15 +219,34 @@ describe('DndResourcesService', () => {
       { name: 'Eldritch Blast', level: 0, school: 'evocation', actionType: '1 action',       classes: ['warlock'],           concentration: false, ritual: false, range: '120 ft', components: ['v','s'],     duration: 'Instantaneous', description: '', material: '' },
     ];
 
+    const mockSupplement: DndSpell[] = [
+      { name: 'Witch Bolt', level: 1, school: 'evocation', actionType: 'action', classes: ['sorcerer', 'warlock', 'wizard'], concentration: true, ritual: false, range: '60 feet', components: ['v','s','m'], duration: 'up to 1 minute', description: '', material: 'a twig struck by lightning' },
+    ];
+
+    /** Flushes both spell files getSpells() fetches (SRD + 2024 PHB supplement). */
+    function flushSpellFiles(supplement: DndSpell[] = mockSupplement): void {
+      httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json').flush(mockSpells);
+      httpMock.expectOne('/assets/data/spells/phb-2024-supplement.json').flush(supplement);
+    }
+
     it('returns only spells for the given class', (done) => {
       service.getSpellsForClass('wizard').subscribe(spells => {
-        expect(spells.length).toBe(1);
+        expect(spells.length).toBe(2);
         expect(spells[0].name).toBe('Fireball');
         done();
       });
 
-      httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json')
-              .flush(mockSpells);
+      flushSpellFiles();
+    });
+
+    it('merges the PHB supplement after the SRD spells', (done) => {
+      service.getSpells().subscribe(spells => {
+        expect(spells.map(s => s.name))
+          .toEqual(['Fireball', 'Healing Word', 'Eldritch Blast', 'Witch Bolt']);
+        done();
+      });
+
+      flushSpellFiles();
     });
 
     it('is case-insensitive on class name', (done) => {
@@ -229,8 +256,7 @@ describe('DndResourcesService', () => {
         done();
       });
 
-      httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json')
-              .flush(mockSpells);
+      flushSpellFiles([]);
     });
 
     it('returns empty array for non-spellcasting class', (done) => {
@@ -239,8 +265,7 @@ describe('DndResourcesService', () => {
         done();
       });
 
-      httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json')
-              .flush(mockSpells);
+      flushSpellFiles();
     });
   });
 

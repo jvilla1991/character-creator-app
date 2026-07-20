@@ -6,9 +6,10 @@ import { DndResourcesService } from '../../services/dnd-resources.service';
 import { PC } from '../../models/pc';
 import { LevelUpPreview } from '../../models/level-up';
 
-/** A SpyObj PCService — the modal only touches levelUpPreview / levelUp. */
+/** A SpyObj PCService — the modal only touches the preview/commit pairs (owner + as-dm). */
 function makePcServiceSpy(): jasmine.SpyObj<PCService> {
-  return jasmine.createSpyObj<PCService>('PCService', ['levelUpPreview', 'levelUp']);
+  return jasmine.createSpyObj<PCService>('PCService',
+    ['levelUpPreview', 'levelUp', 'levelUpPreviewAsDm', 'levelUpAsDm']);
 }
 
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -314,6 +315,36 @@ describe('LevelUpModalComponent', () => {
     expect(component.showCantrips).toBeFalse();
   });
 
+  // --- DM cross-link mode (asDm) ---
+
+  it('uses the DM-authorized preview and commit when asDm is set', () => {
+    pcService.levelUpPreviewAsDm.and.returnValue(of(makePreview()));
+    pcService.levelUpAsDm.and.returnValue(of(makePC({ level: 5 })));
+    const closeSpy = jasmine.createSpy('close');
+    component.close.subscribe(closeSpy);
+
+    component.asDm = true;
+    component.ngOnInit();
+    component.confirm();
+
+    expect(pcService.levelUpPreviewAsDm).toHaveBeenCalledWith(7);
+    expect(pcService.levelUpPreview).not.toHaveBeenCalled();
+    expect(pcService.levelUpAsDm).toHaveBeenCalledWith(7, {});
+    expect(pcService.levelUp).not.toHaveBeenCalled();
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it('uses the owner path when asDm is not set (regression guard)', () => {
+    pcService.levelUpPreview.and.returnValue(of(makePreview()));
+    pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+
+    component.ngOnInit();
+    component.confirm();
+
+    expect(pcService.levelUpPreviewAsDm).not.toHaveBeenCalled();
+    expect(pcService.levelUpAsDm).not.toHaveBeenCalled();
+  });
+
   it('keeps the modal open and shows an error if the commit fails', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview()));
     pcService.levelUp.and.returnValue(throwError(() => ({ error: { message: 'Level-up failed.' } })));
@@ -350,6 +381,7 @@ describe('LevelUpModalComponent', () => {
     pcService.levelUpPreview.and.returnValue(of(makePreview({
       currentCantripsKnown: 2, newCantripsKnown: 2,   // cantrip delta 0
       currentSpellsKnown: 7, newSpellsKnown: 9,        // spell delta 2
+      newSpellSlots: { 1: 4, 2: 3, 3: 2 },             // slots up to spell level 3 at the new level
     })));
     component.pc = makePC({ clazz: 'Bard', spells: [] });
     component.ngOnInit();
@@ -358,9 +390,52 @@ describe('LevelUpModalComponent', () => {
     expect(component.cantripDelta).toBe(0);
     expect(component.spellDelta).toBe(2);
     expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Bard');
-    // The modal hands the full candidate list to app-spell-picker along with the deltas as
+    // The modal hands the castable candidate list to app-spell-picker along with the deltas as
     // cantripLimit/spellLimit — the picker (tested separately) applies the level-0/level>0 filter.
     expect(component.spellList.map(s => s.name)).toEqual(['Light', 'Heroism', 'Invisibility']);
+  });
+
+  it('filters out spells above the highest slot level at the new level', () => {
+    // Bard 4 -> 5: slots reach spell level 3 — Polymorph (L4) must not be offered.
+    dndResources.getSpellsForClass.and.returnValue(of(
+      [dndSpell(0, 'Light'), dndSpell(3, 'Fear'), dndSpell(4, 'Polymorph'), dndSpell(9, 'Wish')] as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentSpellsKnown: 7, newSpellsKnown: 9,
+      newSpellSlots: { 1: 4, 2: 3, 3: 2 },
+    })));
+    component.pc = makePC({ clazz: 'Bard', spells: [] });
+    component.ngOnInit();
+
+    expect(component.maxLearnableSpellLevel).toBe(3);
+    expect(component.spellList.map(s => s.name)).toEqual(['Light', 'Fear']);
+  });
+
+  it('caps warlock candidates at the pact slot level', () => {
+    // Warlock 4 -> 5: the single pact entry is spell level 3.
+    dndResources.getSpellsForClass.and.returnValue(of(
+      [dndSpell(3, 'Fly'), dndSpell(5, 'Hold Monster')] as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentSpellsKnown: 5, newSpellsKnown: 6,
+      newSpellSlots: { 3: 2 },
+    })));
+    component.pc = makePC({ clazz: 'Warlock', spells: [] });
+    component.ngOnInit();
+
+    expect(component.maxLearnableSpellLevel).toBe(3);
+    expect(component.spellList.map(s => s.name)).toEqual(['Fly']);
+  });
+
+  it('always offers cantrips regardless of the slot-level cap', () => {
+    dndResources.getSpellsForClass.and.returnValue(of(
+      [dndSpell(0, 'Mending'), dndSpell(1, 'Heroism')] as any));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentCantripsKnown: 3, newCantripsKnown: 4,   // cantrip delta 1
+      newSpellSlots: { 1: 2 },
+    })));
+    component.pc = makePC({ clazz: 'Bard', spells: [] });
+    component.ngOnInit();
+
+    expect(component.spellList.map(s => s.name)).toEqual(['Mending', 'Heroism']);
   });
 
   it('caps spell selection at the allowed delta (as the spell-picker would enforce via selectedChange)', () => {
@@ -379,7 +454,9 @@ describe('LevelUpModalComponent', () => {
   it('excludes already-known spells from the list', () => {
     const spells = [dndSpell(1, 'Hold Person'), dndSpell(1, 'Heroism')];
     dndResources.getSpellsForClass.and.returnValue(of(spells as any));
-    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentSpellsKnown: 7, newSpellsKnown: 9, newSpellSlots: { 1: 4, 2: 3 },
+    })));
     component.pc = makePC({ clazz: 'Bard',
       spells: [{ lvl: 1, name: 'Heroism', school: 'Ench', time: '1 action', prepared: true }] });
     component.ngOnInit();
@@ -390,7 +467,9 @@ describe('LevelUpModalComponent', () => {
   it('sends selected spells as newSpells mapped to PcSpell', () => {
     const spells = [dndSpell(1, 'Hold Person')];
     dndResources.getSpellsForClass.and.returnValue(of(spells as any));
-    pcService.levelUpPreview.and.returnValue(of(makePreview({ currentSpellsKnown: 7, newSpellsKnown: 9 })));
+    pcService.levelUpPreview.and.returnValue(of(makePreview({
+      currentSpellsKnown: 7, newSpellsKnown: 9, newSpellSlots: { 1: 4, 2: 3 },
+    })));
     pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
     component.pc = makePC({ clazz: 'Bard', spells: [] });
     component.ngOnInit();

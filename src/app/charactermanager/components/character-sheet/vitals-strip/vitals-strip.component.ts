@@ -23,8 +23,13 @@ export class VitalsStripComponent {
   @Input() pc!: PC;
   /** DM cross-link: turns the vitals into click-to-edit numbers. */
   @Input() editable = false;
+  /** True while the DM's short-rest window is open on the player's own live
+   *  session sheet — reveals the Spend Hit Die button under the Hit Dice tile. */
+  @Input() canSpendHitDie = false;
   /** Emits the full updated PC for the parent to persist. */
   @Output() pcChange = new EventEmitter<PC>();
+  /** The player spends a hit die (short rest) — the host owns the server call. */
+  @Output() spendHitDie = new EventEmitter<void>();
   /** A DM clicked an intercepted vital — the parent opens the DM edit modal. */
   @Output() editRequested = new EventEmitter<DmEditRequest>();
 
@@ -34,6 +39,11 @@ export class VitalsStripComponent {
   }
 
   get hitDie(): number { return hitDieFor(this.pc.clazz); }
+
+  /** Unspent hit dice: level minus the server-tracked spent count, floored at 0. */
+  get hitDiceRemaining(): number {
+    return Math.max(0, (this.pc.level ?? 0) - (this.pc.hitDiceUsed ?? 0));
+  }
 
   /** Names of the currently-equipped armor/shield lines, or "unarmored" when
    *  nothing is worn — the caption shown under the AC value. */

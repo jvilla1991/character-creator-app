@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 
-type Feature = { name: string; source: string; desc: string };
+type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
 @Component({
     selector: 'app-features-list',
@@ -23,6 +23,15 @@ export class FeaturesListComponent {
   @Output() featureGranted = new EventEmitter<Feature>();
 
   constructor(private dndResources: DndResourcesService) {}
+
+  /**
+   * Entries shown in this panel: everything NOT tagged category 'other' (absent =
+   * class, so every pre-existing entry stays here). 'other' entries render in the
+   * sibling Other Features panel.
+   */
+  get classFeatures(): Feature[] {
+    return (this.pc.features ?? []).filter(f => f.category !== 'other');
+  }
 
   /**
    * Description to show for a feature. Feats taken on level-up are stored with a blank desc

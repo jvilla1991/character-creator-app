@@ -18,17 +18,27 @@
   display: flex;
   flex-direction: column;
   padding: 26px 28px 22px;
+  // The modal is taller than a phone screen: cap it to the dynamic viewport
+  // and scroll inside, so no part of it (especially the ✕) can be flex-
+  // centered off the top of the screen with no way to reach it.
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
 }
 
 .dice-close {
-  position: absolute;
-  top: 12px;
-  right: 14px;
+  // Upper-LEFT (user request), and sticky inside the modal's scroll container
+  // so the exit stays reachable at any scroll position on any screen.
+  position: sticky;
+  top: 0;
+  left: 0;
+  align-self: flex-start;
+  margin: -14px 0 0 -16px; // tuck into the padding corner
   z-index: 2;
   width: 30px;
   height: 30px;
+  flex: none;
   border: 1px solid var(--border);
-  background: transparent;
+  background: var(--surface, #171a26);
   color: var(--text-2);
   font-size: 20px;
   line-height: 1;
@@ -308,6 +318,16 @@
   gap: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border-soft);
+}
+
+// ── Small screens: shorter arena + tighter padding so the palette and the
+// Roll bar fit a typical phone without scrolling. ────────────────────────────
+@media (max-width: 480px) {
+  .dice-modal { padding: 18px 14px 14px; }
+  .dice-close { margin: -8px 0 0 -6px; }
+  .dice-arena { height: 240px; margin: 12px 0; }
+  .dice-palette { gap: 8px; padding: 10px 2px; }
+  .dice-throwbar { padding-top: 12px; gap: 10px; }
 }
 
 // ── Reduced motion: keep it usable, skip the acrobatics ──────────────────────

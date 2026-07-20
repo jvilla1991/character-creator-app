@@ -40,6 +40,38 @@ export function hitDieFor(clazz: string): number {
   return CLASS_HIT_DICE[clazz] ?? 8;
 }
 
+// ── Spellcasting (2024 PHB) ─────────────────────────────────────────────────
+// Casting ability per class. Paladin/Ranger are half-casters the app doesn't
+// model as slot-casters, but their save DC math is still CHA/WIS-based when
+// they do carry spells (e.g. DM-granted), so they're mapped here.
+
+export const CASTING_ABILITY: Record<string, 'INT' | 'WIS' | 'CHA'> = {
+  Bard: 'CHA', Paladin: 'CHA', Sorcerer: 'CHA', Warlock: 'CHA',
+  Cleric: 'WIS', Druid: 'WIS', Ranger: 'WIS',
+  Wizard: 'INT',
+};
+
+/** Proficiency bonus to use in spell math: the sheet's own value, else derived
+ *  from level ((level−1)/4 + 2) so a sheet that never stored prof still works. */
+function profForSpellMath(pc: PC): number {
+  return pc.prof ?? Math.floor(((pc.level ?? 1) - 1) / 4) + 2;
+}
+
+/** Spell save DC = 8 + proficiency + casting-ability modifier; null for a
+ *  class with no casting ability (Fighter, unknown classes, …). */
+export function spellSaveDc(pc: PC): number | null {
+  const ability = CASTING_ABILITY[pc.clazz];
+  if (!ability) return null;
+  return 8 + profForSpellMath(pc) + modFromScore(pc.stats?.[ability] ?? 10);
+}
+
+/** Spell attack bonus = proficiency + casting-ability modifier; null for non-casters. */
+export function spellAttackBonus(pc: PC): number | null {
+  const ability = CASTING_ABILITY[pc.clazz];
+  if (!ability) return null;
+  return profForSpellMath(pc) + modFromScore(pc.stats?.[ability] ?? 10);
+}
+
 // ── Skill / condition constants ─────────────────────────────────────────────
 
 /** [skill name, governing ability] pairs matching prototype/data.js SKILL_DEFS */

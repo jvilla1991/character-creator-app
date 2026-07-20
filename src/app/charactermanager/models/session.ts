@@ -40,6 +40,11 @@ export interface ParticipantView {
   spellSlots: PC['spellSlots'] | null;
   deathSaveSuccesses: number;
   deathSaveFailures: number;
+  // Spent hit dice from the canonical PC row (max = level); null for NPCs.
+  hitDiceUsed: number | null;
+  // Heroic Inspiration meter from the canonical PC row; null for NPCs.
+  inspirationPips: number | null;
+  heroicInspiration: boolean | null;
 }
 
 /**
@@ -106,6 +111,10 @@ export interface SessionState {
   // player's enemy rows arrive with the HP fields nulled server-side. The DM
   // still receives full health. Ignored while enemiesHidden.
   enemyHpHidden: boolean;
+  // DM-announced short-rest window: while true, a seated player may spend hit
+  // dice (POST /session/{id}/hit-dice/spend). Cleared server-side on encounter
+  // start and session end.
+  shortRestOpen: boolean;
   // Encounter-level turn-cue key set by the DM (null = silent); each device can
   // still mute locally.
   turnSound: string | null;

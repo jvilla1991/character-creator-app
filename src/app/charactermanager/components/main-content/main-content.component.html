@@ -58,6 +58,7 @@
     (click)="closeLevelUpModal()">
     <app-level-up-modal
       [pc]="pc"
+      [asDm]="editable"
       (click)="$event.stopPropagation()"
       (close)="closeLevelUpModal()">
     </app-level-up-modal>

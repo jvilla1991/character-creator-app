@@ -86,13 +86,46 @@ export class MainContentComponent implements OnInit, OnDestroy {
         this.pc = pc;
         this.resolveVariants(pc);
         this.refreshSessionContext(pc);
+        this.refetchOnActivation(pc);
       });
+    document.addEventListener('visibilitychange', this.onVisible);
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('visibilitychange', this.onVisible);
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  // ── Cross-client freshness ─────────────────────────────────────────────────
+  // The local PC store is loaded once at app start, so changes made from
+  // another client — e.g. the DM granting a pending level-up — never reach
+  // this sheet on their own (the Level Up button stayed dead until a full page
+  // reload). Refetch the PC when it lands on the sheet (also covers returning
+  // from a session, where this component is recreated) and when the tab
+  // regains visibility — the same refetch-on-refocus valve the campaign
+  // sidebar/dashboard use. No background polling. Skipped in DM cross-link
+  // view: that PC was just fetched via the DM path, and the owner-scoped
+  // find endpoint isn't authorized for it anyway.
+
+  /** Guards the activation refetch: the refreshed push re-emits the same id. */
+  private lastRefetchedPcId: number | null = null;
+
+  private refetchOnActivation(pc: PC | null): void {
+    if (!pc || this.editable) {
+      this.lastRefetchedPcId = null;
+      return;
+    }
+    if (pc.id === this.lastRefetchedPcId) return;
+    this.lastRefetchedPcId = pc.id;
+    this.pcService.refreshPC(pc.id);
+  }
+
+  private readonly onVisible = () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!this.pc || this.editable) return;
+    this.pcService.refreshPC(this.pc.id);
+  };
 
   /** Look up the PC's campaign variant rules (all false when unknown). */
   private resolveVariants(pc: PC | null): void {
