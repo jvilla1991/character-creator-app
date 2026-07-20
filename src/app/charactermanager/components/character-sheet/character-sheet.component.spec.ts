@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { CharacterSheetComponent } from './character-sheet.component';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
+import { SessionService } from '../../services/session.service';
 import { PC } from '../../models/pc';
 
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -13,11 +14,14 @@ describe('CharacterSheetComponent', () => {
   let component: CharacterSheetComponent;
   let pcService: jasmine.SpyObj<PCService>;
   let grantService: jasmine.SpyObj<GrantService>;
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   beforeEach(() => {
-    pcService = jasmine.createSpyObj<PCService>('PCService', ['updatePC', 'updatePCAsDm']);
+    pcService = jasmine.createSpyObj<PCService>('PCService',
+      ['updatePC', 'updatePCAsDm', 'awardInspirationPip', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
-    component = new CharacterSheetComponent(pcService, grantService);
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
+    component = new CharacterSheetComponent(pcService, grantService, sessionService);
     component.pc = makePC();
   });
 
@@ -45,6 +49,60 @@ describe('CharacterSheetComponent', () => {
 
     component.pc = makePC({ campaignId: undefined });
     expect(component.inCampaign).toBeFalse();
+  });
+
+  // --- Level Up gating ---
+
+  it('canLevelUp is false without XP, a grant, or DM cross-link mode', () => {
+    component.pc = makePC({ level: 4, xp: 0 });
+    expect(component.canLevelUp).toBeFalse();
+  });
+
+  it('canLevelUp is always true in DM cross-link (editable) mode', () => {
+    component.pc = makePC({ level: 4, xp: 0 });
+    component.editable = true;
+    expect(component.canLevelUp).toBeTrue();
+    expect(component.levelUpHint).toContain('no XP threshold');
+  });
+
+  it('canLevelUp is true when the DM granted a pending level-up', () => {
+    component.pc = makePC({ level: 4, xp: 0, pendingLevelGrant: true });
+    expect(component.canLevelUp).toBeTrue();
+  });
+
+  // --- Exhaustion (conditions panel tracker) ---
+
+  it('persists a new exhaustion level via the owner path on the player\'s own sheet', () => {
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    component.onExhaustionChange(3);
+
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 7, exhaustion: 3 }));
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  it('persists exhaustion via the DM-authorized path in cross-link mode', () => {
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+    component.editable = true;
+
+    component.onExhaustionChange(6);
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 7, exhaustion: 6 }), null);
+    expect(pcService.updatePC).not.toHaveBeenCalled();
+  });
+
+  it('clamps the exhaustion level to the 0–6 range', () => {
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    component.onExhaustionChange(9);
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ exhaustion: 6 }));
+
+    component.onExhaustionChange(-2);
+    expect(pcService.updatePC).toHaveBeenCalledWith(
+      jasmine.objectContaining({ exhaustion: 0 }));
   });
 
   // --- DM feature grants ---
@@ -104,6 +162,54 @@ describe('CharacterSheetComponent', () => {
     const consoleSpy = spyOn(console, 'error');
 
     component.onFeatureGrant({ name: 'Blessing', source: 'DM Grant', desc: '' });
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
+  });
+
+  // --- DM "other feature" grants (Other Features panel) ---
+
+  it('grants an other-feature via GrantService, stamping category other onto the entry', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const granted = { name: 'Darkvision', source: 'Species', desc: 'See in the dark.' };
+
+    component.onOtherFeatureGrant(granted);
+
+    expect(grantService.grantToPc).toHaveBeenCalledWith(7, jasmine.any(Function));
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const fresh: PC = makePC({
+      features: [{ name: 'Rage', source: 'Barbarian 1', desc: 'Reckless fury.' }],
+    });
+
+    const result = mutate(fresh);
+
+    expect(result.features).toEqual([
+      { name: 'Rage', source: 'Barbarian 1', desc: 'Reckless fury.' },
+      { name: 'Darkvision', source: 'Species', desc: 'See in the dark.', category: 'other' },
+    ]);
+    // Purity: the fresh copy must not be mutated in place.
+    expect(fresh.features?.length).toBe(1);
+    expect(result).not.toBe(fresh);
+  });
+
+  it('appends an other-feature to an undefined features list on the fresh pc', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+
+    component.onOtherFeatureGrant({ name: 'Stone Sense', source: 'Boon', desc: '' });
+
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const result = mutate(makePC({ features: undefined }));
+
+    expect(result.features).toEqual([
+      { name: 'Stone Sense', source: 'Boon', desc: '', category: 'other' },
+    ]);
+  });
+
+  it('logs an error if the other-feature grant fails', () => {
+    const error = new Error('network down');
+    grantService.grantToPc.and.returnValue(throwError(() => error));
+    const consoleSpy = spyOn(console, 'error');
+
+    component.onOtherFeatureGrant({ name: 'Darkvision', source: 'Species', desc: '' });
 
     expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
   });

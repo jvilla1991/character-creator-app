@@ -25,6 +25,12 @@ import { toPcSpell } from '../../utils/spell-mapping';
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
+  /**
+   * True when a DM levels up a campaign member from the cross-link view — the
+   * preview and commit then use the campaign-DM-authorized endpoints (the
+   * owner-scoped ones would 403). The flow is otherwise identical.
+   */
+  @Input() asDm = false;
   @Output() close = new EventEmitter<void>();
 
   preview: LevelUpPreview | null = null;
@@ -56,7 +62,10 @@ export class LevelUpModalComponent implements OnInit {
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
-    this.pcService.levelUpPreview(this.pc.id).subscribe({
+    const preview$ = this.asDm
+      ? this.pcService.levelUpPreviewAsDm(this.pc.id)
+      : this.pcService.levelUpPreview(this.pc.id);
+    preview$.subscribe({
       next: preview => {
         this.preview = preview;
         this.loading = false;
@@ -74,13 +83,26 @@ export class LevelUpModalComponent implements OnInit {
   private loadSpells(): void {
     this.loadingSpells = true;
     const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    const maxLevel = this.maxLearnableSpellLevel;
     this.dndResources.getSpellsForClass(this.pc.clazz).subscribe({
       next: spells => {
-        this.spellList = spells.filter(s => !known.has(s.name.toLowerCase()));
+        this.spellList = spells.filter(s =>
+          !known.has(s.name.toLowerCase()) && (s.level === 0 || s.level <= maxLevel));
         this.loadingSpells = false;
       },
       error: () => { this.loadingSpells = false; },
     });
+  }
+
+  /**
+   * Highest spell level the character can learn at the NEW level — the top of the
+   * server-computed slot table (covers full casters and warlock pact slots). Per the
+   * 2024 rules you may only learn spells you have slots to cast; cantrips (level 0)
+   * are separate and stay count-gated. The backend enforces the same cap on commit.
+   */
+  get maxLearnableSpellLevel(): number {
+    const slots = this.preview?.newSpellSlots ?? {};
+    return Object.keys(slots).reduce((max, k) => Math.max(max, Number(k)), 0);
   }
 
   /** How many new cantrips / leveled spells the player may learn this level. */
@@ -245,7 +267,10 @@ export class LevelUpModalComponent implements OnInit {
       choices.newSpells = this.selectedSpells.map(toPcSpell);
     }
 
-    this.pcService.levelUp(this.pc.id, choices).subscribe({
+    const commit$ = this.asDm
+      ? this.pcService.levelUpAsDm(this.pc.id, choices)
+      : this.pcService.levelUp(this.pc.id, choices);
+    commit$.subscribe({
       next: () => this.close.emit(),
       error: err => {
         this.error = this.messageFrom(err, 'Level-up failed. Please try again.');

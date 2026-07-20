@@ -11,7 +11,7 @@ import { hitDieFor, modFromScore } from '../utils/character-math';
 import {
   DEMO_PCS,
   DEMO_ACTIVITY_LOGS,
-  DEMO_GENERAL_FEATS,
+  demoFeatOptions,
   demoProfBonus,
   demoLevelUpFields,
   demoSlotsFor,
@@ -59,6 +59,30 @@ export class PCService {
         this.pcsSubject.next(parsed);
       },
       error: (err) => console.error('Failed to load PCs', err)
+    });
+  }
+
+  /**
+   * Refetch one PC from the backend and mirror it into pcs$/activePC$ — used by
+   * the standalone sheet to pick up server-side changes made from another
+   * client (e.g. the DM granting a pending level-up), which otherwise stay
+   * invisible until a full page reload. Demo mode is single-client, so the
+   * local store is already authoritative and this is a no-op.
+   */
+  refreshPC(pcId: number): void {
+    if (environment.demoMode) return;
+    this.http.get<PC>(this.pcUrl + 'find/' + pcId).subscribe({
+      next: raw => {
+        const updated = this.deserializePC(raw);
+        this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+        this.pcsSubject.next(this.pcs);
+        const active = this.activePCSubject.getValue();
+        if (active && active.id === updated.id) {
+          this.activePCSubject.next(updated);
+        }
+      },
+      // Offline or not authorized (e.g. a DM cross-link view) — keep the local copy.
+      error: () => { /* intentional no-op */ },
     });
   }
 
@@ -270,6 +294,54 @@ export class PCService {
     );
   }
 
+  // ── Heroic Inspiration meter ───────────────────────────────────────────────
+
+  /**
+   * DM awards one inspiration pip to a campaign member (campaign-DM-authorized,
+   * like grantLevelUp). The fifth pip converts into Heroic Inspiration
+   * server-side (meter resets, badge lights). The updated PC is mirrored into
+   * pcs$/activePC$ so the open sheet shows the meter at once.
+   */
+  awardInspirationPip(pcId: number): Observable<PC> {
+    if (environment.demoMode) {
+      const pc = this.getPCById(pcId);
+      const pips = (pc?.inspirationPips ?? 0) + 1;
+      this.patchLocalPC(pcId, pips >= 5
+        ? { inspirationPips: 0, heroicInspiration: true }
+        : { inspirationPips: pips });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.post<PC>(`${this.pcUrl}${pcId}/inspiration/pip`, {}).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /**
+   * Spend Heroic Inspiration — the owner (or the campaign's DM) clears the
+   * badge after using the reroll. The server 409s when there is none.
+   */
+  useInspiration(pcId: number): Observable<PC> {
+    if (environment.demoMode) {
+      this.patchLocalPC(pcId, { heroicInspiration: false });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.post<PC>(`${this.pcUrl}${pcId}/inspiration/use`, {}).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /** Mirror a server-returned PC into pcs$ and (when active) activePC$. */
+  private mirrorPC(updated: PC): void {
+    this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (active && active.id === updated.id) {
+      this.activePCSubject.next(updated);
+    }
+  }
+
   // ── Level-up (server-authoritative) ────────────────────────────────────────
   // The D&D rules engine lives in the backend (manager-service LevelUpService). These
   // methods are a thin client: preview fetches the computed deltas to show before the
@@ -284,11 +356,38 @@ export class PCService {
   }
 
   /**
+   * Same preview via the campaign-DM-authorized path (like updatePCAsDm) — used
+   * by the level-up modal in DM cross-link mode, where the owner-scoped preview
+   * endpoint would 403. Demo mode reads the same local store either way.
+   */
+  levelUpPreviewAsDm(id: number): Observable<LevelUpPreview> {
+    if (environment.demoMode) {
+      return of(this.computeDemoPreview(id)).pipe(delay(200));
+    }
+    return this.http.get<LevelUpPreview>(`${this.pcUrl}${id}/level-up/preview/as-dm`);
+  }
+
+  /**
    * Commit a one-level advance server-side, then sync the updated PC into pcs$/activePC$.
    * `choices` carries the only client-supplied inputs (subclass, ASI allocation); the server
    * computes and validates everything else.
    */
   levelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
+    return this.commitLevelUp(id, choices, `${this.pcUrl}${id}/level-up`);
+  }
+
+  /**
+   * Commit a level-up via the campaign-DM-authorized path (like updatePCAsDm) —
+   * the DM performs the level-up on a member directly; the server skips the
+   * XP/grant gate and consumes any pending grant. Same local mirroring as
+   * levelUp; demo mode applies the same in-memory advance.
+   */
+  levelUpAsDm(id: number, choices?: LevelUpChoices): Observable<PC> {
+    return this.commitLevelUp(id, choices, `${this.pcUrl}${id}/level-up/as-dm`);
+  }
+
+  /** Shared tail of levelUp/levelUpAsDm: build the body, POST, mirror the result. */
+  private commitLevelUp(id: number, choices: LevelUpChoices | undefined, url: string): Observable<PC> {
     if (environment.demoMode) {
       return this.applyDemoLevelUp(id, choices).pipe(delay(150));
     }
@@ -299,7 +398,7 @@ export class PCService {
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
     // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
     if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
-    return this.http.post<PC>(`${this.pcUrl}${id}/level-up`, body).pipe(
+    return this.http.post<PC>(url, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
@@ -335,7 +434,7 @@ export class PCService {
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
-      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? [...DEMO_GENERAL_FEATS] : [],
+      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       currentCantripsKnown: demoCantripsKnown(pc.clazz, current),
@@ -463,6 +562,10 @@ export class PCService {
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
         : null,
+      // null (not 0) when never tracked — the backend preserves the stored
+      // value on a null (same rule as survival below), so a payload built from
+      // a source without the field can't reset a real exhaustion level.
+      exhaustion: pc.exhaustion ?? null,
       // JSON-stringify all arrays and objects stored as TEXT
       spells: JSON.stringify(pc.spells ?? []),
       spellSlots: JSON.stringify(pc.spellSlots ?? {}),

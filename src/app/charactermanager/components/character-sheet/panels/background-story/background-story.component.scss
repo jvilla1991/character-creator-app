@@ -1,5 +1,64 @@
 /* Rules in global styles.css */
 
+// ── DM "Grant language" form (mirrors the features-list grant form) ─────────
+
+.grant-form {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.grant-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.grant-known-note {
+  margin-bottom: 8px;
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+// Language field typeahead — filtered standard-language dropdown anchored below the input.
+.lang-combobox {
+  position: relative;
+}
+
+.lang-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.lang-option {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'Newsreader', serif;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { color: var(--gold); }
+}
+
 // ── Languages & Tool Proficiencies block ────────────────────────────────────
 
 .story-proficiencies {

@@ -23,12 +23,23 @@ export class ProficienciesStepComponent {
   @Input() backgroundSkillProfs: string[] = [];
   @Input() backgroundToolProfs: string[] = [];
   @Input() languageChoice = '';
+  @Input() languageChoice2 = '';
   @Input() standardLanguages: string[] = [];
 
   /** A skill chip was clicked — parent runs toggleSkillProf. */
   @Output() toggleSkill = new EventEmitter<string>();
-  /** Additional-language selection (two-way [(languageChoice)] on the parent). */
+  /** Additional-language selections (two-way [(languageChoice)]/[(languageChoice2)] on the parent). */
   @Output() languageChoiceChange = new EventEmitter<string>();
+  @Output() languageChoice2Change = new EventEmitter<string>();
+
+  /** Options for each dropdown exclude the other dropdown's pick (no duplicate languages). */
+  get firstLanguageOptions(): string[] {
+    return this.standardLanguages.filter(l => l !== this.languageChoice2);
+  }
+
+  get secondLanguageOptions(): string[] {
+    return this.standardLanguages.filter(l => l !== this.languageChoice);
+  }
 
   isSkillChosen(skill: string): boolean {
     return this.selectedSkills.includes(skill) || this.backgroundSkillProfs.includes(skill);

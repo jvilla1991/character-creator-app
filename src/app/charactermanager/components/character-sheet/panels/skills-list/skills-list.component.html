@@ -8,6 +8,13 @@
         class="skill"
         [class.prof]="row.profLevel === 'prof' || row.profLevel === 'expert'"
         [class.expert]="row.profLevel === 'expert'"
+        [class.togglable]="editable"
+        [attr.role]="editable ? 'button' : null"
+        [attr.tabindex]="editable ? 0 : null"
+        [attr.aria-label]="editable ? 'Cycle ' + row.name + ' proficiency' : null"
+        (click)="cycleSkill(row.name)"
+        (keydown.enter)="cycleSkill(row.name)"
+        (keydown.space)="cycleSkill(row.name); $event.preventDefault()"
         >
         <span class="skill-dot"></span>
         <span class="skill-name">{{ row.name }}</span>

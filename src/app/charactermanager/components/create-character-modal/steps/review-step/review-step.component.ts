@@ -41,6 +41,12 @@ export class ReviewStepComponent {
   @Input() reviewAllSkills: string[] = [];
   @Input() backgroundToolProfs: string[] = [];
   @Input() languageChoice = '';
+  @Input() languageChoice2 = '';
+
+  /** 'Common' plus the chosen languages, for the languages review row. */
+  get languagesDisplay(): string {
+    return ['Common', this.languageChoice, this.languageChoice2].filter(l => !!l).join(', ');
+  }
 
   // Ability scores
   @Input() abilities: readonly Ability[] = [];

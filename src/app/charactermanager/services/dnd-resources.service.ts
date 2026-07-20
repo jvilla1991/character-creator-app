@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of, shareReplay, throwError } from 'rxjs';
+import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 
@@ -134,12 +134,13 @@ export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[
 };
 
 /**
- * Short descriptions for the 2024 PHB Origin feats.
+ * Short descriptions for the 2024 PHB feats, grouped by category
+ * (Origin, General, Fighting Style, Epic Boon).
  * Expansion-specific feats are not listed here and will render without a description.
  */
 export const FEAT_DESCRIPTIONS: Record<string, string> = {
   'Alert':
-    'You gain +2 to Initiative. You cannot be Surprised, and hidden creatures have no advantage on attack rolls against you.',
+    'When you roll Initiative, add your Proficiency Bonus to the roll. After rolling Initiative, you can swap your result with one willing ally in the same combat.',
   'Crafter':
     'You gain proficiency with three Artisan\'s Tools. You can craft nonmagical items in half the normal time and buy goods at a 20% discount.',
   'Healer':
@@ -248,6 +249,53 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You can speak telepathically to creatures within 60 feet and always have Detect Thoughts prepared, casting it once per Long Rest for free.',
   'Weapon Master':
     'Increase Strength or Dexterity by 1 (max 20). You gain the Weapon Mastery property of two kinds of weapons you are proficient with.',
+  // ── Fighting Style feats (gained through the Fighting Style class feature of
+  //    Fighters, Paladins, and Rangers; also selectable at their ASI levels). ──
+  'Archery':
+    'You gain a +2 bonus to attack rolls you make with Ranged weapons.',
+  'Blind Fighting':
+    'You have Blindsight with a range of 10 feet.',
+  'Defense':
+    'While you are wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class.',
+  'Dueling':
+    'While you are wielding a melee weapon in one hand and no other weapon, you gain a +2 bonus to damage rolls with that weapon.',
+  'Great Weapon Fighting':
+    'When you roll damage for an attack with a two-handed or Versatile melee weapon held in both hands, treat any 1 or 2 on a damage die as a 3.',
+  'Interception':
+    'When a creature you can see hits another creature within 5 feet of you, you can use a Reaction to reduce the damage by 1d10 + your Proficiency Bonus. You must be holding a Shield or a Simple or Martial weapon.',
+  'Protection':
+    'While you are holding a Shield, you can use a Reaction to impose disadvantage on an attack roll made against another creature within 5 feet of you.',
+  'Thrown Weapon Fighting':
+    'When you hit with a ranged attack using a weapon that has the Thrown property, you gain a +2 bonus to the damage roll.',
+  'Two-Weapon Fighting':
+    'When you make the extra attack of the Light weapon property, you can add your ability modifier to the damage of that attack.',
+  'Unarmed Fighting':
+    'Your Unarmed Strikes deal 1d6 + Strength bludgeoning damage, or 1d8 if you aren\'t holding weapons or a Shield. At the start of each of your turns, you can deal 1d4 bludgeoning damage to one creature you are grappling.',
+  // ── Epic Boon feats (level 19+; ability increases can exceed 20, up to 30). ──
+  'Boon of Combat Prowess':
+    'Increase an ability score by 1 (max 30). Once on each of your turns when you miss with an attack roll, you can hit instead.',
+  'Boon of Dimensional Travel':
+    'Increase an ability score by 1 (max 30). Immediately after you take the Attack or Magic action, you can teleport up to 30 feet to a space you can see.',
+  'Boon of Energy Resistance':
+    'Increase an ability score by 1 (max 30). You gain Resistance to two damage types of your choice, and when you take damage of a chosen type you can use a Reaction to hurl energy at a creature within 60 feet (2d12 + your Constitution modifier).',
+  'Boon of Fate':
+    'Increase an ability score by 1 (max 30). When you or a creature within 60 feet succeeds or fails a d20 Test, you can add or subtract 2d4 from the roll. Usable again after you roll Initiative or finish a Short or Long Rest.',
+  'Boon of Fortitude':
+    'Increase an ability score by 1 (max 30). Your Hit Point maximum increases by 40, and whenever you regain Hit Points you regain additional Hit Points equal to your Constitution modifier.',
+  'Boon of Irresistible Offense':
+    'Increase Strength or Dexterity by 1 (max 30). Your Bludgeoning, Piercing, and Slashing damage ignores Resistance, and when you roll a 20 on an attack roll you deal extra damage equal to the increased ability score.',
+  'Boon of Recovery':
+    'Increase an ability score by 1 (max 30). Once per Long Rest, when you would drop to 0 Hit Points you drop to half your Hit Point maximum instead. You also have a pool of ten d10s you can spend as a Bonus Action to heal yourself.',
+  'Boon of Skill':
+    'Increase an ability score by 1 (max 30). You gain proficiency in all skills and Expertise in one skill of your choice.',
+  'Boon of Speed':
+    'Increase an ability score by 1 (max 30). Your Speed increases by 30 feet, and you can take the Disengage action as a Bonus Action, which also ends the Grappled condition on you.',
+  'Boon of Spell Recall':
+    'Increase an ability score by 1 (max 30). When you cast a spell with a level 1-4 spell slot, roll 1d4; if the roll equals the slot\'s level, the slot is not expended.',
+  'Boon of the Night Spirit':
+    'Increase an ability score by 1 (max 30). While within Dim Light or Darkness, you can become Invisible as a Bonus Action, and you have Resistance to all damage except Psychic and Radiant.',
+  'Boon of Truesight':
+    'Increase an ability score by 1 (max 30). You have Truesight with a range of 60 feet.',
 };
 
 /** Standard languages available for the background language bonus */
@@ -436,19 +484,25 @@ export class DndResourcesService {
 
   // ── Spell methods — loaded lazily from asset, cached for the session ────────
 
-  /** All 339 SRD 5.2 spells. Fetched once on first call; cached via shareReplay. */
+  /**
+   * The full 2024 spell list: 339 SRD 5.2 spells plus the 52 remaining 2024 PHB
+   * spells from the supplement file (SRD entries first). Fetched once on first
+   * call; cached via shareReplay.
+   */
   getSpells(): Observable<DndSpell[]> {
     if (!this.spells$) {
-      this.spells$ = this.http
-        .get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json')
-        .pipe(
-          retry(1),
-          // Don't let a transient failure (e.g. a dev-server blip) poison the
-          // cache — drop it so the next request re-fetches instead of replaying
-          // the error forever.
-          catchError(err => { this.spells$ = null; return throwError(() => err); }),
-          shareReplay(1),
-        );
+      this.spells$ = forkJoin([
+        this.http.get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json'),
+        this.http.get<DndSpell[]>('/assets/data/spells/phb-2024-supplement.json'),
+      ]).pipe(
+        map(([srd, supplement]) => [...srd, ...supplement]),
+        retry(1),
+        // Don't let a transient failure (e.g. a dev-server blip) poison the
+        // cache — drop it so the next request re-fetches instead of replaying
+        // the error forever.
+        catchError(err => { this.spells$ = null; return throwError(() => err); }),
+        shareReplay(1),
+      );
     }
     return this.spells$;
   }

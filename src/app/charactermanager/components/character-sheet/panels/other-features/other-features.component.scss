@@ -1,0 +1,32 @@
+/* Rules in global styles.css */
+
+/* .field styles input/select globally but not textarea — extend it here
+   (mirrors features-list.component.scss). */
+.grant-form .field textarea {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  border-radius: 2px;
+  outline: none;
+  resize: vertical;
+}
+.grant-form .field textarea:focus {
+  border-color: var(--gold);
+  box-shadow: var(--glow-gold);
+}
+
+.grant-form {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.grant-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

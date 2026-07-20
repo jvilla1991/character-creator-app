@@ -1,4 +1,7 @@
-import { modFromScore, fmtMod, hitDieFor, tintFor, SKILL_DEFS, CLASS_HIT_DICE } from './character-math';
+import {
+  modFromScore, fmtMod, hitDieFor, tintFor, SKILL_DEFS, CLASS_HIT_DICE,
+  CASTING_ABILITY, spellSaveDc, spellAttackBonus,
+} from './character-math';
 import { PC } from '../models/pc';
 
 describe('character-math', () => {
@@ -131,6 +134,56 @@ describe('character-math', () => {
       const classes = ['Barbarian','Bard','Cleric','Druid','Fighter',
                        'Monk','Paladin','Ranger','Rogue','Sorcerer','Warlock','Wizard'];
       classes.forEach(c => expect(CLASS_HIT_DICE[c]).toBeDefined());
+    });
+  });
+
+  // ── Spell save DC / attack bonus ────────────────────────────────────────────
+
+  describe('spellSaveDc / spellAttackBonus', () => {
+    const caster = (clazz: string, stats: Partial<NonNullable<PC['stats']>>, prof?: number): PC => ({
+      id: 1, name: 'Test', clazz, level: 5, playerName: 'p',
+      prof,
+      stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...stats },
+    });
+
+    it('maps every casting class to its 2024 ability', () => {
+      expect(CASTING_ABILITY['Bard']).toBe('CHA');
+      expect(CASTING_ABILITY['Paladin']).toBe('CHA');
+      expect(CASTING_ABILITY['Sorcerer']).toBe('CHA');
+      expect(CASTING_ABILITY['Warlock']).toBe('CHA');
+      expect(CASTING_ABILITY['Cleric']).toBe('WIS');
+      expect(CASTING_ABILITY['Druid']).toBe('WIS');
+      expect(CASTING_ABILITY['Ranger']).toBe('WIS');
+      expect(CASTING_ABILITY['Wizard']).toBe('INT');
+    });
+
+    it('DC = 8 + prof + casting mod (Wizard, INT 18, prof +3 → 15)', () => {
+      expect(spellSaveDc(caster('Wizard', { INT: 18 }, 3))).toBe(15);
+    });
+
+    it('attack bonus = prof + casting mod (Wizard, INT 18, prof +3 → +7)', () => {
+      expect(spellAttackBonus(caster('Wizard', { INT: 18 }, 3))).toBe(7);
+    });
+
+    it('uses WIS for a Cleric and CHA for a Warlock', () => {
+      expect(spellSaveDc(caster('Cleric', { WIS: 16, CHA: 8 }, 2))).toBe(13);  // 8+2+3
+      expect(spellSaveDc(caster('Warlock', { CHA: 14, WIS: 8 }, 2))).toBe(12); // 8+2+2
+    });
+
+    it('handles a negative casting modifier', () => {
+      expect(spellSaveDc(caster('Sorcerer', { CHA: 8 }, 2))).toBe(9);      // 8+2-1
+      expect(spellAttackBonus(caster('Sorcerer', { CHA: 8 }, 2))).toBe(1); // 2-1
+    });
+
+    it('derives proficiency from level when the sheet has none stored', () => {
+      // level 5 → prof +3
+      expect(spellSaveDc(caster('Druid', { WIS: 16 }))).toBe(14); // 8+3+3
+    });
+
+    it('returns null for non-casters and unknown classes', () => {
+      expect(spellSaveDc(caster('Fighter', { INT: 20 }, 3))).toBeNull();
+      expect(spellAttackBonus(caster('Barbarian', {}, 3))).toBeNull();
+      expect(spellSaveDc(caster('Artificer', {}, 3))).toBeNull();
     });
   });
 });

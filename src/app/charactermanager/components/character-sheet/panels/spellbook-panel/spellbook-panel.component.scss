@@ -1,5 +1,53 @@
 /* Rules in global styles.css */
 
+// ── Spell preparation ────────────────────────────────────────────────────────
+
+.prepared-counter {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  white-space: nowrap;
+
+  &.at-cap { color: var(--gold); }
+}
+
+// Casting math readout in the panel header ("Save DC 15 · Spell Atk +7").
+.spell-dc {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--celestial, #8fb4ff);
+  white-space: nowrap;
+}
+
+// Unprepared spells stay listed but read as dormant.
+.spell-row.unprepared { opacity: 0.5; }
+.spell-row.unprepared:hover { opacity: 0.75; }
+
+// Mirrors .spell-cast-btn (global styles.css); disabled state matches the
+// capped skill-chip pattern (.class-pick.disabled).
+.spell-prep-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 2px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  &.active {
+    color: var(--gold);
+    border-color: rgba(212, 175, 55, 0.5);
+  }
+  &:hover:not(:disabled) { background: rgba(212, 175, 55, 0.12); }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
+}
+
 .grant-form {
   margin-bottom: 14px;
   padding-bottom: 14px;

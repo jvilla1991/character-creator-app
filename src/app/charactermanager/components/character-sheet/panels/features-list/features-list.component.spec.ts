@@ -15,6 +15,25 @@ describe('FeaturesListComponent', () => {
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
 
+  // --- Category filtering (the Other Features panel owns 'other' entries) ---
+
+  it('classFeatures keeps untagged and class-tagged entries, dropping other-tagged ones', () => {
+    component.pc = {
+      ...component.pc,
+      features: [
+        { name: 'Rage', source: 'Barbarian 1', desc: 'Fury.' },
+        { name: 'Darkvision', source: 'Species', desc: 'See in the dark.', category: 'other' },
+        { name: 'Second Wind', source: 'Fighter 1', desc: 'Heal.', category: 'class' },
+      ],
+    };
+    expect(component.classFeatures.map(f => f.name)).toEqual(['Rage', 'Second Wind']);
+  });
+
+  it('classFeatures is empty for an undefined features list', () => {
+    component.pc = { ...component.pc, features: undefined };
+    expect(component.classFeatures).toEqual([]);
+  });
+
   it('uses a class feature\'s own description', () => {
     const desc = component.descFor({ name: 'Action Surge', source: 'Fighter 2', desc: 'Extra action.' });
     expect(desc).toBe('Extra action.');
