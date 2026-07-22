@@ -36,6 +36,80 @@
       </div>
     </div>
 
+    <!-- Security -->
+    @if (!demoMode) {
+      <div class="slideover-section">
+        <span class="panel-title">Security</span>
+        <div class="pref-row">
+          <div>
+            <div class="pref-label">Password</div>
+            <div class="pref-sub">change your sign-in password</div>
+          </div>
+          <button class="btn" type="button" (click)="toggleChangePassword()">
+            {{ showChangePassword ? 'Cancel' : 'Change' }}
+          </button>
+        </div>
+        @if (showChangePassword) {
+          <div class="field">
+            <label for="currentPassword">Current password</label>
+            <input type="password" id="currentPassword" [(ngModel)]="currentPassword"
+              name="currentPassword" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input type="password" id="newPassword" [(ngModel)]="newPassword"
+              name="newPassword" placeholder="At least 8 characters" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirm new password</label>
+            <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword"
+              name="confirmPassword" autocomplete="new-password">
+          </div>
+          @if (passwordError) {
+            <div class="login-error">{{ passwordError }}</div>
+          }
+          <button class="btn primary" type="button" (click)="savePassword()"
+            [disabled]="savingPassword || !currentPassword || !newPassword || !confirmPassword">
+            Save Password
+          </button>
+        }
+        @if (passwordSaved) {
+          <div class="pref-sub">Password changed.</div>
+        }
+      </div>
+    }
+
+    <!-- Admin: password reset links -->
+    @if (!demoMode && user.isAdmin) {
+      <div class="slideover-section">
+        <span class="panel-title">Admin · Reset Links</span>
+        <div class="pref-sub" style="margin-bottom: 8px;">
+          Generate a one-time password-reset link and send it to the player yourself.
+        </div>
+        <div class="field">
+          <label for="resetUserName">Username</label>
+          <input type="text" id="resetUserName" [(ngModel)]="resetUserName"
+            name="resetUserName" placeholder="Who forgot their password?" autocomplete="off">
+        </div>
+        @if (resetError) {
+          <div class="login-error">{{ resetError }}</div>
+        }
+        <button class="btn primary" type="button" (click)="generateResetLink()"
+          [disabled]="generatingReset || !resetUserName.trim()">
+          Generate Reset Link
+        </button>
+        @if (resetLink) {
+          <div class="field" style="margin-top: 10px;">
+            <label>One-time link (expires in 24h)</label>
+            <input type="text" [value]="resetLink" readonly (focus)="$any($event.target).select()">
+          </div>
+          <button class="btn" type="button" (click)="copyResetLink()">
+            {{ resetLinkCopied ? 'Copied!' : 'Copy Link' }}
+          </button>
+        }
+      </div>
+    }
+
     <!-- Default Theme -->
     <div class="slideover-section">
       <span class="panel-title">Default Theme</span>
