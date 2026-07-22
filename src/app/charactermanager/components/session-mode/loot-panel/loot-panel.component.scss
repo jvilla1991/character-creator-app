@@ -133,6 +133,13 @@
   color: var(--muted, rgba(255, 255, 255, 0.6));
 }
 
+.item-notes {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  overflow-wrap: anywhere;
+}
+
 .qty-input { width: 70px; }
 
 .btn.buy {

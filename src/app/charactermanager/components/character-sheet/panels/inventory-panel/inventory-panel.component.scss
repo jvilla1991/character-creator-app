@@ -55,6 +55,13 @@
   }
 }
 
+.inv-item-notes {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
 .inv-equipped-tag {
   margin-left: 6px;
   color: var(--accent, gold);

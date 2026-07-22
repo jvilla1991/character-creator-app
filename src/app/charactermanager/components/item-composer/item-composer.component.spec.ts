@@ -168,4 +168,20 @@ describe('pcItemFromAuthored', () => {
       kind: 'custom', name: 'Mithral Plate', category: 'armor', qty: 1, armorClass: '18',
     })).toEqual({ name: 'Mithral Plate', category: 'armor', qty: 1, bulk: 1, armorClass: '18' });
   });
+
+  it('denormalizes a TRANSPORT catalog pick — fractional-safe bulk and ride notes intact', () => {
+    const pony: CatalogItem = {
+      itemKey: 'pony', name: 'Pony', category: 'TRANSPORT', costCp: 3000,
+      bulk: 20, details: { notes: 'Mount — Medium, speed 40 ft, carries 20 slots' },
+    };
+    expect(pcItemFromAuthored({ kind: 'catalog', item: pony, qty: 1 })).toEqual({
+      catalogKey: 'pony',
+      name: 'Pony',
+      category: 'transport',
+      qty: 1,
+      unitCostCp: 3000,
+      bulk: 20,
+      notes: 'Mount — Medium, speed 40 ft, carries 20 slots',
+    });
+  });
 });

@@ -129,6 +129,12 @@
   font-size: 0.78rem;
   color: var(--muted, rgba(255, 255, 255, 0.6));
 }
+.item-notes {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  overflow-wrap: anywhere;
+}
 
 .btn-x {
   width: 26px;

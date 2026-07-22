@@ -46,6 +46,7 @@ export class ShopPanelComponent implements OnChanges {
     { value: 'ARMOR', label: 'Armor' },
     { value: 'MATERIAL_COMPONENT', label: 'Components' },
     { value: 'GEAR', label: 'Gear' },
+    { value: 'TRANSPORT', label: 'Transport' },
   ];
 
   /** Guards re-fetching the catalog on every 2s poll; only refetch on a real change. */
@@ -125,6 +126,8 @@ export class ShopPanelComponent implements OnChanges {
     } else if (cat === 'MATERIAL_COMPONENT') {
       const consumed = item.details?.['consumedOnCast'] ? 'consumed on cast' : 'reusable';
       fields = [this.detail(item, 'spell'), consumed];
+    } else if (cat === 'TRANSPORT') {
+      fields = [this.detail(item, 'notes')];   // ride stats, e.g. "Mount — Large, speed 50 ft…"
     } else {
       fields = [this.detail(item, 'damage'), this.detail(item, 'properties')];
     }
@@ -137,6 +140,7 @@ export class ShopPanelComponent implements OnChanges {
       case 'ARMOR': return 'Armor';
       case 'MATERIAL_COMPONENT': return 'Component';
       case 'GEAR': return 'Gear';
+      case 'TRANSPORT': return 'Transport';
       default: return 'Weapon';
     }
   }

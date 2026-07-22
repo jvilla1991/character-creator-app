@@ -7,7 +7,7 @@
 import { PcItem } from './pc';
 import { bulkFromWeight } from '../utils/slot-inventory';
 
-export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR';
+export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR' | 'TRANSPORT';
 
 /**
  * One entry from the raw SRD catalog browse (`GET /api/v1/catalog`), used by the
