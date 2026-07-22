@@ -18,7 +18,7 @@ describe('CharacterSheetComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService',
-      ['updatePC', 'updatePCAsDm', 'awardInspirationPip', 'useInspiration']);
+      ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
     component = new CharacterSheetComponent(pcService, grantService, sessionService);

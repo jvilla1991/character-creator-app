@@ -290,23 +290,27 @@ export class CharacterSheetComponent implements OnChanges {
   }
 
   // ── Heroic Inspiration meter ────────────────────────────────────────────────
-  // Server-owned fields: the DM adds pips (the fifth converts into Heroic
-  // Inspiration), the owner (or DM) spends the badge. In a live session the
-  // snapshot carries these fields but a use doesn't bump the session version,
-  // so we force one off-cadence refresh to keep every viewer honest.
+  // Server-owned fields: the DM clicks the pips to set the meter (filling it
+  // converts into Heroic Inspiration), the owner (or DM) spends the badge. In a
+  // live session the snapshot carries these fields but a use doesn't bump the
+  // session version, so we force one off-cadence refresh to keep viewers honest.
 
-  readonly inspirationSlots = [0, 1, 2, 3, 4];
   inspirationBusy = false;
 
-  /** DM cross-link: award one pip (the fifth grants Heroic Inspiration). */
-  addInspirationPip(): void {
+  /**
+   * The conditions panel resolved a pip click to a new meter value (it owns the
+   * click-to-set / re-click-to-lower gesture, shared with its exhaustion
+   * tracker). Persisting is ours: these are server-owned fields with their own
+   * endpoint, not part of a generic sheet save.
+   */
+  onInspirationChange(pips: number): void {
     if (this.inspirationBusy) return;
     this.inspirationBusy = true;
-    this.pcService.awardInspirationPip(this.pc.id).subscribe({
+    this.pcService.setInspirationPips(this.pc.id, pips).subscribe({
       next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
       error: err => {
         this.inspirationBusy = false;
-        console.error('Failed to award an inspiration pip', err);
+        console.error('Failed to set the inspiration meter', err);
       },
     });
   }

@@ -36,4 +36,38 @@
       <span class="exhaustion-effect dead">dead</span>
     }
   </div>
+
+  <!-- Heroic Inspiration meter: pip N = N pips, filling it grants the badge and
+  empties the meter. Same interaction as the exhaustion tracker above — the DM
+  clicks a pip to set it, and re-clicks the top pip to step back down. -->
+  <div class="inspiration-tracker" [title]="inspirationTooltip">
+    <span class="exhaustion-label">Inspiration</span>
+    <span class="insp-pips">
+      @for (pips of inspirationSlots; track pips) {
+        @if (canAwardInspiration) {
+          <button
+            type="button"
+            class="insp-pip clickable"
+            [class.filled]="inspirationPips >= pips"
+            [disabled]="inspirationBusy"
+            [attr.aria-label]="'Set inspiration to ' + pips + ' of 5'"
+            [attr.aria-pressed]="inspirationPips >= pips"
+            [title]="pips === 5
+              ? 'Fill the meter — grants Heroic Inspiration'
+              : (pips === inspirationPips ? 'Click again to lower' : 'Set to ' + pips)"
+            (click)="setInspiration(pips)"
+          ></button>
+        } @else {
+          <span class="insp-pip" [class.filled]="inspirationPips >= pips"></span>
+        }
+      }
+    </span>
+    @if (pc.heroicInspiration) {
+      <span class="inspired-badge" title="Heroic Inspiration — reroll any d20 Test">Inspired</span>
+      @if (canUseInspiration) {
+        <button class="insp-use" (click)="inspirationUsed.emit()" [disabled]="inspirationBusy"
+          title="Spend Heroic Inspiration">Use</button>
+      }
+    }
+  </div>
 </div>
