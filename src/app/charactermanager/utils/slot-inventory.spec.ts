@@ -82,6 +82,22 @@ describe('slot-inventory util', () => {
       expect(usedSlots(stocked)).toBe(5);
     });
 
+    it('charges 0.2 per ration bought beyond box capacity', () => {
+      // 1 box (holds 5) + 9 rations: 4 loose rations ride outside the box.
+      const overflowing: PcItem[] = [
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: 1, bulk: 1 },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1, bulk: 1 },
+        { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 9, bulk: 0.2 },
+        { catalogKey: 'water', name: 'Water', category: 'gear', qty: 5, bulk: 0 },
+      ];
+      expect(usedSlots(overflowing)).toBe(2.8); // 2 containers + 4 × 0.2
+
+      // A second box shelters them again.
+      const rebozed = overflowing.map(i =>
+        i.catalogKey === 'ration-box' ? { ...i, qty: 2 } : i);
+      expect(usedSlots(rebozed)).toBe(3); // 3 containers, no loose rations
+    });
+
     it('excludes transport lines — mounts and vehicles carry themselves', () => {
       const items: PcItem[] = [
         { name: 'Dagger', category: 'weapon', qty: 1, bulk: 1 },

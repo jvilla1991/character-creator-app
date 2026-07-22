@@ -158,7 +158,7 @@ export class CuratedLootComponent implements OnChanges {
     if (item.armorClass) parts.push(`AC ${item.armorClass}`);
     if (item.weight != null) parts.push(`${item.weight} lb`);
     if (item.unitCostCp != null) parts.push(formatCp(item.unitCostCp));
-    if (item.customNotes) parts.push(item.customNotes);
+    // Notes render on their own line under the row, not squeezed in here.
     return parts.length ? parts.join(' · ') : 'Custom item';
   }
 

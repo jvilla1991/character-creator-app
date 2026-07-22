@@ -44,8 +44,9 @@ export const SURVIVAL_STARTING_CHARGES = 5;
 // consumed); each holds 5 servings. The servings are separate charge lines —
 // 'rations' (purchasable, 1 sp each) and 'water' (never sold; refilled free) —
 // whose qty the survival clock decrements. Charges are weightless inside their
-// containers and capped at containers × 5 everywhere. Mirrors the server's
-// SurvivalSupplies so demo mode behaves identically.
+// containers; rations bought beyond containers × 5 ride loose and fill slots
+// at 0.2 each ({@link suppliesSlots}). Mirrors the server's SurvivalSupplies
+// so demo mode behaves identically.
 
 /** One container (ration box / waterskin) holds this many servings. */
 export const SERVINGS_PER_CONTAINER = 5;
@@ -106,6 +107,23 @@ export function supplyBulk(item: PcItem): number {
     return Math.max(0, item.qty ?? 0);
   }
   return 0;
+}
+
+/** A loose ration outside its box fills slots at the catalog's Tiny rating. */
+export const RATION_BULK = 0.2;
+
+/**
+ * Slots the whole supply system fills: each container is 1 bulk and the
+ * servings inside ride free — but rations bought BEYOND box capacity have
+ * nowhere to ride, and fill slots like the loose 0.2-bulk items they are.
+ * (Water can't overflow: it's never stored outside a skin.)
+ */
+export function suppliesSlots(inventory: PcItem[]): number {
+  const containers = inventory.reduce(
+    (sum, i) => sum + (i.status !== 'dropped' ? supplyBulk(i) : 0), 0);
+  const looseRations =
+    Math.max(0, supplyCharges(inventory, 'rations') - supplyCapacity(inventory, 'rations'));
+  return containers + looseRations * RATION_BULK;
 }
 
 /** A fresh charge line for the pane/seed — mirrors the server's line shapes. */

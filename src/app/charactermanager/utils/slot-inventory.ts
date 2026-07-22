@@ -1,6 +1,6 @@
 import { PC, PcItem } from '../models/pc';
 import { modFromScore } from './character-math';
-import { isSupplyItem, supplyBulk } from './survival';
+import { isSupplyItem, suppliesSlots } from './survival';
 
 // ── Darker Dungeons "Active Inventory" (ch. 10) ─────────────────────────────
 // Pure slot/bulk math for campaigns with the slotInventory variant rule.
@@ -28,15 +28,18 @@ export function itemBulk(item: PcItem): number {
 
 /**
  * Slots filled: Σ bulk × qty over owned (non-dropped) lines, to 1 decimal.
- * Two exceptions: travel supplies — each CONTAINER (ration box / waterskin)
- * takes 1 slot and the charges inside it are weightless ({@link supplyBulk}) —
- * and 'transport' lines (mounts/vehicles), which carry themselves rather than
- * ride in your pack (DD p. 58); their bulk is reference-only display.
+ * Two exceptions: travel supplies — handled as a system by
+ * {@link suppliesSlots} (containers 1 slot each, servings free, rations
+ * bought beyond box capacity 0.2 each) — and 'transport' lines
+ * (mounts/vehicles), which carry themselves rather than ride in your pack
+ * (DD p. 58); their bulk is reference-only display.
  */
 export function usedSlots(items: PcItem[] | undefined): number {
-  const total = (items ?? [])
-    .filter(i => i.status !== 'dropped' && i.category !== 'transport')
-    .reduce((sum, i) => sum + (isSupplyItem(i) ? supplyBulk(i) : itemBulk(i) * (i.qty || 1)), 0);
+  const live = (items ?? []).filter(i => i.status !== 'dropped' && i.category !== 'transport');
+  const total = live
+    .filter(i => !isSupplyItem(i))
+    .reduce((sum, i) => sum + itemBulk(i) * (i.qty || 1), 0)
+    + suppliesSlots(live);
   return Math.round(total * 10) / 10; // kill 0.2 float drift
 }
 
