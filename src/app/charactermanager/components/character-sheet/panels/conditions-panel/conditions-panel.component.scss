@@ -22,6 +22,107 @@
   color: var(--text-2);
 }
 
+/* ── Heroic Inspiration meter ──────────────────────────────────────────────
+   Sits directly under the exhaustion tracker and borrows its row layout and
+   label, so the two DM-driven pip trackers read as one pair. Five dots; the
+   DM clicks one to set the meter, and re-clicks the top one to lower it. */
+
+.inspiration-tracker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.insp-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.insp-pip {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--gold, #d9b25f);
+  background: transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+
+  &.filled {
+    background: var(--gold, #d9b25f);
+    box-shadow: 0 0 5px rgba(217, 178, 95, 0.55);
+  }
+}
+
+// DM cross-link: the pips ARE the control. Padding widens the tap target past
+// the 9px dot and the negative margin cancels it, so the dots don't drift apart.
+.insp-pip.clickable {
+  cursor: pointer;
+  box-sizing: content-box;
+  margin: -4px;
+  padding: 4px;
+  background-clip: content-box;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.25);
+    background-color: color-mix(in oklch, var(--gold, #d9b25f) 45%, transparent);
+  }
+
+  &.filled:hover:not(:disabled) { background-color: var(--gold, #d9b25f); }
+
+  &:disabled { cursor: default; }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--gold, #d9b25f) 70%, transparent);
+    outline-offset: 3px;
+  }
+}
+
+.insp-use {
+  height: 20px;
+  padding: 0 7px;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, #9a9ab0);
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not([disabled]) { color: var(--gold, #d9b25f); border-color: var(--gold, #d9b25f); }
+  &[disabled] { opacity: 0.45; cursor: not-allowed; }
+}
+
+.inspired-badge {
+  padding: 2px 10px;
+  font-family: 'Newsreader', serif;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--gold, #d9b25f);
+  border: 1px solid var(--gold, #d9b25f);
+  border-radius: 999px;
+  background: rgba(217, 178, 95, 0.12);
+  animation: inspiredGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes inspiredGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(217, 178, 95, 0.35); }
+  50%      { box-shadow: 0 0 12px rgba(217, 178, 95, 0.75); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspired-badge { animation: none; box-shadow: 0 0 8px rgba(217, 178, 95, 0.5); }
+}
+
 .exhaustion-pips {
   display: inline-flex;
   gap: 4px;

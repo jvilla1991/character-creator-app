@@ -297,21 +297,21 @@ export class PCService {
   // ── Heroic Inspiration meter ───────────────────────────────────────────────
 
   /**
-   * DM awards one inspiration pip to a campaign member (campaign-DM-authorized,
-   * like grantLevelUp). The fifth pip converts into Heroic Inspiration
-   * server-side (meter resets, badge lights). The updated PC is mirrored into
+   * DM sets a campaign member's inspiration meter (campaign-DM-authorized, like
+   * grantLevelUp). The sheet's pips are clickable, so this both raises and
+   * lowers the meter; asking for a full meter converts into Heroic Inspiration
+   * server-side (meter empties, badge lights). The updated PC is mirrored into
    * pcs$/activePC$ so the open sheet shows the meter at once.
    */
-  awardInspirationPip(pcId: number): Observable<PC> {
+  setInspirationPips(pcId: number, pips: number): Observable<PC> {
     if (environment.demoMode) {
-      const pc = this.getPCById(pcId);
-      const pips = (pc?.inspirationPips ?? 0) + 1;
-      this.patchLocalPC(pcId, pips >= 5
+      const value = Math.max(0, Math.min(5, pips));
+      this.patchLocalPC(pcId, value >= 5
         ? { inspirationPips: 0, heroicInspiration: true }
-        : { inspirationPips: pips });
+        : { inspirationPips: value });
       return of(this.getPCById(pcId) as PC).pipe(delay(50));
     }
-    return this.http.post<PC>(`${this.pcUrl}${pcId}/inspiration/pip`, {}).pipe(
+    return this.http.put<PC>(`${this.pcUrl}${pcId}/inspiration`, { pips }).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => this.mirrorPC(updated)),
     );

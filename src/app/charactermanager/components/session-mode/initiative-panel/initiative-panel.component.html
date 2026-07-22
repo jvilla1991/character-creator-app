@@ -130,11 +130,27 @@
                   </div>
                 }
                 <div class="adjust-row">
+                  <!-- Inspiration: the pips themselves are the control. Click one
+                  to set the meter; click the last filled pip again to lower it. -->
                   @if (!p.npc) {
-                    <button class="btn-mini xp insp" (click)="giveInspiration(p)"
-                      [title]="'Award an inspiration pip (' + ((p.inspirationPips ?? 0)) + '/5 — the fifth grants Heroic Inspiration)'">
-                      +Insp
-                    </button>
+                    <span class="insp-pips"
+                      [title]="(p.inspirationPips ?? 0) + '/5 pips — click to set, filling grants Heroic Inspiration'">
+                      @for (i of inspirationSlots; track i) {
+                        <button
+                          type="button"
+                          class="insp-pip clickable"
+                          [class.filled]="i < (p.inspirationPips ?? 0)"
+                          (click)="setInspiration(p, i)"
+                          [attr.aria-label]="'Set ' + p.name + ' inspiration to ' + (i + 1) + ' of 5'"
+                          [title]="i === 4
+                            ? 'Fill the meter — grants Heroic Inspiration'
+                            : 'Set to ' + (i + 1)"
+                        ></button>
+                      }
+                      @if (p.heroicInspiration) {
+                        <span class="insp-star" title="Has Heroic Inspiration">★</span>
+                      }
+                    </span>
                   }
                   <button class="btn-mini dmg remove" (click)="removeParticipant(p)"
                     title="Remove from session">✕</button>
