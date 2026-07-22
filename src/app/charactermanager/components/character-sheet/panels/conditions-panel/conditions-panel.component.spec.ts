@@ -1,3 +1,5 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ConditionsPanelComponent } from './conditions-panel.component';
 import { PC } from '../../../../models/pc';
 
@@ -73,5 +75,133 @@ describe('ConditionsPanelComponent', () => {
     component.pc = { ...component.pc, exhaustion: 3 };
     expect(component.exhaustionTooltip).toContain('−6 to all d20 Tests');
     expect(component.exhaustionTooltip).toContain('−15 ft Speed');
+  });
+
+  // --- Heroic Inspiration meter (same gesture as the exhaustion tracker) ---
+
+  it('reads 0 pips for a pc saved before the field existed', () => {
+    expect(component.inspirationPips).toBe(0);
+  });
+
+  it('clicking a pip above the meter emits that value', () => {
+    component.pc = { ...component.pc, inspirationPips: 1 };
+    const emitted = jasmine.createSpy('emitted');
+    component.inspirationChanged.subscribe(emitted);
+
+    component.setInspiration(3);
+
+    expect(emitted).toHaveBeenCalledWith(3);
+  });
+
+  it('re-clicking the top filled pip lowers the meter (no minus button needed)', () => {
+    component.pc = { ...component.pc, inspirationPips: 3 };
+    const emitted = jasmine.createSpy('emitted');
+    component.inspirationChanged.subscribe(emitted);
+
+    component.setInspiration(3);
+
+    expect(emitted).toHaveBeenCalledWith(2);
+  });
+
+  it('clicking the only lit pip clears the meter to 0', () => {
+    component.pc = { ...component.pc, inspirationPips: 1 };
+    const emitted = jasmine.createSpy('emitted');
+    component.inspirationChanged.subscribe(emitted);
+
+    component.setInspiration(1);
+
+    expect(emitted).toHaveBeenCalledWith(0);
+  });
+
+  it('clicking the fifth pip emits a full meter (the server grants the badge)', () => {
+    const emitted = jasmine.createSpy('emitted');
+    component.inspirationChanged.subscribe(emitted);
+
+    component.setInspiration(5);
+
+    expect(emitted).toHaveBeenCalledWith(5);
+  });
+
+  it('only the DM may move the meter; owner or DM may spend the badge', () => {
+    component.editable = false;
+    component.ownSheet = true;
+    expect(component.canAwardInspiration).toBeFalse();
+    expect(component.canUseInspiration).toBeTrue();
+
+    component.editable = true;
+    expect(component.canAwardInspiration).toBeTrue();
+  });
+});
+
+// The specs above drive the class directly. These render the real template, so a
+// markup regression in the meter (missing pips, a pip that stops emitting) fails
+// here instead of reaching the table.
+describe('ConditionsPanelComponent (rendered)', () => {
+  let fixture: ComponentFixture<ConditionsPanelComponent>;
+  let component: ConditionsPanelComponent;
+
+  const basePc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ConditionsPanelComponent],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ConditionsPanelComponent);
+    component = fixture.componentInstance;
+    component.pc = basePc;
+  });
+
+  const pips = () =>
+    fixture.debugElement.queryAll(By.css('.inspiration-tracker .insp-pip'));
+
+  it('renders five pips, filled up to the current meter', () => {
+    component.pc = { ...basePc, inspirationPips: 3 };
+    fixture.detectChanges();
+
+    expect(pips().length).toBe(5);
+    expect(pips().filter(p => p.nativeElement.classList.contains('filled')).length).toBe(3);
+  });
+
+  it('renders the pips as buttons for the DM and as plain dots otherwise', () => {
+    component.editable = false;
+    fixture.detectChanges();
+    expect(pips().every(p => p.nativeElement.tagName === 'SPAN')).toBeTrue();
+
+    component.editable = true;
+    fixture.detectChanges();
+    expect(pips().every(p => p.nativeElement.tagName === 'BUTTON')).toBeTrue();
+  });
+
+  it('clicking a rendered pip emits the new meter value', () => {
+    component.editable = true;
+    component.pc = { ...basePc, inspirationPips: 1 };
+    fixture.detectChanges();
+
+    const emitted = jasmine.createSpy('emitted');
+    component.inspirationChanged.subscribe(emitted);
+    pips()[3].nativeElement.click(); // the 4th pip
+
+    expect(emitted).toHaveBeenCalledWith(4);
+  });
+
+  it('shows the Inspired badge only once Heroic Inspiration is granted', () => {
+    component.editable = true;
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.inspired-badge'))).toBeNull();
+
+    component.pc = { ...basePc, heroicInspiration: true };
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.inspired-badge'))).not.toBeNull();
+  });
+
+  it('the meter sits inside the Conditions panel, under the exhaustion tracker', () => {
+    fixture.detectChanges();
+    const blocks = fixture.debugElement.queryAll(
+      By.css('.exhaustion-tracker, .inspiration-tracker'));
+
+    expect(blocks.length).toBe(2);
+    expect(blocks[0].nativeElement.classList).toContain('exhaustion-tracker');
+    expect(blocks[1].nativeElement.classList).toContain('inspiration-tracker');
   });
 });

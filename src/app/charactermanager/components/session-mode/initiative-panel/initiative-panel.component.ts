@@ -257,9 +257,19 @@ export class InitiativePanelComponent {
     return n >= 0 ? `+${n}` : `${n}`;
   }
 
-  /** DM awards one inspiration pip; the fifth converts into Heroic Inspiration. */
-  giveInspiration(p: ParticipantView): void {
-    this.sessionService.awardInspiration(this.sessionId, p.participantId).subscribe({
+  /** The five meter positions, so the tracker can render clickable pips. */
+  readonly inspirationSlots = [0, 1, 2, 3, 4];
+
+  /**
+   * DM clicks pip `index` on a combatant's meter: set it to `index + 1`, or
+   * drop to `index` when that pip is already the last filled one — so one
+   * control both grants and takes away. Filling the meter grants Heroic
+   * Inspiration.
+   */
+  setInspiration(p: ParticipantView, index: number): void {
+    const current = p.inspirationPips ?? 0;
+    const target = current === index + 1 ? index : index + 1;
+    this.sessionService.setInspiration(this.sessionId, p.participantId, target).subscribe({
       next: state => {
         const row = state.participants.find(x => x.participantId === p.participantId);
         const heroicNow = !!row?.heroicInspiration && !p.heroicInspiration;
@@ -267,7 +277,7 @@ export class InitiativePanelComponent {
           ? `${p.name} gains Heroic Inspiration!`
           : `${p.name}: inspiration ${row?.inspirationPips ?? 0}/5`);
       },
-      error: err => console.error('Failed to award inspiration', err),
+      error: err => console.error('Failed to set inspiration', err),
     });
   }
 

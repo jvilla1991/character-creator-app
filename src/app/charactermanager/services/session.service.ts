@@ -485,30 +485,31 @@ export class SessionService {
   }
 
   /**
-   * DM awards one inspiration pip to a seated PC — the fifth pip converts into
-   * Heroic Inspiration server-side (meter resets, badge lights). The refreshed
-   * snapshot carries the new meter for every viewer.
+   * DM sets a seated PC's inspiration meter by clicking a pip in the tracker —
+   * raising or lowering it. Filling the meter converts into Heroic Inspiration
+   * server-side (meter empties, badge lights). The refreshed snapshot carries
+   * the new meter for every viewer.
    */
-  awardInspiration(sessionId: number | string, participantId: number): Observable<SessionState> {
-    if (environment.demoMode) return of(this.demoAwardInspiration(participantId));
-    return this.http.post<unknown>(
-      `${this.sessionBase}/${sessionId}/participants/${participantId}/inspiration`, {},
+  setInspiration(sessionId: number | string, participantId: number, pips: number):
+      Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoSetInspiration(participantId, pips));
+    return this.http.put<unknown>(
+      `${this.sessionBase}/${sessionId}/participants/${participantId}/inspiration`, { pips },
     ).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
   }
 
-  /** Demo mirror of the pip award: +1 pip; the fifth converts to Heroic Inspiration. */
-  private demoAwardInspiration(participantId: number): SessionState {
+  /** Demo mirror: store the clicked value; a full meter converts to Heroic Inspiration. */
+  private demoSetInspiration(participantId: number, pips: number): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const value = Math.max(0, Math.min(5, pips));
     const participants = state.participants.map(p => {
       if (p.participantId !== participantId || p.pcId == null) return p;
-      const pips = (p.inspirationPips ?? 0) + 1;
-      const filled = pips >= 5;
-      const patch = filled
+      const patch = value >= 5
         ? { inspirationPips: 0, heroicInspiration: true }
-        : { inspirationPips: pips };
+        : { inspirationPips: value };
       this.pcService.patchLocalPC(p.pcId, patch);
       return { ...p, ...patch };
     });

@@ -71,6 +71,59 @@
     gap: 4px;
   }
 
+  // Inspiration meter: the pips are the control (no +/− buttons). Click a pip
+  // to set the meter; clicking the last filled one lowers it. Mirrors the
+  // character sheet's meter so the DM learns one interaction, not two.
+  .insp-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 0;
+  }
+
+  .insp-pip {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--gold, #d9b25f);
+    background: transparent;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+
+    &.filled {
+      background: var(--gold, #d9b25f);
+      box-shadow: 0 0 5px rgba(217, 178, 95, 0.55);
+    }
+
+    &.clickable {
+      cursor: pointer;
+      // Widen the tap target past the 9px dot without spreading the dots out.
+      box-sizing: content-box;
+      margin: -4px;
+      padding: 4px;
+      background-clip: content-box;
+
+      &:hover {
+        transform: scale(1.25);
+        background-color: color-mix(in oklch, var(--gold, #d9b25f) 45%, transparent);
+      }
+
+      &.filled:hover { background-color: var(--gold, #d9b25f); }
+
+      &:focus-visible {
+        outline: 2px solid color-mix(in oklch, var(--gold, #d9b25f) 70%, transparent);
+        outline-offset: 3px;
+      }
+    }
+  }
+
+  .insp-star {
+    color: var(--gold, #d9b25f);
+    font-size: 12px;
+    line-height: 1;
+    text-shadow: 0 0 6px rgba(217, 178, 95, 0.7);
+  }
+
   .dmg-input {
     width: 48px;
     padding: 2px 4px;
