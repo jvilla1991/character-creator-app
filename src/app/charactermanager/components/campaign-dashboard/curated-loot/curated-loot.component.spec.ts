@@ -87,9 +87,9 @@ describe('CuratedLootComponent', () => {
     expect(service.setCoins).toHaveBeenCalledWith(5, 10);
   });
 
-  it('itemMeta summarizes a custom line’s attributes', () => {
+  it('itemMeta summarizes a custom line’s attributes (notes render separately)', () => {
     expect(component.itemMeta(loot.items[1]))
-      .toBe('weapon · 1d8 slashing + 2d6 fire · 3 lb · 5000 gp · Ignites.');
+      .toBe('weapon · 1d8 slashing + 2d6 fire · 3 lb · 5000 gp');
     expect(component.itemMeta(loot.items[0])).toBe('Catalog item');
   });
 

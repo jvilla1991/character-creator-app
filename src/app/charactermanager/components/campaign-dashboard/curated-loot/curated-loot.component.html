@@ -85,6 +85,9 @@
               <div class="item-main">
                 <span class="item-name">{{ item.name }}</span>
                 <span class="item-meta">{{ itemMeta(item) }}</span>
+                @if (item.customNotes) {
+                  <span class="item-notes">{{ item.customNotes }}</span>
+                }
               </div>
               <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
                 (ngModelChange)="changeQty(item, $event)" title="Quantity" />

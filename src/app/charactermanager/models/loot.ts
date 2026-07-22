@@ -9,7 +9,7 @@ import { PcItem } from './pc';
 
 /** The lowercase inventory categories a custom loot item may carry. */
 export const LOOT_ITEM_CATEGORIES: ReadonlyArray<PcItem['category']> =
-  ['weapon', 'armor', 'material-component', 'gear'];
+  ['weapon', 'armor', 'material-component', 'gear', 'transport'];
 
 export interface LootItem {
   id: number;

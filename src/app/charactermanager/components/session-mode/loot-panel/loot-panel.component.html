@@ -70,10 +70,13 @@
                             <span class="item-name">{{ item.name }}</span>
                             <span class="item-meta">
                               @if (item.custom) {
-                                {{ item.customNotes || 'Custom item' }} ·
+                                Custom item ·
                               }
                               {{ item.qtyRemaining }} of {{ item.qty }} left
                             </span>
+                            @if (item.customNotes) {
+                              <span class="item-notes">{{ item.customNotes }}</span>
+                            }
                           </div>
                           <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
                             (ngModelChange)="changeQty(item, $event)" title="Quantity" />
@@ -114,11 +117,11 @@
                               <div class="item-main">
                                 <span class="item-name">{{ item.name }}</span>
                                 <span class="item-meta">
-                                  @if (item.custom && item.customNotes) {
-                                    {{ item.customNotes }} ·
-                                  }
                                   {{ item.qtyRemaining > 0 ? item.qtyRemaining + ' left' : 'All claimed' }}
                                 </span>
+                                @if (item.customNotes) {
+                                  <span class="item-notes">{{ item.customNotes }}</span>
+                                }
                               </div>
                               @if (myParticipant && item.qtyRemaining > 0) {
                                 @if (item.qtyRemaining > 1) {

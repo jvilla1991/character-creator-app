@@ -12,6 +12,7 @@ import {
   normalizeSupplies,
   registerWeekday,
   setGameTime,
+  suppliesSlots,
   supplyBulk,
   supplyCapacity,
   SURVIVAL_LABELS,
@@ -177,6 +178,18 @@ describe('survival util', () => {
       expect(supplyBulk({ catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 10 })).toBe(0);
       expect(supplyBulk({ catalogKey: 'water', name: 'Water', category: 'gear', qty: 10 })).toBe(0);
       expect(supplyBulk({ name: 'Rope', category: 'gear', qty: 1 })).toBe(0);
+    });
+
+    it('suppliesSlots adds 0.2 per ration beyond box capacity (loose rations)', () => {
+      const inv = (rations: number, boxes: number): PcItem[] => [
+        { catalogKey: 'ration-box', name: 'Ration box', category: 'gear', qty: boxes },
+        { catalogKey: 'waterskin', name: 'Waterskin', category: 'gear', qty: 1 },
+        { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: rations },
+        { catalogKey: 'water', name: 'Water', category: 'gear', qty: 5 },
+      ];
+      expect(suppliesSlots(inv(5, 1))).toBe(2);          // box full, nothing loose
+      expect(suppliesSlots(inv(8, 1))).toBeCloseTo(2.6); // 3 loose × 0.2
+      expect(suppliesSlots(inv(8, 2))).toBe(3);          // second box shelters them
     });
 
     it('isSupplyItem covers charges and containers — water never shows as a normal row', () => {
