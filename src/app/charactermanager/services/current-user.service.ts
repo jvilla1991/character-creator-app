@@ -9,6 +9,7 @@ interface AuthorizeResponse {
   email?: string;
   userName?: string;
   username?: string;
+  roles?: string[];
 }
 
 /**
@@ -46,6 +47,7 @@ export class CurrentUserService {
     this.user.name = username || 'Adventurer';
     this.user.initials = this.initialsOf(this.user.name);
     this.user.email = '';
+    this.user.isAdmin = false;
 
     if (environment.demoMode) return;
 
@@ -62,6 +64,7 @@ export class CurrentUserService {
           this.user.name = name;
           this.user.initials = this.initialsOf(name);
         }
+        this.user.isAdmin = dto?.roles?.includes('ADMIN') ?? false;
       },
       error: () => { /* keep the username-derived display, no email */ },
     });

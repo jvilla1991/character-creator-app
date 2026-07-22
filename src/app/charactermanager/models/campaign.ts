@@ -136,4 +136,6 @@ export interface CurrentUser {
   tint: CampaignTint;
   title?: string;
   member_since?: string;
+  /** True when the auth service reports the ADMIN role (site owner). */
+  isAdmin?: boolean;
 }

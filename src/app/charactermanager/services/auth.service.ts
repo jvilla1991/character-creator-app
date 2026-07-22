@@ -16,6 +16,12 @@ export interface AuthResponse {
   error?: unknown;
 }
 
+/** An admin-issued one-time reset token; the UI composes the shareable link. */
+export interface ResetTokenResponse {
+  token: string;
+  expiresAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -56,6 +62,40 @@ export class AuthService {
         }
       }),
       catchError(err => of({ success: false, error: err }))
+    );
+  }
+
+  /**
+   * Redeem an admin-issued one-time reset token for a new password (public
+   * endpoint — the user is locked out, so no Authorization header applies).
+   */
+  resetPassword(token: string, newPassword: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(this.authUrl + '/reset-password', { token, newPassword }).pipe(
+      catchError(err => of({ success: false, error: err }))
+    );
+  }
+
+  /**
+   * Change the signed-in user's password. Lives under /api/v1/account (not
+   * /api/v1/auth), so the auth interceptor attaches the Bearer token.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${environment.authApiUrl}/api/v1/account/change-password`,
+      { currentPassword, newPassword }
+    ).pipe(
+      catchError(err => of({ success: false, error: err }))
+    );
+  }
+
+  /**
+   * Admin only (enforced server-side): mint a one-time reset token for the
+   * given user. The caller composes `${origin}/reset-password?token=...` and
+   * hands the link to the user out-of-band. Errors propagate to the caller.
+   */
+  issueResetToken(userName: string): Observable<ResetTokenResponse> {
+    return this.http.post<ResetTokenResponse>(
+      `${environment.authApiUrl}/api/admin/users/${encodeURIComponent(userName)}/reset-token`, {}
     );
   }
 
