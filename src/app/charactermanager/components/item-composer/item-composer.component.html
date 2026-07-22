@@ -32,7 +32,7 @@
             <label class="composer-option" [class.on]="catalogSelectedKey === item.itemKey">
               <input type="radio" name="composerCatalogItem" [value]="item.itemKey" [(ngModel)]="catalogSelectedKey">
               <span class="composer-option-name">{{ item.name }}</span>
-              <span class="composer-option-meta">{{ formatCp(item.costCp) }}</span>
+              <span class="composer-option-meta">{{ formatCp(item.costCp) }} · {{ item.bulk }} bulk</span>
             </label>
           }
           @if (!filteredCatalog.length) {
@@ -60,12 +60,13 @@
           <option value="armor">Armor</option>
           <option value="material-component">Material</option>
           <option value="gear">Gear</option>
+          <option value="transport">Transport</option>
         </select>
         <input type="number" min="1" [(ngModel)]="customQty" class="composer-qty" aria-label="Quantity">
       </div>
       <div class="composer-row">
         <input type="number" min="0" [(ngModel)]="customValueGp" class="composer-qty" placeholder="Value (gp)" aria-label="Value in gold">
-        <input type="number" min="0" [(ngModel)]="customWeight" class="composer-qty" placeholder="Weight (lb)" aria-label="Weight in pounds">
+        <input type="number" min="0" [(ngModel)]="customWeight" class="composer-qty" placeholder="Weight (lb, 0 = tiny)" aria-label="Weight in pounds (0 means negligible — 0.2 bulk)">
       </div>
       @if (customCategory === 'weapon') {
         <input type="text" [(ngModel)]="customDamage" class="composer-text"

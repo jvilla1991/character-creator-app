@@ -40,6 +40,7 @@ export class CuratedShopsComponent implements OnChanges {
     { value: 'ARMOR', label: 'Armor' },
     { value: 'MATERIAL_COMPONENT', label: 'Components' },
     { value: 'GEAR', label: 'Gear' },
+    { value: 'TRANSPORT', label: 'Transport' },
   ];
 
   readonly formatCp = formatCp;

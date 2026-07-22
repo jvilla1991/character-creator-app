@@ -28,12 +28,14 @@ export function itemBulk(item: PcItem): number {
 
 /**
  * Slots filled: Σ bulk × qty over owned (non-dropped) lines, to 1 decimal.
- * Travel supplies are the exception — each CONTAINER (ration box / waterskin)
- * takes 1 slot and the charges inside it are weightless ({@link supplyBulk}).
+ * Two exceptions: travel supplies — each CONTAINER (ration box / waterskin)
+ * takes 1 slot and the charges inside it are weightless ({@link supplyBulk}) —
+ * and 'transport' lines (mounts/vehicles), which carry themselves rather than
+ * ride in your pack (DD p. 58); their bulk is reference-only display.
  */
 export function usedSlots(items: PcItem[] | undefined): number {
   const total = (items ?? [])
-    .filter(i => i.status !== 'dropped')
+    .filter(i => i.status !== 'dropped' && i.category !== 'transport')
     .reduce((sum, i) => sum + (isSupplyItem(i) ? supplyBulk(i) : itemBulk(i) * (i.qty || 1)), 0);
   return Math.round(total * 10) / 10; // kill 0.2 float drift
 }

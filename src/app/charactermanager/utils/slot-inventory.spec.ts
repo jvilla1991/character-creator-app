@@ -81,6 +81,15 @@ describe('slot-inventory util', () => {
       ];
       expect(usedSlots(stocked)).toBe(5);
     });
+
+    it('excludes transport lines — mounts and vehicles carry themselves', () => {
+      const items: PcItem[] = [
+        { name: 'Dagger', category: 'weapon', qty: 1, bulk: 1 },
+        { catalogKey: 'pony', name: 'Pony', category: 'transport', qty: 1, bulk: 20 },
+        { catalogKey: 'rowboat', name: 'Rowboat', category: 'transport', qty: 1, bulk: 60 },
+      ];
+      expect(usedSlots(items)).toBe(1); // only the dagger fills the pack
+    });
   });
 
   describe('slotCapacity', () => {
