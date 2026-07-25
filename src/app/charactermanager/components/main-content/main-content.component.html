@@ -3,7 +3,7 @@
 @if (pc) {
   <app-character-sheet
     [pc]="pc"
-    [editable]="editable"
+    [editable]="editable()"
     [slotInventory]="slotInventory"
     [survivalConditions]="survivalConditions"
     [strictComponents]="strictComponents"
@@ -58,7 +58,7 @@
     (click)="closeLevelUpModal()">
     <app-level-up-modal
       [pc]="pc"
-      [asDm]="editable"
+      [asDm]="editable()"
       (click)="$event.stopPropagation()"
       (close)="closeLevelUpModal()">
     </app-level-up-modal>

@@ -19,7 +19,7 @@ import { JoinModalService } from '../../services/join-modal.service';
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   /** True while a DM is viewing a campaign member's sheet → numbers are editable. */
-  get editable(): boolean { return this.uiState.dmReturn(); }
+  readonly editable = this.uiState.dmReturn;
   /** True when the active PC's campaign uses the slot-based inventory variant. */
   slotInventory = false;
   /** True when the active PC's campaign uses the survival-conditions variant. */
@@ -108,7 +108,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
   private lastRefetchedPcId: number | null = null;
 
   private refetchOnActivation(pc: PC | null): void {
-    if (!pc || this.editable) {
+    if (!pc || this.editable()) {
       this.lastRefetchedPcId = null;
       return;
     }
@@ -119,7 +119,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   private readonly onVisible = () => {
     if (document.visibilityState !== 'visible') return;
-    if (!this.pc || this.editable) return;
+    if (!this.pc || this.editable()) return;
     this.pcService.refreshPC(this.pc.id);
   };
 
