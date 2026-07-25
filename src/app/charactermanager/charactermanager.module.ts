@@ -70,6 +70,7 @@ import { RollLogPanelComponent } from './components/session-mode/roll-log-panel/
 import { SessionLiveBannerComponent } from './components/session-live-banner/session-live-banner.component';
 import { ToastComponent } from './components/toast/toast.component';
 
+import { A11yModule } from '@angular/cdk/a11y';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from '../shared/material.module';
 import { AuthService } from './services/auth.service';
@@ -152,6 +153,7 @@ const routes: Routes = [
         EscapeCloseDirective,
     ], imports: [CommonModule,
         MaterialModule,
+        A11yModule,
         DragDropModule,
         FormsModule,
         RouterModule.forChild(routes)], providers: [

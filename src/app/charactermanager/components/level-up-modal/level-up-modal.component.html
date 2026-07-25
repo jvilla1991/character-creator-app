@@ -1,6 +1,8 @@
-<div class="modal" style="border-color: var(--celestial);" appEscapeClose (escapeClose)="cancel()">
+<div class="modal" style="border-color: var(--celestial);" appEscapeClose (escapeClose)="cancel()"
+  role="dialog" aria-modal="true" aria-labelledby="level-up-title"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
 
-  <div class="modal-title" style="color: var(--celestial);">Ascend a Level</div>
+  <div class="modal-title" id="level-up-title" style="color: var(--celestial);">Ascend a Level</div>
 
   <!-- Loading the server-computed preview -->
   @if (loading) {

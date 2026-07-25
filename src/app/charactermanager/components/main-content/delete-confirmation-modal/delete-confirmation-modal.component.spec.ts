@@ -38,4 +38,13 @@ describe('DeleteConfirmationModalComponent', () => {
     component.cancel();
     expect(closed).toBeTrue();
   });
+
+  it('exposes alertdialog semantics on the modal root', () => {
+    const root: HTMLElement = fixture.nativeElement.querySelector('.modal');
+    expect(root.getAttribute('role')).toBe('alertdialog');
+    expect(root.getAttribute('aria-modal')).toBe('true');
+    const titleId = root.getAttribute('aria-labelledby')!;
+    const title = fixture.nativeElement.querySelector('#' + titleId);
+    expect(title?.textContent).toContain('Strike From The Record');
+  });
 });

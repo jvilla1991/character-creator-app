@@ -1,7 +1,9 @@
 <div class="panel roll-log">
-  <div class="panel-header" (click)="toggle()" style="cursor: pointer;">
+  <div class="panel-header" (click)="toggle()" style="cursor: pointer;"
+    role="button" tabindex="0" [attr.aria-expanded]="!collapsed"
+    (keydown.enter)="toggle()" (keydown.space)="$event.preventDefault(); toggle()">
     <span class="panel-title">Roll Log</span>
-    <span class="collapse-caret" [class.open]="!collapsed">▾</span>
+    <span class="collapse-caret" [class.open]="!collapsed" aria-hidden="true">▾</span>
   </div>
   @if (!collapsed) {
     <div class="roll-log-body">

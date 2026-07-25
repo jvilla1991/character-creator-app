@@ -34,6 +34,7 @@
         <input
           [(ngModel)]="query"
           placeholder="Search heroes, players, classes…"
+          aria-label="Search heroes, players, classes"
           autocomplete="off"
           >
         </div>
@@ -49,8 +50,13 @@
             @for (pc of filteredPcs; track pc) {
               <div
                 class="roster-item"
+                role="button"
+                tabindex="0"
                 [class.active]="activePc?.id === pc.id"
+                [attr.aria-current]="activePc?.id === pc.id ? 'true' : null"
                 (click)="setActivePC(pc)"
+                (keydown.enter)="setActivePC(pc)"
+                (keydown.space)="$event.preventDefault(); setActivePC(pc)"
                 >
                 <!-- Portrait circle -->
                 <div class="portrait" [style.background]="tintFor(pc)">
@@ -106,7 +112,9 @@
         }
 
         <!-- Account row → opens settings slide-over -->
-        <div class="account-row" (click)="openSettings()" title="Open your profile">
+        <div class="account-row" role="button" tabindex="0" (click)="openSettings()"
+          (keydown.enter)="openSettings()" (keydown.space)="$event.preventDefault(); openSettings()"
+          title="Open your profile" aria-label="Open your profile and settings">
           <div class="portrait" [style.background]="userTint">{{ user.initials }}</div>
           <div style="min-width: 0;">
             <div class="account-name">{{ user.name }}</div>

@@ -1,4 +1,6 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
+<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+  role="dialog" aria-modal="true" aria-label="Join a campaign"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
 
   <!-- Invite form -->
   @if (!consent) {

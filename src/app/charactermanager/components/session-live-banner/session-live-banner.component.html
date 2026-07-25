@@ -17,8 +17,10 @@
 <!-- PC picker (reuses the join-campaign-modal pattern) -->
 @if (pickerOpen) {
   <div class="modal-backdrop" (click)="closePicker()">
-    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-      <div class="modal-title" style="color: var(--celestial-2);">Join the Session</div>
+    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+      role="dialog" aria-modal="true" aria-labelledby="session-picker-title"
+      cdkTrapFocus cdkTrapFocusAutoCapture>
+      <div class="modal-title" id="session-picker-title" style="color: var(--celestial-2);">Join the Session</div>
       <div class="modal-sub">
         Choose which hero takes the field in
         <em style="color: var(--text); font-style: normal;">{{ live?.campaignName }}</em>.

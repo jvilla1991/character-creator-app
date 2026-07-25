@@ -10,6 +10,10 @@ import { NotificationService } from '../../services/notification.service';
     selector: 'app-toast',
     templateUrl: './toast.component.html',
     styleUrls: ['./toast.component.scss'],
+    // The live region lives on the always-rendered host element so screen
+    // readers register it before any message is inserted — a live region
+    // that appears together with its content is often not announced.
+    host: { 'role': 'status', 'aria-live': 'polite' },
     standalone: false
 })
 export class ToastComponent {

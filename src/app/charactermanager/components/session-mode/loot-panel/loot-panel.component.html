@@ -80,8 +80,9 @@
                             }
                           </div>
                           <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
-                            (ngModelChange)="changeQty(item, $event)" title="Quantity" />
-                            <button class="btn-x" title="Remove" (click)="removeItem(item)">✕</button>
+                            (ngModelChange)="changeQty(item, $event)" title="Quantity"
+                            [attr.aria-label]="'Quantity of ' + item.name" />
+                            <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + item.name" (click)="removeItem(item)">✕</button>
                           </li>
                         }
                       </ul>

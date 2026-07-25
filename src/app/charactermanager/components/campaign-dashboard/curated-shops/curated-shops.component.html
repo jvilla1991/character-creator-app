@@ -76,7 +76,7 @@
                 [value]="item.priceOverrideCp != null ? (item.priceOverrideCp / 100) : ''"
                 [placeholder]="'gp'"
                 (change)="setOverride(item, $any($event.target).value)" />
-                <button class="btn-x" title="Remove" (click)="removeItem(item)">✕</button>
+                <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + item.name" (click)="removeItem(item)">✕</button>
               </li>
             }
           </ul>

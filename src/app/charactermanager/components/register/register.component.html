@@ -1,4 +1,4 @@
-<div class="login-page">
+<main class="login-page">
   <div class="login-card">
 
     <!-- Brand -->
@@ -86,12 +86,12 @@
                     </div>
 
                     @if (passwordMismatch) {
-                      <div class="login-error">
+                      <div class="login-error" role="alert">
                         Passwords do not match.
                       </div>
                     }
                     @if (errorMessage && !passwordMismatch) {
-                      <div class="login-error">
+                      <div class="login-error" role="alert">
                         {{ errorMessage }}
                       </div>
                     }
@@ -108,4 +108,4 @@
                   </div>
 
                 </div>
-              </div>
+              </main>

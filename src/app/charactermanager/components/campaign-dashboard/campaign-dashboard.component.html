@@ -126,8 +126,10 @@
   <!-- Manage Party — bind/unbind your characters to this campaign -->
   @if (managePartyOpen) {
     <div class="modal-backdrop" (click)="closeManageParty()">
-      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-        <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
+      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+        role="dialog" aria-modal="true" aria-labelledby="manage-party-title"
+        cdkTrapFocus cdkTrapFocusAutoCapture>
+        <div class="modal-title" id="manage-party-title" style="color: var(--celestial-2);">Manage Party</div>
         <div class="modal-sub">
           Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em>.
           Toggle a hero on to seat them at this table.
@@ -168,8 +170,10 @@
   <!-- Delete Campaign — confirmation -->
   @if (deleteCampaignOpen) {
     <div class="modal-backdrop" (click)="closeDeleteCampaign()">
-      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()">
-        <div class="modal-title" style="color: var(--crimson);">Delete Campaign</div>
+      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()"
+        role="alertdialog" aria-modal="true" aria-labelledby="delete-campaign-title"
+        cdkTrapFocus cdkTrapFocusAutoCapture>
+        <div class="modal-title" id="delete-campaign-title" style="color: var(--crimson);">Delete Campaign</div>
         <div class="modal-sub">
           <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em> will be erased —
           its sessions, encounters, shops and notes go with it. Its characters are
