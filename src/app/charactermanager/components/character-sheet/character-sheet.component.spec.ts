@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 
 import { CharacterSheetComponent } from './character-sheet.component';
 import { PCService } from '../../services/pc.service';
@@ -21,7 +22,7 @@ describe('CharacterSheetComponent', () => {
       ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
-    component = new CharacterSheetComponent(pcService, grantService, sessionService);
+    component = TestBed.runInInjectionContext(() => new CharacterSheetComponent(pcService, grantService, sessionService));
     component.pc = makePC();
   });
 

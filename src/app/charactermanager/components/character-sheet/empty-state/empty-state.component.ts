@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, output } from '@angular/core';
 
 @Component({
     selector: 'app-empty-state',
@@ -6,5 +6,5 @@ import { Component, EventEmitter, Output } from '@angular/core';
     styleUrls: ['./empty-state.component.scss']
 })
 export class EmptyStateComponent {
-  @Output() forgeHero = new EventEmitter<void>();
+  readonly forgeHero = output<void>();
 }

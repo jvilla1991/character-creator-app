@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, OnChanges, SimpleChanges, input, output } from '@angular/core';
 import { PCService } from '../../services/pc.service';
 import { JoinConsentState, JoinRequest } from '../../services/join-modal.service';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
@@ -20,23 +20,23 @@ export class JoinCampaignModalComponent implements OnChanges {
   code = '';
   pcId: number | null = null;
 
-  @Input() consent: JoinConsentState | null = null;
-  @Input() error: string | null = null;
+  readonly consent = input<JoinConsentState | null>(null);
+  readonly error = input<string | null>(null);
   /** Preselect this character in the PC picker (e.g. opened from its sheet). */
-  @Input() preselectPcId: number | null = null;
+  readonly preselectPcId = input<number | null>(null);
 
-  @Output() confirm = new EventEmitter<JoinRequest>();
-  @Output() close = new EventEmitter<void>();
-  @Output() acceptConsent = new EventEmitter<void>();
-  @Output() declineConsent = new EventEmitter<void>();
+  readonly confirm = output<JoinRequest>();
+  readonly close = output<void>();
+  readonly acceptConsent = output<void>();
+  readonly declineConsent = output<void>();
 
   constructor(private pcService: PCService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     // Apply the preselect only while the player hasn't picked anyone yet —
     // never stomp an explicit choice.
-    if (changes['preselectPcId'] && this.pcId == null && this.preselectPcId != null) {
-      this.pcId = this.preselectPcId;
+    if (changes['preselectPcId'] && this.pcId == null && this.preselectPcId() != null) {
+      this.pcId = this.preselectPcId();
     }
   }
 

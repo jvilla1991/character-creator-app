@@ -1,4 +1,5 @@
 import { DestroyRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
 import { DndResourcesService } from '../../services/dnd-resources.service';
@@ -90,7 +91,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     dndResources = makeMockDndResources();
     auth = jasmine.createSpyObj<AuthService>('AuthService', ['getUsername']);
     auth.getUsername.and.returnValue('tester');
-    component = new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef());
+    component = TestBed.runInInjectionContext(() => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
     component.ngOnInit();
   });
 

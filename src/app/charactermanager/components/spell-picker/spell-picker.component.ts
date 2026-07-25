@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { DndSpell } from '../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 
@@ -26,7 +26,7 @@ export class SpellPickerComponent {
   @Input() cantripLimit: number | null = null;
   @Input() spellLimit: number | null = null;
   @Input() loading = false;
-  @Output() selectedChange = new EventEmitter<DndSpell[]>();
+  readonly selectedChange = output<DndSpell[]>();
 
   search = '';
 

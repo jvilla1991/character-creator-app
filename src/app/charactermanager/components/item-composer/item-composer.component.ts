@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, OnInit, output, input } from '@angular/core';
 import { PcItem } from '../../models/pc';
 import { CatalogItem, ShopCategory, categoryLabelFor, formatCp } from '../../models/shop';
 import { ShopService } from '../../services/shop.service';
@@ -25,14 +25,14 @@ import { FormsModule } from '@angular/forms';
 })
 export class ItemComposerComponent implements OnInit {
   /** Label for the confirm button (hosts read differently: Add / Grant). */
-  @Input() confirmLabel = 'Add';
+  readonly confirmLabel = input('Add');
   /** Whether a Cancel button renders (embedded always-open hosts hide it). */
-  @Input() cancellable = true;
+  readonly cancellable = input(true);
 
   /** The authored item — catalog pick (full CatalogItem) or custom line. */
-  @Output() itemAuthored = new EventEmitter<AuthoredItem>();
+  readonly itemAuthored = output<AuthoredItem>();
   /** The Cancel button (only when `cancellable`). */
-  @Output() cancelled = new EventEmitter<void>();
+  readonly cancelled = output<void>();
 
   constructor(private shopService: ShopService) {}
 

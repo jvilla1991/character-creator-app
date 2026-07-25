@@ -1,26 +1,26 @@
 <div class="modal-title">Proficiencies &amp; Languages</div>
 <div class="modal-sub">
-  Choose {{ classSkillConfig.choose }} skill{{ classSkillConfig.choose !== 1 ? 's' : '' }}
+  Choose {{ classSkillConfig().choose }} skill{{ classSkillConfig().choose !== 1 ? 's' : '' }}
   from your class list. Background skills and tools are already granted.
 </div>
 
 <!-- Class skill selection -->
 <div class="prof-section">
   <div class="prof-section-header">
-    <span class="eyebrow">{{ clazz }} Skills</span>
-    <span class="prof-counter" [class.complete]="classSkillsFull">
-      {{ selectedSkills.length }}/{{ classSkillConfig.choose }} chosen
+    <span class="eyebrow">{{ clazz() }} Skills</span>
+    <span class="prof-counter" [class.complete]="classSkillsFull()">
+      {{ selectedSkills().length }}/{{ classSkillConfig().choose }} chosen
     </span>
   </div>
   <div class="skill-chips">
-    @for (skill of classSkillConfig.from; track trackByName($index, skill)) {
+    @for (skill of classSkillConfig().from; track trackByName($index, skill)) {
       @let locked = isSkillLocked(skill);
       <button
         type="button"
         class="class-pick"
         [class.active]="isSkillChosen(skill) && !locked"
         [class.locked]="locked"
-        [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
+        [class.disabled]="!isSkillChosen(skill) && classSkillsFull()"
         [disabled]="locked"
       (click)="toggleSkill.emit(skill)">{{ skill }}</button>
     }
@@ -28,24 +28,24 @@
 </div>
 
 <!-- Background proficiencies (read-only) -->
-@if (backgroundDetail) {
+@if (backgroundDetail()) {
   <div class="prof-section">
     <div class="prof-section-header">
-      <span class="eyebrow">{{ background }} Proficiencies</span>
+      <span class="eyebrow">{{ background() }} Proficiencies</span>
     </div>
-    @if (backgroundSkillProfs.length) {
+    @if (backgroundSkillProfs().length) {
       <div class="skill-chips">
-        @for (skill of backgroundSkillProfs; track skill) {
+        @for (skill of backgroundSkillProfs(); track skill) {
           <span
             class="class-pick locked"
           title="Granted by background">{{ skill }}</span>
         }
       </div>
     }
-    @if (backgroundToolProfs.length) {
+    @if (backgroundToolProfs().length) {
       <div class="prof-tool-list">
         <span class="detail-label">Tools &amp; Equipment</span>
-        <span class="detail-value">{{ backgroundToolProfs.join(', ') }}</span>
+        <span class="detail-value">{{ backgroundToolProfs().join(', ') }}</span>
       </div>
     }
   </div>
@@ -60,7 +60,7 @@
     <span class="lang-chip locked">Common</span>
     <div class="field lang-field">
       <label>Additional Language 1</label>
-      <select [ngModel]="languageChoice" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">
+      <select [ngModel]="languageChoice()" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">
         <option value="">— choose a language —</option>
         @for (lang of firstLanguageOptions; track lang) {
           <option [value]="lang">{{ lang }}</option>
@@ -69,7 +69,7 @@
     </div>
     <div class="field lang-field">
       <label>Additional Language 2</label>
-      <select [ngModel]="languageChoice2" (ngModelChange)="languageChoice2Change.emit($event)" name="languageChoice2">
+      <select [ngModel]="languageChoice2()" (ngModelChange)="languageChoice2Change.emit($event)" name="languageChoice2">
         <option value="">— choose a language —</option>
         @for (lang of secondLanguageOptions; track lang) {
           <option [value]="lang">{{ lang }}</option>

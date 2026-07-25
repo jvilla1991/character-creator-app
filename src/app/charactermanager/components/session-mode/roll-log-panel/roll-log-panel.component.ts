@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { SessionRollView } from '../../../models/session';
 import { DatePipe } from '@angular/common';
 
@@ -16,8 +16,8 @@ import { DatePipe } from '@angular/common';
     imports: [DatePipe]
 })
 export class RollLogPanelComponent {
-  @Input() rolls: SessionRollView[] = [];
-  @Input() dm = false;
+  readonly rolls = input<SessionRollView[]>([]);
+  readonly dm = input(false);
 
   /** Starts open; the DM or a player can collapse it to reclaim vertical space. */
   collapsed = false;

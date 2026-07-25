@@ -28,7 +28,7 @@ describe('RollLogPanelComponent', () => {
   });
 
   it('renders one row per roll', () => {
-    component.rolls = [roll({ rollId: 1 }), roll({ rollId: 2, rollerName: 'Pip' })];
+    fixture.componentRef.setInput('rolls', [roll({ rollId: 1 }), roll({ rollId: 2, rollerName: 'Pip' })]);
     fixture.detectChanges();
 
     const rows = fixture.debugElement.queryAll(By.css('.roll-row'));
@@ -38,7 +38,7 @@ describe('RollLogPanelComponent', () => {
   });
 
   it('shows the empty state with no rolls', () => {
-    component.rolls = [];
+    fixture.componentRef.setInput('rolls', []);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('.roll-log-empty'))).toBeTruthy();
@@ -46,7 +46,7 @@ describe('RollLogPanelComponent', () => {
   });
 
   it('toggle() hides and shows the body', () => {
-    component.rolls = [roll()];
+    fixture.componentRef.setInput('rolls', [roll()]);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('.roll-log-body'))).toBeTruthy();
 
@@ -60,7 +60,7 @@ describe('RollLogPanelComponent', () => {
   });
 
   it('renders the die breakdown and grand total', () => {
-    component.rolls = [roll({ groups: [{ sides: 20, rolls: [15], subtotal: 15 }], grandTotal: 15 })];
+    fixture.componentRef.setInput('rolls', [roll({ groups: [{ sides: 20, rolls: [15], subtotal: 15 }], grandTotal: 15 })]);
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;

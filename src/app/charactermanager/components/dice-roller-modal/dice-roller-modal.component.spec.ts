@@ -192,8 +192,8 @@ describe('DiceRollerModalComponent', () => {
     expect(Number.isFinite(component.computeVelocity(samples, { x: 5, y: 0, t: 100 }))).toBeTrue();
   });
   it('logs the roll to the session when sessionId and participantId are set', fakeAsync(() => {
-    component.sessionId = 42;
-    component.participantId = 7;
+    fixture.componentRef.setInput('sessionId', 42);
+    fixture.componentRef.setInput('participantId', 7);
     component.addDie(6);
     component.addDie(6);
     component.throwButton();
@@ -209,8 +209,8 @@ describe('DiceRollerModalComponent', () => {
   }));
 
   it('does not log when sessionId is null (standalone/no-session roll)', fakeAsync(() => {
-    component.sessionId = null;
-    component.participantId = 7;
+    fixture.componentRef.setInput('sessionId', null);
+    fixture.componentRef.setInput('participantId', 7);
     component.addDie(6);
     component.throwButton();
     tick(5000);
@@ -219,8 +219,8 @@ describe('DiceRollerModalComponent', () => {
   }));
 
   it('does not log when participantId is null', fakeAsync(() => {
-    component.sessionId = 42;
-    component.participantId = null;
+    fixture.componentRef.setInput('sessionId', 42);
+    fixture.componentRef.setInput('participantId', null);
     component.addDie(6);
     component.throwButton();
     tick(5000);

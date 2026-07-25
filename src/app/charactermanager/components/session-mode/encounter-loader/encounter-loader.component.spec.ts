@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { EncounterLoaderComponent } from './encounter-loader.component';
 import { SessionState } from '../../../models/session';
 import { EncounterSummary } from '../../../models/encounter';
@@ -21,7 +22,7 @@ describe('EncounterLoaderComponent', () => {
     curated.list.and.returnValue(of(summaries));
     session = jasmine.createSpyObj('SessionService', ['loadEncounter']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
-    component = new EncounterLoaderComponent(curated, session, notifications);
+    component = TestBed.runInInjectionContext(() => new EncounterLoaderComponent(curated, session, notifications));
   });
 
   it('loads the campaign encounters once for the DM', () => {

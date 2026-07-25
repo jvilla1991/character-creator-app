@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { modFromScore, SKILL_DEFS } from '../../../../utils/character-math';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
@@ -24,19 +24,19 @@ export interface SkillProfChange {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ModifierPipe]
 })
-export class SkillsListComponent implements OnChanges {
-  @Input() pc!: PC;
+export class SkillsListComponent {
+  readonly pc = input.required<PC>();
   /** DM cross-link: makes each proficiency dot click-to-cycle (none → prof → expertise). */
-  @Input() editable = false;
-  @Output() skillChanged = new EventEmitter<SkillProfChange>();
+  readonly editable = input(false);
+  readonly skillChanged = output<SkillProfChange>();
 
-  skillRows: SkillRow[] = [];
-
-  ngOnChanges(): void {
-    const prof = this.pc.prof ?? 2;
-    this.skillRows = SKILL_DEFS.map(([name, abil]) => {
+  /** Derived skill rows — recompute whenever the PC input changes. */
+  readonly skillRows = computed<SkillRow[]>(() => {
+    const pc = this.pc();
+    const prof = pc.prof ?? 2;
+    return SKILL_DEFS.map(([name, abil]) => {
       const lvl     = this.levelFor(name);
-      const baseMod = modFromScore(this.pc.stats?.[abil as keyof typeof this.pc.stats] ?? 10);
+      const baseMod = modFromScore(pc.stats?.[abil as keyof typeof pc.stats] ?? 10);
       const bonus   = lvl === 'expert' ? prof * 2 : lvl === 'prof' ? prof : 0;
       return {
         name,
@@ -45,7 +45,7 @@ export class SkillsListComponent implements OnChanges {
         mod:       baseMod + bonus,
       };
     });
-  }
+  });
 
   /**
    * Cycle one skill's proficiency: none → prof → expert → none. Emits an
@@ -55,28 +55,30 @@ export class SkillsListComponent implements OnChanges {
    * call can never fire a player-side save.
    */
   cycleSkill(name: string): void {
-    if (!this.editable) return;
+    if (!this.editable()) return;
+    const pc = this.pc();
     const current = this.levelFor(name);
     const next: 'prof' | 'expert' | null =
       current === null ? 'prof' : current === 'prof' ? 'expert' : null;
 
     // Stored keys may use either the full name or its first word ("Animal" for
     // "Animal Handling") — drop both variants, then write the canonical name.
-    const skills = { ...(this.pc.skills ?? {}) };
+    const skills = { ...(pc.skills ?? {}) };
     delete skills[name];
     delete skills[name.split(' ')[0]];
     if (next) skills[name] = next;
 
     const label = next === 'expert' ? 'expertise' : next === 'prof' ? 'proficient' : 'none';
     this.skillChanged.emit({
-      pc: { ...this.pc, skills },
+      pc: { ...pc, skills },
       description: `Skill proficiency changed: ${name} (${label})`,
     });
   }
 
   /** Look up by first word then full name to match prototype data key conventions. */
   private levelFor(name: string): 'prof' | 'expert' | null {
+    const skills = this.pc().skills;
     const shortKey = name.split(' ')[0];
-    return this.pc.skills?.[shortKey] ?? this.pc.skills?.[name] ?? null;
+    return skills?.[shortKey] ?? skills?.[name] ?? null;
   }
 }

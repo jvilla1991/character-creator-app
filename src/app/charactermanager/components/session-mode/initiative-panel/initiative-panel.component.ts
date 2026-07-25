@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { ParticipantView, SessionStatus } from '../../../models/session';
 import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -50,7 +50,7 @@ export class InitiativePanelComponent {
    * DM-only, PC-only (players' own sheet is already embedded in session mode,
    * and NPCs have no sheet to open). SessionModeComponent owns the actual open.
    */
-  @Output() openPc = new EventEmitter<ParticipantView>();
+  readonly openPc = output<ParticipantView>();
 
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};

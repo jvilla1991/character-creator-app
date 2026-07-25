@@ -1,4 +1,4 @@
-import { Component, DestroyRef, Input, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
@@ -25,7 +25,7 @@ import { AsyncPipe } from '@angular/common';
 export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
   // Internal data comes directly from pcsByParty$ below.
-  @Input() pcs!: PC[];
+  readonly pcs = input.required<PC[]>();
 
   query = '';
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */

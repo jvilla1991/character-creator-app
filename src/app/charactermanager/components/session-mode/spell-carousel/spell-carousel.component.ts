@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, ElementRef, OnInit, viewChildren } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, CdkDropList, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { DndSpell } from '../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../services/dnd-resources.service';
@@ -42,7 +42,7 @@ export class SpellCarouselComponent implements OnInit {
   focusedName: string | null = null;
   private focusTimer?: ReturnType<typeof setTimeout>;
 
-  @ViewChildren('cardEl') private cardEls!: QueryList<ElementRef<HTMLElement>>;
+  private readonly cardEls = viewChildren<ElementRef<HTMLElement>>('cardEl');
 
   constructor(private dndResources: DndResourcesService) {}
 
@@ -113,7 +113,7 @@ export class SpellCarouselComponent implements OnInit {
     // Defer a tick so a just-pinned card exists in the DOM before we scroll to it.
     setTimeout(() => {
       const idx = this.pinned.findIndex(s => s.name === name);
-      this.cardEls?.get(idx)?.nativeElement.scrollIntoView({
+      this.cardEls()?.at(idx)?.nativeElement.scrollIntoView({
         behavior: 'smooth', inline: 'center', block: 'nearest',
       });
     });

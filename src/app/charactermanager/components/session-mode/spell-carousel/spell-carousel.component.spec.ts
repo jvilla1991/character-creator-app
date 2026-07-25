@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { DndSpell } from '../../../models/dnd-api.types';
 import { SpellCarouselComponent } from './spell-carousel.component';
 
@@ -30,7 +31,7 @@ describe('SpellCarouselComponent', () => {
 
   beforeEach(() => {
     const dndResources = { getSpells: () => of([fireball, shield]) };
-    component = new SpellCarouselComponent(dndResources as any);
+    component = TestBed.runInInjectionContext(() => new SpellCarouselComponent(dndResources as any));
     component.ngOnInit();
   });
 

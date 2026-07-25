@@ -1,4 +1,4 @@
-import { Directive, EventEmitter, HostListener, Output } from '@angular/core';
+import { Directive, HostListener, output } from '@angular/core';
 
 /**
  * Attribute directive that listens for the Escape key anywhere in the
@@ -10,7 +10,7 @@ import { Directive, EventEmitter, HostListener, Output } from '@angular/core';
  */
 @Directive({ selector: '[appEscapeClose]', })
 export class EscapeCloseDirective {
-  @Output() escapeClose = new EventEmitter<void>();
+  readonly escapeClose = output<void>();
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

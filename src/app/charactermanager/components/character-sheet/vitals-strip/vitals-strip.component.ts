@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
@@ -29,11 +29,11 @@ export class VitalsStripComponent {
    *  session sheet — reveals the Spend Hit Die button under the Hit Dice tile. */
   @Input() canSpendHitDie = false;
   /** Emits the full updated PC for the parent to persist. */
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
   /** The player spends a hit die (short rest) — the host owns the server call. */
-  @Output() spendHitDie = new EventEmitter<void>();
+  readonly spendHitDie = output<void>();
   /** A DM clicked an intercepted vital — the parent opens the DM edit modal. */
-  @Output() editRequested = new EventEmitter<DmEditRequest>();
+  readonly editRequested = output<DmEditRequest>();
 
   get hpPct(): number {
     if (!this.pc.hp) return 0;

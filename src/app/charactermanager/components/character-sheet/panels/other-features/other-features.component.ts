@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { FormsModule } from '@angular/forms';
 
@@ -29,7 +29,11 @@ export class OtherFeaturesComponent {
    * concurrent player edit). CharacterSheetComponent owns the actual save and
    * stamps category 'other' onto the entry.
    */
-  @Output() featureGranted = new EventEmitter<{ name: string; source: string; desc: string }>();
+  readonly featureGranted = output<{
+    name: string;
+    source: string;
+    desc: string;
+}>();
 
   /** Entries shown here: only those tagged 'other' (everything else is a class feature). */
   get otherFeatures(): Feature[] {

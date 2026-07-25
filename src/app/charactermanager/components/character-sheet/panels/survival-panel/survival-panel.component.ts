@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { PC, PcSurvival } from '../../../../models/pc';
 import {
   SURVIVAL_KEYS,
@@ -34,9 +34,9 @@ export class SurvivalPanelComponent {
   @Input() editable = false;
   /** The viewing player owns this sheet — reveals the Eat/Drink actions. */
   @Input() ownControls = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
   /** Owner clicked Eat/Drink — the host applies it (locally or via the session). */
-  @Output() actionRequested = new EventEmitter<SurvivalAction>();
+  readonly actionRequested = output<SurvivalAction>();
 
   readonly keys = SURVIVAL_KEYS;
 

@@ -1,4 +1,5 @@
 import { SurvivalPanelComponent } from './survival-panel.component';
+import { TestBed } from '@angular/core/testing';
 import { PC } from '../../../../models/pc';
 
 describe('SurvivalPanelComponent', () => {
@@ -8,7 +9,7 @@ describe('SurvivalPanelComponent', () => {
     ({ id: 1, name: 'X', clazz: 'Ranger', level: 3, playerName: 'P', survival } as PC);
 
   beforeEach(() => {
-    component = new SurvivalPanelComponent();
+    component = TestBed.runInInjectionContext(() => new SurvivalPanelComponent());
     component.editable = true;
   });
 

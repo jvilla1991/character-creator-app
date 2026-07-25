@@ -42,8 +42,8 @@
       }
       <div class="composer-actions">
         <button type="button" class="composer-btn primary" [disabled]="!catalogSelectedKey"
-        (click)="confirmCatalog()">{{ confirmLabel }}</button>
-        @if (cancellable) {
+        (click)="confirmCatalog()">{{ confirmLabel() }}</button>
+        @if (cancellable()) {
           <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
         }
       </div>
@@ -80,8 +80,8 @@
         placeholder="Notes (optional)" aria-label="Notes">
       <div class="composer-actions">
         <button type="button" class="composer-btn primary" [disabled]="!customName.trim()"
-        (click)="confirmCustom()">{{ confirmLabel }}</button>
-        @if (cancellable) {
+        (click)="confirmCustom()">{{ confirmLabel() }}</button>
+        @if (cancellable()) {
           <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
         }
       </div>

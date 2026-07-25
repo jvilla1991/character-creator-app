@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, output } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -78,23 +78,23 @@ export class CharacterSheetComponent implements OnChanges {
   /** The party's current location (campaign-level), shown at the top of the
    *  sheet. Set by the DM in Session Mode; null until then. */
   @Input() location: CampaignLocation | null = null;
-  @Output() deleteRequested = new EventEmitter<void>();
-  @Output() rollRequested = new EventEmitter<void>();
-  @Output() levelUpRequested = new EventEmitter<void>();
+  readonly deleteRequested = output<void>();
+  readonly rollRequested = output<void>();
+  readonly levelUpRequested = output<void>();
   /** Player asks to connect to their campaign's live session. */
-  @Output() connectRequested = new EventEmitter<void>();
+  readonly connectRequested = output<void>();
   /** Character has no campaign — player asks to join one (opens the join modal). */
-  @Output() joinCampaignRequested = new EventEmitter<void>();
+  readonly joinCampaignRequested = output<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
-  @Output() sellRequested = new EventEmitter<number>();
+  readonly sellRequested = output<number>();
   /** In-session survival action (eat/drink); bubbled from the survival panel so
    *  the host can call the server-authoritative consume endpoint. */
-  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
+  readonly survivalActionRequested = output<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
-  @Output() castRequested = new EventEmitter<CastRequest>();
+  readonly castRequested = output<CastRequest>();
   /** In-session hit-die spend (short rest); bubbled from the vitals strip so the
    *  host can call the server-authoritative spend endpoint. */
-  @Output() spendHitDieRequested = new EventEmitter<void>();
+  readonly spendHitDieRequested = output<void>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {

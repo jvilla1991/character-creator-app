@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, Input, OnInit, output } from '@angular/core';
 import { PC } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
@@ -35,7 +35,7 @@ export class LevelUpModalComponent implements OnInit {
    * owner-scoped ones would 403). The flow is otherwise identical.
    */
   @Input() asDm = false;
-  @Output() close = new EventEmitter<void>();
+  readonly close = output<void>();
 
   preview: LevelUpPreview | null = null;
   loading = true;

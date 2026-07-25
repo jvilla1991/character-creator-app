@@ -1,4 +1,4 @@
-import { Component, DestroyRef, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SessionState } from '../../models/session';
 import { PC } from '../../models/pc';
@@ -41,7 +41,7 @@ import { AsyncPipe, TitleCasePipe } from '@angular/common';
     imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
-  @Input() sessionId!: string;
+  readonly sessionId = input.required<string>();
 
   state$ = this.sessionService.state$;
 
@@ -88,7 +88,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.sessionService.startPolling(this.sessionId);
+    this.sessionService.startPolling(this.sessionId());
     // The DM may end the session from another device; a poll then reports ENDED.
     this.sessionService.state$
       .pipe(takeUntilDestroyed(this.destroyRef))

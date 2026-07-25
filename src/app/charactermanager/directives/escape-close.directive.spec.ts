@@ -1,10 +1,11 @@
 import { EscapeCloseDirective } from './escape-close.directive';
+import { TestBed } from '@angular/core/testing';
 
 describe('EscapeCloseDirective', () => {
   let directive: EscapeCloseDirective;
 
   beforeEach(() => {
-    directive = new EscapeCloseDirective();
+    directive = TestBed.runInInjectionContext(() => new EscapeCloseDirective());
   });
 
   it('emits escapeClose when the document escape keydown fires', () => {

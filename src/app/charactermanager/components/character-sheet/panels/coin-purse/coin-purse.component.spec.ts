@@ -1,4 +1,5 @@
 import { CoinPurseComponent } from './coin-purse.component';
+import { TestBed } from '@angular/core/testing';
 import { PC } from '../../../../models/pc';
 
 describe('CoinPurseComponent', () => {
@@ -8,7 +9,7 @@ describe('CoinPurseComponent', () => {
     ({ id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P', coins: { cp: 1, sp: 2, ep: 0, gp: 10, pp: 0 } } as PC);
 
   beforeEach(() => {
-    component = new CoinPurseComponent();
+    component = TestBed.runInInjectionContext(() => new CoinPurseComponent());
     component.pc = basePc();
   });
 

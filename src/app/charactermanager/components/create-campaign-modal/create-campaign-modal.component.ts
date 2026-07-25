@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, output } from '@angular/core';
 import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/campaign';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { FormsModule } from '@angular/forms';
@@ -34,8 +34,8 @@ export class CreateCampaignModalComponent {
 
   readonly tints: CampaignTint[] = ['celestial', 'violet', 'gold', 'crimson', 'emerald'];
 
-  @Output() confirm = new EventEmitter<CampaignDraft>();
-  @Output() close = new EventEmitter<void>();
+  readonly confirm = output<CampaignDraft>();
+  readonly close = output<void>();
 
   submit(): void {
     if (!this.name.trim()) return;

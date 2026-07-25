@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, output } from '@angular/core';
 import { DmEditRequest } from './dm-edit-request';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { FormsModule } from '@angular/forms';
@@ -28,8 +28,8 @@ export interface DmEditConfirm {
 })
 export class DmEditModalComponent implements OnChanges {
   @Input() request!: DmEditRequest;
-  @Output() confirm = new EventEmitter<DmEditConfirm>();
-  @Output() close = new EventEmitter<void>();
+  readonly confirm = output<DmEditConfirm>();
+  readonly close = output<void>();
 
   readonly descMaxLength = 500;
 

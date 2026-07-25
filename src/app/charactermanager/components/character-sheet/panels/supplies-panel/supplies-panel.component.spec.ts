@@ -1,4 +1,5 @@
 import { SuppliesPanelComponent } from './supplies-panel.component';
+import { TestBed } from '@angular/core/testing';
 import { PC, PcItem } from '../../../../models/pc';
 
 describe('SuppliesPanelComponent', () => {
@@ -15,7 +16,7 @@ describe('SuppliesPanelComponent', () => {
   ];
 
   beforeEach(() => {
-    component = new SuppliesPanelComponent();
+    component = TestBed.runInInjectionContext(() => new SuppliesPanelComponent());
     component.editable = true;
   });
 

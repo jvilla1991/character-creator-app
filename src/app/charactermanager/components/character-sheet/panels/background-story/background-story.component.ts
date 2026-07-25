@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { STANDARD_LANGUAGES } from '../../../../services/dnd-resources.service';
 import { FormsModule } from '@angular/forms';
@@ -10,33 +10,34 @@ import { FormsModule } from '@angular/forms';
     imports: [FormsModule]
 })
 export class BackgroundStoryComponent {
-  @Input() pc!: PC;
+  readonly pc = input.required<PC>();
   /** True when the viewer is a DM cross-linked into this sheet — reveals the Grant language control. */
-  @Input() addAllowed = false;
+  readonly addAllowed = input(false);
   /**
    * A DM-granted language. Emitted as a bare payload rather than a merged PC because a grant
    * must go through GrantService's refetch-merge-save (the sheet's `pc` copy can be stale —
    * PUTting it directly risks clobbering a concurrent player edit). CharacterSheetComponent
    * owns the actual save.
    */
-  @Output() languageGranted = new EventEmitter<string>();
+  readonly languageGranted = output<string>();
 
-  get bioFirst(): string { return this.pc.bio?.charAt(0) ?? ''; }
-  get bioRest(): string  { return this.pc.bio?.slice(1) ?? ''; }
+  get bioFirst(): string { return this.pc().bio?.charAt(0) ?? ''; }
+  get bioRest(): string  { return this.pc().bio?.slice(1) ?? ''; }
 
   get traitEntries(): { key: string; value: string }[] {
-    if (!this.pc.traits) return [];
-    return Object.entries(this.pc.traits).map(([key, value]) => ({ key, value }));
+    const pc = this.pc();
+    if (!pc.traits) return [];
+    return Object.entries(pc.traits).map(([key, value]) => ({ key, value }));
   }
 
   /** Languages the character knows (e.g. ['Common', 'Elvish']) */
   get languages(): string[] {
-    return this.pc.languages ?? [];
+    return this.pc().languages ?? [];
   }
 
   /** Tool proficiencies from background and class (e.g. ["Thieves' Tools"]) */
   get toolProficiencies(): string[] {
-    return this.pc.toolProfs ?? [];
+    return this.pc().toolProfs ?? [];
   }
 
   get hasProficiencies(): boolean {

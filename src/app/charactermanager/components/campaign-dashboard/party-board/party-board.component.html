@@ -17,14 +17,14 @@
       <span></span>
     </div>
 
-    @if (members.length === 0) {
+    @if (members().length === 0) {
       <div
         style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
         No heroes assigned to this campaign yet.
       </div>
     }
 
-    @for (pc of members; track pc) {
+    @for (pc of members(); track pc) {
       <div
         class="board-row member"
         role="button"

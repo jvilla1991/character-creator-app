@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ClassEquipment } from '../../../../models/dnd-api.types';
 
 /**
@@ -12,12 +12,12 @@ import { ClassEquipment } from '../../../../models/dnd-api.types';
     styleUrls: ['./equipment-step.component.scss']
 })
 export class EquipmentStepComponent {
-  @Input() loadingEquipment = false;
-  @Input() currentClassEquipment: ClassEquipment | null = null;
-  @Input() equipmentChoice: 'A' | 'B' | '' = '';
-  @Input() background = '';
-  @Input() backgroundStartingGold = 0;
+  readonly loadingEquipment = input(false);
+  readonly currentClassEquipment = input<ClassEquipment | null>(null);
+  readonly equipmentChoice = input<'A' | 'B' | ''>('');
+  readonly background = input('');
+  readonly backgroundStartingGold = input(0);
 
   /** Kit/gold choice (two-way [(equipmentChoice)] on the parent). */
-  @Output() equipmentChoiceChange = new EventEmitter<'A' | 'B' | ''>();
+  readonly equipmentChoiceChange = output<'A' | 'B' | ''>();
 }

@@ -1,4 +1,5 @@
 import { FormBuilder } from '@angular/forms';
+import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../services/auth.service';
@@ -28,11 +29,11 @@ describe('RegisterComponent', () => {
   beforeEach(() => {
     authService = jasmine.createSpyObj('AuthService', ['register']);
     router      = jasmine.createSpyObj('Router', ['navigate']);
-    component   = new RegisterComponent(
+    component   = TestBed.runInInjectionContext(() => new RegisterComponent(
       new FormBuilder().nonNullable,
       authService as unknown as AuthService,
       router as unknown as Router,
-    );
+    ));
   });
 
   it('starts invalid', () => {

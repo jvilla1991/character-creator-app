@@ -7,10 +7,10 @@
   </div>
   @if (!collapsed) {
     <div class="roll-log-body">
-      @if (!rolls.length) {
+      @if (!rolls().length) {
         <p class="roll-log-empty">No rolls yet this session.</p>
       }
-      @for (r of rolls; track r) {
+      @for (r of rolls(); track r) {
         <div class="roll-row" [class.mine]="r.mine">
           <div class="roll-row-head">
             <span class="roll-who">{{ r.rollerName }}</span>

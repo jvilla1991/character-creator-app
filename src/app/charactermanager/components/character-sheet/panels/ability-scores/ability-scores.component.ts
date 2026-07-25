@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { modFromScore } from '../../../../utils/character-math';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
@@ -20,15 +20,13 @@ interface AbilityRow {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [EditableNumberComponent, ModifierPipe]
 })
-export class AbilityScoresComponent implements OnChanges {
-  @Input() pc!: PC;
+export class AbilityScoresComponent {
+  readonly pc = input.required<PC>();
   /** DM cross-link: makes each ability score click-to-edit. */
-  @Input() editable = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly editable = input(false);
+  readonly pcChange = output<PC>();
   /** A DM clicked an intercepted ability score — the parent opens the DM edit modal. */
-  @Output() editRequested = new EventEmitter<DmEditRequest>();
-
-  rows: AbilityRow[] = [];
+  readonly editRequested = output<DmEditRequest>();
 
   private static readonly ORDER = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
   private static readonly LABELS: Record<string, string> = {
@@ -36,27 +34,30 @@ export class AbilityScoresComponent implements OnChanges {
     INT: 'Intelligence', WIS: 'Wisdom',   CHA: 'Charisma',
   };
 
-  ngOnChanges(): void {
-    this.rows = AbilityScoresComponent.ORDER.map(key => {
-      const score = this.pc.stats?.[key] ?? 10;
+  /** Derived per-ability rows — recompute whenever the PC input changes. */
+  readonly rows = computed<AbilityRow[]>(() => {
+    const pc = this.pc();
+    return AbilityScoresComponent.ORDER.map(key => {
+      const score = pc.stats?.[key] ?? 10;
       return {
         key,
         label:      AbilityScoresComponent.LABELS[key],
         score,
         mod:        modFromScore(score),
-        isSaveProf: this.pc.saves?.includes(key) ?? false,
+        isSaveProf: pc.saves?.includes(key) ?? false,
       };
     });
-  }
+  });
 
   /** Pure builder: apply one ability score. */
   private buildScore(key: string, value: number): PC {
+    const pc = this.pc();
     const stats = {
       STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10,
-      ...(this.pc.stats ?? {}),
+      ...(pc.stats ?? {}),
     } as NonNullable<PC['stats']>;
     stats[key as keyof typeof stats] = value;
-    return { ...this.pc, stats };
+    return { ...pc, stats };
   }
 
   /** Edit one ability score; the modifier display recomputes on the refresh. */

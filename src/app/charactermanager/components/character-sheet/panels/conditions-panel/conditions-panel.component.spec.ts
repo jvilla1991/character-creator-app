@@ -7,7 +7,7 @@ describe('ConditionsPanelComponent', () => {
   let component: ConditionsPanelComponent;
 
   beforeEach(() => {
-    component = new ConditionsPanelComponent();
+    component = TestBed.runInInjectionContext(() => new ConditionsPanelComponent());
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
 

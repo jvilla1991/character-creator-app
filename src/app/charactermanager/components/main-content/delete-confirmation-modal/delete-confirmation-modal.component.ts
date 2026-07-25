@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 
@@ -9,9 +9,9 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
     imports: [CdkTrapFocus]
 })
 export class DeleteConfirmationModalComponent {
-  @Input()  pc!: PC;
-  @Output() confirm = new EventEmitter<void>();
-  @Output() close   = new EventEmitter<void>();
+  readonly pc = input.required<PC>();
+  readonly confirm = output<void>();
+  readonly close = output<void>();
 
   confirmDelete(): void { this.confirm.emit(); }
   cancel(): void        { this.close.emit();   }

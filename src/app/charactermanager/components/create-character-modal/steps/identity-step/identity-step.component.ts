@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -17,13 +17,13 @@ import { FormsModule } from '@angular/forms';
 })
 export class IdentityStepComponent {
   /** Hero name (two-way bound: [(name)] on the parent). */
-  @Input() name = '';
+  readonly name = input('');
   /** Signed-in player's username — display only. */
-  @Input() player = '';
+  readonly player = input('');
 
-  @Output() nameChange = new EventEmitter<string>();
+  readonly nameChange = output<string>();
   /** Advance to the next step (Enter key). */
-  @Output() next = new EventEmitter<void>();
+  readonly next = output<void>();
   /** Close the wizard (Escape key). */
-  @Output() cancel = new EventEmitter<void>();
+  readonly cancel = output<void>();
 }

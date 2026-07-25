@@ -1,7 +1,10 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { SkillsListComponent, SkillProfChange } from './skills-list.component';
 import { PC } from '../../../../models/pc';
 
 describe('SkillsListComponent', () => {
+  let fixture: ComponentFixture<SkillsListComponent>;
   let component: SkillsListComponent;
   let emitted: SkillProfChange[];
 
@@ -12,11 +15,13 @@ describe('SkillsListComponent', () => {
       skills,
     } as PC);
 
+  const setPc = (pc: PC) => fixture.componentRef.setInput('pc', pc);
+
   beforeEach(() => {
-    component = new SkillsListComponent();
-    component.pc = basePc();
-    component.editable = true;
-    component.ngOnChanges();
+    fixture = TestBed.createComponent(SkillsListComponent);
+    component = fixture.componentInstance;
+    setPc(basePc());
+    fixture.componentRef.setInput('editable', true);
     emitted = [];
     component.skillChanged.subscribe(ev => emitted.push(ev));
   });
@@ -28,55 +33,54 @@ describe('SkillsListComponent', () => {
     });
 
     it('cycles prof -> expert', () => {
-      component.pc = basePc({ Stealth: 'prof' });
+      setPc(basePc({ Stealth: 'prof' }));
       component.cycleSkill('Stealth');
       expect(emitted[0].pc.skills?.['Stealth']).toBe('expert');
     });
 
     it('cycles expert -> none (key removed entirely)', () => {
-      component.pc = basePc({ Stealth: 'expert' });
+      setPc(basePc({ Stealth: 'expert' }));
       component.cycleSkill('Stealth');
       expect(emitted[0].pc.skills).toEqual({});
     });
 
     it('reads a short-form key and rewrites it under the canonical name', () => {
-      component.pc = basePc({ Animal: 'prof' });
+      setPc(basePc({ Animal: 'prof' }));
       component.cycleSkill('Animal Handling');
       expect(emitted[0].pc.skills).toEqual({ 'Animal Handling': 'expert' });
     });
 
     it('never mutates the input PC (demo mode hands out the live store object)', () => {
       const pc = basePc({ Insight: 'prof' });
-      component.pc = pc;
+      setPc(pc);
       component.cycleSkill('Insight');
       expect(pc.skills).toEqual({ Insight: 'prof' });
       expect(emitted[0].pc).not.toBe(pc);
     });
 
     it('preserves unrelated skills', () => {
-      component.pc = basePc({ Perception: 'prof', Deception: 'expert' });
+      setPc(basePc({ Perception: 'prof', Deception: 'expert' }));
       component.cycleSkill('Stealth');
       expect(emitted[0].pc.skills).toEqual({ Perception: 'prof', Deception: 'expert', Stealth: 'prof' });
     });
 
     it('describes the change for the DM activity log', () => {
-      component.pc = basePc({ Stealth: 'prof' });
+      setPc(basePc({ Stealth: 'prof' }));
       component.cycleSkill('Stealth');
       expect(emitted[0].description).toBe('Skill proficiency changed: Stealth (expertise)');
     });
 
     it('does nothing when not editable (player viewing their own sheet)', () => {
-      component.editable = false;
+      fixture.componentRef.setInput('editable', false);
       component.cycleSkill('Stealth');
       expect(emitted.length).toBe(0);
     });
   });
 
-  describe('ngOnChanges modifier math', () => {
+  describe('skillRows modifier math', () => {
     it('applies prof and expertise bonuses to the displayed modifier', () => {
-      component.pc = basePc({ Stealth: 'expert', Acrobatics: 'prof' });
-      component.ngOnChanges();
-      const row = (name: string) => component.skillRows.find(r => r.name === name)!;
+      setPc(basePc({ Stealth: 'expert', Acrobatics: 'prof' }));
+      const row = (name: string) => component.skillRows().find(r => r.name === name)!;
       expect(row('Stealth').mod).toBe(7);    // DEX +3, expertise +4
       expect(row('Acrobatics').mod).toBe(5); // DEX +3, prof +2
       expect(row('Athletics').mod).toBe(0);  // STR +0, no prof

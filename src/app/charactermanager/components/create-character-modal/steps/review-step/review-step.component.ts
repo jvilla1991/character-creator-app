@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ClassEquipment, DndClass, DndSpecies, DndSpell } from '../../../../models/dnd-api.types';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
@@ -20,54 +20,54 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 })
 export class ReviewStepComponent {
   // Combat banner
-  @Input() reviewHp = 0;
-  @Input() reviewAc = 0;
-  @Input() reviewInitiative = '';
+  readonly reviewHp = input(0);
+  readonly reviewAc = input(0);
+  readonly reviewInitiative = input('');
 
   // Identity / species / class / background
-  @Input() name = '';
-  @Input() player = '';
-  @Input() species = '';
-  @Input() speciesDetail: DndSpecies | null = null;
-  @Input() reviewSpeciesTraitNames = '';
-  @Input() clazz = '';
-  @Input() selectedSubclass = '';
-  @Input() classDetail: DndClass | null = null;
-  @Input() classSavingThrows = '…';
-  @Input() background = '';
-  @Input() backgroundFeatName = '';
-  @Input() bonusPlus2: Ability | '' = '';
-  @Input() bonusPlus1: Ability | '' = '';
+  readonly name = input('');
+  readonly player = input('');
+  readonly species = input('');
+  readonly speciesDetail = input<DndSpecies | null>(null);
+  readonly reviewSpeciesTraitNames = input('');
+  readonly clazz = input('');
+  readonly selectedSubclass = input('');
+  readonly classDetail = input<DndClass | null>(null);
+  readonly classSavingThrows = input('…');
+  readonly background = input('');
+  readonly backgroundFeatName = input('');
+  readonly bonusPlus2 = input<Ability | ''>('');
+  readonly bonusPlus1 = input<Ability | ''>('');
 
   // Proficiencies & languages
-  @Input() reviewAllSkills: string[] = [];
-  @Input() backgroundToolProfs: string[] = [];
-  @Input() languageChoice = '';
-  @Input() languageChoice2 = '';
+  readonly reviewAllSkills = input<string[]>([]);
+  readonly backgroundToolProfs = input<string[]>([]);
+  readonly languageChoice = input('');
+  readonly languageChoice2 = input('');
 
   /** 'Common' plus the chosen languages, for the languages review row. */
   get languagesDisplay(): string {
-    return ['Common', this.languageChoice, this.languageChoice2].filter(l => !!l).join(', ');
+    return ['Common', this.languageChoice(), this.languageChoice2()].filter(l => !!l).join(', ');
   }
 
   // Ability scores
-  @Input() abilities: readonly Ability[] = [];
-  @Input() finalScore: (a: Ability) => number = () => 0;
+  readonly abilities = input<readonly Ability[]>([]);
+  readonly finalScore = input<(a: Ability) => number>(() => 0);
 
   // Spells (casters only)
-  @Input() isSpellcastingClass = false;
-  @Input() selectedSpells: DndSpell[] = [];
-  @Input() reviewCantripNames = '';
-  @Input() reviewLeveledSpellNames = '';
+  readonly isSpellcastingClass = input(false);
+  readonly selectedSpells = input<DndSpell[]>([]);
+  readonly reviewCantripNames = input('');
+  readonly reviewLeveledSpellNames = input('');
 
   // Equipment
-  @Input() equipmentChoice: 'A' | 'B' | '' = '';
-  @Input() equipmentStep = 8;
-  @Input() currentClassEquipment: ClassEquipment | null = null;
-  @Input() reviewWeaponNames = '';
-  @Input() reviewGearNames = '';
-  @Input() reviewStartingGp = 0;
+  readonly equipmentChoice = input<'A' | 'B' | ''>('');
+  readonly equipmentStep = input(8);
+  readonly currentClassEquipment = input<ClassEquipment | null>(null);
+  readonly reviewWeaponNames = input('');
+  readonly reviewGearNames = input('');
+  readonly reviewStartingGp = input(0);
 
   /** An Edit button was clicked — parent runs goToStep with this step number. */
-  @Output() edit = new EventEmitter<number>();
+  readonly edit = output<number>();
 }

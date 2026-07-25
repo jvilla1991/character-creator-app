@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { PcNotesComponent } from './pc-notes.component';
 import { PCService } from '../../../../services/pc.service';
@@ -17,7 +18,7 @@ describe('PcNotesComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService', ['getNotes', 'addNote']);
-    component = new PcNotesComponent(pcService);
+    component = TestBed.runInInjectionContext(() => new PcNotesComponent(pcService));
     component.canWrite = true;
   });
 

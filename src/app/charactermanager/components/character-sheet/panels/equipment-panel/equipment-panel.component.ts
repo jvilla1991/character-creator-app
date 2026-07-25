@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { PC } from '../../../../models/pc';
 
 @Component({
@@ -7,5 +7,5 @@ import { PC } from '../../../../models/pc';
     styleUrls: ['./equipment-panel.component.scss']
 })
 export class EquipmentPanelComponent {
-  @Input() pc!: PC;
+  readonly pc = input.required<PC>();
 }

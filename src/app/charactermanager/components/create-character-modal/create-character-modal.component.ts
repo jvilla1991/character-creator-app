@@ -1,4 +1,4 @@
-import { Component, DestroyRef, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnDestroy, OnInit, output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
@@ -314,8 +314,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.dndResources.getBackgroundGold(this.background);
   }
 
-  @Output() confirm = new EventEmitter<Partial<PC>>();
-  @Output() close   = new EventEmitter<void>();
+  readonly confirm = output<Partial<PC>>();
+  readonly close = output<void>();
 
   constructor(
     private dndResources: DndResourcesService,

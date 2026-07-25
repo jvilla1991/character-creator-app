@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { passiveScore, tintFor } from '../../../utils/character-math';
 import { DecimalPipe } from '@angular/common';
@@ -13,8 +13,8 @@ import { DecimalPipe } from '@angular/common';
     imports: [DecimalPipe]
 })
 export class PartyBoardComponent {
-  @Input() members: PC[] = [];
-  @Output() openHero = new EventEmitter<PC>();
+  readonly members = input<PC[]>([]);
+  readonly openHero = output<PC>();
 
   tintFor(pc: PC): string { return tintFor(pc); }
 

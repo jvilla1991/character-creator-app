@@ -1,15 +1,19 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { EditableNumberComponent } from './editable-number.component';
 
 describe('EditableNumberComponent', () => {
+  let fixture: ComponentFixture<EditableNumberComponent>;
   let component: EditableNumberComponent;
 
   beforeEach(() => {
-    component = new EditableNumberComponent();
+    fixture = TestBed.createComponent(EditableNumberComponent);
+    component = fixture.componentInstance;
   });
 
   it('start() does nothing when not editable, intercept or not', () => {
-    component.editable = false;
-    component.intercept = true;
+    fixture.componentRef.setInput('editable', false);
+    fixture.componentRef.setInput('intercept', true);
     const emitted = jasmine.createSpy('emitted');
     component.editRequested.subscribe(emitted);
 
@@ -20,8 +24,8 @@ describe('EditableNumberComponent', () => {
   });
 
   it('start() emits editRequested and skips the inline editor when intercept is true', () => {
-    component.editable = true;
-    component.intercept = true;
+    fixture.componentRef.setInput('editable', true);
+    fixture.componentRef.setInput('intercept', true);
     const emitted = jasmine.createSpy('emitted');
     component.editRequested.subscribe(emitted);
 
@@ -32,8 +36,8 @@ describe('EditableNumberComponent', () => {
   });
 
   it('start() opens the inline editor as before when intercept is false (default)', () => {
-    component.editable = true;
-    component.value = 15;
+    fixture.componentRef.setInput('editable', true);
+    fixture.componentRef.setInput('value', 15);
     const emitted = jasmine.createSpy('emitted');
     component.editRequested.subscribe(emitted);
 

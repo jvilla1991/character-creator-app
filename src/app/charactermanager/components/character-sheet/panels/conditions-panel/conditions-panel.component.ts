@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { CONDITIONS_LIST } from '../../../../utils/character-math';
 
@@ -15,15 +15,15 @@ export class ConditionsPanelComponent {
   @Input() ownSheet = false;
   /** An inspiration write is in flight (host-owned); disables the meter. */
   @Input() inspirationBusy = false;
-  @Output() conditionToggled = new EventEmitter<string>();
+  readonly conditionToggled = output<string>();
   /** New exhaustion level (0–6) picked on the tracker; the host clamps and
    *  persists it through the same owner/DM path as a condition toggle. */
-  @Output() exhaustionChanged = new EventEmitter<number>();
+  readonly exhaustionChanged = output<number>();
   /** New inspiration pip count (0–5) picked on the meter; the host persists it
    *  through the server-owned inspiration endpoint. */
-  @Output() inspirationChanged = new EventEmitter<number>();
+  readonly inspirationChanged = output<number>();
   /** Owner (or DM) spends the Heroic Inspiration badge. */
-  @Output() inspirationUsed = new EventEmitter<void>();
+  readonly inspirationUsed = output<void>();
 
   readonly conditions = CONDITIONS_LIST;
 

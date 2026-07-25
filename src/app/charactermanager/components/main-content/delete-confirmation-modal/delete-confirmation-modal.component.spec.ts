@@ -17,7 +17,7 @@ describe('DeleteConfirmationModalComponent', () => {
 
     fixture = TestBed.createComponent(DeleteConfirmationModalComponent);
     component = fixture.componentInstance;
-    component.pc = STUB_PC as PC;
+    fixture.componentRef.setInput('pc', STUB_PC as PC);
     fixture.detectChanges();
   });
 

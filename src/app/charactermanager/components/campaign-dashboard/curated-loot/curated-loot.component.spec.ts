@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CuratedLootComponent } from './curated-loot.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootSummary } from '../../../models/curated-loot';
@@ -26,7 +27,7 @@ describe('CuratedLootComponent', () => {
       ['list', 'create', 'get', 'update', 'delete', 'addItem', 'updateItem', 'removeItem',
        'setCoins', 'importLoot']);
     service.list.and.returnValue(of([] as CuratedLootSummary[]));
-    component = new CuratedLootComponent(service);
+    component = TestBed.runInInjectionContext(() => new CuratedLootComponent(service));
     component.campaign = campaign;
   });
 

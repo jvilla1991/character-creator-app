@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 
 import { ItemComposerComponent } from './item-composer.component';
 import { AuthoredItem, pcItemFromAuthored } from './authored-item';
@@ -19,7 +20,7 @@ describe('ItemComposerComponent', () => {
   beforeEach(() => {
     shopService = jasmine.createSpyObj<ShopService>('ShopService', ['getCatalog']);
     shopService.getCatalog.and.returnValue(of([]));
-    component = new ItemComposerComponent(shopService);
+    component = TestBed.runInInjectionContext(() => new ItemComposerComponent(shopService));
   });
 
   it('loads the catalog for the default category on init', () => {
@@ -118,7 +119,7 @@ describe('ItemComposerComponent', () => {
   it('starts on the custom tab in demo mode (no catalog)', () => {
     // demoMode is captured at construction; build a component that reads it as true.
     spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
-    const demoComponent = new ItemComposerComponent(shopService);
+    const demoComponent = TestBed.runInInjectionContext(() => new ItemComposerComponent(shopService));
 
     demoComponent.ngOnInit();
 

@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CampaignNotesComponent } from './campaign-notes.component';
 import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
@@ -17,7 +18,7 @@ describe('CampaignNotesComponent', () => {
     campaignService = jasmine.createSpyObj('CampaignService',
       ['getNotes', 'addNote', 'updateNote', 'deleteNote']);
     campaignService.getNotes.and.returnValue(of([note]));
-    component = new CampaignNotesComponent(campaignService);
+    component = TestBed.runInInjectionContext(() => new CampaignNotesComponent(campaignService));
     component.campaign = campaign;
     component.ngOnChanges({ campaign: {} as any });
   });

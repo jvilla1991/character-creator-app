@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
 
 /**
@@ -12,18 +12,21 @@ import { DndClass } from '../../../../models/dnd-api.types';
     styleUrls: ['./class-step.component.scss']
 })
 export class ClassStepComponent {
-  @Input() classList: string[] = [];
-  @Input() clazz = '';
-  @Input() classDetail: DndClass | null = null;
-  @Input() loadingClassList = false;
-  @Input() loadingClassDetail = false;
-  @Input() classSavingThrows = '…';
-  @Input() requiresLevel1Subclass = false;
-  @Input() availableSubclasses: { name: string; desc: string }[] = [];
-  @Input() selectedSubclass = '';
+  readonly classList = input<string[]>([]);
+  readonly clazz = input('');
+  readonly classDetail = input<DndClass | null>(null);
+  readonly loadingClassList = input(false);
+  readonly loadingClassDetail = input(false);
+  readonly classSavingThrows = input('…');
+  readonly requiresLevel1Subclass = input(false);
+  readonly availableSubclasses = input<{
+    name: string;
+    desc: string;
+}[]>([]);
+  readonly selectedSubclass = input('');
 
   /** A class row was clicked — parent runs toggleClass (select / collapse). */
-  @Output() toggle = new EventEmitter<string>();
+  readonly toggle = output<string>();
   /** A subclass card was picked (two-way [(selectedSubclass)] on the parent). */
-  @Output() selectedSubclassChange = new EventEmitter<string>();
+  readonly selectedSubclassChange = output<string>();
 }

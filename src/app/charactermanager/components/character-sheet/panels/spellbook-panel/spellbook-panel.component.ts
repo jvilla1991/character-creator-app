@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, input, output } from '@angular/core';
 import { PC, PcSpell } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
@@ -31,75 +31,64 @@ export interface CastRequest {
     imports: [SpellPickerComponent, EditableNumberComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
-  @Input() pc!: PC;
+  readonly pc = input.required<PC>();
   /** DM cross-link: replaces the slot pips with editable used/max numbers. */
-  @Input() editable = false;
+  readonly editable = input(false);
   /** Campaign runs strict material components: a missing costly component blocks the cast. */
-  @Input() strictComponents = false;
+  readonly strictComponents = input(false);
   /** True only inside a live session — casting is a session-mode action, so the
    *  Cast buttons appear only when this is set. Slots are never player-editable
    *  by hand; they change solely through casting (session) or the DM's editor. */
-  @Input() castable = false;
+  readonly castable = input(false);
   /** DM cross-link: reveals the "Grant spells" control. Distinct from `editable`
    *  (slot editing) — a DM may be able to grant spells without also editing slots. */
-  @Input() addAllowed = false;
+  readonly addAllowed = input(false);
   /** The viewer may toggle spells prepared/unprepared: the character's owner on
    *  their own sheet, or the DM cross-link. Swap timing (long-rest-only, etc.)
    *  is deliberately not enforced — tables manage that socially; only the 2024
    *  PHB prepared-count cap is. */
-  @Input() preparable = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly preparable = input(false);
+  readonly pcChange = output<PC>();
   /** A cast resolved to a slot level — the host forwards it to the live session. */
-  @Output() castRequested = new EventEmitter<CastRequest>();
+  readonly castRequested = output<CastRequest>();
   /**
    * DM-granted spells, already mapped to the PcSpell snapshot shape. Emitted as a bare
    * payload rather than a merged PC because a grant must go through GrantService's
    * refetch-merge-save (the sheet's `pc` copy can be stale — PUTting it directly risks
    * clobbering a concurrent player edit). CharacterSheetComponent owns the actual save.
    */
-  @Output() spellsGranted = new EventEmitter<PcSpell[]>();
+  readonly spellsGranted = output<PcSpell[]>();
 
   constructor(private dndResources: DndResourcesService, private cdr: ChangeDetectorRef) {}
 
-  hasSpells   = false;
-  spellsByLevel: SpellLevel[] = [];
+  readonly hasSpells = computed(() => (this.pc().spells ?? []).length > 0);
   /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
-  preparedCount = 0;
-  preparedCap: number | null = null;
-  hasLeveledSpells = false;
+  readonly preparedCount = computed(() => countPreparedSpells(this.pc().spells ?? []));
+  readonly preparedCap = computed(() => preparedSpellCap(this.pc().clazz, this.pc().level));
+  readonly hasLeveledSpells = computed(() => (this.pc().spells ?? []).some(s => s.lvl > 0));
   /** 8 + prof + casting-ability mod; null for non-casters/unknown classes —
    *  the header then simply omits the "Save DC · Spell Atk" readout. */
-  saveDc: number | null = null;
+  readonly saveDc = computed(() => spellSaveDc(this.pc()));
   /** "+7"-style spell attack bonus, pre-formatted; null with saveDc. */
-  spellAtk: string | null = null;
+  readonly spellAtk = computed(() => {
+    const atk = spellAttackBonus(this.pc());
+    return atk == null ? null : fmtMod(atk);
+  });
 
-  ngOnChanges(): void {
-    // A new PC snapshot (including the one a cast produces) closes any open
-    // picker/confirm so stale cast UI never survives a data change.
-    this.pickerFor = null;
-    this.pendingCast = null;
-    this.blockedFor = null;
-
-    const spells = this.pc.spells ?? [];
-    this.hasSpells = spells.length > 0;
-    this.preparedCount = countPreparedSpells(spells);
-    this.preparedCap = preparedSpellCap(this.pc.clazz, this.pc.level);
-    this.hasLeveledSpells = spells.some(s => s.lvl > 0);
-    this.saveDc = spellSaveDc(this.pc);
-    const atk = spellAttackBonus(this.pc);
-    this.spellAtk = atk == null ? null : fmtMod(atk);
-
-    if (!this.hasSpells) { this.spellsByLevel = []; return; }
+  readonly spellsByLevel = computed<SpellLevel[]>(() => {
+    const pc = this.pc();
+    const spells = pc.spells ?? [];
+    if (!spells.length) return [];
 
     const map = new Map<number, NonNullable<PC['spells']>>();
     for (const s of spells) {
       if (!map.has(s.lvl)) map.set(s.lvl, []);
       map.get(s.lvl)!.push(s);
     }
-    this.spellsByLevel = Array.from(map.keys())
+    return Array.from(map.keys())
       .sort((a, b) => a - b)
       .map(lvl => {
-        const slots = this.pc.spellSlots?.[lvl] ?? null;
+        const slots = pc.spellSlots?.[lvl] ?? null;
         return {
           lvl,
           label:       lvl === 0 ? 'Cantrips' : `Level ${lvl}`,
@@ -108,6 +97,14 @@ export class SpellbookPanelComponent implements OnChanges {
           slotIndices: slots ? Array.from({ length: slots.max }, (_, i) => i) : [],
         };
       });
+  });
+
+  ngOnChanges(): void {
+    // A new PC snapshot (including the one a cast produces) closes any open
+    // picker/confirm so stale cast UI never survives a data change.
+    this.pickerFor = null;
+    this.pendingCast = null;
+    this.blockedFor = null;
   }
 
   trackByLvl(_: number, row: SpellLevel): number { return row.lvl; }
@@ -139,7 +136,7 @@ export class SpellbookPanelComponent implements OnChanges {
   blockedFor: { spellName: string; message: string } | null = null;
 
   levelsFor(spell: PcSpell): number[] {
-    return castableLevels(this.pc, spell);
+    return castableLevels(this.pc(), spell);
   }
 
   canCast(spell: PcSpell): boolean {
@@ -159,8 +156,8 @@ export class SpellbookPanelComponent implements OnChanges {
     this.pendingCast = null;
     this.blockedFor = null;
 
-    const warning = castWarning(this.pc, spell);
-    if (warning && this.strictComponents) {
+    const warning = castWarning(this.pc(), spell);
+    if (warning && this.strictComponents()) {
       this.blockedFor = { spellName: spell.name, message: `${warning} — this campaign requires it to cast.` };
       return;
     }
@@ -181,7 +178,7 @@ export class SpellbookPanelComponent implements OnChanges {
   pickLevel(spell: PcSpell, atLevel: number, event: Event): void {
     event.stopPropagation();
     this.pickerFor = null;
-    this.resolveCast(spell.name, atLevel, castWarning(this.pc, spell));
+    this.resolveCast(spell.name, atLevel, castWarning(this.pc(), spell));
   }
 
   /** Emit the cast, or park it behind the missing-component confirmation. */
@@ -225,14 +222,15 @@ export class SpellbookPanelComponent implements OnChanges {
   /** Unpreparing is always allowed; preparing is blocked at the class cap. */
   canTogglePrepared(spell: PcSpell): boolean {
     if (this.isPrepared(spell)) return true;
-    return this.preparedCap == null || this.preparedCount < this.preparedCap;
+    const cap = this.preparedCap();
+    return cap == null || this.preparedCount() < cap;
   }
 
   prepareTitle(spell: PcSpell): string {
     if (this.isPrepared(spell)) return `Unprepare ${spell.name}`;
     return this.canTogglePrepared(spell)
       ? `Prepare ${spell.name}`
-      : `Prepared spells are at the ${this.pc.clazz} cap (${this.preparedCap}) — unprepare another spell first`;
+      : `Prepared spells are at the ${this.pc().clazz} cap (${this.preparedCap()}) — unprepare another spell first`;
   }
 
   togglePrepared(spell: PcSpell, event: Event): void {
@@ -240,21 +238,23 @@ export class SpellbookPanelComponent implements OnChanges {
     if (spell.lvl === 0) return;                 // cantrips have no toggle
     const preparing = !this.isPrepared(spell);
     if (preparing && !this.canTogglePrepared(spell)) return; // at cap; belt and braces
-    const spells = (this.pc.spells ?? []).map(s =>
+    const pc = this.pc();
+    const spells = (pc.spells ?? []).map(s =>
       s === spell ? { ...s, prepared: preparing } : s);
-    this.pcChange.emit({ ...this.pc, spells });
+    this.pcChange.emit({ ...pc, spells });
   }
 
   // ── DM slot editing ──────────────────────────────────────────────────────
   // Edit a spell level's used/max slot counts, keeping used within [0, max].
 
   setSlot(level: number, field: 'used' | 'max', value: number): void {
-    const slots = { ...(this.pc.spellSlots ?? {}) };
+    const pc = this.pc();
+    const slots = { ...(pc.spellSlots ?? {}) };
     const existing = slots[level] ?? { max: 0, used: 0 };
     const next = { ...existing, [field]: value };
     next.used = Math.max(0, Math.min(next.used, next.max));
     slots[level] = next;
-    this.pcChange.emit({ ...this.pc, spellSlots: slots });
+    this.pcChange.emit({ ...pc, spellSlots: slots });
   }
 
   // ── DM grant form ────────────────────────────────────────────────────────
@@ -293,8 +293,8 @@ export class SpellbookPanelComponent implements OnChanges {
   private loadGrantCandidates(): void {
     this.loadingGrantSpells = true;
     this.grantSelection = [];
-    const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
-    const spells$ = this.allClasses ? this.dndResources.getSpells() : this.dndResources.getSpellsForClass(this.pc.clazz);
+    const known = new Set((this.pc().spells ?? []).map(s => s.name.toLowerCase()));
+    const spells$ = this.allClasses ? this.dndResources.getSpells() : this.dndResources.getSpellsForClass(this.pc().clazz);
     spells$.subscribe({
       next: spells => {
         this.grantCandidates = spells.filter(s => !known.has(s.name.toLowerCase()));

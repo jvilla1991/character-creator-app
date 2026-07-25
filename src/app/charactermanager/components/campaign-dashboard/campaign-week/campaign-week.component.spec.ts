@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CampaignWeekComponent } from './campaign-week.component';
 import { Campaign } from '../../../models/campaign';
 
@@ -12,7 +13,7 @@ describe('CampaignWeekComponent', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj('CampaignService', ['setWeekDays']);
-    component = new CampaignWeekComponent(service);
+    component = TestBed.runInInjectionContext(() => new CampaignWeekComponent(service));
     component.campaign = campaign();
   });
 

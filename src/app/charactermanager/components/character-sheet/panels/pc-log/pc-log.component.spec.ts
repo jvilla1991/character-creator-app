@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { PcLogComponent } from './pc-log.component';
 import { PCService } from '../../../../services/pc.service';
@@ -17,7 +18,7 @@ describe('PcLogComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService', ['getLog']);
-    component = new PcLogComponent(pcService);
+    component = TestBed.runInInjectionContext(() => new PcLogComponent(pcService));
   });
 
   function bind(newPc: PC, previous?: PC): void {

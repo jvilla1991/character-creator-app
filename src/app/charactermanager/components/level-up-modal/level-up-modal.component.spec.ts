@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 
 import { LevelUpModalComponent } from './level-up-modal.component';
 import { PCService } from '../../services/pc.service';
@@ -41,7 +42,7 @@ describe('LevelUpModalComponent', () => {
       ['getFeatDescription', 'getSpellsForClass']);
     dndResources.getFeatDescription.and.returnValue('A mighty feat.');
     dndResources.getSpellsForClass.and.returnValue(of([]));
-    component = new LevelUpModalComponent(pcService, dndResources);
+    component = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
     component.pc = makePC();
   });
 
