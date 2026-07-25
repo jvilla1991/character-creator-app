@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  HostListener,
   Input,
   OnDestroy,
   Output,
@@ -381,11 +380,6 @@ export class DiceRollerModalComponent implements OnDestroy {
 
   cancel(): void {
     this.close.emit();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.cancel();
   }
 
   private randomFace(sides: DieSides): number {

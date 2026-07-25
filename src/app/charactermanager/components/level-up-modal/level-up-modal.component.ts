@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { PC } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
@@ -285,11 +285,6 @@ export class LevelUpModalComponent implements OnInit {
   cancel(): void {
     if (this.submitting) return;
     this.close.emit();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.cancel();
   }
 
   private messageFrom(err: unknown, fallback: string): string {

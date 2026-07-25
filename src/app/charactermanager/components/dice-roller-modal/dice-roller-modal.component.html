@@ -1,4 +1,4 @@
-<div class="modal dice-modal" [class.is-rolling]="phase === 'rolling'">
+<div class="modal dice-modal" [class.is-rolling]="phase === 'rolling'" appEscapeClose (escapeClose)="cancel()">
 
   <button class="dice-close" type="button" title="Close" (click)="cancel()">&times;</button>
 
