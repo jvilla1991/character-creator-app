@@ -94,9 +94,30 @@
     </div>
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
-    <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
-    <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
-    <app-curated-loot [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-loot>
+    <!-- Curated shops/encounters/loot are DM authoring tools that sit well below
+    the fold on first paint — deferred until scrolled into view so the dashboard's
+    initial render only pays for the board/treasury above. -->
+    @defer (on viewport) {
+      <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated shops…
+      </div>
+    }
+    @defer (on viewport) {
+      <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated encounters…
+      </div>
+    }
+    @defer (on viewport) {
+      <app-curated-loot [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-loot>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated loot…
+      </div>
+    }
     <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
     <!-- Campaign week definition lives at the bottom: it's set-once-and-rarely-touched. -->
     <app-campaign-week [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-week>

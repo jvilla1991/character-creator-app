@@ -245,20 +245,26 @@
     </div>
   }
 
-  <!-- SPELLS TAB -->
+  <!-- SPELLS TAB — the heaviest panel on the sheet (search/filter over the
+  full spell list plus prep/cast controls), so its render is deferred until
+  it's actually in view rather than paid for on every tab switch. -->
   @if (activeTab === 'spells') {
     <div class="sheet-tab-panel">
-      <app-spellbook-panel
-        [pc]="pc"
-        [editable]="editable"
-        [strictComponents]="strictComponents"
-        [castable]="sessionLive"
-        [addAllowed]="editable"
-        [preparable]="ownSheet || editable"
-        (castRequested)="onCastRequested($event)"
-        (pcChange)="onPcChange($event)"
-        (spellsGranted)="onSpellsGrant($event)">
-      </app-spellbook-panel>
+      @defer (on viewport) {
+        <app-spellbook-panel
+          [pc]="pc"
+          [editable]="editable"
+          [strictComponents]="strictComponents"
+          [castable]="sessionLive"
+          [addAllowed]="editable"
+          [preparable]="ownSheet || editable"
+          (castRequested)="onCastRequested($event)"
+          (pcChange)="onPcChange($event)"
+          (spellsGranted)="onSpellsGrant($event)">
+        </app-spellbook-panel>
+      } @placeholder {
+        <div class="panel-defer-placeholder">Loading spellbook…</div>
+      }
     </div>
   }
 
