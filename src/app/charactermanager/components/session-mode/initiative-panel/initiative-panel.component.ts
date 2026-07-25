@@ -1,9 +1,11 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, output } from '@angular/core';
 import { ParticipantView, SessionStatus } from '../../../models/session';
 import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { tintFor } from '../../../utils/character-math';
 import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
+import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 
 /**
  * Initiative order — one row per combatant in server-computed turn order, with
@@ -25,7 +27,7 @@ import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survi
     selector: 'app-initiative-panel',
     templateUrl: './initiative-panel.component.html',
     styleUrls: ['./initiative-panel.component.scss'],
-    standalone: false
+    imports: [FormsModule, DecimalPipe]
 })
 export class InitiativePanelComponent {
   @Input() participants: ParticipantView[] = [];
@@ -48,7 +50,7 @@ export class InitiativePanelComponent {
    * DM-only, PC-only (players' own sheet is already embedded in session mode,
    * and NPCs have no sheet to open). SessionModeComponent owns the actual open.
    */
-  @Output() openPc = new EventEmitter<ParticipantView>();
+  readonly openPc = output<ParticipantView>();
 
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};

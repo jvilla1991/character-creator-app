@@ -1,11 +1,13 @@
-<div class="modal" style="border-color: var(--crimson);">
+<div class="modal" style="border-color: var(--crimson);"
+  role="alertdialog" aria-modal="true" aria-labelledby="delete-character-title"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
 
-  <div class="modal-title" style="color: var(--crimson);">Strike From The Record</div>
+  <div class="modal-title" id="delete-character-title" style="color: var(--crimson);">Strike From The Record</div>
 
   <div class="modal-sub">
     You are about to remove
-    <em style="color: var(--text); font-style: normal;">{{ pc.name }}</em>,
-    {{ pc.race }} {{ pc.clazz }} of level {{ pc.level }},
+    <em style="color: var(--text); font-style: normal;">{{ pc().name }}</em>,
+    {{ pc().race }} {{ pc().clazz }} of level {{ pc().level }},
     from the chronicle.
     Their tale will not be remembered, nor their bones recovered.
     This cannot be undone.

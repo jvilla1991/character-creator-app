@@ -12,19 +12,20 @@
   </div>
 
   @for (key of keys; track key) {
+    @let stageValue = stage(key);
     <div
       style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0;">
       <span style="text-transform: capitalize; min-width: 62px;">{{ key }}</span>
       <span class="equip-item-meta" style="flex: 1; text-align: right;">
-        {{ label(key) }} · {{ stage(key) }}/6
+        {{ label(key) }} · {{ stageValue }}/6
       </span>
       @if (editable) {
         <span style="display: inline-flex; gap: 4px;">
           <button class="btn" style="padding: 0 8px; line-height: 20px;"
-            [disabled]="stage(key) <= 0" (click)="adjust(key, -1)"
+            [disabled]="stageValue <= 0" (click)="adjust(key, -1)"
           [attr.aria-label]="'Lower ' + key">−</button>
           <button class="btn" style="padding: 0 8px; line-height: 20px;"
-            [disabled]="stage(key) >= 6" (click)="adjust(key, 1)"
+            [disabled]="stageValue >= 6" (click)="adjust(key, 1)"
           [attr.aria-label]="'Raise ' + key">+</button>
         </span>
       }

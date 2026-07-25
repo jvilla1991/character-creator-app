@@ -1,7 +1,10 @@
 import {
-  ChangeDetectionStrategy, Component, ElementRef, EventEmitter,
-  Input, Output, ViewChild,
+  ChangeDetectionStrategy, Component, ElementRef,
+  input,
+  output,
+  viewChild
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 /**
  * A single number shown inline that a DM can click to edit. Mirrors the sheet's
@@ -18,44 +21,44 @@ import {
     templateUrl: './editable-number.component.html',
     styleUrls: ['./editable-number.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    imports: [FormsModule]
 })
 export class EditableNumberComponent {
-  @Input() value: number | null | undefined = 0;
-  @Input() editable = false;
+  readonly value = input<number | null | undefined>(0);
+  readonly editable = input(false);
   /** Inclusive bounds; null = unbounded on that side. */
-  @Input() min: number | null = 0;
-  @Input() max: number | null = null;
+  readonly min = input<number | null>(0);
+  readonly max = input<number | null>(null);
   /** Accessible label, also used for the click hint. */
-  @Input() label = 'value';
+  readonly label = input('value');
   /**
    * Opt-in: when true (and editable), a click emits {@link editRequested}
    * instead of opening the inline editor — the parent owns a richer edit
    * surface (e.g. the DM edit modal) instead. Inert when editable is false,
    * so player flows are completely untouched.
    */
-  @Input() intercept = false;
+  readonly intercept = input(false);
 
-  @Output() committed = new EventEmitter<number>();
-  @Output() editRequested = new EventEmitter<void>();
+  readonly committed = output<number>();
+  readonly editRequested = output<void>();
 
-  @ViewChild('input') inputRef?: ElementRef<HTMLInputElement>;
+  readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('input');
 
   editing = false;
   draft: number | null = null;
 
   start(): void {
-    if (!this.editable) return;
-    if (this.intercept) {
+    if (!this.editable()) return;
+    if (this.intercept()) {
       this.editRequested.emit();
       return;
     }
-    this.draft = this.value ?? 0;
+    this.draft = this.value() ?? 0;
     this.editing = true;
     // Input renders after this change-detection pass; focus + select on the next tick.
     setTimeout(() => {
-      this.inputRef?.nativeElement.focus();
-      this.inputRef?.nativeElement.select();
+      this.inputRef()?.nativeElement.focus();
+      this.inputRef()?.nativeElement.select();
     });
   }
 
@@ -66,7 +69,7 @@ export class EditableNumberComponent {
       return; // reject blank / non-numeric — keep the existing value
     }
     const clamped = this.clamp(Math.round(Number(this.draft)));
-    if (clamped !== (this.value ?? 0)) {
+    if (clamped !== (this.value() ?? 0)) {
       this.committed.emit(clamped);
     }
   }
@@ -77,8 +80,10 @@ export class EditableNumberComponent {
 
   private clamp(n: number): number {
     let v = n;
-    if (this.min !== null) v = Math.max(this.min, v);
-    if (this.max !== null) v = Math.min(this.max, v);
+    const min = this.min();
+    const max = this.max();
+    if (min !== null) v = Math.max(min, v);
+    if (max !== null) v = Math.min(max, v);
     return v;
   }
 }

@@ -5,15 +5,15 @@
 <div class="review-stat-bar">
   <div class="review-stat">
     <span class="review-stat-label">HP</span>
-    <span class="review-stat-value">{{ reviewHp }}</span>
+    <span class="review-stat-value">{{ reviewHp() }}</span>
   </div>
   <div class="review-stat">
     <span class="review-stat-label">AC</span>
-    <span class="review-stat-value">{{ reviewAc }}</span>
+    <span class="review-stat-value">{{ reviewAc() }}</span>
   </div>
   <div class="review-stat">
     <span class="review-stat-label">Initiative</span>
-    <span class="review-stat-value">{{ reviewInitiative }}</span>
+    <span class="review-stat-value">{{ reviewInitiative() }}</span>
   </div>
   <div class="review-stat">
     <span class="review-stat-label">Speed</span>
@@ -35,12 +35,12 @@
     </div>
     <div class="review-row">
       <span class="review-label">Name</span>
-      <span class="review-value">{{ name }}</span>
+      <span class="review-value">{{ name() }}</span>
     </div>
-    @if (player) {
+    @if (player()) {
       <div class="review-row">
         <span class="review-label">Player</span>
-        <span class="review-value">{{ player }}</span>
+        <span class="review-value">{{ player() }}</span>
       </div>
     }
   </div>
@@ -53,18 +53,18 @@
     </div>
     <div class="review-row">
       <span class="review-label">Species</span>
-      <span class="review-value">{{ species }}</span>
+      <span class="review-value">{{ species() }}</span>
     </div>
-    @if (speciesDetail) {
+    @if (speciesDetail(); as detail) {
       <div class="review-row">
         <span class="review-label">Size / Speed</span>
-        <span class="review-value">{{ speciesDetail.size }}, {{ speciesDetail.speed }} ft.</span>
+        <span class="review-value">{{ detail.size }}, {{ detail.speed }} ft.</span>
       </div>
     }
-    @if (reviewSpeciesTraitNames) {
+    @if (reviewSpeciesTraitNames()) {
       <div class="review-row">
         <span class="review-label">Traits</span>
-        <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames }}</span>
+        <span class="review-value review-value--wrap">{{ reviewSpeciesTraitNames() }}</span>
       </div>
     }
   </div>
@@ -77,23 +77,23 @@
     </div>
     <div class="review-row">
       <span class="review-label">Class</span>
-      <span class="review-value">{{ clazz }}</span>
+      <span class="review-value">{{ clazz() }}</span>
     </div>
-    @if (selectedSubclass) {
+    @if (selectedSubclass()) {
       <div class="review-row">
         <span class="review-label">Subclass</span>
-        <span class="review-value">{{ selectedSubclass }}</span>
+        <span class="review-value">{{ selectedSubclass() }}</span>
       </div>
     }
-    @if (classDetail) {
+    @if (classDetail(); as detail) {
       <div class="review-row">
         <span class="review-label">Hit Die</span>
-        <span class="review-value">d{{ classDetail.hit_die }}</span>
+        <span class="review-value">d{{ detail.hit_die }}</span>
       </div>
     }
     <div class="review-row">
       <span class="review-label">Saving Throws</span>
-      <span class="review-value">{{ classSavingThrows }}</span>
+      <span class="review-value">{{ classSavingThrows() }}</span>
     </div>
   </div>
 
@@ -105,18 +105,18 @@
     </div>
     <div class="review-row">
       <span class="review-label">Background</span>
-      <span class="review-value">{{ background }}</span>
+      <span class="review-value">{{ background() }}</span>
     </div>
-    @if (backgroundFeatName) {
+    @if (backgroundFeatName()) {
       <div class="review-row">
         <span class="review-label">Origin Feat</span>
-        <span class="review-value">{{ backgroundFeatName }}</span>
+        <span class="review-value">{{ backgroundFeatName() }}</span>
       </div>
     }
-    @if (bonusPlus2 && bonusPlus1) {
+    @if (bonusPlus2() && bonusPlus1()) {
       <div class="review-row">
         <span class="review-label">Ability Bonuses</span>
-        <span class="review-value">+2 {{ bonusPlus2 }}, +1 {{ bonusPlus1 }}</span>
+        <span class="review-value">+2 {{ bonusPlus2() }}, +1 {{ bonusPlus1() }}</span>
       </div>
     }
   </div>
@@ -129,12 +129,12 @@
     </div>
     <div class="review-row">
       <span class="review-label">Skills</span>
-      <span class="review-value review-value--wrap">{{ reviewAllSkills.join(', ') || '—' }}</span>
+      <span class="review-value review-value--wrap">{{ reviewAllSkills().join(', ') || '—' }}</span>
     </div>
-    @if (backgroundToolProfs.length) {
+    @if (backgroundToolProfs().length) {
       <div class="review-row">
         <span class="review-label">Tools</span>
-        <span class="review-value review-value--wrap">{{ backgroundToolProfs.join(', ') }}</span>
+        <span class="review-value review-value--wrap">{{ backgroundToolProfs().join(', ') }}</span>
       </div>
     }
     <div class="review-row">
@@ -150,38 +150,38 @@
       <button type="button" class="btn review-edit-btn" (click)="edit.emit(6)">Edit</button>
     </div>
     <div class="review-ability-grid">
-      @for (ability of abilities; track ability) {
+      @for (ability of abilities(); track ability) {
         <div class="review-ability">
           <span class="review-ability-label">{{ ability }}</span>
-          <span class="review-ability-score">{{ finalScore(ability) }}</span>
-          <span class="review-ability-mod">{{ modifier(finalScore(ability)) }}</span>
+          <span class="review-ability-score">{{ finalScore()(ability) }}</span>
+          <span class="review-ability-mod">{{ finalScore()(ability) | modifier }}</span>
         </div>
       }
     </div>
   </div>
 
   <!-- Spells (casters only) -->
-  @if (isSpellcastingClass) {
+  @if (isSpellcastingClass()) {
     <div class="review-section">
       <div class="review-section-header">
         <span class="review-section-title">Spells</span>
         <button type="button" class="btn review-edit-btn" (click)="edit.emit(7)">Edit</button>
       </div>
-      @if (selectedSpells.length === 0) {
+      @if (selectedSpells().length === 0) {
         <div class="review-row">
           <span class="review-value review-value--muted">No spells selected yet</span>
         </div>
       }
-      @if (reviewCantripNames) {
+      @if (reviewCantripNames()) {
         <div class="review-row">
           <span class="review-label">Cantrips</span>
-          <span class="review-value review-value--wrap">{{ reviewCantripNames }}</span>
+          <span class="review-value review-value--wrap">{{ reviewCantripNames() }}</span>
         </div>
       }
-      @if (reviewLeveledSpellNames) {
+      @if (reviewLeveledSpellNames()) {
         <div class="review-row">
           <span class="review-label">1st Level</span>
-          <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames }}</span>
+          <span class="review-value review-value--wrap">{{ reviewLeveledSpellNames() }}</span>
         </div>
       }
     </div>
@@ -191,31 +191,31 @@
   <div class="review-section">
     <div class="review-section-header">
       <span class="review-section-title">Starting Equipment</span>
-      <button type="button" class="btn review-edit-btn" (click)="edit.emit(equipmentStep)">Edit</button>
+      <button type="button" class="btn review-edit-btn" (click)="edit.emit(equipmentStep())">Edit</button>
     </div>
-    @if (equipmentChoice === 'A' && currentClassEquipment) {
-      @if (reviewWeaponNames) {
+    @if (equipmentChoice() === 'A' && currentClassEquipment()) {
+      @if (reviewWeaponNames()) {
         <div class="review-row">
           <span class="review-label">Weapons</span>
-          <span class="review-value review-value--wrap">{{ reviewWeaponNames }}</span>
+          <span class="review-value review-value--wrap">{{ reviewWeaponNames() }}</span>
         </div>
       }
-      @if (reviewGearNames) {
+      @if (reviewGearNames()) {
         <div class="review-row">
           <span class="review-label">Gear</span>
-          <span class="review-value review-value--wrap">{{ reviewGearNames }}</span>
+          <span class="review-value review-value--wrap">{{ reviewGearNames() }}</span>
         </div>
       }
     }
-    @if (equipmentChoice === 'B') {
+    @if (equipmentChoice() === 'B') {
       <div class="review-row">
         <span class="review-label">Gold Budget</span>
-        <span class="review-value">{{ currentClassEquipment?.optionB?.gp ?? 0 }} gp to spend</span>
+        <span class="review-value">{{ currentClassEquipment()?.optionB?.gp ?? 0 }} gp to spend</span>
       </div>
     }
     <div class="review-row">
       <span class="review-label">Starting Gold</span>
-      <span class="review-value">{{ reviewStartingGp }} gp total</span>
+      <span class="review-value">{{ reviewStartingGp() }} gp total</span>
     </div>
   </div>
 

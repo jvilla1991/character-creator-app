@@ -12,12 +12,12 @@ describe('DeleteConfirmationModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [DeleteConfirmationModalComponent],
-    }).compileComponents();
+    imports: [DeleteConfirmationModalComponent],
+}).compileComponents();
 
     fixture = TestBed.createComponent(DeleteConfirmationModalComponent);
     component = fixture.componentInstance;
-    component.pc = STUB_PC as PC;
+    fixture.componentRef.setInput('pc', STUB_PC as PC);
     fixture.detectChanges();
   });
 
@@ -37,5 +37,14 @@ describe('DeleteConfirmationModalComponent', () => {
     component.close.subscribe(() => (closed = true));
     component.cancel();
     expect(closed).toBeTrue();
+  });
+
+  it('exposes alertdialog semantics on the modal root', () => {
+    const root: HTMLElement = fixture.nativeElement.querySelector('.modal');
+    expect(root.getAttribute('role')).toBe('alertdialog');
+    expect(root.getAttribute('aria-modal')).toBe('true');
+    const titleId = root.getAttribute('aria-labelledby')!;
+    const title = fixture.nativeElement.querySelector('#' + titleId);
+    expect(title?.textContent).toContain('Strike From The Record');
   });
 });

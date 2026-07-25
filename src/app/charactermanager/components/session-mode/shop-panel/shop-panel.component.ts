@@ -7,6 +7,7 @@ import { ShopService } from '../../../services/shop.service';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 import { PCService } from '../../../services/pc.service';
 import { NotificationService } from '../../../services/notification.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Session Mode shop. The DM activates one weapon shop (Phase 1), types a
@@ -23,7 +24,7 @@ import { NotificationService } from '../../../services/notification.service';
     selector: 'app-shop-panel',
     templateUrl: './shop-panel.component.html',
     styleUrls: ['./shop-panel.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class ShopPanelComponent implements OnChanges {
   @Input() state!: SessionState;

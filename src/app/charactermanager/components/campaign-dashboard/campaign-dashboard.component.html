@@ -1,10 +1,11 @@
 @if (vm$ | async; as vm) {
+  @let campaignName = vm.campaign.name;
   <div class="fade-in">
     <!-- Header -->
     <header class="sheet-header" style="grid-template-columns: 1fr auto;">
       <div class="sheet-id">
         <div class="eyebrow">Campaign · Session {{ vm.campaign.session }} · {{ vm.members.length }} heroes</div>
-        <h1 class="sheet-name">{{ vm.campaign.name }}</h1>
+        <h1 class="sheet-name">{{ campaignName }}</h1>
         <div class="sheet-subtitle">
           {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
         </div>
@@ -94,9 +95,30 @@
     </div>
     <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
-    <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
-    <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
-    <app-curated-loot [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-loot>
+    <!-- Curated shops/encounters/loot are DM authoring tools that sit well below
+    the fold on first paint — deferred until scrolled into view so the dashboard's
+    initial render only pays for the board/treasury above. -->
+    @defer (on viewport) {
+      <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated shops…
+      </div>
+    }
+    @defer (on viewport) {
+      <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated encounters…
+      </div>
+    }
+    @defer (on viewport) {
+      <app-curated-loot [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-loot>
+    } @placeholder {
+      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+        Loading curated loot…
+      </div>
+    }
     <app-campaign-notes [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-notes>
     <!-- Campaign week definition lives at the bottom: it's set-once-and-rarely-touched. -->
     <app-campaign-week [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-campaign-week>
@@ -104,14 +126,17 @@
   <!-- Manage Party — bind/unbind your characters to this campaign -->
   @if (managePartyOpen) {
     <div class="modal-backdrop" (click)="closeManageParty()">
-      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-        <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
+      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+        role="dialog" aria-modal="true" aria-labelledby="manage-party-title"
+        cdkTrapFocus cdkTrapFocusAutoCapture>
+        <div class="modal-title" id="manage-party-title" style="color: var(--celestial-2);">Manage Party</div>
         <div class="modal-sub">
-          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em>.
+          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em>.
           Toggle a hero on to seat them at this table.
         </div>
         <div class="manage-list">
-          @for (pc of allPcs$ | async; track pc) {
+          @let allPcs = allPcs$ | async;
+          @for (pc of allPcs; track pc) {
             <div class="manage-row">
               <div class="manage-hero">
                 <div class="portrait" [style.background]="boundTint(pc)">{{ initialsFor(pc) }}</div>
@@ -129,7 +154,7 @@
               ></button>
             </div>
           }
-          @if ((allPcs$ | async)?.length === 0) {
+          @if (allPcs?.length === 0) {
             <div
               style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
               You have no characters to assign yet.
@@ -145,10 +170,12 @@
   <!-- Delete Campaign — confirmation -->
   @if (deleteCampaignOpen) {
     <div class="modal-backdrop" (click)="closeDeleteCampaign()">
-      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()">
-        <div class="modal-title" style="color: var(--crimson);">Delete Campaign</div>
+      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()"
+        role="alertdialog" aria-modal="true" aria-labelledby="delete-campaign-title"
+        cdkTrapFocus cdkTrapFocusAutoCapture>
+        <div class="modal-title" id="delete-campaign-title" style="color: var(--crimson);">Delete Campaign</div>
         <div class="modal-sub">
-          <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em> will be erased —
+          <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em> will be erased —
           its sessions, encounters, shops and notes go with it. Its characters are
           <strong>released, not deleted</strong>: they return to their players, unbound.
           This cannot be undone.

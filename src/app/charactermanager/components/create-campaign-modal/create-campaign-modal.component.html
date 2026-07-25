@@ -1,5 +1,7 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-  <div class="modal-title" style="color: var(--celestial-2);">Open a New Campaign</div>
+<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+  role="dialog" aria-modal="true" aria-labelledby="create-campaign-title"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
+  <div class="modal-title" id="create-campaign-title" style="color: var(--celestial-2);">Open a New Campaign</div>
   <div class="modal-sub">Every table begins with an empty map and a promise of trouble.</div>
 
   <div class="field">

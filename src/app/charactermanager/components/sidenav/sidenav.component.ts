@@ -1,5 +1,5 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Component, DestroyRef, OnInit, input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
@@ -8,31 +8,39 @@ import { JoinModalService } from '../../services/join-modal.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
+import { FormsModule } from '@angular/forms';
+import { CampaignSidebarComponent } from '../campaign-sidebar/campaign-sidebar.component';
+import { SessionModeComponent } from '../session-mode/session-mode.component';
+import { SessionLiveBannerComponent } from '../session-live-banner/session-live-banner.component';
+import { RouterOutlet } from '@angular/router';
+import { CampaignDashboardComponent } from '../campaign-dashboard/campaign-dashboard.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'app-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
-    standalone: false
+    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe]
 })
-export class SidenavComponent implements OnInit, OnDestroy {
+export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
   // Internal data comes directly from pcsByParty$ below.
-  @Input() pcs!: PC[];
+  readonly pcs = input.required<PC[]>();
 
   query = '';
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
   activePC$ = this.pcService.activePC$;
-  readonly role = this.uiState.role;
-  // When set, Session Mode takes over the main content area for everyone.
+  readonly isPlayer = this.uiState.isPlayer;
+  readonly isDm = this.uiState.isDm;
+  // When set, Session Mode takes over the main content area for everyone…
   readonly activeSessionId = this.uiState.activeSessionId;
-  // True while a DM is viewing a campaign member's sheet — shows the back bar.
+  // …unless a DM cross-linked into a member's sheet (dmReturn shows the back bar).
   readonly dmReturn = this.uiState.dmReturn;
+  readonly sessionOverlayVisible = this.uiState.sessionOverlayVisible;
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];
-  private sub!: Subscription;
 
   constructor(
     private pcService: PCService,
@@ -41,16 +49,15 @@ export class SidenavComponent implements OnInit, OnDestroy {
     private joinModal: JoinModalService,
     private uiState: UiStateService,
     private currentUser: CurrentUserService,
+    private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
-    this.sub = this.pcService.pcs$.subscribe(pcs => {
-      this.allPcs = pcs;
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.sub.unsubscribe();
+    this.pcService.pcs$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(pcs => {
+        this.allPcs = pcs;
+      });
   }
 
   /** The full roster, filtered by the current search query. */

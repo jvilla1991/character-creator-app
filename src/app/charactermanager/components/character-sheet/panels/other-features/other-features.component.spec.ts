@@ -1,11 +1,12 @@
 import { OtherFeaturesComponent } from './other-features.component';
+import { TestBed } from '@angular/core/testing';
 import { PC } from '../../../../models/pc';
 
 describe('OtherFeaturesComponent', () => {
   let component: OtherFeaturesComponent;
 
   beforeEach(() => {
-    component = new OtherFeaturesComponent();
+    component = TestBed.runInInjectionContext(() => new OtherFeaturesComponent());
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
 

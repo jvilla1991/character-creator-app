@@ -1,42 +1,43 @@
 <div class="modal-title">Choose Your Spells</div>
 <div class="modal-sub">
-  Select {{ maxCantrips }} cantrip{{ maxCantrips !== 1 ? 's' : '' }} and
-  {{ maxKnownSpells }} spell{{ maxKnownSpells !== 1 ? 's' : '' }} to begin your arcane journey.
+  Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
+  {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
 </div>
 
 <!-- Filter bar -->
 <div class="spell-filter-bar">
   <button type="button" class="spell-level-tab"
-    [class.active]="spellLevelFilter === 'all'"
+    [class.active]="spellLevelFilter() === 'all'"
   (click)="spellLevelFilterChange.emit('all')">All</button>
   <button type="button" class="spell-level-tab"
-    [class.active]="spellLevelFilter === 0"
+    [class.active]="spellLevelFilter() === 0"
   (click)="spellLevelFilterChange.emit(0)">Cantrip</button>
   <button type="button" class="spell-level-tab"
-    [class.active]="spellLevelFilter === 1"
+    [class.active]="spellLevelFilter() === 1"
   (click)="spellLevelFilterChange.emit(1)">1st</button>
   <input class="spell-search" type="text" placeholder="Search…"
-    [ngModel]="spellSearch" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
+    [ngModel]="spellSearch()" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
   </div>
 
-  @if (loadingSpells) {
+  @if (loadingSpells()) {
     <div class="loading">Loading spells…</div>
   }
 
   <!-- Spell tile list -->
-  @if (!loadingSpells) {
+  @if (!loadingSpells()) {
     <div class="spell-scroll">
-      @for (s of filteredSpellList; track trackBySpellName($index, s)) {
+      @for (s of filteredSpellList(); track trackBySpellName($index, s)) {
+        @let selected = isSpellSelected(s);
         <div class="spell-row">
           <!-- Click the spell to expand/collapse its description -->
           <button type="button"
             class="spell-pick"
-            [class.active]="isSpellSelected(s)"
+            [class.active]="selected"
             [class.open]="isSpellDescOpen(s)"
             (click)="toggleDesc.emit(s)">
             <span class="spell-pick-name">
               {{ s.name }}
-              @if (isSpellSelected(s)) {
+              @if (selected) {
                 <span class="spell-selected-badge">Selected</span>
               }
             </span>
@@ -79,17 +80,17 @@
               <div class="spell-desc-actions">
                 <button type="button"
                   class="btn sm"
-                  [class.primary]="!isSpellSelected(s)"
-                  [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
+                  [class.primary]="!selected"
+                  [disabled]="!selected && (s.level === 0 ? selectedCantrips() >= maxCantrips() : selectedLeveled() >= maxKnownSpells())"
                   (click)="toggleSpell.emit(s)">
-                  {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
+                  {{ selected ? 'Remove from spells' : 'Add to spells' }}
                 </button>
               </div>
             </div>
           }
         </div>
       }
-      @if (filteredSpellList.length === 0) {
+      @if (filteredSpellList().length === 0) {
         <div class="loading">No spells match your search.</div>
       }
     </div>
@@ -97,11 +98,11 @@
 
   <!-- Selection counter -->
   <div class="spell-counter">
-    <span [class.complete]="selectedCantrips === maxCantrips">
-      {{ selectedCantrips }}/{{ maxCantrips }} cantrips
+    <span [class.complete]="selectedCantrips() === maxCantrips()">
+      {{ selectedCantrips() }}/{{ maxCantrips() }} cantrips
     </span>
     <span class="spell-counter-sep">·</span>
-    <span [class.complete]="selectedLeveled === maxKnownSpells">
-      {{ selectedLeveled }}/{{ maxKnownSpells }} spells
+    <span [class.complete]="selectedLeveled() === maxKnownSpells()">
+      {{ selectedLeveled() }}/{{ maxKnownSpells() }} spells
     </span>
   </div>

@@ -10,8 +10,13 @@
     @for (row of rows$ | async; track row) {
       <div
         class="campaign-item"
+        role="button"
+        tabindex="0"
         [class.active]="activeCampaignId() === row.campaign.id"
+        [attr.aria-current]="activeCampaignId() === row.campaign.id ? 'true' : null"
         (click)="select(row.campaign.id)"
+        (keydown.enter)="select(row.campaign.id)"
+        (keydown.space)="$event.preventDefault(); select(row.campaign.id)"
         >
         <!-- IconBanner crest -->
         <div class="campaign-crest">

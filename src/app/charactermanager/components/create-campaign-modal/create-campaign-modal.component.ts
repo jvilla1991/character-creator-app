@@ -1,12 +1,16 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/campaign';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { WeekDaysEditorComponent } from '../week-days-editor/week-days-editor.component';
 
 /** "Open a New Campaign" modal — mirrors the create-character modal chrome. */
 @Component({
     selector: 'app-create-campaign-modal',
     templateUrl: './create-campaign-modal.component.html',
     styleUrls: ['./create-campaign-modal.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CdkTrapFocus, FormsModule, WeekDaysEditorComponent]
 })
 export class CreateCampaignModalComponent {
   name = '';
@@ -31,8 +35,8 @@ export class CreateCampaignModalComponent {
 
   readonly tints: CampaignTint[] = ['celestial', 'violet', 'gold', 'crimson', 'emerald'];
 
-  @Output() confirm = new EventEmitter<CampaignDraft>();
-  @Output() close = new EventEmitter<void>();
+  readonly confirm = output<CampaignDraft>();
+  readonly close = output<void>();
 
   submit(): void {
     if (!this.name.trim()) return;

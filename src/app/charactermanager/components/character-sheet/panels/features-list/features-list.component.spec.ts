@@ -1,4 +1,5 @@
 import { FeaturesListComponent } from './features-list.component';
+import { TestBed } from '@angular/core/testing';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { PC } from '../../../../models/pc';
 
@@ -11,7 +12,7 @@ describe('FeaturesListComponent', () => {
       'DndResourcesService', ['getFeatDescription', 'getFeatNames']);
     dndResources.getFeatDescription.and.returnValue('Looked-up feat text.');
     dndResources.getFeatNames.and.returnValue(['Alert', 'Lucky', 'Skilled']);
-    component = new FeaturesListComponent(dndResources);
+    component = TestBed.runInInjectionContext(() => new FeaturesListComponent(dndResources));
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
 

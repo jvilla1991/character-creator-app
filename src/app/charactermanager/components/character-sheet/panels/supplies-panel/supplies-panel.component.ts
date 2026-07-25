@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import {
   SUPPLY_KEYS,
@@ -42,14 +42,14 @@ const MAX_PIPS = 15;
  */
 @Component({
     selector: 'app-supplies-panel',
-    templateUrl: './supplies-panel.component.html',
-    standalone: false
+    templateUrl: './supplies-panel.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SuppliesPanelComponent {
   @Input() pc!: PC;
   /** Reveals the spend/restock steppers (own sheet, session, or DM cross-link). */
   @Input() editable = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
 
   get rows(): SupplyRow[] {
     // Read through the normalizer so legacy data displays under the container

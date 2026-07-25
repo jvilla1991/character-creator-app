@@ -114,8 +114,10 @@
                 [(ngModel)]="amounts[p.participantId]"
                 aria-label="HP amount"
                 />
-                <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage">−</button>
-                <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing">+</button>
+                <button class="btn-mini dmg" (click)="adjustHp(p, 1)" title="Apply damage"
+                  [attr.aria-label]="'Apply damage to ' + p.name">−</button>
+                <button class="btn-mini heal" (click)="adjustHp(p, -1)" title="Apply healing"
+                  [attr.aria-label]="'Apply healing to ' + p.name">+</button>
               </div>
               @if (!p.npc) {
                 <div class="adjust-row">
@@ -153,7 +155,7 @@
                     </span>
                   }
                   <button class="btn-mini dmg remove" (click)="removeParticipant(p)"
-                    title="Remove from session">✕</button>
+                    title="Remove from session" [attr.aria-label]="'Remove ' + p.name + ' from session'">✕</button>
                 </div>
               </div>
             }

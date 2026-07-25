@@ -17,17 +17,22 @@
       <span></span>
     </div>
 
-    @if (members.length === 0) {
+    @if (members().length === 0) {
       <div
         style="padding: 18px 8px; color: var(--text-dim); font-style: italic;">
         No heroes assigned to this campaign yet.
       </div>
     }
 
-    @for (pc of members; track pc) {
+    @for (pc of members(); track pc) {
       <div
         class="board-row member"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="'Open the sheet for ' + pc.name"
         (click)="openHero.emit(pc)"
+        (keydown.enter)="openHero.emit(pc)"
+        (keydown.space)="$event.preventDefault(); openHero.emit(pc)"
         >
         <div class="board-hero">
           <div class="portrait" [style.background]="tintFor(pc)">{{ initialsFor(pc) }}</div>

@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 
 import { ItemComposerComponent } from './item-composer.component';
 import { AuthoredItem, pcItemFromAuthored } from './authored-item';
@@ -19,7 +20,7 @@ describe('ItemComposerComponent', () => {
   beforeEach(() => {
     shopService = jasmine.createSpyObj<ShopService>('ShopService', ['getCatalog']);
     shopService.getCatalog.and.returnValue(of([]));
-    component = new ItemComposerComponent(shopService);
+    component = TestBed.runInInjectionContext(() => new ItemComposerComponent(shopService));
   });
 
   it('loads the catalog for the default category on init', () => {
@@ -27,7 +28,7 @@ describe('ItemComposerComponent', () => {
     component.ngOnInit();
     expect(shopService.getCatalog).toHaveBeenCalledWith('WEAPON');
     expect(component.tab).toBe('catalog');
-    expect(component.catalogItems).toEqual([catalogLongsword]);
+    expect(component.catalogItems()).toEqual([catalogLongsword]);
   });
 
   it('emits the full catalog item and qty on a catalog confirm', () => {
@@ -45,8 +46,8 @@ describe('ItemComposerComponent', () => {
   });
 
   it('filters the catalog by the search box', () => {
-    component.catalogItems = [catalogLongsword,
-      { ...catalogLongsword, itemKey: 'dagger', name: 'Dagger' }];
+    component.catalogItems.set([catalogLongsword,
+      { ...catalogLongsword, itemKey: 'dagger', name: 'Dagger' }]);
     component.catalogSearch = 'dag';
     expect(component.filteredCatalog.map(i => i.itemKey)).toEqual(['dagger']);
   });
@@ -118,7 +119,7 @@ describe('ItemComposerComponent', () => {
   it('starts on the custom tab in demo mode (no catalog)', () => {
     // demoMode is captured at construction; build a component that reads it as true.
     spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
-    const demoComponent = new ItemComposerComponent(shopService);
+    const demoComponent = TestBed.runInInjectionContext(() => new ItemComposerComponent(shopService));
 
     demoComponent.ngOnInit();
 

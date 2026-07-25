@@ -2,9 +2,9 @@
   <div class="panel-header">
     <span class="panel-title">Background &amp; Story</span>
     <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-      {{ pc.background }} · {{ pc.alignment }}
+      {{ pc().background }} · {{ pc().alignment }}
     </span>
-    @if (addAllowed && !grantFormOpen) {
+    @if (addAllowed() && !grantFormOpen) {
       <button class="btn sm" (click)="openGrantForm()">+ Grant language</button>
     }
   </div>
@@ -28,7 +28,7 @@
         }
       </div>
       @if (draftAlreadyKnown) {
-        <div class="grant-known-note">{{ pc.name }} already knows {{ languageDraft.trim() }}.</div>
+        <div class="grant-known-note">{{ pc().name }} already knows {{ languageDraft.trim() }}.</div>
       }
       <div class="grant-form-actions">
         <button class="btn primary sm" [disabled]="!languageDraft.trim() || draftAlreadyKnown" (click)="submitGrant()">Add</button>
@@ -38,7 +38,7 @@
   }
 
   <!-- Bio with drop cap -->
-  @if (pc.bio) {
+  @if (pc().bio) {
     <p class="prose">
       <span class="drop">{{ bioFirst }}</span>{{ bioRest }}
     </p>
@@ -73,12 +73,12 @@
   }
 
   <!-- DM Notes -->
-  @if (pc.notes) {
+  @if (pc().notes) {
     <div
     style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-soft);
            font-family: 'Newsreader', serif; font-style: italic; color: var(--text-dim); font-size: 13.5px;"
       >
-      <span class="eyebrow" style="margin-right: 10px;">DM Notes</span>{{ pc.notes }}
+      <span class="eyebrow" style="margin-right: 10px;">DM Notes</span>{{ pc().notes }}
     </div>
   }
 </div>

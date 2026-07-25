@@ -1,7 +1,8 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { PcNote } from '../../../../models/pc-note';
 import { PCService } from '../../../../services/pc.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Per-character session notes — the player's own log ("what my character
@@ -13,7 +14,8 @@ import { PCService } from '../../../../services/pc.service';
 @Component({
     selector: 'app-pc-notes',
     templateUrl: './pc-notes.component.html',
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class PcNotesComponent implements OnChanges {
   @Input() pc!: PC;
@@ -21,9 +23,11 @@ export class PcNotesComponent implements OnChanges {
   /** Set when the sheet is embedded in a live session — tags new notes with it. */
   @Input() sessionId: number | string | null = null;
 
-  notes: PcNote[] = [];
+  // Signals: both are written from HTTP callbacks, which don't mark an OnPush
+  // view dirty on their own. `draft` stays a plain field — only template events write it.
+  readonly notes = signal<PcNote[]>([]);
   draft = '';
-  saving = false;
+  readonly saving = signal(false);
 
   constructor(private pcService: PCService) {}
 
@@ -36,17 +40,17 @@ export class PcNotesComponent implements OnChanges {
 
   addNote(): void {
     const body = this.draft.trim();
-    if (!body || this.saving) return;
-    this.saving = true;
+    if (!body || this.saving()) return;
+    this.saving.set(true);
     this.pcService.addNote(this.pc.id, body, this.sessionId).subscribe({
       next: note => {
-        this.notes = [note, ...this.notes];
+        this.notes.update(notes => [note, ...notes]);
         this.draft = '';
-        this.saving = false;
+        this.saving.set(false);
       },
       error: err => {
         console.error('Failed to add character note', err);
-        this.saving = false;
+        this.saving.set(false);
       },
     });
   }
@@ -57,9 +61,9 @@ export class PcNotesComponent implements OnChanges {
   }
 
   private load(): void {
-    this.notes = [];
+    this.notes.set([]);
     this.pcService.getNotes(this.pc.id).subscribe({
-      next: notes => { this.notes = notes; },
+      next: notes => { this.notes.set(notes); },
       error: () => { /* not readable (stranger) — leave the list empty */ },
     });
   }

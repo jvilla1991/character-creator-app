@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { CampaignSidebarComponent } from './campaign-sidebar.component';
 import { CampaignService } from '../../services/campaign.service';
@@ -33,8 +34,8 @@ describe('CampaignSidebarComponent', () => {
   });
 
   function build(): CampaignSidebarComponent {
-    return new CampaignSidebarComponent(
-      campaignService, pcService as PCService, uiState);
+    return TestBed.runInInjectionContext(() => new CampaignSidebarComponent(
+      campaignService, pcService as PCService, uiState));
   }
 
   it('counts heroes from the member projection, not the local PC store', done => {

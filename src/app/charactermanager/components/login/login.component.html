@@ -1,4 +1,4 @@
-<div class="login-page">
+<main class="login-page">
   <div class="login-card">
 
     <!-- Brand -->
@@ -20,15 +20,13 @@
       <div class="login-divider"></div>
 
       <!-- Form -->
-      <form (ngSubmit)="login()" #loginForm="ngForm">
+      <form [formGroup]="form" (ngSubmit)="login()">
         <div class="field">
           <label for="username">Username</label>
           <input
             type="text"
             id="username"
-            [(ngModel)]="userName"
-            name="username"
-            required
+            formControlName="userName"
             placeholder="Enter your username"
             autocomplete="username"
             (keydown.enter)="login()">
@@ -40,9 +38,7 @@
               <input
                 [type]="showPassword ? 'text' : 'password'"
                 id="password"
-                [(ngModel)]="password"
-                name="password"
-                required
+                formControlName="password"
                 placeholder="Enter your password"
                 autocomplete="current-password">
                 <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
@@ -64,16 +60,16 @@
               </div>
             </div>
 
-            @if (errorMessage) {
-              <div class="login-error">
-                {{ errorMessage }}
+            @if (errorMessage()) {
+              <div class="login-error" role="alert">
+                {{ errorMessage() }}
               </div>
             }
 
             <button
               type="submit"
               class="btn primary login-submit"
-              [disabled]="loginForm.invalid">
+              [disabled]="form.invalid">
               Enter the Vault
             </button>
           </form>
@@ -94,4 +90,4 @@
           </div>
 
         </div>
-      </div>
+      </main>

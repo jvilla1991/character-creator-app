@@ -1,5 +1,5 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Component, DestroyRef, OnDestroy, OnInit, input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SessionState } from '../../models/session';
 import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
@@ -14,6 +14,17 @@ import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/s
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
 import { ParticipantView } from '../../models/session';
+import { SpellCarouselComponent } from './spell-carousel/spell-carousel.component';
+import { FormsModule } from '@angular/forms';
+import { InitiativePanelComponent } from './initiative-panel/initiative-panel.component';
+import { RollLogPanelComponent } from './roll-log-panel/roll-log-panel.component';
+import { EncounterLoaderComponent } from './encounter-loader/encounter-loader.component';
+import { ShopPanelComponent } from './shop-panel/shop-panel.component';
+import { LootPanelComponent } from './loot-panel/loot-panel.component';
+import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
+import { AsyncPipe, TitleCasePipe } from '@angular/common';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -27,10 +38,10 @@ import { ParticipantView } from '../../models/session';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    standalone: false
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
-  @Input() sessionId!: string;
+  readonly sessionId = input.required<string>();
 
   state$ = this.sessionService.state$;
 
@@ -63,7 +74,6 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   private lastSeenWeek: number | null = null;
   private lastSeenSegment: TimeOfDay | null = null;
 
-  private stateSub?: Subscription;
   private handledEnd = false;
   private variantsResolvedFor: string | null = null;
 
@@ -74,22 +84,24 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private shopService: ShopService,
+    private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
-    this.sessionService.startPolling(this.sessionId);
+    this.sessionService.startPolling(this.sessionId());
     // The DM may end the session from another device; a poll then reports ENDED.
-    this.stateSub = this.sessionService.state$.subscribe(state => {
-      if (state && state.status === 'ENDED') this.onSessionEnded(state);
-      if (state) {
-        this.resolveVariants(state);
-        this.trackClock(state);
-      }
-    });
+    this.sessionService.state$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(state => {
+        if (state && state.status === 'ENDED') this.onSessionEnded(state);
+        if (state) {
+          this.resolveVariants(state);
+          this.trackClock(state);
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    this.stateSub?.unsubscribe();
     // clear() (not just stopPolling) so closing via browser Back tears the
     // session down exactly like the in-app Close button does.
     this.sessionService.clear();

@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
@@ -22,7 +23,7 @@ describe('CuratedShopsComponent', () => {
     service = jasmine.createSpyObj('CuratedShopService',
       ['list', 'create', 'get', 'update', 'delete', 'addItem', 'updateItem', 'removeItem', 'importCategory']);
     service.list.and.returnValue(of([] as ShopSummary[]));
-    component = new CuratedShopsComponent(service);
+    component = TestBed.runInInjectionContext(() => new CuratedShopsComponent(service));
     component.campaign = campaign;
   });
 

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, effect, Injectable, signal } from '@angular/core';
 
 export type Role = 'player' | 'dm';
 
@@ -37,6 +37,10 @@ export class UiStateService {
   private readonly _role = signal<Role>('player');
   readonly role = this._role.asReadonly();
 
+  /** Role checks derived once here instead of `role() === '…'` at every call site. */
+  readonly isDm = computed(() => this._role() === 'dm');
+  readonly isPlayer = computed(() => this._role() === 'player');
+
   private readonly _activeCampaignId = signal<string | null>(null);
   readonly activeCampaignId = this._activeCampaignId.asReadonly();
 
@@ -53,6 +57,22 @@ export class UiStateService {
   private readonly _dmReturn = signal(false);
   readonly dmReturn = this._dmReturn.asReadonly();
 
+  /**
+   * Session Mode owns the main content area — except while a DM has cross-linked
+   * from the session into a member's sheet (dmReturn), when the sheet takes over
+   * and the session keeps running underneath.
+   */
+  readonly sessionOverlayVisible = computed(
+    () => this._activeSessionId() !== null && !this._dmReturn());
+
+  /**
+   * The role the user *chose* (via the role switch), as opposed to the role
+   * currently displayed: the DM→hero cross-link flips the displayed role to
+   * 'player' without the user choosing it, and a refresh mid-cross-link should
+   * restore the DM view. This is what gets persisted.
+   */
+  private readonly chosenRole = computed<Role>(() => this._dmReturn() ? 'dm' : this._role());
+
   // Overlays we've pushed a browser-history entry for, oldest first. Mirrors the
   // history entries we created so that Back and our own close buttons stay in
   // lock-step.
@@ -64,6 +84,13 @@ export class UiStateService {
   constructor() {
     window.addEventListener('popstate', this.onPopState);
     this.rehydrate();
+    // Persistence is driven by the signal graph rather than sprinkled through the
+    // setters: whenever chosenRole/activeCampaignId settle on a new value, mirror
+    // it to localStorage (same keys/format as before — this state survives
+    // reloads for real users). chosenRole's memoization means the transient
+    // role flips of the DM→hero cross-link never touch storage at all.
+    effect(() => this.persist(UI_ROLE_KEY, this.chosenRole()));
+    effect(() => this.persist(UI_ACTIVE_CAMPAIGN_KEY, this._activeCampaignId()));
   }
 
   /** Restore the persisted role/campaign so a refresh keeps a DM in place. */
@@ -87,12 +114,10 @@ export class UiStateService {
     // A manual role switch ends any campaign cross-link.
     this._dmReturn.set(false);
     this._role.set(role);
-    this.persist(UI_ROLE_KEY, role);
   }
 
   setActiveCampaign(id: string | null): void {
     this._activeCampaignId.set(id);
-    this.persist(UI_ACTIVE_CAMPAIGN_KEY, id);
   }
 
   /** Forget the persisted DM role/campaign (sign-out) so the next user is a player. */

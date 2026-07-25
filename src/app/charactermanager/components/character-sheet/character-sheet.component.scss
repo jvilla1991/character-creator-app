@@ -132,3 +132,13 @@
 
   :host { display: block; padding-bottom: 64px; }
 }
+
+/* @defer placeholder — lightweight stub shown while a heavy panel (e.g. the
+   spellbook) loads in. */
+.panel-defer-placeholder {
+  text-align: center;
+  color: var(--text-dim, rgba(255, 255, 255, 0.35));
+  font-style: italic;
+  font-size: 13px;
+  padding: 40px 0;
+}

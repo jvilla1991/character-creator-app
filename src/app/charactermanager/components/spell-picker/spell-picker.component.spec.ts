@@ -1,4 +1,5 @@
 import { SpellPickerComponent } from './spell-picker.component';
+import { TestBed } from '@angular/core/testing';
 import { DndSpell } from '../../models/dnd-api.types';
 
 function dndSpell(level: number, name: string): DndSpell {
@@ -20,7 +21,7 @@ describe('SpellPickerComponent', () => {
   let component: SpellPickerComponent;
 
   beforeEach(() => {
-    component = new SpellPickerComponent();
+    component = TestBed.runInInjectionContext(() => new SpellPickerComponent());
   });
 
   // --- search filter ---

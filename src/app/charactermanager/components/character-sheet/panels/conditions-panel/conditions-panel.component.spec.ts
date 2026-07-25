@@ -7,7 +7,7 @@ describe('ConditionsPanelComponent', () => {
   let component: ConditionsPanelComponent;
 
   beforeEach(() => {
-    component = new ConditionsPanelComponent();
+    component = TestBed.runInInjectionContext(() => new ConditionsPanelComponent());
     component.pc = { id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P' } as PC;
   });
 
@@ -144,8 +144,8 @@ describe('ConditionsPanelComponent (rendered)', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ConditionsPanelComponent],
-    }).compileComponents();
+    imports: [ConditionsPanelComponent],
+}).compileComponents();
 
     fixture = TestBed.createComponent(ConditionsPanelComponent);
     component = fixture.componentInstance;
@@ -164,11 +164,11 @@ describe('ConditionsPanelComponent (rendered)', () => {
   });
 
   it('renders the pips as buttons for the DM and as plain dots otherwise', () => {
-    component.editable = false;
+    fixture.componentRef.setInput('editable', false);
     fixture.detectChanges();
     expect(pips().every(p => p.nativeElement.tagName === 'SPAN')).toBeTrue();
 
-    component.editable = true;
+    fixture.componentRef.setInput('editable', true);
     fixture.detectChanges();
     expect(pips().every(p => p.nativeElement.tagName === 'BUTTON')).toBeTrue();
   });
@@ -186,11 +186,11 @@ describe('ConditionsPanelComponent (rendered)', () => {
   });
 
   it('shows the Inspired badge only once Heroic Inspiration is granted', () => {
-    component.editable = true;
+    fixture.componentRef.setInput('editable', true);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('.inspired-badge'))).toBeNull();
 
-    component.pc = { ...basePc, heroicInspiration: true };
+    fixture.componentRef.setInput('pc', { ...basePc, heroicInspiration: true });
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('.inspired-badge'))).not.toBeNull();
   });

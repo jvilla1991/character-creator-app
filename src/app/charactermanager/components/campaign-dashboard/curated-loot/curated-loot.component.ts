@@ -5,6 +5,8 @@ import { parseLootImportPayload, toLootImportPayload } from '../../../models/loo
 import { formatCp } from '../../../models/shop';
 import { AuthoredItem } from '../../item-composer/authored-item';
 import { CuratedLootService } from '../../../services/curated-loot.service';
+import { FormsModule } from '@angular/forms';
+import { ItemComposerComponent } from '../../item-composer/item-composer.component';
 
 /**
  * DM-curated loot panel on the campaign dashboard — the standalone home for
@@ -19,7 +21,7 @@ import { CuratedLootService } from '../../../services/curated-loot.service';
     selector: 'app-curated-loot',
     templateUrl: './curated-loot.component.html',
     styleUrls: ['./curated-loot.component.scss'],
-    standalone: false
+    imports: [FormsModule, ItemComposerComponent]
 })
 export class CuratedLootComponent implements OnChanges {
   @Input() campaign!: Campaign;

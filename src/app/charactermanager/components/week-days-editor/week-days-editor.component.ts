@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, output } from '@angular/core';
 import { WEEKDAY_PRESETS, WeekdayPreset } from '../../models/campaign';
+import { FormsModule } from '@angular/forms';
 
 /** Week-size bounds, mirroring the server's GameClock constraints. */
 export const MIN_WEEK_DAYS = 2;
@@ -19,11 +20,12 @@ export const MAX_WEEK_DAYS = 20;
 @Component({
     selector: 'app-week-days-editor',
     templateUrl: './week-days-editor.component.html',
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class WeekDaysEditorComponent implements OnChanges {
   @Input() value: string[] | null = null;
-  @Output() valueChange = new EventEmitter<string[] | null>();
+  readonly valueChange = output<string[] | null>();
 
   readonly presets: WeekdayPreset[] = WEEKDAY_PRESETS;
   readonly minDays = MIN_WEEK_DAYS;

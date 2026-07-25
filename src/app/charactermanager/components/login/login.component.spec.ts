@@ -1,33 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth.service';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let authService: jasmine.SpyObj<AuthService>;
-  let router: jasmine.SpyObj<Router>;
+  let router: Router;
 
   beforeEach(async () => {
-    const authSpy   = jasmine.createSpyObj('AuthService', ['login']);
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const authSpy = jasmine.createSpyObj('AuthService', ['login']);
 
+    // Standalone LoginComponent brings RouterLink with it, and RouterLink needs
+    // the real router wiring (ActivatedRoute etc.) — so provide an empty real
+    // router and spy on `navigate` instead of substituting a bare Router mock.
     await TestBed.configureTestingModule({
-      declarations: [LoginComponent],
-      imports: [FormsModule],
-      providers: [
+    imports: [LoginComponent],
+    providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: authSpy },
-        { provide: Router,      useValue: routerSpy },
-      ],
-    }).compileComponents();
+    ],
+}).compileComponents();
 
     fixture     = TestBed.createComponent(LoginComponent);
     component   = fixture.componentInstance;
     authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    router      = TestBed.inject(Router)      as jasmine.SpyObj<Router>;
+    router      = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
     fixture.detectChanges();
   });
 
@@ -35,9 +36,19 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('starts invalid: both fields are required', () => {
+    expect(component.form.invalid).toBeTrue();
+    expect(component.form.controls.userName.hasError('required')).toBeTrue();
+    expect(component.form.controls.password.hasError('required')).toBeTrue();
+  });
+
+  it('becomes valid once both fields are filled', () => {
+    component.form.setValue({ userName: 'admin', password: 'password' });
+    expect(component.form.valid).toBeTrue();
+  });
+
   it('calls AuthService.login with provided credentials', () => {
-    component.userName = 'admin';
-    component.password = 'password';
+    component.form.setValue({ userName: 'admin', password: 'password' });
     authService.login.and.returnValue(of({ success: true }));
 
     component.login();
@@ -50,7 +61,7 @@ describe('LoginComponent', () => {
 
     component.login();
 
-    expect(component.errorMessage).toBeTruthy();
+    expect(component.errorMessage()).toBeTruthy();
   });
 
   it('shows .login-error element when errorMessage is set', async () => {
@@ -65,6 +76,7 @@ describe('LoginComponent', () => {
 
   it('navigates to /charactermanager on successful login', () => {
     authService.login.and.returnValue(of({ success: true }));
+    component.form.setValue({ userName: 'admin', password: 'password' });
 
     component.login();
 

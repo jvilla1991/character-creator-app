@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterCreature, EncounterSummary } from '../../../models/encounter';
 import { CuratedEncounterService } from '../../../services/curated-encounter.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * DM-curated encounters panel on the campaign dashboard. The DM creates reusable
@@ -15,7 +16,7 @@ import { CuratedEncounterService } from '../../../services/curated-encounter.ser
     selector: 'app-curated-encounters',
     templateUrl: './curated-encounters.component.html',
     styleUrls: ['./curated-encounters.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class CuratedEncountersComponent implements OnChanges {
   @Input() campaign!: Campaign;

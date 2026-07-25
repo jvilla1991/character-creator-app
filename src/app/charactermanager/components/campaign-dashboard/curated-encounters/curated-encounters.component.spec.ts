@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CuratedEncountersComponent } from './curated-encounters.component';
 import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterSummary } from '../../../models/encounter';
@@ -19,7 +20,7 @@ describe('CuratedEncountersComponent', () => {
     service = jasmine.createSpyObj('CuratedEncounterService',
       ['list', 'create', 'get', 'update', 'delete', 'addCreature', 'updateCreature', 'removeCreature']);
     service.list.and.returnValue(of([] as EncounterSummary[]));
-    component = new CuratedEncountersComponent(service);
+    component = TestBed.runInInjectionContext(() => new CuratedEncountersComponent(service));
     component.campaign = campaign;
   });
 

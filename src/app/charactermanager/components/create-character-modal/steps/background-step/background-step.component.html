@@ -2,63 +2,63 @@
 <div class="modal-sub">Your background grants skill proficiencies, a feat, and ability score bonuses.</div>
 
 <div class="source-filters">
-  @for (group of backgroundGroups; track trackBySource($index, group)) {
+  @for (group of backgroundGroups(); track trackBySource($index, group)) {
     <label
       class="source-toggle"
-      [class.disabled]="!enabledSources[group.source]">
+      [class.disabled]="!enabledSources()[group.source]">
       <input type="checkbox"
-        [checked]="enabledSources[group.source]"
+        [checked]="enabledSources()[group.source]"
         (change)="toggleSource.emit(group.source)">
         {{ group.source }}
       </label>
     }
   </div>
 
-  @for (group of activeBackgroundGroups; track trackBySource($index, group)) {
+  @for (group of activeBackgroundGroups(); track trackBySource($index, group)) {
     <div class="background-group">
       <div class="background-group-label">{{ group.source }}</div>
       <div class="picker-accordion">
         @for (b of group.backgrounds; track trackByName($index, b)) {
           <button class="class-pick accordion-head"
-            [class.active]="background === b"
+            [class.active]="background() === b"
             type="button"
             (click)="toggleBackground.emit(b)">
             <span>{{ b }}</span>
-            <svg class="accordion-chev" [class.open]="background === b" viewBox="0 0 10 10" aria-hidden="true">
+            <svg class="accordion-chev" [class.open]="background() === b" viewBox="0 0 10 10" aria-hidden="true">
               <path d="M2 4l3 3 3-3"/>
             </svg>
           </button>
           <!-- Selected background: ability bonuses, proficiencies, origin feat below it -->
-          @if (background === b) {
+          @if (background() === b) {
             <div class="accordion-body">
-              @if (loadingBackgroundDetail) {
+              @if (loadingBackgroundDetail()) {
                 <div class="loading">Loading background details…</div>
               }
-              @if (backgroundDetail && !loadingBackgroundDetail) {
+              @if (!loadingBackgroundDetail() && backgroundDetail(); as detail) {
                 <div class="detail-card">
                   <div class="detail-row">
                     <span class="detail-label">Ability Bonuses</span>
-                    <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames }}</span>
+                    <span class="detail-value">+2 and +1 to two of: {{ backgroundAbilityNames() }}</span>
                   </div>
-                  @if (backgroundDetail.proficiencies?.length) {
+                  @if (detail.proficiencies.length) {
                     <div class="detail-row">
                       <span class="detail-label">Proficiencies</span>
-                      <span class="detail-value">{{ backgroundProficiencyNames }}</span>
+                      <span class="detail-value">{{ backgroundProficiencyNames() }}</span>
                     </div>
                   }
                 </div>
               }
               <!-- Origin Feat card (always fixed per background — display only) -->
-              @if (backgroundFeatName && !loadingBackgroundDetail) {
+              @if (backgroundFeatName() && !loadingBackgroundDetail()) {
                 <div class="feat-card">
                   <div class="feat-card-eyebrow">Origin Feat</div>
-                  <div class="feat-card-name">{{ backgroundFeatName }}</div>
-                  @if (backgroundFeatDescription) {
+                  <div class="feat-card-name">{{ backgroundFeatName() }}</div>
+                  @if (backgroundFeatDescription()) {
                     <div class="feat-card-desc">
-                      {{ backgroundFeatDescription }}
+                      {{ backgroundFeatDescription() }}
                     </div>
                   }
-                  @if (!backgroundFeatDescription) {
+                  @if (!backgroundFeatDescription()) {
                     <div class="feat-card-desc feat-card-desc--unknown">
                       See the 2024 Player's Handbook for full details.
                     </div>
