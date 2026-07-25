@@ -14,13 +14,14 @@
   </div>
   <div class="skill-chips">
     @for (skill of classSkillConfig.from; track trackByName($index, skill)) {
+      @let locked = isSkillLocked(skill);
       <button
         type="button"
         class="class-pick"
-        [class.active]="isSkillChosen(skill) && !isSkillLocked(skill)"
-        [class.locked]="isSkillLocked(skill)"
+        [class.active]="isSkillChosen(skill) && !locked"
+        [class.locked]="locked"
         [class.disabled]="!isSkillChosen(skill) && classSkillsFull"
-        [disabled]="isSkillLocked(skill)"
+        [disabled]="locked"
       (click)="toggleSkill.emit(skill)">{{ skill }}</button>
     }
   </div>

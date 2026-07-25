@@ -27,16 +27,17 @@
   @if (!loadingSpells) {
     <div class="spell-scroll">
       @for (s of filteredSpellList; track trackBySpellName($index, s)) {
+        @let selected = isSpellSelected(s);
         <div class="spell-row">
           <!-- Click the spell to expand/collapse its description -->
           <button type="button"
             class="spell-pick"
-            [class.active]="isSpellSelected(s)"
+            [class.active]="selected"
             [class.open]="isSpellDescOpen(s)"
             (click)="toggleDesc.emit(s)">
             <span class="spell-pick-name">
               {{ s.name }}
-              @if (isSpellSelected(s)) {
+              @if (selected) {
                 <span class="spell-selected-badge">Selected</span>
               }
             </span>
@@ -79,10 +80,10 @@
               <div class="spell-desc-actions">
                 <button type="button"
                   class="btn sm"
-                  [class.primary]="!isSpellSelected(s)"
-                  [disabled]="!isSpellSelected(s) && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
+                  [class.primary]="!selected"
+                  [disabled]="!selected && (s.level === 0 ? selectedCantrips >= maxCantrips : selectedLeveled >= maxKnownSpells)"
                   (click)="toggleSpell.emit(s)">
-                  {{ isSpellSelected(s) ? 'Remove from spells' : 'Add to spells' }}
+                  {{ selected ? 'Remove from spells' : 'Add to spells' }}
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 @if (state && (state.dm || state.lootStatus === 'DROPPED')) {
+  @let itemsCount = loot?.items?.length ?? 0;
   <section class="loot-panel">
     <!-- ===================== DM view ===================== -->
     @if (state.dm) {
@@ -62,7 +63,7 @@
                 <app-item-composer [cancellable]="false"
                 (itemAuthored)="onItemAuthored($event)"></app-item-composer>
               </div>
-                  @if (loot.items.length) {
+                  @if (itemsCount) {
                     <ul class="catalog">
                       @for (item of loot.items; track trackById($index, item)) {
                         <li class="catalog-row">
@@ -110,7 +111,7 @@
                           }
                         </div>
                       }
-                      @if (loot.items.length) {
+                      @if (itemsCount) {
                         <ul class="catalog">
                           @for (item of loot.items; track trackById($index, item)) {
                             <li class="catalog-row">
@@ -138,7 +139,7 @@
                           }
                         </ul>
                       }
-                      @if (!loot.items.length && loot.coinCpTotal === 0) {
+                      @if (!itemsCount && loot.coinCpTotal === 0) {
                         <div class="muted">
                           The pool is empty.
                         </div>

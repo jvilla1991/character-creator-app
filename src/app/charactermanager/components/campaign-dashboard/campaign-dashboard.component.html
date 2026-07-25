@@ -1,10 +1,11 @@
 @if (vm$ | async; as vm) {
+  @let campaignName = vm.campaign.name;
   <div class="fade-in">
     <!-- Header -->
     <header class="sheet-header" style="grid-template-columns: 1fr auto;">
       <div class="sheet-id">
         <div class="eyebrow">Campaign · Session {{ vm.campaign.session }} · {{ vm.members.length }} heroes</div>
-        <h1 class="sheet-name">{{ vm.campaign.name }}</h1>
+        <h1 class="sheet-name">{{ campaignName }}</h1>
         <div class="sheet-subtitle">
           {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
         </div>
@@ -128,11 +129,12 @@
       <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
         <div class="modal-title" style="color: var(--celestial-2);">Manage Party</div>
         <div class="modal-sub">
-          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em>.
+          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em>.
           Toggle a hero on to seat them at this table.
         </div>
         <div class="manage-list">
-          @for (pc of allPcs$ | async; track pc) {
+          @let allPcs = allPcs$ | async;
+          @for (pc of allPcs; track pc) {
             <div class="manage-row">
               <div class="manage-hero">
                 <div class="portrait" [style.background]="boundTint(pc)">{{ initialsFor(pc) }}</div>
@@ -150,7 +152,7 @@
               ></button>
             </div>
           }
-          @if ((allPcs$ | async)?.length === 0) {
+          @if (allPcs?.length === 0) {
             <div
               style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
               You have no characters to assign yet.
@@ -169,7 +171,7 @@
       <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()">
         <div class="modal-title" style="color: var(--crimson);">Delete Campaign</div>
         <div class="modal-sub">
-          <em style="color: var(--text); font-style: normal;">{{ vm.campaign.name }}</em> will be erased —
+          <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em> will be erased —
           its sessions, encounters, shops and notes go with it. Its characters are
           <strong>released, not deleted</strong>: they return to their players, unbound.
           This cannot be undone.

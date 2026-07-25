@@ -88,9 +88,10 @@
           }
         </div>
         @for (s of level.spells; track s) {
+          @let prepared = isPrepared(s);
           <div>
-            <div class="spell-row" [class.unprepared]="!isPrepared(s)" (click)="toggleExpand(s.name)" style="cursor:pointer">
-              <span class="spell-name" [class.prepared]="isPrepared(s)">{{ s.name }}</span>
+            <div class="spell-row" [class.unprepared]="!prepared" (click)="toggleExpand(s.name)" style="cursor:pointer">
+              <span class="spell-name" [class.prepared]="prepared">{{ s.name }}</span>
               @if (s.concentration) {
                 <span class="spell-badge conc"   title="Concentration">C</span>
               }
@@ -105,11 +106,11 @@
               @if (preparable && s.lvl > 0) {
                 <button
                   class="spell-prep-btn"
-                  [class.active]="isPrepared(s)"
+                  [class.active]="prepared"
                   [disabled]="!canTogglePrepared(s)"
                   [title]="prepareTitle(s)"
                   (click)="togglePrepared(s, $event)"
-                >{{ isPrepared(s) ? 'Prepared' : 'Prepare' }}</button>
+                >{{ prepared ? 'Prepared' : 'Prepare' }}</button>
               }
               @if (!editable && castable) {
                 <button

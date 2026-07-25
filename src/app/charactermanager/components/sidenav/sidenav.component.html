@@ -1,3 +1,4 @@
+@let activePc = activePC$ | async;
 <div class="app">
 
   <!-- ═══════════════════════════════════════════════
@@ -48,7 +49,7 @@
             @for (pc of filteredPcs; track pc) {
               <div
                 class="roster-item"
-                [class.active]="(activePC$ | async)?.id === pc.id"
+                [class.active]="activePc?.id === pc.id"
                 (click)="setActivePC(pc)"
                 >
                 <!-- Portrait circle -->
@@ -144,7 +145,7 @@
             <polygon points="24,6 28,20 42,22 30,30 34,44 24,36 14,44 18,30 6,22 20,20" stroke-linejoin="round"/>
             <circle cx="24" cy="24" r="3" fill="currentColor"/>
           </svg>
-          <span class="mobile-topbar-title">{{ (activePC$ | async)?.name || 'Table Mimic' }}</span>
+          <span class="mobile-topbar-title">{{ activePc?.name || 'Table Mimic' }}</span>
         </div>
       </div>
 

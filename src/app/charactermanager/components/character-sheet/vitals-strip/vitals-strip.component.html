@@ -1,24 +1,25 @@
 <div class="vitals">
 
   <!-- HP -->
+  @let hp = pc.hp;
   <div class="vital">
     <span class="eyebrow">Hit Points</span>
     <div class="vital-value numeric">
       <app-editable-number
-        [value]="pc.hp?.cur" [editable]="editable" [min]="0" [max]="pc.hp?.max ?? null"
+        [value]="hp?.cur" [editable]="editable" [min]="0" [max]="hp?.max ?? null"
         [intercept]="true" (editRequested)="requestHp('cur')"
         label="current HP" (committed)="setHp('cur', $event)"
-      >{{ pc.hp?.cur }}</app-editable-number><span class="sub">/<app-editable-number
-      [value]="pc.hp?.max" [editable]="editable" [min]="0"
+      >{{ hp?.cur }}</app-editable-number><span class="sub">/<app-editable-number
+      [value]="hp?.max" [editable]="editable" [min]="0"
       [intercept]="true" (editRequested)="requestHp('max')"
       label="max HP" (committed)="setHp('max', $event)"
-    >{{ pc.hp?.max }}</app-editable-number></span>
-    @if (editable || (pc.hp?.temp && pc.hp!.temp > 0)) {
+    >{{ hp?.max }}</app-editable-number></span>
+    @if (editable || (hp?.temp && hp!.temp > 0)) {
       <span class="sub" style="color: var(--celestial)"> +<app-editable-number
-        [value]="pc.hp?.temp" [editable]="editable" [min]="0"
+        [value]="hp?.temp" [editable]="editable" [min]="0"
         [intercept]="true" (editRequested)="requestHp('temp')"
         label="temporary HP" (committed)="setHp('temp', $event)"
-      >{{ pc.hp?.temp ?? 0 }}</app-editable-number></span>
+      >{{ hp?.temp ?? 0 }}</app-editable-number></span>
     }
   </div>
   <div class="vital-bar"><span [style.width.%]="hpPct"></span></div>

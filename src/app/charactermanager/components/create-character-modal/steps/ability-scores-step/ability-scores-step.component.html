@@ -22,6 +22,7 @@
 @if (abilityMethod === 'standard') {
   <div class="ability-grid">
     @for (ability of abilities; track ability) {
+      @let score = finalScore(ability);
       <div class="ability-row">
         <span class="ability-label">{{ ability }}</span>
         <select class="ability-select" [(ngModel)]="assignments[ability]">
@@ -40,7 +41,7 @@
         </span>
         @if (assignments[ability] !== null) {
           <span class="ability-final">
-            = {{ finalScore(ability) }} <em>{{ finalScore(ability) | modifier }}</em>
+            = {{ score }} <em>{{ score | modifier }}</em>
           </span>
         }
       </div>
@@ -62,6 +63,7 @@
   </div>
   <div class="ability-grid">
     @for (ability of abilities; track ability) {
+      @let score = finalScore(ability);
       <div class="ability-row ability-row--pb">
         <span class="ability-label">{{ ability }}</span>
         <div class="pb-stepper">
@@ -82,7 +84,7 @@
           }
         </span>
         <span class="ability-final">
-          = {{ finalScore(ability) }} <em>{{ finalScore(ability) | modifier }}</em>
+          = {{ score }} <em>{{ score | modifier }}</em>
         </span>
       </div>
     }
