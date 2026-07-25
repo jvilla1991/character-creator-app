@@ -4,7 +4,6 @@ import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
-import { fmtMod } from '../../utils/character-math';
 import { toPcSpell } from '../../utils/spell-mapping';
 
 /**
@@ -125,10 +124,6 @@ export class LevelUpModalComponent implements OnInit {
 
   get selectedSpellCount(): number {
     return this.selectedSpells.filter(s => s.level > 0).length;
-  }
-
-  fmtMod(value: number): string {
-    return fmtMod(value);
   }
 
   /** Whether the proficiency bonus changes on this level (drives a highlight). */

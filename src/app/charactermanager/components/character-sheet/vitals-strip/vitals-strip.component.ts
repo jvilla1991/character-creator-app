@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../models/pc';
-import { hitDieFor, fmtMod } from '../../../utils/character-math';
+import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
 
 // 'AC' matches the backend's own diff vocabulary (PcActivityLogService.buildDmDiff);
@@ -53,8 +53,6 @@ export class VitalsStripComponent {
       .map(i => i.name);
     return worn.length ? worn.join(' & ') : 'unarmored';
   }
-
-  fmtMod(n: number): string { return fmtMod(n); }
 
   /** Pure builder: apply one HP field, keeping current within [0, max]. */
   private buildHp(field: 'cur' | 'max' | 'temp', value: number): PC {

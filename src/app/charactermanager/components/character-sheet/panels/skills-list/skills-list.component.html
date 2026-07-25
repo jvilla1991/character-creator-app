@@ -19,7 +19,7 @@
         <span class="skill-dot"></span>
         <span class="skill-name">{{ row.name }}</span>
         <span class="skill-ability">{{ row.abil }}</span>
-        <span class="skill-mod numeric">{{ row.modStr }}</span>
+        <span class="skill-mod numeric">{{ row.mod | modifier }}</span>
       </div>
     }
   </div>

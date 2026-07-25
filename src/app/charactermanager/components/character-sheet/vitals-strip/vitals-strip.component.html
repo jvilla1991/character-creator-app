@@ -42,7 +42,7 @@
     [value]="pc.init" [editable]="editable" [min]="null"
     [intercept]="true" (editRequested)="requestVital('init')"
     label="initiative" (committed)="setVital('init', $event)"
-  >{{ pc.init != null ? fmtMod(pc.init) : '—' }}</app-editable-number></div>
+  >{{ pc.init != null ? (pc.init | modifier) : '—' }}</app-editable-number></div>
   <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">d20 + mod</div>
 </div>
 

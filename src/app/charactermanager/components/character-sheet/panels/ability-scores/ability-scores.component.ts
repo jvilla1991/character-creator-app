@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
-import { modFromScore, fmtMod } from '../../../../utils/character-math';
+import { modFromScore } from '../../../../utils/character-math';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
 
 interface AbilityRow {
   key: string;
   label: string;
   score: number;
-  mod: string;
+  mod: number;
   isSaveProf: boolean;
 }
 
@@ -41,7 +41,7 @@ export class AbilityScoresComponent implements OnChanges {
         key,
         label:      AbilityScoresComponent.LABELS[key],
         score,
-        mod:        fmtMod(modFromScore(score)),
+        mod:        modFromScore(score),
         isSaveProf: this.pc.saves?.includes(key) ?? false,
       };
     });

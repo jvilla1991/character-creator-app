@@ -38,6 +38,7 @@ import { DmEditModalComponent } from './components/character-sheet/dm-edit-modal
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
+import { ModifierPipe } from './pipes/modifier.pipe';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -145,6 +146,7 @@ const routes: Routes = [
         SessionLiveBannerComponent,
         ToastComponent,
         RollLogPanelComponent,
+        ModifierPipe,
     ], imports: [CommonModule,
         MaterialModule,
         DragDropModule,

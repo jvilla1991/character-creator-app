@@ -77,9 +77,9 @@ describe('SkillsListComponent', () => {
       component.pc = basePc({ Stealth: 'expert', Acrobatics: 'prof' });
       component.ngOnChanges();
       const row = (name: string) => component.skillRows.find(r => r.name === name)!;
-      expect(row('Stealth').modStr).toBe('+7');    // DEX +3, expertise +4
-      expect(row('Acrobatics').modStr).toBe('+5'); // DEX +3, prof +2
-      expect(row('Athletics').modStr).toBe('+0');  // STR +0, no prof
+      expect(row('Stealth').mod).toBe(7);    // DEX +3, expertise +4
+      expect(row('Acrobatics').mod).toBe(5); // DEX +3, prof +2
+      expect(row('Athletics').mod).toBe(0);  // STR +0, no prof
     });
   });
 });

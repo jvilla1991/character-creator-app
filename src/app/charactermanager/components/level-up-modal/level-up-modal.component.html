@@ -28,12 +28,12 @@
           +{{ p.hpGained }}
           @if (hpMode === 'AVERAGE') {
             <span class="lvl-gain-note">
-              (d{{ p.hitDie }} avg {{ fmtMod(p.conModifier) }} CON) → max {{ p.newHpMax }}
+              (d{{ p.hitDie }} avg {{ p.conModifier | modifier }} CON) → max {{ p.newHpMax }}
             </span>
           }
           @if (hpMode === 'ROLL') {
             <span class="lvl-gain-note">
-              (roll d{{ p.hitDie }} {{ fmtMod(p.conModifier) }} CON, rolled on confirm — avg {{ p.hpGained }} shown)
+              (roll d{{ p.hitDie }} {{ p.conModifier | modifier }} CON, rolled on confirm — avg {{ p.hpGained }} shown)
             </span>
           }
         </span>
@@ -53,9 +53,9 @@
       <li class="lvl-gain" [class.is-bump]="profChanged">
         <span class="lvl-gain-label">Proficiency Bonus</span>
         <span class="lvl-gain-value">
-          {{ fmtMod(p.currentProfBonus) }}
+          {{ p.currentProfBonus | modifier }}
           @if (profChanged) {
-            → {{ fmtMod(p.newProfBonus) }}
+            → {{ p.newProfBonus | modifier }}
           }
           @if (!profChanged) {
             <span class="lvl-gain-note">(unchanged)</span>

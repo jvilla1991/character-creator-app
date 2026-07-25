@@ -472,7 +472,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   get reviewInitiative(): string {
-    return this.modifier(this.finalScore('DEX'));
+    return fmtMod(this.modNum(this.finalScore('DEX')));
   }
 
   /** Combined skill proficiencies: background (locked) + class choices */
@@ -642,8 +642,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                 + (this.bonusPlus1 === ability ? 1 : 0);
     return base + bonus;
   };
-
-  modifier = (score: number): string => fmtMod(modFromScore(score));
 
   private modNum(score: number): number { return modFromScore(score); }
 

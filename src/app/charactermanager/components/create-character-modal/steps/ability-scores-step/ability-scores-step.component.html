@@ -40,7 +40,7 @@
         </span>
         @if (assignments[ability] !== null) {
           <span class="ability-final">
-            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+            = {{ finalScore(ability) }} <em>{{ finalScore(ability) | modifier }}</em>
           </span>
         }
       </div>
@@ -82,7 +82,7 @@
           }
         </span>
         <span class="ability-final">
-          = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+          = {{ finalScore(ability) }} <em>{{ finalScore(ability) | modifier }}</em>
         </span>
       </div>
     }

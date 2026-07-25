@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
-import { modFromScore, fmtMod, SKILL_DEFS } from '../../../../utils/character-math';
+import { modFromScore, SKILL_DEFS } from '../../../../utils/character-math';
 
 interface SkillRow {
   name: string;
   abil: string;
   profLevel: 'prof' | 'expert' | null;
-  modStr: string;
+  mod: number;
 }
 
 /** A DM cycled a skill's proficiency marker: the fully-updated PC plus a
@@ -41,7 +41,7 @@ export class SkillsListComponent implements OnChanges {
         name,
         abil,
         profLevel: lvl,
-        modStr:    fmtMod(baseMod + bonus),
+        mod:       baseMod + bonus,
       };
     });
   }

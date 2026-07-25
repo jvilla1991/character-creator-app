@@ -6,9 +6,10 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 /**
  * Step 6: assign ability scores (Standard Array or Point Buy) and apply the
  * background's +2/+1 bonus. Presentational — the parent owns all the scoring
- * math and the canonical state. The display helpers (finalScore / modifier /
+ * math and the canonical state. The display helpers (finalScore /
  * availableFor / can*Score) are passed in as bound functions so the formulas
  * stay single-sourced on the parent; interactions are reported via events.
+ * Modifiers render via the shared `modifier` pipe rather than a passed-in formatter.
  *
  * The `assignments` Record is the parent's own object (shared by reference), so
  * the Standard-Array [(ngModel)] writes land directly on parent state.
@@ -37,7 +38,6 @@ export class AbilityScoresStepComponent {
 
   // Math provided by the parent (single source of truth).
   @Input() finalScore: (a: Ability) => number = () => 0;
-  @Input() modifier: (score: number) => string = () => '';
   @Input() availableFor: (a: Ability) => number[] = () => [];
   @Input() canIncreaseScore: (a: Ability) => boolean = () => false;
   @Input() canDecreaseScore: (a: Ability) => boolean = () => false;
