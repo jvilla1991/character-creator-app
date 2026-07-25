@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { DndSpell } from '../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 
@@ -18,6 +18,7 @@ import { FormsModule } from '@angular/forms';
     selector: 'app-spell-picker',
     templateUrl: './spell-picker.component.html',
     styleUrls: ['./spell-picker.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class SpellPickerComponent {

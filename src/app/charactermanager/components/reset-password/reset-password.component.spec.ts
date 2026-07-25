@@ -33,12 +33,12 @@ describe('ResetPasswordComponent', () => {
   it('reads the token from the query string', async () => {
     await setup('abc123');
     expect(component.token).toBe('abc123');
-    expect(component.errorMessage).toBe('');
+    expect(component.errorMessage()).toBe('');
   });
 
   it('shows an error when the link has no token', async () => {
     await setup(null);
-    expect(component.errorMessage).toBeTruthy();
+    expect(component.errorMessage()).toBeTruthy();
   });
 
   it('requires both fields before the form is valid', async () => {
@@ -55,7 +55,7 @@ describe('ResetPasswordComponent', () => {
 
     component.submit();
 
-    expect(component.errorMessage).toBeTruthy();
+    expect(component.errorMessage()).toBeTruthy();
     expect(authService.resetPassword).not.toHaveBeenCalled();
   });
 
@@ -65,7 +65,7 @@ describe('ResetPasswordComponent', () => {
 
     component.submit();
 
-    expect(component.errorMessage).toBeTruthy();
+    expect(component.errorMessage()).toBeTruthy();
     expect(authService.resetPassword).not.toHaveBeenCalled();
   });
 
@@ -77,7 +77,7 @@ describe('ResetPasswordComponent', () => {
     component.submit();
 
     expect(authService.resetPassword).toHaveBeenCalledWith('abc123', 'longenough1');
-    expect(component.done).toBeTrue();
+    expect(component.done()).toBeTrue();
   });
 
   it('shows the invalid-or-expired error when the backend rejects the token', async () => {
@@ -87,7 +87,7 @@ describe('ResetPasswordComponent', () => {
 
     component.submit();
 
-    expect(component.done).toBeFalse();
-    expect(component.errorMessage).toContain('invalid or has expired');
+    expect(component.done()).toBeFalse();
+    expect(component.errorMessage()).toContain('invalid or has expired');
   });
 });

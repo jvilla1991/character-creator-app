@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
     styleUrls: ['./reset-password.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class ResetPasswordComponent implements OnInit {
@@ -29,9 +30,10 @@ export class ResetPasswordComponent implements OnInit {
 
   token = '';
   showPassword = false;
-  errorMessage = '';
-  done = false;
-  submitting = false;
+  // Signals: set from the reset HTTP callback, which never marks an OnPush view.
+  readonly errorMessage = signal('');
+  readonly done = signal(false);
+  readonly submitting = signal(false);
 
   constructor(
     private fb: NonNullableFormBuilder,
@@ -42,28 +44,28 @@ export class ResetPasswordComponent implements OnInit {
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
     if (!this.token) {
-      this.errorMessage = 'This reset link is incomplete — ask your DM for a new one.';
+      this.errorMessage.set('This reset link is incomplete — ask your DM for a new one.');
     }
   }
 
   submit(): void {
-    this.errorMessage = '';
+    this.errorMessage.set('');
     const { newPassword, confirmPassword } = this.form.getRawValue();
     if (newPassword.length < 8) {
-      this.errorMessage = 'Password must be at least 8 characters.';
+      this.errorMessage.set('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      this.errorMessage = 'Passwords do not match.';
+      this.errorMessage.set('Passwords do not match.');
       return;
     }
-    this.submitting = true;
+    this.submitting.set(true);
     this.authService.resetPassword(this.token, newPassword).subscribe(response => {
-      this.submitting = false;
+      this.submitting.set(false);
       if (response.success) {
-        this.done = true;
+        this.done.set(true);
       } else {
-        this.errorMessage = 'This reset link is invalid or has expired — ask your DM for a new one.';
+        this.errorMessage.set('This reset link is invalid or has expired — ask your DM for a new one.');
       }
     });
   }

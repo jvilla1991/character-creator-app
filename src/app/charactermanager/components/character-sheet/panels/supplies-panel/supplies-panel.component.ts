@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import {
   SUPPLY_KEYS,
@@ -42,7 +42,8 @@ const MAX_PIPS = 15;
  */
 @Component({
     selector: 'app-supplies-panel',
-    templateUrl: './supplies-panel.component.html'
+    templateUrl: './supplies-panel.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SuppliesPanelComponent {
   @Input() pc!: PC;

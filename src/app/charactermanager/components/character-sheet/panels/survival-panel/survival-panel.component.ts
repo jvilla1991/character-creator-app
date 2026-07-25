@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC, PcSurvival } from '../../../../models/pc';
 import {
   SURVIVAL_KEYS,
@@ -26,7 +26,8 @@ import {
  */
 @Component({
     selector: 'app-survival-panel',
-    templateUrl: './survival-panel.component.html'
+    templateUrl: './survival-panel.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SurvivalPanelComponent {
   @Input() pc!: PC;

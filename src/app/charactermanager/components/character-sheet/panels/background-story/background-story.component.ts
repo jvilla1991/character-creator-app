@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { STANDARD_LANGUAGES } from '../../../../services/dnd-resources.service';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
     selector: 'app-background-story',
     templateUrl: './background-story.component.html',
     styleUrls: ['./background-story.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class BackgroundStoryComponent {

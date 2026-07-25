@@ -90,15 +90,15 @@
                         Passwords do not match.
                       </div>
                     }
-                    @if (errorMessage && !passwordMismatch) {
+                    @if (errorMessage() && !passwordMismatch) {
                       <div class="login-error" role="alert">
-                        {{ errorMessage }}
+                        {{ errorMessage() }}
                       </div>
                     }
 
                     <button type="submit" class="btn primary login-submit"
-                      [disabled]="form.invalid || loading">
-                      {{ loading ? 'Inscribing…' : 'Inscribe Your Name' }}
+                      [disabled]="form.invalid || loading()">
+                      {{ loading() ? 'Inscribing…' : 'Inscribe Your Name' }}
                     </button>
                   </form>
 

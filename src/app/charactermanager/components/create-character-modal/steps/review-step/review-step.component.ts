@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ClassEquipment, DndClass, DndSpecies, DndSpell } from '../../../../models/dnd-api.types';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
@@ -16,6 +16,7 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
     selector: 'app-review-step',
     templateUrl: './review-step.component.html',
     styleUrls: ['./review-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ModifierPipe]
 })
 export class ReviewStepComponent {

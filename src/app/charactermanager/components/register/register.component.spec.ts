@@ -109,8 +109,8 @@ describe('RegisterComponent', () => {
 
     component.register();
 
-    expect(component.loading).toBeFalse();
-    expect(component.errorMessage).toContain('already be in use');
+    expect(component.loading()).toBeFalse();
+    expect(component.errorMessage()).toContain('already be in use');
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
@@ -120,13 +120,13 @@ describe('RegisterComponent', () => {
 
     component.register();
 
-    expect(component.loading).toBeFalse();
-    expect(component.errorMessage).toContain('try again');
+    expect(component.loading()).toBeFalse();
+    expect(component.errorMessage()).toContain('try again');
   });
 
   it('ignores register() while a request is in flight', () => {
     fillValid();
-    component.loading = true;
+    component.loading.set(true);
 
     component.register();
 

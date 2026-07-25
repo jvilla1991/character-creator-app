@@ -33,7 +33,7 @@ describe('PcNotesComponent', () => {
     bind(pc(1));
 
     expect(pcService.getNotes).toHaveBeenCalledWith(1);
-    expect(component.notes.map(n => n.body)).toEqual(['Later', 'Earlier']);
+    expect(component.notes().map(n => n.body)).toEqual(['Later', 'Earlier']);
   });
 
   it('does not reload for same-character change events, but does for a new character', () => {
@@ -56,7 +56,7 @@ describe('PcNotesComponent', () => {
     component.addNote();
 
     expect(pcService.addNote).toHaveBeenCalledWith(1, 'We spared the chief', 9);
-    expect(component.notes[0].body).toBe('We spared the chief');
+    expect(component.notes()[0].body).toBe('We spared the chief');
     expect(component.draft).toBe('');
   });
 
@@ -72,6 +72,6 @@ describe('PcNotesComponent', () => {
     component.draft = 'A clue';
     component.addNote();
     expect(component.draft).toBe('A clue'); // kept for retry
-    expect(component.saving).toBeFalse();
+    expect(component.saving()).toBeFalse();
   });
 });

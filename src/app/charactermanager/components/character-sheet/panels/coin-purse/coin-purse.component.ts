@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
 import { EditableNumberComponent } from '../../editable-number/editable-number.component';
@@ -9,6 +9,7 @@ type CoinKey = keyof NonNullable<PC['coins']>;
     selector: 'app-coin-purse',
     templateUrl: './coin-purse.component.html',
     styleUrls: ['./coin-purse.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [EditableNumberComponent]
 })
 export class CoinPurseComponent {

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { SessionRollView } from '../../../models/session';
 import { DatePipe } from '@angular/common';
 
@@ -13,6 +13,7 @@ import { DatePipe } from '@angular/common';
     selector: 'app-roll-log-panel',
     templateUrl: './roll-log-panel.component.html',
     styleUrls: ['./roll-log-panel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DatePipe]
 })
 export class RollLogPanelComponent {
@@ -20,9 +21,9 @@ export class RollLogPanelComponent {
   readonly dm = input(false);
 
   /** Starts open; the DM or a player can collapse it to reclaim vertical space. */
-  collapsed = false;
+  readonly collapsed = signal(false);
 
   toggle(): void {
-    this.collapsed = !this.collapsed;
+    this.collapsed.update(collapsed => !collapsed);
   }
 }

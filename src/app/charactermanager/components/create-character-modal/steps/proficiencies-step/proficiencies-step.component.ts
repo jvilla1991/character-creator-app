@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndBackground } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 
@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
     selector: 'app-proficiencies-step',
     templateUrl: './proficiencies-step.component.html',
     styleUrls: ['./proficiencies-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class ProficienciesStepComponent {

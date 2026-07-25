@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { BackgroundGroup, DndBackground } from '../../../../models/dnd-api.types';
 
 /**
@@ -10,7 +10,8 @@ import { BackgroundGroup, DndBackground } from '../../../../models/dnd-api.types
 @Component({
     selector: 'app-background-step',
     templateUrl: './background-step.component.html',
-    styleUrls: ['./background-step.component.scss']
+    styleUrls: ['./background-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BackgroundStepComponent {
   readonly backgroundGroups = input<BackgroundGroup[]>([]);

@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { passiveScore, tintFor } from '../../../utils/character-math';
 import { DecimalPipe } from '@angular/common';
@@ -10,6 +10,7 @@ import { DecimalPipe } from '@angular/common';
 @Component({
     selector: 'app-party-board',
     templateUrl: './party-board.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DecimalPipe]
 })
 export class PartyBoardComponent {

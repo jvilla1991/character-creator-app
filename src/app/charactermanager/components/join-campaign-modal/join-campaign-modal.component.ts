@@ -1,4 +1,4 @@
-import { Component, OnChanges, SimpleChanges, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnChanges, SimpleChanges, input, output } from '@angular/core';
 import { PCService } from '../../services/pc.service';
 import { JoinConsentState, JoinRequest } from '../../services/join-modal.service';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
@@ -13,6 +13,7 @@ import { AsyncPipe } from '@angular/common';
 @Component({
     selector: 'app-join-campaign-modal',
     templateUrl: './join-campaign-modal.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CdkTrapFocus, FormsModule, AsyncPipe]
 })
 export class JoinCampaignModalComponent implements OnChanges {

@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, signal } from '@angular/core';
 import { SessionState } from '../../../models/session';
 import { EncounterSummary } from '../../../models/encounter';
 import { CuratedEncounterService } from '../../../services/curated-encounter.service';
@@ -16,14 +16,16 @@ import { FormsModule } from '@angular/forms';
     selector: 'app-encounter-loader',
     templateUrl: './encounter-loader.component.html',
     styleUrls: ['./encounter-loader.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class EncounterLoaderComponent implements OnChanges {
   @Input() state!: SessionState;
 
-  encounters: EncounterSummary[] = [];
-  selectedId: number | null = null;
-  busy = false;
+  // Signals: written from list/load HTTP callbacks, which never mark an OnPush view.
+  readonly encounters = signal<EncounterSummary[]>([]);
+  readonly selectedId = signal<number | null>(null);
+  readonly busy = signal(false);
 
   private loadedFor: string | null = null;
 
@@ -40,29 +42,30 @@ export class EncounterLoaderComponent implements OnChanges {
     if (`${s.campaignId}` !== this.loadedFor) {
       this.loadedFor = `${s.campaignId}`;
       this.curatedEncounters.list(s.campaignId).subscribe({
-        next: encounters => (this.encounters = encounters),
-        error: () => (this.encounters = []),
+        next: encounters => this.encounters.set(encounters),
+        error: () => this.encounters.set([]),
       });
     }
   }
 
   get selectedNotes(): string | null {
-    const e = this.encounters.find(x => x.id === this.selectedId);
+    const e = this.encounters().find(x => x.id === this.selectedId());
     return e?.notes ?? null;
   }
 
   load(): void {
-    if (this.selectedId == null || this.busy) return;
-    const encounter = this.encounters.find(x => x.id === this.selectedId);
-    this.busy = true;
-    this.sessionService.loadEncounter(this.state.sessionId, this.selectedId).subscribe({
+    const selectedId = this.selectedId();
+    if (selectedId == null || this.busy()) return;
+    const encounter = this.encounters().find(x => x.id === selectedId);
+    this.busy.set(true);
+    this.sessionService.loadEncounter(this.state.sessionId, selectedId).subscribe({
       next: () => {
-        this.busy = false;
+        this.busy.set(false);
         this.notifications.notify(`Loaded ${encounter?.name ?? 'encounter'} into the session.`);
-        this.selectedId = null;
+        this.selectedId.set(null);
       },
       error: err => {
-        this.busy = false;
+        this.busy.set(false);
         this.notifications.notify(err?.error?.message || 'Could not load the encounter.');
       },
     });

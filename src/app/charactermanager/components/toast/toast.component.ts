@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NotificationService } from '../../services/notification.service';
 import { AsyncPipe } from '@angular/common';
 
@@ -15,6 +15,7 @@ import { AsyncPipe } from '@angular/common';
     // readers register it before any message is inserted — a live region
     // that appears together with its content is often not announced.
     host: { 'role': 'status', 'aria-live': 'polite' },
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [AsyncPipe]
 })
 export class ToastComponent {

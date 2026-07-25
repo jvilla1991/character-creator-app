@@ -32,7 +32,7 @@ describe('PcLogComponent', () => {
     bind(pc(1));
 
     expect(pcService.getLog).toHaveBeenCalledWith(1);
-    expect(component.entries.map(e => e.description)).toEqual(['Bought Rope for 1 gp', 'Leveled up to 3']);
+    expect(component.entries().map(e => e.description)).toEqual(['Bought Rope for 1 gp', 'Leveled up to 3']);
   });
 
   it('does not reload for same-character change events, but does for a new character', () => {
@@ -50,7 +50,7 @@ describe('PcLogComponent', () => {
 
     bind(pc(1));
 
-    expect(component.entries).toEqual([]);
+    expect(component.entries()).toEqual([]);
   });
 
   describe('entryDate', () => {

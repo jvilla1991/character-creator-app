@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { UiStateService, Role } from '../../../services/ui-state.service';
 
 /**
@@ -7,7 +7,8 @@ import { UiStateService, Role } from '../../../services/ui-state.service';
  */
 @Component({
     selector: 'app-role-switch',
-    templateUrl: './role-switch.component.html'
+    templateUrl: './role-switch.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RoleSwitchComponent {
   readonly isPlayer = this.uiState.isPlayer;

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
@@ -18,6 +18,7 @@ interface CampaignRow {
 @Component({
     selector: 'app-campaign-sidebar',
     templateUrl: './campaign-sidebar.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [AsyncPipe]
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {

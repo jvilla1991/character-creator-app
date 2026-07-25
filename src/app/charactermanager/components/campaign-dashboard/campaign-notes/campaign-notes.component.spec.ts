@@ -25,7 +25,7 @@ describe('CampaignNotesComponent', () => {
 
   it('loads notes when the campaign changes', () => {
     expect(campaignService.getNotes).toHaveBeenCalledWith('1');
-    expect(component.notes).toEqual([note]);
+    expect(component.notes()).toEqual([note]);
   });
 
   it('startEdit opens the inline editor seeded with the note body', () => {
@@ -44,7 +44,7 @@ describe('CampaignNotesComponent', () => {
     component.saveEdit(note);
 
     expect(campaignService.updateNote).toHaveBeenCalledWith('1', 7, 'The cult regrouped.');
-    expect(component.notes[0]).toBe(updated);
+    expect(component.notes()[0]).toBe(updated);
     expect(component.editingId).toBeNull(); // editor closed
   });
 
@@ -61,7 +61,7 @@ describe('CampaignNotesComponent', () => {
     component.editDraft = 'New text';
     component.saveEdit(note);
     expect(component.editingId).toBe(7);
-    expect(component.saving).toBeFalse();
+    expect(component.saving()).toBeFalse();
   });
 
   it('cancelEdit closes the editor without saving', () => {

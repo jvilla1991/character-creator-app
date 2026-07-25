@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { goldValue } from '../../../utils/character-math';
 import { DecimalPipe } from '@angular/common';
@@ -9,6 +9,7 @@ interface TreasuryRow { name: string; gp: number; }
 @Component({
     selector: 'app-party-treasury',
     templateUrl: './party-treasury.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DecimalPipe]
 })
 export class PartyTreasuryComponent {

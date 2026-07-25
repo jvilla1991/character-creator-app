@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ClassEquipment } from '../../../../models/dnd-api.types';
 
 /**
@@ -9,7 +9,8 @@ import { ClassEquipment } from '../../../../models/dnd-api.types';
 @Component({
     selector: 'app-equipment-step',
     templateUrl: './equipment-step.component.html',
-    styleUrls: ['./equipment-step.component.scss']
+    styleUrls: ['./equipment-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EquipmentStepComponent {
   readonly loadingEquipment = input(false);

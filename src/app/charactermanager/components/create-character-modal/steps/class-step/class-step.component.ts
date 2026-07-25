@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
 
 /**
@@ -9,7 +9,8 @@ import { DndClass } from '../../../../models/dnd-api.types';
 @Component({
     selector: 'app-class-step',
     templateUrl: './class-step.component.html',
-    styleUrls: ['./class-step.component.scss']
+    styleUrls: ['./class-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClassStepComponent {
   readonly classList = input<string[]>([]);

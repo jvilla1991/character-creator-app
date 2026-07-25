@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 
@@ -6,6 +6,7 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
     selector: 'app-delete-confirmation-modal',
     templateUrl: './delete-confirmation-modal.component.html',
     styleUrls: ['./delete-confirmation-modal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CdkTrapFocus]
 })
 export class DeleteConfirmationModalComponent {

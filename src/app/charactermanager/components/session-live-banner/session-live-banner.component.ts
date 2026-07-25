@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { combineLatest, of, timer } from 'rxjs';
 import { catchError, filter, map, switchMap } from 'rxjs/operators';
@@ -27,16 +27,20 @@ interface LiveSession {
     selector: 'app-session-live-banner',
     templateUrl: './session-live-banner.component.html',
     styleUrls: ['./session-live-banner.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CdkTrapFocus, FormsModule]
 })
 export class SessionLiveBannerComponent implements OnInit {
-  live: LiveSession | null = null;
+  // Signals: all four are written from the discovery poll / join HTTP callbacks,
+  // which never mark an OnPush view on their own. eligiblePcs/selectedPcId are
+  // only written from template events, so they stay plain fields.
+  readonly live = signal<LiveSession | null>(null);
 
-  pickerOpen = false;
+  readonly pickerOpen = signal(false);
   eligiblePcs: PC[] = [];
   selectedPcId: number | null = null;
-  joining = false;
-  error: string | null = null;
+  readonly joining = signal(false);
+  readonly error = signal<string | null>(null);
 
   private allPcs: PC[] = [];
 
@@ -68,45 +72,47 @@ export class SessionLiveBannerComponent implements OnInit {
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(found => {
-      this.live = found
+      this.live.set(found
         ? {
             session: found.session,
             campaignId: found.id,
             campaignName: this.campaignService.getById(found.id)?.name ?? 'your campaign',
           }
-        : null;
+        : null);
       // If the live session went away while the picker was open, close it.
-      if (!found) this.pickerOpen = false;
+      if (!found) this.pickerOpen.set(false);
     });
   }
 
   openPicker(): void {
-    if (!this.live) return;
-    this.error = null;
+    const live = this.live();
+    if (!live) return;
+    this.error.set(null);
     this.eligiblePcs = this.allPcs.filter(
-      pc => pc.campaignId != null && String(pc.campaignId) === this.live!.campaignId,
+      pc => pc.campaignId != null && String(pc.campaignId) === live.campaignId,
     );
     this.selectedPcId = this.eligiblePcs[0]?.id ?? null;
-    this.pickerOpen = true;
+    this.pickerOpen.set(true);
   }
 
   closePicker(): void {
-    this.pickerOpen = false;
+    this.pickerOpen.set(false);
   }
 
   join(): void {
-    if (!this.live || this.selectedPcId == null) return;
-    this.joining = true;
-    this.error = null;
-    this.sessionService.joinSession(this.live.session.sessionId, this.selectedPcId).subscribe({
+    const live = this.live();
+    if (!live || this.selectedPcId == null) return;
+    this.joining.set(true);
+    this.error.set(null);
+    this.sessionService.joinSession(live.session.sessionId, this.selectedPcId).subscribe({
       next: state => {
-        this.joining = false;
-        this.pickerOpen = false;
+        this.joining.set(false);
+        this.pickerOpen.set(false);
         this.uiState.openSession(String(state.sessionId));
       },
       error: () => {
-        this.joining = false;
-        this.error = 'Could not join the session. Try again.';
+        this.joining.set(false);
+        this.error.set('Could not join the session. Try again.');
       },
     });
   }

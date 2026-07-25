@@ -1,11 +1,12 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { CONDITIONS_LIST } from '../../../../utils/character-math';
 
 @Component({
     selector: 'app-conditions-panel',
     templateUrl: './conditions-panel.component.html',
-    styleUrls: ['./conditions-panel.component.scss']
+    styleUrls: ['./conditions-panel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConditionsPanelComponent {
   @Input() pc!: PC;

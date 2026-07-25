@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, output } from '@angular/core';
 import { WEEKDAY_PRESETS, WeekdayPreset } from '../../models/campaign';
 import { FormsModule } from '@angular/forms';
 
@@ -20,6 +20,7 @@ export const MAX_WEEK_DAYS = 20;
 @Component({
     selector: 'app-week-days-editor',
     templateUrl: './week-days-editor.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class WeekDaysEditorComponent implements OnChanges {

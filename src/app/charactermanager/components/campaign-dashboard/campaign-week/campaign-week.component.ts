@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CampaignService } from '../../../services/campaign.service';
 import { WeekDaysEditorComponent } from '../../week-days-editor/week-days-editor.component';
@@ -12,19 +12,21 @@ import { WeekDaysEditorComponent } from '../../week-days-editor/week-days-editor
 @Component({
     selector: 'app-campaign-week',
     templateUrl: './campaign-week.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [WeekDaysEditorComponent]
 })
 export class CampaignWeekComponent implements OnChanges {
   @Input() campaign!: Campaign;
 
-  editing = false;
+  // Signals: cleared from HTTP callbacks, which never mark an OnPush view.
+  readonly editing = signal(false);
   draft: string[] | null = null;
-  saving = false;
+  readonly saving = signal(false);
 
   constructor(private campaignService: CampaignService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['campaign']) this.editing = false;
+    if (changes['campaign']) this.editing.set(false);
   }
 
   /** "Sul · Mol · …" or the free-text fallback description. */
@@ -36,24 +38,24 @@ export class CampaignWeekComponent implements OnChanges {
 
   edit(): void {
     this.draft = this.campaign.weekDays?.length ? [...this.campaign.weekDays] : null;
-    this.editing = true;
+    this.editing.set(true);
   }
 
   cancel(): void {
-    this.editing = false;
+    this.editing.set(false);
   }
 
   save(): void {
-    if (this.saving) return;
-    this.saving = true;
+    if (this.saving()) return;
+    this.saving.set(true);
     this.campaignService.setWeekDays(this.campaign.id, this.draft).subscribe({
       next: () => {
-        this.saving = false;
-        this.editing = false;
+        this.saving.set(false);
+        this.editing.set(false);
       },
       error: err => {
         console.error('Failed to save the week definition', err);
-        this.saving = false; // keep the editor open so the DM can retry
+        this.saving.set(false); // keep the editor open so the DM can retry
       },
     });
   }

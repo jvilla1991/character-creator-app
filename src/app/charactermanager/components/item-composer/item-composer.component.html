@@ -23,10 +23,10 @@
         <input type="number" min="1" [(ngModel)]="catalogQty" class="composer-qty" aria-label="Quantity">
       </div>
       <input type="text" [(ngModel)]="catalogSearch" class="composer-text" placeholder="Search items…">
-      @if (loadingCatalog) {
+      @if (loadingCatalog()) {
         <div class="composer-hint">Loading catalog…</div>
       }
-      @if (!loadingCatalog) {
+      @if (!loadingCatalog()) {
         <div class="composer-list">
           @for (item of filteredCatalog; track item.itemKey) {
             <label class="composer-option" [class.on]="catalogSelectedKey === item.itemKey">

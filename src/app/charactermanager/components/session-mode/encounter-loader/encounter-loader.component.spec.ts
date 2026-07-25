@@ -30,7 +30,7 @@ describe('EncounterLoaderComponent', () => {
     component.ngOnChanges();
     component.ngOnChanges(); // second poll tick — must not refetch
     expect(curated.list).toHaveBeenCalledTimes(1);
-    expect(component.encounters).toEqual(summaries);
+    expect(component.encounters()).toEqual(summaries);
   });
 
   it('does not fetch for a non-DM viewer', () => {
@@ -42,27 +42,27 @@ describe('EncounterLoaderComponent', () => {
   it('exposes the selected encounter notes', () => {
     component.state = dmState();
     component.ngOnChanges();
-    component.selectedId = 5;
+    component.selectedId.set(5);
     expect(component.selectedNotes).toBe('In the trees.');
   });
 
   it('load posts to the session and toasts on success', () => {
     component.state = dmState();
     component.ngOnChanges();
-    component.selectedId = 5;
+    component.selectedId.set(5);
     session.loadEncounter.and.returnValue(of({} as SessionState));
     component.load();
     expect(session.loadEncounter).toHaveBeenCalledWith(7, 5);
     expect(notifications.notify).toHaveBeenCalledWith('Loaded Goblin Ambush into the session.');
-    expect(component.selectedId).toBeNull();
-    expect(component.busy).toBeFalse();
+    expect(component.selectedId()).toBeNull();
+    expect(component.busy()).toBeFalse();
   });
 
   it('shows an empty list when the campaign has no curated encounters', () => {
     curated.list.and.returnValue(of([]));
     component.state = dmState();
     component.ngOnChanges();
-    expect(component.encounters).toEqual([]);
+    expect(component.encounters()).toEqual([]);
     component.load(); // no selection possible — must no-op
     expect(session.loadEncounter).not.toHaveBeenCalled();
   });
@@ -76,10 +76,10 @@ describe('EncounterLoaderComponent', () => {
   it('load surfaces an error toast and clears busy', () => {
     component.state = dmState();
     component.ngOnChanges();
-    component.selectedId = 5;
+    component.selectedId.set(5);
     session.loadEncounter.and.returnValue(throwError(() => ({ error: { message: 'boom' } })));
     component.load();
     expect(notifications.notify).toHaveBeenCalledWith('boom');
-    expect(component.busy).toBeFalse();
+    expect(component.busy()).toBeFalse();
   });
 });

@@ -28,7 +28,7 @@ describe('ItemComposerComponent', () => {
     component.ngOnInit();
     expect(shopService.getCatalog).toHaveBeenCalledWith('WEAPON');
     expect(component.tab).toBe('catalog');
-    expect(component.catalogItems).toEqual([catalogLongsword]);
+    expect(component.catalogItems()).toEqual([catalogLongsword]);
   });
 
   it('emits the full catalog item and qty on a catalog confirm', () => {
@@ -46,8 +46,8 @@ describe('ItemComposerComponent', () => {
   });
 
   it('filters the catalog by the search box', () => {
-    component.catalogItems = [catalogLongsword,
-      { ...catalogLongsword, itemKey: 'dagger', name: 'Dagger' }];
+    component.catalogItems.set([catalogLongsword,
+      { ...catalogLongsword, itemKey: 'dagger', name: 'Dagger' }]);
     component.catalogSearch = 'dag';
     expect(component.filteredCatalog.map(i => i.itemKey)).toEqual(['dagger']);
   });

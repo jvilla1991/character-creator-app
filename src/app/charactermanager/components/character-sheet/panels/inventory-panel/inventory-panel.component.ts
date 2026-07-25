@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
 import { categoryLabelFor, formatCp } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
@@ -28,6 +28,7 @@ import { ItemComposerComponent } from '../../../item-composer/item-composer.comp
     selector: 'app-inventory-panel',
     templateUrl: './inventory-panel.component.html',
     styleUrls: ['./inventory-panel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ItemComposerComponent]
 })
 export class InventoryPanelComponent {

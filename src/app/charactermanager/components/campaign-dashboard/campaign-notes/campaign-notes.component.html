@@ -2,7 +2,7 @@
   <div class="panel-header">
     <span class="panel-title">Session Notes</span>
     <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
-      {{ notes.length }} {{ notes.length === 1 ? 'entry' : 'entries' }}
+      {{ notes().length }} {{ notes().length === 1 ? 'entry' : 'entries' }}
     </span>
   </div>
 
@@ -13,18 +13,18 @@
       placeholder="Jot a note — a ruling, a clue, a thread to pull next time…"
       (keydown.control.enter)="add()"
     ></textarea>
-    <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="add()">Add Note</button>
+    <button class="btn primary" [disabled]="!draft.trim() || saving()" (click)="add()">Add Note</button>
   </div>
 
-  @if (notes.length) {
+  @if (notes().length) {
     <div class="note-list">
-      @for (n of notes; track trackById($index, n)) {
+      @for (n of notes(); track trackById($index, n)) {
         <div class="note">
           @if (editingId === n.id) {
             <div class="note-compose" style="margin-bottom: 6px;">
               <textarea [(ngModel)]="editDraft" rows="2" aria-label="Edit note"
               (keydown.control.enter)="saveEdit(n)"></textarea>
-              <button class="btn primary" [disabled]="!editDraft.trim() || saving" (click)="saveEdit(n)">Save</button>
+              <button class="btn primary" [disabled]="!editDraft.trim() || saving()" (click)="saveEdit(n)">Save</button>
               <button class="btn" (click)="cancelEdit()">Cancel</button>
             </div>
           } @else {

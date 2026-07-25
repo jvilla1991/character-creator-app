@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
@@ -19,6 +19,7 @@ const VITAL_LABELS: Record<'ac' | 'init' | 'speed' | 'prof', string> = {
     selector: 'app-vitals-strip',
     templateUrl: './vitals-strip.component.html',
     styleUrls: ['./vitals-strip.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [EditableNumberComponent, ModifierPipe]
 })
 export class VitalsStripComponent {

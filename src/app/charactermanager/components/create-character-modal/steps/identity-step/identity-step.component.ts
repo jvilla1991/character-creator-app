@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
     selector: 'app-identity-step',
     templateUrl: './identity-step.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class IdentityStepComponent {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, signal, viewChildren } from '@angular/core';
 import { CdkDragDrop, moveItemInArray, CdkDropList, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { DndSpell } from '../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../services/dnd-resources.service';
@@ -25,21 +25,24 @@ import { TitleCasePipe } from '@angular/common';
     selector: 'app-spell-carousel',
     templateUrl: './spell-carousel.component.html',
     styleUrls: ['./spell-carousel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CdkDropList, CdkDrag, CdkDragHandle, SpellPickerComponent_1, TitleCasePipe]
 })
 export class SpellCarouselComponent implements OnInit {
   /** Ordered, de-duplicated pinned spells. Ephemeral — session only. */
   pinned: DndSpell[] = [];
 
-  /** All SRD spells, loaded once for the search overlay's candidate list. */
-  allSpells: DndSpell[] = [];
-  loadingSpells = false;
+  /** All SRD spells, loaded once for the search overlay's candidate list.
+   *  Signals: written from the spells HTTP callback, which never marks an OnPush view. */
+  readonly allSpells = signal<DndSpell[]>([]);
+  readonly loadingSpells = signal(false);
 
   collapsed = false;
   searchOpen = false;
 
-  /** Name of the card to flash (add / duplicate-select), cleared after the pulse. */
-  focusedName: string | null = null;
+  /** Name of the card to flash (add / duplicate-select), cleared after the pulse.
+   *  Signal: cleared from a timer callback, which never marks an OnPush view. */
+  readonly focusedName = signal<string | null>(null);
   private focusTimer?: ReturnType<typeof setTimeout>;
 
   private readonly cardEls = viewChildren<ElementRef<HTMLElement>>('cardEl');
@@ -49,10 +52,10 @@ export class SpellCarouselComponent implements OnInit {
   ngOnInit(): void {
     // Cached via shareReplay in the service, so this is cheap and warms the
     // search list before the DM opens it.
-    this.loadingSpells = true;
+    this.loadingSpells.set(true);
     this.dndResources.getSpells().subscribe({
-      next: spells => { this.allSpells = spells; this.loadingSpells = false; },
-      error: () => { this.loadingSpells = false; },
+      next: spells => { this.allSpells.set(spells); this.loadingSpells.set(false); },
+      error: () => { this.loadingSpells.set(false); },
     });
   }
 
@@ -108,7 +111,7 @@ export class SpellCarouselComponent implements OnInit {
 
   /** Flash the named card and scroll it into view (used on add and on duplicate-select). */
   private focusCard(name: string): void {
-    this.focusedName = name;
+    this.focusedName.set(name);
     clearTimeout(this.focusTimer);
     // Defer a tick so a just-pinned card exists in the DOM before we scroll to it.
     setTimeout(() => {
@@ -117,6 +120,6 @@ export class SpellCarouselComponent implements OnInit {
         behavior: 'smooth', inline: 'center', block: 'nearest',
       });
     });
-    this.focusTimer = setTimeout(() => { this.focusedName = null; }, 1600);
+    this.focusTimer = setTimeout(() => { this.focusedName.set(null); }, 1600);
   }
 }

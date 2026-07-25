@@ -60,9 +60,9 @@
               </div>
             </div>
 
-            @if (errorMessage) {
+            @if (errorMessage()) {
               <div class="login-error" role="alert">
-                {{ errorMessage }}
+                {{ errorMessage() }}
               </div>
             }
 

@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -35,6 +35,7 @@ import { PcLogComponent } from './panels/pc-log/pc-log.component';
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges {
@@ -314,7 +315,8 @@ export class CharacterSheetComponent implements OnChanges {
   // live session the snapshot carries these fields but a use doesn't bump the
   // session version, so we force one off-cadence refresh to keep viewers honest.
 
-  inspirationBusy = false;
+  // Signal: cleared from HTTP callbacks, which never mark an OnPush view on their own.
+  readonly inspirationBusy = signal(false);
 
   /**
    * The conditions panel resolved a pip click to a new meter value (it owns the
@@ -323,12 +325,12 @@ export class CharacterSheetComponent implements OnChanges {
    * endpoint, not part of a generic sheet save.
    */
   onInspirationChange(pips: number): void {
-    if (this.inspirationBusy) return;
-    this.inspirationBusy = true;
+    if (this.inspirationBusy()) return;
+    this.inspirationBusy.set(true);
     this.pcService.setInspirationPips(this.pc.id, pips).subscribe({
-      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
-        this.inspirationBusy = false;
+        this.inspirationBusy.set(false);
         console.error('Failed to set the inspiration meter', err);
       },
     });
@@ -336,12 +338,12 @@ export class CharacterSheetComponent implements OnChanges {
 
   /** Owner (or DM) spends Heroic Inspiration after using the reroll. */
   useInspiration(): void {
-    if (this.inspirationBusy) return;
-    this.inspirationBusy = true;
+    if (this.inspirationBusy()) return;
+    this.inspirationBusy.set(true);
     this.pcService.useInspiration(this.pc.id).subscribe({
-      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
-        this.inspirationBusy = false;
+        this.inspirationBusy.set(false);
         console.error('Failed to use Heroic Inspiration', err);
       },
     });

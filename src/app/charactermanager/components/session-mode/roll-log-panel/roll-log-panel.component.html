@@ -1,11 +1,11 @@
 <div class="panel roll-log">
   <div class="panel-header" (click)="toggle()" style="cursor: pointer;"
-    role="button" tabindex="0" [attr.aria-expanded]="!collapsed"
+    role="button" tabindex="0" [attr.aria-expanded]="!collapsed()"
     (keydown.enter)="toggle()" (keydown.space)="$event.preventDefault(); toggle()">
     <span class="panel-title">Roll Log</span>
-    <span class="collapse-caret" [class.open]="!collapsed" aria-hidden="true">▾</span>
+    <span class="collapse-caret" [class.open]="!collapsed()" aria-hidden="true">▾</span>
   </div>
-  @if (!collapsed) {
+  @if (!collapsed()) {
     <div class="roll-log-body">
       @if (!rolls().length) {
         <p class="roll-log-empty">No rolls yet this session.</p>

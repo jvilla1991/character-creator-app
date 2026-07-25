@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { PcActivityLogEntry } from '../../../../models/pc-activity-log';
 import { PCService } from '../../../../services/pc.service';
@@ -14,12 +14,14 @@ import { PCService } from '../../../../services/pc.service';
  */
 @Component({
     selector: 'app-pc-log',
-    templateUrl: './pc-log.component.html'
+    templateUrl: './pc-log.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PcLogComponent implements OnChanges {
   @Input() pc!: PC;
 
-  entries: PcActivityLogEntry[] = [];
+  // Signal so the async load result renders under OnPush (no zone-tick reliance).
+  readonly entries = signal<PcActivityLogEntry[]>([]);
 
   constructor(private pcService: PCService) {}
 
@@ -45,9 +47,9 @@ export class PcLogComponent implements OnChanges {
   }
 
   private load(): void {
-    this.entries = [];
+    this.entries.set([]);
     this.pcService.getLog(this.pc.id).subscribe({
-      next: entries => { this.entries = entries; },
+      next: entries => { this.entries.set(entries); },
       error: () => { /* not readable (stranger) — leave the list empty */ },
     });
   }

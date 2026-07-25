@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndSpecies } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 
@@ -11,7 +11,8 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 @Component({
     selector: 'app-species-step',
     templateUrl: './species-step.component.html',
-    styleUrls: ['./species-step.component.scss']
+    styleUrls: ['./species-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SpeciesStepComponent {
   readonly speciesList = input<string[]>([]);

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -8,6 +8,7 @@ import { passwordsMatch, requiredTrimmed } from '../../utils/auth-validators';
     selector: 'app-register',
     templateUrl: './register.component.html',
     styleUrls: ['./register.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class RegisterComponent {
@@ -32,8 +33,9 @@ export class RegisterComponent {
   );
 
   showPassword = false;
-  errorMessage = '';
-  loading      = false;
+  // Signals: set from the register HTTP callback, which never marks an OnPush view.
+  readonly errorMessage = signal('');
+  readonly loading      = signal(false);
 
   constructor(
     private fb: NonNullableFormBuilder,
@@ -47,10 +49,10 @@ export class RegisterComponent {
   }
 
   register(): void {
-    if (this.form.invalid || this.loading) return;
+    if (this.form.invalid || this.loading()) return;
 
-    this.errorMessage = '';
-    this.loading      = true;
+    this.errorMessage.set('');
+    this.loading.set(true);
 
     const { firstName, lastName, email, userName, password } = this.form.getRawValue();
 
@@ -62,16 +64,16 @@ export class RegisterComponent {
       password
     ).subscribe({
       next: response => {
-        this.loading = false;
+        this.loading.set(false);
         if (response?.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage = 'Registration failed. The username or email may already be in use.';
+          this.errorMessage.set('Registration failed. The username or email may already be in use.');
         }
       },
       error: () => {
-        this.loading = false;
-        this.errorMessage = 'Registration failed. Please try again.';
+        this.loading.set(false);
+        this.errorMessage.set('Registration failed. Please try again.');
       }
     });
   }

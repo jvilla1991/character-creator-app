@@ -61,7 +61,7 @@ describe('LoginComponent', () => {
 
     component.login();
 
-    expect(component.errorMessage).toBeTruthy();
+    expect(component.errorMessage()).toBeTruthy();
   });
 
   it('shows .login-error element when errorMessage is set', async () => {

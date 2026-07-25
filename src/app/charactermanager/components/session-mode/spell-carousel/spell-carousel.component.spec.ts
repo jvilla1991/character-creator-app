@@ -36,8 +36,8 @@ describe('SpellCarouselComponent', () => {
   });
 
   it('loads candidate spells on init', () => {
-    expect(component.allSpells.length).toBe(2);
-    expect(component.loadingSpells).toBeFalse();
+    expect(component.allSpells().length).toBe(2);
+    expect(component.loadingSpells()).toBeFalse();
   });
 
   it('pins a newly selected spell and closes the overlay', () => {
@@ -45,7 +45,7 @@ describe('SpellCarouselComponent', () => {
     component.onSelectionChange([fireball]);
     expect(component.pinned).toEqual([fireball]);
     expect(component.searchOpen).toBeFalse();
-    expect(component.focusedName).toBe('Fireball');
+    expect(component.focusedName()).toBe('Fireball');
   });
 
   it('does not add a duplicate — focuses the existing card instead', () => {
@@ -53,7 +53,7 @@ describe('SpellCarouselComponent', () => {
     // Picker emits a shorter array (an already-pinned spell was clicked).
     component.onSelectionChange([]);
     expect(component.pinned).toEqual([fireball]); // unchanged, not unpinned
-    expect(component.focusedName).toBe('Fireball');
+    expect(component.focusedName()).toBe('Fireball');
   });
 
   it('removes a card by spell', () => {

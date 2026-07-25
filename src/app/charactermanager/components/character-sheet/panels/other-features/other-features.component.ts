@@ -1,4 +1,4 @@
-import { Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { FormsModule } from '@angular/forms';
 
@@ -16,6 +16,7 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
     selector: 'app-other-features',
     templateUrl: './other-features.component.html',
     styleUrls: ['./other-features.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule]
 })
 export class OtherFeaturesComponent {

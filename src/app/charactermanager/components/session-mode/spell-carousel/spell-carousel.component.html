@@ -26,7 +26,7 @@
           class="spell-card"
           cdkDrag
           #cardEl
-          [class.is-focused]="focusedName === s.name"
+          [class.is-focused]="focusedName() === s.name"
           >
           <button type="button" class="card-remove" (click)="remove(s)" aria-label="Remove spell">×</button>
           <span class="card-handle" cdkDragHandle title="Drag to reorder">⠿</span>
@@ -77,11 +77,11 @@
           <button type="button" class="btn sm" (click)="closeSearch()">Close</button>
         </div>
         <app-spell-picker
-          [spells]="allSpells"
+          [spells]="allSpells()"
           [selected]="pinned"
           [cantripLimit]="null"
           [spellLimit]="null"
-          [loading]="loadingSpells"
+          [loading]="loadingSpells()"
           (selectedChange)="onSelectionChange($event)"
         ></app-spell-picker>
       </div>
