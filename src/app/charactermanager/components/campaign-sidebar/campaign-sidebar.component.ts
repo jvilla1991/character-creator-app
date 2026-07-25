@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
@@ -6,6 +6,7 @@ import { PC } from '../../models/pc';
 import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { AsyncPipe } from '@angular/common';
 
 interface CampaignRow {
   campaign: Campaign;
@@ -17,7 +18,8 @@ interface CampaignRow {
 @Component({
     selector: 'app-campaign-sidebar',
     templateUrl: './campaign-sidebar.component.html',
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AsyncPipe]
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {
   readonly activeCampaignId = this.uiState.activeCampaignId;

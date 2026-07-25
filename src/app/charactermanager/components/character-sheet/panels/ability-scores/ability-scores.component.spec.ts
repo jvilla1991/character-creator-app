@@ -1,16 +1,19 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { AbilityScoresComponent } from './ability-scores.component';
 import { PC } from '../../../../models/pc';
 
 describe('AbilityScoresComponent', () => {
+  let fixture: ComponentFixture<AbilityScoresComponent>;
   let component: AbilityScoresComponent;
 
   const basePc = (): PC =>
     ({ id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P', stats: { STR: 16, DEX: 12, CON: 14, INT: 8, WIS: 10, CHA: 13 } } as PC);
 
   beforeEach(() => {
-    component = new AbilityScoresComponent();
-    component.pc = basePc();
-    component.ngOnChanges();
+    fixture = TestBed.createComponent(AbilityScoresComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('pc', basePc());
   });
 
   describe('requestScore', () => {
@@ -31,7 +34,7 @@ describe('AbilityScoresComponent', () => {
       const result = captured.apply(18);
 
       expect(result.stats.STR).toBe(18);
-      expect(component.pc.stats?.STR).toBe(16); // original untouched
+      expect(component.pc().stats?.STR).toBe(16); // original untouched
       // Other abilities preserved.
       expect(result.stats.DEX).toBe(12);
     });

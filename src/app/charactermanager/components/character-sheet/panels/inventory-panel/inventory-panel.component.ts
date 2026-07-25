@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
 import { categoryLabelFor, formatCp } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
@@ -11,6 +11,7 @@ import {
   usedSlots,
 } from '../../../../utils/slot-inventory';
 import { isSupplyItem } from '../../../../utils/survival';
+import { ItemComposerComponent } from '../../../item-composer/item-composer.component';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -27,7 +28,8 @@ import { isSupplyItem } from '../../../../utils/survival';
     selector: 'app-inventory-panel',
     templateUrl: './inventory-panel.component.html',
     styleUrls: ['./inventory-panel.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ItemComposerComponent]
 })
 export class InventoryPanelComponent {
   @Input() pc!: PC;
@@ -46,14 +48,14 @@ export class InventoryPanelComponent {
   /** DM cross-link: reveals the "Grant item" control. Distinct from `editable`
    *  (which also drives the in-session sell/equip embed). */
   @Input() addAllowed = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
   /** Player sells the item at this inventory index; the host owns the actual
    *  sell transaction (it needs the session/shop context this panel doesn't have). */
-  @Output() sellRequested = new EventEmitter<number>();
+  readonly sellRequested = output<number>();
   /** DM grants this (already-denormalized) item; emitted as a bare payload so the
    *  host can route it through GrantService's refetch-merge-save rather than
    *  PUTting this panel's possibly-stale PC copy. */
-  @Output() itemGranted = new EventEmitter<PcItem>();
+  readonly itemGranted = output<PcItem>();
 
   readonly formatCp = formatCp;
 

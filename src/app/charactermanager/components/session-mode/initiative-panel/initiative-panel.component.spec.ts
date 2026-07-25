@@ -1,4 +1,5 @@
 import { InitiativePanelComponent } from './initiative-panel.component';
+import { TestBed } from '@angular/core/testing';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ParticipantView } from '../../../models/session';
@@ -14,7 +15,7 @@ describe('InitiativePanelComponent', () => {
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['isMuted']);
     sessionService.isMuted.and.returnValue(false);
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
-    component = new InitiativePanelComponent(sessionService, notifications);
+    component = TestBed.runInInjectionContext(() => new InitiativePanelComponent(sessionService, notifications));
   });
 
   const participant = (overrides: Partial<ParticipantView> = {}): ParticipantView => ({

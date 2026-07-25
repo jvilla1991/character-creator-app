@@ -15,11 +15,11 @@
         style="width: 100%; resize: vertical;"
         (keydown.control.enter)="addNote()"
       ></textarea>
-      <button class="btn primary" [disabled]="!draft.trim() || saving" (click)="addNote()">Add</button>
+      <button class="btn primary" [disabled]="!draft.trim() || saving()" (click)="addNote()">Add</button>
     </div>
   }
 
-  @for (note of notes; track note) {
+  @for (note of notes(); track note) {
     <div style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
       <div style="white-space: pre-wrap;">{{ note.body }}</div>
       <div class="equip-item-meta" style="margin-top: 2px;">

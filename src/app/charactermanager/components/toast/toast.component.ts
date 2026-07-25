@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NotificationService } from '../../services/notification.service';
+import { AsyncPipe } from '@angular/common';
 
 /**
  * App-shell toast. Renders the current NotificationService message (if any) as a
@@ -10,7 +11,12 @@ import { NotificationService } from '../../services/notification.service';
     selector: 'app-toast',
     templateUrl: './toast.component.html',
     styleUrls: ['./toast.component.scss'],
-    standalone: false
+    // The live region lives on the always-rendered host element so screen
+    // readers register it before any message is inserted — a live region
+    // that appears together with its content is often not announced.
+    host: { 'role': 'status', 'aria-live': 'polite' },
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AsyncPipe]
 })
 export class ToastComponent {
   message$ = this.notifications.message$;

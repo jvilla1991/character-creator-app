@@ -1,6 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, DestroyRef, OnDestroy, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -10,17 +9,23 @@ import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { JoinModalService } from '../../services/join-modal.service';
+import { RouterOutlet } from '@angular/router';
+import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
+import { EmptyStateComponent } from '../character-sheet/empty-state/empty-state.component';
+import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
+import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
+import { LevelUpModalComponent } from '../level-up-modal/level-up-modal.component';
 
 @Component({
     selector: 'app-main-content',
     templateUrl: './main-content.component.html',
     styleUrls: ['./main-content.component.scss'],
-    standalone: false
+    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent, DiceRollerModalComponent, LevelUpModalComponent]
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
   /** True while a DM is viewing a campaign member's sheet → numbers are editable. */
-  get editable(): boolean { return this.uiState.dmReturn(); }
+  readonly editable = this.uiState.dmReturn;
   /** True when the active PC's campaign uses the slot-based inventory variant. */
   slotInventory = false;
   /** True when the active PC's campaign uses the survival-conditions variant. */
@@ -41,8 +46,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
   activeRollSessionId: number | string | null = null;
   activeRollParticipantId: number | null = null;
 
-  private readonly destroy$ = new Subject<void>();
-
   constructor(
     private pcService: PCService,
     private characterModal: CharacterModalService,
@@ -51,6 +54,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private joinModal: JoinModalService,
+    private destroyRef: DestroyRef,
   ) {}
 
   /** Sheet's Join Campaign button — open the join modal with this PC preselected. */
@@ -81,7 +85,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pcService.getActivePC()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(pc => {
         this.pc = pc;
         this.resolveVariants(pc);
@@ -93,8 +97,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('visibilitychange', this.onVisible);
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   // ── Cross-client freshness ─────────────────────────────────────────────────
@@ -112,7 +114,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
   private lastRefetchedPcId: number | null = null;
 
   private refetchOnActivation(pc: PC | null): void {
-    if (!pc || this.editable) {
+    if (!pc || this.editable()) {
       this.lastRefetchedPcId = null;
       return;
     }
@@ -123,7 +125,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   private readonly onVisible = () => {
     if (document.visibilityState !== 'visible') return;
-    if (!this.pc || this.editable) return;
+    if (!this.pc || this.editable()) return;
     this.pcService.refreshPC(this.pc.id);
   };
 
@@ -136,7 +138,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.campaignService.getSummary(pc.campaignId)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: summary => {
           // Guard against a stale response after switching characters.
@@ -166,7 +168,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.sessionService.getActiveForCampaign(String(pc.campaignId))
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(state => {
         if (this.pc?.id !== pcId || !state) return; // guard stale response after PC switch
         const mine = state.participants.find(p => p.pcId === pcId && p.ownedByMe);

@@ -11,6 +11,15 @@ import { UiStateService } from '../../services/ui-state.service';
 import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
 import { describeGameTime } from '../../utils/survival';
+import { PartyBoardComponent } from './party-board/party-board.component';
+import { PartyTreasuryComponent } from './party-treasury/party-treasury.component';
+import { CuratedShopsComponent } from './curated-shops/curated-shops.component';
+import { CuratedEncountersComponent } from './curated-encounters/curated-encounters.component';
+import { CuratedLootComponent } from './curated-loot/curated-loot.component';
+import { CampaignNotesComponent } from './campaign-notes/campaign-notes.component';
+import { CampaignWeekComponent } from './campaign-week/campaign-week.component';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { AsyncPipe } from '@angular/common';
 
 interface DashboardVm {
   campaign: Campaign;
@@ -32,7 +41,7 @@ interface DashboardVm {
 @Component({
     selector: 'app-campaign-dashboard',
     templateUrl: './campaign-dashboard.component.html',
-    standalone: false
+    imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, CdkTrapFocus, AsyncPipe]
 })
 export class CampaignDashboardComponent implements OnInit, OnDestroy {
   /** In-world clock label for the header chip (campaigns$ keeps it fresh). */

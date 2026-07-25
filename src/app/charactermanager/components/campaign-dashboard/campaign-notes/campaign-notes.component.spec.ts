@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CampaignNotesComponent } from './campaign-notes.component';
 import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
@@ -17,14 +18,14 @@ describe('CampaignNotesComponent', () => {
     campaignService = jasmine.createSpyObj('CampaignService',
       ['getNotes', 'addNote', 'updateNote', 'deleteNote']);
     campaignService.getNotes.and.returnValue(of([note]));
-    component = new CampaignNotesComponent(campaignService);
+    component = TestBed.runInInjectionContext(() => new CampaignNotesComponent(campaignService));
     component.campaign = campaign;
     component.ngOnChanges({ campaign: {} as any });
   });
 
   it('loads notes when the campaign changes', () => {
     expect(campaignService.getNotes).toHaveBeenCalledWith('1');
-    expect(component.notes).toEqual([note]);
+    expect(component.notes()).toEqual([note]);
   });
 
   it('startEdit opens the inline editor seeded with the note body', () => {
@@ -43,7 +44,7 @@ describe('CampaignNotesComponent', () => {
     component.saveEdit(note);
 
     expect(campaignService.updateNote).toHaveBeenCalledWith('1', 7, 'The cult regrouped.');
-    expect(component.notes[0]).toBe(updated);
+    expect(component.notes()[0]).toBe(updated);
     expect(component.editingId).toBeNull(); // editor closed
   });
 
@@ -60,7 +61,7 @@ describe('CampaignNotesComponent', () => {
     component.editDraft = 'New text';
     component.saveEdit(note);
     expect(component.editingId).toBe(7);
-    expect(component.saving).toBeFalse();
+    expect(component.saving()).toBeFalse();
   });
 
   it('cancelEdit closes the editor without saving', () => {

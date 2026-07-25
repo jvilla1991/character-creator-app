@@ -1,4 +1,5 @@
 import { WeekDaysEditorComponent } from './week-days-editor.component';
+import { TestBed } from '@angular/core/testing';
 import { WEEKDAY_PRESETS } from '../../models/campaign';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
@@ -9,7 +10,7 @@ describe('WeekDaysEditorComponent', () => {
   const eberron = WEEKDAY_PRESETS.find(p => p.key === 'eberron')!;
 
   beforeEach(() => {
-    component = new WeekDaysEditorComponent();
+    component = TestBed.runInInjectionContext(() => new WeekDaysEditorComponent());
     emitted = [];
     component.valueChange.subscribe(v => emitted.push(v));
   });

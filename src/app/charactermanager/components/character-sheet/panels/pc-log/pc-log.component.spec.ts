@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { PcLogComponent } from './pc-log.component';
 import { PCService } from '../../../../services/pc.service';
@@ -17,7 +18,7 @@ describe('PcLogComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService', ['getLog']);
-    component = new PcLogComponent(pcService);
+    component = TestBed.runInInjectionContext(() => new PcLogComponent(pcService));
   });
 
   function bind(newPc: PC, previous?: PC): void {
@@ -31,7 +32,7 @@ describe('PcLogComponent', () => {
     bind(pc(1));
 
     expect(pcService.getLog).toHaveBeenCalledWith(1);
-    expect(component.entries.map(e => e.description)).toEqual(['Bought Rope for 1 gp', 'Leveled up to 3']);
+    expect(component.entries().map(e => e.description)).toEqual(['Bought Rope for 1 gp', 'Leveled up to 3']);
   });
 
   it('does not reload for same-character change events, but does for a new character', () => {
@@ -49,7 +50,7 @@ describe('PcLogComponent', () => {
 
     bind(pc(1));
 
-    expect(component.entries).toEqual([]);
+    expect(component.entries()).toEqual([]);
   });
 
   describe('entryDate', () => {

@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { SessionModeComponent } from './session-mode.component';
 import { ParticipantView, SessionState } from '../../models/session';
 import { PCService } from '../../services/pc.service';
@@ -10,8 +11,11 @@ import { PC } from '../../models/pc';
 // sessionService.state$ is touched during construction, so stub just that).
 describe('SessionModeComponent.showInitiative', () => {
   const sessionServiceStub = { state$: of(null) } as never;
-  const component = new SessionModeComponent(
-    sessionServiceStub, null as never, null as never, null as never, null as never, null as never);
+  let component: SessionModeComponent;
+  beforeEach(() => {
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never));
+  });
 
   const state = (dm: boolean, status: SessionState['status']): SessionState =>
     ({ dm, status } as SessionState);
@@ -42,8 +46,8 @@ describe('SessionModeComponent.openPcSheet', () => {
     uiState = jasmine.createSpyObj<UiStateService>('UiStateService', ['viewHeroAsDm']);
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     const sessionServiceStub = { state$: of(null) } as never;
-    component = new SessionModeComponent(
-      sessionServiceStub, uiState, pcService, notifications, null as never, null as never);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never));
   });
 
   it('owned PC: opens from the local store with no HTTP fetch', () => {
@@ -106,8 +110,8 @@ describe('SessionModeComponent.openRoll / closeRoll', () => {
   let component: SessionModeComponent;
 
   beforeEach(() => {
-    component = new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
   it('openRoll sets the pc and opens the modal', () => {

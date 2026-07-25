@@ -1,6 +1,7 @@
-import { Component, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnDestroy, OnInit, output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { catchError, switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
@@ -8,6 +9,18 @@ import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPE
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { IdentityStepComponent } from './steps/identity-step/identity-step.component';
+import { SpeciesStepComponent } from './steps/species-step/species-step.component';
+import { ClassStepComponent } from './steps/class-step/class-step.component';
+import { BackgroundStepComponent } from './steps/background-step/background-step.component';
+import { ProficienciesStepComponent } from './steps/proficiencies-step/proficiencies-step.component';
+import { AbilityScoresStepComponent } from './steps/ability-scores-step/ability-scores-step.component';
+import { SpellsStepComponent } from './steps/spells-step/spells-step.component';
+import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.component';
+import { ReviewStepComponent } from './steps/review-step/review-step.component';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -43,7 +56,7 @@ interface WizardDraft {
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
     styleUrls: ['./create-character-modal.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus, MatTooltip, MatSlideToggle, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
@@ -128,8 +141,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   loadingBackgroundDetail = false;
   // switchMap subject — cancels in-flight requests when background changes
   private backgroundTrigger$ = new Subject<string>();
-
-  private destroy$ = new Subject<void>();
 
   // ── Step 5: Proficiencies & Languages ───────────────────────────────────
   /** Skills chosen by the player from the class list (excludes locked background skills) */
@@ -303,10 +314,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.dndResources.getBackgroundGold(this.background);
   }
 
-  @Output() confirm = new EventEmitter<Partial<PC>>();
-  @Output() close   = new EventEmitter<void>();
+  readonly confirm = output<Partial<PC>>();
+  readonly close = output<void>();
 
-  constructor(private dndResources: DndResourcesService, private auth: AuthService) {}
+  constructor(
+    private dndResources: DndResourcesService,
+    private auth: AuthService,
+    private destroyRef: DestroyRef,
+  ) {}
 
   ngOnInit(): void {
     // The character's player is the signed-in user; display their username.
@@ -320,7 +335,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
           catchError(() => of(null))  // graceful 404 fallback (e.g. legacy species)
         );
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.speciesDetail        = detail;
       this.loadingSpeciesDetail = false;
@@ -331,7 +346,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         this.loadingClassDetail = true;
         return this.dndResources.getClassDetail(name);
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.classDetail        = detail;
       this.loadingClassDetail = false;
@@ -342,26 +357,26 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         this.loadingBackgroundDetail = true;
         return this.dndResources.getBackgroundDetail(name);
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.backgroundDetail        = detail;
       this.loadingBackgroundDetail = false;
     });
 
     // ── Load lists ───────────────────────────────────────────────────────────
-    this.dndResources.getSpeciesList().pipe(takeUntil(this.destroy$)).subscribe(list => {
+    this.dndResources.getSpeciesList().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => {
       this.speciesList    = list;
       this.loadingSpecies = false;
       // No default — the player must choose a species (gates Next).
     });
 
-    this.dndResources.getClassNames2024().pipe(takeUntil(this.destroy$)).subscribe(list => {
+    this.dndResources.getClassNames2024().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => {
       this.classList        = list;
       this.loadingClassList = false;
       // No default — the player must choose a class (gates Next).
     });
 
-    this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
+    this.dndResources.getBackgroundGroups().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(groups => {
       this.backgroundGroups = groups;
       // Enable Player's Handbook by default; a restored draft's source picks win.
       this.enabledSources = {
@@ -378,8 +393,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // The modal can be destroyed without an explicit Cancel (SPA navigation,
     // logout) — treat that like a disconnect and keep the draft.
     this.saveDraft();
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   /** Tab/window closing mid-creation — the disconnect case the draft exists for. */
@@ -442,7 +455,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (this.step === 7 && this.isSpellcastingClass && !this.spellList.length) {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: spells => { this.spellList = spells; this.loadingSpells = false; },
           error: () => { this.loadingSpells = false; },
@@ -452,7 +465,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (this.step >= this.equipmentStep && !this.classEquipmentData && !this.loadingEquipment) {
       this.loadingEquipment = true;
       this.dndResources.getClassEquipment()
-        .pipe(takeUntil(this.destroy$))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(data => {
           this.classEquipmentData = data;
           this.loadingEquipment   = false;
@@ -472,7 +485,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   get reviewInitiative(): string {
-    return this.modifier(this.finalScore('DEX'));
+    return fmtMod(this.modNum(this.finalScore('DEX')));
   }
 
   /** Combined skill proficiencies: background (locked) + class choices */
@@ -642,8 +655,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                 + (this.bonusPlus1 === ability ? 1 : 0);
     return base + bonus;
   };
-
-  modifier = (score: number): string => fmtMod(modFromScore(score));
 
   private modNum(score: number): number { return modFromScore(score); }
 

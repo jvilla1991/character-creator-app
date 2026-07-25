@@ -1,5 +1,5 @@
 <!-- Live-session banner (player view). Hidden when no session is live. -->
-@if (live) {
+@if (live(); as live) {
   <div class="session-banner">
     <div class="session-banner-glyph" aria-hidden="true">
       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4">
@@ -15,13 +15,15 @@
 }
 
 <!-- PC picker (reuses the join-campaign-modal pattern) -->
-@if (pickerOpen) {
+@if (pickerOpen()) {
   <div class="modal-backdrop" (click)="closePicker()">
-    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-      <div class="modal-title" style="color: var(--celestial-2);">Join the Session</div>
+    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+      role="dialog" aria-modal="true" aria-labelledby="session-picker-title"
+      cdkTrapFocus cdkTrapFocusAutoCapture>
+      <div class="modal-title" id="session-picker-title" style="color: var(--celestial-2);">Join the Session</div>
       <div class="modal-sub">
         Choose which hero takes the field in
-        <em style="color: var(--text); font-style: normal;">{{ live?.campaignName }}</em>.
+        <em style="color: var(--text); font-style: normal;">{{ live()?.campaignName }}</em>.
       </div>
       @if (eligiblePcs.length) {
         <div class="field">
@@ -39,17 +41,17 @@
           None of your heroes are seated at this campaign yet. Join the campaign first.
         </div>
       }
-      @if (error) {
-        <div class="login-error" style="margin-top: 8px;">{{ error }}</div>
+      @if (error()) {
+        <div class="login-error" style="margin-top: 8px;">{{ error() }}</div>
       }
       <div class="modal-actions">
         <button class="btn" (click)="closePicker()">Cancel</button>
         <button
           class="btn primary"
           (click)="join()"
-          [disabled]="selectedPcId == null || joining"
+          [disabled]="selectedPcId == null || joining()"
           >
-          {{ joining ? 'Joining…' : 'Take the Field' }}
+          {{ joining() ? 'Joining…' : 'Take the Field' }}
         </button>
       </div>
     </div>

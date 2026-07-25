@@ -1,66 +1,79 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { passwordsMatch, requiredTrimmed } from '../../utils/auth-validators';
 
 @Component({
     selector: 'app-register',
     templateUrl: './register.component.html',
     styleUrls: ['./register.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class RegisterComponent {
-  firstName       = '';
-  lastName        = '';
-  email           = '';
-  userName        = '';
-  password        = '';
-  confirmPassword = '';
-  showPassword    = false;
+  /**
+   * Typed reactive form. The rules mirror the old hand-rolled `formValid`
+   * getter exactly:
+   *  - names / email / username must be non-blank after trimming
+   *  - password needs at least 6 characters
+   *  - confirm may stay empty, but once typed it must match the password
+   *    (enforced by the group-level `passwordsMatch` validator)
+   */
+  readonly form = this.fb.group(
+    {
+      firstName:       ['', requiredTrimmed],
+      lastName:        ['', requiredTrimmed],
+      email:           ['', requiredTrimmed],
+      userName:        ['', requiredTrimmed],
+      password:        ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: [''],
+    },
+    { validators: passwordsMatch('password', 'confirmPassword') },
+  );
 
-  errorMessage = '';
-  loading      = false;
+  showPassword = false;
+  // Signals: set from the register HTTP callback, which never marks an OnPush view.
+  readonly errorMessage = signal('');
+  readonly loading      = signal(false);
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private fb: NonNullableFormBuilder,
+    private authService: AuthService,
+    private router: Router,
+  ) {}
 
+  /** True when the confirm field has content that differs from the password. */
   get passwordMismatch(): boolean {
-    return !!this.confirmPassword && this.password !== this.confirmPassword;
-  }
-
-  get formValid(): boolean {
-    return !!(
-      this.firstName.trim() &&
-      this.lastName.trim()  &&
-      this.email.trim()     &&
-      this.userName.trim()  &&
-      this.password.length >= 6 &&
-      !this.passwordMismatch
-    );
+    return this.form.hasError('passwordMismatch');
   }
 
   register(): void {
-    if (!this.formValid || this.loading) return;
+    if (this.form.invalid || this.loading()) return;
 
-    this.errorMessage = '';
-    this.loading      = true;
+    this.errorMessage.set('');
+    this.loading.set(true);
+
+    const { firstName, lastName, email, userName, password } = this.form.getRawValue();
 
     this.authService.register(
-      this.firstName.trim(),
-      this.lastName.trim(),
-      this.email.trim(),
-      this.userName.trim(),
-      this.password
+      firstName.trim(),
+      lastName.trim(),
+      email.trim(),
+      userName.trim(),
+      password
     ).subscribe({
       next: response => {
-        this.loading = false;
+        this.loading.set(false);
         if (response?.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage = 'Registration failed. The username or email may already be in use.';
+          this.errorMessage.set('Registration failed. The username or email may already be in use.');
         }
       },
       error: () => {
-        this.loading = false;
-        this.errorMessage = 'Registration failed. Please try again.';
+        this.loading.set(false);
+        this.errorMessage.set('Registration failed. Please try again.');
       }
     });
   }

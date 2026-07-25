@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SpellbookPanelComponent } from './spellbook-panel.component';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
@@ -6,25 +7,30 @@ import { DndSpell } from '../../../../models/dnd-api.types';
 import { PC, PcSpell } from '../../../../models/pc';
 
 /**
- * Class-level tests (no TestBed): the panel's cast-resolution logic — level
- * picking, missing-component warning vs. strict block, and the emitted event.
- * Template rendering is verified in the browser.
+ * Class-level tests via TestBed fixtures: the panel's cast-resolution logic —
+ * level picking, missing-component warning vs. strict block, and the emitted
+ * event. Template rendering is verified in the browser.
  */
-function makePanel(pc: Partial<PC>, strict = false): SpellbookPanelComponent {
-  // The constructor now requires DndResourcesService/ChangeDetectorRef (the DM
-  // grant flow); the cast-logic tests don't exercise them, so stubs suffice.
-  const dndResources = jasmine.createSpyObj<DndResourcesService>(
+let dndResources: jasmine.SpyObj<DndResourcesService>;
+
+beforeEach(() => {
+  dndResources = jasmine.createSpyObj<DndResourcesService>(
     'DndResourcesService', ['getSpells', 'getSpellsForClass']);
-  const cdr = { markForCheck: () => {} } as any;
-  const panel = new SpellbookPanelComponent(dndResources, cdr);
-  panel.pc = {
+  TestBed.configureTestingModule({
+    providers: [{ provide: DndResourcesService, useValue: dndResources }],
+  });
+});
+
+function makePanel(pc: Partial<PC>, strict = false): SpellbookPanelComponent {
+  const fixture = TestBed.createComponent(SpellbookPanelComponent);
+  const panel = fixture.componentInstance;
+  fixture.componentRef.setInput('pc', {
     id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 0 } },
     spells: [],
     ...pc,
-  } as PC;
-  panel.strictComponents = strict;
-  panel.ngOnChanges();
+  } as PC);
+  fixture.componentRef.setInput('strictComponents', strict);
   return panel;
 }
 
@@ -42,7 +48,7 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     const emitted: Array<{ spellName: string; atLevel: number }> = [];
     panel.castRequested.subscribe(e => emitted.push(e));
 
-    panel.onCastClick(panel.pc.spells![0], stop());
+    panel.onCastClick(panel.pc().spells![0], stop());
 
     expect(emitted).toEqual([{ spellName: 'Cure Wounds', atLevel: 1 }]);
     expect(panel.pickerFor).toBeNull();
@@ -53,12 +59,12 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     const emitted: unknown[] = [];
     panel.castRequested.subscribe(e => emitted.push(e));
 
-    panel.onCastClick(panel.pc.spells![0], stop());
+    panel.onCastClick(panel.pc().spells![0], stop());
 
     expect(panel.pickerFor).toBe('Cure Wounds');
     expect(emitted.length).toBe(0);
 
-    panel.pickLevel(panel.pc.spells![0], 2, stop());
+    panel.pickLevel(panel.pc().spells![0], 2, stop());
     expect(emitted).toEqual([{ spellName: 'Cure Wounds', atLevel: 2 }]);
   });
 
@@ -67,7 +73,7 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     const emitted: Array<{ atLevel: number }> = [];
     panel.castRequested.subscribe(e => emitted.push(e));
 
-    panel.onCastClick(panel.pc.spells![0], stop());
+    panel.onCastClick(panel.pc().spells![0], stop());
     expect(emitted).toEqual([{ spellName: 'Fire Bolt', atLevel: 0 } as any]);
   });
 
@@ -105,8 +111,8 @@ describe('SpellbookPanelComponent (cast logic)', () => {
       spellSlots: { 1: { max: 2, used: 2 } },
       spells: [spell()],
     });
-    expect(panel.canCast(panel.pc.spells![0])).toBeFalse();
-    expect(panel.castTitle(panel.pc.spells![0])).toBe('No slots available');
+    expect(panel.canCast(panel.pc().spells![0])).toBeFalse();
+    expect(panel.castTitle(panel.pc().spells![0])).toBe('No slots available');
   });
 
   it('disables casting an unprepared spell even when slots are free', () => {
@@ -114,10 +120,10 @@ describe('SpellbookPanelComponent (cast logic)', () => {
     const emitted: unknown[] = [];
     panel.castRequested.subscribe(e => emitted.push(e));
 
-    expect(panel.canCast(panel.pc.spells![0])).toBeFalse();
-    expect(panel.castTitle(panel.pc.spells![0])).toBe('Cure Wounds is not prepared');
+    expect(panel.canCast(panel.pc().spells![0])).toBeFalse();
+    expect(panel.castTitle(panel.pc().spells![0])).toBe('Cure Wounds is not prepared');
 
-    panel.onCastClick(panel.pc.spells![0], stop());
+    panel.onCastClick(panel.pc().spells![0], stop());
     expect(emitted.length).toBe(0);
   });
 });
@@ -132,15 +138,15 @@ describe('SpellbookPanelComponent — spell preparation', () => {
         spell({ lvl: 2, name: 'Invisibility', prepared: false }),
       ],
     });
-    expect(panel.preparedCap).toBe(9);
-    expect(panel.preparedCount).toBe(1);
+    expect(panel.preparedCap()).toBe(9);
+    expect(panel.preparedCount()).toBe(1);
   });
 
   it('treats a missing prepared flag (pre-feature data) as prepared', () => {
     const legacy = { lvl: 1, name: 'Sleep', school: 'Enchantment', time: '1 action' } as PcSpell;
     const panel = makePanel({ spells: [legacy] });
     expect(panel.isPrepared(legacy)).toBeTrue();
-    expect(panel.preparedCount).toBe(1);
+    expect(panel.preparedCount()).toBe(1);
     expect(panel.canCast(legacy)).toBeTrue(); // older characters keep casting
   });
 
@@ -169,14 +175,14 @@ describe('SpellbookPanelComponent — spell preparation', () => {
     const emitted: PC[] = [];
     panel.pcChange.subscribe(p => emitted.push(p));
 
-    expect(panel.preparedCap).toBe(2);
+    expect(panel.preparedCap()).toBe(2);
     expect(panel.canTogglePrepared(waiting)).toBeFalse();
     expect(panel.prepareTitle(waiting)).toContain('cap');
     panel.togglePrepared(waiting, stop());
     expect(emitted.length).toBe(0); // at cap — nothing emitted
 
     // Prepared spells can still be unprepared at cap.
-    expect(panel.canTogglePrepared(panel.pc.spells![0])).toBeTrue();
+    expect(panel.canTogglePrepared(panel.pc().spells![0])).toBeTrue();
 
     // One under cap: preparing works again.
     const panel2 = makePanel({
@@ -203,7 +209,7 @@ describe('SpellbookPanelComponent — spell preparation', () => {
   it('enforces no cap for classes without a 2024 prepared table', () => {
     const waiting = spell({ lvl: 1, name: 'Sleep', prepared: false });
     const panel = makePanel({ clazz: 'Fighter', level: 3, spells: [waiting] });
-    expect(panel.preparedCap).toBeNull();
+    expect(panel.preparedCap()).toBeNull();
     expect(panel.canTogglePrepared(waiting)).toBeTrue();
   });
 });
@@ -230,18 +236,18 @@ function makePC(overrides: Partial<PC> = {}): PC {
 }
 
 describe('SpellbookPanelComponent — DM grants', () => {
+  let fixture: ComponentFixture<SpellbookPanelComponent>;
   let component: SpellbookPanelComponent;
-  let dndResources: jasmine.SpyObj<DndResourcesService>;
-  const cdr = { markForCheck: () => {} } as any;
 
   beforeEach(() => {
-    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells', 'getSpellsForClass']);
-    component = new SpellbookPanelComponent(dndResources, cdr);
-    component.pc = makePC();
+    fixture = TestBed.createComponent(SpellbookPanelComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('pc', makePC());
   });
 
   it('loads the full spell list by default ("All classes" pre-checked) and excludes already-known spells (case-insensitive)', () => {
-    component.pc = makePC({ spells: [{ lvl: 0, name: 'fire bolt', school: 'Evocation', time: 'action', prepared: true }] });
+    fixture.componentRef.setInput('pc',
+      makePC({ spells: [{ lvl: 0, name: 'fire bolt', school: 'Evocation', time: 'action', prepared: true }] }));
     dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Fire Bolt' }), makeSpell({ name: 'Cure Wounds', classes: ['cleric'] })]));
 
     component.openGrantForm();

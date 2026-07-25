@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { LootPanelComponent } from './loot-panel.component';
 import { SessionState, ParticipantView } from '../../../models/session';
 import { LootView } from '../../../models/loot';
@@ -52,8 +53,8 @@ describe('LootPanelComponent', () => {
     curatedLootService.list.and.returnValue(of([]));
     pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
-    component = new LootPanelComponent(
-      lootService, curatedLootService, pcService, notifications);
+    component = TestBed.runInInjectionContext(() => new LootPanelComponent(
+      lootService, curatedLootService, pcService, notifications));
   });
 
   // ── poll-driven fetch ───────────────────────────────────────────────────────

@@ -1,7 +1,9 @@
-import { Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, signal, viewChildren } from '@angular/core';
+import { CdkDragDrop, moveItemInArray, CdkDropList, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { DndSpell } from '../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../services/dnd-resources.service';
+import { SpellPickerComponent as SpellPickerComponent_1 } from '../../spell-picker/spell-picker.component';
+import { TitleCasePipe } from '@angular/common';
 
 /**
  * DM-screen Spell Reference Carousel — a wrapping row of always-expanded spell
@@ -23,34 +25,37 @@ import { DndResourcesService } from '../../../services/dnd-resources.service';
     selector: 'app-spell-carousel',
     templateUrl: './spell-carousel.component.html',
     styleUrls: ['./spell-carousel.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CdkDropList, CdkDrag, CdkDragHandle, SpellPickerComponent_1, TitleCasePipe]
 })
 export class SpellCarouselComponent implements OnInit {
   /** Ordered, de-duplicated pinned spells. Ephemeral — session only. */
   pinned: DndSpell[] = [];
 
-  /** All SRD spells, loaded once for the search overlay's candidate list. */
-  allSpells: DndSpell[] = [];
-  loadingSpells = false;
+  /** All SRD spells, loaded once for the search overlay's candidate list.
+   *  Signals: written from the spells HTTP callback, which never marks an OnPush view. */
+  readonly allSpells = signal<DndSpell[]>([]);
+  readonly loadingSpells = signal(false);
 
   collapsed = false;
   searchOpen = false;
 
-  /** Name of the card to flash (add / duplicate-select), cleared after the pulse. */
-  focusedName: string | null = null;
+  /** Name of the card to flash (add / duplicate-select), cleared after the pulse.
+   *  Signal: cleared from a timer callback, which never marks an OnPush view. */
+  readonly focusedName = signal<string | null>(null);
   private focusTimer?: ReturnType<typeof setTimeout>;
 
-  @ViewChildren('cardEl') private cardEls!: QueryList<ElementRef<HTMLElement>>;
+  private readonly cardEls = viewChildren<ElementRef<HTMLElement>>('cardEl');
 
   constructor(private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
     // Cached via shareReplay in the service, so this is cheap and warms the
     // search list before the DM opens it.
-    this.loadingSpells = true;
+    this.loadingSpells.set(true);
     this.dndResources.getSpells().subscribe({
-      next: spells => { this.allSpells = spells; this.loadingSpells = false; },
-      error: () => { this.loadingSpells = false; },
+      next: spells => { this.allSpells.set(spells); this.loadingSpells.set(false); },
+      error: () => { this.loadingSpells.set(false); },
     });
   }
 
@@ -106,15 +111,15 @@ export class SpellCarouselComponent implements OnInit {
 
   /** Flash the named card and scroll it into view (used on add and on duplicate-select). */
   private focusCard(name: string): void {
-    this.focusedName = name;
+    this.focusedName.set(name);
     clearTimeout(this.focusTimer);
     // Defer a tick so a just-pinned card exists in the DOM before we scroll to it.
     setTimeout(() => {
       const idx = this.pinned.findIndex(s => s.name === name);
-      this.cardEls?.get(idx)?.nativeElement.scrollIntoView({
+      this.cardEls()?.at(idx)?.nativeElement.scrollIntoView({
         behavior: 'smooth', inline: 'center', block: 'nearest',
       });
     });
-    this.focusTimer = setTimeout(() => { this.focusedName = null; }, 1600);
+    this.focusTimer = setTimeout(() => { this.focusedName.set(null); }, 1600);
   }
 }

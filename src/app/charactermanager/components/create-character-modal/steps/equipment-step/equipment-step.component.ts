@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ClassEquipment } from '../../../../models/dnd-api.types';
 
 /**
@@ -9,16 +9,16 @@ import { ClassEquipment } from '../../../../models/dnd-api.types';
 @Component({
     selector: 'app-equipment-step',
     templateUrl: './equipment-step.component.html',
-    styleUrls: ['./equipment-step.component.scss'],
-    standalone: false
+    styleUrls: ['./equipment-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EquipmentStepComponent {
-  @Input() loadingEquipment = false;
-  @Input() currentClassEquipment: ClassEquipment | null = null;
-  @Input() equipmentChoice: 'A' | 'B' | '' = '';
-  @Input() background = '';
-  @Input() backgroundStartingGold = 0;
+  readonly loadingEquipment = input(false);
+  readonly currentClassEquipment = input<ClassEquipment | null>(null);
+  readonly equipmentChoice = input<'A' | 'B' | ''>('');
+  readonly background = input('');
+  readonly backgroundStartingGold = input(0);
 
   /** Kit/gold choice (two-way [(equipmentChoice)] on the parent). */
-  @Output() equipmentChoiceChange = new EventEmitter<'A' | 'B' | ''>();
+  readonly equipmentChoiceChange = output<'A' | 'B' | ''>();
 }

@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { passiveScore, tintFor } from '../../../utils/character-math';
+import { DecimalPipe } from '@angular/common';
 
 /**
  * Party Vitals Board — one row per campaign member with HP bar, AC, passive
@@ -9,11 +10,12 @@ import { passiveScore, tintFor } from '../../../utils/character-math';
 @Component({
     selector: 'app-party-board',
     templateUrl: './party-board.component.html',
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DecimalPipe]
 })
 export class PartyBoardComponent {
-  @Input() members: PC[] = [];
-  @Output() openHero = new EventEmitter<PC>();
+  readonly members = input<PC[]>([]);
+  readonly openHero = output<PC>();
 
   tintFor(pc: PC): string { return tintFor(pc); }
 

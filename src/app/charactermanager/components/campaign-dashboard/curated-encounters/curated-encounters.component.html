@@ -61,7 +61,7 @@
                   }
                 </span>
               </div>
-              <button class="btn-x" title="Remove" (click)="removeCreature(c)">✕</button>
+              <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + c.name" (click)="removeCreature(c)">✕</button>
             </li>
           }
         </ul>

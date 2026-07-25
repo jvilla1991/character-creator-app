@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, output, input, signal } from '@angular/core';
 import { PcItem } from '../../models/pc';
 import { CatalogItem, ShopCategory, categoryLabelFor, formatCp } from '../../models/shop';
 import { ShopService } from '../../services/shop.service';
 import { environment } from '../../../../environments/environment';
 import { AuthoredItem } from './authored-item';
+import { FormsModule } from '@angular/forms';
 
 /**
  * The one shared "author an item" form: a two-tab composer (Catalog / Custom)
@@ -20,18 +21,19 @@ import { AuthoredItem } from './authored-item';
     selector: 'app-item-composer',
     templateUrl: './item-composer.component.html',
     styleUrls: ['./item-composer.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class ItemComposerComponent implements OnInit {
   /** Label for the confirm button (hosts read differently: Add / Grant). */
-  @Input() confirmLabel = 'Add';
+  readonly confirmLabel = input('Add');
   /** Whether a Cancel button renders (embedded always-open hosts hide it). */
-  @Input() cancellable = true;
+  readonly cancellable = input(true);
 
   /** The authored item — catalog pick (full CatalogItem) or custom line. */
-  @Output() itemAuthored = new EventEmitter<AuthoredItem>();
+  readonly itemAuthored = output<AuthoredItem>();
   /** The Cancel button (only when `cancellable`). */
-  @Output() cancelled = new EventEmitter<void>();
+  readonly cancelled = output<void>();
 
   constructor(private shopService: ShopService) {}
 
@@ -44,11 +46,12 @@ export class ItemComposerComponent implements OnInit {
 
   // Catalog tab
   catalogCategory: ShopCategory = 'WEAPON';
-  catalogItems: CatalogItem[] = [];
+  // Signals: written from the catalog HTTP callback, which never marks an OnPush view.
+  readonly catalogItems = signal<CatalogItem[]>([]);
   catalogSearch = '';
   catalogSelectedKey: string | null = null;
   catalogQty = 1;
-  loadingCatalog = false;
+  readonly loadingCatalog = signal(false);
 
   // Custom tab
   customName = '';
@@ -70,21 +73,21 @@ export class ItemComposerComponent implements OnInit {
 
   setTab(tab: 'catalog' | 'custom'): void {
     this.tab = tab;
-    if (tab === 'catalog' && !this.catalogItems.length) this.loadCatalog();
+    if (tab === 'catalog' && !this.catalogItems().length) this.loadCatalog();
   }
 
   loadCatalog(): void {
-    this.loadingCatalog = true;
+    this.loadingCatalog.set(true);
     this.catalogSelectedKey = null;
     this.shopService.getCatalog(this.catalogCategory).subscribe({
-      next: items => { this.catalogItems = items; this.loadingCatalog = false; },
-      error: () => { this.catalogItems = []; this.loadingCatalog = false; },
+      next: items => { this.catalogItems.set(items); this.loadingCatalog.set(false); },
+      error: () => { this.catalogItems.set([]); this.loadingCatalog.set(false); },
     });
   }
 
   get filteredCatalog(): CatalogItem[] {
     const q = this.catalogSearch.trim().toLowerCase();
-    return q ? this.catalogItems.filter(i => i.name.toLowerCase().includes(q)) : this.catalogItems;
+    return q ? this.catalogItems().filter(i => i.name.toLowerCase().includes(q)) : this.catalogItems();
   }
 
   /** A tidy display label for an item's category (shared with the inventory list). */
@@ -101,7 +104,7 @@ export class ItemComposerComponent implements OnInit {
 
   /** Emit the selected catalog item (the full CatalogItem rides along). */
   confirmCatalog(): void {
-    const item = this.catalogItems.find(i => i.itemKey === this.catalogSelectedKey);
+    const item = this.catalogItems().find(i => i.itemKey === this.catalogSelectedKey);
     if (!item) return;
     const qty = Math.max(1, Math.floor(this.catalogQty || 1));
     this.itemAuthored.emit({ kind: 'catalog', item, qty });

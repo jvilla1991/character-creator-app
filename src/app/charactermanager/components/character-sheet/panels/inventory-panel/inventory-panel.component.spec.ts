@@ -1,4 +1,5 @@
 import { InventoryPanelComponent } from './inventory-panel.component';
+import { TestBed } from '@angular/core/testing';
 import { PC, PcItem } from '../../../../models/pc';
 import { CatalogItem } from '../../../../models/shop';
 
@@ -9,7 +10,7 @@ describe('InventoryPanelComponent', () => {
     ({ id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P', inventory } as PC);
 
   beforeEach(() => {
-    component = new InventoryPanelComponent();
+    component = TestBed.runInInjectionContext(() => new InventoryPanelComponent());
     component.editable = true;
   });
 

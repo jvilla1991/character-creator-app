@@ -6,14 +6,14 @@
     </span>
   </div>
 
-  @for (entry of entries; track entry) {
+  @for (entry of entries(); track entry) {
     <div style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
       <div>{{ entry.description }}</div>
       <div class="equip-item-meta" style="margin-top: 2px;">{{ entryDate(entry) }}</div>
     </div>
   }
 
-  @if (!entries.length) {
+  @if (!entries().length) {
     <div class="equip-item-meta">No activity yet.</div>
   }
 </div>

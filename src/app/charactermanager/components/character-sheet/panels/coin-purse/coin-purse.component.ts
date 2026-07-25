@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
+import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 
 type CoinKey = keyof NonNullable<PC['coins']>;
 
@@ -8,15 +9,16 @@ type CoinKey = keyof NonNullable<PC['coins']>;
     selector: 'app-coin-purse',
     templateUrl: './coin-purse.component.html',
     styleUrls: ['./coin-purse.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EditableNumberComponent]
 })
 export class CoinPurseComponent {
   @Input() pc!: PC;
   /** DM cross-link: makes each coin amount click-to-edit. */
   @Input() editable = false;
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
   /** A DM clicked an intercepted coin amount — the parent opens the DM edit modal. */
-  @Output() editRequested = new EventEmitter<DmEditRequest>();
+  readonly editRequested = output<DmEditRequest>();
 
   readonly coinTypes: Array<{ key: CoinKey; label: string }> = [
     { key: 'cp', label: 'Copper' },

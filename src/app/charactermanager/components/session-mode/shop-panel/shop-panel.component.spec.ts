@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { ShopPanelComponent } from './shop-panel.component';
 import { SessionState, ParticipantView } from '../../../models/session';
 import { ShopItem, ShopView } from '../../../models/shop';
@@ -48,7 +49,7 @@ describe('ShopPanelComponent', () => {
     curatedShopService = jasmine.createSpyObj('CuratedShopService', ['list']);
     pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
-    component = new ShopPanelComponent(shopService, curatedShopService, pcService, notifications);
+    component = TestBed.runInInjectionContext(() => new ShopPanelComponent(shopService, curatedShopService, pcService, notifications));
   });
 
   it('myCoinsCp sums the purse in copper', () => {

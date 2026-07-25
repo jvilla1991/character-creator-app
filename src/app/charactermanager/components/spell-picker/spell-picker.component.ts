@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { DndSpell } from '../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Reusable spell search-and-select list — extracted from the level-up modal so
@@ -17,7 +18,8 @@ import { DndSpell } from '../../models/dnd-api.types';
     selector: 'app-spell-picker',
     templateUrl: './spell-picker.component.html',
     styleUrls: ['./spell-picker.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class SpellPickerComponent {
   @Input() spells: DndSpell[] = [];
@@ -25,7 +27,7 @@ export class SpellPickerComponent {
   @Input() cantripLimit: number | null = null;
   @Input() spellLimit: number | null = null;
   @Input() loading = false;
-  @Output() selectedChange = new EventEmitter<DndSpell[]>();
+  readonly selectedChange = output<DndSpell[]>();
 
   search = '';
 

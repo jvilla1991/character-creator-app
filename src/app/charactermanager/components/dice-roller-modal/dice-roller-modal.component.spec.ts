@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { A11yModule } from '@angular/cdk/a11y';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { of } from 'rxjs';
 import { DiceRollerModalComponent } from './dice-roller-modal.component';
@@ -15,10 +16,9 @@ describe('DiceRollerModalComponent', () => {
     sessionService.logRoll.and.returnValue(of({} as SessionState));
 
     await TestBed.configureTestingModule({
-      declarations: [DiceRollerModalComponent],
-      imports: [DragDropModule],
-      providers: [{ provide: SessionService, useValue: sessionService }],
-    }).compileComponents();
+    imports: [A11yModule, DragDropModule, DiceRollerModalComponent],
+    providers: [{ provide: SessionService, useValue: sessionService }],
+}).compileComponents();
 
     fixture = TestBed.createComponent(DiceRollerModalComponent);
     component = fixture.componentInstance;
@@ -27,6 +27,17 @@ describe('DiceRollerModalComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('exposes dialog semantics and a labelled close button', () => {
+    const root: HTMLElement = fixture.nativeElement.querySelector('.modal');
+    expect(root.getAttribute('role')).toBe('dialog');
+    expect(root.getAttribute('aria-modal')).toBe('true');
+    const titleId = root.getAttribute('aria-labelledby')!;
+    expect(fixture.nativeElement.querySelector('#' + titleId)?.textContent)
+      .toContain('Cast The Bones');
+    const close: HTMLElement = fixture.nativeElement.querySelector('.dice-close');
+    expect(close.getAttribute('aria-label')).toBe('Close dice roller');
   });
 
   it('adds dice to the field and counts them per type', () => {
@@ -181,8 +192,8 @@ describe('DiceRollerModalComponent', () => {
     expect(Number.isFinite(component.computeVelocity(samples, { x: 5, y: 0, t: 100 }))).toBeTrue();
   });
   it('logs the roll to the session when sessionId and participantId are set', fakeAsync(() => {
-    component.sessionId = 42;
-    component.participantId = 7;
+    fixture.componentRef.setInput('sessionId', 42);
+    fixture.componentRef.setInput('participantId', 7);
     component.addDie(6);
     component.addDie(6);
     component.throwButton();
@@ -198,8 +209,8 @@ describe('DiceRollerModalComponent', () => {
   }));
 
   it('does not log when sessionId is null (standalone/no-session roll)', fakeAsync(() => {
-    component.sessionId = null;
-    component.participantId = 7;
+    fixture.componentRef.setInput('sessionId', null);
+    fixture.componentRef.setInput('participantId', 7);
     component.addDie(6);
     component.throwButton();
     tick(5000);
@@ -208,8 +219,8 @@ describe('DiceRollerModalComponent', () => {
   }));
 
   it('does not log when participantId is null', fakeAsync(() => {
-    component.sessionId = 42;
-    component.participantId = null;
+    fixture.componentRef.setInput('sessionId', 42);
+    fixture.componentRef.setInput('participantId', null);
     component.addDie(6);
     component.throwButton();
     tick(5000);

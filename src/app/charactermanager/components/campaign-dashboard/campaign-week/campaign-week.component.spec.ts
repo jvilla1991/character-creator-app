@@ -1,4 +1,5 @@
 import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
 import { CampaignWeekComponent } from './campaign-week.component';
 import { Campaign } from '../../../models/campaign';
 
@@ -12,7 +13,7 @@ describe('CampaignWeekComponent', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj('CampaignService', ['setWeekDays']);
-    component = new CampaignWeekComponent(service);
+    component = TestBed.runInInjectionContext(() => new CampaignWeekComponent(service));
     component.campaign = campaign();
   });
 
@@ -31,8 +32,8 @@ describe('CampaignWeekComponent', () => {
     service.setWeekDays.and.returnValue(of(campaign(['Sul', 'Mol', 'Zol'])));
     component.save();
     expect(service.setWeekDays).toHaveBeenCalledWith('1', ['Sul', 'Mol', 'Zol']);
-    expect(component.editing).toBeFalse();
-    expect(component.saving).toBeFalse();
+    expect(component.editing()).toBeFalse();
+    expect(component.saving()).toBeFalse();
   });
 
   it('save keeps the editor open on an error so the DM can retry', () => {
@@ -40,8 +41,8 @@ describe('CampaignWeekComponent', () => {
     component.draft = ['Sul', 'Mol'];
     service.setWeekDays.and.returnValue(throwError(() => new Error('boom')));
     component.save();
-    expect(component.editing).toBeTrue();
-    expect(component.saving).toBeFalse();
+    expect(component.editing()).toBeTrue();
+    expect(component.saving()).toBeFalse();
   });
 
   it('cancel closes without saving; a campaign switch resets the editor', () => {
@@ -51,6 +52,6 @@ describe('CampaignWeekComponent', () => {
 
     component.edit();
     component.ngOnChanges({ campaign: {} as never });
-    expect(component.editing).toBeFalse();
+    expect(component.editing()).toBeFalse();
   });
 });
