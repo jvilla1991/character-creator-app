@@ -8,8 +8,8 @@ import { LoginComponent } from './charactermanager/components/login/login.compon
 import { RegisterComponent } from './charactermanager/components/register/register.component';
 import { ResetPasswordComponent } from './charactermanager/components/reset-password/reset-password.component';
 import { FormsModule } from '@angular/forms';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './interceptors/auth.interceptor';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
 
@@ -32,7 +32,6 @@ const routes: Routes = [
     bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
         RouterModule.forRoot(routes)], providers: [
-        { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withInterceptors([authInterceptor]))
     ] })
 export class AppModule { }
