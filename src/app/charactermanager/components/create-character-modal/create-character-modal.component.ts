@@ -1,6 +1,7 @@
-import { Component, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, HostListener, OnDestroy, OnInit, Output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { catchError, switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
@@ -128,8 +129,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   loadingBackgroundDetail = false;
   // switchMap subject — cancels in-flight requests when background changes
   private backgroundTrigger$ = new Subject<string>();
-
-  private destroy$ = new Subject<void>();
 
   // ── Step 5: Proficiencies & Languages ───────────────────────────────────
   /** Skills chosen by the player from the class list (excludes locked background skills) */
@@ -306,7 +305,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   @Output() confirm = new EventEmitter<Partial<PC>>();
   @Output() close   = new EventEmitter<void>();
 
-  constructor(private dndResources: DndResourcesService, private auth: AuthService) {}
+  constructor(
+    private dndResources: DndResourcesService,
+    private auth: AuthService,
+    private destroyRef: DestroyRef,
+  ) {}
 
   ngOnInit(): void {
     // The character's player is the signed-in user; display their username.
@@ -320,7 +323,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
           catchError(() => of(null))  // graceful 404 fallback (e.g. legacy species)
         );
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.speciesDetail        = detail;
       this.loadingSpeciesDetail = false;
@@ -331,7 +334,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         this.loadingClassDetail = true;
         return this.dndResources.getClassDetail(name);
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.classDetail        = detail;
       this.loadingClassDetail = false;
@@ -342,26 +345,26 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         this.loadingBackgroundDetail = true;
         return this.dndResources.getBackgroundDetail(name);
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(detail => {
       this.backgroundDetail        = detail;
       this.loadingBackgroundDetail = false;
     });
 
     // ── Load lists ───────────────────────────────────────────────────────────
-    this.dndResources.getSpeciesList().pipe(takeUntil(this.destroy$)).subscribe(list => {
+    this.dndResources.getSpeciesList().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => {
       this.speciesList    = list;
       this.loadingSpecies = false;
       // No default — the player must choose a species (gates Next).
     });
 
-    this.dndResources.getClassNames2024().pipe(takeUntil(this.destroy$)).subscribe(list => {
+    this.dndResources.getClassNames2024().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => {
       this.classList        = list;
       this.loadingClassList = false;
       // No default — the player must choose a class (gates Next).
     });
 
-    this.dndResources.getBackgroundGroups().pipe(takeUntil(this.destroy$)).subscribe(groups => {
+    this.dndResources.getBackgroundGroups().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(groups => {
       this.backgroundGroups = groups;
       // Enable Player's Handbook by default; a restored draft's source picks win.
       this.enabledSources = {
@@ -378,8 +381,6 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // The modal can be destroyed without an explicit Cancel (SPA navigation,
     // logout) — treat that like a disconnect and keep the draft.
     this.saveDraft();
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   /** Tab/window closing mid-creation — the disconnect case the draft exists for. */
@@ -442,7 +443,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (this.step === 7 && this.isSpellcastingClass && !this.spellList.length) {
       this.loadingSpells = true;
       this.dndResources.getSpellsForClass(this.clazz)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: spells => { this.spellList = spells; this.loadingSpells = false; },
           error: () => { this.loadingSpells = false; },
@@ -452,7 +453,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (this.step >= this.equipmentStep && !this.classEquipmentData && !this.loadingEquipment) {
       this.loadingEquipment = true;
       this.dndResources.getClassEquipment()
-        .pipe(takeUntil(this.destroy$))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(data => {
           this.classEquipmentData = data;
           this.loadingEquipment   = false;

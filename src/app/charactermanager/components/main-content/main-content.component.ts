@@ -1,6 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, DestroyRef, OnDestroy, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -41,8 +40,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
   activeRollSessionId: number | string | null = null;
   activeRollParticipantId: number | null = null;
 
-  private readonly destroy$ = new Subject<void>();
-
   constructor(
     private pcService: PCService,
     private characterModal: CharacterModalService,
@@ -51,6 +48,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private joinModal: JoinModalService,
+    private destroyRef: DestroyRef,
   ) {}
 
   /** Sheet's Join Campaign button — open the join modal with this PC preselected. */
@@ -81,7 +79,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pcService.getActivePC()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(pc => {
         this.pc = pc;
         this.resolveVariants(pc);
@@ -93,8 +91,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('visibilitychange', this.onVisible);
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   // ── Cross-client freshness ─────────────────────────────────────────────────
@@ -136,7 +132,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.campaignService.getSummary(pc.campaignId)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: summary => {
           // Guard against a stale response after switching characters.
@@ -166,7 +162,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     if (!pc || pc.campaignId == null) return;
     const pcId = pc.id;
     this.sessionService.getActiveForCampaign(String(pc.campaignId))
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(state => {
         if (this.pc?.id !== pcId || !state) return; // guard stale response after PC switch
         const mine = state.participants.find(p => p.pcId === pcId && p.ownedByMe);

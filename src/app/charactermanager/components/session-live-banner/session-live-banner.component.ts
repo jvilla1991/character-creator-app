@@ -1,5 +1,6 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subscription, combineLatest, of, timer } from 'rxjs';
+import { Component, DestroyRef, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest, of, timer } from 'rxjs';
 import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import { PC } from '../../models/pc';
 import { SessionState } from '../../models/session';
@@ -26,7 +27,7 @@ interface LiveSession {
     styleUrls: ['./session-live-banner.component.scss'],
     standalone: false
 })
-export class SessionLiveBannerComponent implements OnInit, OnDestroy {
+export class SessionLiveBannerComponent implements OnInit {
   live: LiveSession | null = null;
 
   pickerOpen = false;
@@ -36,19 +37,19 @@ export class SessionLiveBannerComponent implements OnInit, OnDestroy {
   error: string | null = null;
 
   private allPcs: PC[] = [];
-  private sub?: Subscription;
 
   constructor(
     private pcService: PCService,
     private campaignService: CampaignService,
     private sessionService: SessionService,
     private uiState: UiStateService,
+    private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
     // Re-check whenever the roster changes and on a 5s heartbeat (paused while
     // the tab is hidden). Show the first campaign that has a live session.
-    this.sub = combineLatest([this.pcService.pcs$, timer(0, 5000)]).pipe(
+    combineLatest([this.pcService.pcs$, timer(0, 5000)]).pipe(
       filter(() => !document.hidden),
       switchMap(([pcs]) => {
         this.allPcs = pcs;
@@ -63,6 +64,7 @@ export class SessionLiveBannerComponent implements OnInit, OnDestroy {
           ),
         ).pipe(map(results => results.find(r => r != null) ?? null));
       }),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(found => {
       this.live = found
         ? {
@@ -74,10 +76,6 @@ export class SessionLiveBannerComponent implements OnInit, OnDestroy {
       // If the live session went away while the picker was open, close it.
       if (!found) this.pickerOpen = false;
     });
-  }
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
   }
 
   openPicker(): void {

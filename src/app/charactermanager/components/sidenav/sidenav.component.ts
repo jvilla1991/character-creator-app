@@ -1,5 +1,5 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Component, DestroyRef, Input, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
@@ -15,7 +15,7 @@ import { tintFor } from '../../utils/character-math';
     styleUrls: ['./sidenav.component.scss'],
     standalone: false
 })
-export class SidenavComponent implements OnInit, OnDestroy {
+export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
   // Internal data comes directly from pcsByParty$ below.
   @Input() pcs!: PC[];
@@ -32,7 +32,6 @@ export class SidenavComponent implements OnInit, OnDestroy {
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];
-  private sub!: Subscription;
 
   constructor(
     private pcService: PCService,
@@ -41,16 +40,15 @@ export class SidenavComponent implements OnInit, OnDestroy {
     private joinModal: JoinModalService,
     private uiState: UiStateService,
     private currentUser: CurrentUserService,
+    private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
-    this.sub = this.pcService.pcs$.subscribe(pcs => {
-      this.allPcs = pcs;
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.sub.unsubscribe();
+    this.pcService.pcs$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(pcs => {
+        this.allPcs = pcs;
+      });
   }
 
   /** The full roster, filtered by the current search query. */

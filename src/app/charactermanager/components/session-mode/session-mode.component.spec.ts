@@ -11,7 +11,7 @@ import { PC } from '../../models/pc';
 describe('SessionModeComponent.showInitiative', () => {
   const sessionServiceStub = { state$: of(null) } as never;
   const component = new SessionModeComponent(
-    sessionServiceStub, null as never, null as never, null as never, null as never, null as never);
+    sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never);
 
   const state = (dm: boolean, status: SessionState['status']): SessionState =>
     ({ dm, status } as SessionState);
@@ -43,7 +43,7 @@ describe('SessionModeComponent.openPcSheet', () => {
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     const sessionServiceStub = { state$: of(null) } as never;
     component = new SessionModeComponent(
-      sessionServiceStub, uiState, pcService, notifications, null as never, null as never);
+      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never);
   });
 
   it('owned PC: opens from the local store with no HTTP fetch', () => {
@@ -107,7 +107,7 @@ describe('SessionModeComponent.openRoll / closeRoll', () => {
 
   beforeEach(() => {
     component = new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never);
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never);
   });
 
   it('openRoll sets the pc and opens the modal', () => {

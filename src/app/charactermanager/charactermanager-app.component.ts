@@ -1,7 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { Subscription } from 'rxjs';
 import { PC } from './models/pc';
 import { PCService } from './services/pc.service';
 import { CharacterModalService } from './services/character-modal.service';
@@ -69,7 +69,7 @@ import { CampaignDraft } from './models/campaign';
     styles: [],
     standalone: false
 })
-export class CharactermanagerAppComponent implements OnInit, OnDestroy {
+export class CharactermanagerAppComponent implements OnInit {
   pcs: PC[] = [];
   isCreateModalOpen = false;
   isCampaignModalOpen = false;
@@ -79,8 +79,6 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
   joinError: string | null = null;
   joinPreselectPcId: number | null = null;
 
-  private subs: Subscription[] = [];
-
   constructor(
     private pcService: PCService,
     private characterModal: CharacterModalService,
@@ -89,36 +87,31 @@ export class CharactermanagerAppComponent implements OnInit, OnDestroy {
     private uiState: UiStateService,
     private currentUser: CurrentUserService,
     private router: Router,
+    private destroyRef: DestroyRef,
   ) {}
 
   ngOnInit(): void {
     // Reflect the signed-in user (handles re-login without a full reload).
     this.currentUser.refresh();
 
-    this.subs.push(
-      this.pcService.pcs$.subscribe(pcs => { this.pcs = pcs; }),
+    this.pcService.pcs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(pcs => { this.pcs = pcs; });
 
-      this.characterModal.isOpen$.subscribe(open => { this.isCreateModalOpen = open; }),
-      this.campaignModal.isOpen$.subscribe(open => { this.isCampaignModalOpen = open; }),
-      this.joinModal.isOpen$.subscribe(open => { this.isJoinModalOpen = open; }),
-      this.joinModal.consent$.subscribe(consent => { this.joinConsent = consent; }),
-      this.joinModal.error$.subscribe(error => { this.joinError = error; }),
-      this.joinModal.preselectPcId$.subscribe(id => { this.joinPreselectPcId = id; }),
+    this.characterModal.isOpen$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(open => { this.isCreateModalOpen = open; });
+    this.campaignModal.isOpen$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(open => { this.isCampaignModalOpen = open; });
+    this.joinModal.isOpen$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(open => { this.isJoinModalOpen = open; });
+    this.joinModal.consent$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(consent => { this.joinConsent = consent; });
+    this.joinModal.error$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(error => { this.joinError = error; });
+    this.joinModal.preselectPcId$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(id => { this.joinPreselectPcId = id; });
 
-      this.router.events
-        .pipe(filter(e => e instanceof NavigationEnd))
-        .subscribe(() => {
-          if (this.router.url.includes('/charactermanager')) {
-            this.pcService.refreshPCs();
-          }
-        })
-    );
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.router.url.includes('/charactermanager')) {
+          this.pcService.refreshPCs();
+        }
+      });
 
     this.pcService.refreshPCs();
-  }
-
-  ngOnDestroy(): void {
-    this.subs.forEach(s => s.unsubscribe());
   }
 
   closeCreate(): void  { this.characterModal.closeCreateModal(); }
