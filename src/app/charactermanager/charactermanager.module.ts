@@ -40,6 +40,7 @@ import { LevelUpModalComponent } from './components/level-up-modal/level-up-moda
 import { SpellPickerComponent } from './components/spell-picker/spell-picker.component';
 import { ModifierPipe } from './pipes/modifier.pipe';
 import { EscapeCloseDirective } from './directives/escape-close.directive';
+import { characterResolver } from './resolvers/character.resolver';
 
 // ── DM mode ──────────────────────────────────────────────────────────────
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
@@ -79,7 +80,7 @@ const routes: Routes = [
   {
     path: '', component: CharactermanagerAppComponent,
     children: [
-      { path: ':id', component: MainContentComponent },
+      { path: ':id', component: MainContentComponent, resolve: { pc: characterResolver } },
       { path: '',    component: MainContentComponent },
     ]
   },
