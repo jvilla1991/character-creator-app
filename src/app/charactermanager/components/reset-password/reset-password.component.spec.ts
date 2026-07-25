@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ResetPasswordComponent } from './reset-password.component';
 import { AuthService } from '../../services/auth.service';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -15,7 +15,7 @@ describe('ResetPasswordComponent', () => {
 
     await TestBed.configureTestingModule({
       declarations: [ResetPasswordComponent],
-      imports: [FormsModule],
+      imports: [ReactiveFormsModule],
       providers: [
         { provide: AuthService, useValue: authSpy },
         {
@@ -42,9 +42,17 @@ describe('ResetPasswordComponent', () => {
     expect(component.errorMessage).toBeTruthy();
   });
 
+  it('requires both fields before the form is valid', async () => {
+    await setup('abc123');
+    expect(component.form.invalid).toBeTrue();
+
+    component.form.setValue({ newPassword: 'longenough1', confirmPassword: 'longenough1' });
+    expect(component.form.valid).toBeTrue();
+  });
+
   it('rejects a short password without calling the backend', async () => {
     await setup('abc123');
-    component.newPassword = component.confirmPassword = 'short';
+    component.form.setValue({ newPassword: 'short', confirmPassword: 'short' });
 
     component.submit();
 
@@ -54,8 +62,7 @@ describe('ResetPasswordComponent', () => {
 
   it('rejects mismatched passwords without calling the backend', async () => {
     await setup('abc123');
-    component.newPassword = 'longenough1';
-    component.confirmPassword = 'different1';
+    component.form.setValue({ newPassword: 'longenough1', confirmPassword: 'different1' });
 
     component.submit();
 
@@ -66,7 +73,7 @@ describe('ResetPasswordComponent', () => {
   it('submits the token and new password, then shows the done state', async () => {
     await setup('abc123');
     authService.resetPassword.and.returnValue(of({ success: true }));
-    component.newPassword = component.confirmPassword = 'longenough1';
+    component.form.setValue({ newPassword: 'longenough1', confirmPassword: 'longenough1' });
 
     component.submit();
 
@@ -77,7 +84,7 @@ describe('ResetPasswordComponent', () => {
   it('shows the invalid-or-expired error when the backend rejects the token', async () => {
     await setup('abc123');
     authService.resetPassword.and.returnValue(of({ success: false }));
-    component.newPassword = component.confirmPassword = 'longenough1';
+    component.form.setValue({ newPassword: 'longenough1', confirmPassword: 'longenough1' });
 
     component.submit();
 

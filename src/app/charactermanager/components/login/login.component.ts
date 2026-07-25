@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
@@ -9,16 +10,25 @@ import { Router } from '@angular/router';
     standalone: false
 })
 export class LoginComponent {
-  userName = '';
-  password = '';
+  /** Typed reactive form — both fields are required, exactly like the old ngModel form. */
+  readonly form = this.fb.group({
+    userName: ['', Validators.required],
+    password: ['', Validators.required],
+  });
+
   errorMessage = '';
   showPassword = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private fb: NonNullableFormBuilder,
+    private authService: AuthService,
+    private router: Router,
+  ) {}
 
   login(): void {
     this.errorMessage = ''; // Clear any previous error messages
-    this.authService.login(this.userName, this.password).subscribe({
+    const { userName, password } = this.form.getRawValue();
+    this.authService.login(userName, password).subscribe({
       next: (response) => {
         if (response && response.success) {
           this.router.navigate(['/charactermanager']);

@@ -19,31 +19,31 @@
 
       <div class="login-divider"></div>
 
-      <form (ngSubmit)="register()" #registerForm="ngForm">
+      <form [formGroup]="form" (ngSubmit)="register()">
 
         <!-- Name row -->
         <div class="two-col">
           <div class="field">
             <label>First Name</label>
-            <input type="text" [(ngModel)]="firstName" name="firstName" required
+            <input type="text" formControlName="firstName"
               placeholder="First name" autocomplete="given-name">
             </div>
             <div class="field">
               <label>Last Name</label>
-              <input type="text" [(ngModel)]="lastName" name="lastName" required
+              <input type="text" formControlName="lastName"
                 placeholder="Last name" autocomplete="family-name">
               </div>
             </div>
 
             <div class="field">
               <label>Email</label>
-              <input type="email" [(ngModel)]="email" name="email" required
+              <input type="email" formControlName="email"
                 placeholder="your@email.com" autocomplete="email">
               </div>
 
               <div class="field">
                 <label>Username</label>
-                <input type="text" [(ngModel)]="userName" name="userName" required
+                <input type="text" formControlName="userName"
                   placeholder="Choose a username" autocomplete="username">
                 </div>
 
@@ -53,7 +53,7 @@
                     <label>Password</label>
                     <div class="input-reveal">
                       <input [type]="showPassword ? 'text' : 'password'"
-                        [(ngModel)]="password" name="password" required
+                        formControlName="password"
                         placeholder="Min. 6 characters" autocomplete="new-password">
                         <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
                           [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
@@ -77,7 +77,7 @@
                       <label>Confirm</label>
                       <div class="input-reveal">
                         <input [type]="showPassword ? 'text' : 'password'"
-                          [(ngModel)]="confirmPassword" name="confirmPassword"
+                          formControlName="confirmPassword"
                           placeholder="Repeat password" autocomplete="new-password"
                           [class.input-error]="passwordMismatch">
                           <!-- no separate toggle — showPassword controls both fields together -->
@@ -97,7 +97,7 @@
                     }
 
                     <button type="submit" class="btn primary login-submit"
-                      [disabled]="!formValid || loading">
+                      [disabled]="form.invalid || loading">
                       {{ loading ? 'Inscribing…' : 'Inscribe Your Name' }}
                     </button>
                   </form>

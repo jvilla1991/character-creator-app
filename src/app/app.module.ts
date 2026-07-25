@@ -7,7 +7,7 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './charactermanager/components/login/login.component';
 import { RegisterComponent } from './charactermanager/components/register/register.component';
 import { ResetPasswordComponent } from './charactermanager/components/reset-password/reset-password.component';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { authGuard } from './guards/auth.guard';
@@ -30,7 +30,9 @@ const routes: Routes = [
         ResetPasswordComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
-        FormsModule,
+        // Auth screens (login / register / reset-password) use typed reactive
+        // forms; nothing declared here uses ngModel, so FormsModule is gone.
+        ReactiveFormsModule,
         RouterModule.forRoot(routes)], providers: [
         provideHttpClient(withInterceptors([authInterceptor]))
     ] })

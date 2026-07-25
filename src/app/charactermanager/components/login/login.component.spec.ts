@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth.service';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -17,7 +17,7 @@ describe('LoginComponent', () => {
 
     await TestBed.configureTestingModule({
       declarations: [LoginComponent],
-      imports: [FormsModule],
+      imports: [ReactiveFormsModule],
       providers: [
         { provide: AuthService, useValue: authSpy },
         { provide: Router,      useValue: routerSpy },
@@ -35,9 +35,19 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('starts invalid: both fields are required', () => {
+    expect(component.form.invalid).toBeTrue();
+    expect(component.form.controls.userName.hasError('required')).toBeTrue();
+    expect(component.form.controls.password.hasError('required')).toBeTrue();
+  });
+
+  it('becomes valid once both fields are filled', () => {
+    component.form.setValue({ userName: 'admin', password: 'password' });
+    expect(component.form.valid).toBeTrue();
+  });
+
   it('calls AuthService.login with provided credentials', () => {
-    component.userName = 'admin';
-    component.password = 'password';
+    component.form.setValue({ userName: 'admin', password: 'password' });
     authService.login.and.returnValue(of({ success: true }));
 
     component.login();
@@ -65,6 +75,7 @@ describe('LoginComponent', () => {
 
   it('navigates to /charactermanager on successful login', () => {
     authService.login.and.returnValue(of({ success: true }));
+    component.form.setValue({ userName: 'admin', password: 'password' });
 
     component.login();
 

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -15,15 +16,28 @@ import { AuthService } from '../../services/auth.service';
     standalone: false
 })
 export class ResetPasswordComponent implements OnInit {
+  /**
+   * Typed reactive form. Only `required` gates the submit button — the
+   * min-length and match rules are deliberately checked in submit() so
+   * their messages still appear on click, exactly like the old
+   * template-driven form did.
+   */
+  readonly form = this.fb.group({
+    newPassword:     ['', Validators.required],
+    confirmPassword: ['', Validators.required],
+  });
+
   token = '';
-  newPassword = '';
-  confirmPassword = '';
   showPassword = false;
   errorMessage = '';
   done = false;
   submitting = false;
 
-  constructor(private route: ActivatedRoute, private authService: AuthService) {}
+  constructor(
+    private fb: NonNullableFormBuilder,
+    private route: ActivatedRoute,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
@@ -34,16 +48,17 @@ export class ResetPasswordComponent implements OnInit {
 
   submit(): void {
     this.errorMessage = '';
-    if (this.newPassword.length < 8) {
+    const { newPassword, confirmPassword } = this.form.getRawValue();
+    if (newPassword.length < 8) {
       this.errorMessage = 'Password must be at least 8 characters.';
       return;
     }
-    if (this.newPassword !== this.confirmPassword) {
+    if (newPassword !== confirmPassword) {
       this.errorMessage = 'Passwords do not match.';
       return;
     }
     this.submitting = true;
-    this.authService.resetPassword(this.token, this.newPassword).subscribe(response => {
+    this.authService.resetPassword(this.token, newPassword).subscribe(response => {
       this.submitting = false;
       if (response.success) {
         this.done = true;
