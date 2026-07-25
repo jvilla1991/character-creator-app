@@ -1,11 +1,15 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, Input, OnInit, output } from '@angular/core';
 import { PC } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
-import { fmtMod } from '../../utils/character-math';
 import { toPcSpell } from '../../utils/spell-mapping';
+import { EscapeCloseDirective } from '../../directives/escape-close.directive';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
+import { ModifierPipe } from '../../pipes/modifier.pipe';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -21,7 +25,7 @@ import { toPcSpell } from '../../utils/spell-mapping';
     selector: 'app-level-up-modal',
     templateUrl: './level-up-modal.component.html',
     styleUrls: ['./level-up-modal.component.scss'],
-    standalone: false
+    imports: [EscapeCloseDirective, CdkTrapFocus, FormsModule, SpellPickerComponent, ModifierPipe]
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
@@ -31,7 +35,7 @@ export class LevelUpModalComponent implements OnInit {
    * owner-scoped ones would 403). The flow is otherwise identical.
    */
   @Input() asDm = false;
-  @Output() close = new EventEmitter<void>();
+  readonly close = output<void>();
 
   preview: LevelUpPreview | null = null;
   loading = true;
@@ -125,10 +129,6 @@ export class LevelUpModalComponent implements OnInit {
 
   get selectedSpellCount(): number {
     return this.selectedSpells.filter(s => s.level > 0).length;
-  }
-
-  fmtMod(value: number): string {
-    return fmtMod(value);
   }
 
   /** Whether the proficiency bonus changes on this level (drives a highlight). */
@@ -290,11 +290,6 @@ export class LevelUpModalComponent implements OnInit {
   cancel(): void {
     if (this.submitting) return;
     this.close.emit();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.cancel();
   }
 
   private messageFrom(err: unknown, fallback: string): string {

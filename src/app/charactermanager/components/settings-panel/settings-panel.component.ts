@@ -6,6 +6,10 @@ import { AuthService } from '../../services/auth.service';
 import { DicePrefs } from '../../models/campaign';
 import { tintFor } from '../../utils/character-math';
 import { environment } from '../../../../environments/environment';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { RoleSwitchComponent } from './role-switch/role-switch.component';
+import { FormsModule } from '@angular/forms';
+import { AsyncPipe } from '@angular/common';
 
 interface ThemeSwatch {
   id: Theme;
@@ -22,7 +26,7 @@ interface ThemeSwatch {
 @Component({
     selector: 'app-settings-panel',
     templateUrl: './settings-panel.component.html',
-    standalone: false
+    imports: [CdkTrapFocus, RoleSwitchComponent, FormsModule, AsyncPipe]
 })
 export class SettingsPanelComponent {
   user = this.currentUser.getUser();

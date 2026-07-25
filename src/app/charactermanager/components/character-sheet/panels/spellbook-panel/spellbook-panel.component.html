@@ -1,22 +1,22 @@
-<div class="panel">
+﻿<div class="panel">
   <div class="panel-header">
     <span class="panel-title">Spellbook</span>
     <!-- Casting math at a glance: DC = 8 + prof + casting mod, Atk = prof + mod.
     Omitted for non-casters (no casting ability to compute from). -->
-    @if (hasSpells && saveDc != null) {
+    @if (hasSpells() && saveDc() != null) {
       <span class="spell-dc"
         title="Spell save DC (8 + proficiency + casting ability) · spell attack bonus (proficiency + casting ability)">
-        Save DC {{ saveDc }} · Spell Atk {{ spellAtk }}
+        Save DC {{ saveDc() }} · Spell Atk {{ spellAtk() }}
       </span>
     }
-    @if (preparable && hasLeveledSpells && preparedCap != null) {
+    @if (preparable() && hasLeveledSpells() && preparedCap() != null) {
       <span
         class="prepared-counter"
-        [class.at-cap]="preparedCount >= preparedCap!"
+        [class.at-cap]="preparedCount() >= preparedCap()!"
         title="Leveled spells prepared vs the 2024 class-table cap (cantrips are always available)"
-      >Prepared {{ preparedCount }} / {{ preparedCap }}</span>
+      >Prepared {{ preparedCount() }} / {{ preparedCap() }}</span>
     }
-    @if (addAllowed && !grantFormOpen) {
+    @if (addAllowed() && !grantFormOpen) {
       <button class="btn sm" (click)="openGrantForm()">Grant spells</button>
     }
   </div>
@@ -44,23 +44,23 @@
   }
 
   <!-- No spells -->
-  @if (!hasSpells) {
+  @if (!hasSpells()) {
     <div
       style="color: var(--text-dim); font-style: italic; text-align: center; padding: 16px;"
       >
-      {{ pc.name.split(' ')[0] }} wields no magic — only steel and conviction.
+      {{ pc().name.split(' ')[0] }} wields no magic — only steel and conviction.
     </div>
   }
 
   <!-- Spell levels -->
-  @if (hasSpells) {
-    @for (level of spellsByLevel; track trackByLvl($index, level)) {
+  @if (hasSpells()) {
+    @for (level of spellsByLevel(); track trackByLvl($index, level)) {
       <div class="spell-level">
         <div class="spell-level-header">
           <span class="spell-level-name">{{ level.label }}</span>
           @if (level.slots) {
             <div class="spell-slots">
-              @if (!editable) {
+              @if (!editable()) {
                 <!-- Display-only for players: slots are spent by casting (in session),
                 never toggled by hand. The DM edits them via the numbers below. -->
                 @for (i of level.slotIndices; track i) {
@@ -71,7 +71,7 @@
                   ></span>
                 }
               }
-              @if (editable) {
+              @if (editable()) {
                 <span class="slot-edit">
                   <app-editable-number
                     [value]="level.slots!.used" [editable]="true" [min]="0" [max]="level.slots!.max"
@@ -88,9 +88,10 @@
           }
         </div>
         @for (s of level.spells; track s) {
+          @let prepared = isPrepared(s);
           <div>
-            <div class="spell-row" [class.unprepared]="!isPrepared(s)" (click)="toggleExpand(s.name)" style="cursor:pointer">
-              <span class="spell-name" [class.prepared]="isPrepared(s)">{{ s.name }}</span>
+            <div class="spell-row" [class.unprepared]="!prepared" (click)="toggleExpand(s.name)" style="cursor:pointer">
+              <span class="spell-name" [class.prepared]="prepared">{{ s.name }}</span>
               @if (s.concentration) {
                 <span class="spell-badge conc"   title="Concentration">C</span>
               }
@@ -102,16 +103,16 @@
               @if (s.range) {
                 <span class="spell-range">{{ s.range }}</span>
               }
-              @if (preparable && s.lvl > 0) {
+              @if (preparable() && s.lvl > 0) {
                 <button
                   class="spell-prep-btn"
-                  [class.active]="isPrepared(s)"
+                  [class.active]="prepared"
                   [disabled]="!canTogglePrepared(s)"
                   [title]="prepareTitle(s)"
                   (click)="togglePrepared(s, $event)"
-                >{{ isPrepared(s) ? 'Prepared' : 'Prepare' }}</button>
+                >{{ prepared ? 'Prepared' : 'Prepare' }}</button>
               }
-              @if (!editable && castable) {
+              @if (!editable() && castable()) {
                 <button
                   class="spell-cast-btn"
                   [disabled]="!canCast(s)"

@@ -6,10 +6,10 @@
 <!-- Method selector -->
 <div class="score-method-tabs">
   <button type="button" class="score-method-tab"
-    [class.active]="abilityMethod === 'standard'"
+    [class.active]="abilityMethod() === 'standard'"
   (click)="abilityMethodChange.emit('standard')">Standard Array</button>
   <button type="button" class="score-method-tab"
-    [class.active]="abilityMethod === 'point-buy'"
+    [class.active]="abilityMethod() === 'point-buy'"
   (click)="abilityMethodChange.emit('point-buy')">Point Buy</button>
   <span class="score-method-tab score-method-tab--disabled"
     title="Dice rolling will be available in a future update.">
@@ -19,28 +19,29 @@
 </div>
 
 <!-- ── Standard Array ───────────────────────────────────────────────── -->
-@if (abilityMethod === 'standard') {
+@if (abilityMethod() === 'standard') {
   <div class="ability-grid">
-    @for (ability of abilities; track ability) {
+    @for (ability of abilities(); track ability) {
+      @let score = finalScore()(ability);
       <div class="ability-row">
         <span class="ability-label">{{ ability }}</span>
         <select class="ability-select" [(ngModel)]="assignments[ability]">
           <option [ngValue]="null">—</option>
-          @for (v of availableFor(ability); track v) {
+          @for (v of availableFor()(ability); track v) {
             <option [ngValue]="v">{{ v }}</option>
           }
         </select>
         <span class="ability-bonus">
-          @if (bonusPlus2 === ability) {
+          @if (bonusPlus2() === ability) {
             +2
           }
-          @if (bonusPlus1 === ability) {
+          @if (bonusPlus1() === ability) {
             +1
           }
         </span>
         @if (assignments[ability] !== null) {
           <span class="ability-final">
-            = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+            = {{ score }} <em>{{ score | modifier }}</em>
           </span>
         }
       </div>
@@ -49,40 +50,41 @@
 }
 
 <!-- ── Point Buy ────────────────────────────────────────────────────── -->
-@if (abilityMethod === 'point-buy') {
+@if (abilityMethod() === 'point-buy') {
   <div class="pb-budget">
     <span class="pb-budget-spent"
-      [class.pb-budget-full]="pointBuyRemaining === 0">
-      {{ pointBuySpent }}&thinsp;/&thinsp;{{ pointBuyBudget }} points spent
+      [class.pb-budget-full]="pointBuyRemaining() === 0">
+      {{ pointBuySpent() }}&thinsp;/&thinsp;{{ pointBuyBudget() }} points spent
     </span>
     <span class="pb-budget-remaining"
-      [class.pb-budget-low]="pointBuyRemaining <= 3 && pointBuyRemaining > 0">
-      {{ pointBuyRemaining }} remaining
+      [class.pb-budget-low]="pointBuyRemaining() <= 3 && pointBuyRemaining() > 0">
+      {{ pointBuyRemaining() }} remaining
     </span>
   </div>
   <div class="ability-grid">
-    @for (ability of abilities; track ability) {
+    @for (ability of abilities(); track ability) {
+      @let score = finalScore()(ability);
       <div class="ability-row ability-row--pb">
         <span class="ability-label">{{ ability }}</span>
         <div class="pb-stepper">
           <button type="button" class="pb-btn"
-            [disabled]="!canDecreaseScore(ability)"
+            [disabled]="!canDecreaseScore()(ability)"
           (click)="decrease.emit(ability)">−</button>
-          <span class="pb-value">{{ pointBuyScores[ability] }}</span>
+          <span class="pb-value">{{ pointBuyScores()[ability] }}</span>
           <button type="button" class="pb-btn"
-            [disabled]="!canIncreaseScore(ability)"
+            [disabled]="!canIncreaseScore()(ability)"
           (click)="increase.emit(ability)">+</button>
         </div>
         <span class="ability-bonus">
-          @if (bonusPlus2 === ability) {
+          @if (bonusPlus2() === ability) {
             +2
           }
-          @if (bonusPlus1 === ability) {
+          @if (bonusPlus1() === ability) {
             +1
           }
         </span>
         <span class="ability-final">
-          = {{ finalScore(ability) }} <em>{{ modifier(finalScore(ability)) }}</em>
+          = {{ score }} <em>{{ score | modifier }}</em>
         </span>
       </div>
     }
@@ -90,27 +92,27 @@
 }
 
 <!-- Background bonus selectors (shared by both methods) -->
-@if (backgroundDetail && bonusAbilities.length) {
+@if (backgroundDetail() && bonusAbilities.length) {
   <div class="bonus-selectors">
     <div class="field">
-      <label>{{ background }} +2 bonus</label>
-      <select [ngModel]="bonusPlus2" (ngModelChange)="bonusPlus2Change.emit($event)">
+      <label>{{ background() }} +2 bonus</label>
+      <select [ngModel]="bonusPlus2()" (ngModelChange)="bonusPlus2Change.emit($event)">
         <option value="">— choose ability —</option>
         @for (a of bonusAbilities; track a) {
           <option
             [value]="a"
-          [disabled]="bonusPlus1 === a">{{ a }}</option>
+          [disabled]="bonusPlus1() === a">{{ a }}</option>
         }
       </select>
     </div>
     <div class="field">
-      <label>{{ background }} +1 bonus</label>
-      <select [ngModel]="bonusPlus1" (ngModelChange)="bonusPlus1Change.emit($event)">
+      <label>{{ background() }} +1 bonus</label>
+      <select [ngModel]="bonusPlus1()" (ngModelChange)="bonusPlus1Change.emit($event)">
         <option value="">— choose ability —</option>
         @for (a of bonusAbilities; track a) {
           <option
             [value]="a"
-          [disabled]="bonusPlus2 === a">{{ a }}</option>
+          [disabled]="bonusPlus2() === a">{{ a }}</option>
         }
       </select>
     </div>

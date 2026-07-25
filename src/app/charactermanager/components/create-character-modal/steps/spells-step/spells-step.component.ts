@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndSpell } from '../../../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Step 7 (spellcasting classes only): pick cantrips/1st-level spells with a
@@ -12,35 +13,36 @@ import { DndSpell } from '../../../../models/dnd-api.types';
     selector: 'app-spells-step',
     templateUrl: './spells-step.component.html',
     styleUrls: ['./spells-step.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class SpellsStepComponent {
-  @Input() filteredSpellList: DndSpell[] = [];
-  @Input() loadingSpells = false;
-  @Input() maxCantrips = 0;
-  @Input() maxKnownSpells = 0;
-  @Input() selectedCantrips = 0;
-  @Input() selectedLeveled = 0;
-  @Input() spellLevelFilter: number | 'all' = 'all';
-  @Input() spellSearch = '';
-  @Input() selectedSpells: DndSpell[] = [];
-  @Input() expandedSpellName: string | null = null;
+  readonly filteredSpellList = input<DndSpell[]>([]);
+  readonly loadingSpells = input(false);
+  readonly maxCantrips = input(0);
+  readonly maxKnownSpells = input(0);
+  readonly selectedCantrips = input(0);
+  readonly selectedLeveled = input(0);
+  readonly spellLevelFilter = input<number | 'all'>('all');
+  readonly spellSearch = input('');
+  readonly selectedSpells = input<DndSpell[]>([]);
+  readonly expandedSpellName = input<string | null>(null);
 
   /** Filter tab clicked (two-way [(spellLevelFilter)] on the parent). */
-  @Output() spellLevelFilterChange = new EventEmitter<number | 'all'>();
+  readonly spellLevelFilterChange = output<number | 'all'>();
   /** Search box edited (two-way [(spellSearch)] on the parent). */
-  @Output() spellSearchChange = new EventEmitter<string>();
+  readonly spellSearchChange = output<string>();
   /** A spell row was clicked — parent runs toggleSpellDesc (expand/collapse). */
-  @Output() toggleDesc = new EventEmitter<DndSpell>();
+  readonly toggleDesc = output<DndSpell>();
   /** Add/remove a spell — parent runs toggleSpell. */
-  @Output() toggleSpell = new EventEmitter<DndSpell>();
+  readonly toggleSpell = output<DndSpell>();
 
   isSpellSelected(spell: DndSpell): boolean {
-    return this.selectedSpells.some(s => s.name === spell.name);
+    return this.selectedSpells().some(s => s.name === spell.name);
   }
 
   isSpellDescOpen(spell: DndSpell): boolean {
-    return this.expandedSpellName === spell.name;
+    return this.expandedSpellName() === spell.name;
   }
 
   trackBySpellName(_: number, spell: DndSpell): string { return spell.name; }

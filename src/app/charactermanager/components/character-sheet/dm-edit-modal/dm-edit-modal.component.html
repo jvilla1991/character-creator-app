@@ -1,5 +1,7 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()">
-  <div class="modal-title" style="color: var(--celestial-2);">Edit {{ request.label }}</div>
+<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
+  role="dialog" aria-modal="true" aria-labelledby="dm-edit-title"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
+  <div class="modal-title" id="dm-edit-title" style="color: var(--celestial-2);">Edit {{ request.label }}</div>
 
   <div class="field">
     <label>{{ request.label | titlecase }}</label>

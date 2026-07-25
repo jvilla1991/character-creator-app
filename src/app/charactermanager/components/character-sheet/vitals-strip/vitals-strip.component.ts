@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
-import { hitDieFor, fmtMod } from '../../../utils/character-math';
+import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
+import { EditableNumberComponent } from '../editable-number/editable-number.component';
+import { ModifierPipe } from '../../../pipes/modifier.pipe';
 
 // 'AC' matches the backend's own diff vocabulary (PcActivityLogService.buildDmDiff);
 // initiative/speed/proficiency bonus aren't in that diff at all (DM edits to them
@@ -17,7 +19,8 @@ const VITAL_LABELS: Record<'ac' | 'init' | 'speed' | 'prof', string> = {
     selector: 'app-vitals-strip',
     templateUrl: './vitals-strip.component.html',
     styleUrls: ['./vitals-strip.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EditableNumberComponent, ModifierPipe]
 })
 export class VitalsStripComponent {
   @Input() pc!: PC;
@@ -27,11 +30,11 @@ export class VitalsStripComponent {
    *  session sheet — reveals the Spend Hit Die button under the Hit Dice tile. */
   @Input() canSpendHitDie = false;
   /** Emits the full updated PC for the parent to persist. */
-  @Output() pcChange = new EventEmitter<PC>();
+  readonly pcChange = output<PC>();
   /** The player spends a hit die (short rest) — the host owns the server call. */
-  @Output() spendHitDie = new EventEmitter<void>();
+  readonly spendHitDie = output<void>();
   /** A DM clicked an intercepted vital — the parent opens the DM edit modal. */
-  @Output() editRequested = new EventEmitter<DmEditRequest>();
+  readonly editRequested = output<DmEditRequest>();
 
   get hpPct(): number {
     if (!this.pc.hp) return 0;
@@ -53,8 +56,6 @@ export class VitalsStripComponent {
       .map(i => i.name);
     return worn.length ? worn.join(' & ') : 'unarmored';
   }
-
-  fmtMod(n: number): string { return fmtMod(n); }
 
   /** Pure builder: apply one HP field, keeping current within [0, max]. */
   private buildHp(field: 'cur' | 'max' | 'temp', value: number): PC {

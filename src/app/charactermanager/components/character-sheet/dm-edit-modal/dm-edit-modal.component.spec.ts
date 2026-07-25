@@ -1,4 +1,5 @@
 import { DmEditModalComponent } from './dm-edit-modal.component';
+import { TestBed } from '@angular/core/testing';
 import { DmEditRequest } from './dm-edit-request';
 import { PC } from '../../../models/pc';
 
@@ -20,7 +21,7 @@ describe('DmEditModalComponent', () => {
   };
 
   beforeEach(() => {
-    component = new DmEditModalComponent();
+    component = TestBed.runInInjectionContext(() => new DmEditModalComponent());
   });
 
   // --- init / auto text ---

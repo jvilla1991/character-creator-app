@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -6,17 +6,37 @@ import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
-import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
-import { SkillProfChange } from './panels/skills-list/skills-list.component';
+// NOTE: the type import is kept separate from the component import — sharing
+// one import statement counts as an eager reference to SpellbookPanelComponent
+// and blocks the @defer chunk-split of the spells tab.
+import type { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
+import { SpellbookPanelComponent } from './panels/spellbook-panel/spellbook-panel.component';
+import { SkillProfChange, SkillsListComponent } from './panels/skills-list/skills-list.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
-import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
+import { DmEditConfirm, DmEditModalComponent } from './dm-edit-modal/dm-edit-modal.component';
+import { FormsModule } from '@angular/forms';
+import { EditableNumberComponent } from './editable-number/editable-number.component';
+import { VitalsStripComponent } from './vitals-strip/vitals-strip.component';
+import { AbilityScoresComponent } from './panels/ability-scores/ability-scores.component';
+import { ConditionsPanelComponent } from './panels/conditions-panel/conditions-panel.component';
+import { SurvivalPanelComponent } from './panels/survival-panel/survival-panel.component';
+import { FeaturesListComponent } from './panels/features-list/features-list.component';
+import { OtherFeaturesComponent } from './panels/other-features/other-features.component';
+import { CoinPurseComponent } from './panels/coin-purse/coin-purse.component';
+import { BackgroundStoryComponent } from './panels/background-story/background-story.component';
+import { SuppliesPanelComponent } from './panels/supplies-panel/supplies-panel.component';
+import { EquipmentPanelComponent } from './panels/equipment-panel/equipment-panel.component';
+import { InventoryPanelComponent } from './panels/inventory-panel/inventory-panel.component';
+import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
+import { PcLogComponent } from './panels/pc-log/pc-log.component';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges {
   @Input() pc!: PC;
@@ -59,23 +79,23 @@ export class CharacterSheetComponent implements OnChanges {
   /** The party's current location (campaign-level), shown at the top of the
    *  sheet. Set by the DM in Session Mode; null until then. */
   @Input() location: CampaignLocation | null = null;
-  @Output() deleteRequested = new EventEmitter<void>();
-  @Output() rollRequested = new EventEmitter<void>();
-  @Output() levelUpRequested = new EventEmitter<void>();
+  readonly deleteRequested = output<void>();
+  readonly rollRequested = output<void>();
+  readonly levelUpRequested = output<void>();
   /** Player asks to connect to their campaign's live session. */
-  @Output() connectRequested = new EventEmitter<void>();
+  readonly connectRequested = output<void>();
   /** Character has no campaign — player asks to join one (opens the join modal). */
-  @Output() joinCampaignRequested = new EventEmitter<void>();
+  readonly joinCampaignRequested = output<void>();
   /** Player sells the inventory item at this index; bubbled from the inventory panel. */
-  @Output() sellRequested = new EventEmitter<number>();
+  readonly sellRequested = output<number>();
   /** In-session survival action (eat/drink); bubbled from the survival panel so
    *  the host can call the server-authoritative consume endpoint. */
-  @Output() survivalActionRequested = new EventEmitter<SurvivalAction>();
+  readonly survivalActionRequested = output<SurvivalAction>();
   /** In-session spell cast (resolved to a slot level); bubbled from the spellbook panel. */
-  @Output() castRequested = new EventEmitter<CastRequest>();
+  readonly castRequested = output<CastRequest>();
   /** In-session hit-die spend (short rest); bubbled from the vitals strip so the
    *  host can call the server-authoritative spend endpoint. */
-  @Output() spendHitDieRequested = new EventEmitter<void>();
+  readonly spendHitDieRequested = output<void>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -295,7 +315,8 @@ export class CharacterSheetComponent implements OnChanges {
   // live session the snapshot carries these fields but a use doesn't bump the
   // session version, so we force one off-cadence refresh to keep viewers honest.
 
-  inspirationBusy = false;
+  // Signal: cleared from HTTP callbacks, which never mark an OnPush view on their own.
+  readonly inspirationBusy = signal(false);
 
   /**
    * The conditions panel resolved a pip click to a new meter value (it owns the
@@ -304,12 +325,12 @@ export class CharacterSheetComponent implements OnChanges {
    * endpoint, not part of a generic sheet save.
    */
   onInspirationChange(pips: number): void {
-    if (this.inspirationBusy) return;
-    this.inspirationBusy = true;
+    if (this.inspirationBusy()) return;
+    this.inspirationBusy.set(true);
     this.pcService.setInspirationPips(this.pc.id, pips).subscribe({
-      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
-        this.inspirationBusy = false;
+        this.inspirationBusy.set(false);
         console.error('Failed to set the inspiration meter', err);
       },
     });
@@ -317,12 +338,12 @@ export class CharacterSheetComponent implements OnChanges {
 
   /** Owner (or DM) spends Heroic Inspiration after using the reroll. */
   useInspiration(): void {
-    if (this.inspirationBusy) return;
-    this.inspirationBusy = true;
+    if (this.inspirationBusy()) return;
+    this.inspirationBusy.set(true);
     this.pcService.useInspiration(this.pc.id).subscribe({
-      next: () => { this.inspirationBusy = false; this.refreshSessionIfLive(); },
+      next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
-        this.inspirationBusy = false;
+        this.inspirationBusy.set(false);
         console.error('Failed to use Heroic Inspiration', err);
       },
     });

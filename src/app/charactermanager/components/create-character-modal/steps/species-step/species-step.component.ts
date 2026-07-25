@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndSpecies } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 
@@ -11,19 +11,19 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 @Component({
     selector: 'app-species-step',
     templateUrl: './species-step.component.html',
-    styleUrls: ['./species-step.component.scss'],
-    standalone: false
+    styleUrls: ['./species-step.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SpeciesStepComponent {
-  @Input() speciesList: string[] = [];
-  @Input() species = '';
-  @Input() loadingSpecies = false;
-  @Input() loadingSpeciesDetail = false;
-  @Input() speciesDetail: DndSpecies | null = null;
-  @Input() speciesSubspeciesNames = '';
+  readonly speciesList = input<string[]>([]);
+  readonly species = input('');
+  readonly loadingSpecies = input(false);
+  readonly loadingSpeciesDetail = input(false);
+  readonly speciesDetail = input<DndSpecies | null>(null);
+  readonly speciesSubspeciesNames = input('');
 
   /** A species row was clicked — parent runs toggleSpecies (select / collapse). */
-  @Output() toggle = new EventEmitter<string>();
+  readonly toggle = output<string>();
 
   constructor(private dndResources: DndResourcesService) {}
 

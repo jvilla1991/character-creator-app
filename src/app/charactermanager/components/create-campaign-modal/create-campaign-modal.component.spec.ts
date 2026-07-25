@@ -1,4 +1,5 @@
 import { CreateCampaignModalComponent } from './create-campaign-modal.component';
+import { TestBed } from '@angular/core/testing';
 import { CampaignDraft } from '../../models/campaign';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
@@ -7,7 +8,7 @@ describe('CreateCampaignModalComponent', () => {
   let emitted: CampaignDraft[];
 
   beforeEach(() => {
-    component = new CreateCampaignModalComponent();
+    component = TestBed.runInInjectionContext(() => new CreateCampaignModalComponent());
     emitted = [];
     component.confirm.subscribe(d => emitted.push(d));
   });

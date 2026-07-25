@@ -1,33 +1,45 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
     selector: 'app-login',
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class LoginComponent {
-  userName = '';
-  password = '';
-  errorMessage = '';
+  /** Typed reactive form — both fields are required, exactly like the old ngModel form. */
+  readonly form = this.fb.group({
+    userName: ['', Validators.required],
+    password: ['', Validators.required],
+  });
+
+  // Signal: set from the auth HTTP callback, which never marks an OnPush view.
+  readonly errorMessage = signal('');
   showPassword = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private fb: NonNullableFormBuilder,
+    private authService: AuthService,
+    private router: Router,
+  ) {}
 
   login(): void {
-    this.errorMessage = ''; // Clear any previous error messages
-    this.authService.login(this.userName, this.password).subscribe({
+    this.errorMessage.set(''); // Clear any previous error messages
+    const { userName, password } = this.form.getRawValue();
+    this.authService.login(userName, password).subscribe({
       next: (response) => {
         if (response && response.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage = 'Invalid username or password';
+          this.errorMessage.set('Invalid username or password');
         }
       },
       error: (err) => {
-        this.errorMessage = 'Login failed. Please try again.';
+        this.errorMessage.set('Login failed. Please try again.');
       }
     });
   }

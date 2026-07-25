@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { SessionRollView } from '../../../models/session';
+import { DatePipe } from '@angular/common';
 
 /**
  * Session Mode's "Roll Log" panel — a collapsible, newest-first feed of dice
@@ -12,16 +13,17 @@ import { SessionRollView } from '../../../models/session';
     selector: 'app-roll-log-panel',
     templateUrl: './roll-log-panel.component.html',
     styleUrls: ['./roll-log-panel.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe]
 })
 export class RollLogPanelComponent {
-  @Input() rolls: SessionRollView[] = [];
-  @Input() dm = false;
+  readonly rolls = input<SessionRollView[]>([]);
+  readonly dm = input(false);
 
   /** Starts open; the DM or a player can collapse it to reclaim vertical space. */
-  collapsed = false;
+  readonly collapsed = signal(false);
 
   toggle(): void {
-    this.collapsed = !this.collapsed;
+    this.collapsed.update(collapsed => !collapsed);
   }
 }

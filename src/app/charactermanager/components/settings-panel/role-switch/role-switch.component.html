@@ -1,10 +1,10 @@
 <div class="role-switch" role="tablist" aria-label="View as">
   <button
     class="role-seg"
-    [class.active]="role() === 'player'"
+    [class.active]="isPlayer()"
     (click)="setRole('player')"
     role="tab"
-    [attr.aria-selected]="role() === 'player'"
+    [attr.aria-selected]="isPlayer()"
     >
     <!-- IconHero -->
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
@@ -14,10 +14,10 @@
   </button>
   <button
     class="role-seg dm"
-    [class.active]="role() === 'dm'"
+    [class.active]="isDm()"
     (click)="setRole('dm')"
     role="tab"
-    [attr.aria-selected]="role() === 'dm'"
+    [attr.aria-selected]="isDm()"
     >
     <!-- IconCrown -->
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">

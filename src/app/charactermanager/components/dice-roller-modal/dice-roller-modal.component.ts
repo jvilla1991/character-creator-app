@@ -1,16 +1,17 @@
 import {
   Component,
   ElementRef,
-  EventEmitter,
-  HostListener,
   Input,
   OnDestroy,
-  Output,
-  ViewChild,
+  input,
+  output,
+  viewChild
 } from '@angular/core';
-import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDropList, CdkDrag } from '@angular/cdk/drag-drop';
 import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
+import { EscapeCloseDirective } from '../../directives/escape-close.directive';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 
 /** The seven polyhedral dice a player can summon. */
 export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
@@ -36,19 +37,19 @@ type Phase = 'staging' | 'rolling' | 'result';
     selector: 'app-dice-roller-modal',
     templateUrl: './dice-roller-modal.component.html',
     styleUrls: ['./dice-roller-modal.component.scss'],
-    standalone: false
+    imports: [EscapeCloseDirective, CdkTrapFocus, CdkDropList, CdkDrag]
 })
 export class DiceRollerModalComponent implements OnDestroy {
   /** Optional — only used to personalise the title. */
-  @Input() pc: PC | null = null;
+  readonly pc = input<PC | null>(null);
 
   /** When both are set, a settled roll is logged to this live session's Roll Log. */
-  @Input() sessionId: number | string | null = null;
-  @Input() participantId: number | null = null;
+  readonly sessionId = input<number | string | null>(null);
+  readonly participantId = input<number | null>(null);
 
-  @Output() close = new EventEmitter<void>();
+  readonly close = output<void>();
 
-  @ViewChild('arenaEl') arenaRef?: ElementRef<HTMLElement>;
+  readonly arenaRef = viewChild<ElementRef<HTMLElement>>('arenaEl');
 
   constructor(private sessionService: SessionService) {}
 
@@ -67,7 +68,7 @@ export class DiceRollerModalComponent implements OnDestroy {
   // target (Pokemon Go pokeball feel) — drag it around the arena (clamped to
   // arena bounds), dice spin while held, release with a velocity flick to
   // throw (speed → power); a slow release just drops the cluster in place.
-  @ViewChild('shelfEl') shelfRef?: ElementRef<HTMLElement>;
+  readonly shelfRef = viewChild<ElementRef<HTMLElement>>('shelfEl');
 
   dragging = false;
   /** Cluster's current offset from its resting position, px — drives the CSS transform. */
@@ -174,8 +175,8 @@ export class DiceRollerModalComponent implements OnDestroy {
 
     // Clamp so the cluster can't be dragged out of the arena — same
     // rect-measurement approach as throwDice's flight clamping.
-    const arenaRect = this.arenaRef?.nativeElement.getBoundingClientRect();
-    const shelfRect = this.shelfRef?.nativeElement.getBoundingClientRect();
+    const arenaRect = this.arenaRef()?.nativeElement.getBoundingClientRect();
+    const shelfRect = this.shelfRef()?.nativeElement.getBoundingClientRect();
     let clampedDx = dx;
     let clampedDy = dy;
     if (arenaRect && shelfRect) {
@@ -270,7 +271,7 @@ export class DiceRollerModalComponent implements OnDestroy {
     if (!this.canThrow) return;
     this.cancelTimers();
 
-    const arenaEl = this.arenaRef?.nativeElement;
+    const arenaEl = this.arenaRef()?.nativeElement;
     const arenaRect = arenaEl?.getBoundingClientRect();
     const arenaWidth = arenaEl?.clientWidth ?? 480;
     const arenaHeight = arenaEl?.clientHeight ?? 340;
@@ -338,9 +339,11 @@ export class DiceRollerModalComponent implements OnDestroy {
    * blocks or reverts the result the player already saw.
    */
   private logRollToSession(): void {
-    if (this.sessionId == null || this.participantId == null) return;
+    const sessionId = this.sessionId();
+    const participantId = this.participantId();
+    if (sessionId == null || participantId == null) return;
     const groups = this.breakdown.map(row => ({ sides: row.sides, rolls: row.rolls }));
-    this.sessionService.logRoll(this.sessionId, this.participantId, groups).subscribe({
+    this.sessionService.logRoll(sessionId, participantId, groups).subscribe({
       error: err => console.error('Failed to log roll', err),
     });
   }
@@ -381,11 +384,6 @@ export class DiceRollerModalComponent implements OnDestroy {
 
   cancel(): void {
     this.close.emit();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.cancel();
   }
 
   private randomFace(sides: DieSides): number {

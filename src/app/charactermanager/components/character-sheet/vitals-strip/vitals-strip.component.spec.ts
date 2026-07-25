@@ -1,4 +1,5 @@
 import { VitalsStripComponent } from './vitals-strip.component';
+import { TestBed } from '@angular/core/testing';
 import { PC, PcItem } from '../../../models/pc';
 
 describe('VitalsStripComponent', () => {
@@ -8,7 +9,7 @@ describe('VitalsStripComponent', () => {
     ({ id: 1, name: 'X', clazz: 'Fighter', level: 4, playerName: 'P', inventory } as PC);
 
   beforeEach(() => {
-    component = new VitalsStripComponent();
+    component = TestBed.runInInjectionContext(() => new VitalsStripComponent());
   });
 
   describe('armorLabel', () => {

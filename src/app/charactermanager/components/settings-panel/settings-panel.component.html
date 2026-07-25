@@ -1,6 +1,8 @@
 <div class="slideover-backdrop" (click)="close()"></div>
 
-<aside class="slideover" (click)="$event.stopPropagation()">
+<aside class="slideover" (click)="$event.stopPropagation()"
+  role="dialog" aria-modal="true" aria-label="Profile and settings"
+  cdkTrapFocus cdkTrapFocusAutoCapture>
 
   <!-- Header: portrait + identity + close -->
   <div class="slideover-header">

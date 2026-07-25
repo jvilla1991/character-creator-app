@@ -1,7 +1,19 @@
+import { DestroyRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
+
+/**
+ * Minimal stand-in for the injected DestroyRef — these tests instantiate the
+ * component directly (no TestBed), so there's no real injection context to
+ * supply one. takeUntilDestroyed() only ever calls .onDestroy(), which these
+ * tests never trigger (they don't assert on post-destroy unsubscription).
+ */
+function makeMockDestroyRef(): DestroyRef {
+  return { onDestroy: () => () => undefined } as unknown as DestroyRef;
+}
 
 /**
  * Tests exercise the TypeScript logic of the wizard component directly
@@ -79,7 +91,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     dndResources = makeMockDndResources();
     auth = jasmine.createSpyObj<AuthService>('AuthService', ['getUsername']);
     auth.getUsername.and.returnValue('tester');
-    component = new CreateCharacterModalComponent(dndResources, auth);
+    component = TestBed.runInInjectionContext(() => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
     component.ngOnInit();
   });
 

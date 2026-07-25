@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
+import { FormsModule } from '@angular/forms';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
@@ -15,7 +16,8 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
     selector: 'app-other-features',
     templateUrl: './other-features.component.html',
     styleUrls: ['./other-features.component.scss'],
-    standalone: false
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule]
 })
 export class OtherFeaturesComponent {
   @Input() pc!: PC;
@@ -28,7 +30,11 @@ export class OtherFeaturesComponent {
    * concurrent player edit). CharacterSheetComponent owns the actual save and
    * stamps category 'other' onto the entry.
    */
-  @Output() featureGranted = new EventEmitter<{ name: string; source: string; desc: string }>();
+  readonly featureGranted = output<{
+    name: string;
+    source: string;
+    desc: string;
+}>();
 
   /** Entries shown here: only those tagged 'other' (everything else is a class feature). */
   get otherFeatures(): Feature[] {
