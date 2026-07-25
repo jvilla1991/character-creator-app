@@ -1,5 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { DmEditRequest } from './dm-edit-request';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { TitleCasePipe } from '@angular/common';
 
 /** What the modal hands back on Save: the clamped value and, if the DM typed
  *  one, their own log description (null lets the backend fall back to its
@@ -21,7 +24,7 @@ export interface DmEditConfirm {
     selector: 'app-dm-edit-modal',
     templateUrl: './dm-edit-modal.component.html',
     styleUrls: ['./dm-edit-modal.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus, FormsModule, TitleCasePipe]
 })
 export class DmEditModalComponent implements OnChanges {
   @Input() request!: DmEditRequest;

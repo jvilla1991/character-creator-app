@@ -11,6 +11,7 @@ import {
   usedSlots,
 } from '../../../../utils/slot-inventory';
 import { isSupplyItem } from '../../../../utils/survival';
+import { ItemComposerComponent } from '../../../item-composer/item-composer.component';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -27,7 +28,7 @@ import { isSupplyItem } from '../../../../utils/survival';
     selector: 'app-inventory-panel',
     templateUrl: './inventory-panel.component.html',
     styleUrls: ['./inventory-panel.component.scss'],
-    standalone: false
+    imports: [ItemComposerComponent]
 })
 export class InventoryPanelComponent {
   @Input() pc!: PC;

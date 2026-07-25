@@ -7,7 +7,6 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './charactermanager/components/login/login.component';
 import { RegisterComponent } from './charactermanager/components/register/register.component';
 import { ResetPasswordComponent } from './charactermanager/components/reset-password/reset-password.component';
-import { ReactiveFormsModule } from '@angular/forms';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { authGuard } from './guards/auth.guard';
@@ -23,16 +22,13 @@ const routes: Routes = [
   { path: 'charactermanager', canActivate: [authGuard], loadChildren: () => import('./charactermanager/charactermanager.module').then(m => m.CharactermanagerModule) }
 ];
 
-@NgModule({ declarations: [
-        AppComponent,
-        LoginComponent,
-        RegisterComponent,
-        ResetPasswordComponent,
-    ],
-    bootstrap: [AppComponent], imports: [BrowserModule,
-        // Auth screens (login / register / reset-password) use typed reactive
-        // forms; nothing declared here uses ngModel, so FormsModule is gone.
-        ReactiveFormsModule,
+// Thin shell: nothing is declared here anymore — every component is standalone
+// and brings its own imports (the auth screens pull in ReactiveFormsModule
+// directives themselves). The routes above reference the standalone components
+// directly, so none of them need to appear in `imports`. The module only wires
+// up bootstrap + root routing; converting to bootstrapApplication/provideRouter
+// is a follow-up branch.
+@NgModule({ bootstrap: [AppComponent], imports: [BrowserModule,
         RouterModule.forRoot(routes)], providers: [
         provideHttpClient(withInterceptors([authInterceptor]))
     ] })

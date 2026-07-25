@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { PcNote } from '../../../../models/pc-note';
 import { PCService } from '../../../../services/pc.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Per-character session notes — the player's own log ("what my character
@@ -13,7 +14,7 @@ import { PCService } from '../../../../services/pc.service';
 @Component({
     selector: 'app-pc-notes',
     templateUrl: './pc-notes.component.html',
-    standalone: false
+    imports: [FormsModule]
 })
 export class PcNotesComponent implements OnChanges {
   @Input() pc!: PC;

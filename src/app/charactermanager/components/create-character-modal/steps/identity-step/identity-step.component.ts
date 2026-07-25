@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Step 1 of the create-character wizard: hero name + (read-only) player.
@@ -12,7 +13,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 @Component({
     selector: 'app-identity-step',
     templateUrl: './identity-step.component.html',
-    standalone: false
+    imports: [FormsModule]
 })
 export class IdentityStepComponent {
   /** Hero name (two-way bound: [(name)] on the parent). */

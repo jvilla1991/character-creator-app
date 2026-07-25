@@ -8,12 +8,19 @@ import { JoinModalService } from '../../services/join-modal.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { tintFor } from '../../utils/character-math';
+import { FormsModule } from '@angular/forms';
+import { CampaignSidebarComponent } from '../campaign-sidebar/campaign-sidebar.component';
+import { SessionModeComponent } from '../session-mode/session-mode.component';
+import { SessionLiveBannerComponent } from '../session-live-banner/session-live-banner.component';
+import { RouterOutlet } from '@angular/router';
+import { CampaignDashboardComponent } from '../campaign-dashboard/campaign-dashboard.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
     selector: 'app-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
-    standalone: false
+    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe]
 })
 export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.

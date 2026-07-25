@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
+import { EditableNumberComponent } from '../editable-number/editable-number.component';
+import { ModifierPipe } from '../../../pipes/modifier.pipe';
 
 // 'AC' matches the backend's own diff vocabulary (PcActivityLogService.buildDmDiff);
 // initiative/speed/proficiency bonus aren't in that diff at all (DM edits to them
@@ -17,7 +19,7 @@ const VITAL_LABELS: Record<'ac' | 'init' | 'speed' | 'prof', string> = {
     selector: 'app-vitals-strip',
     templateUrl: './vitals-strip.component.html',
     styleUrls: ['./vitals-strip.component.scss'],
-    standalone: false
+    imports: [EditableNumberComponent, ModifierPipe]
 })
 export class VitalsStripComponent {
   @Input() pc!: PC;

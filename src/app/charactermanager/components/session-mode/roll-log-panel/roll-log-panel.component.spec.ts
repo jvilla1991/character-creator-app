@@ -20,8 +20,8 @@ describe('RollLogPanelComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [RollLogPanelComponent],
-    }).compileComponents();
+    imports: [RollLogPanelComponent],
+}).compileComponents();
 
     fixture = TestBed.createComponent(RollLogPanelComponent);
     component = fixture.componentInstance;

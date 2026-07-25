@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { NonNullableFormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 /**
@@ -13,7 +13,7 @@ import { AuthService } from '../../services/auth.service';
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
     styleUrls: ['./reset-password.component.scss'],
-    standalone: false
+    imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class ResetPasswordComponent implements OnInit {
   /**

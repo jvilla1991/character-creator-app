@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { NonNullableFormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { NonNullableFormBuilder, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { passwordsMatch, requiredTrimmed } from '../../utils/auth-validators';
 
@@ -8,7 +8,7 @@ import { passwordsMatch, requiredTrimmed } from '../../utils/auth-validators';
     selector: 'app-register',
     templateUrl: './register.component.html',
     styleUrls: ['./register.component.scss'],
-    standalone: false
+    imports: [FormsModule, ReactiveFormsModule, RouterLink]
 })
 export class RegisterComponent {
   /**

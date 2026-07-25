@@ -4,6 +4,7 @@ import { EncounterSummary } from '../../../models/encounter';
 import { CuratedEncounterService } from '../../../services/curated-encounter.service';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * DM-only in-session control: pick one of the campaign's curated encounters and
@@ -15,7 +16,7 @@ import { NotificationService } from '../../../services/notification.service';
     selector: 'app-encounter-loader',
     templateUrl: './encounter-loader.component.html',
     styleUrls: ['./encounter-loader.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class EncounterLoaderComponent implements OnChanges {
   @Input() state!: SessionState;

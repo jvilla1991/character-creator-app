@@ -9,12 +9,18 @@ import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { JoinModalService } from '../../services/join-modal.service';
+import { RouterOutlet } from '@angular/router';
+import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
+import { EmptyStateComponent } from '../character-sheet/empty-state/empty-state.component';
+import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
+import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
+import { LevelUpModalComponent } from '../level-up-modal/level-up-modal.component';
 
 @Component({
     selector: 'app-main-content',
     templateUrl: './main-content.component.html',
     styleUrls: ['./main-content.component.scss'],
-    standalone: false
+    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent, DiceRollerModalComponent, LevelUpModalComponent]
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;

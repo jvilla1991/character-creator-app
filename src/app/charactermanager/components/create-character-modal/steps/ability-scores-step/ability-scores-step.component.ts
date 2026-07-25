@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DndBackground } from '../../../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
+import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
@@ -18,7 +20,7 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
     selector: 'app-ability-scores-step',
     templateUrl: './ability-scores-step.component.html',
     styleUrls: ['./ability-scores-step.component.scss'],
-    standalone: false
+    imports: [FormsModule, ModifierPipe]
 })
 export class AbilityScoresStepComponent {
   @Input() abilityMethod: 'standard' | 'point-buy' = 'standard';

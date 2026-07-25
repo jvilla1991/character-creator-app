@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../models/pc';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 
 @Component({
     selector: 'app-delete-confirmation-modal',
     templateUrl: './delete-confirmation-modal.component.html',
     styleUrls: ['./delete-confirmation-modal.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus]
 })
 export class DeleteConfirmationModalComponent {
   @Input()  pc!: PC;

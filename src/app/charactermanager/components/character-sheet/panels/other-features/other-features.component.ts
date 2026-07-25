@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
+import { FormsModule } from '@angular/forms';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
@@ -15,7 +16,7 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
     selector: 'app-other-features',
     templateUrl: './other-features.component.html',
     styleUrls: ['./other-features.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class OtherFeaturesComponent {
   @Input() pc!: PC;

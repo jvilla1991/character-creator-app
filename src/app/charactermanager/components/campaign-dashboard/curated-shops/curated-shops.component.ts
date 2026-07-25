@@ -3,6 +3,8 @@ import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary, parseImportPayload, toImportPayload } from '../../../models/curated-shop';
 import { formatCp } from '../../../models/shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
+import { FormsModule } from '@angular/forms';
+import { LowerCasePipe } from '@angular/common';
 
 /**
  * DM-curated shops panel on the campaign dashboard. The DM creates reusable
@@ -14,7 +16,7 @@ import { CuratedShopService } from '../../../services/curated-shop.service';
     selector: 'app-curated-shops',
     templateUrl: './curated-shops.component.html',
     styleUrls: ['./curated-shops.component.scss'],
-    standalone: false
+    imports: [FormsModule, LowerCasePipe]
 })
 export class CuratedShopsComponent implements OnChanges {
   @Input() campaign!: Campaign;

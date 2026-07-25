@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { modFromScore, SKILL_DEFS } from '../../../../utils/character-math';
+import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
 interface SkillRow {
   name: string;
@@ -21,7 +22,7 @@ export interface SkillProfChange {
     templateUrl: './skills-list.component.html',
     styleUrls: ['./skills-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    imports: [ModifierPipe]
 })
 export class SkillsListComponent implements OnChanges {
   @Input() pc!: PC;

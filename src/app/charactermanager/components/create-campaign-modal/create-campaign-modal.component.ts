@@ -1,12 +1,15 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/campaign';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { WeekDaysEditorComponent } from '../week-days-editor/week-days-editor.component';
 
 /** "Open a New Campaign" modal — mirrors the create-character modal chrome. */
 @Component({
     selector: 'app-create-campaign-modal',
     templateUrl: './create-campaign-modal.component.html',
     styleUrls: ['./create-campaign-modal.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus, FormsModule, WeekDaysEditorComponent]
 })
 export class CreateCampaignModalComponent {
   name = '';

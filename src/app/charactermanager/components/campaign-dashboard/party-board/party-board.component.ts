@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { passiveScore, tintFor } from '../../../utils/character-math';
+import { DecimalPipe } from '@angular/common';
 
 /**
  * Party Vitals Board — one row per campaign member with HP bar, AC, passive
@@ -9,7 +10,7 @@ import { passiveScore, tintFor } from '../../../utils/character-math';
 @Component({
     selector: 'app-party-board',
     templateUrl: './party-board.component.html',
-    standalone: false
+    imports: [DecimalPipe]
 })
 export class PartyBoardComponent {
   @Input() members: PC[] = [];

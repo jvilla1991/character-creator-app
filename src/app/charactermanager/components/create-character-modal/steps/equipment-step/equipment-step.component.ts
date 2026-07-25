@@ -9,8 +9,7 @@ import { ClassEquipment } from '../../../../models/dnd-api.types';
 @Component({
     selector: 'app-equipment-step',
     templateUrl: './equipment-step.component.html',
-    styleUrls: ['./equipment-step.component.scss'],
-    standalone: false
+    styleUrls: ['./equipment-step.component.scss']
 })
 export class EquipmentStepComponent {
   @Input() loadingEquipment = false;

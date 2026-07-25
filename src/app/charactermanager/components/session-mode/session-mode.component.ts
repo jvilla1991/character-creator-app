@@ -14,6 +14,17 @@ import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/s
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
 import { withRecomputedAc } from '../../utils/armor-math';
 import { ParticipantView } from '../../models/session';
+import { SpellCarouselComponent } from './spell-carousel/spell-carousel.component';
+import { FormsModule } from '@angular/forms';
+import { InitiativePanelComponent } from './initiative-panel/initiative-panel.component';
+import { RollLogPanelComponent } from './roll-log-panel/roll-log-panel.component';
+import { EncounterLoaderComponent } from './encounter-loader/encounter-loader.component';
+import { ShopPanelComponent } from './shop-panel/shop-panel.component';
+import { LootPanelComponent } from './loot-panel/loot-panel.component';
+import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
+import { AsyncPipe, TitleCasePipe } from '@angular/common';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -27,7 +38,7 @@ import { ParticipantView } from '../../models/session';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    standalone: false
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   @Input() sessionId!: string;

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { FormsModule } from '@angular/forms';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
@@ -8,7 +9,7 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
     selector: 'app-features-list',
     templateUrl: './features-list.component.html',
     styleUrls: ['./features-list.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class FeaturesListComponent {
   @Input() pc!: PC;

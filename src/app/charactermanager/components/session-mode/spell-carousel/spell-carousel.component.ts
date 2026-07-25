@@ -1,7 +1,9 @@
 import { Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, moveItemInArray, CdkDropList, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { DndSpell } from '../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../services/dnd-resources.service';
+import { SpellPickerComponent as SpellPickerComponent_1 } from '../../spell-picker/spell-picker.component';
+import { TitleCasePipe } from '@angular/common';
 
 /**
  * DM-screen Spell Reference Carousel — a wrapping row of always-expanded spell
@@ -23,7 +25,7 @@ import { DndResourcesService } from '../../../services/dnd-resources.service';
     selector: 'app-spell-carousel',
     templateUrl: './spell-carousel.component.html',
     styleUrls: ['./spell-carousel.component.scss'],
-    standalone: false
+    imports: [CdkDropList, CdkDrag, CdkDragHandle, SpellPickerComponent_1, TitleCasePipe]
 })
 export class SpellCarouselComponent implements OnInit {
   /** Ordered, de-duplicated pinned spells. Ephemeral — session only. */

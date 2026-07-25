@@ -8,6 +8,8 @@ import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
 
 interface LiveSession {
   session: SessionState;
@@ -25,7 +27,7 @@ interface LiveSession {
     selector: 'app-session-live-banner',
     templateUrl: './session-live-banner.component.html',
     styleUrls: ['./session-live-banner.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus, FormsModule]
 })
 export class SessionLiveBannerComponent implements OnInit {
   live: LiveSession | null = null;

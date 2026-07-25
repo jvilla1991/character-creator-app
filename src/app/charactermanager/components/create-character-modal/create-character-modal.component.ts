@@ -9,6 +9,18 @@ import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPE
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { IdentityStepComponent } from './steps/identity-step/identity-step.component';
+import { SpeciesStepComponent } from './steps/species-step/species-step.component';
+import { ClassStepComponent } from './steps/class-step/class-step.component';
+import { BackgroundStepComponent } from './steps/background-step/background-step.component';
+import { ProficienciesStepComponent } from './steps/proficiencies-step/proficiencies-step.component';
+import { AbilityScoresStepComponent } from './steps/ability-scores-step/ability-scores-step.component';
+import { SpellsStepComponent } from './steps/spells-step/spells-step.component';
+import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.component';
+import { ReviewStepComponent } from './steps/review-step/review-step.component';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -44,7 +56,7 @@ interface WizardDraft {
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
     styleUrls: ['./create-character-modal.component.scss'],
-    standalone: false
+    imports: [CdkTrapFocus, MatTooltip, MatSlideToggle, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 

@@ -4,6 +4,8 @@ import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { tintFor } from '../../../utils/character-math';
 import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
+import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 
 /**
  * Initiative order — one row per combatant in server-computed turn order, with
@@ -25,7 +27,7 @@ import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survi
     selector: 'app-initiative-panel',
     templateUrl: './initiative-panel.component.html',
     styleUrls: ['./initiative-panel.component.scss'],
-    standalone: false
+    imports: [FormsModule, DecimalPipe]
 })
 export class InitiativePanelComponent {
   @Input() participants: ParticipantView[] = [];

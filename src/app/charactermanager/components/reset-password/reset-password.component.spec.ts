@@ -14,16 +14,15 @@ describe('ResetPasswordComponent', () => {
     const authSpy = jasmine.createSpyObj('AuthService', ['resetPassword']);
 
     await TestBed.configureTestingModule({
-      declarations: [ResetPasswordComponent],
-      imports: [ReactiveFormsModule],
-      providers: [
+    imports: [ReactiveFormsModule, ResetPasswordComponent],
+    providers: [
         { provide: AuthService, useValue: authSpy },
         {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap(token === null ? {} : { token }) } },
+            provide: ActivatedRoute,
+            useValue: { snapshot: { queryParamMap: convertToParamMap(token === null ? {} : { token }) } },
         },
-      ],
-    }).compileComponents();
+    ],
+}).compileComponents();
 
     fixture = TestBed.createComponent(ResetPasswordComponent);
     component = fixture.componentInstance;

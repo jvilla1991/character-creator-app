@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
+import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 
 type CoinKey = keyof NonNullable<PC['coins']>;
 
@@ -8,7 +9,7 @@ type CoinKey = keyof NonNullable<PC['coins']>;
     selector: 'app-coin-purse',
     templateUrl: './coin-purse.component.html',
     styleUrls: ['./coin-purse.component.scss'],
-    standalone: false
+    imports: [EditableNumberComponent]
 })
 export class CoinPurseComponent {
   @Input() pc!: PC;

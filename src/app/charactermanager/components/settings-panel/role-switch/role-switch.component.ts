@@ -7,8 +7,7 @@ import { UiStateService, Role } from '../../../services/ui-state.service';
  */
 @Component({
     selector: 'app-role-switch',
-    templateUrl: './role-switch.component.html',
-    standalone: false
+    templateUrl: './role-switch.component.html'
 })
 export class RoleSwitchComponent {
   readonly isPlayer = this.uiState.isPlayer;

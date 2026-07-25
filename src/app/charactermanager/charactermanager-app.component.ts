@@ -10,6 +10,12 @@ import { JoinConsentState, JoinModalService, JoinRequest } from './services/join
 import { UiStateService } from './services/ui-state.service';
 import { CurrentUserService } from './services/current-user.service';
 import { CampaignDraft } from './models/campaign';
+import { SidenavComponent } from './components/sidenav/sidenav.component';
+import { CreateCharacterModalComponent } from './components/create-character-modal/create-character-modal.component';
+import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
+import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
+import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
+import { ToastComponent } from './components/toast/toast.component';
 
 @Component({
     selector: 'app-charactermanager-app',
@@ -67,7 +73,7 @@ import { CampaignDraft } from './models/campaign';
     <app-toast></app-toast>
     `,
     styles: [],
-    standalone: false
+    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent]
 })
 export class CharactermanagerAppComponent implements OnInit {
   pcs: PC[] = [];

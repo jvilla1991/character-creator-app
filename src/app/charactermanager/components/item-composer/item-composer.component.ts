@@ -4,6 +4,7 @@ import { CatalogItem, ShopCategory, categoryLabelFor, formatCp } from '../../mod
 import { ShopService } from '../../services/shop.service';
 import { environment } from '../../../../environments/environment';
 import { AuthoredItem } from './authored-item';
+import { FormsModule } from '@angular/forms';
 
 /**
  * The one shared "author an item" form: a two-tab composer (Catalog / Custom)
@@ -20,7 +21,7 @@ import { AuthoredItem } from './authored-item';
     selector: 'app-item-composer',
     templateUrl: './item-composer.component.html',
     styleUrls: ['./item-composer.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class ItemComposerComponent implements OnInit {
   /** Label for the confirm button (hosts read differently: Add / Grant). */

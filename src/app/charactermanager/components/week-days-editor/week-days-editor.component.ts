@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { WEEKDAY_PRESETS, WeekdayPreset } from '../../models/campaign';
+import { FormsModule } from '@angular/forms';
 
 /** Week-size bounds, mirroring the server's GameClock constraints. */
 export const MIN_WEEK_DAYS = 2;
@@ -19,7 +20,7 @@ export const MAX_WEEK_DAYS = 20;
 @Component({
     selector: 'app-week-days-editor',
     templateUrl: './week-days-editor.component.html',
-    standalone: false
+    imports: [FormsModule]
 })
 export class WeekDaysEditorComponent implements OnChanges {
   @Input() value: string[] | null = null;

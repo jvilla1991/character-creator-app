@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DndBackground } from '../../../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Step 5: choose class skills + an additional language; show background-granted
@@ -11,7 +12,7 @@ import { DndBackground } from '../../../../models/dnd-api.types';
     selector: 'app-proficiencies-step',
     templateUrl: './proficiencies-step.component.html',
     styleUrls: ['./proficiencies-step.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class ProficienciesStepComponent {
   @Input() clazz = '';

@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CampaignService } from '../../../services/campaign.service';
+import { WeekDaysEditorComponent } from '../../week-days-editor/week-days-editor.component';
 
 /**
  * Campaign Week panel on the DM dashboard — shows the campaign's defined week
@@ -11,7 +12,7 @@ import { CampaignService } from '../../../services/campaign.service';
 @Component({
     selector: 'app-campaign-week',
     templateUrl: './campaign-week.component.html',
-    standalone: false
+    imports: [WeekDaysEditorComponent]
 })
 export class CampaignWeekComponent implements OnChanges {
   @Input() campaign!: Campaign;

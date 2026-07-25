@@ -16,10 +16,9 @@ describe('DiceRollerModalComponent', () => {
     sessionService.logRoll.and.returnValue(of({} as SessionState));
 
     await TestBed.configureTestingModule({
-      declarations: [DiceRollerModalComponent],
-      imports: [A11yModule, DragDropModule],
-      providers: [{ provide: SessionService, useValue: sessionService }],
-    }).compileComponents();
+    imports: [A11yModule, DragDropModule, DiceRollerModalComponent],
+    providers: [{ provide: SessionService, useValue: sessionService }],
+}).compileComponents();
 
     fixture = TestBed.createComponent(DiceRollerModalComponent);
     component = fixture.componentInstance;

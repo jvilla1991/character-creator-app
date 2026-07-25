@@ -2,6 +2,8 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
 import { CampaignService } from '../../../services/campaign.service';
+import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
 
 /**
  * Session Notes panel on the DM dashboard — the out-of-session surface for the
@@ -12,7 +14,7 @@ import { CampaignService } from '../../../services/campaign.service';
     selector: 'app-campaign-notes',
     templateUrl: './campaign-notes.component.html',
     styleUrls: ['./campaign-notes.component.scss'],
-    standalone: false
+    imports: [FormsModule, DatePipe]
 })
 export class CampaignNotesComponent implements OnChanges {
   @Input() campaign!: Campaign;

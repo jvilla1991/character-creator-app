@@ -1,33 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth.service';
-import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let authService: jasmine.SpyObj<AuthService>;
-  let router: jasmine.SpyObj<Router>;
+  let router: Router;
 
   beforeEach(async () => {
-    const authSpy   = jasmine.createSpyObj('AuthService', ['login']);
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const authSpy = jasmine.createSpyObj('AuthService', ['login']);
 
+    // Standalone LoginComponent brings RouterLink with it, and RouterLink needs
+    // the real router wiring (ActivatedRoute etc.) — so provide an empty real
+    // router and spy on `navigate` instead of substituting a bare Router mock.
     await TestBed.configureTestingModule({
-      declarations: [LoginComponent],
-      imports: [ReactiveFormsModule],
-      providers: [
+    imports: [LoginComponent],
+    providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: authSpy },
-        { provide: Router,      useValue: routerSpy },
-      ],
-    }).compileComponents();
+    ],
+}).compileComponents();
 
     fixture     = TestBed.createComponent(LoginComponent);
     component   = fixture.componentInstance;
     authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    router      = TestBed.inject(Router)      as jasmine.SpyObj<Router>;
+    router      = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
     fixture.detectChanges();
   });
 

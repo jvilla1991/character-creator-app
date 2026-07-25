@@ -42,8 +42,7 @@ const MAX_PIPS = 15;
  */
 @Component({
     selector: 'app-supplies-panel',
-    templateUrl: './supplies-panel.component.html',
-    standalone: false
+    templateUrl: './supplies-panel.component.html'
 })
 export class SuppliesPanelComponent {
   @Input() pc!: PC;

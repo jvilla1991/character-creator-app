@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { SessionRollView } from '../../../models/session';
+import { DatePipe } from '@angular/common';
 
 /**
  * Session Mode's "Roll Log" panel — a collapsible, newest-first feed of dice
@@ -12,7 +13,7 @@ import { SessionRollView } from '../../../models/session';
     selector: 'app-roll-log-panel',
     templateUrl: './roll-log-panel.component.html',
     styleUrls: ['./roll-log-panel.component.scss'],
-    standalone: false
+    imports: [DatePipe]
 })
 export class RollLogPanelComponent {
   @Input() rolls: SessionRollView[] = [];

@@ -6,17 +6,36 @@ import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
-import { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
-import { SkillProfChange } from './panels/skills-list/skills-list.component';
+// NOTE: the type import is kept separate from the component import — sharing
+// one import statement counts as an eager reference to SpellbookPanelComponent
+// and blocks the @defer chunk-split of the spells tab.
+import type { CastRequest } from './panels/spellbook-panel/spellbook-panel.component';
+import { SpellbookPanelComponent } from './panels/spellbook-panel/spellbook-panel.component';
+import { SkillProfChange, SkillsListComponent } from './panels/skills-list/skills-list.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
-import { DmEditConfirm } from './dm-edit-modal/dm-edit-modal.component';
+import { DmEditConfirm, DmEditModalComponent } from './dm-edit-modal/dm-edit-modal.component';
+import { FormsModule } from '@angular/forms';
+import { EditableNumberComponent } from './editable-number/editable-number.component';
+import { VitalsStripComponent } from './vitals-strip/vitals-strip.component';
+import { AbilityScoresComponent } from './panels/ability-scores/ability-scores.component';
+import { ConditionsPanelComponent } from './panels/conditions-panel/conditions-panel.component';
+import { SurvivalPanelComponent } from './panels/survival-panel/survival-panel.component';
+import { FeaturesListComponent } from './panels/features-list/features-list.component';
+import { OtherFeaturesComponent } from './panels/other-features/other-features.component';
+import { CoinPurseComponent } from './panels/coin-purse/coin-purse.component';
+import { BackgroundStoryComponent } from './panels/background-story/background-story.component';
+import { SuppliesPanelComponent } from './panels/supplies-panel/supplies-panel.component';
+import { EquipmentPanelComponent } from './panels/equipment-panel/equipment-panel.component';
+import { InventoryPanelComponent } from './panels/inventory-panel/inventory-panel.component';
+import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
+import { PcLogComponent } from './panels/pc-log/pc-log.component';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
-    standalone: false
+    imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges {
   @Input() pc!: PC;

@@ -144,8 +144,8 @@ describe('ConditionsPanelComponent (rendered)', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ConditionsPanelComponent],
-    }).compileComponents();
+    imports: [ConditionsPanelComponent],
+}).compileComponents();
 
     fixture = TestBed.createComponent(ConditionsPanelComponent);
     component = fixture.componentInstance;

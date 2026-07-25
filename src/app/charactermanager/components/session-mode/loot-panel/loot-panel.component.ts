@@ -9,6 +9,8 @@ import { LootService } from '../../../services/loot.service';
 import { CuratedLootService } from '../../../services/curated-loot.service';
 import { PCService } from '../../../services/pc.service';
 import { NotificationService } from '../../../services/notification.service';
+import { FormsModule } from '@angular/forms';
+import { ItemComposerComponent } from '../../item-composer/item-composer.component';
 
 /**
  * Session Mode post-combat loot. The DM prepares a pool — seeded from one of
@@ -30,7 +32,7 @@ import { NotificationService } from '../../../services/notification.service';
     selector: 'app-loot-panel',
     templateUrl: './loot-panel.component.html',
     styleUrls: ['./loot-panel.component.scss'],
-    standalone: false
+    imports: [FormsModule, ItemComposerComponent]
 })
 export class LootPanelComponent implements OnChanges {
   @Input() state!: SessionState;

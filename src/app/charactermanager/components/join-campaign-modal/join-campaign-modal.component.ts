@@ -1,6 +1,9 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { PCService } from '../../services/pc.service';
 import { JoinConsentState, JoinRequest } from '../../services/join-modal.service';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { AsyncPipe } from '@angular/common';
 
 /**
  * "Join a Campaign" — a player enters an invite code and picks one of their
@@ -10,7 +13,7 @@ import { JoinConsentState, JoinRequest } from '../../services/join-modal.service
 @Component({
     selector: 'app-join-campaign-modal',
     templateUrl: './join-campaign-modal.component.html',
-    standalone: false
+    imports: [CdkTrapFocus, FormsModule, AsyncPipe]
 })
 export class JoinCampaignModalComponent implements OnChanges {
   pcs$ = this.pcService.pcs$;

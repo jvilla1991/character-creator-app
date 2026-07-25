@@ -14,8 +14,7 @@ import { PCService } from '../../../../services/pc.service';
  */
 @Component({
     selector: 'app-pc-log',
-    templateUrl: './pc-log.component.html',
-    standalone: false
+    templateUrl: './pc-log.component.html'
 })
 export class PcLogComponent implements OnChanges {
   @Input() pc!: PC;

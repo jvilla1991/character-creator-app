@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DndSpell } from '../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Reusable spell search-and-select list — extracted from the level-up modal so
@@ -17,7 +18,7 @@ import { DndSpell } from '../../models/dnd-api.types';
     selector: 'app-spell-picker',
     templateUrl: './spell-picker.component.html',
     styleUrls: ['./spell-picker.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class SpellPickerComponent {
   @Input() spells: DndSpell[] = [];

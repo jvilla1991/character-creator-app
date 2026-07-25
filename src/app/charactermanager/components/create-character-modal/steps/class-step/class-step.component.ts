@@ -9,8 +9,7 @@ import { DndClass } from '../../../../models/dnd-api.types';
 @Component({
     selector: 'app-class-step',
     templateUrl: './class-step.component.html',
-    styleUrls: ['./class-step.component.scss'],
-    standalone: false
+    styleUrls: ['./class-step.component.scss']
 })
 export class ClassStepComponent {
   @Input() classList: string[] = [];

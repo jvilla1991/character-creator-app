@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ClassEquipment, DndClass, DndSpecies, DndSpell } from '../../../../models/dnd-api.types';
+import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
@@ -15,7 +16,7 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
     selector: 'app-review-step',
     templateUrl: './review-step.component.html',
     styleUrls: ['./review-step.component.scss'],
-    standalone: false
+    imports: [ModifierPipe]
 })
 export class ReviewStepComponent {
   // Combat banner

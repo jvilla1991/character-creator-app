@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DndSpell } from '../../../../models/dnd-api.types';
+import { FormsModule } from '@angular/forms';
 
 /**
  * Step 7 (spellcasting classes only): pick cantrips/1st-level spells with a
@@ -12,7 +13,7 @@ import { DndSpell } from '../../../../models/dnd-api.types';
     selector: 'app-spells-step',
     templateUrl: './spells-step.component.html',
     styleUrls: ['./spells-step.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class SpellsStepComponent {
   @Input() filteredSpellList: DndSpell[] = [];

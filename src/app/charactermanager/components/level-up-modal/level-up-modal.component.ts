@@ -5,6 +5,11 @@ import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { toPcSpell } from '../../utils/spell-mapping';
+import { EscapeCloseDirective } from '../../directives/escape-close.directive';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { FormsModule } from '@angular/forms';
+import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
+import { ModifierPipe } from '../../pipes/modifier.pipe';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -20,7 +25,7 @@ import { toPcSpell } from '../../utils/spell-mapping';
     selector: 'app-level-up-modal',
     templateUrl: './level-up-modal.component.html',
     styleUrls: ['./level-up-modal.component.scss'],
-    standalone: false
+    imports: [EscapeCloseDirective, CdkTrapFocus, FormsModule, SpellPickerComponent, ModifierPipe]
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;

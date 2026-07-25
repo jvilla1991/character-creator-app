@@ -5,10 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
  * 3 → "+3", 0 → "+0", -1 → "-1". Pure, so Angular only re-evaluates it
  * when the bound number itself changes.
  */
-@Pipe({
-  name: 'modifier',
-  standalone: false,
-})
+@Pipe({ name: 'modifier', })
 export class ModifierPipe implements PipeTransform {
   transform(value: number): string {
     return value >= 0 ? `+${value}` : `${value}`;

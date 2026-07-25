@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Out
 import { PC } from '../../../../models/pc';
 import { modFromScore } from '../../../../utils/character-math';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
+import { EditableNumberComponent } from '../../editable-number/editable-number.component';
+import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
 interface AbilityRow {
   key: string;
@@ -16,7 +18,7 @@ interface AbilityRow {
     templateUrl: './ability-scores.component.html',
     styleUrls: ['./ability-scores.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    imports: [EditableNumberComponent, ModifierPipe]
 })
 export class AbilityScoresComponent implements OnChanges {
   @Input() pc!: PC;

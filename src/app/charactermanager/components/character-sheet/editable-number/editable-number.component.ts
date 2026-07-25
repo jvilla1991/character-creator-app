@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy, Component, ElementRef, EventEmitter,
   Input, Output, ViewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 /**
  * A single number shown inline that a DM can click to edit. Mirrors the sheet's
@@ -18,7 +19,7 @@ import {
     templateUrl: './editable-number.component.html',
     styleUrls: ['./editable-number.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    imports: [FormsModule]
 })
 export class EditableNumberComponent {
   @Input() value: number | null | undefined = 0;

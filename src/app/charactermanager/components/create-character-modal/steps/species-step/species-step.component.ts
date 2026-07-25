@@ -11,8 +11,7 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 @Component({
     selector: 'app-species-step',
     templateUrl: './species-step.component.html',
-    styleUrls: ['./species-step.component.scss'],
-    standalone: false
+    styleUrls: ['./species-step.component.scss']
 })
 export class SpeciesStepComponent {
   @Input() speciesList: string[] = [];

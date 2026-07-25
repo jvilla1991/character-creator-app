@@ -6,6 +6,8 @@ import { toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
+import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
+import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 
 export interface SpellLevel {
   lvl: number;
@@ -26,7 +28,7 @@ export interface CastRequest {
     templateUrl: './spellbook-panel.component.html',
     styleUrls: ['./spellbook-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    imports: [SpellPickerComponent, EditableNumberComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
   @Input() pc!: PC;

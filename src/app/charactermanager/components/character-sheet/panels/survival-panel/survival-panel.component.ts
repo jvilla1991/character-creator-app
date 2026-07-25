@@ -26,8 +26,7 @@ import {
  */
 @Component({
     selector: 'app-survival-panel',
-    templateUrl: './survival-panel.component.html',
-    standalone: false
+    templateUrl: './survival-panel.component.html'
 })
 export class SurvivalPanelComponent {
   @Input() pc!: PC;

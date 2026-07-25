@@ -8,10 +8,7 @@ import { Directive, EventEmitter, HostListener, Output } from '@angular/core';
  * what "close" means (e.g. guard against a submit in flight) by handling
  * the output itself.
  */
-@Directive({
-  selector: '[appEscapeClose]',
-  standalone: false,
-})
+@Directive({ selector: '[appEscapeClose]', })
 export class EscapeCloseDirective {
   @Output() escapeClose = new EventEmitter<void>();
 

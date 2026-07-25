@@ -12,8 +12,8 @@ describe('DeleteConfirmationModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [DeleteConfirmationModalComponent],
-    }).compileComponents();
+    imports: [DeleteConfirmationModalComponent],
+}).compileComponents();
 
     fixture = TestBed.createComponent(DeleteConfirmationModalComponent);
     component = fixture.componentInstance;

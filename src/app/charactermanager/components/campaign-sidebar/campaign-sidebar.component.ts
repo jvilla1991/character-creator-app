@@ -6,6 +6,7 @@ import { PC } from '../../models/pc';
 import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { AsyncPipe } from '@angular/common';
 
 interface CampaignRow {
   campaign: Campaign;
@@ -17,7 +18,7 @@ interface CampaignRow {
 @Component({
     selector: 'app-campaign-sidebar',
     templateUrl: './campaign-sidebar.component.html',
-    standalone: false
+    imports: [AsyncPipe]
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {
   readonly activeCampaignId = this.uiState.activeCampaignId;

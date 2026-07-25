@@ -1,12 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { STANDARD_LANGUAGES } from '../../../../services/dnd-resources.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-background-story',
     templateUrl: './background-story.component.html',
     styleUrls: ['./background-story.component.scss'],
-    standalone: false
+    imports: [FormsModule]
 })
 export class BackgroundStoryComponent {
   @Input() pc!: PC;
