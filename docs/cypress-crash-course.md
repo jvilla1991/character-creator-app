@@ -240,9 +240,9 @@ feature for learning: real user flows, no deep-link shortcuts.
 | Nav buttons | `button` "Next →" / "Back" / "Cancel"; final step: "Inscribe". Next/Inscribe `[disabled]` until the step's `canAdvance` rule passes |
 | Step 1 | name input, `placeholder="e.g. Seraphina Goldveil"`; requires non-blank name |
 | Steps 2–4 | click-to-select tiles (species, class, background) — loaded async |
-| Step 5 | skill checkboxes — must pick *exactly* the class's `choose` count |
-| Step 6 | ability scores: standard array `[15,14,13,12,10,8]` or point-buy; requires +2/+1 bonuses on two *different* abilities |
-| Draft persistence | wizard state auto-saves to `localStorage['tm_pc_draft:<username>']`; restored on reopen; cleared by Cancel or Inscribe |
+| Step 5 | skill chips — must pick *exactly* the class's `choose` count; background-granted skills render as **locked/disabled** chips that don't count toward the quota |
+| Step 6 | ability scores: standard array `[15,14,13,12,10,8]` assigned via one `select.ability-select` per row (options shrink as values are claimed), or point-buy; then +2/+1 background bonuses via two `.bonus-selectors` selects on two *different* abilities |
+| Draft persistence | wizard state auto-saves to `localStorage['tm_pc_draft:<username>']` (`tm_pc_draft:anon` in demo mode — no username is stored); restored on reopen **including the step you were on**; cleared by Cancel or Inscribe |
 | Save | `POST http://localhost:8080/api/v1/pc/add` with a flattened PC payload |
 
 ### Exercise
@@ -271,14 +271,19 @@ describe('character creation wizard', () => {
     cy.contains('Fighter').click(); next();
     cy.contains('Soldier').click(); next();
 
-    // Step 5 — pick exactly the required skill count (Fighter: 2)
-    cy.contains('Athletics').click();
+    // Step 5 — pick exactly the required skill count (Fighter: 2).
+    // Gotcha: Soldier already grants Athletics + Intimidation as LOCKED
+    // background chips that don't count toward the quota — pick two others.
+    cy.contains('button', 'Athletics').should('be.disabled');
+    cy.contains('button', 'Perception').click();
     cy.contains('button', 'Next →').should('be.disabled');   // 1 of 2 — still gated
-    cy.contains('Intimidation').click();
+    cy.contains('button', 'Survival').click();
     next();
 
-    // Step 6 — assign standard array + background bonuses, then continue
-    // (drive the actual increase/decrease buttons; assert Next flips to enabled)
+    // Step 6 — standard array via per-row selects, then the +2/+1 bonuses
+    // (each pick re-renders the other selects' options — re-query per row)
+    // e.g.: cy.contains('.ability-row', 'STR').find('select.ability-select').select('15');
+    // then the two .bonus-selectors selects; assert Next flips to enabled
 
     // Step 7 — equipment choice A or B
     // Step 8 — review, then:
@@ -292,11 +297,20 @@ describe('character creation wizard', () => {
     cy.contains('button', 'Next →').click();                   // step change → snapshot
     cy.reload();
     cy.contains('button', 'Forge Hero').click();
+    // The draft restores the STEP too — we saved on step 2, so it reopens there.
+    cy.get('.wizard-steps .step-dot.active').should('contain.text', '2');
+    cy.contains('button', 'Back').click();
     cy.get('input[placeholder="e.g. Seraphina Goldveil"]')
       .should('have.value', 'Draft Test');                     // tm_pc_draft:<user> restored
   });
 });
 ```
+
+> **This slice is already implemented as a reference** in
+> [`cypress/e2e/character-creation.cy.ts`](../cypress/e2e/character-creation.cy.ts) (with the
+> scaffold from section 0 and the dnd5eapi stubs from the "go deeper" below). Try writing your
+> own version first, then diff against it. Run with `npm start` + `npm run e2e` — demo mode
+> means no Java backends and no internet needed.
 
 Then repeat with a Wizard and assert the step-dot count is **9** — the spells step appears.
 Asserting on structure that changes with domain rules is exactly the kind of test that catches
