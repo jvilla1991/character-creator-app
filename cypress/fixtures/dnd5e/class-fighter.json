@@ -1,0 +1,12 @@
+{
+  "index": "fighter",
+  "name": "Fighter",
+  "hit_die": 10,
+  "saving_throws": [
+    { "index": "str", "name": "STR", "url": "" },
+    { "index": "con", "name": "CON", "url": "" }
+  ],
+  "proficiency_choices": [],
+  "proficiencies": [],
+  "subclasses": []
+}

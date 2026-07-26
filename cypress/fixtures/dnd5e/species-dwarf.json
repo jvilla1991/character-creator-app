@@ -1,0 +1,12 @@
+{
+  "index": "dwarf",
+  "name": "Dwarf",
+  "size": "Medium",
+  "speed": 30,
+  "traits": [
+    { "index": "darkvision", "name": "Darkvision", "url": "" },
+    { "index": "dwarven-resilience", "name": "Dwarven Resilience", "url": "" },
+    { "index": "dwarven-toughness", "name": "Dwarven Toughness", "url": "" }
+  ],
+  "subspecies": []
+}

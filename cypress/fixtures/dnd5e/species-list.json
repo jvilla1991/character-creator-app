@@ -1,0 +1,7 @@
+{
+  "count": 2,
+  "results": [
+    { "index": "dwarf", "name": "Dwarf", "url": "/api/2024/species/dwarf" },
+    { "index": "human", "name": "Human", "url": "/api/2024/species/human" }
+  ]
+}
