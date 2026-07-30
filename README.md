@@ -25,7 +25,7 @@ End-to-end tests run on [Cypress](https://www.cypress.io/). Start the dev server
 - `npm run e2e` — open the interactive Cypress app (use this while writing tests)
 - `npm run e2e:run` — run every spec headlessly and print a results summary
 
-The existing specs run against the app's demo mode, so no backend services are required. See [`cypress/README.md`](cypress/README.md) to get started and [`docs/cypress-crash-course.md`](docs/cypress-crash-course.md) for the guided course.
+The existing specs run fully network-stubbed (`cy.intercept`), so no backend services are required. See [`cypress/README.md`](cypress/README.md) to get started and [`docs/cypress-crash-course.md`](docs/cypress-crash-course.md) for the guided course.
 
 ## Further help
 

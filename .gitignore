@@ -43,3 +43,8 @@ Thumbs.db
 
 # Claude Code (worktrees, local agent state)
 .claude/
+
+# Cypress run artifacts
+/cypress/videos
+/cypress/screenshots
+/cypress/downloads

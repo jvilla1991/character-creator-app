@@ -1,10 +1,15 @@
 // Slice 2 — Character creation wizard (docs/cypress-crash-course.md §2).
 //
-// Runs entirely in DEMO MODE: `ng serve` on :4200 is the only prerequisite —
-// no Spring Boot backends. The external https://www.dnd5eapi.co calls that
-// feed the species/class tiles (steps 2–3) are stubbed with local fixtures so
-// the specs are deterministic and work offline. Backgrounds, spells, and
-// equipment come from local static data / assets, so they need no stubbing.
+// CORPORATE PATTERN — stub at the network boundary, run the real app:
+// every line of production frontend code executes here (route guard, auth
+// interceptor, PCService serialization, the wizard itself); the only fake
+// things are the HTTP responses, controlled with cy.intercept. Contrast
+// with the app's demo mode, which swaps out the service layer in-app and
+// therefore skips the HTTP code paths entirely — fine for manual demos,
+// not what a test suite should exercise.
+//
+// Prerequisite: `ng serve` on :4200. No Java backends, no internet — the
+// stubs below stand in for both Spring Boot services and dnd5eapi.co.
 //
 // Selector notes (all verified against src/):
 // - Wizard is a modal, not a route: opened via the sidenav "Forge Hero" button.
@@ -14,9 +19,39 @@
 //   the +2/+1 background bonuses are two selects inside `.bonus-selectors`.
 
 const NAME_INPUT = 'input[placeholder="e.g. Seraphina Goldveil"]';
+const USER = 'e2eTester';
 
-/** Stub the external dnd5eapi.co calls the wizard makes for steps 2–3. */
-function stubDndApi(): void {
+/**
+ * Stateful mini-backend for the character API: POST /pc/add writes into `db`,
+ * GET /pc/all reads from it. This matters because after "Inscribe" the app
+ * refetches the roster (CharacterModalService.onCreated → refreshPCs) — a
+ * static [] stub would make the new hero vanish. Route handlers with shared
+ * state are the standard way to fake read-your-writes behaviour.
+ */
+function stubBackend(): void {
+  const db: Record<string, unknown>[] = [];
+
+  // Character manager service (:8080)
+  cy.intercept('GET', '**/api/v1/pc/all', (req) => req.reply(db)).as('getPcs');
+  cy.intercept('POST', '**/api/v1/pc/add', (req) => {
+    // Echo the serialized payload back with a server-assigned id — the same
+    // flat row shape the real backend returns, so deserializePC round-trips.
+    const created = { ...req.body, id: 101 };
+    db.push(created);
+    req.reply(created);
+  }).as('addPc');
+
+  // The shell also loads the user's campaigns — none for this spec, but stub
+  // it anyway: every request the page makes should have a controlled answer
+  // (an unstubbed call would just error to the console and hide real issues).
+  cy.intercept('GET', '**/api/v1/campaign/mine', { body: [] }).as('getCampaigns');
+
+  // Auth service (:8085) — profile enrichment fired on shell load
+  cy.intercept('GET', '**/api/v1/auth/authorize', {
+    body: { userName: USER, email: 'e2e@test.local', roles: [] },
+  }).as('authorize');
+
+  // External dnd5eapi.co — species/class data for wizard steps 2–3
   cy.intercept('GET', '**/api/2024/species', { fixture: 'dnd5e/species-list.json' }).as('speciesList');
   cy.intercept('GET', '**/api/2024/species/*', { fixture: 'dnd5e/species-dwarf.json' }).as('speciesDetail');
   cy.intercept('GET', '**/api/2024/classes', { fixture: 'dnd5e/class-list.json' }).as('classList');
@@ -30,14 +65,14 @@ const next = () => cy.contains('button', 'Next →').click();
 describe('character creation wizard', () => {
   beforeEach(() => {
     // ORDER MATTERS: intercepts before the visit that triggers the requests.
-    stubDndApi();
-    cy.enterDemo();
-    cy.visit('/charactermanager');
+    stubBackend();
+    cy.visitAuthed('/charactermanager', USER);
+    cy.wait('@getPcs'); // shell loaded and fetched the (empty) roster
     cy.contains('button', 'Forge Hero').click();
     cy.get('.modal.wizard').should('be.visible');
   });
 
-  it('walks a fighter through all 8 steps and inscribes the hero', () => {
+  it('walks a fighter through all 8 steps and posts the serialized contract', () => {
     // Non-caster default: 8 step dots
     cy.get('.wizard-steps .step-dot').should('have.length', 8);
 
@@ -104,8 +139,31 @@ describe('character creation wizard', () => {
     cy.contains('.review-value', 'Borin Ironfoot');
     cy.contains('button', 'Inscribe').click();
 
-    // Modal closes and the new hero appears in the sidenav roster.
+    // THE PAYLOAD ASSERTION — the core of the network-boundary pattern.
+    // We verify the app's outbound contract: PCService.serializePC flattened
+    // the wizard's nested draft into the backend's column shape, and the auth
+    // interceptor (real production code) attached our JWT.
+    cy.wait('@addPc').then(({ request }) => {
+      expect(request.headers.authorization, 'JWT attached by the real interceptor')
+        .to.match(/^Bearer /);
+      expect(request.body).to.deep.include({
+        name: 'Borin Ironfoot',
+        species: 'Dwarf',   // serializePC maps frontend `race` → backend `species`
+        clazz: 'Fighter',
+        background: 'Soldier',
+        level: 1,
+        profBonus: 2,
+        abilityStr: 17,     // 15 from the array + Soldier's +2
+        abilityCon: 14,     // 13 from the array + Soldier's +1
+        hpMax: 12,          // d10 hit die + CON mod (+2)
+      });
+      // Complex fields ride as JSON strings (TEXT columns server-side)
+      expect(request.body.skills).to.contain('Perception').and.to.contain('Survival');
+    });
+
+    // Modal closes; the roster refetch (our stateful stub) shows the new hero.
     cy.get('.modal.wizard').should('not.exist');
+    cy.wait('@getPcs');
     cy.contains('.roster-name', 'Borin Ironfoot').should('be.visible');
   });
 
@@ -113,10 +171,9 @@ describe('character creation wizard', () => {
     cy.get(NAME_INPUT).type('Draft Test');
     next(); // step change → wizard snapshots to localStorage
 
-    // Demo mode never sets localStorage.username (see AuthService.enterDemoMode),
-    // so getUsername() is null and the draft key falls back to "anon".
+    // The draft key is per-user: tm_pc_draft:<username from localStorage>.
     cy.window().then((win) => {
-      const draft = JSON.parse(win.localStorage.getItem('tm_pc_draft:anon') ?? '{}');
+      const draft = JSON.parse(win.localStorage.getItem(`tm_pc_draft:${USER}`) ?? '{}');
       expect(draft.name).to.eq('Draft Test');
       expect(draft.step).to.eq(2);
     });

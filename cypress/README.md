@@ -28,9 +28,11 @@ That opens the Cypress app. Click **E2E Testing** → pick **Chrome** → **Star
 click `character-creation.cy.ts` in the spec list. The browser opens and the test drives the UI
 in front of you while the left-hand command log lists every step.
 
-That's it. The existing spec runs against **demo mode**, so you do *not* need the Java backends
+That's it. The existing spec runs **fully network-stubbed** — every backend response is faked
+at the HTTP boundary with `cy.intercept` — so you do *not* need the Java backends
 (`authentication-service` on :8085, `character-manager-service` on :8080) or even an internet
-connection.
+connection. The entire real Angular app still runs; only the network is fake. (This is the
+industry-standard pattern — see "How this maps to a corporate suite" below.)
 
 ### Headless mode
 
@@ -71,7 +73,7 @@ cypress/
 │   └── dnd5e/              # stubbed species/class data for the wizard
 ├── support/
 │   ├── e2e.ts              # auto-loaded before every spec
-│   └── commands.ts         # cy.enterDemo(), cy.loginSession()
+│   └── commands.ts         # cy.visitAuthed(), cy.loginSession(), cy.enterDemo()
 ├── tsconfig.json           # keeps Cypress + Jasmine globals from colliding
 └── README.md               # this file
 ```
@@ -94,25 +96,49 @@ red-squiggling `cy.`, that's the file to look at.
 
 ## 3. Logging in
 
-Most specs need an authenticated app. Two custom commands are already defined in
-[`support/commands.ts`](support/commands.ts) — call either in a `beforeEach`:
+Most specs need an authenticated app. Three custom commands are defined in
+[`support/commands.ts`](support/commands.ts), one per tier:
 
 ```ts
-cy.enterDemo();                              // no backends needed
-cy.loginSession('yourUser', 'yourPassword'); // real auth service on :8085
+cy.visitAuthed('/charactermanager');         // stubbed specs — seeds a fake JWT, no backends
+cy.loginSession('yourUser', 'yourPassword'); // real-backend specs — auth service on :8085
+cy.enterDemo();                              // app demo mode — manual convenience only
 ```
 
-**`cy.enterDemo()`** clicks the app's real "Enter in Demo Mode" button, which puts the app on
-in-memory seed data with zero backend calls. This is the default for practice specs. Its one
-limitation: **shopping deliberately throws in demo mode**, so shop tests need the real or a
-stubbed backend.
+**`cy.visitAuthed(path, user?)`** is the default for network-stubbed specs. It mints a
+structurally valid JWT (real header/payload, garbage signature — clients never verify
+signatures, only servers do) and seeds `localStorage.token` + `username` before the app boots.
+Everything downstream is real production code: the route guard decodes the token and checks its
+`exp`, and the auth interceptor attaches it as a `Bearer` header — which your spec can then
+assert on.
 
 **`cy.loginSession(user, pass)`** POSTs straight to `:8085/api/v1/auth/authenticate` and seeds
-`localStorage.token` — no UI typing. Requires `authentication-service` running.
+the real token — no UI typing. It wraps `cy.session()`, which caches the browser storage and
+restores it per test, so the first test pays the network cost and the rest are instant. Use it
+for the true end-to-end layer (real backends, seeded data).
 
-Both wrap `cy.session()`, which caches the resulting browser storage and restores it for each
-subsequent test instead of logging in again. First test pays the cost, the rest are instant.
-You'll see "Restored session" in the command log when the cache hits.
+**`cy.enterDemo()`** opts into the app's built-in demo mode (in-memory seed data, zero HTTP).
+Kept as a convenience for manually poking the app — **not used by the suite**, because demo
+mode swaps out the service layer in-app, so a test running against it never exercises the real
+HTTP client, interceptor, or serialization code.
+
+### How this maps to a corporate suite
+
+A production E2E suite is two layers, and this repo mirrors that:
+
+1. **Stubbed-network specs (the bulk).** The whole real frontend runs; `cy.intercept` controls
+   every response. Fast, deterministic, offline, and the only sane way to cover error paths
+   (409s, timeouts, empty states). The risk — drifting from the real API contract — is managed
+   by asserting on **request payloads** (see the `@addPc` assertion in
+   [`e2e/character-creation.cy.ts`](e2e/character-creation.cy.ts)), so a contract change breaks
+   the test even though the response is fake.
+2. **A thin true-E2E layer (a handful of journey tests).** Real deployed backends, test data
+   seeded via API calls (`cy.request`) or DB tasks (`cy.task`), `cy.loginSession` for auth.
+   Slow and environment-dependent, so you keep few of them — their job is proving the stubs
+   still tell the truth.
+
+An in-app "demo mode" like this app's is neither layer — it's a product feature, not a test
+strategy. If your employer's app has one, don't test against it.
 
 ---
 
@@ -204,6 +230,7 @@ JSON files under `cypress/fixtures/` are referenced by path relative to that dir
 | `element is detached from the DOM` | you grabbed an element, then the view re-rendered | re-query instead of reusing the reference |
 | `cy.wait() timed out waiting for route: @alias` | the intercept never matched | check the URL pattern; confirm the intercept was registered *before* the request |
 | Response is real data despite a stub | intercept registered after the request fired | move `cy.intercept` above `cy.visit` |
+| `cypress run` exits instantly, no output at all (Windows, exit code `0x80000003`) | the bundled Electron's own sandbox crashes on some Windows setups | set `$env:ELECTRON_EXTRA_LAUNCH_ARGS='--no-sandbox'` before running, or use `npx cypress run --browser chrome` |
 
 ---
 

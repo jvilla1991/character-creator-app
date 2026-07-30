@@ -203,11 +203,15 @@ directly — no UI, ~50ms) and **cached** (the session restores across specs). T
 the app itself needs: the auth interceptor only reads `localStorage.token`, so seeding it is a
 legitimate login. Call `loginSession(...)` in `beforeEach`, then `cy.visit('/charactermanager')`.
 
-> **Backendless option:** this app has a first-class demo mode — set
-> `localStorage.demoMode = 'true'` plus any non-JWT `token` value and the whole app runs on
-> in-memory seed data, zero servers. Great for practicing slices 2–3 without booting Spring
-> Boot. Caveat: shopping deliberately throws in demo mode, so Slice 4 needs the real or stubbed
-> backend.
+> **A note on this app's demo mode — and why the suite doesn't use it:** Table Mimic has a
+> built-in demo mode (`localStorage.demoMode = 'true'`) that runs the whole app on in-memory
+> seed data, zero servers. Tempting for tests — but it swaps out the service layer *inside the
+> app*, so a test against it never executes the real HTTP client, the auth interceptor, or the
+> serialization code. That's testing a different app. The corporate pattern for backendless
+> runs is to keep all the real code and stub **at the network boundary** with `cy.intercept`
+> (Slice 3's skill, used to full effect in the reference spec) — plus `cy.visitAuthed()`, which
+> seeds a structurally valid fake JWT so the real guard and interceptor run. Demo mode remains
+> handy for manually exploring the app without backends.
 
 **Common beginner mistake at this stage:** `cy.wait(2000)` sprinkled everywhere to "make it
 stable." Fixed waits are both too slow (they always burn the full duration) and too fast (the
@@ -307,10 +311,13 @@ describe('character creation wizard', () => {
 ```
 
 > **This slice is already implemented as a reference** in
-> [`cypress/e2e/character-creation.cy.ts`](../cypress/e2e/character-creation.cy.ts) (with the
-> scaffold from section 0 and the dnd5eapi stubs from the "go deeper" below). Try writing your
-> own version first, then diff against it. Run with `npm start` + `npm run e2e` — demo mode
-> means no Java backends and no internet needed.
+> [`cypress/e2e/character-creation.cy.ts`](../cypress/e2e/character-creation.cy.ts), written the
+> way a corporate suite would: the full real app runs, every backend response is stubbed at the
+> HTTP boundary (including a stateful mini-backend so the post-create roster refetch sees the
+> write), auth is a seeded fake JWT via `cy.visitAuthed()`, and the final assertion verifies
+> the serialized `POST /pc/add` payload — the outbound contract, not just the pixels. Try
+> writing your own version first, then diff against it. Run with `npm start` + `npm run e2e` —
+> no Java backends and no internet needed.
 
 Then repeat with a Wizard and assert the step-dot count is **9** — the spells step appears.
 Asserting on structure that changes with domain rules is exactly the kind of test that catches
