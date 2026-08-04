@@ -89,6 +89,38 @@ export interface SessionRollView {
   createdAt: string; // ISO instant
 }
 
+/**
+ * Lifecycle of a player-initiated short-rest vote. ACTIVE is the only live
+ * state. FAILED covers every "no rest" outcome (a no ballot, the 60s window
+ * expiring with unanswered ballots, or the DM's deny override); CANCELLED is
+ * system interruption (an encounter started mid-vote).
+ */
+export type RestVoteStatus = 'ACTIVE' | 'PASSED' | 'FAILED' | 'CANCELLED';
+
+/** One seated PC's ballot. `vote` null = not yet voted (the yellow "?"). */
+export interface RestVoteBallot {
+  participantId: number;
+  displayName: string;
+  vote: boolean | null;
+}
+
+/**
+ * The short-rest vote riding the snapshot — broadcast to every viewer; a
+ * client finds its own ballot by participant id. `expiresAt` is the
+ * server-authoritative deadline (ISO instant): render a countdown from it,
+ * never tick 60 locally — a backgrounded tab must snap correct on return.
+ * The latest vote stays on the snapshot after it resolves (so clients can
+ * announce the outcome) until the next vote replaces it.
+ */
+export interface RestVoteView {
+  voteId: number;
+  status: RestVoteStatus;
+  initiatorParticipantId: number | null;
+  initiatorName: string;
+  expiresAt: string;
+  votes: RestVoteBallot[];
+}
+
 export interface SessionState {
   // Numeric in real mode; a string sentinel in demo mode.
   sessionId: number | string;
@@ -148,4 +180,7 @@ export interface SessionState {
   // Roll Log feed: newest-first, capped at 50, server-filtered per viewer (DM
   // sees every roll made this session; a player sees only their own).
   rolls: SessionRollView[];
+  // The latest player-initiated short-rest vote (terminal included), or null
+  // when this session has never held one.
+  restVote: RestVoteView | null;
 }

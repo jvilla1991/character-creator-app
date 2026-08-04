@@ -1,0 +1,60 @@
+@if (dm()) {
+  <!-- DM face: non-blocking status panel with the override buttons. -->
+  <div class="panel rest-vote-banner" role="status" aria-live="polite">
+    <div class="panel-header" style="margin-bottom: 0;">
+      <span class="panel-title">Short Rest Vote</span>
+      <span class="vote-countdown">{{ secondsLeft() }}s</span>
+    </div>
+    <div class="vote-sub">{{ restVote().initiatorName }} calls for a short rest — unanimous yes passes.</div>
+    <div class="vote-grid">
+      @for (b of restVote().votes; track b.participantId) {
+        <div class="vote-row">
+          <span class="vote-glyph" [class]="'vote-glyph ' + glyphClass(b)">{{ glyph(b) }}</span>
+          <span class="vote-name">{{ b.displayName }}</span>
+        </div>
+      }
+    </div>
+    <div class="vote-actions">
+      <button class="btn primary" (click)="overrideCast.emit(true)"
+        title="End the vote now as passed — the rest window opens regardless of missing votes">
+        Allow the rest
+      </button>
+      <button class="btn danger" (click)="overrideCast.emit(false)"
+        title="End the vote now as failed — no rest">
+        Deny
+      </button>
+    </div>
+  </div>
+} @else {
+  <!-- Player face: BLOCKING on purpose — no backdrop-click close, no
+  escape-close. The table is being asked; the exits are a vote or the timer. -->
+  <div class="modal-backdrop">
+    <div class="modal rest-vote-modal" role="dialog" aria-modal="true"
+      aria-labelledby="rest-vote-title" cdkTrapFocus cdkTrapFocusAutoCapture>
+      <div class="modal-title" id="rest-vote-title">Short Rest?</div>
+      <div class="modal-sub">
+        {{ restVote().initiatorName }} calls for a short rest. All must agree.
+      </div>
+      <div class="vote-countdown big" aria-live="polite">{{ secondsLeft() }}s</div>
+      <div class="vote-grid">
+        @for (b of restVote().votes; track b.participantId) {
+          <div class="vote-row">
+            <span class="vote-glyph" [class]="'vote-glyph ' + glyphClass(b)">{{ glyph(b) }}</span>
+            <span class="vote-name">{{ b.displayName }}</span>
+            @if (b.participantId === myParticipantId()) {
+              <span class="vote-you">you</span>
+            }
+          </div>
+        }
+      </div>
+      @if (awaitingMyVote()) {
+        <div class="vote-actions">
+          <button class="btn primary" (click)="voteCast.emit(true)">Rest (yes)</button>
+          <button class="btn danger" (click)="voteCast.emit(false)">Keep going (no)</button>
+        </div>
+      } @else {
+        <div class="vote-waiting">Waiting on the rest of the party…</div>
+      }
+    </div>
+  </div>
+}

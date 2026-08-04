@@ -52,6 +52,21 @@
         @if (!state.dm && myParticipantId(state) != null) {
           <button
             class="btn"
+            (click)="initiateRestVote(state)"
+            [disabled]="state.shortRestOpen || state.restVote?.status === 'ACTIVE' || state.status !== 'LOBBY'"
+            [title]="state.shortRestOpen
+              ? 'A short rest is already underway'
+              : state.restVote?.status === 'ACTIVE'
+                ? 'A rest vote is already being tallied'
+                : state.status !== 'LOBBY'
+                  ? 'No resting mid-encounter'
+                  : 'Call a short rest — the party votes, and a unanimous yes opens the rest'">
+            Short Rest
+          </button>
+        }
+        @if (!state.dm && myParticipantId(state) != null) {
+          <button
+            class="btn"
             (click)="leave(state)"
             >
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -70,6 +85,15 @@
         </button>
       </div>
     </header>
+    <!-- DM view of a live rest vote: non-blocking panel with the override
+    buttons (the DM holds no ballot — their word ends the vote). -->
+    @if (state.dm && state.restVote?.status === 'ACTIVE') {
+      <app-rest-vote-modal
+        [restVote]="state.restVote!"
+        [dm]="true"
+        (overrideCast)="overrideRestVote($event, state)">
+      </app-rest-vote-modal>
+    }
     <!-- Clock + location share one row for the DM; players (no location panel)
     get the clock full width. Stacks on narrow screens. -->
     <div class="clock-location-row" [class.two-up]="state.dm">
@@ -282,6 +306,16 @@
         (survivalActionRequested)="onSurvivalAction($event, state)"
         (spendHitDieRequested)="onSpendHitDie(state)"
       (sellRequested)="sell($event, state)"></app-character-sheet>
+    }
+    <!-- Player view of a live rest vote: blocking modal — vote or wait out
+    the 60 seconds. Rendered for every player, ballot or not (a late joiner
+    just watches the tally). -->
+    @if (!state.dm && state.restVote?.status === 'ACTIVE') {
+      <app-rest-vote-modal
+        [restVote]="state.restVote!"
+        [myParticipantId]="myParticipantId(state)"
+        (voteCast)="castRestVote($event, state)">
+      </app-rest-vote-modal>
     }
     <!-- Long rest modal (DM): was the rest undisturbed? -->
     @if (state.dm && longRestModalOpen) {
