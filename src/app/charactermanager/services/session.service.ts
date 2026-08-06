@@ -5,6 +5,7 @@ import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   ParticipantView,
+  RestVoteView,
   SessionRollGroup,
   SessionRollView,
   SessionState,
@@ -429,6 +430,76 @@ export class SessionService {
   private demoShortRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     return this.demoPatch({ shortRestOpen: !state.shortRestOpen });
+  }
+
+  /**
+   * A seated player calls a short rest: opens a 60-second unanimous vote among
+   * every seated PC (the caller's ballot is pre-set to yes). Passing opens the
+   * same shortRestOpen window as the DM's toggle. The vote itself arrives on
+   * the snapshot (`restVote`) via the poll.
+   */
+  initiateRestVote(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoInitiateRestVote());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/rest-vote`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** Answer the active rest vote with this player's ballot (true = yes). */
+  castRestVote(sessionId: number | string, vote: boolean): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoCastRestVote(vote));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/rest-vote/cast`, { vote }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** DM override on the active vote: true ends it passed now, false ends it failed. */
+  overrideRestVote(sessionId: number | string, vote: boolean): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoOverrideRestVote(vote));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/rest-vote/override`, { vote }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
+   * Demo mirror: a solo table is unanimity of one, so the vote passes on the
+   * spot and the rest window opens — no fake 60-second wait.
+   */
+  private demoInitiateRestVote(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const me = state.participants.find(p => p.pcId != null);
+    const restVote: RestVoteView = {
+      voteId: Date.now(),
+      status: 'PASSED',
+      initiatorParticipantId: me?.participantId ?? null,
+      initiatorName: me?.name ?? 'You',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      votes: me ? [{ participantId: me.participantId, displayName: me.name, vote: true }] : [],
+    };
+    return this.demoPatch({ restVote, shortRestOpen: true });
+  }
+
+  /** Demo mirror: settle the (already terminal) vote per the ballot cast. */
+  private demoCastRestVote(vote: boolean): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (!state.restVote) return state;
+    return this.demoPatch({
+      restVote: { ...state.restVote, status: vote ? 'PASSED' : 'FAILED' },
+      shortRestOpen: vote,
+    });
+  }
+
+  /** Demo mirror of the DM override: pass now or fail now. */
+  private demoOverrideRestVote(vote: boolean): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (!state.restVote) return state;
+    return this.demoPatch({
+      restVote: { ...state.restVote, status: vote ? 'PASSED' : 'FAILED' },
+      shortRestOpen: vote,
+    });
   }
 
   /**
@@ -998,6 +1069,7 @@ export class SessionService {
       weekDays: this.campaignService.getLocalCampaign(campaignId)?.weekDays ?? null,
       participants,
       rolls: [],
+      restVote: null,
     };
   }
 
@@ -1009,6 +1081,7 @@ export class SessionService {
       lootStatus: null, lootName: null, myXp: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
+      restVote: null,
     };
   }
 
@@ -1070,6 +1143,22 @@ export class SessionService {
       weekDays: Array.isArray(dto.weekDays) && dto.weekDays.length ? dto.weekDays : null,
       participants: (dto.participants ?? []).map(p => this.deserializeParticipant(p)),
       rolls: (dto.rolls ?? []).map(r => this.deserializeRoll(r)),
+      restVote: dto.restVote ? this.deserializeRestVote(dto.restVote) : null,
+    };
+  }
+
+  private deserializeRestVote(v: RestVoteDto): RestVoteView {
+    return {
+      voteId: v.voteId,
+      status: v.status,
+      initiatorParticipantId: v.initiatorParticipantId ?? null,
+      initiatorName: v.initiatorName,
+      expiresAt: v.expiresAt,
+      votes: (v.votes ?? []).map(b => ({
+        participantId: b.participantId,
+        displayName: b.displayName,
+        vote: b.vote ?? null,
+      })),
     };
   }
 
@@ -1181,6 +1270,16 @@ interface SessionStateDto {
   weekDays?: string[] | null;
   participants?: ParticipantDto[];
   rolls?: SessionRollDto[];
+  restVote?: RestVoteDto | null;
+}
+
+interface RestVoteDto {
+  voteId: number;
+  status: RestVoteView['status'];
+  initiatorParticipantId?: number | null;
+  initiatorName: string;
+  expiresAt: string;
+  votes?: Array<{ participantId: number; displayName: string; vote?: boolean | null }>;
 }
 
 interface ParticipantDto {

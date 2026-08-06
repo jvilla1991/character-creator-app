@@ -1,7 +1,8 @@
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { SessionModeComponent } from './session-mode.component';
-import { ParticipantView, SessionState } from '../../models/session';
+import { ParticipantView, RestVoteView, SessionState } from '../../models/session';
+import { SessionService } from '../../services/session.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
@@ -128,5 +129,95 @@ describe('SessionModeComponent.openRoll / closeRoll', () => {
 
     expect(component.rollModalOpen).toBeFalse();
     expect(component.rollPc).toBeNull();
+  });
+});
+
+describe('SessionModeComponent rest vote', () => {
+  let component: SessionModeComponent;
+  let sessionService: jasmine.SpyObj<SessionService> & { state$: typeof stateOfNull };
+  let notifications: jasmine.SpyObj<NotificationService>;
+  const stateOfNull = of(null);
+
+  const state = (overrides: Partial<SessionState> = {}): SessionState =>
+    ({
+      sessionId: 1,
+      dm: false,
+      status: 'LOBBY',
+      participants: [],
+      rolls: [],
+      restVote: null,
+      ...overrides,
+    } as SessionState);
+
+  const restVote = (status: RestVoteView['status'], voteId = 10): RestVoteView => ({
+    voteId,
+    status,
+    initiatorParticipantId: 5,
+    initiatorName: 'Gorath',
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    votes: [],
+  });
+
+  beforeEach(() => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService',
+      ['initiateRestVote', 'castRestVote', 'overrideRestVote']) as never;
+    (sessionService as { state$: unknown }).state$ = stateOfNull;
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, null as never, notifications, null as never, null as never, null as never));
+  });
+
+  it('initiateRestVote calls the service for this session', () => {
+    sessionService.initiateRestVote.and.returnValue(of(state()));
+
+    component.initiateRestVote(state());
+
+    expect(sessionService.initiateRestVote).toHaveBeenCalledWith(1);
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('initiate failure surfaces the server message (e.g. a vote already runs)', () => {
+    sessionService.initiateRestVote.and.returnValue(
+      throwError(() => ({ error: { message: 'A rest vote is already in progress' } })));
+
+    component.initiateRestVote(state());
+
+    expect(notifications.notify).toHaveBeenCalledWith('A rest vote is already in progress');
+  });
+
+  it('castRestVote and overrideRestVote forward the ballot/override value', () => {
+    sessionService.castRestVote.and.returnValue(of(state()));
+    sessionService.overrideRestVote.and.returnValue(of(state()));
+
+    component.castRestVote(true, state());
+    component.overrideRestVote(false, state());
+
+    expect(sessionService.castRestVote).toHaveBeenCalledWith(1, true);
+    expect(sessionService.overrideRestVote).toHaveBeenCalledWith(1, false);
+  });
+
+  it('toasts an outcome exactly once, on the ACTIVE → terminal transition', () => {
+    const track = (s: SessionState) =>
+      (component as unknown as { trackRestVote(s: SessionState): void }).trackRestVote(s);
+
+    track(state({ restVote: restVote('ACTIVE') }));
+    expect(notifications.notify).not.toHaveBeenCalled();
+
+    track(state({ restVote: restVote('PASSED') }));
+    expect(notifications.notify).toHaveBeenCalledTimes(1);
+    expect(notifications.notify).toHaveBeenCalledWith(
+      'The party rests — spend hit dice while the window is open.');
+
+    // The terminal vote keeps riding the snapshot — no repeat toast.
+    track(state({ restVote: restVote('PASSED') }));
+    expect(notifications.notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('a vote first seen already terminal (rejoin mid-outcome) is not announced', () => {
+    const track = (s: SessionState) =>
+      (component as unknown as { trackRestVote(s: SessionState): void }).trackRestVote(s);
+
+    track(state({ restVote: restVote('FAILED') }));
+    expect(notifications.notify).not.toHaveBeenCalled();
   });
 });
