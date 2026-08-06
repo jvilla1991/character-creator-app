@@ -22,6 +22,7 @@ import { EncounterLoaderComponent } from './encounter-loader/encounter-loader.co
 import { ShopPanelComponent } from './shop-panel/shop-panel.component';
 import { LootPanelComponent } from './loot-panel/loot-panel.component';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
+import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.component';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
@@ -38,7 +39,7 @@ import { AsyncPipe, TitleCasePipe } from '@angular/common';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
@@ -97,6 +98,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
         if (state) {
           this.resolveVariants(state);
           this.trackClock(state);
+          this.trackRestVote(state);
         }
       });
   }
@@ -283,8 +285,63 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       next: next => this.notifications.notify(next.shortRestOpen
         ? 'Short rest — the party may spend hit dice.'
         : 'The short rest ends.'),
-      error: () => this.notifications.notify('Could not toggle the short rest.'),
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not toggle the short rest.')),
     });
+  }
+
+  // ── Short rest vote (player-initiated, unanimous, 60s window) ──────────────
+
+  /** Snapshot transition tracker: announce a vote's outcome exactly once. */
+  private lastVoteSeen: { voteId: number; status: string } | null = null;
+
+  /** A player calls the short rest — every seated PC gets a ballot. */
+  initiateRestVote(state: SessionState): void {
+    this.sessionService.initiateRestVote(state.sessionId).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not call a short rest.')),
+    });
+  }
+
+  /** The player's ballot (bubbled from the blocking modal). */
+  castRestVote(vote: boolean, state: SessionState): void {
+    this.sessionService.castRestVote(state.sessionId, vote).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not record your vote.')),
+    });
+  }
+
+  /** The DM's override: true ends the vote passed now, false failed. */
+  overrideRestVote(vote: boolean, state: SessionState): void {
+    this.sessionService.overrideRestVote(state.sessionId, vote).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not settle the vote.')),
+    });
+  }
+
+  /**
+   * Toast the outcome when a vote the viewer watched resolves — driven by the
+   * ACTIVE → terminal transition across poll snapshots (same pattern as the
+   * clock's week-tick toast), so it fires once per vote on every device.
+   */
+  private trackRestVote(state: SessionState): void {
+    const vote = state.restVote;
+    if (!vote) { this.lastVoteSeen = null; return; }
+    const prev = this.lastVoteSeen;
+    if (prev?.voteId === vote.voteId && prev.status === 'ACTIVE' && vote.status !== 'ACTIVE') {
+      const message =
+        vote.status === 'PASSED' ? 'The party rests — spend hit dice while the window is open.'
+        : vote.status === 'FAILED' ? 'No rest — the vote failed.'
+        : 'The rest vote was called off.';
+      this.notifications.notify(message);
+    }
+    this.lastVoteSeen = { voteId: vote.voteId, status: vote.status };
+  }
+
+  /** Prefer the server's message (e.g. "A rest vote is already in progress"). */
+  private restVoteError(err: unknown, fallback: string): string {
+    const serverMessage = (err as { error?: { message?: string } })?.error?.message;
+    return serverMessage || fallback;
   }
 
   /**

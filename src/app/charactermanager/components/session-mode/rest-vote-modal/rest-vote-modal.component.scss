@@ -1,0 +1,91 @@
+// Shared vote grid — both faces (player modal, DM banner) render the same rows.
+.vote-grid {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.vote-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vote-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 15px;
+
+  // The three ballot states: green check, red cross, gold "?" (the default
+  // until the player answers).
+  &.yes {
+    color: var(--emerald);
+    border-color: var(--emerald);
+  }
+  &.no {
+    color: var(--crimson);
+    border-color: var(--crimson);
+  }
+  &.pending {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+}
+
+.vote-name {
+  color: var(--text);
+}
+
+.vote-you {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.vote-countdown {
+  font-family: 'Cinzel', serif;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+
+  &.big {
+    font-size: 26px;
+    text-align: center;
+    margin-top: 6px;
+  }
+}
+
+.vote-sub {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 8px;
+}
+
+.vote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.vote-waiting {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 12px;
+}
+
+// DM face: sits in the normal panel flow, but visually flagged as live.
+.rest-vote-banner {
+  border-color: var(--gold);
+}

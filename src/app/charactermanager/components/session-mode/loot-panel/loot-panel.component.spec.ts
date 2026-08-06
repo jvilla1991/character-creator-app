@@ -31,7 +31,8 @@ describe('LootPanelComponent', () => {
       onDeckParticipantId: null, version: 1, dm: false, enemiesHidden: true, enemyHpHidden: false,
       shortRestOpen: false, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null, lootStatus: null, lootName: null,
-      myXp: null, gameTime: null, location: null, weekDays: null, participants: [], rolls: [], ...over,
+      myXp: null, gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
+      restVote: null, ...over,
     };
   }
 
