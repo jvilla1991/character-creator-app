@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, input, output, signal } from '@angular/core';
 import { PC, PcSpell } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
@@ -66,6 +66,27 @@ export class SpellbookPanelComponent implements OnChanges {
   readonly preparedCount = computed(() => countPreparedSpells(this.pc().spells ?? []));
   readonly preparedCap = computed(() => preparedSpellCap(this.pc().clazz, this.pc().level));
   readonly hasLeveledSpells = computed(() => (this.pc().spells ?? []).some(s => s.lvl > 0));
+
+  // ── Player filters (name search + magic school) ──────────────────────────
+  // Purely a view over the known-spells list; they narrow what spellsByLevel()
+  // renders and never mutate the PC. Both are case-insensitive.
+  readonly search = signal('');
+  readonly schoolFilter = signal('');
+  /** Distinct schools present on this PC's spells, sorted — drives the dropdown. */
+  readonly schools = computed<string[]>(() => {
+    const set = new Set<string>();
+    for (const s of this.pc().spells ?? []) {
+      if (s.school) set.add(s.school);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  });
+  /** True when either filter is active — reveals the Clear button / empty note. */
+  readonly filtering = computed(() => this.search().trim().length > 0 || this.schoolFilter().length > 0);
+
+  clearFilters(): void {
+    this.search.set('');
+    this.schoolFilter.set('');
+  }
   /** 8 + prof + casting-ability mod; null for non-casters/unknown classes —
    *  the header then simply omits the "Save DC · Spell Atk" readout. */
   readonly saveDc = computed(() => spellSaveDc(this.pc()));
@@ -80,8 +101,16 @@ export class SpellbookPanelComponent implements OnChanges {
     const spells = pc.spells ?? [];
     if (!spells.length) return [];
 
+    // Apply the player's name/school filters before grouping. A level with no
+    // surviving spells is dropped, so filtered results collapse to just matches.
+    const term = this.search().trim().toLowerCase();
+    const school = this.schoolFilter();
+    const matches = spells.filter(s =>
+      (!term || s.name.toLowerCase().includes(term)) &&
+      (!school || s.school === school));
+
     const map = new Map<number, NonNullable<PC['spells']>>();
-    for (const s of spells) {
+    for (const s of matches) {
       if (!map.has(s.lvl)) map.set(s.lvl, []);
       map.get(s.lvl)!.push(s);
     }

@@ -48,6 +48,32 @@
   &:disabled { opacity: 0.3; cursor: not-allowed; }
 }
 
+// Player filter bar: name search + school dropdown. Inputs inherit the global
+// themed-input baseline; only the row layout lives here.
+.spell-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.spell-filter-search {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.spell-filter-school {
+  flex: 0 1 auto;
+}
+.spell-filter-clear {
+  flex: 0 0 auto;
+}
+.spell-filter-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+}
+
 .grant-form {
   margin-bottom: 14px;
   padding-bottom: 14px;

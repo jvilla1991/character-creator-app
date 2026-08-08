@@ -52,8 +52,40 @@
     </div>
   }
 
+  <!-- Player filters: search by name and narrow by magic school -->
+  @if (hasSpells()) {
+    <div class="spell-filter-bar">
+      <input
+        type="text"
+        class="spell-filter-search"
+        placeholder="Search spells by name…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+        aria-label="Search spells by name"
+      >
+      @if (schools().length > 1) {
+        <select
+          class="spell-filter-school"
+          (change)="schoolFilter.set($any($event.target).value)"
+          aria-label="Filter spells by magic school"
+        >
+          <option value="" [selected]="!schoolFilter()">All schools</option>
+          @for (school of schools(); track school) {
+            <option [value]="school" [selected]="school === schoolFilter()">{{ school }}</option>
+          }
+        </select>
+      }
+      @if (filtering()) {
+        <button type="button" class="btn sm spell-filter-clear" (click)="clearFilters()">Clear</button>
+      }
+    </div>
+  }
+
   <!-- Spell levels -->
   @if (hasSpells()) {
+    @if (!spellsByLevel().length) {
+      <div class="spell-filter-empty">No spells match your search.</div>
+    }
     @for (level of spellsByLevel(); track trackByLvl($index, level)) {
       <div class="spell-level">
         <div class="spell-level-header">
