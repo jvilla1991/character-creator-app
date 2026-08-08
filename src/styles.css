@@ -891,6 +891,36 @@ app-root { display: block; height: 100vh; width: 100vw; }
   margin-top: 4px;
 }
 
+/* Mobile: the 7-column spell row can't fit a phone, so the name gets
+   truncated to an ellipsis. Reflow to a wrapping row — the name takes its
+   own full-width line (and wraps instead of clipping) while the badges,
+   school/time/range and Prepare/Cast buttons flow onto a second line with
+   larger tap targets. */
+@media (max-width: 640px) {
+  .spell-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 4px;
+    padding: 8px 0;
+  }
+  .spell-name {
+    flex: 1 1 100%;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+  .spell-school { font-size: 13px; }
+  .spell-time, .spell-range { font-size: 11px; }
+  .spell-prep-btn, .spell-cast-btn {
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+}
+
 /* === CONDITIONS === */
 .conditions {
   display: flex;
