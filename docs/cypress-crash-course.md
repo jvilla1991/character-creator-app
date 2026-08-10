@@ -540,7 +540,7 @@ assertion timeout.
 
 ## 5. Next steps (names only, on purpose)
 
-- **CI integration** — headless `cypress run`, containerized app + DB, artifacts (videos/screenshots) on failure
+- **CI expansion** — grow the pull-request login smoke test into full-suite and seeded-backend coverage
 - **Custom command libraries** — promote `loginSession` to `cy.login()` via `Cypress.Commands.add` + TS declaration merging
 - **Component testing** — mount single Angular components in Cypress without the full app
 - **Visual regression** — screenshot-diffing plugins for the "it renders but looks wrong" class of bugs

@@ -1,6 +1,9 @@
 import { defineConfig } from 'cypress';
 
 export default defineConfig({
+  // Prevent browser code from reading all Cypress environment values. This
+  // suite does not use the deprecated Cypress.env() API.
+  allowCypressEnv: false,
   e2e: {
     baseUrl: 'http://localhost:4200',
     specPattern: 'cypress/e2e/**/*.cy.ts',

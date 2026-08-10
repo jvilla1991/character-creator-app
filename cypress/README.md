@@ -36,14 +36,14 @@ industry-standard pattern — see "How this maps to a corporate suite" below.)
 
 ### Headless mode
 
-For a quick pass/fail with no GUI — this is what CI would run:
+For a quick pass/fail with no GUI, run the complete local suite:
 
 ```bash
 npm run e2e:run
 ```
 
-Runs every spec in Electron, prints a results table, and saves video + failure screenshots under
-`cypress/videos/` and `cypress/screenshots/`. To run a single spec:
+This runs every spec in Electron and prints a results table. Failure screenshots are saved under
+`cypress/screenshots/`. To run a single spec:
 
 ```bash
 npx cypress run --spec cypress/e2e/character-creation.cy.ts
@@ -241,5 +241,5 @@ JSON files under `cypress/fixtures/` are referenced by path relative to that dir
   properly.
 - [Cypress docs](https://docs.cypress.io) — the official API reference; the "Introduction to
   Cypress" page is the canonical explanation of retry-ability.
-- Not set up yet, listed in the crash course as next steps: CI integration, component testing,
-  visual regression.
+- Pull-request CI currently runs the login validation spec as a fast browser smoke test. Expanding
+  CI to the full Cypress suite, component testing, and visual regression remain future steps.
