@@ -1,0 +1,7 @@
+{
+  "count": 2,
+  "results": [
+    { "index": "fighter", "name": "Fighter", "url": "/api/2024/classes/fighter" },
+    { "index": "wizard", "name": "Wizard", "url": "/api/2024/classes/wizard" }
+  ]
+}
