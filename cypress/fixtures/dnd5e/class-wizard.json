@@ -1,0 +1,12 @@
+{
+  "index": "wizard",
+  "name": "Wizard",
+  "hit_die": 6,
+  "saving_throws": [
+    { "index": "int", "name": "INT", "url": "" },
+    { "index": "wis", "name": "WIS", "url": "" }
+  ],
+  "proficiency_choices": [],
+  "proficiencies": [],
+  "subclasses": []
+}
