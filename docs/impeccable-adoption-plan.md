@@ -359,3 +359,29 @@ Phase 1, in Claude Code chat (not the terminal):
 - `/impeccable document` — writes `DESIGN.md`, codifying Arcane **before** anything is restyled
 - `/impeccable extract` — then add the missing `--space-*` / `--radius-*` / type-scale tokens
 - an `ignores` pass for the identity rules listed above
+
+### Both login-page defects fixed (branch `fix/login-label-and-placeholder-contrast`)
+
+Re-scanned after the fix: **6 findings + 2 advisory → 4 findings + 0 advisory.** The remaining
+four are the `radial-spotlight-glow` and `dark-glow` identity findings earmarked for the
+Phase 1 `ignores` pass. Verified in-browser across all three themes: labels 11px,
+`::placeholder` opacity 1, contrast 6.31:1 / 5.25:1 / 5.44:1.
+
+Two things this turned up that are **bigger than the fix itself**:
+
+1. **`--text-dim` fails WCAG AA on two of the three themes** — 2.98:1 on vellum's `--bg-2` and
+   3.51:1 on candlelit's, against a 4.5:1 requirement. It passes only on midnight (6.31:1).
+   That is why the placeholder got its own token instead of reusing it. `--text-dim` is used
+   widely, including by `.field label` itself, so **every `--text-dim` usage on vellum and
+   candlelit is suspect.** The detector cannot see this: it only ever scanned the default
+   midnight theme. Needs its own audit — a token-level contrast sweep across all three themes,
+   not a per-page scan.
+2. **30 more sub-11px values remain.** `font-size: 10px` appears 32 times (16 in `styles.css`,
+   16 across component stylesheets); only the two on the login page were reachable by the
+   scanner. These were deliberately **not** swept in this fix: doing 30 ad-hoc edits without a
+   type scale, and with no way to re-scan the affected surfaces until the Phase 2 auth problem
+   is solved, is exactly the churn this plan exists to avoid. They belong in the Phase 1
+   type-scale work.
+
+Both points argue the same thing: **per-page URL scanning is not sufficient for a themed app.**
+Phase 2 needs a theme-matrix pass, not just a route-by-route pass.
