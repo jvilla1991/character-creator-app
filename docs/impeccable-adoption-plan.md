@@ -2,8 +2,11 @@
 
 Plan for using [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (`impeccable@4.8.0`,
 Apache-2.0, published 2026-10-26 by `paulbakaus`, repo URL matches GitHub) to improve the
-Table Mimic frontend. Nothing has been installed yet — this document is the decision record
-that precedes installation.
+Table Mimic frontend.
+
+> **Status: Phase 0 is done.** Installed 2026-11-07, global scope, no hooks. Several
+> predictions below were tested and some were wrong — see **§8 Phase 0 results** for what
+> actually happened. Read §8 before acting on §2 or §4.
 
 ---
 
@@ -259,3 +262,100 @@ goes wrong.
 | Chromium sandbox failure on this machine | Known cause and flag documented in `CLAUDE.md`. |
 | Token sweep breaks the light `vellum` theme | Every slice verifies all three themes before commit. |
 | Ten branches is a lot of ceremony | Phases 0–2 are cheap and produce a measured backlog. Re-scope Phase 3 *after* reading the audit, not now. |
+
+---
+
+## 8. Phase 0 results — installed and verified (2026-11-07)
+
+### What was installed
+
+```powershell
+npx impeccable install --yes --providers=claude --scope=global --no-hooks
+```
+
+- Skill → `C:\Users\jvill\.claude\skills\impeccable\` (`SKILL.md`, `reference/`, `scripts/`)
+- Engine binary → `...\scripts\bin\windows-x64\impeccable.exe`, **engine v0.1.18**
+- **Four subagents** → `C:\Users\jvill\.claude\agents\`: `impeccable-asset-producer`,
+  `impeccable-documenter`, `impeccable-finish-reviewer`, `impeccable-manual-edit-applier`.
+  These are global, so they appear in every project's agent list, not just this repo.
+- **Nothing was written into the repo.** `.impeccable/` does not exist until `/impeccable init`.
+
+### Guardrails applied
+
+| Guardrail | How | Verified |
+|---|---|---|
+| No design hook | `--no-hooks` (a real flag — the manual-copy workaround was unnecessary) | `~/.claude/settings.json` contains no hook entries; the only `*hook*` file is docs (`reference/hooks.md`) |
+| Telemetry off | `npx impeccable telemetry off` | `"telemetry": false` in `C:\Users\jvill\.impeccable\config.json` |
+| Live Apply | Not configured — moot while live mode is unused | — |
+
+Note the telemetry message is narrower than the README implied: *"Rolls still work; the roll
+API is told not to record them, and no choice is sent."* The callout still happens.
+
+### Corrections to this plan
+
+1. **The Windows / Chromium-sandbox risk did not materialise.** The URL scan launched a browser
+   and completed on the first try. No `--no-sandbox` workaround needed. Phase 2 is unblocked.
+2. **`detect src/` is not completely blind to Angular** — it *does* read `.scss`. But it found
+   **exactly 1 finding across 51 stylesheets / 5,185 lines** (a `border-left: 2px solid
+   var(--celestial)` flagged as `side-tab` in `level-up-modal.component.scss:297`). Noise-level,
+   as predicted. Lean on URL scans.
+3. **`doctor` and `pin` are not CLI commands.** The CLI exposes only `detect`, `ignores`,
+   `help`, `install`, `link`, `update`, `check`, `telemetry`. `/impeccable doctor` and
+   `/impeccable pin` are chat commands. Phase 0 items 6–7 move to Phase 1.
+4. **New blocker for Phase 2: the detector can only reach the login page.** Every other surface
+   is behind auth, and `detect <url>` does not log in. Scanning the other nine surfaces needs
+   either a Cypress-seeded authenticated session, or the Chrome extension driven by hand in a
+   logged-in browser. **This changes Phase 2's shape and must be solved before it starts.**
+5. The skill ships more playbooks than the README's 24 commands: `ios.md`, `android.md`,
+   `adapt.native.md`, `audit.native.md`, `component-review.md`, `visualize.md`, `region-map.md`,
+   `routing.md`, `mode-read/operate/persuade.md`, plus a `degraded/` fallback set.
+
+### The 62 rules, split
+
+**31 slop + 31 quality.** The split lands almost exactly where §3 predicted, and it is the most
+important thing learned in Phase 0:
+
+- **Slop rules largely target the Arcane identity on purpose.** `italic-serif-display` names
+  **Newsreader-italic** by name. `kicker-above-heading` is "banned outright, repeated or not" —
+  that is our `.eyebrow` class. `dark-glow` describes `--glow` / `--glow-gold` exactly
+  ("zero-offset chromatic halo"). `radial-halo` / `radial-spotlight-glow` describe the `body`
+  background's two radial ellipses. `wide-tracking` is `.eyebrow`'s `0.22em`.
+- **Quality rules are a near-perfect match for our real problems**, including four that target
+  token drift directly: `design-system-font`, `design-system-color`, `design-system-radius`,
+  `design-system-font-size` — i.e. the 174 hard-coded hexes and the missing scale.
+
+**Therefore Phase 1 needs an `ignores` pass, not just a font allow-list.** Budget for it.
+
+### First real scan — login page, `http://localhost:4200`
+
+6 findings + 2 advisory. It divides cleanly into "leave it alone" and "genuine bug":
+
+| Finding | Count | Verdict |
+|---|---|---|
+| `radial-spotlight-glow` — `#8fb4ff` a0.20 behind `login-page` | 1 | **Allow-list.** Deliberate Arcane styling. |
+| `dark-glow` — zero-offset box/text-shadow `#d4b06a` | 3 | **Allow-list.** That is `--glow-gold`. |
+| `undersized-ui-text` — 10px "Username" / "Password" below the 11px floor | 2 | **Real bug. Fix.** |
+| `low-contrast` (advisory) — placeholder `#757575` on `#0d1224`, 4.0:1, needs 4.5:1 | 2 | **Real bug. Fix.** |
+
+Two things worth sitting with:
+
+- The `undersized-ui-text` rule anticipates our exact defence and rejects it: *"Being ON the
+  DESIGN.md size ramp does not exempt a value here… Decorative letterspaced micro-labels are
+  still functional and stay in scope."* Our `.eyebrow` is 10px Cinzel at `0.22em`. The rule is
+  right — that is hard to read, and it is not a false positive to be ignored away.
+- The failing placeholder colour `#757575` is a **browser default**, not a theme token at all.
+  It is the 174-hex drift problem showing up on the very first page scanned, and it means the
+  light `vellum` theme almost certainly has worse instances waiting.
+
+So the first scan found two genuine defects on the simplest page in the app. That is a good
+sign for Phase 2 — once the auth problem in correction #4 is solved.
+
+### Next step
+
+Phase 1, in Claude Code chat (not the terminal):
+
+- `/impeccable doctor` — confirm the install is healthy
+- `/impeccable init` — writes `PRODUCT.md`
+- `/impeccable document` — writes `DESIGN.md`, codifying Arcane **before** anything is restyled
+- `/impeccable extract` — then add the missing `--space-*` / `--radius-*` / type-scale tokens
+- an `ignores` pass for the identity rules listed above
