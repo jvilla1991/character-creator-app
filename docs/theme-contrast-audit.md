@@ -162,8 +162,8 @@ touches these.
 | `--crimson` midnight + candlelit | **Fixed** on `fix/crimson-token-contrast` (#d67c7b / #e1896d). Verified in-browser: worst surface 4.51 / 4.53. Token-level failures 26 -> 19. |
 | `--text-dim` vellum + candlelit | **Fixed** on `fix/text-ramp-contrast`. Required re-spacing `--text-2` too — see note below. |
 | `--gold` vellum | **Fixed** on `fix/gold-contrast-vellum`. Classification disproved caveat 2 — see note below. |
-| `--emerald` vellum + candlelit | Open — 4/15, only 7 usages |
-| `--violet` midnight `--surface-3` | Open — near-miss at 4.44 |
+| `--emerald` vellum + candlelit | **Fixed** on `fix/emerald-violet-contrast` (#345e34 / #aaa254). |
+| `--violet` midnight `--surface-3` | **Fixed** on `fix/emerald-violet-contrast` (#a189d5). |
 
 > **The `--text-dim` fix could not be made in isolation.** Darkening vellum's
 > `--text-dim` far enough to clear AA on all five surfaces put it at 1.14 separation
@@ -209,8 +209,12 @@ touches these.
   and it was found only by resolving the `color-mix(in oklch, ...)` gradient to sRGB
   through a canvas; `getComputedStyle` returns `oklch()` strings that naive contrast
   maths silently mis-parses.
-- `--emerald` (4/15) and `--violet` (1/15) remain — 7 usages each, the last 5 failing
-  combinations of the original 26.
+- ~~`--emerald` and `--violet`~~ — fixed. **The palette now reaches 0 / 135 failing
+  combinations**, verified by running the matrix over a stylesheet with all four fix
+  branches applied, and in-browser with canvas-resolved sRGB.
+- The candlelit `--emerald` and midnight `--violet` fixes are ~2% nudges that only tip a
+  near-miss over the line. They are **fragile**: any future change to `--surface-3` will
+  break them again. A regression check belongs in CI.
 
 ---
 
