@@ -39,8 +39,12 @@
   --border:       #b8a276;
   --border-soft:  #cdb98c;
   --text:         #2a2114;
-  --text-2:       #5a4a2e;
-  --text-dim:     #8a7850;
+  /* Text ramp re-spaced for WCAG AA. --text-dim was #8a7850, which failed
+     on all five vellum surfaces (3.59 down to 2.58). Darkening it alone
+     put it 1.14 from --text-2 — indistinguishable — so --text-2 moved too.
+     Ramp now #2a2114 -> #463b27 -> #605338, separations 1.44 / 1.46. */
+  --text-2:       #463b27;
+  --text-dim:     #605338;
   --gold:         #8a5e22;
   --gold-2:       #6e4a1a;
   --gold-deep:    #4a3210;
@@ -66,8 +70,11 @@
   --border:       #5a3f1c;
   --border-soft:  #3a2a14;
   --text:         #f0dcb4;
-  --text-2:       #c9a878;
-  --text-dim:     #8a6a40;
+  /* Same re-spacing as vellum. --text-dim was #8a6a40, failing on all five
+     candlelit surfaces (3.72 down to 2.39). Ramp now
+     #f0dcb4 -> #cfbb99 -> #b29d81, separations 1.39 / 1.40. */
+  --text-2:       #cfbb99;
+  --text-dim:     #b29d81;
   --gold:         #e8b860;
   --gold-2:       #fbd58a;
   --gold-deep:    #a87830;
