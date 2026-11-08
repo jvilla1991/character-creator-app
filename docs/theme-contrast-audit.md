@@ -160,10 +160,26 @@ touches these.
 | Item | State |
 |---|---|
 | `--crimson` midnight + candlelit | **Fixed** on `fix/crimson-token-contrast` (#d67c7b / #e1896d). Verified in-browser: worst surface 4.51 / 4.53. Token-level failures 26 -> 19. |
-| `--text-dim` vellum + candlelit | Open — 10/15, highest volume (128 usages) |
+| `--text-dim` vellum + candlelit | **Fixed** on `fix/text-ramp-contrast`. Required re-spacing `--text-2` too — see note below. |
 | `--gold` vellum | Open — needs usage classification first (see caveat 2) |
 | `--emerald` vellum + candlelit | Open — 4/15, only 7 usages |
 | `--violet` midnight `--surface-3` | Open — near-miss at 4.44 |
+
+> **The `--text-dim` fix could not be made in isolation.** Darkening vellum's
+> `--text-dim` far enough to clear AA on all five surfaces put it at 1.14 separation
+> from `--text-2` — two tiers rendering as one, which would have made `--text-dim`
+> meaningless across its 124 `color:` usages. Both ramps were therefore re-spaced:
+>
+> - vellum: `#2a2114` -> `#463b27` -> `#605338` (separations 1.44 / 1.46)
+> - candlelit: `#f0dcb4` -> `#cfbb99` -> `#b29d81` (separations 1.39 / 1.40)
+>
+> This widened the change to `--text-2` (22 usages, 20 of them `color:`). Separations
+> are tighter than the originals (1.85/1.99 vellum, 1.67/2.22 candlelit) but well clear
+> of the ~1.2 point where tiers stop reading as distinct. Midnight was already passing
+> and is untouched.
+>
+> **Combined with `fix/crimson-token-contrast`: 26 -> 9 failing combinations.** The two
+> branches merge without conflict. Remaining: `--gold` 4, `--emerald` 4, `--violet` 1.
 
 ---
 
@@ -172,7 +188,7 @@ touches these.
 Not a global find-and-replace. In order:
 
 1. ~~Fix `--crimson` on midnight~~ — done, see Status above.
-2. Fix `--text-dim` on vellum and candlelit — highest volume, 10/15 failing.
+2. ~~Fix `--text-dim` on vellum and candlelit~~ — done, see Status above.
 3. Classify `--gold`'s 126 usages into text vs display vs decorative *before* deciding.
 4. Re-measure with the matrix script, then re-run the detector on midnight as a regression check.
 
