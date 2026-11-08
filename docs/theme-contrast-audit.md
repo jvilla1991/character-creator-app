@@ -200,15 +200,47 @@ touches these.
 
 ---
 
+## 5. Measuring this palette — read before auditing it again
+
+Three measurement traps cost real time in this audit, and two of them produced confident,
+wrong numbers rather than obvious errors. Anything that re-checks these colours needs all
+three handled:
+
+1. **`color-mix(in oklch, ...)` does not resolve to RGB.** `getComputedStyle` returns the
+   literal `oklch(...)` string. Naive contrast maths reads those three numbers as R/G/B
+   and returns a plausible-looking figure that is meaningless. Resolve through a canvas —
+   `ctx.fillStyle = css` then `getImageData` — to get real sRGB bytes.
+2. **CSS transitions freeze while the preview pane is hidden.** `.btn` animates `color`,
+   so after switching `data-theme` the computed colour stays at its pre-switch value
+   indefinitely. This produced a false "hardcoded colour" finding that was raised and
+   retracted. Inject `*{transition:none!important;animation:none!important}` before
+   measuring and force a sync reflow (`void el.offsetHeight`) after each switch.
+   `requestAnimationFrame` does **not** fire in a hidden pane — waiting on it hangs.
+3. **Most text sits over a gradient.** `body` carries two radial washes and
+   `.btn.primary` is a linear gradient, so `backgroundColor` is `transparent` for roughly
+   18 of 21 text nodes, and walking ancestors for an effective background does not work.
+   Resolve the gradient stops explicitly and test against each.
+
+Screenshots are also unreliable for this: with the pane hidden, a theme switch can be
+captured mid-transition. Prefer numeric readings from the live element.
+
+---
+
 ## 6. Still open
 
-- **`.btn.primary` text in vellum fails AA** at 4.32:1 / 4.20:1 against its own gradient
-  (11px needs 4.5:1). This is **pre-existing** — it measured 3.88 / 3.51 before the gold
-  change, so the gold fix improved it without clearing it. It is a component-level fix
-  (lighten the button gradient, or give the button its own text token), not a token one,
-  and it was found only by resolving the `color-mix(in oklch, ...)` gradient to sRGB
-  through a canvas; `getComputedStyle` returns `oklch()` strings that naive contrast
-  maths silently mis-parses.
+- ~~**`.btn.primary` text in vellum fails AA**~~ — **fixed** on
+  `fix/primary-button-contrast`, together with a second defect found while fixing it.
+  Both were pre-existing and neither was reachable by the detector: the button sits
+  behind auth, and only midnight was ever scanned.
+  - *Rest, vellum:* the gilded `--gold-2` label on a light gold gradient measured 4.20:1.
+    Vellum now uses `--gold-deep` — same gilded character, 5.32:1. Midnight and candlelit
+    are dark fills, already passed at 5.59 / 5.45, and are unchanged.
+  - *Hover, candlelit:* at a 45% gold mix the bright candlelit gold pushed the fill
+    mid-tone and `--text` reached only 4.07:1 — **no text colour cleared AA against it**.
+    The hover mix dropped to 40%/30%, which keeps a visible hover shift and lifts every
+    theme: candlelit 4.07 → 4.54, midnight 5.03 → 5.64, vellum 5.64 → 6.13.
+  - Holds with or without `fix/gold-contrast-vellum`, so the two have no merge ordering
+    dependency.
 - ~~`--emerald` and `--violet`~~ — fixed. **The palette now reaches 0 / 135 failing
   combinations**, verified by running the matrix over a stylesheet with all four fix
   branches applied, and in-browser with canvas-resolved sRGB.
