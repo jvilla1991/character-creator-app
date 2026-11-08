@@ -41,8 +41,15 @@
   --text:         #2a2114;
   --text-2:       #5a4a2e;
   --text-dim:     #8a7850;
-  --gold:         #8a5e22;
-  --gold-2:       #6e4a1a;
+  /* Darkened from #8a5e22, which failed WCAG AA on four of five vellum
+     surfaces (4.73 down to 3.41). Only 4 of ~56 gold text usages are large
+     enough for the 3:1 allowance; the rest are 9-18px, so 4.5:1 applies.
+     Now 5.85 / 5.24 / 6.30 / 5.34 / 4.54. Borders and tints only improve. */
+  --gold:         #714d1c;
+  /* Re-spaced: the darkened --gold sat 1.05 from the old #6e4a1a, so the
+     gold ramp read as two steps. Now #4a3210 -> #5e4016 -> #714d1c,
+     separations 1.27 / 1.25. --gold-2 worst surface 5.68. */
+  --gold-2:       #5e4016;
   --gold-deep:    #4a3210;
   --celestial:    #2a4a8a;
   --celestial-2:  #1a3060;
@@ -51,7 +58,7 @@
   --emerald:      #3a6a3a;
   --violet:       #5a3a8a;
   --glow:         0 0 12px rgba(42, 74, 138, 0.15);
-  --glow-gold:    0 0 12px rgba(138, 94, 34, 0.18);
+  --glow-gold:    0 0 12px rgba(113, 77, 28, 0.18);
   --shadow:       0 4px 16px rgba(74, 50, 16, 0.18);
   --sigil-opacity: 0.06;
 }
