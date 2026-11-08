@@ -17,8 +17,9 @@ import { ItemComposerComponent } from '../../../item-composer/item-composer.comp
  * Displays and manages a character's structured inventory (`pc.inventory`).
  * Items are acquired only by buying them at a session shop (which writes them
  * through to `pc.inventory`); this panel lets the owner — or a DM via the
- * cross-link — manage what they already own: equip/unequip, reduce quantity
- * (use one / drop one), or drop a whole stack. It never adds new items.
+ * cross-link — manage what they already own: equip/unequip, drop a whole
+ * stack (all of it at once), or discard a dropped stack one unit at a time.
+ * It never adds new items.
  *
  * Mirrors {@link CoinPurseComponent}: emits a modified PC via `pcChange` when
  * `editable`; read-only otherwise (e.g. the in-session embed). `equipped` is a
@@ -116,11 +117,20 @@ export class InventoryPanelComponent {
     this.emit(inventory);
   }
 
-  /** Second click (only available once dropped): remove the line for good. */
+  /**
+   * Second click (only available once dropped): destroy ONE unit of the stack.
+   * Dropping is all-or-nothing — the whole stack leaves your hands at once —
+   * but discarding is per-unit, so a dropped stack can be whittled down (and
+   * the remainder picked back up) instead of being annihilated by one click.
+   * The line itself is removed only when the last unit goes.
+   */
   discardItem(index: number): void {
     const inventory = this.items.map(i => ({ ...i }));
     if (index < 0 || index >= inventory.length) return;
-    inventory.splice(index, 1);
+    const line = inventory[index];
+    const qty = line.qty ?? 1;
+    if (qty > 1) line.qty = qty - 1;
+    else inventory.splice(index, 1);
     this.emit(inventory);
   }
 

@@ -26,8 +26,30 @@ describe('InventoryPanelComponent', () => {
     expect(component.pc.inventory![0].status).toBeUndefined(); // original untouched
   });
 
-  it('removes a dropped line for good via discardItem', () => {
+  it('discards ONE unit of a dropped stack, keeping the rest of the line', () => {
     component.pc = basePc([{ name: 'Arrows', category: 'gear', qty: 20, status: 'dropped' }]);
+    const spy = spyOn(component.pcChange, 'emit');
+
+    component.discardItem(0);
+
+    const emitted = spy.calls.mostRecent().args[0] as PC;
+    expect(emitted.inventory!.length).toBe(1);
+    expect(emitted.inventory![0].qty).toBe(19);
+    expect(emitted.inventory![0].status).toBe('dropped');
+    expect(component.pc.inventory![0].qty).toBe(20); // original untouched
+  });
+
+  it('removes the line once the last unit is discarded', () => {
+    component.pc = basePc([{ name: 'Torch', category: 'gear', qty: 1, status: 'dropped' }]);
+    const spy = spyOn(component.pcChange, 'emit');
+
+    component.discardItem(0);
+
+    expect((spy.calls.mostRecent().args[0] as PC).inventory!.length).toBe(0);
+  });
+
+  it('treats a qty-less legacy line as a single unit and removes it', () => {
+    component.pc = basePc([{ name: 'Relic', category: 'treasure', status: 'dropped' } as PcItem]);
     const spy = spyOn(component.pcChange, 'emit');
 
     component.discardItem(0);
