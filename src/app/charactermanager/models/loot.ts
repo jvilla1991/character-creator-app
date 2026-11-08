@@ -9,7 +9,7 @@ import { PcItem } from './pc';
 
 /** The lowercase inventory categories a custom loot item may carry. */
 export const LOOT_ITEM_CATEGORIES: ReadonlyArray<PcItem['category']> =
-  ['weapon', 'armor', 'material-component', 'gear', 'transport'];
+  ['weapon', 'armor', 'material-component', 'gear', 'transport', 'treasure'];
 
 export interface LootItem {
   id: number;
@@ -50,8 +50,9 @@ export interface ClaimResult {
  * reference ("key", an SRD slug) or a custom free-hand item ("name" + optional
  * "notes") — exactly one of the two; qty defaults to 1. Custom items may also
  * carry the attributes a DM grant stamps: "category" (weapon | armor |
- * material-component | gear), "valueGp" (≥ 0, fractions ok), "weight" (≥ 0,
- * pounds), "damage" (weapons) and "armorClass" (armor). Legacy payloads
+ * material-component | gear | transport | treasure), "valueGp" (≥ 0, fractions
+ * ok), "weight" (≥ 0, pounds), "damage" (weapons) and "armorClass" (armor).
+ * Legacy payloads
  * (key/name/notes/qty + coinGp only) stay valid. coinGp adds to the list's
  * coin pile. Import APPENDS to the existing loot.
  */
@@ -132,7 +133,7 @@ export function parseLootImportPayload(raw: string): { payload?: LootImportPaylo
     }
     if (item.category != null
         && !(LOOT_ITEM_CATEGORIES as readonly string[]).includes(item.category)) {
-      return { error: `"${label}": category must be one of weapon, armor, material-component, gear.` };
+      return { error: `"${label}": category must be one of weapon, armor, material-component, gear, transport, treasure.` };
     }
     if (item.valueGp != null && (typeof item.valueGp !== 'number' || item.valueGp < 0)) {
       return { error: `"${label}": valueGp must be a non-negative number when present.` };

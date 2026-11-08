@@ -100,6 +100,7 @@ export class InventoryPanelComponent {
       case 'material-component': return 'Material';
       case 'gear': return 'Gear';
       case 'transport': return 'Transport';
+      case 'treasure': return 'Treasure';
       default: return category;
     }
   }
