@@ -235,9 +235,14 @@
   }
 }
 
-// Per-device turn-cue mute — shown to everyone, persists in localStorage.
+// Per-device turn-cue controls (mute, volume, uploaded sound) — shown to
+// everyone, all of it persisted in localStorage.
 .cue-mute {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 
   .btn-mini {
     height: 26px;
@@ -251,6 +256,49 @@
     background: var(--bg-elev, rgba(255, 255, 255, 0.04));
     color: var(--text-dim);
     &:hover { color: var(--text); }
+  }
+
+  .cue-volume {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+
+    input[type='range'] {
+      width: 96px;
+      accent-color: var(--gold, #d9b25f);
+      cursor: pointer;
+    }
+
+    .numeric {
+      font-style: normal;
+      font-size: 12px;
+      min-width: 34px;          // reserve room so the row stops jittering
+      text-align: right;
+    }
+  }
+
+  // The file input itself is hidden; its label's span is the visible button.
+  .cue-upload {
+    display: inline-flex;
+    input[type='file'] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  .cue-error {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--crimson, #c0392b);
   }
 }
 

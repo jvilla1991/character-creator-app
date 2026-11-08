@@ -1,6 +1,6 @@
 import { Component, Input, output } from '@angular/core';
 import { ParticipantView, SessionStatus } from '../../../models/session';
-import { SessionService, TURN_SOUNDS } from '../../../services/session.service';
+import { MAX_CUE_BYTES, SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { tintFor } from '../../../utils/character-math';
 import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
@@ -21,7 +21,9 @@ import { DecimalPipe } from '@angular/common';
  * freely in the lobby, and once the encounter is active only while theirs is
  * still unset (late joiner). The DM also gets an encounter bar: add enemy
  * (name + optional AC + optional HP), the enemy-visibility checkbox,
- * and the turn-sound picker. Everyone gets a local mute toggle.
+ * and the turn-sound picker. Everyone gets their own per-device cue controls:
+ * a mute toggle, a volume slider, and an uploaded sound that stands in for the
+ * DM's preset on this device only.
  */
 @Component({
     selector: 'app-initiative-panel',
@@ -72,11 +74,22 @@ export class InitiativePanelComponent {
   /** Local (per-device) turn-cue mute — mirrored from localStorage. */
   muted = false;
 
+  /** Local (per-device) cue volume, held as the slider's 0–100 percentage. */
+  volume = 100;
+
+  /** True while a per-device uploaded sound is standing in for the DM's preset. */
+  customCue = false;
+
+  /** Why the last upload was refused, shown beside the control. */
+  cueError: string | null = null;
+
   constructor(
     private sessionService: SessionService,
     private notifications: NotificationService,
   ) {
     this.muted = this.sessionService.isMuted();
+    this.volume = Math.round(this.sessionService.cueVolume() * 100);
+    this.customCue = !!this.sessionService.customCue();
   }
 
   /**
@@ -200,6 +213,63 @@ export class InitiativePanelComponent {
   toggleMute(): void {
     this.muted = !this.muted;
     this.sessionService.setMuted(this.muted);
+  }
+
+  /** Slider moved. Stored per device, like the mute — nothing syncs. */
+  onVolumeChange(raw: string | number): void {
+    const pct = Number(raw);
+    this.volume = Math.min(100, Math.max(0, isFinite(pct) ? Math.round(pct) : 100));
+    this.sessionService.setCueVolume(this.volume / 100);
+  }
+
+  /**
+   * Play the cue as it stands, so a volume change or a fresh upload can be
+   * heard without waiting for a turn to pass. Falls back to the chime preset
+   * when the DM has the cue switched off, since the preview is about this
+   * device's sound, not the session's setting.
+   */
+  previewCue(): void {
+    this.sessionService.playCue(this.turnSound || 'chime');
+  }
+
+  /**
+   * Take an uploaded sound as this device's cue, replacing whichever preset the
+   * DM picked. It is read into a data URL and kept in localStorage next to the
+   * mute — there is no upload endpoint and no sharing: each person brings their
+   * own sound. Oversized or non-audio files are refused here, before the read.
+   */
+  onCueFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';            // so re-picking the same file fires change again
+    if (!file) return;
+    this.cueError = null;
+    if (file.type && !file.type.startsWith('audio/')) {
+      this.cueError = 'That file is not audio.';
+      return;
+    }
+    if (file.size > MAX_CUE_BYTES) {
+      this.cueError = 'Too big — keep the sound under 1 MB.';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (this.sessionService.setCustomCue(String(reader.result))) {
+        this.customCue = true;
+        this.previewCue();
+      } else {
+        this.cueError = 'Could not save the sound on this device — try a smaller file.';
+      }
+    };
+    reader.onerror = () => { this.cueError = 'Could not read that file.'; };
+    reader.readAsDataURL(file);
+  }
+
+  /** Drop the uploaded sound and go back to the DM's chosen preset. */
+  clearCueFile(): void {
+    this.sessionService.setCustomCue(null);
+    this.customCue = false;
+    this.cueError = null;
   }
 
   // 5 columns read-only; a 6th DM "Adjust" column appears for the DM.

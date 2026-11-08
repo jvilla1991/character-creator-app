@@ -218,11 +218,31 @@
               </div>
             }
 
-            <!-- Everyone: local mute for the turn cue (this device only). -->
+            <!-- Everyone: per-device cue controls (mute, volume, own sound). -->
             <div class="cue-mute">
               <button class="btn-mini" (click)="toggleMute()">
                 {{ muted ? 'Unmute turn cue' : 'Mute turn cue' }}
               </button>
+              <label class="cue-volume">
+                Volume
+                <input type="range" min="0" max="100" step="5" [value]="volume"
+                  (input)="onVolumeChange($any($event.target).value)"
+                  (change)="previewCue()"
+                  aria-label="Turn cue volume" />
+                <span class="numeric">{{ volume }}%</span>
+              </label>
+              <label class="cue-upload">
+                <input type="file" accept="audio/*" (change)="onCueFile($event)"
+                  aria-label="Upload a turn cue sound" />
+                <span class="btn-mini">{{ customCue ? 'Replace sound' : 'Upload sound' }}</span>
+              </label>
+              @if (customCue) {
+                <button class="btn-mini" (click)="clearCueFile()"
+                  title="Go back to the cue the DM chose">Use default</button>
+              }
+              @if (cueError) {
+                <span class="cue-error">{{ cueError }}</span>
+              }
             </div>
 
             @if (dm) {

@@ -34,6 +34,19 @@ const POLL_INTERVAL_MS = 2000;
 /** localStorage key for the per-device sound mute (player preference, not synced). */
 const SOUND_MUTE_KEY = 'tm-session-sound-muted';
 
+/** The per-device uploaded cue, stored as a data URL (player preference, not synced). */
+const SOUND_CUSTOM_KEY = 'tm-session-sound-custom';
+
+/** The per-device cue volume, 0–1 as a string (player preference, not synced). */
+const SOUND_VOLUME_KEY = 'tm-session-sound-volume';
+
+/**
+ * The largest custom cue we will keep. localStorage holds roughly 5 MB per
+ * origin and base64 inflates a file by about a third, so 1 MB of audio is the
+ * safe ceiling — a turn cue is a half-second sound, not a song.
+ */
+export const MAX_CUE_BYTES = 1_000_000;
+
 /**
  * Turn-cue presets synthesized with WebAudio — no bundled assets. The key is
  * what the DM stores on the session (`turnSound`).
@@ -202,12 +215,72 @@ export class SessionService {
   }
 
   /**
-   * Synthesize the cue with WebAudio (no audio assets to ship). Public so the
-   * DM's sound picker can preview a cue on selection. Failures are swallowed —
-   * a blocked AudioContext must never break the tracker.
+   * The per-device uploaded cue as a data URL, or null when none is set. Like
+   * the mute, this is a local override: it replaces whichever preset the DM
+   * chose, and the DM's choice still syncs to everyone else untouched.
+   */
+  customCue(): string | null {
+    try {
+      return localStorage.getItem(SOUND_CUSTOM_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Store an uploaded cue (a data URL), or clear it with null. Returns false
+   * when storage refuses the write — almost always the quota, which the caller
+   * must surface rather than leaving the upload silently forgotten.
+   */
+  setCustomCue(dataUrl: string | null): boolean {
+    try {
+      if (dataUrl) localStorage.setItem(SOUND_CUSTOM_KEY, dataUrl);
+      else localStorage.removeItem(SOUND_CUSTOM_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Cue volume, 0–1. Defaults to 1 — the level the presets were tuned at. */
+  cueVolume(): number {
+    try {
+      const raw = localStorage.getItem(SOUND_VOLUME_KEY);
+      if (raw == null) return 1;
+      const value = Number(raw);
+      // A corrupt or out-of-range entry falls back to full volume rather than
+      // leaving the tracker mysteriously silent.
+      if (!isFinite(value) || value < 0 || value > 1) return 1;
+      return value;
+    } catch {
+      return 1;
+    }
+  }
+
+  setCueVolume(volume: number): void {
+    const clamped = Math.min(1, Math.max(0, isFinite(volume) ? volume : 1));
+    try {
+      localStorage.setItem(SOUND_VOLUME_KEY, String(clamped));
+    } catch {
+      // storage unavailable — the cue just plays at its default level
+    }
+  }
+
+  /**
+   * Play the turn cue — the per-device uploaded sound when there is one, else
+   * the named preset synthesized with WebAudio (no audio assets to ship).
+   * Public so the DM's sound picker can preview a cue on selection. Failures
+   * are swallowed — a blocked AudioContext must never break the tracker.
    */
   playCue(key: string): void {
     if (this.isMuted()) return;
+    const volume = this.cueVolume();
+    if (volume <= 0) return;           // slider at zero is a mute by another name
+    const custom = this.customCue();
+    if (custom) {
+      this.playUploadedCue(custom, volume);
+      return;
+    }
     try {
       const ctx = this.audioCtx ?? (this.audioCtx = new AudioContext());
       if (ctx.state === 'suspended') {
@@ -225,13 +298,31 @@ export class SessionService {
       const gain = ctx.createGain();
       osc.type = preset.type;
       osc.frequency.value = preset.freq;
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.setValueAtTime(0.25 * volume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + preset.decay);
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + preset.decay);
     } catch {
       // audio unavailable (autoplay policy, no device) — stay silent
+    }
+  }
+
+  /**
+   * Play an uploaded cue from its data URL. A plain HTMLAudioElement rather
+   * than the WebAudio graph: the file is already encoded audio, and decoding it
+   * into a buffer would buy nothing for a one-shot sound. Failures stay silent
+   * for the same reason the synthesized path does.
+   */
+  private playUploadedCue(dataUrl: string, volume: number): void {
+    try {
+      const el = new Audio(dataUrl);
+      el.volume = volume;
+      void el.play().catch(() => {
+        // autoplay policy or an unsupported codec — stay silent
+      });
+    } catch {
+      // no audio element available — stay silent
     }
   }
 
