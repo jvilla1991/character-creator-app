@@ -28,6 +28,11 @@ jobs:
           node-version: "24"
           cache: npm
 
+      # Runs before install: it is plain Node with no dependencies, and a
+      # contrast regression should fail fast rather than after a full build.
+      - name: Check theme contrast (WCAG AA)
+        run: npm run check:contrast
+
       - name: Install dependencies
         run: npm ci
 
