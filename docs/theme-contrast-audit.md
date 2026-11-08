@@ -161,7 +161,7 @@ touches these.
 |---|---|
 | `--crimson` midnight + candlelit | **Fixed** on `fix/crimson-token-contrast` (#d67c7b / #e1896d). Verified in-browser: worst surface 4.51 / 4.53. Token-level failures 26 -> 19. |
 | `--text-dim` vellum + candlelit | **Fixed** on `fix/text-ramp-contrast`. Required re-spacing `--text-2` too — see note below. |
-| `--gold` vellum | Open — needs usage classification first (see caveat 2) |
+| `--gold` vellum | **Fixed** on `fix/gold-contrast-vellum`. Classification disproved caveat 2 — see note below. |
 | `--emerald` vellum + candlelit | Open — 4/15, only 7 usages |
 | `--violet` midnight `--surface-3` | Open — near-miss at 4.44 |
 
@@ -181,15 +181,46 @@ touches these.
 > **Combined with `fix/crimson-token-contrast`: 26 -> 9 failing combinations.** The two
 > branches merge without conflict. Remaining: `--gold` 4, `--emerald` 4, `--violet` 1.
 
+> **Caveat 2 was wrong, and the classification is what proved it.** The assumption was
+> that `--gold` mostly carried large Cinzel display headings, where 3:1 applies and
+> vellum's 3.41-4.73 would have been acceptable. In fact, of ~56 `color:` usages only
+> **4** are large (24-44px: `.prose .drop`, `.treasury-total .big`, `.equip-gold-amount`,
+> `.result-total-num`). Fifteen are 9-18px and 34 inherit their size. The 4.5:1 threshold
+> applies, so the failure was real.
+>
+> `--gold` #8a5e22 -> #714d1c, and `--gold-2` #6e4a1a -> #5e4016 because the darkened
+> `--gold` landed 1.05 away from it. Ramp now `#4a3210` -> `#5e4016` -> `#714d1c`.
+> The other usage classes were checked and all improve: ~35 borders and ~20 color-mix
+> tints need only 3:1; the one solid gold background carries light `--bg` text and goes
+> 4.39 -> 5.85. `--gold-deep` is never used as text.
+>
+> **This is the second time a token fix forced its neighbour to move.** Both the text
+> ramp and the gold ramp were spaced tightly enough that raising the weakest step
+> collapsed it into the next. Worth expecting on any remaining token work.
+
 ---
 
-## 5. Suggested next step
+## 6. Still open
+
+- **`.btn.primary` text in vellum fails AA** at 4.32:1 / 4.20:1 against its own gradient
+  (11px needs 4.5:1). This is **pre-existing** — it measured 3.88 / 3.51 before the gold
+  change, so the gold fix improved it without clearing it. It is a component-level fix
+  (lighten the button gradient, or give the button its own text token), not a token one,
+  and it was found only by resolving the `color-mix(in oklch, ...)` gradient to sRGB
+  through a canvas; `getComputedStyle` returns `oklch()` strings that naive contrast
+  maths silently mis-parses.
+- `--emerald` (4/15) and `--violet` (1/15) remain — 7 usages each, the last 5 failing
+  combinations of the original 26.
+
+---
+
+## 7. Suggested next step
 
 Not a global find-and-replace. In order:
 
 1. ~~Fix `--crimson` on midnight~~ — done, see Status above.
 2. ~~Fix `--text-dim` on vellum and candlelit~~ — done, see Status above.
-3. Classify `--gold`'s 126 usages into text vs display vs decorative *before* deciding.
+3. ~~Classify `--gold`'s 126 usages~~ — done, and fixed. See Status above.
 4. Re-measure with the matrix script, then re-run the detector on midnight as a regression check.
 
 This belongs with the Phase 1 token work in `docs/impeccable-adoption-plan.md`, not as a
