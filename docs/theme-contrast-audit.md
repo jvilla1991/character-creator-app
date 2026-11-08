@@ -155,11 +155,23 @@ touches these.
 
 ---
 
-## 4. Suggested next step
+## 4. Status
+
+| Item | State |
+|---|---|
+| `--crimson` midnight + candlelit | **Fixed** on `fix/crimson-token-contrast` (#d67c7b / #e1896d). Verified in-browser: worst surface 4.51 / 4.53. Token-level failures 26 -> 19. |
+| `--text-dim` vellum + candlelit | Open — 10/15, highest volume (128 usages) |
+| `--gold` vellum | Open — needs usage classification first (see caveat 2) |
+| `--emerald` vellum + candlelit | Open — 4/15, only 7 usages |
+| `--violet` midnight `--surface-3` | Open — near-miss at 4.44 |
+
+---
+
+## 5. Suggested next step
 
 Not a global find-and-replace. In order:
 
-1. Fix `--crimson` on midnight — default theme, highest-stakes semantics, 5/5 failing.
+1. ~~Fix `--crimson` on midnight~~ — done, see Status above.
 2. Fix `--text-dim` on vellum and candlelit — highest volume, 10/15 failing.
 3. Classify `--gold`'s 126 usages into text vs display vs decorative *before* deciding.
 4. Re-measure with the matrix script, then re-run the detector on midnight as a regression check.
