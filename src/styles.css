@@ -383,10 +383,20 @@ app-root { display: block; height: 100vh; width: 100vw; }
   flex: 1;
   box-shadow: var(--glow-gold);
 }
+/* Vellum's gold gradient is light, so the gilded --gold-2 label only reached
+   4.20:1 on it (11px needs 4.5:1). The deeper gold keeps the gilded look and
+   clears it at 5.32:1. Midnight and candlelit are dark fills and already pass
+   with --gold-2 (5.59 / 5.45), so they keep it. */
+[data-theme="vellum"] .btn.primary { color: var(--gold-deep); }
+
 .btn.primary:hover {
+  /* Hover mix reduced from 45%/35%. At 45% candlelit's bright gold pushed the
+     fill mid-tone, leaving --text at 4.07:1 — no text colour cleared AA there.
+     40%/30% keeps a visible hover shift and lifts every theme:
+     candlelit 4.07 -> 4.54, midnight 5.03 -> 5.64, vellum 5.64 -> 6.13. */
   background: linear-gradient(180deg,
-    color-mix(in oklch, var(--gold) 45%, var(--surface-2)),
-    color-mix(in oklch, var(--gold-deep) 35%, var(--surface-2)));
+    color-mix(in oklch, var(--gold) 40%, var(--surface-2)),
+    color-mix(in oklch, var(--gold-deep) 30%, var(--surface-2)));
   color: var(--text);
 }
 .btn.danger { color: var(--crimson); border-color: color-mix(in oklch, var(--crimson) 50%, transparent); }
