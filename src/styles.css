@@ -20,7 +20,9 @@
   --celestial:    #8fb4ff;
   --celestial-2:  #c0d4ff;
   --celestial-deep:#3a5aa0;
-  --crimson:      #c8504f;
+  /* Lightened from #c8504f, which failed WCAG AA on all five midnight
+     surfaces (4.40 down to 3.03). Now 6.56 / 6.22 / 5.78 / 5.19 / 4.51. */
+  --crimson:      #d67c7b;
   --emerald:      #6fa872;
   --violet:       #a087d4;
   --glow:         0 0 20px rgba(143, 180, 255, 0.25);
@@ -78,7 +80,9 @@
   --celestial:    #d8a868;
   --celestial-2:  #f0c898;
   --celestial-deep:#8a5e2a;
-  --crimson:      #d86844;
+  /* Lightened from #d86844, which failed AA on --surface-2 (4.04) and
+     --surface-3 (3.39). Now 7.06 / 6.66 / 6.15 / 5.40 / 4.53. */
+  --crimson:      #e1896d;
   --emerald:      #a8a050;
   --violet:       #c89878;
   --glow:         0 0 20px rgba(232, 184, 96, 0.30);
