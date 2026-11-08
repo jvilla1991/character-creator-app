@@ -24,7 +24,8 @@
      surfaces (4.40 down to 3.03). Now 6.56 / 6.22 / 5.78 / 5.19 / 4.51. */
   --crimson:      #d67c7b;
   --emerald:      #6fa872;
-  --violet:       #a087d4;
+  /* Nudged from #a087d4, which missed AA on --surface-3 only (4.44). */
+  --violet:       #a189d5;
   --glow:         0 0 20px rgba(143, 180, 255, 0.25);
   --glow-gold:    0 0 18px rgba(212, 176, 106, 0.22);
   --shadow:       0 8px 32px rgba(0, 0, 0, 0.5);
@@ -64,7 +65,9 @@
   --celestial-2:  #1a3060;
   --celestial-deep:#0a1a40;
   --crimson:      #8a2a28;
-  --emerald:      #3a6a3a;
+  /* Darkened from #3a6a3a, which failed AA on --bg-2 (4.41), --surface-2
+     (4.50) and --surface-3 (3.82). Now 5.82 / 5.21 / 6.27 / 5.31 / 4.51. */
+  --emerald:      #345e34;
   --violet:       #5a3a8a;
   --glow:         0 0 12px rgba(42, 74, 138, 0.15);
   --glow-gold:    0 0 12px rgba(113, 77, 28, 0.18);
@@ -97,7 +100,8 @@
   /* Lightened from #d86844, which failed AA on --surface-2 (4.04) and
      --surface-3 (3.39). Now 7.06 / 6.66 / 6.15 / 5.40 / 4.53. */
   --crimson:      #e1896d;
-  --emerald:      #a8a050;
+  /* Nudged from #a8a050, which missed AA on --surface-3 only (4.42). */
+  --emerald:      #aaa254;
   --violet:       #c89878;
   --glow:         0 0 20px rgba(232, 184, 96, 0.30);
   --glow-gold:    0 0 18px rgba(232, 184, 96, 0.30);
