@@ -48,3 +48,17 @@ Thumbs.db
 /cypress/videos
 /cypress/screenshots
 /cypress/downloads
+
+# impeccable-ignore-start
+# Ignore everything impeccable generates, then re-include the shared artifacts
+# that are meant to be committed. See docs/impeccable-adoption-plan.md.
+.impeccable/*
+!.impeccable/config.json
+!.impeccable/design.json
+!.impeccable/live/
+.impeccable/live/*
+!.impeccable/live/config.json
+!.impeccable/surfaces/
+!.impeccable/critique/
+.impeccable/**/*.png
+# impeccable-ignore-end
