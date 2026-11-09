@@ -1,7 +1,16 @@
-name: Pull Request CI
+name: CI
 
 on:
   pull_request:
+    branches: [develop, main]
+  # Also run on direct pushes to the long-lived branches. Merges into develop
+  # and main are not always made through a pull request, and until this was
+  # added those pushes reached the shared branches — and, for main, the
+  # deploy workflow — with no CI at all.
+  #
+  # Only develop and main are listed, so a push to a feature branch with an
+  # open PR does not run this twice.
+  push:
     branches: [develop, main]
   workflow_dispatch:
 
@@ -9,7 +18,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-ci-${{ github.event.pull_request.number || github.ref }}
+  # For a pull_request the key is the PR number; for a push there is no PR,
+  # so it falls back to the ref. PR runs and push runs therefore land in
+  # different groups and do not cancel each other.
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
