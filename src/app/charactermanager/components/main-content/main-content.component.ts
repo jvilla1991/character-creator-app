@@ -9,18 +9,18 @@ import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { JoinModalService } from '../../services/join-modal.service';
+import { DiceRollerService } from '../../services/dice-roller.service';
 import { RouterOutlet } from '@angular/router';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { EmptyStateComponent } from '../character-sheet/empty-state/empty-state.component';
 import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
-import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
 import { LevelUpModalComponent } from '../level-up-modal/level-up-modal.component';
 
 @Component({
     selector: 'app-main-content',
     templateUrl: './main-content.component.html',
     styleUrls: ['./main-content.component.scss'],
-    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent, DiceRollerModalComponent, LevelUpModalComponent]
+    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent, LevelUpModalComponent]
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
@@ -35,16 +35,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
   /** The active PC's campaign's current party location (null when none). */
   location: CampaignLocation | null = null;
   isDeleteModalOpen = false;
-  isRollModalOpen = false;
   isLevelUpModalOpen = false;
-
-  /**
-   * When the active PC is currently seated in a live (non-ENDED) session, the
-   * session/participant id to wire into the dice modal so a roll logs to the
-   * DM's Roll Log — null otherwise (standalone roll, nothing to log to).
-   */
-  activeRollSessionId: number | string | null = null;
-  activeRollParticipantId: number | null = null;
 
   constructor(
     private pcService: PCService,
@@ -54,6 +45,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private joinModal: JoinModalService,
+    private dice: DiceRollerService,
     private destroyRef: DestroyRef,
   ) {}
 
@@ -89,7 +81,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
       .subscribe(pc => {
         this.pc = pc;
         this.resolveVariants(pc);
-        this.refreshSessionContext(pc);
         this.refetchOnActivation(pc);
       });
     document.addEventListener('visibilitychange', this.onVisible);
@@ -153,32 +144,6 @@ export class MainContentComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * One-shot check (on PC load/switch, not a poll): is the active PC currently
-   * seated in a live session? If so, wire the dice modal's sessionId/
-   * participantId so a settled roll logs to the DM's Roll Log — same as the
-   * Session Mode Roll button, but discovered independently since this
-   * standalone sheet has no ambient SessionService.state$ (that only starts
-   * once Session Mode is entered). Known gap: a session started while the
-   * sheet is already open isn't picked up until the next PC load/switch.
-   */
-  private refreshSessionContext(pc: PC | null): void {
-    this.activeRollSessionId = null;
-    this.activeRollParticipantId = null;
-    if (!pc || pc.campaignId == null) return;
-    const pcId = pc.id;
-    this.sessionService.getActiveForCampaign(String(pc.campaignId))
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(state => {
-        if (this.pc?.id !== pcId || !state) return; // guard stale response after PC switch
-        const mine = state.participants.find(p => p.pcId === pcId && p.ownedByMe);
-        if (mine) {
-          this.activeRollSessionId = state.sessionId;
-          this.activeRollParticipantId = mine.participantId;
-        }
-      });
-  }
-
   // ── Create modal ─────────────────────────────────────────────────────────
 
   openCreateModal(): void { this.characterModal.openCreateModal(); }
@@ -188,10 +153,11 @@ export class MainContentComponent implements OnInit, OnDestroy {
   openDeleteModal(): void  { this.isDeleteModalOpen = true;  }
   closeDeleteModal(): void { this.isDeleteModalOpen = false; }
 
-  // ── Dice roller modal ──────────────────────────────────────────────────────
+  // ── Dice roller ────────────────────────────────────────────────────────────
+  // The sheet's dice icon is one of several triggers for the shell-level
+  // roller; the service works out whether the roll logs to a live session.
 
-  openRollModal(): void  { this.isRollModalOpen = true;  }
-  closeRollModal(): void { this.isRollModalOpen = false; }
+  openRollModal(): void { this.dice.open(); }
 
   // ── Level-up modal ─────────────────────────────────────────────────────────
   // The modal owns the preview→confirm→commit flow; PCService pushes the updated PC
