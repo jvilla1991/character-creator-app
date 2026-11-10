@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: Table Mimic",
+  "extensions": {
+    "colorMeta": {
+      "gold": {
+        "role": "primary",
+        "displayName": "Arcane Gold",
+        "canonical": "#d4b06a",
+        "tonalRamp": ["#2a1f0e", "#4a3718", "#6b4f24", "#8a6a3a", "#a98850", "#d4b06a", "#e8c98a", "#f5e4c2"]
+      },
+      "celestial": {
+        "role": "secondary",
+        "displayName": "Starlight",
+        "canonical": "#8fb4ff",
+        "tonalRamp": ["#0f1a33", "#1b2c55", "#2a4379", "#3a5aa0", "#5d84cd", "#8fb4ff", "#c0d4ff", "#e4edff"]
+      },
+      "crimson": {
+        "role": "tertiary",
+        "displayName": "Rose Crimson",
+        "canonical": "#d67c7b",
+        "tonalRamp": ["#2e1313", "#4d1f1e", "#6f2e2d", "#93403f", "#b55a59", "#d67c7b", "#e8a7a6", "#f6d6d5"]
+      },
+      "emerald": {
+        "role": "tertiary",
+        "displayName": "Moss Emerald",
+        "canonical": "#6fa872",
+        "tonalRamp": ["#101f12", "#1b331e", "#28492c", "#38613c", "#53854f", "#6fa872", "#9ac89c", "#d2e8d3"]
+      },
+      "violet": {
+        "role": "tertiary",
+        "displayName": "Thistle Violet",
+        "canonical": "#a189d5",
+        "tonalRamp": ["#1a1430", "#2b2150", "#3f3173", "#564497", "#7a64b8", "#a189d5", "#c4b4e6", "#e6def5"]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Void",
+        "canonical": "#080b18",
+        "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Astral Surface",
+        "canonical": "#131934",
+        "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Constellation Line",
+        "canonical": "#2a3464"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Parchment Ink",
+        "canonical": "#ece3cc"
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#b8b2a0"
+      },
+      "text-dim": {
+        "role": "neutral",
+        "displayName": "Dim Ink",
+        "canonical": "#9195af"
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Placeholder Ink",
+        "canonical": "#9195af"
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Drop capital and the largest dice result. Rare." },
+      "headline": { "displayName": "Headline", "purpose": "Page and empty-state titles." },
+      "title": { "displayName": "Title", "purpose": "Modal titles and section headings." },
+      "body": { "displayName": "Body", "purpose": "All prose; italic carries flavour text." },
+      "label": { "displayName": "Label", "purpose": "Buttons, panel titles, field labels, tabs. Uppercase Cinzel." },
+      "numeric": { "displayName": "Numeric", "purpose": "Any figure compared or totalled: HP, ability scores, dice, currency." }
+    },
+    "themes": [
+      { "name": "midnight", "selector": ":root, [data-theme=\"midnight\"]", "note": "Default. Values in DESIGN.md frontmatter are this theme." },
+      { "name": "vellum", "selector": "[data-theme=\"vellum\"]", "note": "Light parchment. Same token names, inverted ramp." },
+      { "name": "candlelit", "selector": "[data-theme=\"candlelit\"]", "note": "Warm sepia." }
+    ],
+    "shadows": [
+      { "name": "ambient-page", "value": "0 8px 32px rgba(0, 0, 0, 0.5)", "purpose": "Modals and drawers only — the one place something sits above the page." },
+      { "name": "focus-glow-gold", "value": "0 0 18px rgba(212, 176, 106, 0.22)", "purpose": "Input focus and the primary button. State, never decoration." },
+      { "name": "live-glow-celestial", "value": "0 0 20px rgba(143, 180, 255, 0.25)", "purpose": "Active or live session state." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": "all .15s", "purpose": "Default for button and control state changes." },
+      { "name": "meter-fill", "value": "width .25s ease-out", "purpose": "Vitals bar and other meters changing value." },
+      { "name": "reduced-motion", "value": "@media (prefers-reduced-motion: reduce)", "purpose": "Honoured; motion is CSS-only. @angular/animations is deliberately absent." }
+    ],
+    "breakpoints": [
+      { "name": "shell-collapse", "value": "820px" },
+      { "name": "md", "value": "640px" },
+      { "name": "sm", "value": "560px" },
+      { "name": "xs", "value": "480px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "The base control: hairline border, uppercase Cinzel label, near-sharp corner.",
+      "html": "<button class=\"ds-btn\">Open Chronicle</button>",
+      "css": ".ds-btn { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; padding: 9px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-2); border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-btn:hover { color: var(--gold); border-color: var(--gold); } .ds-btn:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The committing action. Gradient fill mixed from gold into the raised surface, gold border and glow.",
+      "html": "<button class=\"ds-btn-primary\">Forge a Hero</button>",
+      "css": ".ds-btn-primary { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; padding: 9px 14px; border: 1px solid var(--gold); color: var(--gold-2); border-radius: 2px; cursor: pointer; background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 30%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 25%, var(--surface-2))); box-shadow: var(--glow-gold); transition: all .15s; } .ds-btn-primary:hover { color: var(--text); background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 40%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 30%, var(--surface-2))); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Inset ground, hairline border, gold focus glow. Label is a tracked Cinzel micro-cap.",
+      "html": "<label class=\"ds-field\"><span>Username</span><input class=\"ds-input\" placeholder=\"Enter your username\"></label>",
+      "css": ".ds-field { display: block; } .ds-field span { display: block; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; } .ds-input { width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; font-family: 'Newsreader', Georgia, serif; font-size: 15px; border-radius: 2px; outline: none; } .ds-input::placeholder { color: var(--placeholder); opacity: 1; } .ds-input:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The repeating container: translucent surface over a blurred backdrop, hairline border, 3px corner. No shadow.",
+      "html": "<section class=\"ds-panel\"><h3 class=\"ds-panel-title\">Ability Scores</h3><p class=\"ds-panel-body\">Strength, Dexterity, Constitution.</p></section>",
+      "css": ".ds-panel { background: color-mix(in oklch, var(--surface) 75%, transparent); border: 1px solid var(--border); border-radius: 3px; padding: 18px 20px; backdrop-filter: blur(4px); } .ds-panel-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; } .ds-panel-body { font-family: 'Newsreader', Georgia, serif; font-size: 14px; line-height: 1.45; color: var(--text); margin: 0; }"
+    },
+    {
+      "name": "Condition Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Accent text on a faint mix of the same accent. Used for conditions, tags and counts.",
+      "html": "<span class=\"ds-chip\">Poisoned</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--crimson); background: color-mix(in oklch, var(--crimson) 16%, transparent); border: 1px solid color-mix(in oklch, var(--crimson) 45%, transparent); border-radius: 999px; padding: 3px 10px; }"
+    },
+    {
+      "name": "Roster Row",
+      "kind": "nav",
+      "refersTo": "nav-row",
+      "description": "A navigation row in the 320px rail. Active rows take a gold left marker.",
+      "html": "<a class=\"ds-nav-row ds-nav-row--active\" aria-current=\"true\"><span class=\"ds-nav-name\">Lyra Moonwhisper</span><span class=\"ds-nav-meta\">Half-Elf Bard</span></a>",
+      "css": ".ds-nav-row { position: relative; display: block; padding: 10px 12px; border: 1px solid transparent; border-radius: 2px; cursor: pointer; text-decoration: none; transition: all .15s; } .ds-nav-row:hover { background: color-mix(in oklch, var(--celestial) 10%, transparent); } .ds-nav-row--active { background: color-mix(in oklch, var(--celestial) 14%, transparent); border-color: color-mix(in oklch, var(--celestial) 35%, transparent); } .ds-nav-row--active::before { content: ''; position: absolute; left: -8px; top: 4px; bottom: 4px; width: 2px; background: var(--gold); } .ds-nav-name { display: block; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: .04em; color: var(--text); } .ds-nav-meta { display: block; font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 2px; }"
+    },
+    {
+      "name": "Vitals Bar",
+      "kind": "custom",
+      "refersTo": "vitals-bar",
+      "description": "Signature component. A hairline-bounded meter whose fill runs crimson to gold, flattening to crimson when bloodied.",
+      "html": "<div class=\"ds-vitals\"><span style=\"width:62%\"></span></div>",
+      "css": ".ds-vitals { height: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; } .ds-vitals > span { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--crimson), var(--gold)); transition: width .25s ease-out; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Astral Chart",
+    "overview": "Table Mimic reads as a star chart kept by a cartographer who also runs a dungeon. The ground is deep midnight; the marks on it are gold leaf and starlight blue. Sigils and faint radial washes sit behind the content like constellations drawn on the page, never competing with it. The register is arcane and cosmic rather than bookish — this is an instrument for navigating a campaign, not a rulebook to be read.\n\nThe system is restrained by intent. Chrome is thin: hairline borders, near-sharp corners, a single hairline-bordered panel that repeats everywhere. Colour does the work that borders and boxes do in other systems — the accent is scarce and meaningful, and ornament is confined to the background. Depth is tonal, never lifted.\n\nOne thing makes this system unusual and governs everything else: it ships three complete themes, and all three are first-class. The token names are constant; their values are redefined per theme. A screen that only holds together in the default theme is not finished.",
+    "keyCharacteristics": [
+      "Gold and starlight accents on a deep midnight ground, with two sibling themes",
+      "Inscriptional caps (Cinzel) for labels, editorial serif (Newsreader) for prose, mono for numbers",
+      "Near-sharp corners (2–3px); pills reserved for status",
+      "Tonal depth through three stacked surface steps, never drop shadows",
+      "Glow is a state signal, not decoration",
+      "Dense by nature — built for glanceable reading on a phone at a table"
+    ],
+    "rules": [
+      { "name": "The Three Themes Rule", "body": "midnight (default), vellum (light parchment) and candlelit (sepia) redefine every token under a [data-theme] selector. Never write a literal colour in a component — the token is the only interface. A change verified in one theme is unverified.", "section": "colors" },
+      { "name": "The AA Floor Rule", "body": "Every text token clears 4.5:1 against every surface token, in every theme — 135 combinations, enforced by npm run check:contrast in CI. Adding or darkening a token without re-running it is how this breaks.", "section": "colors" },
+      { "name": "The Scarce Accent Rule", "body": "Gold marks what is active, valuable, or focused. When most of a screen is gold, none of it is.", "section": "colors" },
+      { "name": "The Ramp Separation Rule", "body": "The three text steps sit roughly 1.4x apart in contrast. Fixing a contrast failure by sliding one step toward another collapses the ramp; move its neighbour too.", "section": "colors" },
+      { "name": "The 11px Floor Rule", "body": "No functional text ships below 11px. Letterspaced micro-labels are functional text and are not exempt; being on the scale does not launder a legibility failure.", "section": "typography" },
+      { "name": "The Tracking Ladder Rule", "body": "Tracking rises as size falls: 0.04em on display, 0.05em on titles, 0.18em on buttons, 0.22em on the smallest eyebrow labels. Uppercase Cinzel below 12px without tracking is illegible.", "section": "typography" },
+      { "name": "The Panel Owns Its Scroll Rule", "body": "The shell never scrolls. A new surface that needs to scroll scrolls inside its panel, not by growing the page.", "section": "layout" },
+      { "name": "The Phone Is The Table Rule", "body": "Players hold phones during play. Any session surface must stay workable at 375px — dense is acceptable, cramped and clipped are not.", "section": "layout" },
+      { "name": "The Glow Is State Rule", "body": "Glow signals focus, activity, or liveness. Never apply it to make something look richer at rest.", "section": "elevation" },
+      { "name": "The Hairline Rule", "body": "Structure is drawn with 1px borders and tone. If a boundary needs more than a hairline to read, the tones on either side of it are wrong.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do write every colour as a token. The three themes are the product.",
+      "Do run npm run check:contrast after touching any colour token.",
+      "Do keep functional text at 11px or above, and raise tracking as size falls.",
+      "Do use tone and hairlines for structure; let surface → surface-2 → surface-3 carry depth.",
+      "Do keep the accent scarce — gold marks active, valuable, or focused.",
+      "Do verify at 375px before calling a session surface done."
+    ],
+    "donts": [
+      "Don't introduce a drop shadow to separate elements. Change the tone step instead.",
+      "Don't leave a glow on an element at rest.",
+      "Don't soften the corner language; 2–3px is the house voice, pills are for status only.",
+      "Don't reach for a literal hex, #757575-style browser defaults included.",
+      "Don't add @angular/animations. Motion here is CSS-only and deliberately so — the package was removed for 433 kB and should stay out.",
+      "Don't let a fix for one theme regress another; all three ship together."
+    ]
+  }
+}
