@@ -110,6 +110,56 @@
   --placeholder:  #a98b5c;
 }
 
+/* === SCALE TOKENS (theme-independent) ===
+   Extracted from the values the implementation already uses — see DESIGN.md,
+   whose frontmatter is the normative copy of these scales.
+
+   These are definitions only. Existing declarations were deliberately NOT
+   rewritten: that migration is its own pass, so this commit cannot cause a
+   visual change. New and reworked surfaces should consume these. */
+:root {
+  /* Spacing. The rhythm is a 2px grid with 8px as the dominant unit
+     (62 of the gaps in the app). Tight steps group within a component;
+     --space-xl and above separate groups. */
+  --space-2xs: 2px;
+  --space-xs:  4px;
+  --space-sm:  6px;
+  --space-md:  8px;
+  --space-lg:  10px;
+  --space-xl:  12px;
+  --space-2xl: 14px;
+  --space-3xl: 20px;
+
+  /* Radius. 2px is the house corner; pills are for status only. */
+  --radius-sharp: 2px;
+  --radius-panel: 3px;
+  --radius-sm:    4px;
+  --radius-md:    6px;
+  --radius-lg:    8px;
+  --radius-pill:  999px;
+
+  /* Type scale. There is deliberately no token below 11px: that is the
+     legibility floor for functional text, and giving a smaller size a name
+     would launder it. The 9px and 10px values still in the codebase are a
+     known debt, not a tier. */
+  --text-2xs:  11px;
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-md:   14px;
+  --text-base: 15px;
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  24px;
+  --text-3xl:  32px;
+  --text-4xl:  48px;
+
+  /* Tracking rises as size falls — see the Tracking Ladder Rule. */
+  --track-display: 0.04em;
+  --track-title:   0.05em;
+  --track-label:   0.18em;
+  --track-micro:   0.22em;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {

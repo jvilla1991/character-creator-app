@@ -385,3 +385,69 @@ Two things this turned up that are **bigger than the fix itself**:
 
 Both points argue the same thing: **per-page URL scanning is not sufficient for a themed app.**
 Phase 2 needs a theme-matrix pass, not just a route-by-route pass.
+
+---
+
+## 9. Phase 1 results — design context captured (2026-11-10)
+
+### How it ran
+
+The `/impeccable` slash commands were **never available**: the skill installed into
+`~/.claude/skills/` but the session that installed it could not load it, and a reload did not
+happen before this work. The playbooks are plain markdown, so Phase 1 was run by reading
+`reference/init.md`, `reference/document.md` and `reference/extract.md` and following them
+directly. The skill's own `impeccable context` launcher *did* run and supplied its directives.
+
+That distinction matters for judging the tool: **nothing below came from the skill driving the
+session.** It came from the skill's written method, applied by hand.
+
+### What was produced
+
+| File | Contents |
+|---|---|
+| `PRODUCT.md` | Product truth from a three-question interview: in-person single group; positioning across live session state, variant rules and deliberate lightness; three binding constraints (2024 PHB, phone-usable, DM/player visibility split). |
+| `DESIGN.md` | The Arcane system to the DESIGN.md spec — YAML token frontmatter plus the eight canonical sections. North star **"The Astral Chart"**; depth is tonal, glow is state; components "refined and restrained". |
+| `.impeccable/design.json` | Sidecar (schemaVersion 2): tonal ramps, shadow/motion/breakpoint tokens, 7 component snippets, narrative. |
+| `.impeccable/config.json` | Detector ignores. |
+| `src/styles.css` | The missing scales, as tokens. |
+
+### The scales (the Phase 1 deliverable from §4)
+
+`--space-*` (2–20px on a 2px grid, 8px the unit), `--radius-*` (2px house corner through
+`999px` pills), `--text-*` (11–48px) and `--track-*`. Theme-independent, unlike the colour
+tokens.
+
+**Definitions only — no existing declaration was rewritten**, so this cannot have changed
+anything visually. Migrating the ~1,900 raw px values is its own pass.
+
+The type scale deliberately has **no step below 11px**. Naming a 9px or 10px size would launder
+the legibility floor; those values remain in the codebase as recorded debt, not as a tier.
+
+### Decisions worth knowing
+
+- **Interview answers shaped the file, not the repo's guesses.** Content licensing was offered
+  as a constraint and *not* selected, so `PRODUCT.md` records it as an open question rather than
+  assuming an SRD restriction.
+- **A documented rule immediately collided with the implementation.** "Glow is state" was the
+  chosen depth philosophy, but `.btn.primary` carries the gold glow at rest. Rather than quietly
+  exempt it, DESIGN.md names **The One Standing Glow** as the single sanctioned exception.
+- **`dark-glow` was deliberately NOT suppressed.** It has no value-level ignore, so silencing it
+  would also stop it catching celestial rest glows — the failures actually worth knowing about.
+  Its 3 findings are expected output; check which element they sit on before treating them as
+  new. Only `radial-spotlight-glow` is ignored, since that wash *is* the documented world.
+- **A stated tension was recorded, not smoothed over.** The chosen component philosophy is
+  "refined and restrained"; the current build runs dense (9–10px labels, 4–6px gaps). DESIGN.md
+  marks restraint as the direction for new and reworked surfaces, not a description of what
+  exists.
+
+### State after Phase 1
+
+Detector on the login page: **3 findings, all the One Standing Glow.** Contrast gate: green,
+135/135. No visual change.
+
+### Still open
+
+- Migrating raw px values onto the new scales, and the ~55 sub-11px font sizes.
+- `/impeccable` slash commands still need a reload; everything so far was done by hand.
+- Phase 2's auth blocker (§8 correction #4) is unchanged: `detect` launches a clean browser, so
+  only the login page is reachable.
