@@ -21,7 +21,23 @@ describe('RestVoteModalComponent', () => {
     ...overrides,
   });
 
+  /**
+   * The component snapshots `Date.now()` once at construction and only refreshes
+   * it on a 500ms tick, so a deadline built from a LATER `Date.now()` sits more
+   * than N whole seconds away and `Math.ceil` reports N+1. A 1ms gap between
+   * construction and the assertion is enough, which made the countdown spec pass
+   * or fail depending on how fast the preceding setup ran.
+   *
+   * Freezing the clock before the component is constructed makes both references
+   * the same instant — which is what the countdown assertions mean to compare —
+   * and lets them assert exact values instead of a tolerance band.
+   */
+  let frozenNow: number;
+
   beforeEach(async () => {
+    frozenNow = Date.now();
+    spyOn(Date, 'now').and.returnValue(frozenNow);
+
     await TestBed.configureTestingModule({
       imports: [RestVoteModalComponent],
     }).compileComponents();
@@ -95,12 +111,11 @@ describe('RestVoteModalComponent', () => {
   });
 
   it('counts down from the server deadline, clamped at zero', () => {
-    fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(Date.now() + 30_000).toISOString() }));
+    fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(frozenNow + 30_000).toISOString() }));
     fixture.detectChanges();
-    expect(component.secondsLeft()).toBeGreaterThanOrEqual(29);
-    expect(component.secondsLeft()).toBeLessThanOrEqual(30);
+    expect(component.secondsLeft()).toBe(30);
 
-    fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(Date.now() - 5_000).toISOString() }));
+    fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(frozenNow - 5_000).toISOString() }));
     fixture.detectChanges();
     expect(component.secondsLeft()).toBe(0);
   });
