@@ -33,6 +33,7 @@
 .field-heading { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
 .field-heading label { margin-bottom: 0; }
 .field-heading app-context-help { flex-shrink: 0; }
+.field-heading input[type="checkbox"] { flex-shrink: 0; min-width: 14px; }
 
 @media (max-width: 600px) {
   .class-picker { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
