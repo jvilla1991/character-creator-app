@@ -29,3 +29,14 @@
     inset 0 0 0 6px var(--surface),
     inset 0 0 0 7px var(--border);
 }
+
+.field-heading { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.field-heading label { margin-bottom: 0; }
+.field-heading app-context-help { flex-shrink: 0; }
+.field-heading input[type="checkbox"] { flex-shrink: 0; min-width: 14px; }
+
+@media (max-width: 600px) {
+  .class-picker { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .field > div[style*="repeat(4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  input, select { min-width: 0; }
+}

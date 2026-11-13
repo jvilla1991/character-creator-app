@@ -71,6 +71,7 @@
 /* ── Section tabs (Sheet / Spells / Inventory / Notes) ───────────────────── */
 .sheet-tabs {
   display: flex;
+  overflow-x: auto;
   gap: 4px;
   margin: 12px 0 16px;
   border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
@@ -123,8 +124,8 @@
   }
 
   .sheet-tab {
-    flex: 1;
-    padding: 10px 4px;
+    flex: 1 0 auto;
+    padding: 10px 12px;
     text-align: center;
 
     &.active { border-bottom-color: transparent; border-top: 2px solid var(--celestial-2, #c9b6ff); }

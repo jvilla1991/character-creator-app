@@ -176,6 +176,10 @@
     [attr.aria-selected]="activeTab === 'spells'" (click)="setTab('spells')">Spells</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'inventory'"
     [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'renown'"
+      [attr.aria-selected]="activeTab === 'renown'" (click)="setTab('renown')">Renown</button>
+    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'followers'"
+      [attr.aria-selected]="activeTab === 'followers'" (click)="setTab('followers')">Followers</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
     [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
@@ -296,6 +300,16 @@
         (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
     </div>
+  }
+
+  @if (activeTab === 'renown' || activeTab === 'followers') {
+    <section class="sheet-tab-panel panel" role="tabpanel"
+      [attr.aria-label]="activeTab === 'renown' ? 'Renown' : 'Followers'">
+      <div class="panel-header">
+        <span class="panel-title">{{ activeTab === 'renown' ? 'Renown' : 'Followers' }}</span>
+      </div>
+      <p>{{ activeTab === 'renown' ? 'Renown' : 'Followers' }} will be available here in a future update.</p>
+    </section>
   }
 
   <!-- NOTES TAB -->

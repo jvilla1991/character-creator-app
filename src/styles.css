@@ -3,6 +3,15 @@
    Google Fonts loaded via <link> in index.html (not @import here) */
 
 /* === THEME: MIDNIGHT (default) === */
+.context-help-tooltip {
+  --mat-tooltip-container-color: var(--surface-2);
+  --mat-tooltip-supporting-text-color: var(--text);
+  --mat-tooltip-supporting-text-font: inherit;
+  --mat-tooltip-supporting-text-size: 13px;
+  --mat-tooltip-supporting-text-line-height: 20px;
+  --mat-tooltip-container-shape: 6px;
+}
+
 :root, [data-theme="midnight"] {
   --bg:           #080b18;
   --bg-2:         #0d1224;
