@@ -1,13 +1,9 @@
 <div class="modal-title">Proficiencies &amp; Languages</div>
-<div class="modal-sub">
-  Choose {{ classSkillConfig().choose }} skill{{ classSkillConfig().choose !== 1 ? 's' : '' }}
-  from your class list. Background skills and tools are already granted.
-</div>
 
 <!-- Class skill selection -->
 <div class="prof-section">
   <div class="prof-section-header">
-    <span class="eyebrow">{{ clazz() }} Skills</span>
+    <span class="eyebrow">{{ clazz() }} Skills <span aria-label="required">*</span></span>
     <span class="prof-counter" [class.complete]="classSkillsFull()">
       {{ selectedSkills().length }}/{{ classSkillConfig().choose }} chosen
     </span>
@@ -57,7 +53,6 @@
     <span class="eyebrow">Languages</span>
   </div>
   <div class="language-row">
-    <span class="lang-chip locked">Common</span>
     <div class="field lang-field">
       <label>Additional Language 1</label>
       <select [ngModel]="languageChoice()" (ngModelChange)="languageChoiceChange.emit($event)" name="languageChoice">

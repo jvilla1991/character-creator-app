@@ -18,7 +18,7 @@
 // - Standard-array assignment uses one `select.ability-select` per ability row;
 //   the +2/+1 background bonuses are two selects inside `.bonus-selectors`.
 
-const NAME_INPUT = 'input[placeholder="e.g. Seraphina Goldveil"]';
+const NAME_INPUT = '#hero-name';
 const USER = 'e2eTester';
 
 /**

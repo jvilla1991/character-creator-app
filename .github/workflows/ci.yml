@@ -79,7 +79,7 @@ jobs:
           wait-on: "http://127.0.0.1:4200"
           wait-on-timeout: 120
           browser: chrome
-          spec: cypress/e2e/login.cy.ts
+          spec: cypress/e2e/*.cy.ts
 
       - name: Upload Cypress failure artifacts
         if: failure()
