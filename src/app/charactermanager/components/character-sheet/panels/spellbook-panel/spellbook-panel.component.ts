@@ -31,6 +31,12 @@ export interface CastRequest {
     imports: [SpellPickerComponent, EditableNumberComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
+  readonly collapsedLevels = new Set<number>();
+  toggleLevel(level: number): void {
+    if (this.collapsedLevels.has(level)) this.collapsedLevels.delete(level);
+    else this.collapsedLevels.add(level);
+  }
+
   readonly pc = input.required<PC>();
   /** DM cross-link: replaces the slot pips with editable used/max numbers. */
   readonly editable = input(false);

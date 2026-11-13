@@ -72,14 +72,31 @@ jobs:
           node-version: "24"
           cache: npm
 
-      - name: Run Cypress login smoke test
+      - name: Install dependencies
+        run: npm ci
+
+      # Poll readiness explicitly: the action's wait-on can fail immediately on
+      # a closed socket while Angular is still starting, before its timeout.
+      - name: Start application and wait for readiness
+        run: |
+          npm start -- --host 127.0.0.1 > /tmp/table-mimic-ui.log 2>&1 &
+          echo $! > /tmp/table-mimic-ui.pid
+          curl --fail --silent --show-error --retry 60 --retry-delay 2 \
+            --retry-all-errors --retry-max-time 120 http://127.0.0.1:4200/ > /dev/null
+
+      - name: Run Cypress browser tests
         uses: cypress-io/github-action@dace029018fcdf86e0df89a31bc3cfa5b32570d8 # v7.3.0
         with:
-          start: npm start -- --host 0.0.0.0
-          wait-on: "http://127.0.0.1:4200"
-          wait-on-timeout: 120
+          install: false
           browser: chrome
-          spec: cypress/e2e/login.cy.ts
+          spec: cypress/e2e/*.cy.ts
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f /tmp/table-mimic-ui.pid ]; then
+            kill "$(cat /tmp/table-mimic-ui.pid)" || true
+          fi
 
       - name: Upload Cypress failure artifacts
         if: failure()
@@ -89,5 +106,6 @@ jobs:
           path: |
             cypress/screenshots
             cypress/videos
+            /tmp/table-mimic-ui.log
           if-no-files-found: ignore
           retention-days: 7

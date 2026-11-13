@@ -89,7 +89,8 @@
     @for (level of spellsByLevel(); track trackByLvl($index, level)) {
       <div class="spell-level">
         <div class="spell-level-header">
-          <span class="spell-level-name">{{ level.label }}</span>
+          <button type="button" class="spell-level-toggle" [attr.aria-expanded]="!collapsedLevels.has(level.lvl)"
+            (click)="toggleLevel(level.lvl)">{{ collapsedLevels.has(level.lvl) ? '▸' : '▾' }} {{ level.label }}</button>
           @if (level.slots) {
             <div class="spell-slots">
               @if (!editable()) {
@@ -119,6 +120,7 @@
             </div>
           }
         </div>
+        <div [hidden]="collapsedLevels.has(level.lvl)">
         @for (s of level.spells; track s) {
           @let prepared = isPrepared(s);
           <div>
@@ -201,6 +203,7 @@
             }
           </div>
         }
+        </div>
       </div>
     }
   }

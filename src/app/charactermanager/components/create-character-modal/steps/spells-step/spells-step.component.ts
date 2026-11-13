@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 
@@ -18,6 +18,11 @@ import { FormsModule } from '@angular/forms';
 })
 export class SpellsStepComponent {
   readonly filteredSpellList = input<DndSpell[]>([]);
+  readonly spellGroups = computed(() => {
+    const spells = this.filteredSpellList();
+    return [...new Set(spells.map(s => s.level))].sort((a, b) => a - b)
+      .map(level => ({ level, spells: spells.filter(s => s.level === level) }));
+  });
   readonly loadingSpells = input(false);
   readonly maxCantrips = input(0);
   readonly maxKnownSpells = input(0);

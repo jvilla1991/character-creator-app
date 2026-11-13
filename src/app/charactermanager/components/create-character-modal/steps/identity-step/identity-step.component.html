@@ -1,11 +1,10 @@
 <div class="modal-title">Forge a New Hero</div>
-<div class="modal-sub">Every legend begins with a name written in ink, and most end the same way.</div>
 
 <div class="field">
-  <label>Hero's Name</label>
-  <input [ngModel]="name()"
+  <label for="hero-name">Hero's Name <span aria-label="required">*</span></label>
+  <input id="hero-name" aria-required="true" [ngModel]="name()"
          (ngModelChange)="nameChange.emit($event)"
-         placeholder="e.g. Seraphina Goldveil"
+         placeholder="Seraphina Goldveil"
          autofocus
          (keydown.enter)="next.emit()"
          (keydown.escape)="cancel.emit()">

@@ -26,7 +26,10 @@
   <!-- Spell tile list -->
   @if (!loadingSpells()) {
     <div class="spell-scroll">
-      @for (s of filteredSpellList(); track trackBySpellName($index, s)) {
+      @for (group of spellGroups(); track group.level) {
+      <details class="spell-group" open>
+        <summary>{{ group.level === 0 ? 'Cantrips' : 'Level ' + group.level + ' Spells' }}</summary>
+      @for (s of group.spells; track trackBySpellName($index, s)) {
         @let selected = isSpellSelected(s);
         <div class="spell-row">
           <!-- Click the spell to expand/collapse its description -->
@@ -89,6 +92,8 @@
             </div>
           }
         </div>
+      }
+      </details>
       }
       @if (filteredSpellList().length === 0) {
         <div class="loading">No spells match your search.</div>

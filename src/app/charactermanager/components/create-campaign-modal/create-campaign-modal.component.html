@@ -2,11 +2,10 @@
   role="dialog" aria-modal="true" aria-labelledby="create-campaign-title"
   cdkTrapFocus cdkTrapFocusAutoCapture>
   <div class="modal-title" id="create-campaign-title" style="color: var(--celestial-2);">Open a New Campaign</div>
-  <div class="modal-sub">Every table begins with an empty map and a promise of trouble.</div>
 
   <div class="field">
-    <label>Campaign Name</label>
-    <input [(ngModel)]="name" autocomplete="off" placeholder="e.g. The Ashfall Accord" autofocus>
+    <label for="campaign-name">Campaign Name <span aria-label="required">*</span></label>
+    <input id="campaign-name" aria-required="true" [(ngModel)]="name" autocomplete="off" placeholder="The Ashfall Accord" autofocus>
   </div>
 
   <div class="field">
@@ -29,50 +28,42 @@
   </div>
 
   <div class="field">
-    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+    <div class="field-heading"><label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
       <input type="checkbox" [(ngModel)]="slotInventory" style="width: auto;">
       Use slot-based inventory (Darker Dungeons)
     </label>
-    <div class="modal-sub" style="margin-top: 4px;">
-      Players who join convert their inventory to bulk &amp; slots. Set at creation; can't be changed later.
-    </div>
+      <app-context-help label="Use slot-based inventory (Darker Dungeons)" text="Players who join convert their inventory to bulk &amp; slots. Set at creation; can't be changed later."></app-context-help></div>
   </div>
 
   <div class="field">
-    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+    <div class="field-heading"><label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
       <input type="checkbox" [(ngModel)]="survivalConditions" style="width: auto;">
       Use survival conditions (Darker Dungeons)
     </label>
-    <div class="modal-sub" style="margin-top: 4px;">
-      Characters track hunger, thirst &amp; fatigue; time of day worsens them. Set at creation; can't be changed later.
-    </div>
+      <app-context-help label="Use survival conditions (Darker Dungeons)" text="Characters track hunger, thirst &amp; fatigue; time of day worsens them. Set at creation; can't be changed later."></app-context-help></div>
   </div>
 
   <div class="field">
-    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+    <div class="field-heading"><label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
       <input type="checkbox" [(ngModel)]="strictComponents" style="width: auto;">
       Strict material components
     </label>
-    <div class="modal-sub" style="margin-top: 4px;">
-      Casting a spell with a costly material component requires that component in inventory. Set at creation; can't be changed later.
-    </div>
+      <app-context-help label="Strict material components" text="Casting a spell with a costly material component requires that component in inventory. Set at creation; can't be changed later."></app-context-help></div>
   </div>
 
   <div class="field">
-    <label>Days of the week (optional)</label>
+    <div class="field-heading"><label>Days of the week</label>
+      <app-context-help label="Days of the week" text="Pick a preset or enter custom day names. With a defined week the clock auto-advances the weekday each new day and counts weeks when it wraps. Editable later from the dashboard."></app-context-help></div>
     <app-week-days-editor [value]="weekDays" (valueChange)="onWeekDaysChange($event)"></app-week-days-editor>
-    <div class="modal-sub" style="margin-top: 4px;">
-      Pick a preset or enter custom day names. With a defined week the clock auto-advances the
-      weekday each new day and counts weeks when it wraps. Editable later from the dashboard.
-    </div>
   </div>
 
   <div class="field">
-    <label>In-world start date (optional)</label>
+    <div class="field-heading"><label>In-world start date</label>
+      <app-context-help label="In-world start date" text="Free text — any calendar works. The clock starts at morning of this day; the DM advances time in session and updates the date when a new day begins. Leave blank to set it later."></app-context-help></div>
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-      <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · e.g. 3rd" maxlength="40">
-      <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · e.g. Hammer" maxlength="40">
-      <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · e.g. 1492 DR" maxlength="40">
+      <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · 3rd" maxlength="40">
+      <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · Hammer" maxlength="40">
+      <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · 1492 DR" maxlength="40">
       @if (!weekDays?.length) {
         <input
           [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
@@ -85,10 +76,6 @@
           }
         </select>
       }
-    </div>
-    <div class="modal-sub" style="margin-top: 4px;">
-      Free text — any calendar works. The clock starts at morning of this day; the DM advances time
-      in session and updates the date when a new day begins. Leave blank to set it later.
     </div>
   </div>
 

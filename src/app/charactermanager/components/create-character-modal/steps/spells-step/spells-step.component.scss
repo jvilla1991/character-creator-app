@@ -203,3 +203,5 @@
   color: var(--celestial);
   margin-right: 4px;
 }
+
+.spell-group > summary { cursor: pointer; padding: 12px 4px; color: var(--gold); font-weight: 600; }

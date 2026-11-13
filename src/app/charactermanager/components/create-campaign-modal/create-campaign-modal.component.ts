@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { CampaignDraft, CampaignGameTime, CampaignTint } from '../../models/campaign';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ContextHelpComponent } from '../context-help/context-help.component';
 import { FormsModule } from '@angular/forms';
 import { WeekDaysEditorComponent } from '../week-days-editor/week-days-editor.component';
 
@@ -10,7 +11,7 @@ import { WeekDaysEditorComponent } from '../week-days-editor/week-days-editor.co
     templateUrl: './create-campaign-modal.component.html',
     styleUrls: ['./create-campaign-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus, FormsModule, WeekDaysEditorComponent]
+    imports: [ContextHelpComponent, CdkTrapFocus, FormsModule, WeekDaysEditorComponent]
 })
 export class CreateCampaignModalComponent {
   name = '';
