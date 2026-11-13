@@ -1,8 +1,53 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/create-character-wizard.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/create-character-wizard.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Create-character wizard
 
-# Assessment A — Create-character wizard
+**Design Health Score: 19/40 — Poor (just under Acceptable).** Weakest: Consistency (1), Error
+Recovery (1). Audit: 8/20 — Poor.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored in voice ("Forge a New Hero", "Inscribe", the Origin Feat card, a
+2024-PHB-shaped flow) but only half in the system. The visual layer is an older language — literal
+violet `#8a5cf6` / `#a78bfa` for progress, selection, chips and counters — never moved onto The
+Astral Chart.
+
+**Deterministic scan:** `dark-glow` on `div.step-dot.active` (#8a5cf6) and `div.modal.wizard`;
+`undersized-ui-text` ×6 (ruleset badges 8–9px, method tabs 10px, "soon" 7px); `low-contrast` on
+disabled "2014 5e" / "Roll Dice" (disabled controls are exempt from 1.4.3). Measured in vellum:
+ability labels 1.11:1, future step numbers 1.06:1; midnight/candlelit future steps 3.1:1.
+
+**Agreement:** vellum invisibility and the off-palette violet are both assessments' top two. Here
+the `dark-glow` "AI purple" slop finding is a **true positive**. **Reviewer-only, confirmed in
+source:** the modifier column shows the score ("INT 17 +17") — `score | modifier` passes the raw
+score (`ability-scores-step.component.html:44,87`, `review-step.component.html:157`); the saved
+character is computed separately and is correct. Also: disabled Next/Inscribe look enabled (no
+`.btn:disabled` style in `styles.css`); no close/Escape on a phone, and Cancel on step 1 deletes the
+draft without asking. **False positive:** `low-contrast` on disabled placeholders.
+
+## Overall Impression
+
+The flow is well thought through and on voice; the paint is from another app, and in vellum the
+ability step cannot be completed.
+
+## Priority Issues
+
+- **[P0] Vellum: ability labels, totals and wizard chrome invisible.** → `/impeccable colorize`
+- **[P1] Modifier column shows the score, not the modifier.** → `/impeccable harden`
+- **[P1] Disabled Next / Inscribe look enabled; Next goes dead without saying why.** →
+  `/impeccable harden`, `/impeccable clarify`
+- **[P1] Off-palette violet with a standing glow.** → `/impeccable colorize`
+- **[P2] No close / Escape on a phone; Cancel wipes the draft silently.** → `/impeccable harden`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/create-character-wizard.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Create-character wizard
 
 Looked at: the 9-step wizard (`components/create-character-modal/` + all `steps/`), walked live in the browser pane at 375×812 as a player (Elf / Wizard / Sage, Standard Array and Point Buy both exercised, one cantrip added, Option A kit), through to Review and back out via Back ×8 → Cancel (nothing inscribed, draft cleared, roster still 3). Themes: midnight throughout; vellum on Spells + Ability Scores; candlelit on Ability Scores. Desktop (800×600 pane) checked at Review. Escape tested at step 1 and step 9. Source read for every step.
 

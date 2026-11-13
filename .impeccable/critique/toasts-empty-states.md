@@ -1,8 +1,48 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/toasts-empty-states.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/toasts-empty-states.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Toasts and empty states
 
-# Assessment A — Toasts and empty states
+**Design Health Score: 21/36 (58%) — Acceptable.** Heuristic 7 scored n/a (passive feedback
+surfaces; no accelerators apply). Audit: 14/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** empty states authored — the sigil, tracked Cinzel title and "inscribe a new
+soul to begin" are The Astral Chart at its most characteristic. The toast is generic: a 10px-rounded
+box with the same info glyph for every message.
+
+**Deterministic scan:** no detector findings on the toast itself. Measured: toast 0 contrast
+failures in all three themes, but **188px wide on a 375px phone**; curated empty states 1.16:1 in
+vellum (`--muted`). Host live region is correct (`role="status"`, `aria-live="polite"`).
+
+**Agreement:** the half-width toast (reviewer 187px, measured 188px) and the vanishing curated
+empties. **Reviewer-only:** errors and successes look identical; a new toast silently replaces the
+previous one; "No heroes match that name." shows with no query; "Choose a name from the chronicle"
+points at a drawer that is hidden on phones. **Wash-only:** `div.empty-sub` passes on the solid
+ground (6.31:1) — not a finding.
+
+## Overall Impression
+
+The empty states are some of the best writing in the app; the toast is the least designed element.
+
+## Priority Issues
+
+- **[P1] Toast collapses to half the screen on phones.** → `/impeccable adapt`
+- **[P1] Curated empty states invisible in vellum.** → `/impeccable colorize`
+- **[P2] No severity — errors and successes look identical; newer toasts erase older ones.** →
+  `/impeccable harden`
+- **[P2] Empty states that misdiagnose or point at hidden UI** (roster search, phone drawer). →
+  `/impeccable onboard`, `/impeccable clarify`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/toasts-empty-states.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Toasts and empty states
 
 Looked at, in a browser tab:
 - the "No Hero Selected" empty state at 375×812 (player, no hero),

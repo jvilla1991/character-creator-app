@@ -1,8 +1,63 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/session-mode.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/session-mode.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Session mode
 
-# Assessment A — Live session mode (`components/session-mode/`)
+**Design Health Score: 20/40 — Acceptable (bottom of band).** Weakest: Consistency (1), Error
+Recovery (1). Audit: 9/20 — Poor.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored at the centre, generic at the edges. The turn board, whole-viewport
+turn vignette, green "up" / gold "on deck" and the rest vote belong to a table game and nothing
+else. The shop, loot and encounter-loader panels below were built in another dialect (12px cards,
+undefined tokens, Arial `btn-mini`).
+
+**Deterministic scan:** initiative panel — 8 `dark-glow` on the current/on-deck rows, 3
+`undersized-ui-text`; shop panel — `low-contrast 1.6:1 (#ece3cc on #8fb4ff)` on `.seg-btn.active`.
+Measured: vellum current-turn names 1.16:1, on-deck 1.27:1; `--muted` text 1.16:1; active segment
+1.60–1.84:1 in all three themes.
+
+**Agreement:** both rank the vellum whose-turn failure first (reviewer 1.13–1.24, measured
+1.16–1.27) and both found the `--muted`/`--bg-elev` forms. **Reviewer-only:** the 720px board
+(confirmed `styles.css:1624`), prep living inside play, unguarded End Session, per-second countdown
+announcements. **Detector-only:** the `.seg-btn.active` contrast in *every* theme. **False
+positive:** the 8 `dark-glow` findings on the active row are state glows — sanctioned by The Glow Is
+State Rule; only their literal colours are wrong. **Corrected:** the reviewer says no
+`prefers-reduced-motion` exists anywhere; two component files do handle it, session mode does not.
+
+## Overall Impression
+
+The app's centre of gravity and its most characterful screen — and the one that fails hardest on a
+phone. The single answer a player needs (whose turn?) is invisible in one theme and off-screen in
+another.
+
+## Priority Issues
+
+- **[P0] Whose turn it is cannot be read in vellum.** → `/impeccable colorize`
+- **[P1] The initiative board does not fit a phone** (`min-width: 720px`). → `/impeccable adapt`
+- **[P1] Shop/loot/encounter forms unreadable in vellum; active segment fails everywhere.** →
+  `/impeccable colorize`
+- **[P1] Preparation lives inside play** — at 375px the first screen is an empty "Spells (0)"
+  carousel and the turn never appears in the header (PRODUCT.md principle 3). → `/impeccable distill`,
+  `/impeccable layout`
+- **[P2] Irreversible actions unguarded, failures silent** — End Session / Leave have no confirm;
+  HP/initiative errors go to the console. → `/impeccable harden`
+
+## Persona Red Flags (summary)
+
+**DM mid-combat:** Adjust column is off-screen at 375px. **Player between turns:** own HP clipped,
+turn not in the header. **Sam:** turn changes never announced; countdown announces every second.
+Full detail in the appendix.
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/session-mode.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Live session mode (`components/session-mode/`)
 
 Looked at: demo campaign "The Veiled Compass" → Start Session as DM, in the browser pane. States: lobby → load "Goblin Ambush (demo)" → Start Encounter → Next Turn ×2 (active + on-deck glows), and the DM-side forms for clock/location/shop/loot/encounter loader/session note. I could not reach a live shop or loot pool in demo: `loot.service.ts:27` and the shop equivalent return `demoUnsupported()`, so "Prepare Loot" fails with a "Could not prepare the loot." toast. I reviewed those states from source only. Demo always builds `dm: true` (`session.service.ts:1056`), so I rendered the **player face** and the **rest vote** (both faces) by pushing a modified in-memory snapshot into `SessionService.stateSubject` through `ng.getComponent`. That used the real templates and changed no source. Widths: 375×812 (binding), 800 and 1280. Themes: midnight, vellum and candlelit, with transitions frozen. Reduced-motion and keyboard behaviour were checked from source.
 

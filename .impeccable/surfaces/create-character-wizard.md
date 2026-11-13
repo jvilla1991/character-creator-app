@@ -28,7 +28,7 @@ breaks outright.
 
 ## Executive Summary
 
-- **8/20 — Poor.** P0: 1 · P1: 4 · P2: 2 · P3: 1
+- **8/20 — Poor.** P0: 1 · P1: 6 · P2: 2 · P3: 1
 - Top issues:
   1. **[P0] Vellum: the ability-score labels are white on parchment** (STR/DEX/… 1.11:1).
   2. **[P1] Off-palette violet** in progress, selection and checkboxes.
@@ -59,6 +59,15 @@ breaks outright.
 - **Recommendation:** progress and selection use `--gold` (active) / `--celestial` (done); native
   controls `accent-color: var(--gold)`. This is *folding into tokens*, not a repaint.
 - **Suggested command:** `/impeccable colorize`
+
+**[P1] Modifier column shows the score** — `ability-scores-step.component.html:44,87` and
+`review-step.component.html:157` pipe the raw score into `modifier`, so INT 17 reads "+17" instead of
+"+3". The saved character is computed separately and is correct; only the display lies — on the
+step where the player is deciding. (Design review finding, confirmed in source.)
+→ `/impeccable harden`
+
+**[P1] Disabled Next / Inscribe look enabled** — `styles.css` has no `.btn:disabled` /
+`.btn.primary:disabled` rule, so Next simply goes dead. → `/impeccable harden`
 
 **[P1] Step progress unreadable**
 - **Location:** `.step-dot` future state (`create-character-modal.component.scss:65+`)

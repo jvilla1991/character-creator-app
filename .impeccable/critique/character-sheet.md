@@ -1,8 +1,61 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/character-sheet.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/character-sheet.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Character sheet
 
-# Assessment A — Character sheet
+**Design Health Score: 21/40 — Acceptable.** Weakest: Error Recovery (1). Audit: 10/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored, not interchangeable. The vitals strip, ability tiles (big modifier,
+small mono score), drop-capped bio and in-world empty states are The Astral Chart done right. The
+authorship thins toward the edges: inventory, coins and the phone tab bar were built outside the
+token system.
+
+**Deterministic scan:** Sheet tab — 62 `undersized-ui-text`, 10 `nested-cards`, 2 `dark-glow`
+(`div.portrait.xl`, `h1.sheet-name`), 1 `kicker-above-heading` ("played by Alice"). Spells tab adds
+`spell-prep-btn` at 9px. Measured: 0 definite contrast failures in midnight and candlelit; in vellum
+the tab bar measures 1.34:1 (active) / 2.28:1.
+
+**Agreement:** both found the vellum tab bar (reviewer ~1.3:1, measured 1.34:1), the sub-11px labels
+and the rest glows. **Reviewer-only:** the mobile grid rules that never apply (source order), silent
+save failures, tooltip-only rules on touch, the absolute-HP edit. **Detector-only:** none material.
+**False positive:** `kicker-above-heading` is the house `.eyebrow` pattern — identity, not slop.
+**Severity corrected in synthesis:** the reviewer's P0 "DM notes on the player's sheet" is latent —
+nothing writes `PC.notes` today — so it is P1 here.
+
+## Overall Impression
+
+The best-looking screen in the app until you change theme or pick up a phone. At 375px the header
+uses ~64% of the first screen and the hero's name clips; in vellum the only navigation disappears.
+
+## Priority Issues
+
+- **[P1] Vellum breaks the sheet's chrome** — tab bar, coin amounts, inventory accents come from
+  undefined tokens with midnight fallbacks. *Fix:* map `--panel-bg`, `--line`, `--accent`,
+  `--bg-elev`, `--surface-1` to real tokens. → `/impeccable colorize`
+- **[P1] Phone layout buries the vitals** — header clips the name, XP wraps to three lines, HP starts
+  at y≈521; the 720px grid overrides never apply. → `/impeccable adapt`
+- **[P1] "DM Notes" render to the owner** (latent visibility hazard; both repos). → `/impeccable harden`
+- **[P1] Failures are silent** — saves, grants, inspiration only `console.error`; Level Up's disabled
+  reason and rule help live in hover tooltips. → `/impeccable harden`, `/impeccable clarify`
+- **[P2] Spell-slot pips invert their meaning** — filled = spent, and the filled ones glow. →
+  `/impeccable clarify`
+
+## Persona Red Flags (summary)
+
+**Player between turns:** HP is below the fold at 375px. **Sam:** one heading on the whole sheet;
+spell rows are clickable `div`s. **DM mid-combat:** types an absolute HP and does the subtraction.
+Full detail in the appendix.
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/character-sheet.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Character sheet
 
 Looked at: `/charactermanager` in demo mode, live in the browser pane. Covered Lyra Moonwhisper (bard, spellcaster) and Throk Ironjaw in the **DM cross-link view** (Back to campaign, editable numbers, Grant Level-Up, DM edit modal opened on current HP) and Lyra in the **player's own-sheet view** (`tm_role=player`, then put back to `dm`). Tabs checked: Sheet, Spells, Inventory, Notes and Log. Widths: 375×812 and desktop (1024). Themes: midnight (all tabs), vellum (Spells, Inventory, Sheet → coin purse, background), candlelit (Sheet header and vitals). **Source only:** the survival and supplies panels, because neither demo campaign has the survivalConditions variant. Slot-inventory mode, also no demo campaign. Spell description text, because the demo spells have no descriptions.
 

@@ -1,8 +1,48 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/sidenav-roster.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/sidenav-roster.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Sidenav + roster
 
-# Assessment A — Sidenav / roster rail and mobile drawer
+**Design Health Score: 25/40 — Acceptable.** Weakest: Status, Control, Flexibility, Error Recovery,
+Help (2 each). Audit: 13/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored — sigil brand mark, faint sigil tile, Cinzel names over Newsreader
+sub-lines, gold active marker. The clearest Astral Chart outside the sheet.
+
+**Deterministic scan:** 2 `undersized-ui-text` ("Your Campaigns", count), 1 `tiny-text`
+(`brand-sub` 11px italic), 1 `dark-glow` (primary button — the One Standing Glow, expected).
+Measured: **0 definite contrast failures in all three themes, 0 literal colours** — the cleanest
+surface in the app.
+
+**Agreement:** the mobile drawer — no dialog semantics, no Escape, no focus handling — and the 10px
+labels. **Reviewer-only:** the mobile top bar shows stale context ("Lyra Moonwhisper" while on the
+DM dashboard); closed drawer leaves 7 off-screen controls in the tab order; empty roster says "No
+heroes match that name." with no search. **Audit-only:** choosing a campaign leaves the drawer open
+over what it loaded.
+
+## Overall Impression
+
+Calm and correct on desktop; on a phone, every navigation costs an extra tap and the top bar can lie
+about where you are.
+
+## Priority Issues
+
+- **[P1] Mobile drawer: no close, no Escape, no focus move/trap, stays in tab order; doesn't close
+  on navigation.** → `/impeccable harden`, `/impeccable adapt`
+- **[P1] Mobile top bar shows stale/wrong context.** → `/impeccable harden`
+- **[P2] Empty roster / empty campaign list misdiagnose.** → `/impeccable onboard`
+- **[P2] 10px rail labels.** → `/impeccable typeset`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/sidenav-roster.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Sidenav / roster rail and mobile drawer
 
 Looked at: the `/charactermanager` shell in a browser tab at 1024px (rail) and 375×812 (drawer), in both roles. DM shows the campaign list; Player shows the hero roster with search. Midnight in both, plus vellum and candlelit on the rail. Source: `sidenav.component.html/.scss/.ts`, `campaign-sidebar.component.html/.ts`, `main-content.component.html/.scss`, and the matching `styles.css` blocks.
 

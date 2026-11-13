@@ -1,8 +1,47 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/session-live-banner.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/session-live-banner.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Session live banner
 
-# Assessment A — "Session is live — join" banner (`components/session-live-banner/`)
+**Design Health Score: 27/40 — Acceptable (near Good).** Weakest: Consistency (2), Flexibility (2),
+Error Recovery (2). Audit: 13/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** mostly authored, slightly off-system. Celestial-for-live is the correct
+semantic; the copy ("take your place in the order", "Take the Field") is on voice. The container
+drifts: 12px radius, literal tint, Newsreader title where call-to-action headings use Cinzel.
+
+**Deterministic scan:** not run on the rendered banner — demo mode never shows it (the reviewer
+forced it via the component's `live` signal; the detector was not injected into that state). Source
+review: literal `rgba(120,170,255,0.08)`, dead fallback hexes, `border-radius: 12px`.
+
+**Agreement:** radius, tint and the unbound picker label. **Reviewer-only:** one-hero players still
+go through the picker; the banner re-invites an already-seated player. **Audit-only:** the banner's
+appearance is not a live region, so session start is silent to assistive tech.
+
+## Overall Impression
+
+Small, correct in intent, and the gentlest surface in the review. Its job is one tap; it currently
+takes three.
+
+## Priority Issues
+
+- **[P1] Session start is not announced** (no live region). → `/impeccable harden`
+- **[P2] Skip the picker with exactly one eligible hero.** → `/impeccable distill`
+- **[P2] Knows nothing of "already seated"** — re-invites after Close. → `/impeccable harden`
+- **[P2] Off-system container** (radius, tint, title face). → `/impeccable colorize`, `/impeccable typeset`
+- **[P3] Picker select unnamed; "no hero" empty state is a dead end.** → `/impeccable harden`,
+  `/impeccable onboard`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/session-live-banner.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — "Session is live — join" banner (`components/session-live-banner/`)
 
 Looked at: the player role on `/charactermanager` in the browser pane at 375×812, in midnight (screenshot) and vellum/candlelit (computed styles). Demo mode disables discovery: `getActiveForCampaign` returns `null` and the 5s poll clears the banner. So I **forced it to render** by setting the component's `live` signal through `ng.getComponent` and opening the picker with `openPicker()`, which exercised the real template and styles. I saw the PC picker in both its populated state and its "None of your heroes" empty state. The join request, the error toast and the live poll behaviour I reviewed from source only (`session-live-banner.component.ts`). I did not see the banner at desktop width; its layout there is from source (a flex row above 560px).
 

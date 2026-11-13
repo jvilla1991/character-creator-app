@@ -25,7 +25,7 @@ no shared shell, so Escape, focus placement, titles and corner radii vary dialog
 
 ## Executive Summary
 
-- **11/20 — Acceptable.** P0: 0 · P1: 3 · P2: 3 · P3: 1
+- **11/20 — Acceptable.** P0: 0 · P1: 4 · P2: 3 · P3: 1
 
 ## Detailed Findings by Severity
 
@@ -33,6 +33,10 @@ no shared shell, so Escape, focus placement, titles and corner radii vary dialog
 Verified: dice roller and level-up close on Escape; the settings slide-over does not. Delete
 character, create/join campaign, manage party, delete campaign, session picker, long rest, item
 composer, spell picker and DM edit do not. Already in `docs/a11y-notes.md`. → `/impeccable harden`
+
+**[P1] Disabled primary actions look enabled** — no `.btn:disabled` style exists in `styles.css`
+(only `.spell-cast-btn:disabled`), so "Save", "Answer the Call", "Inscribe" and "Roll" look tappable
+while inert. (Design review finding, confirmed in source.) → `/impeccable harden`
 
 **[P1] Level-up leaves focus on `<body>`** — opened from the sheet, `document.activeElement` was
 `BODY`; a keyboard or switch user starts outside the dialog. Dice roller does this right

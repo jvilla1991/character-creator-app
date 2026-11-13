@@ -1,8 +1,51 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/modals.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/modals.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Modals
 
-# Assessment A — Modals (family)
+**Design Health Score: 23/40 — Acceptable.** Weakest: Consistency (1). Audit: 11/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** the small modals are authored — the global `.modal` gold frame with an inset
+plate, Cinzel titles, in-world sub-lines ("Strike From The Record"). The family is not one family:
+level-up speaks a second dialect (Arial buttons, 6–8px radii, 9.9px labels, non-primary commit
+button) and the item composer a third (primary-first button order).
+
+**Deterministic scan:** dice roller — 1 `low-contrast`, `edge-flush-cards`, `dark-glow` on
+`div.modal` (gold); level-up — `gray-on-color`, 69 sub-24px targets in a 1,262px dialog. Measured:
+dice roller Escape ✓ / focus to close ✓; level-up Escape ✓ but focus left on `<body>`; settings
+Escape ✗. Statically, `appEscapeClose` is on 2 of ~10 dialogs.
+
+**Agreement:** level-up focus, the Escape gap, the standing `.modal` glow (`styles.css:1170` — every
+dialog, including the crimson delete, glows gold at rest). **Reviewer-only:** disabled primary
+actions look enabled across the family; the app header stays tappable above the backdrop on phones
+for delete, dice, level-up and DM edit; DM edit makes the DM type absolute HP and pre-fills a field
+labelled "leave blank"; create-campaign clips "Emerald" and its date fields at 375px.
+**Corrected:** the reviewer found Escape also works in DM edit (input-scoped), so the static count
+understates it by one.
+
+## Overall Impression
+
+The dice roller is the reference implementation; nothing else copied it. A shared modal shell would
+close most of this list at once.
+
+## Priority Issues
+
+- **[P1] Disabled primary actions look enabled** (no `.btn:disabled` style). → `/impeccable harden`
+- **[P1] Level-up is a separate dialect and drops focus.** → `/impeccable polish`, `/impeccable harden`
+- **[P1] Header stays live above modal backdrops on phones.** → `/impeccable adapt`
+- **[P2] DM edit forces mental maths.** → `/impeccable clarify`
+- **[P2] Create campaign at 375px clips and lacks labels.** → `/impeccable adapt`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/modals.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Modals (family)
 
 Looked at, live at 375×812 in the browser pane, each opened and then closed without committing:
 - **Create campaign** (DM), in midnight and vellum.

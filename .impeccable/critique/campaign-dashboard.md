@@ -1,8 +1,47 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/campaign-dashboard.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/campaign-dashboard.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Campaign dashboard
 
-# Assessment A — Campaign dashboard
+**Design Health Score: 21/40 — Acceptable.** Weakest: Error Recovery (1). Audit: 10/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** mostly authored, with an unauthored layer bolted underneath. The header
+(Cinzel title, italic setting/arc, mono invite pill, Vitals Bar on the party board) is the most
+"Astral Chart" composition in the app. The three curated cards use a different vocabulary: 12px/10px
+radii, sentence-case `h2`s, rem-sized grey meta, undefined tokens.
+
+**Deterministic scan:** 11 `undersized-ui-text`, 5 `dark-glow` (campaign title text-shadow, primary
+button), 2 `nested-cards` (`div.note`), 2 `tiny-text`. Measured in vellum: `shop-sub` "3 creatures"
+1.16:1, row chevron 1.13:1, curated empty states 1.16:1. Midnight and candlelit: 0 definite failures.
+
+**Agreement:** the curated cards breaking vellum is both assessments' top finding. **Reviewer-only:**
+the header grid collapsing into an empty 210px column at 821–1100px; one-tap deletes with silent
+failures across curated editors; the party board's 720px minimum on phones. **Audit-only:** 18×16px
+note edit/delete targets; clipped "CONDITIONS" stat. **False positive:** `nested-cards` on notes.
+
+## Overall Impression
+
+A DM's preparation room with a beautiful door and an unfinished back half. Prep and status share
+one undifferentiated seven-section scroll.
+
+## Priority Issues
+
+- **[P1] Curated cards vanish in vellum and are off-system everywhere.** → `/impeccable colorize`
+- **[P1] One-tap deletes, silent failures** in shops / encounters / loot / notes. → `/impeccable harden`
+- **[P1] Header grid breaks at 821–1100px; party board clipped at 375px.** → `/impeccable adapt`
+- **[P2] Prep and status fused into one scroll** — no grouping between "the party now" and "next
+  session's prep". → `/impeccable layout`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/campaign-dashboard.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Campaign dashboard
 
 Looked at: `/charactermanager` in DM role with "The Veiled Compass" selected, in a browser tab at 1024×768 (desktop pane) and 375×812 (mobile preset). Midnight throughout; vellum and candlelit checked on the curated cards and the header/board. I read the source for every child (party-board, party-treasury, campaign-notes, campaign-week, curated-shops/-encounters/-loot) and the matching `styles.css` blocks. The curated *editors* could not be opened, because demo mode refuses `open()` (more on that below), so I reviewed them from source. **Player view:** a player never reaches this surface. `sidenav.component.html:165-186` renders it only in the DM branch. Players get the roster plus their sheet, so this page carries no visibility-split risk.
 

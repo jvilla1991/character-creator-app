@@ -1,8 +1,48 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/auth.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/auth.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Login / register / reset-password
 
-# Assessment A — Login / Register / Reset password
+**Design Health Score: 26/40 — Acceptable (near Good).** Weakest: Status, Consistency, Error
+Prevention, Error Recovery (2 each). Audit: 13/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored — the strongest brand moment in the app (gold-hairline card with inset
+plate, sigil, "Enter the Vault", "Inscribe Your Name"). Not a template login.
+
+**Deterministic scan (CLI, clean browser, 375×812):** `/login` and `/register` — 3 `dark-glow` each:
+`div.login-card`, `div.login-brand-name`, `button.btn.primary`. Only the button is the One Standing
+Glow; the other two contradict DESIGN.md (and correct adoption plan §9). `/reset-password`, measured
+in all three themes: 0 definite contrast failures; reveal toggle 16×16, "Sign in" link 37×13.
+
+**Agreement:** the standing glows (reviewer also notes an 80px black drop shadow). **Reviewer-only,
+both confirmed in source:** pages cannot scroll (`body { overflow: hidden }`), and Enter on the
+username field calls `login()` twice. Also: password minimum is 6 on register but 8 on reset;
+"Ask your DM for a reset link" is the wrong mechanism (an admin issues them). **Audit-only:** the
+sub-24px reveal toggle.
+
+## Overall Impression
+
+Beautiful and nearly finished. The two real defects are mechanical and cheap.
+
+## Priority Issues
+
+- **[P1] Auth pages cannot scroll** — submit unreachable on small phones / keyboard up. →
+  `/impeccable adapt`
+- **[P1] Double submit on Enter; no in-flight state on login.** → `/impeccable harden`
+- **[P2] Inconsistent password rules; unlabelled register fields.** → `/impeccable clarify`
+- **[P2] Card and brand-name glow at rest** — remove, or record a login-only exception in
+  DESIGN.md. → `/impeccable quieter`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/auth.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Login / Register / Reset password
 
 Looked at: **`/reset-password` live** in a browser tab: with a token, without one, and the short-password error path. Widths were 375×812 and 375×420 (keyboard-open proxy); themes midnight and vellum. **`/login` and `/register` from source and styles only.** In demo mode the route guard redirected both to `/charactermanager`. I did not log out, so the shared demo flag was untouched. All three pages share `.login-page`/`.login-card` chrome (`styles.css:1376-1471`), so the live reset page stands in for the card's rendering. Source: `login/`, `register/` and `reset-password/` `.html/.ts/.scss`.
 

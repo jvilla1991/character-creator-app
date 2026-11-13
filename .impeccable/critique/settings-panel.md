@@ -1,8 +1,48 @@
-Method: dual-agent, partial (A: isolated design-review sub-agent · B: detector + measured browser evidence gathered in the parent, recorded in `.impeccable/surfaces/settings-panel.md`).
+Method: dual-agent (A: isolated design-review sub-agent · B: detector + measured browser evidence, gathered in the parent before A's output was read). B ran in the parent rather than its own sub-agent; isolation of A from B held.
 
-> **Status:** this file is Assessment A (design review) as written by its isolated reviewer. The woven A+B synthesis and the cross-surface ranking were not completed in this session (usage limit). Read it alongside the audit in `.impeccable/surfaces/settings-panel.md`, which already folds in the verified A findings. Parent verification: the DM-notes finding is **latent** (nothing writes `PC.notes` today), so P1 not P0; the reduced-motion claim is partly wrong (2 component files handle it); the wizard modifier bug and login double-submit are confirmed in source.
+# Critique — Settings panel
 
-# Assessment A — Settings panel (role switch, theme picker)
+**Design Health Score: 23/40 — Acceptable.** Weakest: Status, Control, Consistency, Error
+Prevention (2 each). Audit: 13/20.
+
+## Design Specificity Verdict
+
+**LLM assessment:** authored in its look (gold-hairline slide-over, theme swatches that preview
+each theme, "Critical fanfare"), generic in its structure — a stock profile drawer with account
+fields first and four different control idioms for single choices.
+
+**Deterministic scan:** `dark-glow` on `aside.slideover` (gold) and `button.role-seg.dm`
+(**celestial** — "always a bug" per DESIGN.md), `theme-swatch.active`; `undersized-ui-text` on swatch
+labels (9px) and role segments (10px). Measured: one vellum near-miss (4.3:1, 9px "digital");
+Escape does not close; a toggle and an input are unnamed.
+
+**Agreement:** unnamed toggles, false-affordance account fields (confirmed: `[value]` with no save),
+no Escape, sub-floor labels. **Reviewer-only:** the role switch — which rebuilds the whole app — is
+styled and behaves like a preference, with no acknowledgement; "Default Theme" sets the current
+theme; errors lack `role="alert"`. **Detector-only:** the celestial rest glow.
+
+## Overall Impression
+
+Pleasant, but the most consequential control in the app (DM ↔ player) is hidden among dice
+preferences and gives no feedback when it changes everything.
+
+## Priority Issues
+
+- **[P1] Toggles and choice buttons have no names or states.** → `/impeccable harden`
+- **[P1] Account fields look editable and save nothing.** → `/impeccable harden`
+- **[P2] Role switch reads as a preference, no feedback.** → `/impeccable layout`, `/impeccable clarify`
+- **[P2] Sub-floor text and gold saturation** (every title gold + border + glow). →
+  `/impeccable typeset`, `/impeccable quieter`
+
+**Questions skipped:** batch run across ten surfaces. The owner-direction questions this surface raises are consolidated in `docs/impeccable-adoption-plan.md` §10.
+
+Technical detail, evidence and file locations: `.impeccable/surfaces/settings-panel.md`.
+
+---
+
+## Appendix — Assessment A (design review, as written by the isolated reviewer)
+
+### Assessment A — Settings panel (role switch, theme picker)
 
 Looked at: the settings slide-over opened from the account row, in a browser tab at 375×812, in the midnight theme. I used the role switch (DM → Player → back to DM) and inspected all its controls through the DOM. Theme rendering in vellum and candlelit was covered via the swatches and the global token review. Source: `settings-panel.component.html/.ts`, `role-switch/`, and `styles.css:1479-1522, 1745-1898`. Not exercised: the change-password and admin reset-link sections, which are hidden in demo mode, so I reviewed them from source. I restored `tm_role` to `dm` (what I found) after my switch. Later in the session another reviewer set it to `player`; I left that alone.
 
