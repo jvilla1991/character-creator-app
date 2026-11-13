@@ -4,7 +4,7 @@ Plan for using [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (`imp
 Apache-2.0, published 2026-10-26 by `paulbakaus`, repo URL matches GitHub) to improve the
 Table Mimic frontend.
 
-> **Status: Phase 0 is done.** Installed 2026-11-07, global scope, no hooks. Several
+> **Status: Phases 0–2 are done** (Phase 2 results and the ranked Phase 3 backlog: **§10**). Installed 2026-11-07, global scope, no hooks. Several
 > predictions below were tested and some were wrong — see **§8 Phase 0 results** for what
 > actually happened. Read §8 before acting on §2 or §4.
 
@@ -451,3 +451,148 @@ Detector on the login page: **3 findings, all the One Standing Glow.** Contrast 
 - `/impeccable` slash commands still need a reload; everything so far was done by hand.
 - Phase 2's auth blocker (§8 correction #4) is unchanged: `detect` launches a clean browser, so
   only the login page is reachable.
+
+---
+
+## 10. Phase 2 results — measured backlog (2026-11-13)
+
+### How it ran
+
+- **`/impeccable` loaded as a real skill** this time (v4.8.0). `doctor` reported one `mention`:
+  `.impeccable/design.json` predates DESIGN.md's last edit (`/impeccable document` refreshes it). A
+  v4.9.0 update is available and was not applied.
+- **The §8 auth blocker is solved — without credentials.** The app's own demo mode (in-memory seed
+  data, no backend) reaches every signed-in surface. The detector's browser bundle was injected into
+  that signed-in page through `impeccable live-server` and run with `impeccableScanAsync()`; `/login`
+  and `/register` used the CLI's clean browser. No local backend, no :8080 conflict, no real accounts.
+- **Every surface at 375×812 in all three themes**, with the contrast-audit §5 traps handled
+  (canvas-resolved sRGB, transitions off, gradients composited). Failures are split into *definite*
+  (fail on the solid ground) and *wash-only* (would fail only if the faint radial washes peaked under
+  the text). Only definite failures are reported, and each headline one was re-read from computed
+  styles. The first version of the script over-counted wash failures; it was caught before any report
+  was written.
+- **Critique ran dual-agent:** four isolated design-review sub-agents (Assessment A) never saw the
+  detector output; detector and measurement evidence (Assessment B) was gathered in the parent before
+  their output was read. Every A finding promoted into the backlog below was checked in source or
+  in-browser first; three were corrected (see "Corrections").
+- Reports: `.impeccable/surfaces/*.md` (audit; method in its README) and `.impeccable/critique/*.md`
+  (synthesis + the reviewer's full assessment). The `critique-storage` helper was not used — it names
+  files by a hashed slug, so there is no `/impeccable critique` trend yet; the files use the names
+  this plan specified.
+
+### Scores
+
+| # | Surface | Audit /20 | Critique | P0 | Headline |
+|---|---|---|---|---|---|
+| 1 | Character sheet | 10 | 21/40 | — | Vellum tab bar 1.34:1; header buries vitals at 375px |
+| 2 | Session mode | **9** | 20/40 | **1** | Whose-turn names 1.16:1 in vellum; 720px board |
+| 3 | Create-character wizard | **8** | **19/40** | **1** | Off-palette violet; vellum ability labels 1.11:1; "+17" modifiers |
+| 4 | Campaign dashboard | 10 | 21/40 | — | Curated cards vanish in vellum; one-tap deletes |
+| 5 | Sidenav + roster | 13 | 25/40 | — | Drawer: no close / Escape / focus; stale top bar |
+| 6 | Login / register / reset | 13 | 26/40 | — | Page can't scroll; Enter submits twice |
+| 7 | Modals | 11 | 23/40 | — | Three dialects; disabled buttons look enabled; Escape on 2–3 of ~10 |
+| 8 | Settings panel | 13 | 23/40 | — | Unnamed toggles; account fields save nothing |
+| 9 | Session live banner | 13 | 27/40 | — | Session start not announced |
+| 10 | Toasts / empty states | 14 | 21/36 | — | Toast 188px wide on a phone |
+
+The worst-first order in §4 was right: the three surfaces used *at the table* (session, wizard,
+sheet) are the three lowest.
+
+### The finding that reframes Phase 3
+
+**The contrast gate is green (0/135) and vellum is still broken on five surfaces.** The gate checks
+*token pairs*; the failures come from code that never reaches a token:
+
+| Leak | Count | Effect in vellum |
+|---|---|---|
+| **Undefined tokens** with midnight fallbacks — `--muted` ×34, `--bg-elev` ×16, `--accent` ×13 (falls back to CSS `gold`), `--line` ×4, `--panel`, `--panel-bg`, `--surface-1` | ~70 refs | 60 %-white text at 1.13–1.16:1; near-black sheet tab bar |
+| **White-alpha literals** `rgba(255,255,255,…)` | **192** (session 51, wizard 49, dashboard 44, level-up 24) | white text on parchment |
+| **Literal state colours** — turn `#7fe0ae` / `#f0d391`, wizard violet `#8a5cf6` / `#a78bfa` | ~15 | the turn cue and wizard progress disappear |
+| **A defined token used as a fill it was never tuned for** — `.seg-btn.active { background: var(--celestial, <18 % tint>) }` | 2 | 1.6–1.8:1 in **all three** themes |
+
+§3's "174 hard-coded hexes" was the wrong metric — most of them are harmless `var(--gold, #d9b25f)`
+fallbacks behind defined tokens. The damage is the undefined tokens and the white-alpha literals.
+
+### Ranked Phase 3 backlog
+
+Ranked by severity, then by how many surfaces one fix reaches. "Slice" maps to the §4 table (revised
+below); **fix** = a small standalone bug branch, not a slice.
+
+| Rank | P | Finding | Surfaces | Where | Goes to |
+|---|---|---|---|---|---|
+| 1 | P0 | Whose-turn / on-deck names 1.16–1.27:1 in vellum (literal `#7fe0ae`, `#f0d391`) | session | `initiative-panel.component.scss:6-32` | slice 1 |
+| 2 | P0 | Wizard ability labels, totals, chrome invisible in vellum (white-alpha) | wizard | `steps/*.scss` | slice 1 |
+| 3 | P1 | Seven undefined tokens with midnight fallbacks | sheet, session, dashboard, toasts, item composer | see table above | slice 1 |
+| 4 | P1 | `.seg-btn.active` 1.6:1 in every theme | session (shop, loot) | `shop-panel.scss:49`, `loot-panel.scss:54` | slice 1 |
+| 5 | P1 | Off-palette violet progress / selection, standing violet glow | wizard | `create-character-modal.scss:87`, steps | slice 1 |
+| 6 | P1 | Modifier column shows the score ("INT 17 +17") | wizard | `ability-scores-step.html:44,87`, `review-step.html:157` | **fix** |
+| 7 | P1 | Enter on username calls `login()` twice | auth | `login.component.html:23,32` | **fix** |
+| 8 | P1 | "DM Notes" render to the character's owner — latent (nothing writes `PC.notes` yet), but a hard product rule | sheet | `background-story.component.html:76`; backend `PC.notes` | **fix, both repos** |
+| 9 | P1 | Initiative board `min-width: 720px`; party board likewise | session, dashboard | `styles.css:1616-1624` | slice 3 |
+| 10 | P1 | Auth pages cannot scroll (`body { overflow: hidden }`) | auth | `styles.css` | slice 3 |
+| 11 | P1 | Sheet at 375px: header ~64 % of first screen, name clips; 720px grid overrides lose on source order | sheet | `styles.css` ~621 vs ~668 / ~783 | slice 3 |
+| 12 | P1 | Disabled `.btn` / `.btn.primary` look enabled (no `:disabled` style) | wizard, modals, app-wide | `styles.css` | slice 2 |
+| 13 | P1 | Escape on 2–3 of ~10 dialogs; level-up and settings focus/escape gaps; app header live above backdrops on phones | modals, settings, wizard, banner | — | slice 2 (+3) |
+| 14 | P1 | Mobile drawer: no close, Escape, focus or `inert`; stays open after navigating; top bar shows stale context | sidenav | `sidenav.component.*` | slice 2 + 3 |
+| 15 | P1 | Turn changes and session start never announced; countdown announces every second | session, banner | — | slice 2 |
+| 16 | P1 | Silent failures — saves, grants, curated editors, session actions go to `console.error` only | sheet, dashboard, session | — | new harden branch |
+| 17 | P1 | Unguarded destructive actions — curated deletes, notes, End Session | dashboard, session | — | new harden branch |
+| 18 | P1 | Unnamed controls (settings toggles, wizard/encounter/picker selects); account fields look editable and save nothing | settings, wizard, session, banner | — | slice 2 |
+| 19 | P1 | **56 sub-11px declarations** — 68 nodes on the sheet tab alone; 7–9px in wizard and combat chips | all except auth | — | **new: type-floor slice** |
+| 20 | P1 | Toast squeezed to half the phone (188px) | toasts | `toast.component.scss` | slice 3 |
+| 21 | P1 | Preparation lives inside play (session) / prep and status fused (dashboard) — PRODUCT.md principle 3 | session, dashboard | — | slice 6 (re-scoped) |
+| 22 | P2 | Standing glows: `.modal` (`styles.css:1170`), login card + brand name, portrait, sheet/campaign title, settings slide-over, **celestial** role pill | many | — | slice 6 |
+| 23 | P2 | Sub-24px targets — exhaustion pips 22, inspiration pips 19, note buttons 18×16, reveal toggle 16, level-up checkboxes 13 | many | — | slice 3 |
+| 24 | P2 | Off-system corners (10–12px toast, curated cards, banner, session forms); level-up Arial buttons and 6–8px radii | toasts, dashboard, session, modals | — | slice 1 / 6 |
+| 25 | P2 | Reduced motion: only 2 files honour it; the turn cue *lives in* an infinite animation | session | `session-mode.scss:23` | slice 2 |
+| 26 | P2 | Copy: password minimum 6 vs 8; "ask your DM" for an admin-issued reset; slot pips filled = spent; rules in hover-only tooltips; generic error toasts; DM edit types absolute HP | auth, sheet, modals, toasts | — | slice 4 |
+| 27 | P2 | Empty states that misdiagnose ("No heroes match that name." with no query) or point at the hidden phone drawer | sidenav, toasts | — | slice 4 |
+
+### Verdict on the six planned slices
+
+| # | Slice | Evidence says | Change |
+|---|---|---|---|
+| 1 | `chore/impeccable-token-sweep` | **Strongly supported — the highest-value slice.** Owns both P0s. | **Re-scope to colour only:** (a) the seven undefined tokens, (b) the 192 white-alpha literals, (c) literal state colours and the violet, (d) `.seg-btn.active`. **Drop the px migration** — no finding was caused by px, and mixing it in makes the three-theme verification unreviewable. Add a **CI guard** that fails on `var(--x)` for an undeclared `--x` and on new `rgba(255,255,255,` in component styles; the token-pair contrast gate demonstrably cannot see this class of bug. |
+| 2 | `fix/a11y-deferred-backlog` | **Supported and larger than planned.** All 8 deferred items are still present. | **Expand:** disabled-button style, a shared modal shell (title, close, Escape, focus-in, trap) instead of wiring `appEscapeClose` dialog by dialog, turn/session live regions, unnamed controls, reduced-motion turn cue. Keep silent failures and unguarded deletes (ranks 16–17) out — they are `harden` work too, but belong on their own branch so this one stays a11y-only. |
+| 3 | `fix/responsive-pass` | **Strongly supported**, now with concrete targets. | Board / party-board phone layout, auth scrolling, sheet header and grid source order, drawer close-on-navigate, toast width, header above modal backdrops, sub-24px targets. No change in shape. |
+| 4 | `chore/ui-copy-clarify` | **Weakly supported.** The in-world voice is the app's strength; most copy is good. | **Shrink** to ranks 26–27 and **absorb slice 5**. |
+| 5 | `feature/first-run-onboarding` | **Not supported as its own slice.** The empty states are some of the best work in the app; the gaps are two misdiagnosing messages and a dead-end banner state. | **Fold into slice 4.** Revisit only if a real new-player session shows confusion. |
+| 6 | `chore/ui-density-polish` | **Supported, but the real problem is structure, not noise.** | **Re-scope** to `layout`/`distill`: separate prep from play on the session screen and group the dashboard; plus the standing-glow cleanup (`quieter`) and the level-up dialect (`polish`). |
+| new | `chore/type-floor` | **Added.** The 11px floor is broken by 56 declarations, concentrated on the sheet, wizard and combat chips. | `/impeccable typeset` onto the existing `--text-*` scale. This is where the deferred **px migration** naturally starts (font sizes first), so it absorbs the part dropped from slice 1. |
+
+**Recommended order:** the three small **fix** branches first (ranks 6–8 — cheap, real bugs, and
+rank 8 is a product rule), then slice 1 → 2 → 3 → type floor → harden (ranks 16–17) → 6 → 4. Slices
+1 and 3 both touch `styles.css`; keep them sequential, not parallel.
+
+### Corrections this phase made to earlier records
+
+- **§9** says the login page's three `dark-glow` findings are "all the One Standing Glow". Only
+  `button.btn.primary` is; `div.login-card` and `div.login-brand-name` also glow at rest.
+- **DESIGN.md** says "`prefers-reduced-motion` is honoured". Only `conditions-panel` and
+  `dice-roller-modal` honour it; `styles.css` (26 transitions/animations) and session mode do not.
+  Either the claim or the code should change in slice 2.
+- **§3's 174-hex count** is not the theme-drift metric — see "The finding that reframes Phase 3".
+- Three design-review claims were corrected before entering the backlog: the DM-notes leak is
+  latent, not live (P1, not P0); "no reduced-motion anywhere" is "two files only"; Escape also works
+  in DM edit.
+
+### Detector notes for Phase 4
+
+- **True positives worth keeping on:** `low-contrast` caught `.seg-btn.active` independently;
+  `dark-glow` on the wizard's violet step dot and on the celestial role pill are real rule breaks.
+- **Expected noise:** `kicker-above-heading` (the house `.eyebrow`), `nested-cards` on panel-in-panel
+  and notes, `dark-glow` on the active initiative row (a sanctioned state glow) and on `.btn.primary`.
+- **In-page runs ignore `.impeccable/config.json`.** A PR-time gate should run the CLI against a
+  served build in demo mode (set `localStorage.demoMode = 'true'` before load) — that makes every
+  surface scannable in CI with no backend.
+
+### Questions for the owner
+
+1. **Login glow:** remove the card and brand-name glows, or record the login page as a sanctioned
+   ceremonial exception in DESIGN.md?
+2. **Session layout:** is splitting preparation (shop / loot / encounter loader) out of the live
+   session screen in scope for slice 6, or a separate feature?
+3. **DM notes:** fix the latent visibility hazard now (frontend role check + backend strips `notes`
+   from the owner's payload), even though nothing writes the field yet?
+4. **Wizard accent:** fold the violet into gold (active) + celestial (done), or keep Thistle Violet
+   (`--violet`) as the wizard's sanctioned accent?
