@@ -596,3 +596,22 @@ rank 8 is a product rule), then slice 1 → 2 → 3 → type floor → harden (r
    from the owner's payload), even though nothing writes the field yet?
 4. **Wizard accent:** fold the violet into gold (active) + celestial (done), or keep Thistle Violet
    (`--violet`) as the wizard's sanctioned accent?
+
+### Owner decisions (2026-11-13)
+
+All four took the recommended option. These are settled; later slices should not re-ask.
+
+| # | Question | Decision | Lands in |
+|---|---|---|---|
+| 1 | Login glow | **Remove** the at-rest glow on `.login-card` and `.login-brand-name`. No ceremonial exception — only `.btn.primary` keeps its sanctioned glow. | slice 6 |
+| 2 | Session layout | **Out of Phase 3.** Splitting prep from play changes how a DM runs a session, so it gets its own feature and design pass. Slice 6 stays polish-sized. | separate feature |
+| 3 | DM notes | **Superseded the same day — `PC.notes` is the player's field, not DM notes.** First answered "fix now, in both repos", but that rested on this audit's reading of the sheet's "DM Notes" label. The backend files `notes` under Narrative beside `bio`, and `CampaignMemberView` already hides it from the DM as "a player's private narrative"; only the frontend label and model comment (one commit, 2026-05-30) said DM-only. **Decision: relabel to "Notes", frontend only, no backend change.** Stripping it from the owner would have hidden players' own notes from them. | fix (rank 8) |
+| 4 | Wizard accent | **Gold + celestial.** Gold for the active step and selection, celestial for completed steps. Thistle Violet stays reserved for categorical chips and tags, as DESIGN.md defines it. | slice 1 |
+
+### Phase 3 progress
+
+| Rank | Branch | State |
+|---|---|---|
+| 6 | `fix/ability-modifier-display` | Done — regression from #228 (2026-07-25): the wizard piped raw scores into a pipe that only adds a sign, so 17 read "+17". |
+| 7 | `fix/login-double-submit` | Done — one Enter sent two login requests; with the password empty it sent one anyway. Measured 2 → 1 and 1 → 0. |
+| 8 | `fix/pc-notes-label` | Done — relabelled "DM Notes" to "Notes"; the field was the player's all along. No backend change. |
