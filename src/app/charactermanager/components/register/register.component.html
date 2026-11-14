@@ -13,8 +13,7 @@
             stroke="currentColor" stroke-width="0.6" fill="none" opacity="0.8"/>
           </svg>
         </div>
-        <div class="login-brand-name">Join the Compendium</div>
-        <div class="login-brand-sub">Bind your name to the arcane record</div>
+        <div class="login-brand-name">Create Your Account</div>
       </div>
 
       <div class="login-divider"></div>
@@ -47,8 +46,7 @@
                   placeholder="Choose a username" autocomplete="username">
                 </div>
 
-                <!-- Password row -->
-                <div class="two-col">
+                <!-- Password, then Confirm directly beneath it -->
                   <div class="field">
                     <label>Password</label>
                     <div class="input-reveal">
@@ -83,7 +81,6 @@
                           <!-- no separate toggle — showPassword controls both fields together -->
                         </div>
                       </div>
-                    </div>
 
                     @if (passwordMismatch) {
                       <div class="login-error" role="alert">
@@ -98,7 +95,7 @@
 
                     <button type="submit" class="btn primary login-submit"
                       [disabled]="form.invalid || loading()">
-                      {{ loading() ? 'Inscribing…' : 'Inscribe Your Name' }}
+                      {{ loading() ? 'Creating account…' : 'Create Account' }}
                     </button>
                   </form>
 
