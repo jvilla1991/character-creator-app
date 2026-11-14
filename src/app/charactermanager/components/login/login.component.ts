@@ -28,6 +28,11 @@ export class LoginComponent {
   ) {}
 
   login(): void {
+    // Enter in either field submits the form natively (implicit submission),
+    // so (ngSubmit) is the only trigger. Guard anyway: a required field that
+    // is still empty must never reach the auth service, whatever called this.
+    if (this.form.invalid) return;
+
     this.errorMessage.set(''); // Clear any previous error messages
     const { userName, password } = this.form.getRawValue();
     this.authService.login(userName, password).subscribe({
