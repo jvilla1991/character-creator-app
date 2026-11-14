@@ -1,0 +1,81 @@
+// Party Vitals Board — desktop layout lives in the global .board* rules in
+// src/styles.css. Everything here is the mobile reflow: below 820px the
+// 7-column row (which has a hard 720px minimum) becomes one card per
+// character, so the board fits a phone without sideways scrolling or zoom.
+
+// Desktop: the wrapper around the three numeric cells must not exist as a box,
+// or it would occupy a single column of .board-row's 7-column grid. display:
+// contents promotes its children back to direct grid items.
+.num-strip { display: contents; }
+
+// The column header row carries the labels on desktop, so the per-tile labels
+// stay hidden there.
+.num-label { display: none; }
+
+@media (max-width: 820px) {
+
+  // Cancel the 720px floor that forces the sideways scroll.
+  .board { overflow-x: visible; }
+  .board-row { min-width: 0; }
+
+  // Column headers are meaningless once each row is a card.
+  .board-row.head { display: none; }
+
+  .board-row.member {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 16px;
+    grid-template-areas:
+      "hero chev"
+      "hp   hp"
+      "nums nums"
+      "cond cond";
+    gap: 10px;
+    padding: 12px 10px;
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+    background: color-mix(in oklch, var(--bg-2) 60%, transparent);
+    margin-bottom: 8px;
+  }
+
+  .board-hero { grid-area: hero; }
+  .board-hp { grid-area: hp; }
+  .board-conditions { grid-area: cond; }
+  .board-chev {
+    grid-area: chev;
+    align-self: start;
+    margin-top: 10px;
+  }
+
+  // Names get room to wrap instead of being clipped to an ellipsis.
+  .board-hero-name {
+    font-size: 15px;
+    white-space: normal;
+  }
+  .board-hero-sub { font-size: 12px; }
+
+  // The three bare numbers lose their meaning once the header row is hidden,
+  // so each tile carries its own label.
+  .num-strip {
+    display: grid;
+    grid-area: nums;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .board-num {
+    padding: 7px 4px;
+    text-align: center;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+  }
+
+  .num-label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+}

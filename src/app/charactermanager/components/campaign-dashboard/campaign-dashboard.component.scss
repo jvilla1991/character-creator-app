@@ -1,0 +1,57 @@
+// Campaign dashboard shell. Panel/typography chrome comes from the global
+// design system in src/styles.css; this file holds the two grid overrides the
+// template used to carry as inline styles (inline wins over every stylesheet,
+// so the global responsive rules could never apply on a phone) plus the
+// mobile reflow that lets the dashboard fit a 375px screen without zooming.
+
+// The global base is 6 columns, sized for the character sheet's six vitals.
+// The dashboard has four tiles.
+.dashboard-vitals {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 820px) {
+
+  // Four tiles across is unreadable on a phone; 2x2 keeps the numbers legible.
+  .dashboard-vitals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  // The global .vital borders assume a single row: every tile but the last
+  // draws a right border. In a 2x2 grid that leaves a stray edge on the right
+  // column and no divider between the rows.
+  .dashboard-vitals .vital:nth-child(2n) { border-right: none; }
+  .dashboard-vitals .vital:nth-child(-n + 2) { border-bottom: 1px solid var(--border-soft); }
+
+  // Title and actions stack; 48px Cinzel does not fit 375px.
+  .dashboard-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .dashboard-header .sheet-name {
+    font-size: 26px;
+  }
+
+  // Start Session / Manage Party share a row at a finger-sized height; the
+  // icon-only delete button keeps its natural width.
+  .dashboard-header .sheet-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dashboard-header .sheet-actions .btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .dashboard-header .sheet-actions .btn.icon {
+    flex: 0 0 auto;
+  }
+}

@@ -2,7 +2,7 @@
   @let campaignName = vm.campaign.name;
   <div class="fade-in">
     <!-- Header -->
-    <header class="sheet-header" style="grid-template-columns: 1fr auto;">
+    <header class="sheet-header dashboard-header">
       <div class="sheet-id">
         <div class="eyebrow">Campaign · Session {{ vm.campaign.session }} · {{ vm.members.length }} heroes</div>
         <h1 class="sheet-name">{{ campaignName }}</h1>
@@ -63,7 +63,7 @@
       </div>
     </header>
     <!-- Aggregate vitals strip -->
-    <div class="vitals" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+    <div class="vitals dashboard-vitals">
       <div class="vital">
         <span class="eyebrow">Heroes</span>
         <div class="vital-value numeric">{{ vm.members.length }}</div>

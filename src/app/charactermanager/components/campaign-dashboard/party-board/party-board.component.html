@@ -8,7 +8,7 @@
 
   <div class="board">
     <div class="board-row head">
-      <span>Hero</span>
+      <span>Character</span>
       <span>Hit Points</span>
       <span class="num">AC</span>
       <span class="num">Pass. Perc</span>
@@ -50,9 +50,13 @@
           </div>
           <div class="vital-bar"><span [style.width.%]="hpPct(pc)"></span></div>
         </div>
-        <div class="board-num lit">{{ pc.ac }}</div>
-        <div class="board-num">{{ passivePerception(pc) }}</div>
-        <div class="board-num">{{ passiveInsight(pc) }}</div>
+        <!-- display:contents on desktop, so these stay direct grid items of
+        .board-row; on mobile .num-strip becomes a real 3-up strip. -->
+        <div class="num-strip">
+          <div class="board-num lit"><span class="num-label">AC</span>{{ pc.ac }}</div>
+          <div class="board-num"><span class="num-label">Pass. Perc</span>{{ passivePerception(pc) }}</div>
+          <div class="board-num"><span class="num-label">Pass. Ins</span>{{ passiveInsight(pc) }}</div>
+        </div>
         <div class="board-conditions">
           @if (!pc.conditions?.length && !pc.exhaustion) {
             <span class="board-cond calm">steady</span>

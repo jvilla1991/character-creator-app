@@ -10,6 +10,7 @@ import { DecimalPipe } from '@angular/common';
 @Component({
     selector: 'app-party-board',
     templateUrl: './party-board.component.html',
+    styleUrls: ['./party-board.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DecimalPipe]
 })

@@ -41,6 +41,7 @@ interface DashboardVm {
 @Component({
     selector: 'app-campaign-dashboard',
     templateUrl: './campaign-dashboard.component.html',
+    styleUrls: ['./campaign-dashboard.component.scss'],
     imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, CdkTrapFocus, AsyncPipe]
 })
 export class CampaignDashboardComponent implements OnInit, OnDestroy {
