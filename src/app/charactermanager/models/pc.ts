@@ -128,7 +128,8 @@ export interface PC {
   features?: Array<{ name: string; source: string; desc: string; category?: 'class' | 'other' }>;
   traits?: { Personality: string; Ideals: string; Bonds: string; Flaws: string };
   bio?: string;
-  notes?: string; // DM-only notes
+  notes?: string; // The player's own notes (narrative, like bio). NOT DM-only: the backend
+                  // files it under Narrative and hides it from the DM's member projection.
 
   // Proficiencies / origin (populated in later wizard steps)
   languages?: string[];
