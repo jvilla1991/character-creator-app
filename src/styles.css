@@ -1093,6 +1093,10 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .coin.gp { --tint: var(--gold); }
 .coin.pp { --tint: #a8c4dc; }
 .coin .coin-amt { color: var(--tint); }
+/* The metal tints are pale inks tuned for the dark grounds; on parchment
+   silver read 1.2:1. Vellum pulls each toward --text, keeping a trace of
+   the metal (worst case 4.9:1). */
+[data-theme="vellum"] .coin .coin-amt { color: color-mix(in oklch, var(--tint) 35%, var(--text)); }
 
 /* === BACKGROUND PROSE === */
 .prose {
@@ -1710,7 +1714,8 @@ select:focus {
 .board-cond.slot-chip.calm {
   background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
   border-color: color-mix(in oklch, var(--gold) 35%, transparent);
-  color: var(--gold);
+  /* Gilt, not --gold: vellum's --gold on this gold tint was 4.43:1. */
+  color: var(--gold-2);
 }
 .board-chev { color: var(--text-dim); width: 12px; height: 12px; }
 .board-row.member:hover .board-chev { color: var(--celestial); }
