@@ -78,16 +78,18 @@
   position: relative;
 
   &.done {
-    background: rgba(138, 92, 246, 0.18);
-    border-color: rgba(138, 92, 246, 0.4);
-    color: rgba(138, 92, 246, 0.8);
+    background: color-mix(in oklch, var(--celestial) 18%, transparent);
+    border-color: color-mix(in oklch, var(--celestial) 45%, transparent);
+    color: var(--celestial);
   }
 
   &.active {
-    background: #8a5cf6;
-    border-color: #8a5cf6;
-    color: #fff;
-    box-shadow: 0 0 10px rgba(138, 92, 246, 0.5);
+    // Solid gold with --bg ink: the active step is the one gold thing in
+    // the progress row. No glow — the fill is the state; a glow here would
+    // be a second standing glow.
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
   }
 }
 

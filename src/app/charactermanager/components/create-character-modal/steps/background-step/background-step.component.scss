@@ -23,12 +23,12 @@
   user-select: none;
   padding: 4px 10px 4px 8px;
   border-radius: 20px;
-  border: 1px solid rgba(138, 92, 246, 0.35);
-  background: rgba(138, 92, 246, 0.1);
+  border: 1px solid color-mix(in oklch, var(--gold) 35%, transparent);
+  background: color-mix(in oklch, var(--gold) 10%, transparent);
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 
   input[type="checkbox"] {
-    accent-color: #8a5cf6;
+    accent-color: var(--gold);
     width: 13px;
     height: 13px;
     cursor: pointer;
