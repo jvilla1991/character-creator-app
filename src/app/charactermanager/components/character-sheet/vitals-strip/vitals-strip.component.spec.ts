@@ -22,12 +22,12 @@ describe('VitalsStripComponent', () => {
       expect(component.armorLabel).toBe('Chain Mail & Shield');
     });
 
-    it('reports unarmored when nothing armor-like is equipped', () => {
+    it('is empty when nothing armor-like is equipped', () => {
       component.pc = basePc([
         { name: 'Leather Armor', category: 'armor', qty: 1, equipped: false },
         { name: 'Studded Leather', category: 'armor', qty: 1, equipped: true, status: 'dropped' },
       ]);
-      expect(component.armorLabel).toBe('unarmored');
+      expect(component.armorLabel).toBe('');
     });
   });
 

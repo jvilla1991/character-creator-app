@@ -35,7 +35,7 @@ describe('DiceRollerModalComponent', () => {
     expect(root.getAttribute('aria-modal')).toBe('true');
     const titleId = root.getAttribute('aria-labelledby')!;
     expect(fixture.nativeElement.querySelector('#' + titleId)?.textContent)
-      .toContain('Cast The Bones');
+      .toContain('Dice Roller');
     const close: HTMLElement = fixture.nativeElement.querySelector('.dice-close');
     expect(close.getAttribute('aria-label')).toBe('Close dice roller');
   });
