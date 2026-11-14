@@ -153,10 +153,10 @@ describe('login page', () => {
   });
 
   it('gates submit until the form is valid', () => {
-    cy.contains('button', 'Enter the Vault').should('be.disabled');
+    cy.contains('button', 'Sign In').should('be.disabled');
     cy.get('#username').type('someone');
     cy.get('#password').type('secret');
-    cy.contains('button', 'Enter the Vault').should('be.enabled');
+    cy.contains('button', 'Sign In').should('be.enabled');
   });
 });
 ```

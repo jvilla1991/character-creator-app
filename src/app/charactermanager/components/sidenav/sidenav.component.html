@@ -32,8 +32,8 @@
         </svg>
         <input
           [(ngModel)]="query"
-          placeholder="Search heroes, players, classes…"
-          aria-label="Search heroes, players, classes"
+          placeholder="Search characters, players, classes…"
+          aria-label="Search characters, players, classes"
           autocomplete="off"
           >
         </div>
@@ -42,7 +42,7 @@
           @if (filteredPcs.length === 0) {
             <p
               style="padding: 20px; color: var(--text-dim); font-style: italic; text-align: center; font-size: 13px; margin: 0;">
-              No heroes match that name.
+              No characters match that name.
             </p>
           }
           <div class="roster-items">
@@ -88,7 +88,7 @@
               style="margin-right: 8px; vertical-align: -2px;">
               <path d="M8 3v10M3 8h10"/>
             </svg>
-            Forge Hero
+            Create Character
           </button>
         }
         @if (isPlayer()) {

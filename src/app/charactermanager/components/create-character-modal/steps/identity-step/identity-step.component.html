@@ -1,10 +1,9 @@
-<div class="modal-title">Forge a New Hero</div>
+<div class="modal-title">Create a Character</div>
 
 <div class="field">
-  <label for="hero-name">Hero's Name <span aria-label="required">*</span></label>
+  <label for="hero-name">Character Name <span aria-label="required">*</span></label>
   <input id="hero-name" aria-required="true" [ngModel]="name()"
          (ngModelChange)="nameChange.emit($event)"
-         placeholder="Seraphina Goldveil"
          autofocus
          (keydown.enter)="next.emit()"
          (keydown.escape)="cancel.emit()">
