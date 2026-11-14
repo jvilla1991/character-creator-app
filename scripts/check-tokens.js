@@ -1,0 +1,91 @@
+#!/usr/bin/env node
+/**
+ * Theme-token leak check.
+ *
+ * Fails on the two ways a component style can bypass the theme tokens:
+ *
+ *   1. `var(--x)` where `--x` is never declared anywhere in src/. The
+ *      browser then silently uses the fallback (or nothing), which is
+ *      always the midnight value, so the element ignores vellum and
+ *      candlelit entirely.
+ *   2. A white-alpha literal `rgba(255, 255, 255, …)` in any stylesheet
+ *      under src/ (component styles and the global styles.css). White ink or a white wash reads on the two dark themes and
+ *      vanishes on vellum's parchment.
+ *
+ * Why this exists: check-contrast.js only compares token *pairs*, so it
+ * stayed green (0/135 failures) while vellum was broken on five screens
+ * by exactly these two leaks. See docs/impeccable-adoption-plan.md §10,
+ * "The finding that reframes Phase 3".
+ *
+ * A white-alpha literal that is genuinely theme-independent (a specular
+ * highlight on a coloured button, say) may stay if the line carries the
+ * comment `token-check: allow-white` with a reason.
+ *
+ * Usage:  node scripts/check-tokens.js
+ * Exits 1 on any finding.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const SRC = path.join(__dirname, '..', 'src');
+const ALLOW_WHITE = 'token-check: allow-white';
+
+function walk(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, out);
+    else if (/\.(s?css|html|ts)$/.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+const files = walk(SRC);
+const declared = new Set();
+const uses = [];
+const whites = [];
+
+for (const file of files) {
+  const text = fs.readFileSync(file, 'utf8');
+  const isStyle = /\.s?css$/.test(file);
+
+  // Declarations: `--x:` in stylesheets, and custom properties set from
+  // templates or code (`[style.--x]`, `setProperty('--x'`, `'--x':`).
+  const declRe = isStyle
+    ? /(--[a-zA-Z0-9-]+)\s*:/g
+    : /(?:style\.|setProperty\(\s*['"`]|['"`])(--[a-zA-Z0-9-]+)/g;
+  for (const m of text.matchAll(declRe)) declared.add(m[1]);
+
+  const lines = text.split(/\r?\n/);
+  lines.forEach((line, i) => {
+    for (const m of line.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)) {
+      uses.push({ name: m[1], file, line: i + 1 });
+    }
+    if (
+      isStyle &&
+      /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/.test(line) &&
+      !line.includes(ALLOW_WHITE)
+    ) {
+      whites.push({ file, line: i + 1, text: line.trim() });
+    }
+  });
+}
+
+const rel = (f) => path.relative(path.join(__dirname, '..'), f).replace(/\\/g, '/');
+const undeclared = uses.filter((u) => !declared.has(u.name));
+
+if (undeclared.length) {
+  console.log(`Undeclared custom properties (${undeclared.length} uses):`);
+  for (const u of undeclared) console.log(`  ${u.name}  ${rel(u.file)}:${u.line}`);
+}
+if (whites.length) {
+  console.log(`White-alpha literals in stylesheets (${whites.length}):`);
+  for (const w of whites) console.log(`  ${rel(w.file)}:${w.line}  ${w.text}`);
+  console.log(`  Use a theme token, or add "/* ${ALLOW_WHITE}: <reason> */" to the line.`);
+}
+
+if (undeclared.length || whites.length) {
+  console.log('\nFAIL: styles bypass the theme tokens.');
+  process.exit(1);
+}
+console.log(`OK: ${uses.length} var() uses all declared; no white-alpha literals in stylesheets.`);
