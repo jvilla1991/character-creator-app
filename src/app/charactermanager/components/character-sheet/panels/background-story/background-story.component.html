@@ -72,13 +72,13 @@
     </div>
   }
 
-  <!-- DM Notes -->
+  <!-- Notes: the player's own narrative notes (PC.notes), not DM-only -->
   @if (pc().notes) {
     <div
     style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-soft);
            font-family: 'Newsreader', serif; font-style: italic; color: var(--text-dim); font-size: 13.5px;"
       >
-      <span class="eyebrow" style="margin-right: 10px;">DM Notes</span>{{ pc().notes }}
+      <span class="eyebrow" style="margin-right: 10px;">Notes</span>{{ pc().notes }}
     </div>
   }
 </div>

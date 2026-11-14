@@ -56,7 +56,39 @@ describe('LoginComponent', () => {
     expect(authService.login).toHaveBeenCalledWith('admin', 'password');
   });
 
+  it('makes no request while a required field is empty', () => {
+    component.form.setValue({ userName: 'admin', password: '' });
+
+    component.login();
+
+    expect(authService.login).not.toHaveBeenCalled();
+  });
+
+  // Regression: the username input also carried (keydown.enter)="login()", so one
+  // Enter fired login() from the keydown AND from the form's own implicit submit
+  // (two requests), and with the password still empty it sent one anyway.
+  it('Enter in the username field leaves submission to the form', () => {
+    component.form.setValue({ userName: 'admin', password: 'password' });
+    authService.login.and.returnValue(of({ success: true }));
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('#username');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(authService.login).not.toHaveBeenCalled();
+  });
+
+  it('submitting the form logs in exactly once', () => {
+    component.form.setValue({ userName: 'admin', password: 'password' });
+    authService.login.and.returnValue(of({ success: true }));
+
+    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    form.dispatchEvent(new Event('submit'));
+
+    expect(authService.login).toHaveBeenCalledTimes(1);
+  });
+
   it('sets errorMessage when login fails', () => {
+    component.form.setValue({ userName: 'admin', password: 'wrong' });
     authService.login.and.returnValue(throwError(() => new Error('Login failed')));
 
     component.login();
@@ -65,6 +97,7 @@ describe('LoginComponent', () => {
   });
 
   it('shows .login-error element when errorMessage is set', async () => {
+    component.form.setValue({ userName: 'admin', password: 'wrong' });
     authService.login.and.returnValue(throwError(() => new Error('Bad credentials')));
     component.login();
     fixture.detectChanges();

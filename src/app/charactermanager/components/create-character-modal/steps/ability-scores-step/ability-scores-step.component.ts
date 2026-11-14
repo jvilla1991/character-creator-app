@@ -2,6 +2,7 @@ import { Component, Input, input, output } from '@angular/core';
 import { DndBackground } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
+import { modFromScore } from '../../../../utils/character-math';
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
@@ -11,7 +12,9 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
  * math and the canonical state. The display helpers (finalScore /
  * availableFor / can*Score) are passed in as bound functions so the formulas
  * stay single-sourced on the parent; interactions are reported via events.
- * Modifiers render via the shared `modifier` pipe rather than a passed-in formatter.
+ * Modifiers render as `modFromScore(score) | modifier`: the pipe only adds the
+ * sign to a value that is ALREADY a modifier, so a raw score must go through
+ * `modFromScore` first (piping the score straight in rendered "17 +17").
  *
  * The `assignments` Record is the parent's own object (shared by reference), so
  * the Standard-Array [(ngModel)] writes land directly on parent state.
@@ -42,6 +45,9 @@ export class AbilityScoresStepComponent {
   readonly availableFor = input<(a: Ability) => number[]>(() => []);
   readonly canIncreaseScore = input<(a: Ability) => boolean>(() => false);
   readonly canDecreaseScore = input<(a: Ability) => boolean>(() => false);
+
+  /** Score → modifier (17 → 3). The `modifier` pipe then only adds the sign. */
+  protected readonly modFromScore = modFromScore;
 
   readonly abilityMethodChange = output<'standard' | 'point-buy'>();
   readonly increase = output<Ability>();
