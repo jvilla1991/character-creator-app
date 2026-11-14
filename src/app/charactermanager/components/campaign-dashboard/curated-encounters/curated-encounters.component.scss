@@ -1,7 +1,7 @@
 .curated-card {
   display: block;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border-radius: 12px;
   padding: 18px 20px;
 }
@@ -61,9 +61,9 @@
 .shop-name { font-weight: 600; }
 .shop-sub {
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
-.chevron { color: var(--muted, rgba(255, 255, 255, 0.5)); font-size: 1.4rem; }
+.chevron { color: var(--text-dim); font-size: 1.4rem; }
 
 .editor-head {
   display: flex;
@@ -83,7 +83,7 @@
 .field-label {
   display: block;
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   margin: 12px 0 6px;
 }
 
@@ -124,7 +124,7 @@
 .item-name { font-weight: 600; }
 .item-meta {
   font-size: 0.78rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .btn-x {
@@ -133,14 +133,14 @@
   border-radius: 6px;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
   background: transparent;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   cursor: pointer;
 
   &:hover { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
 }
 
 .muted {
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   font-size: 0.85rem;
   padding: 6px 0;
 }
@@ -148,5 +148,5 @@
 .total-line {
   margin-top: 12px;
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }

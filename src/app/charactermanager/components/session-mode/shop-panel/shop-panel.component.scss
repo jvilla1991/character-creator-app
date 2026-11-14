@@ -4,7 +4,7 @@
 
 .shop-card {
   border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border-radius: 12px;
   padding: 18px 20px;
 }
@@ -36,7 +36,7 @@
 
 .seg-btn {
   font: inherit;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   background: transparent;
   border: 0;
   padding: 7px 16px;
@@ -55,7 +55,7 @@
 .field-label {
   display: block;
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   margin-bottom: 6px;
 }
 
@@ -112,7 +112,7 @@
 
 .item-meta {
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .item-price {
@@ -137,5 +137,5 @@
 }
 
 .muted {
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }

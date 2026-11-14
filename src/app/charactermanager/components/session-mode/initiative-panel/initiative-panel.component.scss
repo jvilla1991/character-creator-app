@@ -63,7 +63,7 @@
   text-align: center;
   font: inherit;
   color: var(--text);
-  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
   border-radius: 6px;
 }
@@ -153,7 +153,7 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
     border-radius: 6px;
   }
@@ -170,7 +170,7 @@
     cursor: pointer;
     border-radius: 6px;
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
 
     &.dmg:hover { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
@@ -208,7 +208,7 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
     border-radius: 6px;
 
@@ -227,7 +227,7 @@
     cursor: pointer;
     border-radius: 6px;
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
     &:hover:not([disabled]) { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
     &[disabled] { opacity: 0.45; cursor: not-allowed; }
@@ -250,7 +250,7 @@
       font: inherit;
       font-style: normal;
       color: var(--text);
-      background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+      background: color-mix(in oklch, var(--text) 4%, transparent);
       border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
       border-radius: 6px;
       padding: 3px 6px;
@@ -271,7 +271,7 @@
     cursor: pointer;
     border-radius: 6px;
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text-dim);
     &:hover { color: var(--text); }
   }
@@ -299,7 +299,7 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
     border-radius: 6px;
   }
@@ -313,7 +313,7 @@
     cursor: pointer;
     border-radius: 6px;
     border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
     &:hover:not([disabled]) { border-color: var(--gold, #d9b25f); color: var(--gold, #d9b25f); }
     &[disabled] { opacity: 0.45; cursor: not-allowed; }

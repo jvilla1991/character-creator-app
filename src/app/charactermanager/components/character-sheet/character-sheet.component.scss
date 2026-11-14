@@ -49,7 +49,7 @@
   height: 6px;
   flex: 0 1 280px;
   max-width: 280px;
-  background: var(--bg-elev, rgba(255, 255, 255, 0.06));
+  background: color-mix(in oklch, var(--text) 6%, transparent);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
   border-radius: 999px;
   overflow: hidden;
@@ -74,7 +74,7 @@
   overflow-x: auto;
   gap: 4px;
   margin: 12px 0 16px;
-  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .sheet-tab {
@@ -116,9 +116,9 @@
     margin: 0;
     gap: 0;
     justify-content: space-around;
-    border-top: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+    border-top: 1px solid var(--border);
     border-bottom: none;
-    background: var(--panel-bg, rgba(18, 18, 32, 0.96));
+    background: color-mix(in oklch, var(--surface) 96%, transparent);
     backdrop-filter: blur(8px);
     padding: 4px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
   }
