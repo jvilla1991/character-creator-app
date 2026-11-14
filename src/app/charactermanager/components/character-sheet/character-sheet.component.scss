@@ -50,7 +50,7 @@
   flex: 0 1 280px;
   max-width: 280px;
   background: color-mix(in oklch, var(--text) 6%, transparent);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -138,7 +138,7 @@
    spellbook) loads in. */
 .panel-defer-placeholder {
   text-align: center;
-  color: var(--text-dim, rgba(255, 255, 255, 0.35));
+  color: var(--text-dim);
   font-style: italic;
   font-size: 13px;
   padding: 40px 0;

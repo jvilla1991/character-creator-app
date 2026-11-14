@@ -3,7 +3,7 @@
 }
 
 .loot-card {
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border-radius: 12px;
   padding: 18px 20px;
@@ -34,7 +34,7 @@
 .seg {
   display: inline-flex;
   margin-bottom: 16px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -48,7 +48,7 @@
   cursor: pointer;
 
   & + .seg-btn {
-    border-left: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    border-left: 1px solid var(--border);
   }
 
   &.active {
@@ -71,7 +71,7 @@
   font: inherit;
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -81,7 +81,7 @@
   font: inherit;
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -114,7 +114,7 @@
   align-items: center;
   gap: 14px;
   padding: 9px 0;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+  border-top: 1px solid var(--border);
 }
 
 .item-main {
@@ -155,7 +155,7 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;

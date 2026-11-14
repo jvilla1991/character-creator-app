@@ -1,6 +1,6 @@
 .encounter-loader {
   display: block;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border-radius: 12px;
   padding: 14px 16px;
@@ -23,7 +23,7 @@
   font: inherit;
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 

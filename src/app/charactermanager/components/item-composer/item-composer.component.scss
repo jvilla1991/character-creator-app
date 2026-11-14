@@ -19,7 +19,7 @@
   padding: 4px 10px;
   color: var(--text-dim);
   background: transparent;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
 
@@ -65,7 +65,7 @@
   padding: 6px 8px;
   color: var(--text, inherit);
   background: var(--bg-2);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border);
   border-radius: 4px;
 }
 
@@ -83,7 +83,7 @@
   padding: 6px 4px;
   font-size: 13px;
   cursor: pointer;
-  border-bottom: 1px dotted var(--border-soft, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px dotted var(--border-soft);
 
   &:last-child { border-bottom: none; }
   &.on { color: var(--gold); }
@@ -106,7 +106,7 @@
   padding: 5px 9px;
   color: var(--text-dim);
   background: transparent;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
 
