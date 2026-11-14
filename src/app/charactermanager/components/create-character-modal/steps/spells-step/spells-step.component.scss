@@ -17,7 +17,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border);
   border-radius: 2px;
   color: var(--text-dim);
@@ -158,7 +158,7 @@
 .spell-desc {
   margin: 0 0 4px;
   padding: 9px 11px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in oklch, var(--text) 3%, transparent);
   border: 1px solid var(--border-soft);
   border-top: none;
   border-radius: 0 0 2px 2px;

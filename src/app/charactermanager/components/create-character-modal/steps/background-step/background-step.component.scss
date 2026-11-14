@@ -18,7 +18,7 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-2);
   cursor: pointer;
   user-select: none;
   padding: 4px 10px 4px 8px;
@@ -35,8 +35,8 @@
   }
 
   &.disabled {
-    color: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-dim);
+    border-color: var(--border-soft);
     background: transparent;
   }
 }
@@ -92,7 +92,7 @@
     font-family: 'Newsreader', serif;
     font-size: 13px;
     line-height: 1.55;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
 
     &--unknown {
       font-style: italic;
