@@ -4,17 +4,17 @@ describe('login page', () => {
   });
 
   it('keeps submit disabled until both fields are filled', () => {
-    cy.contains('button', 'Enter the Vault')
+    cy.contains('button', 'Sign In')
       .should('be.disabled');
 
     cy.get('#username').type('juniorDev');
 
-    cy.contains('button', 'Enter the Vault')
+    cy.contains('button', 'Sign In')
       .should('be.disabled');
 
     cy.get('#password').type('secret');
 
-    cy.contains('button', 'Enter the Vault')
+    cy.contains('button', 'Sign In')
       .should('be.enabled');
   });
 });

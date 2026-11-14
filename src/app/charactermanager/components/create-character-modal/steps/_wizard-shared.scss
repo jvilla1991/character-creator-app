@@ -34,8 +34,12 @@
   to   { opacity: 0.25; }
 }
 
+// The value may be a long lineage list or a multi-sentence PHB note. Without
+// wrapping, a flex item refuses to shrink below its content (min-width: auto)
+// and the whole detail card is pushed past both screen edges on a phone.
 .detail-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
@@ -62,7 +66,13 @@
   color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
   text-align: right;
+  min-width: 0;            // allow the value to shrink and wrap
+  overflow-wrap: anywhere; // a single long unbroken token still can't overflow
+
+  // Fills the line it wraps onto instead of hugging the right edge.
+  flex: 1 1 auto;
 }
+
 
 // ── Collapsible pickers (species / class / background) ────────────────────
 // Each option is a full-width row; selecting one reveals its details directly
