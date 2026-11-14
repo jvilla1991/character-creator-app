@@ -23,15 +23,17 @@ export class CoinPurseComponent {
   readonly coinTypes: Array<{ key: CoinKey; label: string }> = [
     { key: 'cp', label: 'Copper' },
     { key: 'sp', label: 'Silver' },
-    { key: 'ep', label: 'Electrum' },
     { key: 'gp', label: 'Gold' },
-    { key: 'pp', label: 'Platinum' },
   ];
 
+  /** Gold-piece value of the purse. Only the three denominations the sheet
+   *  shows are counted, so the total always reconciles with the visible tiles.
+   *  Electrum and platinum stay on the PC (shops and loot still use them) but
+   *  are deliberately excluded here. */
   get gpEquiv(): string {
     if (!this.pc.coins) return '0.00';
-    const { cp, sp, ep, gp, pp } = this.pc.coins;
-    return (cp / 100 + sp / 10 + ep / 2 + gp + pp * 10).toFixed(2);
+    const { cp, sp, gp } = this.pc.coins;
+    return (cp / 100 + sp / 10 + gp).toFixed(2);
   }
 
   coinAmt(key: CoinKey): number {

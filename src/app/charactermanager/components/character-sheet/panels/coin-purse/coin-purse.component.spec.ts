@@ -14,8 +14,14 @@ describe('CoinPurseComponent', () => {
   });
 
   describe('gpEquiv', () => {
-    it('converts every denomination to its gp value', () => {
-      expect(component.gpEquiv).toBe((1 / 100 + 2 / 10 + 0 / 2 + 10 + 0 * 10).toFixed(2));
+    it('converts the displayed denominations to their gp value', () => {
+      expect(component.gpEquiv).toBe((1 / 100 + 2 / 10 + 10).toFixed(2));
+    });
+
+    it('ignores electrum and platinum, which the sheet no longer shows', () => {
+      component.pc = { ...basePc(), coins: { cp: 1, sp: 2, ep: 50, gp: 10, pp: 7 } } as PC;
+
+      expect(component.gpEquiv).toBe((1 / 100 + 2 / 10 + 10).toFixed(2));
     });
   });
 
