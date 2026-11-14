@@ -153,7 +153,7 @@
         <div class="review-ability">
           <span class="review-ability-label">{{ ability }}</span>
           <span class="review-ability-score">{{ finalScore()(ability) }}</span>
-          <span class="review-ability-mod">{{ finalScore()(ability) | modifier }}</span>
+          <span class="review-ability-mod">{{ modFromScore(finalScore()(ability)) | modifier }}</span>
         </div>
       }
     </div>

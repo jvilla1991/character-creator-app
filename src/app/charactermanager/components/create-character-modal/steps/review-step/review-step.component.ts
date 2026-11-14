@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ClassEquipment, DndClass, DndSpecies, DndSpell } from '../../../../models/dnd-api.types';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
+import { modFromScore } from '../../../../utils/character-math';
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
@@ -9,8 +10,8 @@ type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
  * buttons. Presentational — the parent computes all the review getters and
  * passes them in; the child only renders and emits (edit) with the target step
  * number when an Edit button is clicked. The ability grid reuses the parent's
- * finalScore as a bound function input (single-sourced math); modifiers render
- * via the shared `modifier` pipe.
+ * finalScore as a bound function input (single-sourced math); modifiers render as
+ * `modFromScore(score) | modifier` — the pipe only signs an existing modifier.
  */
 @Component({
     selector: 'app-review-step',
@@ -54,6 +55,8 @@ export class ReviewStepComponent {
   // Ability scores
   readonly abilities = input<readonly Ability[]>([]);
   readonly finalScore = input<(a: Ability) => number>(() => 0);
+  /** Score → modifier (17 → 3). The `modifier` pipe then only adds the sign. */
+  protected readonly modFromScore = modFromScore;
 
   // Spells (casters only)
   readonly isSpellcastingClass = input(false);
