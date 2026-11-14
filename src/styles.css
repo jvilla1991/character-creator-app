@@ -1364,11 +1364,17 @@ select:focus {
   background: var(--gold);
 }
 
-/* fade-in transitions */
+/* fade-in transitions
+   Opacity only — deliberately NO transform. An element with a running
+   transform animation becomes the containing block for its position:fixed
+   descendants, which threw the sheet's mobile bottom tab bar to the foot of
+   a ~3000px sheet instead of pinning it to the screen (measured: top 304px
+   -> 2951px mid-animation). Every screen wraps its content in .fade-in, so
+   the 4px slide is not worth a tab bar that vanishes. */
 .fade-in { animation: fade-in .25s ease-out; }
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ── Angular Material dialog overrides ─────────────────────────────────────
