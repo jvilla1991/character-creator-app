@@ -34,8 +34,10 @@
     margin-bottom: 18px;
   }
 
+  // The global .sheet-name rule below 1100px is itself !important, which
+  // beats any specificity, so matching it is the only way to override.
   .dashboard-header .sheet-name {
-    font-size: 26px;
+    font-size: 26px !important;
   }
 
   // Start Session / Manage Party share a row at a finger-sized height; the
