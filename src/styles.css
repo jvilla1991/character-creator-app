@@ -208,6 +208,25 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border: 0;
 }
 
+/* === REDUCED MOTION ===
+   One rule for the whole app, component styles included (it is global and
+   !important). Every animation and transition collapses to an instant change:
+   things still arrive in their final state, nothing slides, fades or pulses.
+   0.01ms rather than none so animationend/transitionend still fire for any
+   code that waits on them. Infinite animations run once and stop at rest, so
+   any state an animation carries must also live on the element itself — see
+   the my-turn vignette in session-mode, which keeps a static green frame. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* === LAYOUT === */
 .app {
   display: grid;
