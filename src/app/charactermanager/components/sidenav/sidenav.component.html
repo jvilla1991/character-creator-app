@@ -4,7 +4,12 @@
   <!-- ═══════════════════════════════════════════════
   SIDEBAR
   ═══════════════════════════════════════════════ -->
-  <aside class="sidebar" [class.open]="drawerOpen">
+  <!-- On phones the sidebar is a slide-in drawer and, while open, a modal
+  dialog: focus moves in, Tab stays inside, Escape closes it, and the page
+  behind is inert. At desktop widths drawerOpen stays false and it is the
+  plain navigation landmark. -->
+  <aside id="party-drawer" class="sidebar" [class.open]="drawerOpen"
+    appDialog [dialogActive]="drawerOpen" aria-label="Party menu" (dismiss)="closeDrawer()">
 
     <!-- Brand block (constant across both modes) -->
     <div class="brand">
@@ -20,6 +25,14 @@
       <div>
         <div class="brand-name">TABLE MIMIC</div>
       </div>
+      <!-- Phone drawer only (hidden at desktop widths). -->
+      <button type="button" class="drawer-close" cdkFocusInitial (click)="closeDrawer()"
+        aria-label="Close party menu">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"
+          stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8"/>
+        </svg>
+      </button>
     </div>
 
     <!-- ── PLAYER MODE: roster ─────────────────────────────────────────── -->
@@ -131,16 +144,17 @@
     </aside>
 
     <!-- Mobile-only scrim: tap to dismiss the drawer (no effect at desktop widths) -->
-    <div class="drawer-scrim" [class.show]="drawerOpen" (click)="closeDrawer()"></div>
+    <div class="drawer-scrim" [class.show]="drawerOpen" (click)="closeDrawer()" aria-hidden="true"></div>
 
     <!-- ═══════════════════════════════════════════════
     MAIN CONTENT
     ═══════════════════════════════════════════════ -->
-    <main class="main">
+    <main class="main" [attr.inert]="drawerOpen ? '' : null">
 
       <!-- Mobile-only top bar: hamburger + brand + active hero name (hidden at >=821px via CSS) -->
       <div class="mobile-topbar">
-        <button class="mobile-menu-btn" (click)="toggleDrawer()" aria-label="Open party menu">
+        <button class="mobile-menu-btn" (click)="toggleDrawer()" aria-label="Open party menu"
+          aria-controls="party-drawer" [attr.aria-expanded]="drawerOpen">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
             <path d="M3 6h18M3 12h18M3 18h18"/>
           </svg>
