@@ -6,6 +6,7 @@ import { SessionService } from '../../services/session.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
+import { DiceRollerService } from '../../services/dice-roller.service';
 import { PC } from '../../models/pc';
 
 // Class-only test of the initiative-visibility predicate (no TestBed; only
@@ -15,7 +16,7 @@ describe('SessionModeComponent.showInitiative', () => {
   let component: SessionModeComponent;
   beforeEach(() => {
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never));
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
   const state = (dm: boolean, status: SessionState['status']): SessionState =>
@@ -48,7 +49,7 @@ describe('SessionModeComponent.openPcSheet', () => {
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     const sessionServiceStub = { state$: of(null) } as never;
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never));
+      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never, null as never));
   });
 
   it('owned PC: opens from the local store with no HTTP fetch', () => {
@@ -106,29 +107,25 @@ describe('SessionModeComponent.openPcSheet', () => {
   });
 });
 
-describe('SessionModeComponent.openRoll / closeRoll', () => {
+describe('SessionModeComponent.openRoll', () => {
   const sessionServiceStub = { state$: of(null) } as never;
   let component: SessionModeComponent;
+  let dice: jasmine.SpyObj<DiceRollerService>;
 
   beforeEach(() => {
+    dice = jasmine.createSpyObj<DiceRollerService>('DiceRollerService', ['open', 'close']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never));
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never,
+      dice, null as never));
   });
 
-  it('openRoll sets the pc and opens the modal', () => {
-    const pc = { id: 7, name: 'Aria' } as PC;
-    component.openRoll(pc);
+  // The roller itself is mounted once in the app shell (and reachable from
+  // every screen via the floating launcher); the in-session Roll button is now
+  // just another trigger, and owns no modal state of its own.
+  it('delegates to the shell-level dice roller', () => {
+    component.openRoll();
 
-    expect(component.rollModalOpen).toBeTrue();
-    expect(component.rollPc).toBe(pc);
-  });
-
-  it('closeRoll clears the pc and closes the modal', () => {
-    component.openRoll({ id: 7, name: 'Aria' } as PC);
-    component.closeRoll();
-
-    expect(component.rollModalOpen).toBeFalse();
-    expect(component.rollPc).toBeNull();
+    expect(dice.open).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -164,7 +161,7 @@ describe('SessionModeComponent rest vote', () => {
     (sessionService as { state$: unknown }).state$ = stateOfNull;
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionService, null as never, null as never, notifications, null as never, null as never, null as never));
+      sessionService, null as never, null as never, notifications, null as never, null as never, null as never, null as never));
   });
 
   it('initiateRestVote calls the service for this session', () => {

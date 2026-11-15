@@ -11,11 +11,12 @@ export const UI_ACTIVE_CAMPAIGN_KEY = 'tm_active_campaign';
 /**
  * In-app, full-screen-ish views that are *not* routes but should still respond
  * to the browser Back button: the live-session overlay, the settings slide-over,
- * and a DM cross-linked into a member's sheet. Each one pushes a single history
- * entry when opened; pressing Back (or an in-app close button) unwinds exactly
- * one. See the history plumbing at the bottom of this service.
+ * a DM cross-linked into a member's sheet, and the app-wide dice roller. Each
+ * one pushes a single history entry when opened; pressing Back (or an in-app
+ * close button) unwinds exactly one. See the history plumbing at the bottom of
+ * this service.
  */
-type Overlay = 'session' | 'settings' | 'dmHero';
+type Overlay = 'session' | 'settings' | 'dmHero' | 'dice';
 
 /**
  * Holds app-level UI state that is *not* a route: the Player/DM role, which
@@ -46,6 +47,13 @@ export class UiStateService {
 
   private readonly _settingsOpen = signal(false);
   readonly settingsOpen = this._settingsOpen.asReadonly();
+
+  // The dice roller, launched from the shell's floating button (or the "r"
+  // shortcut) and therefore reachable from every screen. Open/close lives here
+  // rather than in DiceRollerService so it rides the same history plumbing as
+  // the other overlays; DiceRollerService owns the roll context.
+  private readonly _diceOpen = signal(false);
+  readonly diceOpen = this._diceOpen.asReadonly();
 
   // The live session currently open as a full-screen overlay (null = none).
   // Drives Session Mode, which layers over both the Player and DM views.
@@ -139,6 +147,21 @@ export class UiStateService {
     this.unwind('settings');
   }
 
+  // ── Dice roller overlay ───────────────────────────────────────────────────
+  // Call DiceRollerService.open()/close() rather than these directly: it also
+  // resolves which live session (if any) a settled roll should be logged to.
+  openDice(): void {
+    if (this._diceOpen()) return;                         // guard a double-open
+    this._diceOpen.set(true);
+    this.pushOverlay('dice');
+  }
+
+  closeDice(): void {
+    if (!this._diceOpen()) return;
+    this._diceOpen.set(false);
+    this.unwind('dice');
+  }
+
   // ── Live session overlay ──────────────────────────────────────────────────
   openSession(sessionId: string): void {
     const firstOpen = this._activeSessionId() === null;
@@ -185,6 +208,7 @@ export class UiStateService {
   resetOverlays(): void {
     this.overlayStack = [];
     this._settingsOpen.set(false);
+    this._diceOpen.set(false);
     this._activeSessionId.set(null);
   }
 
@@ -230,6 +254,9 @@ export class UiStateService {
     switch (kind) {
       case 'settings':
         this._settingsOpen.set(false);
+        break;
+      case 'dice':
+        this._diceOpen.set(false);
         break;
       case 'session':
         // SessionMode's ngOnDestroy stops polling and clears the snapshot when

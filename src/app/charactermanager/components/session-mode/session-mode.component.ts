@@ -8,6 +8,7 @@ import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
+import { DiceRollerService } from '../../services/dice-roller.service';
 import { formatCp } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
@@ -24,7 +25,6 @@ import { LootPanelComponent } from './loot-panel/loot-panel.component';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.component';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { DiceRollerModalComponent } from '../dice-roller-modal/dice-roller-modal.component';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
 
 /**
@@ -39,7 +39,7 @@ import { AsyncPipe, TitleCasePipe } from '@angular/common';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, CdkTrapFocus, DiceRollerModalComponent, AsyncPipe, TitleCasePipe]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, CdkTrapFocus, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
@@ -85,6 +85,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private shopService: ShopService,
+    private dice: DiceRollerService,
     private destroyRef: DestroyRef,
   ) {}
 
@@ -262,11 +263,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   // ── Player Roll button (opens the dice modal wired to this live session) ───
 
-  rollModalOpen = false;
-  rollPc: PC | null = null;
-
-  openRoll(pc: PC): void { this.rollPc = pc; this.rollModalOpen = true; }
-  closeRoll(): void { this.rollModalOpen = false; this.rollPc = null; }
+  /** The in-session Roll button — same shell-level roller as the FAB. */
+  openRoll(): void { this.dice.open(); }
 
   confirmLongRest(undisturbed: boolean, state: SessionState): void {
     this.longRestModalOpen = false;
