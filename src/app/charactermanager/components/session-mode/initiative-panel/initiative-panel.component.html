@@ -52,8 +52,15 @@
             {{ p.initRolled ? p.initiative : '—' }}
           }
         </div>
+        <!-- A button only where the DM can open this PC's sheet; the cell holds
+        no other controls, so the role does not nest anything. -->
         <div class="board-hero" [class.linkable]="canOpenSheet(p)" (click)="onHeroClick(p)"
-          [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null">
+          [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null"
+          [attr.role]="canOpenSheet(p) ? 'button' : null"
+          [attr.tabindex]="canOpenSheet(p) ? 0 : null"
+          [attr.aria-label]="canOpenSheet(p) ? 'Open the sheet for ' + p.name : null"
+          (keydown.enter)="onHeroClick(p)"
+          (keydown.space)="canOpenSheet(p) && $event.preventDefault(); onHeroClick(p)">
           <div class="portrait" [style.background]="tintFor(p)">{{ initialsFor(p) }}</div>
           <div style="min-width: 0;">
             <div class="board-hero-name">{{ p.name }}</div>

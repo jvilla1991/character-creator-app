@@ -14,15 +14,15 @@
         <ul class="shop-list">
           @for (l of lists; track trackById($index, l)) {
             <li class="shop-row" (click)="open(l)">
-              <div>
-                <div class="shop-name">{{ l.name }}</div>
-                <div class="shop-sub">
+              <button type="button" class="shop-open" (click)="$event.stopPropagation(); open(l)">
+                <span class="shop-name">{{ l.name }}</span>
+                <span class="shop-sub">
                   {{ l.itemCount }} item{{ l.itemCount === 1 ? '' : 's' }}@if (l.coinCp > 0) {
                   · {{ formatCp(l.coinCp) }}
                 }
-              </div>
-            </div>
-            <span class="chevron">›</span>
+              </span>
+            </button>
+            <span class="chevron" aria-hidden="true">›</span>
           </li>
         }
       </ul>
