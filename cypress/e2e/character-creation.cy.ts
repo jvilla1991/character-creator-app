@@ -12,7 +12,7 @@
 // stubs below stand in for both Spring Boot services and dnd5eapi.co.
 //
 // Selector notes (all verified against src/):
-// - Wizard is a modal, not a route: opened via the sidenav "Forge Hero" button.
+// - Wizard is a modal, not a route: opened via the sidenav "Create Character" button.
 // - Species/class/background tiles are `button.class-pick` accordion heads.
 // - Skill chips on the proficiencies step are also `button.class-pick`.
 // - Standard-array assignment uses one `select.ability-select` per ability row;
@@ -68,7 +68,7 @@ describe('character creation wizard', () => {
     stubBackend();
     cy.visitAuthed('/charactermanager', USER);
     cy.wait('@getPcs'); // shell loaded and fetched the (empty) roster
-    cy.contains('button', 'Forge Hero').click();
+    cy.contains('button', 'Create Character').click();
     cy.get('.modal.wizard').should('be.visible');
   });
 
@@ -179,7 +179,7 @@ describe('character creation wizard', () => {
     });
 
     cy.reload();
-    cy.contains('button', 'Forge Hero').click();
+    cy.contains('button', 'Create Character').click();
     cy.get('.modal.wizard').should('be.visible');
 
     // The draft restores the step too — we saved on step 2 (species), so the

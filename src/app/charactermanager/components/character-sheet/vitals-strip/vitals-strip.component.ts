@@ -48,13 +48,13 @@ export class VitalsStripComponent {
     return Math.max(0, (this.pc.level ?? 0) - (this.pc.hitDiceUsed ?? 0));
   }
 
-  /** Names of the currently-equipped armor/shield lines, or "unarmored" when
-   *  nothing is worn — the caption shown under the AC value. */
+  /** Names of the currently-equipped armor/shield lines — the caption shown under
+   *  the AC value. Empty when nothing is worn, so the caption is hidden. */
   get armorLabel(): string {
     const worn = (this.pc.inventory ?? [])
       .filter(i => i.category === 'armor' && i.equipped && i.status !== 'dropped')
       .map(i => i.name);
-    return worn.length ? worn.join(' & ') : 'unarmored';
+    return worn.length ? worn.join(' & ') : '';
   }
 
   /** Pure builder: apply one HP field, keeping current within [0, max]. */

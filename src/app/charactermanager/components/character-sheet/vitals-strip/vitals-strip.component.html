@@ -33,7 +33,9 @@
     [intercept]="true" (editRequested)="requestVital('ac')"
     label="armor class" (committed)="setVital('ac', $event)"
   >{{ pc.ac ?? '—' }}</app-editable-number></div>
-  <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">{{ armorLabel }}</div>
+  @if (armorLabel) {
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">{{ armorLabel }}</div>
+  }
 </div>
 
 <!-- Initiative -->
@@ -44,7 +46,6 @@
     [intercept]="true" (editRequested)="requestVital('init')"
     label="initiative" (committed)="setVital('init', $event)"
   >{{ pc.init != null ? (pc.init | modifier) : '—' }}</app-editable-number></div>
-  <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">d20 + mod</div>
 </div>
 
 <!-- Speed -->
@@ -57,7 +58,6 @@
   >{{ pc.speed ?? '—' }}</app-editable-number>@if (pc.speed) {
   <span class="sub">ft</span>
 }</div>
-<div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">per round</div>
 </div>
 
 <!-- Proficiency -->
@@ -68,7 +68,6 @@
     [intercept]="true" (editRequested)="requestVital('prof')"
     label="proficiency bonus" (committed)="setVital('prof', $event)"
   >{{ pc.prof ?? '—' }}</app-editable-number></div>
-  <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">level {{ pc.level }}</div>
 </div>
 
 <!-- Hit Dice: remaining of the level-sized pool. Spends happen in a live
@@ -87,10 +86,6 @@ session while the DM's short-rest window is open; a long rest restores half. -->
         : 'Roll 1d' + hitDie + ' + CON and heal (short rest)'">
       Spend Hit Die (1d{{ hitDie }}+CON)
     </button>
-  } @else {
-    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px;">
-      short rest to spend
-    </div>
   }
 </div>
 
