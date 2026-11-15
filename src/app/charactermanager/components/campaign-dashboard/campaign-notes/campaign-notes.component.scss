@@ -15,7 +15,7 @@
     min-height: 44px;
     padding: 8px 10px;
     border-radius: 6px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    border: 1px solid var(--border);
     background: var(--bg-2, rgba(0, 0, 0, 0.2));
     color: var(--text);
     font-family: inherit;
@@ -41,7 +41,7 @@
 .note {
   padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border: 1px solid var(--border);
   background: var(--bg-2, rgba(0, 0, 0, 0.15));
 
   .note-body {

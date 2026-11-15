@@ -17,7 +17,7 @@
   }
 
   @for (note of notes(); track note) {
-    <div style="padding: 6px 0; border-bottom: 1px solid var(--line, rgba(255,255,255,0.06));">
+    <div style="padding: 6px 0; border-bottom: 1px solid var(--border-soft);">
       <div style="white-space: pre-wrap;">{{ note.body }}</div>
       <div class="equip-item-meta" style="margin-top: 2px;">
         {{ noteDate(note) }}@if (note.sessionId) {

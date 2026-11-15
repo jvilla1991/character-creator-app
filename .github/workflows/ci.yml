@@ -45,6 +45,12 @@ jobs:
       - name: Check theme contrast (WCAG AA)
         run: npm run check:contrast
 
+      # The contrast check only compares token pairs, so it cannot see a
+      # component that bypasses the tokens. This one fails on var(--x) for an
+      # undeclared --x and on white-alpha literals in any stylesheet.
+      - name: Check theme token leaks
+        run: npm run check:tokens
+
       - name: Install dependencies
         run: npm ci
 

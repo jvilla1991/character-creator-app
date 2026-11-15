@@ -26,9 +26,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 10px 14px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-3);
   border-radius: 8px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  background: var(--surface-2);
 
   &.is-bump {
     border-color: var(--celestial);
@@ -39,7 +39,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .lvl-gain-value {
@@ -53,7 +53,7 @@
   margin-top: 2px;
   font-size: 0.75rem;
   font-weight: 400;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 // ── Spell-slot pips ───────────────────────────────────────────────────────────
@@ -71,9 +71,9 @@
   align-items: center;
   min-width: 34px;
   padding: 3px 6px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-3);
   border-radius: 6px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  background: var(--surface-2);
   line-height: 1.2;
 
   &.slot-up {
@@ -86,7 +86,7 @@
   font-size: 0.62rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .slot-up .slot-lvl {
@@ -111,7 +111,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .subclass-option {
@@ -119,9 +119,9 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-3);
   border-radius: 8px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  background: var(--surface-2);
   cursor: pointer;
   color: var(--text, #fff);
 
@@ -147,7 +147,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .asi-remaining {
@@ -161,9 +161,9 @@
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-3);
   border-radius: 8px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  background: var(--surface-2);
 
   &.is-raised {
     border-color: var(--celestial);
@@ -174,7 +174,7 @@
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .is-raised .asi-ability {
@@ -195,7 +195,7 @@
 .asi-step {
   width: 26px;
   height: 26px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--surface-3);
   border-radius: 6px;
   background: transparent;
   color: var(--text, #fff);
@@ -218,7 +218,7 @@
 .asi-note {
   margin-top: 4px;
   font-size: 0.74rem;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 // ── ASI / Feat toggle ─────────────────────────────────────────────────────────
@@ -232,10 +232,10 @@
 .milestone-tab {
   flex: 1;
   padding: 7px 10px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--surface-3);
   border-radius: 7px;
   background: transparent;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   font-size: 0.8rem;
   letter-spacing: 0.03em;
   cursor: pointer;
@@ -269,7 +269,7 @@
 
 .feat-desc {
   font-size: 0.74rem;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 // ── Auto-granted class features ───────────────────────────────────────────────
@@ -285,7 +285,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .feature-item {
@@ -293,10 +293,10 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 12px;
-  border: 1px solid var(--surface-3, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-3);
   border-left: 2px solid var(--celestial);
   border-radius: 6px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  background: var(--surface-2);
 }
 
 .feature-name {
@@ -306,7 +306,7 @@
 
 .feature-desc {
   font-size: 0.76rem;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 // ── Spell picker ──────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .spell-counts {

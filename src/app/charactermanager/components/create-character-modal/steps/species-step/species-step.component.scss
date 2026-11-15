@@ -19,7 +19,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-dim);
   margin-bottom: 6px;
 }
 
@@ -28,7 +28,7 @@
   flex-direction: column;
   gap: 1px;
   padding: 5px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-soft);
 
   &:first-child { border-top: none; }
 }
@@ -37,7 +37,7 @@
   font-family: 'Cinzel', serif;
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text);
   letter-spacing: 0.04em;
 }
 
@@ -45,6 +45,6 @@
   font-family: 'Newsreader', serif;
   font-size: 12px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-dim);
   font-style: italic;
 }

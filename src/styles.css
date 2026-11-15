@@ -930,7 +930,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
   cursor: pointer;
 }
 .spell-cast-level:hover { background: rgba(212,175,55,0.12); }
-.spell-cast-level.dim { color: var(--text-dim); border-color: rgba(255,255,255,0.2); }
+.spell-cast-level.dim { color: var(--text-dim); border-color: var(--border); }
 .spell-name, .equip-item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spell-name { color: var(--text); }
 .spell-name.prepared::before {
@@ -973,7 +973,7 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .spell-desc, .spell-higher, .spell-material {
   font-family: 'Newsreader', serif;
   font-size: 13px;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-2);
   margin: 0 0 5px;
   line-height: 1.5;
 }
@@ -1093,6 +1093,10 @@ app-root { display: block; height: 100vh; width: 100vw; }
 .coin.gp { --tint: var(--gold); }
 .coin.pp { --tint: #a8c4dc; }
 .coin .coin-amt { color: var(--tint); }
+/* The metal tints are pale inks tuned for the dark grounds; on parchment
+   silver read 1.2:1. Vellum pulls each toward --text, keeping a trace of
+   the metal (worst case 4.9:1). */
+[data-theme="vellum"] .coin .coin-amt { color: color-mix(in oklch, var(--tint) 35%, var(--text)); }
 
 /* === BACKGROUND PROSE === */
 .prose {
@@ -1732,7 +1736,8 @@ select:focus {
 .board-cond.slot-chip.calm {
   background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
   border-color: color-mix(in oklch, var(--gold) 35%, transparent);
-  color: var(--gold);
+  /* Gilt, not --gold: vellum's --gold on this gold tint was 4.43:1. */
+  color: var(--gold-2);
 }
 .board-chev { color: var(--text-dim); width: 12px; height: 12px; }
 .board-row.member:hover .board-chev { color: var(--celestial); }
