@@ -4,16 +4,20 @@ import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ParticipantView } from '../../../models/session';
 
-// Class-only test (no TestBed/DOM). SessionService.isMuted is called from the
-// ctor, so the spy must stub it even though most tests below never touch it.
+// Class-only test (no TestBed/DOM). The per-device cue settings (isMuted,
+// cueVolume, customCue) are read in the ctor, so the spy must stub them even
+// though most tests below never touch sound.
 describe('InitiativePanelComponent', () => {
   let component: InitiativePanelComponent;
   let sessionService: jasmine.SpyObj<SessionService>;
   let notifications: jasmine.SpyObj<NotificationService>;
 
   beforeEach(() => {
-    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['isMuted']);
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService',
+      ['isMuted', 'cueVolume', 'customCue', 'setCueVolume', 'setCustomCue', 'playCue']);
     sessionService.isMuted.and.returnValue(false);
+    sessionService.cueVolume.and.returnValue(1);
+    sessionService.customCue.and.returnValue(null);
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     component = TestBed.runInInjectionContext(() => new InitiativePanelComponent(sessionService, notifications));
   });

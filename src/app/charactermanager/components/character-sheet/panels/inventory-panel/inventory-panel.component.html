@@ -93,11 +93,14 @@
             </button>
             @if (item.status !== 'dropped') {
               <button type="button" class="inv-btn danger" (click)="dropItem(i)"
-              [attr.aria-label]="'Drop ' + item.name" title="Drop this item">Drop</button>
+              [attr.aria-label]="'Drop ' + item.name"
+              [title]="item.qty > 1 ? 'Drop the whole stack' : 'Drop this item'">Drop</button>
             }
             @if (item.status === 'dropped') {
               <button type="button" class="inv-btn danger" (click)="discardItem(i)"
-              [attr.aria-label]="'Discard ' + item.name" title="Remove this item for good">Discard</button>
+              [attr.aria-label]="(item.qty > 1 ? 'Discard one ' : 'Discard ') + item.name"
+              [title]="item.qty > 1 ? 'Destroy one of the stack' : 'Remove this item for good'">
+              {{ item.qty > 1 ? 'Discard one' : 'Discard' }}</button>
             }
           </div>
         }
