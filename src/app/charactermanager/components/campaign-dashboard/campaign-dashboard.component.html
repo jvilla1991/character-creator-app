@@ -51,6 +51,7 @@
         <button
           class="btn danger icon"
           (click)="openDeleteCampaign()"
+          aria-label="Delete campaign"
           [disabled]="!!vm.liveSession"
           [title]="vm.liveSession
             ? 'A session is live — end it before deleting the campaign'

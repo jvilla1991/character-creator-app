@@ -208,6 +208,18 @@ app-root { display: block; height: 100vh; width: 100vw; }
   border: 0;
 }
 
+/* === KEYBOARD FOCUS ===
+   One ring for every control that does not draw its own focus state (inputs
+   keep their gold border + glow). Gold clears 3:1 against every ground in
+   all three themes; the 2px offset keeps it off gold-bordered buttons.
+   :where() keeps it at zero specificity, so a component's own focus style
+   still wins. Pointer clicks do not show it (:focus-visible). */
+:where(button, a[href], summary, [role="button"], [role="tab"], [role="switch"],
+       [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 /* === REDUCED MOTION ===
    One rule for the whole app, component styles included (it is global and
    !important). Every animation and transition collapses to an instant change:
