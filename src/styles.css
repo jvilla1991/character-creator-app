@@ -468,6 +468,26 @@ app-root { display: block; height: 100vh; width: 100vw; }
   width: 34px; height: 34px;
   display: inline-flex; align-items: center; justify-content: center;
 }
+/* Disabled: one look for every variant. The hairline turns dashed (a cue that
+   does not depend on colour) and both border and label drop to --text-dim,
+   which clears 4.5:1 on every surface in every theme, so the boundary clears
+   the 3:1 non-text floor. Fill, glow and hover go: an inert control does not
+   announce itself or answer the pointer. The selector list out-ranks the
+   variant and :hover rules above (and vellum's primary label override). */
+.btn:disabled,
+.btn:disabled:hover,
+.btn.primary:disabled,
+.btn.primary:disabled:hover,
+.btn.danger:disabled:hover,
+.btn.play:disabled:hover,
+[data-theme] .btn.primary:disabled {
+  background: transparent;
+  border-color: var(--text-dim);
+  border-style: dashed;
+  color: var(--text-dim);
+  box-shadow: none;
+  cursor: not-allowed;
+}
 
 /* === MAIN === */
 .main {
