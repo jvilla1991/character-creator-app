@@ -1,6 +1,4 @@
-<div class="modal wizard"
-  role="dialog" aria-modal="true" aria-label="Create a character"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
+<div class="modal wizard" appDialog aria-label="Create a character" (dismiss)="close.emit()">
 
   <!-- Ruleset selector — 2014 option is planned but not yet available -->
   <div class="ruleset-bar"

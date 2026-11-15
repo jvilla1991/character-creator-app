@@ -10,8 +10,7 @@ import {
 import { CdkDragDrop, CdkDropList, CdkDrag } from '@angular/cdk/drag-drop';
 import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
-import { EscapeCloseDirective } from '../../directives/escape-close.directive';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DialogDirective } from '../modal/dialog.directive';
 
 /** The seven polyhedral dice a player can summon. */
 export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
@@ -37,7 +36,7 @@ type Phase = 'staging' | 'rolling' | 'result';
     selector: 'app-dice-roller-modal',
     templateUrl: './dice-roller-modal.component.html',
     styleUrls: ['./dice-roller-modal.component.scss'],
-    imports: [EscapeCloseDirective, CdkTrapFocus, CdkDropList, CdkDrag]
+    imports: [DialogDirective, CdkDropList, CdkDrag]
 })
 export class DiceRollerModalComponent implements OnDestroy {
   /** Optional — only used to personalise the title. */

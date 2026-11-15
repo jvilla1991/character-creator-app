@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, output } from '@angular/core';
 import { DmEditRequest } from './dm-edit-request';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
 
@@ -25,7 +25,7 @@ export interface DmEditConfirm {
     templateUrl: './dm-edit-modal.component.html',
     styleUrls: ['./dm-edit-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus, FormsModule, TitleCasePipe]
+    imports: [ModalComponent, FormsModule, TitleCasePipe]
 })
 export class DmEditModalComponent implements OnChanges {
   @Input() request!: DmEditRequest;

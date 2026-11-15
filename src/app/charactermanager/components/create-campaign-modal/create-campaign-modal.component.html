@@ -1,7 +1,4 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-  role="dialog" aria-modal="true" aria-labelledby="create-campaign-title"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
-  <div class="modal-title" id="create-campaign-title" style="color: var(--celestial-2);">Open a New Campaign</div>
+<app-modal title="Open a New Campaign" tone="celestial" (dismiss)="cancel()">
 
   <div class="field">
     <label for="campaign-name">Campaign Name <span aria-label="required">*</span></label>
@@ -83,4 +80,4 @@
     <button class="btn" (click)="cancel()">Cancel</button>
     <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>
   </div>
-</div>
+</app-modal>

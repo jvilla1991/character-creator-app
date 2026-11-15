@@ -513,8 +513,12 @@ app-root { display: block; height: 100vh; width: 100vw; }
   max-width: 1180px;
   margin: 0 auto;
   padding: 28px 36px 80px;
+  /* Positioned (no z-index) so it paints over the fixed .main::before sigil
+     by source order. A z-index here would make it a stacking context and trap
+     every dialog opened from the sheet, dashboard or session (backdrop z 100)
+     beneath the sticky phone top bar (z 90), leaving the bar live above the
+     backdrop. */
   position: relative;
-  z-index: 1;
 }
 
 /* === HEADER STRIP === */
@@ -1224,6 +1228,35 @@ app-root { display: block; height: 100vh; width: 100vw; }
   color: var(--gold);
   margin: 0 0 4px;
 }
+/* <app-modal> shell: title row with room for the close button, and the two
+   accent tones the dialogs used to set inline. */
+.modal-head { position: relative; }
+.modal-head.has-close { padding-right: 40px; }
+.modal-close {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.modal-close:hover { color: var(--gold); border-color: var(--border); }
+.modal.tone-celestial { border-color: var(--celestial); }
+.modal.tone-celestial .modal-title { color: var(--celestial-2); }
+.modal.tone-crimson { border-color: var(--crimson); }
+.modal.tone-crimson .modal-title { color: var(--crimson); }
+/* A dialog only takes focus itself when it has nothing tabbable yet (e.g.
+   level-up while its preview loads); the box needs no ring for that. */
+.dialog-active:focus { outline: none; }
 .modal-sub {
   font-family: 'Newsreader', serif;
   font-style: italic;

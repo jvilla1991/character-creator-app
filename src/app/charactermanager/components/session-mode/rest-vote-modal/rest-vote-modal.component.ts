@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../../modal/modal.component';
 import { RestVoteBallot, RestVoteView } from '../../../models/session';
 
 /**
@@ -32,7 +32,7 @@ import { RestVoteBallot, RestVoteView } from '../../../models/session';
     templateUrl: './rest-vote-modal.component.html',
     styleUrls: ['./rest-vote-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus]
+    imports: [ModalComponent]
 })
 export class RestVoteModalComponent {
   readonly restVote = input.required<RestVoteView>();

@@ -8,7 +8,7 @@ import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 
 interface LiveSession {
@@ -28,7 +28,7 @@ interface LiveSession {
     templateUrl: './session-live-banner.component.html',
     styleUrls: ['./session-live-banner.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus, FormsModule]
+    imports: [ModalComponent, FormsModule]
 })
 export class SessionLiveBannerComponent implements OnInit {
   // Signals: all four are written from the discovery poll / join HTTP callbacks,

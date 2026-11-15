@@ -29,9 +29,7 @@
   <!-- Player face: BLOCKING on purpose — no backdrop-click close, no
   escape-close. The table is being asked; the exits are a vote or the timer. -->
   <div class="modal-backdrop">
-    <div class="modal rest-vote-modal" role="dialog" aria-modal="true"
-      aria-labelledby="rest-vote-title" cdkTrapFocus cdkTrapFocusAutoCapture>
-      <div class="modal-title" id="rest-vote-title">Short Rest?</div>
+    <app-modal class="rest-vote-modal" title="Short Rest?" [closable]="false" [dialogDismissible]="false">
       <div class="modal-sub">
         {{ restVote().initiatorName }} calls for a short rest. All must agree.
       </div>
@@ -55,6 +53,6 @@
       } @else {
         <div class="vote-waiting">Waiting on the rest of the party…</div>
       }
-    </div>
+    </app-modal>
   </div>
 }

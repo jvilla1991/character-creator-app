@@ -9,7 +9,7 @@ import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPE
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DialogDirective } from '../modal/dialog.directive';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { IdentityStepComponent } from './steps/identity-step/identity-step.component';
@@ -56,7 +56,7 @@ interface WizardDraft {
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
     styleUrls: ['./create-character-modal.component.scss'],
-    imports: [CdkTrapFocus, MatTooltip, MatSlideToggle, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
+    imports: [DialogDirective, MatTooltip, MatSlideToggle, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
