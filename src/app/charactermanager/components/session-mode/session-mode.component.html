@@ -257,10 +257,12 @@
         (openPc)="openPcSheet($event)"
       ></app-initiative-panel>
     }
-    <!-- Player: opens the dice modal wired to this live session so rolls stream to the DM. -->
-    @if (!state.dm && myPc(state); as pc) {
+    <!-- Player: opens the shell's dice roller, which wires itself to this live
+         session so rolls stream to the DM. (The shell's floating launcher does
+         the same from anywhere; this keeps the prominent in-session button.) -->
+    @if (!state.dm && myPc(state)) {
       <div class="roll-launch">
-        <button class="btn primary" style="width: 100%;" (click)="openRoll(pc)">
+        <button class="btn primary" style="width: 100%;" (click)="openRoll()">
           Roll
         </button>
       </div>
@@ -341,18 +343,6 @@
             <button class="btn" (click)="cancelLongRest()">Cancel</button>
           </div>
         </div>
-      </div>
-    }
-    <!-- Player Roll modal: wired to this live session so a settled roll logs to the DM. -->
-    @if (rollModalOpen && rollPc) {
-      <div class="modal-backdrop" (click)="closeRoll()">
-        <app-dice-roller-modal
-          [pc]="rollPc"
-          [sessionId]="state.sessionId"
-          [participantId]="myParticipantId(state)"
-          (click)="$event.stopPropagation()"
-          (close)="closeRoll()">
-        </app-dice-roller-modal>
       </div>
     }
   </div>

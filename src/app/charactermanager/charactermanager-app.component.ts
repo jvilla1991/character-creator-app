@@ -8,6 +8,7 @@ import { CharacterModalService } from './services/character-modal.service';
 import { CampaignModalService } from './services/campaign-modal.service';
 import { JoinConsentState, JoinModalService, JoinRequest } from './services/join-modal.service';
 import { UiStateService } from './services/ui-state.service';
+import { DiceRollerService } from './services/dice-roller.service';
 import { CurrentUserService } from './services/current-user.service';
 import { CampaignDraft } from './models/campaign';
 import { SidenavComponent } from './components/sidenav/sidenav.component';
@@ -15,6 +16,8 @@ import { CreateCharacterModalComponent } from './components/create-character-mod
 import { CreateCampaignModalComponent } from './components/create-campaign-modal/create-campaign-modal.component';
 import { JoinCampaignModalComponent } from './components/join-campaign-modal/join-campaign-modal.component';
 import { SettingsPanelComponent } from './components/settings-panel/settings-panel.component';
+import { DiceFabComponent } from './components/dice-fab/dice-fab.component';
+import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { ToastComponent } from './components/toast/toast.component';
 
 @Component({
@@ -69,11 +72,30 @@ import { ToastComponent } from './components/toast/toast.component';
       <app-settings-panel></app-settings-panel>
     }
     
+    <!-- Dice roller: one copy for the whole app, reachable from every screen
+         via the floating launcher below (or the "r" shortcut). The PC and the
+         live-session wiring come from DiceRollerService, so this does not care
+         which screen the player happened to be on. -->
+    <app-dice-fab></app-dice-fab>
+    @if (dice.isOpen()) {
+      <div
+        class="modal-backdrop"
+        (click)="dice.close()">
+        <app-dice-roller-modal
+          [pc]="dice.pc()"
+          [sessionId]="dice.sessionId()"
+          [participantId]="dice.participantId()"
+          (click)="$event.stopPropagation()"
+          (close)="dice.close()">
+        </app-dice-roller-modal>
+      </div>
+    }
+    
     <!-- App-wide transient notifications (e.g. the DM ended the session) -->
     <app-toast></app-toast>
     `,
     styles: [],
-    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent]
+    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent, DiceFabComponent, DiceRollerModalComponent]
 })
 export class CharactermanagerAppComponent implements OnInit {
   pcs: PC[] = [];
@@ -91,6 +113,7 @@ export class CharactermanagerAppComponent implements OnInit {
     private campaignModal: CampaignModalService,
     public joinModal: JoinModalService,
     private uiState: UiStateService,
+    public dice: DiceRollerService,
     private currentUser: CurrentUserService,
     private router: Router,
     private destroyRef: DestroyRef,

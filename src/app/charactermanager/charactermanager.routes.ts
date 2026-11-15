@@ -5,6 +5,7 @@ import { MainContentComponent } from './components/main-content/main-content.com
 import { characterResolver } from './resolvers/character.resolver';
 import { AuthService } from './services/auth.service';
 import { CharacterModalService } from './services/character-modal.service';
+import { DiceRollerService } from './services/dice-roller.service';
 
 // Direct `component:` references are deliberate: this file is only reached via
 // `loadChildren`, so every component referenced here already rides the lazy
@@ -24,6 +25,9 @@ export const CHARACTERMANAGER_ROUTES: Routes = [
     providers: [
       AuthService,
       CharacterModalService,
+      // One roller for the whole feature: the shell mounts it, every screen
+      // triggers it (see DiceRollerService).
+      DiceRollerService,
     ],
     children: [
       { path: ':id', component: MainContentComponent, resolve: { pc: characterResolver } },
