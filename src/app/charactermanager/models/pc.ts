@@ -24,7 +24,7 @@ export interface PcSpell {
 export interface PcItem {
   catalogKey?: string;          // SRD slug, e.g. 'longsword'; absent for ad-hoc items
   name: string;
-  category: 'weapon' | 'armor' | 'material-component' | 'gear' | 'transport';
+  category: 'weapon' | 'armor' | 'material-component' | 'gear' | 'transport' | 'treasure';
   qty: number;
   unitCostCp?: number;          // unit price paid, in copper
   weight?: number;

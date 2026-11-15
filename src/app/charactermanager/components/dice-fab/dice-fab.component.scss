@@ -1,0 +1,53 @@
+/* App-wide dice launcher. position: fixed is deliberate — this button belongs
+   to the shell, not to whatever screen happens to be scrolled underneath it.
+
+   z-index 95 sits above page content (the sticky mobile topbar is 90) but
+   below .modal-backdrop (100), so any open modal — the roller it opens
+   included — covers the button instead of floating on top of it. */
+.dice-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 95;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold);
+  cursor: pointer;
+  box-shadow: var(--shadow), var(--glow-gold);
+  transition: transform .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.dice-fab:hover {
+  color: var(--gold-2);
+  border-color: var(--gold-2);
+  transform: translateY(-2px) rotate(-12deg);
+}
+
+.dice-fab:active { transform: translateY(0) rotate(0deg); }
+
+.dice-fab:focus-visible {
+  outline: 2px solid var(--celestial);
+  outline-offset: 3px;
+}
+
+/* Clears the toast (centred, 16px up) and sits in the thumb zone on phones. */
+@media (max-width: 560px) {
+  .dice-fab {
+    right: 14px;
+    bottom: 14px;
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dice-fab { transition: none; }
+  .dice-fab:hover { transform: none; }
+}

@@ -108,4 +108,38 @@ describe('UiStateService', () => {
       expect(localStorage.getItem(UI_ACTIVE_CAMPAIGN_KEY)).toBeNull();
     });
   });
+
+  describe('dice roller overlay', () => {
+    it('opens once and ignores a double-open', () => {
+      const service = create();
+      expect(service.diceOpen()).toBeFalse();
+
+      service.openDice();
+      service.openDice();                   // a second trigger while already up
+
+      expect(service.diceOpen()).toBeTrue();
+    });
+
+    it('closes on the in-app close path', () => {
+      const service = create();
+      service.openDice();
+
+      service.closeDice();
+
+      expect(service.diceOpen()).toBeFalse();
+    });
+
+    // resetOverlays is the sign-out path: it drops every overlay without
+    // touching history, since the pushed entries go with the navigation.
+    it('is torn down with the other overlays on sign-out', () => {
+      const service = create();
+      service.openDice();
+      service.openSession('7');
+
+      service.resetOverlays();
+
+      expect(service.diceOpen()).toBeFalse();
+      expect(service.activeSessionId()).toBeNull();
+    });
+  });
 });
