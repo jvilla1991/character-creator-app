@@ -16,7 +16,9 @@
   </div>
 
   <!-- Step indicator -->
-  <div class="wizard-steps">
+  <!-- The dots are visual only; this line tells a screen reader where it is. -->
+  <div class="visually-hidden" role="status">Step {{ step }} of {{ totalSteps }}: {{ stepName }}</div>
+  <div class="wizard-steps" aria-hidden="true">
     @for (n of stepRange; track n) {
       <div
         class="step-dot"

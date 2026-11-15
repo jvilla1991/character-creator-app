@@ -81,6 +81,14 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.isSpellcastingClass ? 9 : 8;
   }
 
+  /** Spoken with the step count; mirrors each step's heading. */
+  get stepName(): string {
+    if (this.step === this.reviewStep) return 'Review';
+    if (this.step === this.equipmentStep) return 'Starting Equipment';
+    return ['Identity', 'Species', 'Class', 'Background', 'Proficiencies and Languages',
+      'Ability Scores', 'Spells'][this.step - 1] ?? '';
+  }
+
   get stepRange(): number[] {
     return Array.from({ length: this.totalSteps }, (_, i) => i + 1);
   }
