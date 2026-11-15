@@ -6,6 +6,10 @@
     </span>
   </div>
 
+  <!-- Spoken turn changes; always rendered so the region exists before the
+  first change. -->
+  <div class="visually-hidden" role="status">{{ turnAnnouncement }}</div>
+
   <div class="board">
     <div class="board-row head" [style.grid-template-columns]="columns">
       <span class="num">Init</span>
@@ -30,6 +34,7 @@
         class="board-row member"
         [class.current-turn]="isActive(p)"
         [class.on-deck]="isOnDeck(p)"
+        [attr.aria-current]="isActive(p) ? 'true' : null"
         [style.grid-template-columns]="columns"
         style="cursor: default;"
         >

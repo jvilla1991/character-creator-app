@@ -1,3 +1,8 @@
+<!-- Spoken session start. Lives outside the @if so the region exists before
+the banner appears; a region created together with its text is often not
+announced. The 5s poll re-sets the same text, which stays silent. -->
+<div class="visually-hidden" role="status">@if (live(); as l) {A session is live in {{ l.campaignName }}. Join Session to take your place.}</div>
+
 <!-- Live-session banner (player view). Hidden when no session is live. -->
 @if (live(); as live) {
   <div class="session-banner">
