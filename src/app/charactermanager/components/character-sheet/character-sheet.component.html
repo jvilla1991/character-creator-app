@@ -16,7 +16,7 @@
 
       <!-- Editable hero name -->
       @if (editingName) {
-        <input
+        <input aria-label="Character name"
           class="sheet-name sheet-name-edit"
           [(ngModel)]="nameDraft"
           (blur)="commitName()"

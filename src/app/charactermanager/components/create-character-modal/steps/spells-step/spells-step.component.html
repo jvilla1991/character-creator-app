@@ -15,7 +15,7 @@
   <button type="button" class="spell-level-tab"
     [class.active]="spellLevelFilter() === 1"
   (click)="spellLevelFilterChange.emit(1)">1st</button>
-  <input class="spell-search" type="text" placeholder="Search…"
+  <input aria-label="Search spells" class="spell-search" type="text" placeholder="Search…"
     [ngModel]="spellSearch()" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
   </div>
 

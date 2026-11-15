@@ -27,14 +27,18 @@
     <!-- Account -->
     <div class="slideover-section">
       <span class="panel-title">Account</span>
-      <div class="field">
-        <label>Display Name</label>
-        <input [value]="user.name" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input [value]="user.email" autocomplete="off">
-      </div>
+      <!-- Read-only: nothing saves these, so they no longer pose as inputs. -->
+      <dl class="account-facts">
+        <div>
+          <dt>Display Name</dt>
+          <dd>{{ user.name || 'Not set' }}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>{{ user.email || 'Not set' }}</dd>
+        </div>
+      </dl>
+      <div class="pref-sub">These come from your account and can't be edited here.</div>
     </div>
 
     <!-- Security -->
@@ -101,8 +105,8 @@
         </button>
         @if (resetLink) {
           <div class="field" style="margin-top: 10px;">
-            <label>One-time link (expires in 24h)</label>
-            <input type="text" [value]="resetLink" readonly (focus)="$any($event.target).select()">
+            <label for="resetLink">One-time link (expires in 24h)</label>
+            <input type="text" id="resetLink" [value]="resetLink" readonly (focus)="$any($event.target).select()">
           </div>
           <button class="btn" type="button" (click)="copyResetLink()">
             {{ resetLinkCopied ? 'Copied!' : 'Copy Link' }}
@@ -120,6 +124,7 @@
             <button
               class="theme-swatch"
               [class.active]="theme === t.id"
+              [attr.aria-pressed]="theme === t.id"
               (click)="setTheme(t.id)"
               >
               <div class="theme-swatch-preview" [style.background]="t.bg">
@@ -139,37 +144,42 @@
         <span class="panel-title">Dice &amp; Rolling</span>
         <div class="pref-row">
           <div>
-            <div class="pref-label">Roll style</div>
+            <div class="pref-label" id="pref-style-label">Roll style</div>
             <div class="pref-sub">how the dice are cast</div>
           </div>
-          <div class="seg-mini">
-            <button [class.active]="dice.style === 'digital'" (click)="setDiceStyle('digital')">digital</button>
-            <button [class.active]="dice.style === 'manual'" (click)="setDiceStyle('manual')">manual</button>
+          <div class="seg-mini" role="group" aria-labelledby="pref-style-label">
+            <button [class.active]="dice.style === 'digital'" [attr.aria-pressed]="dice.style === 'digital'"
+              (click)="setDiceStyle('digital')">digital</button>
+            <button [class.active]="dice.style === 'manual'" [attr.aria-pressed]="dice.style === 'manual'"
+              (click)="setDiceStyle('manual')">manual</button>
           </div>
         </div>
         <div class="pref-row">
           <div>
-            <div class="pref-label">Show modifiers</div>
-            <div class="pref-sub">break down each roll's math</div>
+            <div class="pref-label" id="pref-showMods-label">Show modifiers</div>
+            <div class="pref-sub" id="pref-showMods-sub">break down each roll's math</div>
           </div>
-          <button class="toggle" [class.on]="dice.showMods" (click)="toggleDice('showMods')"
-          [attr.aria-pressed]="dice.showMods"></button>
+          <button class="toggle" role="switch" [class.on]="dice.showMods" (click)="toggleDice('showMods')"
+            [attr.aria-checked]="dice.showMods" aria-labelledby="pref-showMods-label"
+            aria-describedby="pref-showMods-sub"></button>
         </div>
         <div class="pref-row">
           <div>
-            <div class="pref-label">Advantage prompt</div>
-            <div class="pref-sub">ask adv/disadv before rolling</div>
+            <div class="pref-label" id="pref-advPrompt-label">Advantage prompt</div>
+            <div class="pref-sub" id="pref-advPrompt-sub">ask adv/disadv before rolling</div>
           </div>
-          <button class="toggle" [class.on]="dice.advPrompt" (click)="toggleDice('advPrompt')"
-          [attr.aria-pressed]="dice.advPrompt"></button>
+          <button class="toggle" role="switch" [class.on]="dice.advPrompt" (click)="toggleDice('advPrompt')"
+            [attr.aria-checked]="dice.advPrompt" aria-labelledby="pref-advPrompt-label"
+            aria-describedby="pref-advPrompt-sub"></button>
         </div>
         <div class="pref-row">
           <div>
-            <div class="pref-label">Critical fanfare</div>
-            <div class="pref-sub">celebrate natural 20s</div>
+            <div class="pref-label" id="pref-critFx-label">Critical fanfare</div>
+            <div class="pref-sub" id="pref-critFx-sub">celebrate natural 20s</div>
           </div>
-          <button class="toggle" [class.on]="dice.critFx" (click)="toggleDice('critFx')"
-          [attr.aria-pressed]="dice.critFx"></button>
+          <button class="toggle" role="switch" [class.on]="dice.critFx" (click)="toggleDice('critFx')"
+            [attr.aria-checked]="dice.critFx" aria-labelledby="pref-critFx-label"
+            aria-describedby="pref-critFx-sub"></button>
         </div>
       </div>
     }

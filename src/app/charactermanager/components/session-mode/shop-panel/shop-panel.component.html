@@ -27,9 +27,9 @@
           }
           <!-- Curated: pick one of the DM's pre-built shops -->
           @if (source === 'curated') {
-            <div class="field-label">Which shop?</div>
+            <div class="field-label" id="curated-shop-label">Which shop?</div>
             @if (curatedShops.length) {
-              <select class="text-input" [(ngModel)]="curatedShopId">
+              <select class="text-input" aria-labelledby="curated-shop-label" [(ngModel)]="curatedShopId">
                 <option [ngValue]="null" disabled>Choose a curated shop…</option>
                 @for (cs of curatedShops; track cs) {
                   <option [ngValue]="cs.id">

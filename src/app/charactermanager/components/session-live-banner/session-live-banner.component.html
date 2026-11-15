@@ -29,8 +29,8 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
       </div>
       @if (eligiblePcs.length) {
         <div class="field">
-          <label>Character</label>
-          <select [(ngModel)]="selectedPcId">
+          <label for="session-character">Character</label>
+          <select id="session-character" [(ngModel)]="selectedPcId">
             @for (pc of eligiblePcs; track pc) {
               <option [ngValue]="pc.id">
                 {{ pc.name }} — {{ pc.race }} {{ pc.clazz }}

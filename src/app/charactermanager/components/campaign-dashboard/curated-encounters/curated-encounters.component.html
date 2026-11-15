@@ -5,7 +5,7 @@
   @if (!selected) {
     <h2 class="curated-title">Curated Encounters</h2>
     <div class="new-shop">
-      <input class="text-input" type="text" [(ngModel)]="newName"
+      <input aria-label="New encounter name" class="text-input" type="text" [(ngModel)]="newName"
         placeholder="New encounter name (e.g. Goblin Ambush)"
         (keyup.enter)="createEncounter()" />
         <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createEncounter()">Create</button>
@@ -35,14 +35,14 @@
       </div>
       <h2 class="curated-title">{{ encounter.name }}</h2>
       <div class="field-label">Notes</div>
-      <textarea class="text-input notes" rows="2" [(ngModel)]="notesDraft"
+      <textarea aria-label="Encounter notes" class="text-input notes" rows="2" [(ngModel)]="notesDraft"
       placeholder="Tactics, terrain, read-aloud text…"></textarea>
       <div class="notes-actions">
         <button class="btn" [disabled]="notesDraft === (encounter.notes ?? '')" (click)="saveNotes()">Save notes</button>
       </div>
       <div class="field-label">Add a creature</div>
       <div class="creature-form">
-        <input class="text-input" type="text" [(ngModel)]="cName" placeholder="Name (e.g. Goblin)"
+        <input aria-label="Creature name" class="text-input" type="text" [(ngModel)]="cName" placeholder="Name (e.g. Goblin)"
           (keyup.enter)="addCreature()" />
           <input class="num-input" type="number" min="1" [(ngModel)]="cAc" placeholder="AC" title="Armor Class (optional)" />
           <input class="num-input" type="number" min="1" [(ngModel)]="cHp" placeholder="HP" title="Max HP (optional)" />

@@ -1953,6 +1953,22 @@ select:focus {
 }
 .pref-row:last-child { border-bottom: none; }
 .pref-label { font-family: 'Newsreader', serif; font-size: 15px; color: var(--text); }
+/* Account name and email: read-only facts, labelled like fields. */
+.account-facts { margin: 0 0 6px; display: grid; gap: 12px; }
+.account-facts dt {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.account-facts dd {
+  margin: 4px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 .pref-sub { font-family: 'Newsreader', serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 .toggle {
   width: 42px; height: 24px;

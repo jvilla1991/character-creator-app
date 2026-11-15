@@ -1,8 +1,8 @@
 <app-modal [title]="'Edit ' + request.label" tone="celestial" (dismiss)="cancel()">
 
   <div class="field">
-    <label>{{ request.label | titlecase }}</label>
-    <input
+    <label for="dm-edit-value">{{ request.label | titlecase }}</label>
+    <input id="dm-edit-value"
       type="number"
       [(ngModel)]="valueDraft"
       [min]="request.min"
@@ -14,8 +14,8 @@
   </div>
 
   <div class="field">
-    <label>Log entry (leave blank for the automatic one)</label>
-    <textarea
+    <label for="dm-edit-log">Log entry (leave blank for the automatic one)</label>
+    <textarea id="dm-edit-log"
       rows="2"
       [(ngModel)]="descDraft"
       [maxLength]="descMaxLength"

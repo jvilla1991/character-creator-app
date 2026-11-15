@@ -9,17 +9,17 @@
   @if (grantFormOpen) {
     <div class="grant-form">
       <div class="field">
-        <label>Name</label>
-        <input type="text" [(ngModel)]="nameDraft" placeholder="e.g. Darkvision"
+        <label for="trait-grant-name">Name</label>
+        <input id="trait-grant-name" type="text" [(ngModel)]="nameDraft" placeholder="e.g. Darkvision"
           (keydown.enter)="submitGrant()" (keydown.escape)="cancelGrant()" autofocus>
       </div>
       <div class="field">
-        <label>Source</label>
-        <input type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
+        <label for="trait-grant-source">Source</label>
+        <input id="trait-grant-source" type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
       </div>
       <div class="field">
-        <label>Description (optional)</label>
-        <textarea rows="2" [(ngModel)]="descDraft"
+        <label for="trait-grant-desc">Description (optional)</label>
+        <textarea id="trait-grant-desc" rows="2" [(ngModel)]="descDraft"
         placeholder="What it does…"></textarea>
       </div>
       <div class="grant-form-actions">

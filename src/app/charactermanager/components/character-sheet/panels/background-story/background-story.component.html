@@ -12,8 +12,8 @@
   @if (grantFormOpen) {
     <div class="grant-form">
       <div class="field lang-combobox">
-        <label>Language</label>
-        <input type="text" [(ngModel)]="languageDraft" placeholder="e.g. Draconic, Abyssal, Druidic…"
+        <label for="grant-language">Language</label>
+        <input id="grant-language" type="text" [(ngModel)]="languageDraft" placeholder="e.g. Draconic, Abyssal, Druidic…"
           role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="languageDropdownOpen"
           (focus)="onLanguageFocus()" (input)="onLanguageInput()" (blur)="onLanguageBlur()"
           (keydown.enter)="submitGrant()" (keydown.escape)="onLanguageEscape()" autofocus>
