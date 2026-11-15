@@ -17,7 +17,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border);
   border-radius: 2px;
   color: var(--text-dim);
@@ -25,9 +25,9 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 
   &.active {
-    background: rgba(138, 92, 246, 0.15);
-    border-color: rgba(138, 92, 246, 0.5);
-    color: #a78bfa;
+    background: color-mix(in oklch, var(--gold) 15%, transparent);
+    border-color: color-mix(in oklch, var(--gold) 50%, transparent);
+    color: var(--gold-2);
   }
 }
 
@@ -70,13 +70,13 @@
   transition: background 0.15s, border-color 0.15s;
 
   &.active {
-    background: rgba(138, 92, 246, 0.15);
-    border-color: rgba(138, 92, 246, 0.5);
+    background: color-mix(in oklch, var(--gold) 15%, transparent);
+    border-color: color-mix(in oklch, var(--gold) 50%, transparent);
   }
 
   // Currently expanded for reading — join it visually to the description below.
   &.open {
-    border-color: rgba(138, 92, 246, 0.5);
+    border-color: color-mix(in oklch, var(--celestial) 50%, transparent);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
@@ -105,8 +105,8 @@
   padding: 1px 4px;
   margin-left: 4px;
   border-radius: 100px;
-  border: 1px solid rgba(138, 92, 246, 0.5);
-  color: #a78bfa;
+  border: 1px solid var(--border);
+  color: var(--text-2);
   vertical-align: middle;
 }
 
@@ -120,7 +120,7 @@
   letter-spacing: 0.08em;
   color: var(--text-dim);
 
-  span.complete { color: #a78bfa; }
+  span.complete { color: var(--celestial); }
 }
 
 .spell-counter-sep { opacity: 0.4; }
@@ -144,8 +144,8 @@
   text-transform: uppercase;
   padding: 1px 6px;
   border-radius: 100px;
-  border: 1px solid rgba(138, 92, 246, 0.6);
-  color: #a78bfa;
+  border: 1px solid color-mix(in oklch, var(--gold) 60%, transparent);
+  color: var(--gold-2);
   vertical-align: middle;
 }
 
@@ -158,7 +158,7 @@
 .spell-desc {
   margin: 0 0 4px;
   padding: 9px 11px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in oklch, var(--text) 3%, transparent);
   border: 1px solid var(--border-soft);
   border-top: none;
   border-radius: 0 0 2px 2px;

@@ -1,36 +1,59 @@
-// Turn indication: the WHOLE combatant card glows — green for the active
+// Turn indication: the WHOLE combatant card glows — emerald for the active
 // combatant, gold for on-deck. Both target ids come from the per-viewer
 // snapshot — when a hidden enemy acts, players simply have no active row (and
 // no glow). A ring border + ambient inner wash + outer bloom, plus tinted
 // name/init so every part of the row carries the state.
+//
+// Every colour is a theme token. The name/init ink mixes the state hue toward
+// --text, which is the highest-contrast ink in each theme, so the tint can
+// never read fainter than the hue alone (the old literals #7fe0ae / #f0d391
+// were pale midnight inks and fell to ~1.1:1 on vellum's parchment).
 .board-row.member.current-turn {
   background:
-    radial-gradient(ellipse at center, rgba(76, 175, 125, 0.20), rgba(76, 175, 125, 0.08));
+    radial-gradient(ellipse at center,
+      color-mix(in oklch, var(--emerald) 20%, transparent),
+      color-mix(in oklch, var(--emerald) 8%, transparent));
   border-radius: 8px;
   border-bottom-color: transparent;
   box-shadow:
-    inset 0 0 0 2px rgba(96, 200, 145, 0.85),
-    inset 0 0 22px rgba(76, 175, 125, 0.22),
-    0 0 16px rgba(76, 175, 125, 0.45);
+    inset 0 0 0 2px color-mix(in oklch, var(--emerald) 85%, transparent),
+    inset 0 0 22px color-mix(in oklch, var(--emerald) 22%, transparent),
+    0 0 16px color-mix(in oklch, var(--emerald) 45%, transparent);
 
   .board-hero-name,
-  .board-num.lit { color: #7fe0ae; text-shadow: 0 0 8px rgba(76, 175, 125, 0.6); }
-  .portrait { box-shadow: 0 0 0 2px rgba(96, 200, 145, 0.85), 0 0 10px rgba(76, 175, 125, 0.6); }
+  .board-num.lit {
+    color: color-mix(in oklch, var(--emerald) 60%, var(--text));
+    text-shadow: 0 0 8px color-mix(in oklch, var(--emerald) 40%, transparent);
+  }
+  .portrait {
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--emerald) 85%, transparent),
+      0 0 10px color-mix(in oklch, var(--emerald) 60%, transparent);
+  }
 }
 
 .board-row.member.on-deck {
   background:
-    radial-gradient(ellipse at center, rgba(217, 178, 95, 0.16), rgba(217, 178, 95, 0.06));
+    radial-gradient(ellipse at center,
+      color-mix(in oklch, var(--gold) 16%, transparent),
+      color-mix(in oklch, var(--gold) 6%, transparent));
   border-radius: 8px;
   border-bottom-color: transparent;
   box-shadow:
-    inset 0 0 0 2px rgba(228, 196, 124, 0.75),
-    inset 0 0 20px rgba(217, 178, 95, 0.18),
-    0 0 14px rgba(217, 178, 95, 0.35);
+    inset 0 0 0 2px color-mix(in oklch, var(--gold) 75%, transparent),
+    inset 0 0 20px color-mix(in oklch, var(--gold) 18%, transparent),
+    0 0 14px color-mix(in oklch, var(--gold) 35%, transparent);
 
   .board-hero-name,
-  .board-num.lit { color: #f0d391; text-shadow: 0 0 8px rgba(217, 178, 95, 0.55); }
-  .portrait { box-shadow: 0 0 0 2px rgba(228, 196, 124, 0.75), 0 0 10px rgba(217, 178, 95, 0.5); }
+  .board-num.lit {
+    color: color-mix(in oklch, var(--gold) 60%, var(--text));
+    text-shadow: 0 0 8px color-mix(in oklch, var(--gold) 40%, transparent);
+  }
+  .portrait {
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--gold) 75%, transparent),
+      0 0 10px color-mix(in oklch, var(--gold) 50%, transparent);
+  }
 }
 
 // DM inline controls -------------------------------------------------------
@@ -40,8 +63,8 @@
   text-align: center;
   font: inherit;
   color: var(--text);
-  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  background: color-mix(in oklch, var(--text) 4%, transparent);
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
 
@@ -130,8 +153,8 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
+    border: 1px solid var(--border);
     border-radius: 6px;
   }
 
@@ -146,8 +169,8 @@
     line-height: 1;
     cursor: pointer;
     border-radius: 6px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border);
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
 
     &.dmg:hover { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
@@ -171,7 +194,7 @@
   gap: 16px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-top: 1px solid var(--border);
 
   .enemy-form {
     display: flex;
@@ -185,8 +208,8 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
+    border: 1px solid var(--border);
     border-radius: 6px;
 
     &.name {
@@ -203,8 +226,8 @@
     font-size: 13px;
     cursor: pointer;
     border-radius: 6px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border);
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
     &:hover:not([disabled]) { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
     &[disabled] { opacity: 0.45; cursor: not-allowed; }
@@ -227,8 +250,8 @@
       font: inherit;
       font-style: normal;
       color: var(--text);
-      background: var(--bg-elev, rgba(255, 255, 255, 0.04));
-      border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+      background: color-mix(in oklch, var(--text) 4%, transparent);
+      border: 1px solid var(--border);
       border-radius: 6px;
       padding: 3px 6px;
     }
@@ -252,8 +275,8 @@
     font-size: 12px;
     cursor: pointer;
     border-radius: 6px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border);
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text-dim);
     &:hover { color: var(--text); }
   }
@@ -309,7 +332,7 @@
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-top: 1px solid var(--border);
 
   .xp-all-label {
     font-family: 'Newsreader', serif;
@@ -324,8 +347,8 @@
     text-align: center;
     font: inherit;
     color: var(--text);
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    background: color-mix(in oklch, var(--text) 4%, transparent);
+    border: 1px solid var(--border);
     border-radius: 6px;
   }
 
@@ -337,8 +360,8 @@
     font-size: 13px;
     cursor: pointer;
     border-radius: 6px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-    background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border);
+    background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
     &:hover:not([disabled]) { border-color: var(--gold, #d9b25f); color: var(--gold, #d9b25f); }
     &[disabled] { opacity: 0.45; cursor: not-allowed; }

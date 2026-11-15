@@ -3,8 +3,8 @@
 }
 
 .loot-card {
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
-  background: var(--bg-elev, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, var(--text) 4%, transparent);
   border-radius: 12px;
   padding: 18px 20px;
 }
@@ -34,33 +34,37 @@
 .seg {
   display: inline-flex;
   margin-bottom: 16px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .seg-btn {
   font: inherit;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   background: transparent;
   border: 0;
   padding: 7px 16px;
   cursor: pointer;
 
   & + .seg-btn {
-    border-left: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+    border-left: 1px solid var(--border);
   }
 
   &.active {
     color: var(--text);
-    background: var(--celestial, rgba(120, 170, 255, 0.18));
+    // A celestial tint, not a celestial fill: --text on solid --celestial
+    // was 1.6-1.8:1 in every theme. The inset underline carries the
+    // selection without relying on the tint alone.
+    background: color-mix(in oklch, var(--celestial) 18%, transparent);
+    box-shadow: inset 0 -2px 0 var(--celestial);
   }
 }
 
 .field-label {
   display: block;
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   margin-bottom: 6px;
 }
 
@@ -71,7 +75,7 @@
   font: inherit;
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -81,7 +85,7 @@
   font: inherit;
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -114,7 +118,7 @@
   align-items: center;
   gap: 14px;
   padding: 9px 0;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+  border-top: 1px solid var(--border);
 }
 
 .item-main {
@@ -130,13 +134,13 @@
 
 .item-meta {
   font-size: 0.8rem;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }
 
 .item-notes {
   font-size: 0.8rem;
   font-style: italic;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   overflow-wrap: anywhere;
 }
 
@@ -155,19 +159,19 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--border);
   background: transparent;
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
   cursor: pointer;
 
   &:hover { border-color: var(--crimson, #d9534f); color: var(--crimson, #d9534f); }
 }
 
 .claimed {
-  color: var(--muted, rgba(255, 255, 255, 0.4));
+  color: var(--text-dim);
   padding: 0 10px;
 }
 
 .muted {
-  color: var(--muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-dim);
 }

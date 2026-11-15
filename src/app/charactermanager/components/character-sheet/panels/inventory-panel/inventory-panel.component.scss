@@ -18,7 +18,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px dotted var(--border-soft, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px dotted var(--border-soft);
 
   &:last-child { border-bottom: none; }
 
@@ -64,7 +64,7 @@
 
 .inv-equipped-tag {
   margin-left: 6px;
-  color: var(--accent, gold);
+  color: var(--gold);
   font-size: 11px;
   text-transform: lowercase;
 }
@@ -84,7 +84,7 @@
   padding: 5px 9px;
   color: var(--text-dim);
   background: transparent;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
 
@@ -94,16 +94,16 @@
   }
 
   &.on {
-    color: var(--accent, gold);
-    border-color: var(--accent, gold);
+    color: var(--gold);
+    border-color: var(--gold);
   }
 
   &.sell {
-    color: var(--accent, gold);
-    border-color: var(--accent, gold);
+    color: var(--gold);
+    border-color: var(--gold);
 
     &:hover:not(:disabled) {
-      color: var(--accent, gold);
+      color: var(--gold);
       background: rgba(255, 215, 0, 0.1);
     }
   }
@@ -115,8 +115,8 @@
 
   &.grant {
     margin-left: auto;
-    color: var(--accent, gold);
-    border-color: var(--accent, gold);
+    color: var(--gold);
+    border-color: var(--gold);
   }
 
   &:disabled {
@@ -129,7 +129,7 @@
 .grant-form {
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--border-soft);
   display: flex;
   flex-direction: column;
   gap: 8px;

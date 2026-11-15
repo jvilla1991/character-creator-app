@@ -4,7 +4,9 @@
 
 :host {
   // Per-die-type accent colours. Shared by the palette and the arena dice.
-  --d4-color:  #c8504f;
+  // Rose Crimson as styles.css lightened it: the old #c8504f put the dark
+  // die label at 4.16:1.
+  --d4-color:  #d67c7b;
   --d6-color:  #d4b06a;
   --d8-color:  #8fb4ff;
   --d10-color: #5bbf8a;
@@ -62,7 +64,7 @@
   font-family: 'Cinzel', serif;
   font-weight: 700;
   background: var(--die, var(--gold));
-  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.4),
+  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.4), /* token-check: allow-white: specular highlight on a coloured die, theme-independent */
               inset 0 -3px 6px rgba(0, 0, 0, 0.35);
 
   &[data-die='d4']   { --die: var(--d4-color);   clip-path: polygon(50% 4%, 96% 92%, 4% 92%); }
@@ -148,6 +150,11 @@
     radial-gradient(ellipse at 50% 120%, color-mix(in oklch, var(--gold) 12%, transparent), transparent 55%),
     color-mix(in oklch, var(--bg) 70%, #000);
 
+  // "Deeper than the page" means darker on the two dark themes, but on
+  // vellum a 30 % black mix turned parchment to mud (hint text 1.9:1).
+  // There the recessed ground is the inset token instead.
+  :host-context([data-theme="vellum"]) & { background-color: var(--bg-2); }
+
   &.cdk-drop-list-receiving,
   &.cdk-drop-list-dragging {
     border-color: var(--gold);
@@ -218,7 +225,7 @@
   }
 
   &.landed {
-    .die-shape { box-shadow: inset 0 2px 5px rgba(255,255,255,0.4),
+    .die-shape { box-shadow: inset 0 2px 5px rgba(255,255,255,0.4), /* token-check: allow-white: same die highlight */
                              inset 0 -3px 6px rgba(0,0,0,0.35),
                              0 0 14px color-mix(in oklch, var(--gold) 45%, transparent); }
   }

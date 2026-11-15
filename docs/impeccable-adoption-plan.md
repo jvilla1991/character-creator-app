@@ -615,3 +615,58 @@ All four took the recommended option. These are settled; later slices should not
 | 6 | `fix/ability-modifier-display` | Done — regression from #228 (2026-07-25): the wizard piped raw scores into a pipe that only adds a sign, so 17 read "+17". |
 | 7 | `fix/login-double-submit` | Done — one Enter sent two login requests; with the password empty it sent one anyway. Measured 2 → 1 and 1 → 0. |
 | 8 | `fix/pc-notes-label` | Done — relabelled "DM Notes" to "Notes"; the field was the player's all along. No backend change. |
+| 1–5 | `chore/impeccable-token-sweep` (slice 1) | Done — colour only, no px or font-size changes. Both P0s fixed, the seven undefined tokens mapped onto existing ones (no new tokens), every white-alpha literal gone, `.seg-btn.active` retuned, wizard violet → gold + celestial, and `npm run check:tokens` added to CI. See "Slice 1 results" below. |
+
+#### Slice 1 results (2026-11-14)
+
+Measured on current `develop` (after #234) in demo mode at 375×812, every theme set on `<html>`
+with transitions off, colours resolved through a canvas, gradients composited stop by stop.
+Ranges are worst–best across a row's gradient wash.
+
+| Finding | Theme | Before | After |
+|---|---|---|---|
+| **P0** current-turn name / init | vellum | 1.07–1.23 | **6.11–7.64** |
+| **P0** on-deck name / init | vellum | 1.06–1.16 | **6.47–7.92** |
+| current-turn / on-deck (unchanged look) | midnight · candlelit | 7.6–11.3 · 7.2–10.4 | 6.0–9.8 · 5.6–9.3 |
+| **P0** wizard ability labels | vellum | 1.11 | **6.28** |
+| **P0** wizard ability totals | vellum | 1.18 | **13.22** |
+| wizard step dots (upcoming / done) | vellum | 1.06–2.33 | 5.39–5.62 |
+| wizard active step dot (was white on violet) | all | 4.25 | 5.85 (vellum) – 10.1 |
+| `.seg-btn.active` (shop, loot) | all | 1.6–1.8 (Phase 2) | 6.84–10.24 |
+| sheet tab bar | vellum | 1.34 (Phase 2) | 6.21–10.68 |
+| curated-list secondary text | vellum | 1.13 (Phase 2) | 4.37 at the wash peak, passes on the solid ground |
+
+After the sweep, a whole-surface scan found **zero definite failures in all three themes** on the
+session screen, all 8 wizard steps, the character sheet (all 7 tabs), the campaign dashboard,
+level-up (with the spell picker), the dice roller and the item composer. One exception: the
+dashboard's "Invite" `.eyebrow` is 4.4:1 in vellum. That is the known `--gold`-in-vellum token
+margin (contrast audit §3, caveat 2), not a leak, so it was left alone. Selected and granted wizard
+states that demo data cannot reach were checked by forcing the classes: all ≥ 6.1:1.
+
+**Mappings used.** `--muted` → `--text-dim`; `--bg-elev` → `--text` wash at the old alpha;
+`--accent` → `--gold`; `--line` → `--border-soft` / `--border`; `--panel`, `--surface-1` →
+`--bg-2`; `--panel-bg` → `--surface` at 96 %. White-alpha text mapped by alpha onto the text ramp
+(≥ .82 `--text`, ≥ .62 `--text-2`, else `--text-dim`), borders onto `--border-soft` / `--border`,
+faint fills onto a `--text` wash. Of the 190 white literals in component styles on `develop`, 138
+were fallbacks (behind undefined tokens, or harmlessly behind declared ones). The wizard owned 49 of
+the 52 plain ones. The dice's specular highlight stays, marked
+`token-check: allow-white`.
+
+**Found by the sweep, not in the Phase 2 backlog** (each its own commit):
+- Spellbook descriptions in global `styles.css` were 70 % white, invisible in vellum. Now `--text-2`.
+- Purse amounts used literal metal inks (silver 1.2:1, platinum 1.26:1 in vellum). Vellum mixes
+  them toward `--text`; worst 4.9:1.
+- Spell-slot chips: `--gold` on a gold tint, 4.43:1 in vellum. Now `--gold-2`.
+- Dice roller: arena mixed `--bg` with literal black (vellum hint 1.9:1), and d4 still used
+  crimson's pre-fix `#c8504f` (label 4.16:1 everywhere). Vellum arena → `--bg-2`, d4 → `#d67c7b`.
+
+**Detector**, static run on the 21 changed source files with DESIGN.md context: 461 → 255 findings,
+`design-system-color` 295 → 89. Of the 89 left, 59 are fallbacks behind declared tokens
+(harmless). About 30 are plain literals: gold-alpha tints and glows, black shadows, and a few status
+hexes (`#fbbf24`, `#f87171`, `#7dd3fc`, `#fff` on coloured fills). None produced a definite contrast
+failure in any theme. They are a candidate follow-up, not slice-1 scope.
+
+**CI guard.** `scripts/check-tokens.js` (`npm run check:tokens`) runs beside `check:contrast`,
+before `npm ci`. It fails on `var(--x)` for an `--x` declared nowhere in `src/`, and on
+`rgba(255,255,255,` in any stylesheet under `src/` (component styles and `styles.css`) unless
+the line carries `token-check: allow-white: <reason>`. Verified by planting both leaks: exit 1.

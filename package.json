@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "check:contrast": "node scripts/check-contrast.js",
+    "check:tokens": "node scripts/check-tokens.js",
     "e2e": "cypress open",
     "e2e:run": "cypress run"
   },
