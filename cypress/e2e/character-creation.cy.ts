@@ -171,6 +171,7 @@ describe(`character creation wizard (${mobile ? 'phone' : 'desktop'})`, () => {
     cy.wait('@getPcs');
     cy.contains('.sheet-name', 'Borin Ironfoot').should('be.visible');
     if (mobile) {
+      cy.get('.mobile-menu-btn').should('be.focused');
       const checkChrome = () => {
         cy.get('.mobile-topbar').should($bar => {
           expect($bar[0].getBoundingClientRect().top, 'header at viewport top').to.be.closeTo(0, 1);
