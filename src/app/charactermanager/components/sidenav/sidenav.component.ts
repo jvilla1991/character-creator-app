@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, OnInit, inject, input, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject, input, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
@@ -44,6 +44,7 @@ export class SidenavComponent implements OnInit {
 
   private allPcs: PC[] = [];
   private readonly doc = inject(DOCUMENT);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private pcService: PCService,
@@ -89,6 +90,11 @@ export class SidenavComponent implements OnInit {
   closeDrawer(): void {
     if (!this.drawerOpen) return;
     this.drawerOpen = false;
+    // Render now, so <main> drops `inert` before focus moves into it. While the
+    // drawer is open the page behind it is inert, and an inert element cannot
+    // take focus: without this the focus() below silently fails, and a wizard
+    // opened from the drawer records the hidden drawer button as its opener.
+    this.cdr.detectChanges();
     // The wizard captures its opener and restores focus when it closes.
     // Give it a visible return target before opening it, rather than leaving
     // focus on a button in the off-screen drawer that can scroll the page.
