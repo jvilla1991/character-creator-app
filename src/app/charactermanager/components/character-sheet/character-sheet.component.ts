@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -38,7 +38,7 @@ import { PcLogComponent } from './panels/pc-log/pc-log.component';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, DmEditModalComponent]
 })
-export class CharacterSheetComponent implements OnChanges {
+export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;
   /**
    * When true, the sheet's numbers become click-to-edit and changes persist via
@@ -170,6 +170,21 @@ export class CharacterSheetComponent implements OnChanges {
     private grantService: GrantService,
     private sessionService: SessionService,
   ) {}
+
+  /**
+   * Below 820px the section tabs are pinned to the bottom of the screen (see
+   * the SCSS), which puts the Followers/Log end of the bar directly under the
+   * floating dice button. The button lives in the app shell, nowhere near this
+   * component in the DOM, so we flag the bar on <body>: styles.css turns that
+   * flag into --bottom-bar-height, and the button lifts itself clear.
+   */
+  ngOnInit(): void {
+    document.body.classList.add('has-bottom-tab-bar');
+  }
+
+  ngOnDestroy(): void {
+    document.body.classList.remove('has-bottom-tab-bar');
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['pc']) {
