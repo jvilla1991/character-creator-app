@@ -40,7 +40,7 @@
     <h2 class="curated-title">{{ loot.name }}</h2>
     <div class="field-label">Notes</div>
     <textarea aria-label="Loot list notes" class="text-input notes" rows="2" [(ngModel)]="notesDraft"
-    placeholder="Where this hoard waits, who guards it…"></textarea>
+    ></textarea>
     <div class="notes-actions">
       <button class="btn" [disabled]="notesDraft === (loot.notes ?? '')" (click)="saveNotes()">Save notes</button>
     </div>

@@ -3,7 +3,6 @@
 
   <!-- Invite form -->
   @if (!consent()) {
-    <div class="modal-sub">Enter the invite code your Dungeon Master shared, then choose who answers the call.</div>
     <div class="field">
       <label for="join-code">Invite Code</label>
       <input id="join-code" [(ngModel)]="code" autocomplete="off" placeholder="e.g. VEIL23"

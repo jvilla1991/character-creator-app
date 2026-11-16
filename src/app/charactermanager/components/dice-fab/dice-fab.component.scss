@@ -4,10 +4,14 @@
    z-index 95 sits above page content (the sticky mobile topbar is 90) but
    below .modal-backdrop (100), so any open modal — the roller it opens
    included — covers the button instead of floating on top of it. */
+/* --bottom-bar-height is published on <body> by any screen that pins a tab bar
+   to the bottom edge (see styles.css). It is 0 everywhere else, so the button
+   keeps its usual corner and only lifts where it would otherwise land on top
+   of the bar. */
 .dice-fab {
   position: fixed;
   right: 24px;
-  bottom: 24px;
+  bottom: calc(24px + var(--bottom-bar-height, 0px));
   z-index: 95;
   width: 56px;
   height: 56px;
@@ -41,7 +45,7 @@
 @media (max-width: 560px) {
   .dice-fab {
     right: 14px;
-    bottom: 14px;
+    bottom: calc(14px + var(--bottom-bar-height, 0px));
     width: 52px;
     height: 52px;
   }

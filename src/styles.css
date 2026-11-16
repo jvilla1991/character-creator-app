@@ -2112,3 +2112,18 @@ select:focus {
   /* The account row at the drawer footer is also a tap target. */
   .account-row { min-height: 48px; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   BOTTOM BAR CLEARANCE
+   A screen that pins a tab bar to the bottom edge adds .has-bottom-tab-bar to
+   <body> while it is on screen (CharacterSheetComponent does this). The token
+   is inherited by everything in the page, so the fixed dice launcher — which
+   lives in the app shell, far from the sheet in the DOM — can lift itself off
+   the bar instead of sitting on top of the Followers/Log tabs.
+   The bar itself only exists below 820px; above that the token stays 0.
+   ════════════════════════════════════════════════════════════════════════ */
+body { --bottom-bar-height: 0px; }
+
+@media (max-width: 820px) {
+  body.has-bottom-tab-bar { --bottom-bar-height: calc(48px + env(safe-area-inset-bottom)); }
+}
