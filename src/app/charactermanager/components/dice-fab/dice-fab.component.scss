@@ -41,7 +41,12 @@
 @media (max-width: 560px) {
   .dice-fab {
     right: 14px;
-    bottom: 14px;
+    /* The character sheet pins a tab bar (Sheet/Spells/.../Log) to the
+       bottom of the screen on phones, and the launcher was sitting on top
+       of it, covering the right-hand tabs. Clear the bar's height plus the
+       home-indicator inset, with the same 14px breathing room. The sheet
+       reserves 64px for that bar in its own :host padding. */
+    bottom: calc(64px + 14px + env(safe-area-inset-bottom, 0px));
     width: 52px;
     height: 52px;
   }
