@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, input } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, inject, input, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
@@ -31,6 +31,7 @@ export class SidenavComponent implements OnInit {
   query = '';
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
+  private readonly mobileMenuButton = viewChild<ElementRef<HTMLButtonElement>>('mobileMenuButton');
   activePC$ = this.pcService.activePC$;
   readonly isPlayer = this.uiState.isPlayer;
   readonly isDm = this.uiState.isDm;
@@ -85,7 +86,14 @@ export class SidenavComponent implements OnInit {
 
   /** Mobile drawer controls — no-ops visually at desktop widths (drawer CSS only applies <=820px). */
   toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; }
-  closeDrawer(): void { this.drawerOpen = false; }
+  closeDrawer(): void {
+    if (!this.drawerOpen) return;
+    this.drawerOpen = false;
+    // The wizard captures its opener and restores focus when it closes.
+    // Give it a visible return target before opening it, rather than leaving
+    // focus on a button in the off-screen drawer that can scroll the page.
+    this.mobileMenuButton()?.nativeElement.focus({ preventScroll: true });
+  }
 
   setActivePC(pc: PC): void {
     this.pcService.setActivePC(pc);

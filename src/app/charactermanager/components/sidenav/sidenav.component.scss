@@ -15,6 +15,10 @@
      overlays as a drawer. 100dvh tracks the real visible height as mobile
      browser chrome shows/hides (plain 100vh over-shoots and clips). */
   .app {
+    // Keep document scrolling (e.g. after focusing an auth field) from moving
+    // the shell off-screen. Only .main scrolls within the mobile shell.
+    position: fixed;
+    inset: 0;
     grid-template-columns: 1fr;
     height: 100dvh;
   }
