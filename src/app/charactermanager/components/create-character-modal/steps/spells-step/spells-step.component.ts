@@ -42,6 +42,19 @@ export class SpellsStepComponent {
   /** Add/remove a spell — parent runs toggleSpell. */
   readonly toggleSpell = output<DndSpell>();
 
+  /**
+   * True once every pick in this group has been spent — all cantrips chosen
+   * for level 0, all known spells for a leveled group. The template uses it to
+   * collapse the finished group so the player's eye lands on what is left.
+   * A group with no allowance at all (max 0) never counts as "complete", or it
+   * would start collapsed with nothing to show for it.
+   */
+  isGroupComplete(level: number): boolean {
+    const picked = level === 0 ? this.selectedCantrips() : this.selectedLeveled();
+    const max = level === 0 ? this.maxCantrips() : this.maxKnownSpells();
+    return max > 0 && picked >= max;
+  }
+
   isSpellSelected(spell: DndSpell): boolean {
     return this.selectedSpells().some(s => s.name === spell.name);
   }
