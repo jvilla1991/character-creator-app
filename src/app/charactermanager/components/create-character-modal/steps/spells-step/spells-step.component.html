@@ -1,4 +1,4 @@
-<div class="modal-title">Choose Your Spells</div>
+<h2 class="modal-title">Choose Your Spells</h2>
 <div class="modal-sub">
   Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
   {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
@@ -15,7 +15,7 @@
   <button type="button" class="spell-level-tab"
     [class.active]="spellLevelFilter() === 1"
   (click)="spellLevelFilterChange.emit(1)">1st</button>
-  <input class="spell-search" type="text" placeholder="Search…"
+  <input aria-label="Search spells" class="spell-search" type="text" placeholder="Search…"
     [ngModel]="spellSearch()" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
   </div>
 

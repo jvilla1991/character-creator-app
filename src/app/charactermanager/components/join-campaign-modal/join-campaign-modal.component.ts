@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnChanges, SimpleChanges, input, output } from '@angular/core';
 import { PCService } from '../../services/pc.service';
 import { JoinConsentState, JoinRequest } from '../../services/join-modal.service';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
 
@@ -14,7 +14,7 @@ import { AsyncPipe } from '@angular/common';
     selector: 'app-join-campaign-modal',
     templateUrl: './join-campaign-modal.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus, FormsModule, AsyncPipe]
+    imports: [ModalComponent, FormsModule, AsyncPipe]
 })
 export class JoinCampaignModalComponent implements OnChanges {
   pcs$ = this.pcService.pcs$;

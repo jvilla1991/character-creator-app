@@ -231,8 +231,12 @@ nothing visually; most existing declarations still carry raw px and migrating th
 pass. The type scale deliberately has **no step below 11px** — naming a smaller size would
 launder the floor. The 9px and 10px values still in the codebase are known debt, not a tier.
 
-Breakpoints observed: 820px (shell collapse), 640px, 560px, 480px. `prefers-reduced-motion` is
-honoured.
+Breakpoints observed: 820px (shell collapse), 640px, 560px, 480px.
+
+**Reduced motion.** One global rule in `src/styles.css` honours `prefers-reduced-motion: reduce`
+for the whole app: every animation and transition collapses to an instant change, and infinite
+animations run once and stop. The dice roller, dice launcher and conditions panel add their own
+handling on top of it.
 
 ### Named Rules
 
@@ -304,6 +308,21 @@ than a hairline to read, the tones on either side of it are wrong.
   mix to 40%/30% and shifts the label to `text`.
 - **Danger / Play:** same base with `crimson` / `emerald` label and a 50–55% accent border;
   hover fills with the accent at ~20%.
+- **Disabled (every variant):** the hairline turns **dashed** and both border and label drop to
+  `text-dim`; no fill, no glow, no hover, `cursor: not-allowed`. Dashing is the cue that does not
+  rely on colour, and `text-dim` clears 4.5:1 on every surface, so the boundary clears 3:1 in all
+  three themes. Do not fade a disabled button with `opacity`; that drops the boundary below 3:1.
+- **Keyboard focus:** controls without their own focus state take a 2px `gold` outline at a 2px
+  offset (`:focus-visible` only). Inputs keep the gold border and glow.
+
+### Dialogs
+
+- **Shell:** `<app-modal>` — the `.modal` box, an `<h2>` title (Title style) that names the
+  dialog, a close button top-right, and a `celestial` or `crimson` tone for the border and title.
+- **Behaviour** (`appDialog`, shared by the shell and by dialogs with their own chrome): Escape
+  closes the topmost dialog only, focus moves in on open and returns to the opener on close, Tab
+  stays inside. A blocking dialog (the players' rest vote) drops the close button and ignores
+  Escape.
 
 ### Chips
 
@@ -331,7 +350,8 @@ than a hairline to read, the tones on either side of it are wrong.
 
 - **Style:** a 320px rail listing campaigns and the character roster; rows are Cinzel-named with
   Newsreader sub-text, a left gold marker on the active row, and `aria-current` set.
-- **Mobile:** collapses to a drawer with a scrim below 820px.
+- **Mobile:** collapses to a drawer with a scrim below 820px. While open the drawer is a modal
+  dialog (its own close button, Escape, focus in and back, the page behind `inert`).
 
 ### Vitals Bar (signature component)
 
@@ -349,6 +369,9 @@ strip carrying state through colour alone.
 - **Do** use tone and hairlines for structure; let `surface` → `surface-2` → `surface-3` carry depth.
 - **Do** keep the accent scarce — gold marks active, valuable, or focused.
 - **Do** verify at 375px before calling a session surface done.
+- **Do** put any state an animation shows on the element itself too. Under reduced motion the
+  animation stops at rest, so a cue that lives only in keyframes disappears. The my-turn vignette
+  holds its green frame statically for this reason.
 
 ### Don't:
 

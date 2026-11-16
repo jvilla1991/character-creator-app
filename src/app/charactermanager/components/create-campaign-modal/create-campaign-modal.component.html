@@ -1,7 +1,4 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-  role="dialog" aria-modal="true" aria-labelledby="create-campaign-title"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
-  <div class="modal-title" id="create-campaign-title" style="color: var(--celestial-2);">Open a New Campaign</div>
+<app-modal title="Open a New Campaign" tone="celestial" (dismiss)="cancel()">
 
   <div class="field">
     <label for="campaign-name">Campaign Name <span aria-label="required">*</span></label>
@@ -9,17 +6,18 @@
   </div>
 
   <div class="field">
-    <label>Setting</label>
-    <input [(ngModel)]="setting" autocomplete="off" placeholder="where the tale unfolds">
+    <label for="campaign-setting">Setting</label>
+    <input id="campaign-setting" [(ngModel)]="setting" autocomplete="off" placeholder="where the tale unfolds">
   </div>
 
   <div class="field">
-    <label>Banner Hue</label>
-    <div class="class-picker" style="grid-template-columns: repeat(5, 1fr);">
+    <label id="banner-hue-label">Banner Hue</label>
+    <div class="class-picker" role="group" aria-labelledby="banner-hue-label" style="grid-template-columns: repeat(5, 1fr);">
       @for (c of tints; track c) {
         <button
           class="class-pick"
           [class.active]="tint === c"
+          [attr.aria-pressed]="tint === c"
           style="text-transform: capitalize;"
           (click)="tint = c"
         >{{ c }}</button>
@@ -61,11 +59,11 @@
     <div class="field-heading"><label>In-world start date</label>
       <app-context-help label="In-world start date" text="Free text — any calendar works. The clock starts at morning of this day; the DM advances time in session and updates the date when a new day begins. Leave blank to set it later."></app-context-help></div>
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-      <input [(ngModel)]="startDay" autocomplete="off" placeholder="Day · 3rd" maxlength="40">
-      <input [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · Hammer" maxlength="40">
-      <input [(ngModel)]="startYear" autocomplete="off" placeholder="Year · 1492 DR" maxlength="40">
+      <input aria-label="Start day" [(ngModel)]="startDay" autocomplete="off" placeholder="Day · 3rd" maxlength="40">
+      <input aria-label="Start month" [(ngModel)]="startMonth" autocomplete="off" placeholder="Month · Hammer" maxlength="40">
+      <input aria-label="Start year" [(ngModel)]="startYear" autocomplete="off" placeholder="Year · 1492 DR" maxlength="40">
       @if (!weekDays?.length) {
-        <input
+        <input aria-label="Start weekday"
           [(ngModel)]="startWeekday" autocomplete="off" placeholder="Weekday" maxlength="40">
       }
       @if (weekDays?.length) {
@@ -83,4 +81,4 @@
     <button class="btn" (click)="cancel()">Cancel</button>
     <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>
   </div>
-</div>
+</app-modal>

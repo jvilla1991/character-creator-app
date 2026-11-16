@@ -16,9 +16,9 @@
             (click)="source = 'scratch'">From scratch</button>
           </div>
           @if (source === 'list') {
-            <div class="field-label">Which loot list?</div>
+            <div class="field-label" id="loot-list-label">Which loot list?</div>
             @if (lootLists.length) {
-              <select class="text-input" [(ngModel)]="lootListId">
+              <select class="text-input" aria-labelledby="loot-list-label" [(ngModel)]="lootListId">
                 <option [ngValue]="null" disabled>Choose a curated loot list…</option>
                 @for (l of lootLists; track l.id) {
                   <option [ngValue]="l.id">{{ l.name }} ({{ l.itemCount }} item{{ l.itemCount === 1 ? '' : 's' }})</option>

@@ -4,7 +4,7 @@
     <h3 class="loader-title">Load an encounter</h3>
     @if (encounters().length) {
       <div class="loader-row">
-        <select class="select" [ngModel]="selectedId()" (ngModelChange)="selectedId.set($event)">
+        <select class="select" aria-label="Encounter to load" [ngModel]="selectedId()" (ngModelChange)="selectedId.set($event)">
           <option [ngValue]="null" disabled>Choose an encounter…</option>
           @for (e of encounters(); track trackById($index, e)) {
             <option [ngValue]="e.id">

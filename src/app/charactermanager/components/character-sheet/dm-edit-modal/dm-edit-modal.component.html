@@ -1,30 +1,25 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-  role="dialog" aria-modal="true" aria-labelledby="dm-edit-title"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
-  <div class="modal-title" id="dm-edit-title" style="color: var(--celestial-2);">Edit {{ request.label }}</div>
+<app-modal [title]="'Edit ' + request.label" tone="celestial" (dismiss)="cancel()">
 
   <div class="field">
-    <label>{{ request.label | titlecase }}</label>
-    <input
+    <label for="dm-edit-value">{{ request.label | titlecase }}</label>
+    <input id="dm-edit-value"
       type="number"
       [(ngModel)]="valueDraft"
       [min]="request.min"
       [max]="request.max"
       (ngModelChange)="onValueChange()"
       (keydown.enter)="save()"
-      (keydown.escape)="cancel()"
       autofocus
     >
   </div>
 
   <div class="field">
-    <label>Log entry (leave blank for the automatic one)</label>
-    <textarea
+    <label for="dm-edit-log">Log entry (leave blank for the automatic one)</label>
+    <textarea id="dm-edit-log"
       rows="2"
       [(ngModel)]="descDraft"
       [maxLength]="descMaxLength"
       (ngModelChange)="onDescInput()"
-      (keydown.escape)="cancel()"
       placeholder="What happened…"
     ></textarea>
   </div>
@@ -33,4 +28,4 @@
     <button class="btn" type="button" (click)="cancel()">Cancel</button>
     <button class="btn primary" type="button" [disabled]="!canSave" (click)="save()">Save</button>
   </div>
-</div>
+</app-modal>

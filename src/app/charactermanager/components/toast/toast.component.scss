@@ -24,6 +24,25 @@
   svg { color: var(--celestial-2, #c0d4ff); }
 }
 
+.toast-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: -4px -8px -4px 2px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+
+  svg { color: currentColor; }
+  &:hover { color: var(--text); border-color: var(--border); }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 10px); }
   to   { opacity: 1; transform: translate(-50%, 0); }

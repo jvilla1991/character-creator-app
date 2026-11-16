@@ -51,6 +51,7 @@
         <button
           class="btn danger icon"
           (click)="openDeleteCampaign()"
+          aria-label="Delete campaign"
           [disabled]="!!vm.liveSession"
           [title]="vm.liveSession
             ? 'A session is live — end it before deleting the campaign'
@@ -126,10 +127,7 @@
   <!-- Manage Party — bind/unbind your characters to this campaign -->
   @if (managePartyOpen) {
     <div class="modal-backdrop" (click)="closeManageParty()">
-      <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-        role="dialog" aria-modal="true" aria-labelledby="manage-party-title"
-        cdkTrapFocus cdkTrapFocusAutoCapture>
-        <div class="modal-title" id="manage-party-title" style="color: var(--celestial-2);">Manage Party</div>
+      <app-modal title="Manage Party" tone="celestial" (dismiss)="closeManageParty()">
         <div class="modal-sub">
           Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em>.
           Toggle a hero on to seat them at this table.
@@ -164,16 +162,13 @@
         <div class="modal-actions">
           <button class="btn primary" style="flex: none;" (click)="closeManageParty()">Done</button>
         </div>
-      </div>
+      </app-modal>
     </div>
   }
   <!-- Delete Campaign — confirmation -->
   @if (deleteCampaignOpen) {
     <div class="modal-backdrop" (click)="closeDeleteCampaign()">
-      <div class="modal" style="border-color: var(--crimson);" (click)="$event.stopPropagation()"
-        role="alertdialog" aria-modal="true" aria-labelledby="delete-campaign-title"
-        cdkTrapFocus cdkTrapFocusAutoCapture>
-        <div class="modal-title" id="delete-campaign-title" style="color: var(--crimson);">Delete Campaign</div>
+      <app-modal title="Delete Campaign" tone="crimson" dialogRole="alertdialog" (dismiss)="closeDeleteCampaign()">
         <div class="modal-sub">
           <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em> will be erased —
           its sessions, encounters, shops and notes go with it. Its characters are
@@ -187,7 +182,7 @@
             Delete Campaign
           </button>
         </div>
-      </div>
+      </app-modal>
     </div>
   }
 } @else {

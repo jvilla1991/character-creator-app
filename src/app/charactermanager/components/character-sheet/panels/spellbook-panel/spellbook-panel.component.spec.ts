@@ -313,3 +313,31 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(component.allClasses).toBeTrue();
   });
 });
+
+describe('SpellbookPanelComponent (description disclosure)', () => {
+  it('makes each spell name a button that reports and toggles its expanded state', () => {
+    dndResources.getSpells.and.returnValue(of([]));
+    dndResources.getSpellsForClass.and.returnValue(of([]));
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
+      spellSlots: { 1: { max: 4, used: 0 } },
+      spells: [spell({ description: 'Heals a creature you touch.' })],
+    } as PC);
+    fixture.detectChanges();
+
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('button.spell-toggle');
+    expect(toggle.getAttribute('aria-label')).toBe('Cure Wounds');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true'); // spells start expanded
+    expect(fixture.nativeElement.querySelector('.spell-desc')).not.toBeNull();
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.querySelector('.spell-desc')).toBeNull();
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+});

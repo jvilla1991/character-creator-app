@@ -5,7 +5,7 @@
   @if (!selected) {
     <h2 class="curated-title">Curated Shops</h2>
     <div class="new-shop">
-      <input class="text-input" type="text" [(ngModel)]="newName"
+      <input aria-label="New shop name" class="text-input" type="text" [(ngModel)]="newName"
         placeholder="New shop name (e.g. Barthen's Provisions)"
         (keyup.enter)="createShop()" />
         <button class="btn primary" [disabled]="!newName.trim() || busy" (click)="createShop()">Create</button>
@@ -29,16 +29,18 @@
       @if (shops.length) {
         <ul class="shop-list">
           @for (s of shops; track trackById($index, s)) {
+            <!-- The name is the keyboard way in; the row click stays as a larger
+            pointer target. A row-level role would nest the Copy JSON button. -->
             <li class="shop-row" (click)="open(s)">
-              <div>
-                <div class="shop-name">{{ s.name }}</div>
-                <div class="shop-sub">{{ s.settlement || 'No settlement' }} · {{ s.itemCount }} item{{ s.itemCount === 1 ? '' : 's' }}</div>
-              </div>
+              <button type="button" class="shop-open" (click)="$event.stopPropagation(); open(s)">
+                <span class="shop-name">{{ s.name }}</span>
+                <span class="shop-sub">{{ s.settlement || 'No settlement' }} · {{ s.itemCount }} item{{ s.itemCount === 1 ? '' : 's' }}</span>
+              </button>
               <button class="btn link" (click)="$event.stopPropagation(); copyShopJson(s)"
                 title="Copy this shop as import JSON">
                 {{ copiedShopId === s.id ? 'Copied ✓' : 'Copy JSON' }}
               </button>
-              <span class="chevron">›</span>
+              <span class="chevron" aria-hidden="true">›</span>
             </li>
           }
         </ul>
@@ -70,7 +72,7 @@
               <span class="item-price" [class.overridden]="item.priceOverrideCp != null">
                 {{ formatCp(item.effectiveCostCp) }}
               </span>
-              <input class="price-input" type="number" min="0" step="0.01"
+              <input [attr.aria-label]="'Price override for ' + item.name + ', in gold'" class="price-input" type="number" min="0" step="0.01"
                 [value]="item.priceOverrideCp != null ? (item.priceOverrideCp / 100) : ''"
                 [placeholder]="'gp'"
                 (change)="setOverride(item, $any($event.target).value)" />
