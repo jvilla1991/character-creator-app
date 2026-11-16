@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../../modal/modal.component';
 import { RestVoteBallot, RestVoteView } from '../../../models/session';
 
 /**
@@ -32,7 +32,7 @@ import { RestVoteBallot, RestVoteView } from '../../../models/session';
     templateUrl: './rest-vote-modal.component.html',
     styleUrls: ['./rest-vote-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CdkTrapFocus]
+    imports: [ModalComponent]
 })
 export class RestVoteModalComponent {
   readonly restVote = input.required<RestVoteView>();
@@ -59,6 +59,23 @@ export class RestVoteModalComponent {
 
   /** True while the viewer still owes the table an answer. */
   readonly awaitingMyVote = computed(() => this.myBallot()?.vote == null && this.myBallot() != null);
+
+  private readonly openedAt = Date.now();
+
+  /**
+   * What the hidden status line says. It changes only at three moments — the
+   * vote opening, ten seconds left, time up — so a screen reader hears those
+   * instead of the visible countdown once a second. Empty until the first
+   * tick: a live region that is created already holding text often goes
+   * unannounced, so the opening line is set just after the region exists.
+   */
+  readonly countdownAnnouncement = computed(() => {
+    if (this.now() - this.openedAt < 400) return '';
+    const s = this.secondsLeft();
+    if (s === 0) return 'Time is up for the short rest vote.';
+    if (s <= 10) return 'Ten seconds left in the short rest vote.';
+    return `${this.restVote().initiatorName} calls for a short rest. Every hero must agree.`;
+  });
 
   constructor(destroyRef: DestroyRef) {
     interval(500).pipe(takeUntilDestroyed(destroyRef)).subscribe(() => this.now.set(Date.now()));

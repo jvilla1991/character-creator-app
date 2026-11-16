@@ -18,7 +18,7 @@ import { CuratedEncountersComponent } from './curated-encounters/curated-encount
 import { CuratedLootComponent } from './curated-loot/curated-loot.component';
 import { CampaignNotesComponent } from './campaign-notes/campaign-notes.component';
 import { CampaignWeekComponent } from './campaign-week/campaign-week.component';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../modal/modal.component';
 import { AsyncPipe } from '@angular/common';
 
 interface DashboardVm {
@@ -42,7 +42,7 @@ interface DashboardVm {
     selector: 'app-campaign-dashboard',
     templateUrl: './campaign-dashboard.component.html',
     styleUrls: ['./campaign-dashboard.component.scss'],
-    imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, CdkTrapFocus, AsyncPipe]
+    imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, ModalComponent, AsyncPipe]
 })
 export class CampaignDashboardComponent implements OnInit, OnDestroy {
   /** In-world clock label for the header chip (campaigns$ keeps it fresh). */

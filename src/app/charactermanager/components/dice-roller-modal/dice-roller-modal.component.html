@@ -1,10 +1,9 @@
-<div class="modal dice-modal" [class.is-rolling]="phase === 'rolling'" appEscapeClose (escapeClose)="cancel()"
-  role="dialog" aria-modal="true" aria-labelledby="dice-roller-title"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
+<div class="modal dice-modal" [class.is-rolling]="phase === 'rolling'" appDialog (dismiss)="cancel()"
+  aria-labelledby="dice-roller-title">
 
   <button class="dice-close" type="button" title="Close" aria-label="Close dice roller" (click)="cancel()">&times;</button>
 
-  <div class="modal-title" id="dice-roller-title">Dice Roller</div>
+  <h2 class="modal-title" id="dice-roller-title">Dice Roller</h2>
   <div class="modal-sub">
     Drag dice into the field, then grab the cluster and flick it to throw.
   </div>

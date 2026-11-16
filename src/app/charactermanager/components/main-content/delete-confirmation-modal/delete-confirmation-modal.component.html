@@ -1,8 +1,4 @@
-<div class="modal" style="border-color: var(--crimson);"
-  role="alertdialog" aria-modal="true" aria-labelledby="delete-character-title"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
-
-  <div class="modal-title" id="delete-character-title" style="color: var(--crimson);">Strike From The Record</div>
+<app-modal title="Strike From The Record" tone="crimson" dialogRole="alertdialog" (dismiss)="cancel()">
 
   <div class="modal-sub">
     You are about to remove
@@ -18,4 +14,4 @@
     <button class="btn danger" type="button" (click)="confirmDelete()">Erase Forever</button>
   </div>
 
-</div>
+</app-modal>

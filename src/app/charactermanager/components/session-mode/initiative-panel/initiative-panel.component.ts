@@ -152,6 +152,25 @@ export class InitiativePanelComponent {
     if (this.canOpenSheet(p)) this.openPc.emit(p);
   }
 
+  /**
+   * Whose turn it is, for the hidden status line — the green and gold glows
+   * say this to sighted players only. Built from the rows this viewer already
+   * sees, so a hidden enemy's turn says nothing rather than naming it. The
+   * text changes only when the turn moves, so the 2s poll re-rendering the
+   * same string stays silent.
+   */
+  get turnAnnouncement(): string {
+    if (this.status !== 'ACTIVE') return '';
+    const byId = (id: number | null) =>
+      id == null ? undefined : this.participants.find(p => p.participantId === id);
+    const active = byId(this.activeParticipantId);
+    if (!active) return '';
+    const onDeck = byId(this.onDeckParticipantId);
+    return onDeck && onDeck !== active
+      ? `${active.name}'s turn. ${onDeck.name} is on deck.`
+      : `${active.name}'s turn.`;
+  }
+
   isActive(p: ParticipantView): boolean {
     return p.participantId === this.activeParticipantId;
   }

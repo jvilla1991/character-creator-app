@@ -98,3 +98,15 @@
 }
 
 .spell-level-toggle { background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 8px 0; text-align: left; }
+
+// The spell name doubles as the button that shows or hides its description.
+// Reset to read exactly like the plain name it replaced.
+.spell-toggle {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}

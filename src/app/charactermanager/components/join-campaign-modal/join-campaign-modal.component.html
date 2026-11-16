@@ -1,19 +1,17 @@
-<div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-  role="dialog" aria-modal="true" aria-label="Join a campaign"
-  cdkTrapFocus cdkTrapFocusAutoCapture>
+<app-modal [title]="consent() ? 'Slot-Based Inventory' : 'Join a Campaign'" tone="celestial"
+  (dismiss)="cancel()">
 
   <!-- Invite form -->
   @if (!consent()) {
-    <div class="modal-title" style="color: var(--celestial-2);">Join a Campaign</div>
     <div class="modal-sub">Enter the invite code your Dungeon Master shared, then choose who answers the call.</div>
     <div class="field">
-      <label>Invite Code</label>
-      <input [(ngModel)]="code" autocomplete="off" placeholder="e.g. VEIL23"
+      <label for="join-code">Invite Code</label>
+      <input id="join-code" [(ngModel)]="code" autocomplete="off" placeholder="e.g. VEIL23"
         style="text-transform: uppercase; letter-spacing: 0.15em;" autofocus>
       </div>
       <div class="field">
-        <label>Character</label>
-        <select [(ngModel)]="pcId">
+        <label for="join-character">Character</label>
+        <select id="join-character" [(ngModel)]="pcId">
           <option [ngValue]="null" disabled>Choose a hero…</option>
           @for (pc of pcs$ | async; track pc) {
             <option [ngValue]="pc.id">{{ pc.name }} — {{ pc.race }} {{ pc.clazz }}</option>
@@ -31,7 +29,6 @@
 
     <!-- Slot-inventory conversion consent -->
     @if (consent(); as c) {
-      <div class="modal-title" style="color: var(--celestial-2);">Slot-Based Inventory</div>
       <div class="modal-sub">
         <strong>{{ c.campaignName }}</strong> uses Darker Dungeons slot-based inventory.
         Joining will convert this character's weapons and gear into the slot system —
@@ -43,4 +40,4 @@
         <button class="btn primary" style="flex: none;" (click)="acceptConsent.emit()">Accept &amp; Join</button>
       </div>
     }
-  </div>
+</app-modal>

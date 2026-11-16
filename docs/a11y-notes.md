@@ -80,35 +80,56 @@ Added `role="button"`, `tabindex="0"`, and Enter/Space activation (Space
 - Auth error boxes (`.login-error` in login, register, reset-password) →
   `role="alert"`.
 
-## Found but deferred (needs real rework — do not lose)
+## Formerly deferred — resolved 2026-11-15 (`fix/a11y-deferred-backlog`)
 
-- **List rows with nested interactive content**: curated shops / loot /
-  encounters `li.shop-row` open-on-click rows contain a nested "Copy JSON"
-  button (`curated-shops.component.html:32`, `curated-loot.component.html:16`,
-  `curated-encounters.component.html:16`). Making the row `role="button"`
-  would illegally nest interactive controls; the fix is an explicit "Open"
-  button or making the name a button.
-- **Spellbook expandable rows** (`character-sheet/panels/spellbook-panel/spellbook-panel.component.html:93`):
-  `div.spell-row` toggles expansion on click but contains prepared/cast
-  buttons. Needs the spell name turned into a disclosure button
-  (`aria-expanded`) rather than a row-level role.
-- **Initiative panel hero cell** (`session-mode/initiative-panel/initiative-panel.component.html:50`):
-  `div.board-hero` is clickable only when `canOpenSheet(p)` (DM cross-link);
-  needs conditional `tabindex`/role and sits inside a dense grid row — skipped.
-- **Toast keyboard dismissal** (`components/toast/toast.component.html`): the
-  toast dismisses on click anywhere; as a `status` region it cannot also be a
-  button. A separate labelled dismiss button inside it would fix this.
-- **Create-character wizard step dots**
-  (`create-character-modal.component.html`, `.wizard-steps`): purely visual
-  progress; screen readers get no "step N of M" announcement. Consider a
-  visually-hidden live status line bound to `step`/`totalSteps`.
-- **Modals without Escape support**: only dice-roller and level-up use
-  `appEscapeClose`. Delete-character, create/join campaign, manage party,
-  delete campaign, session picker, and long rest close only via
-  buttons/backdrop. Wiring `appEscapeClose` to each is mechanical but touches
-  many host components — left for a follow-up.
-- **Sidenav drawer scrim** (`sidenav.component.html`, `.drawer-scrim`):
-  click-only dismiss for the mobile drawer; the drawer itself has no focus
-  trap. Mobile drawer focus management would be its own small task.
-- **Backdrop divs** (`.modal-backdrop` click-to-close): intentionally not
-  focusable; fine as-is since every dialog has a labelled close/cancel path.
+All eight items this pass deferred were still present when Phase 2 of the impeccable
+adoption plan measured (2026-11-13). Slice 2 closed them:
+
+- **List rows with nested interactive content** — the curated shop / encounter / loot
+  name and summary are now a `button.shop-open` that opens the entry. The row click stays
+  as a larger pointer target; no row role, so "Copy JSON" is not nested.
+- **Spellbook expandable rows** — the spell name is a `button.spell-toggle` with
+  `aria-expanded`; the row click stays for pointers.
+- **Initiative panel hero cell** — where the DM can open the PC's sheet, `div.board-hero`
+  is `role="button"`, `tabindex="0"`, named "Open the sheet for <name>", Enter/Space
+  activate. Elsewhere it stays a plain cell.
+- **Toast keyboard dismissal** — a labelled "Dismiss notification" button. The message is
+  spoken by an always-rendered hidden `role="status"` line, not by the toast, so the
+  button is not read with every message.
+- **Wizard step dots** — a hidden status line reads "Step N of M: <step>"; the dots are
+  `aria-hidden`.
+- **Modals without Escape support** — superseded by a shared shell, below.
+- **Sidenav drawer scrim** — the drawer is a modal dialog while open, below.
+- **Backdrop divs** — unchanged and still fine: every dialog has a labelled close path.
+
+### The shared dialog shell (replaces per-dialog `cdkTrapFocus` / `appEscapeClose`)
+
+`components/modal/`:
+
+- `DialogDirective` (`appDialog`): `role` + `aria-modal`, Escape for the **topmost**
+  open dialog only (`DialogStack`), focus moved in on open (`[cdkFocusInitial]` →
+  `[autofocus]` → first tabbable that is not the shell close button → the dialog
+  itself), Tab trapped (CDK `FocusTrap`), focus returned to the opener on close.
+  `[dialogDismissible]="false"` keeps a dialog open and still stops Escape reaching the
+  one below. `[dialogActive]` makes an always-present element a dialog only while open.
+- `ModalComponent` (`<app-modal title tone dialogRole>`): the `.modal` box, an `<h2>`
+  title that names the dialog, a labelled close button, `celestial` / `crimson` tones.
+
+Using the shell: create/join campaign, delete character (`alertdialog`), delete
+campaign (`alertdialog`), manage party, DM edit, session picker, long rest, level-up, the
+players' rest vote (no close button, Escape ignored). Using the directive on their own
+chrome: dice roller, settings slide-over, create-character wizard (Escape = backdrop tap,
+draft kept), and the phone drawer (`dialogActive` = open; `<main>` inert behind it;
+closed drawer `visibility: hidden`). `EscapeCloseDirective` is gone.
+
+**Known gap:** focus returns to the opener only if it can still take focus. A dialog
+opened from the drawer footer (Create Character, Join Campaign, New Campaign) closes the
+drawer first, so on close focus falls to `<body>`.
+
+### Live regions added
+
+- Initiative board: hidden status "<name>'s turn. <name> is on deck." from the rows the
+  viewer can see (a hidden enemy's turn says nothing); `aria-current` on the active row.
+- Session banner: an always-present status says "A session is live in <campaign>".
+- Rest vote: the countdown is out of every live region; a hidden line speaks at the
+  opening, at ten seconds and at zero.

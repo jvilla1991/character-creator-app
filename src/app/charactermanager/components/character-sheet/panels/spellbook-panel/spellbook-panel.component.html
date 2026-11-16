@@ -125,7 +125,11 @@
           @let prepared = isPrepared(s);
           <div>
             <div class="spell-row" [class.unprepared]="!prepared" (click)="toggleExpand(s.name)" style="cursor:pointer">
-              <span class="spell-name" [class.prepared]="prepared">{{ s.name }}</span>
+              <!-- The name is the disclosure control (the row click stays for
+              pointers); a row-level role would nest the Prepare / Cast buttons. -->
+              <button type="button" class="spell-name spell-toggle" [class.prepared]="prepared"
+                [attr.aria-expanded]="isExpanded(s.name)" [attr.aria-label]="s.name"
+                (click)="$event.stopPropagation(); toggleExpand(s.name)">{{ s.name }}</button>
               @if (s.concentration) {
                 <span class="spell-badge conc"   title="Concentration">C</span>
               }

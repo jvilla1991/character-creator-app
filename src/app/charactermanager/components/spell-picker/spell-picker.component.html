@@ -1,5 +1,5 @@
 <div class="spell-picker">
-  <input class="spell-search" type="text" [(ngModel)]="search" placeholder="Search spells…">
+  <input aria-label="Search spells" class="spell-search" type="text" [(ngModel)]="search" placeholder="Search spells…">
   @if (loading) {
     <div class="spell-loading">Consulting the grimoire…</div>
   }

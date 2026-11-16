@@ -20,6 +20,13 @@
 
   &.my-turn {
     opacity: 1;
+    // The cue at full strength, held by the element itself (it matches the
+    // pulse's 0%/100% frame). The pulse only breathes it; with motion
+    // reduced the animation goes and this static green frame stays.
+    box-shadow:
+      inset 0 0 0 3px rgba(96, 200, 145, 0.80),
+      inset 0 0 38px 8px rgba(76, 175, 125, 0.34),
+      inset 0 0 100px 24px rgba(76, 175, 125, 0.16);
     animation: vignette-pulse-green 2.4s ease-in-out infinite;
   }
 
@@ -30,6 +37,10 @@
       inset 0 0 34px 6px rgba(217, 178, 95, 0.30),
       inset 0 0 90px 20px rgba(217, 178, 95, 0.14);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-vignette.my-turn { animation: none; }
 }
 
 @keyframes vignette-pulse-green {

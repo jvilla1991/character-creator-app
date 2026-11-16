@@ -22,7 +22,7 @@
         </select>
         <input type="number" min="1" [(ngModel)]="catalogQty" class="composer-qty" aria-label="Quantity">
       </div>
-      <input type="text" [(ngModel)]="catalogSearch" class="composer-text" placeholder="Search items…">
+      <input aria-label="Search items" type="text" [(ngModel)]="catalogSearch" class="composer-text" placeholder="Search items…">
       @if (loadingCatalog()) {
         <div class="composer-hint">Loading catalog…</div>
       }
@@ -53,7 +53,7 @@
   <!-- Custom tab: free-hand homebrew with the full attribute set -->
   @if (tab === 'custom') {
     <div class="composer-body">
-      <input type="text" [(ngModel)]="customName" class="composer-text" placeholder="Item name">
+      <input aria-label="Item name" type="text" [(ngModel)]="customName" class="composer-text" placeholder="Item name">
       <div class="composer-row">
         <select [(ngModel)]="customCategory" aria-label="Category">
           <option value="weapon">Weapon</option>
@@ -70,11 +70,11 @@
         <input type="number" min="0" [(ngModel)]="customWeight" class="composer-qty" placeholder="Weight (lb, 0 = tiny)" aria-label="Weight in pounds (0 means negligible — 0.2 bulk)">
       </div>
       @if (customCategory === 'weapon') {
-        <input type="text" [(ngModel)]="customDamage" class="composer-text"
+        <input aria-label="Damage" type="text" [(ngModel)]="customDamage" class="composer-text"
           placeholder="Damage (e.g. 1d8 slashing)">
       }
       @if (customCategory === 'armor') {
-        <input type="text" [(ngModel)]="customArmorClass" class="composer-text"
+        <input aria-label="Armor Class" type="text" [(ngModel)]="customArmorClass" class="composer-text"
           placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
       }
       <input type="text" [(ngModel)]="customNotes" class="composer-text"

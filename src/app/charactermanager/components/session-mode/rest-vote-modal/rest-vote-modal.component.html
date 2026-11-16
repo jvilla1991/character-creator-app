@@ -1,6 +1,7 @@
 @if (dm()) {
   <!-- DM face: non-blocking status panel with the override buttons. -->
-  <div class="panel rest-vote-banner" role="status" aria-live="polite">
+  <div class="panel rest-vote-banner">
+    <div class="visually-hidden" role="status">{{ countdownAnnouncement() }}</div>
     <div class="panel-header" style="margin-bottom: 0;">
       <span class="panel-title">Short Rest Vote</span>
       <span class="vote-countdown">{{ secondsLeft() }}s</span>
@@ -29,13 +30,12 @@
   <!-- Player face: BLOCKING on purpose — no backdrop-click close, no
   escape-close. The table is being asked; the exits are a vote or the timer. -->
   <div class="modal-backdrop">
-    <div class="modal rest-vote-modal" role="dialog" aria-modal="true"
-      aria-labelledby="rest-vote-title" cdkTrapFocus cdkTrapFocusAutoCapture>
-      <div class="modal-title" id="rest-vote-title">Short Rest?</div>
+    <app-modal class="rest-vote-modal" title="Short Rest?" [closable]="false" [dialogDismissible]="false">
       <div class="modal-sub">
         {{ restVote().initiatorName }} calls for a short rest. All must agree.
       </div>
-      <div class="vote-countdown big" aria-live="polite">{{ secondsLeft() }}s</div>
+      <div class="visually-hidden" role="status">{{ countdownAnnouncement() }}</div>
+      <div class="vote-countdown big">{{ secondsLeft() }}s</div>
       <div class="vote-grid">
         @for (b of restVote().votes; track b.participantId) {
           <div class="vote-row">
@@ -55,6 +55,6 @@
       } @else {
         <div class="vote-waiting">Waiting on the rest of the party…</div>
       }
-    </div>
+    </app-modal>
   </div>
 }
