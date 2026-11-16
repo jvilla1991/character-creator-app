@@ -374,3 +374,36 @@
 
   &:hover .board-hero-name { color: var(--celestial); }
 }
+
+// ── Phones: the initiative board must not force the session screen wide ────
+// This board reuses the global .board-row from styles.css, which carries
+// min-width: 720px — sized for a desktop party table. On a 375px screen that
+// one rule drags the whole live-session page wider than the viewport, which
+// is why the page arrives needing a pinch-zoom and the fixed bottom tab bar
+// ends up off-screen. Dropping the floor and letting the row wrap fixes the
+// page, not just this panel.
+//
+// The template sets grid-template-columns as an INLINE style, which beats any
+// stylesheet; switching the row to flex makes that inline value inert rather
+// than fighting it with !important.
+@media (max-width: 820px) {
+  .board-row { min-width: 0; }
+
+  // The header row's labels mean nothing once each row wraps.
+  .board-row.head { display: none; }
+
+  .board-row.member {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 8px;
+  }
+
+  // Initiative number and AC stay inline; name, HP and conditions each take
+  // their own line so nothing is clipped.
+  .board-row.member .board-num { flex: 0 0 auto; }
+  .board-row.member .board-hero { flex: 1 1 60%; min-width: 0; }
+  .board-row.member .board-hp { flex: 1 1 100%; }
+  .board-row.member .board-conditions { flex: 1 1 100%; }
+}
