@@ -36,7 +36,7 @@
       <h2 class="curated-title">{{ encounter.name }}</h2>
       <div class="field-label">Notes</div>
       <textarea aria-label="Encounter notes" class="text-input notes" rows="2" [(ngModel)]="notesDraft"
-      placeholder="Tactics, terrain, read-aloud text…"></textarea>
+      ></textarea>
       <div class="notes-actions">
         <button class="btn" [disabled]="notesDraft === (encounter.notes ?? '')" (click)="saveNotes()">Save notes</button>
       </div>
