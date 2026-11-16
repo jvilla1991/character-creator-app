@@ -53,7 +53,18 @@
     min-height: 44px;
   }
 
+  // Start/Resume Session is the primary action and takes the first row on
+  // its own. Manage Party and the icon-only delete then share the second
+  // row — without this the two text buttons take half each and the icon is
+  // pushed onto a third row by itself, which reads like a stray control.
+  .dashboard-header .sheet-actions .btn.play {
+    flex: 1 1 100%;
+  }
+
+  // Keeps its natural width rather than stretching, but not below the 44px
+  // touch target the rest of the row already meets.
   .dashboard-header .sheet-actions .btn.icon {
     flex: 0 0 auto;
+    min-width: 44px;
   }
 }
