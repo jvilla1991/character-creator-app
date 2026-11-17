@@ -1,11 +1,15 @@
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { SimpleChange } from '@angular/core';
 
 import { CharacterSheetComponent } from './character-sheet.component';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
+import { FollowerService } from '../../services/follower.service';
+import { UiStateService } from '../../services/ui-state.service';
 import { PC } from '../../models/pc';
+import { Follower } from '../../models/follower';
 
 function makePC(overrides: Partial<PC> = {}): PC {
   return { id: 7, name: 'Throk', clazz: 'Barbarian', level: 4, playerName: 'Ben', ...overrides };
@@ -16,13 +20,18 @@ describe('CharacterSheetComponent', () => {
   let pcService: jasmine.SpyObj<PCService>;
   let grantService: jasmine.SpyObj<GrantService>;
   let sessionService: jasmine.SpyObj<SessionService>;
+  let followerService: jasmine.SpyObj<FollowerService>;
+  let uiState: UiStateService;
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService',
       ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
-    component = TestBed.runInInjectionContext(() => new CharacterSheetComponent(pcService, grantService, sessionService));
+    followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['update']);
+    uiState = TestBed.inject(UiStateService);
+    component = TestBed.runInInjectionContext(
+      () => new CharacterSheetComponent(pcService, grantService, sessionService, followerService, uiState));
     component.pc = makePC();
   });
 
@@ -389,5 +398,169 @@ describe('CharacterSheetComponent', () => {
 
     expect(component.dmEdit).toBeNull();
     expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  // --- Followers: opening one from the character's sheet ---
+
+  describe('followers', () => {
+    const brannoc = (): Follower =>
+      ({ id: 12, pcId: 7, name: 'Brannoc', statBlock: { clazz: 'Guard', level: 2, ac: 16 } });
+
+    afterEach(() => uiState.closeFollower());
+
+    it('opening a follower exposes it as a PC for the nested follower sheet', () => {
+      expect(component.openFollowerPc()).toBeNull();
+
+      component.onFollowerOpened(brannoc());
+
+      expect(uiState.openFollowerId()).toBe(12);
+      expect(component.openFollowerPc()).toEqual(jasmine.objectContaining(
+        { id: -12, name: 'Brannoc', clazz: 'Guard', level: 2, ac: 16 }));
+    });
+
+    it('closeFollower (Back to Character) returns to the character sheet', () => {
+      component.onFollowerOpened(brannoc());
+
+      component.closeFollower();
+
+      expect(component.openFollowerPc()).toBeNull();
+      expect(uiState.openFollowerId()).toBeNull();
+    });
+
+    it('the browser Back button (UiState closing the follower) also returns to the character', () => {
+      component.onFollowerOpened(brannoc());
+
+      uiState.closeFollower(); // what applyClose('follower') does on popstate
+
+      expect(component.openFollowerPc()).toBeNull();
+    });
+
+    it('a follower sheet edit is applied at once and saved through FollowerService', () => {
+      followerService.update.and.returnValue(of(brannoc()));
+      component.onFollowerOpened(brannoc());
+      const edited = { ...component.openFollowerPc()!, name: 'Sir Brannoc', ac: 18 };
+
+      component.onFollowerChanged(edited);
+
+      expect(followerService.update).toHaveBeenCalledWith(7, 12, 'Sir Brannoc',
+        { clazz: 'Guard', level: 2, ac: 18 });
+      expect(component.openFollowerPc()).toEqual(jasmine.objectContaining({ name: 'Sir Brannoc', ac: 18 }));
+      // A follower is not a PC row — the character endpoints are never touched.
+      expect(pcService.updatePC).not.toHaveBeenCalled();
+      expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+    });
+
+    it('a failed follower save reverts to the last confirmed sheet', () => {
+      spyOn(console, 'error');
+      followerService.update.and.returnValue(throwError(() => new Error('500')));
+      component.onFollowerOpened(brannoc());
+
+      component.onFollowerChanged({ ...component.openFollowerPc()!, ac: 18 });
+
+      expect(component.openFollowerPc()?.ac).toBe(16);
+    });
+
+    it('switching to a different character closes the open follower', () => {
+      component.onFollowerOpened(brannoc());
+      const previous = component.pc;
+      component.pc = makePC({ id: 8, name: 'Aelindra' });
+
+      component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+
+      expect(component.openFollowerPc()).toBeNull();
+      expect(uiState.openFollowerId()).toBeNull();
+    });
+
+    it('a refresh of the same character keeps the follower open', () => {
+      component.onFollowerOpened(brannoc());
+      const previous = component.pc;
+      component.pc = makePC({ ac: 17 });
+
+      component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+
+      expect(component.openFollowerPc()).not.toBeNull();
+    });
+
+    it('destroying the sheet abandons the follower view', () => {
+      component.onFollowerOpened(brannoc());
+
+      component.ngOnDestroy();
+
+      expect(uiState.openFollowerId()).toBeNull();
+    });
+  });
+
+  // --- Follower mode: this sheet IS the follower's ---
+
+  describe('follower mode', () => {
+    let changed: jasmine.Spy;
+
+    beforeEach(() => {
+      component.followerMode = true;
+      component.pc = makePC({ id: -12, name: 'Brannoc', clazz: 'Guard', level: 2 });
+      changed = spyOn(component.followerChanged, 'emit');
+    });
+
+    it('saves by emitting followerChanged instead of calling the PC endpoints', () => {
+      component.onPcChange(makePC({ id: -12, ac: 18 }));
+
+      expect(changed).toHaveBeenCalledWith(jasmine.objectContaining({ id: -12, ac: 18 }));
+      expect(pcService.updatePC).not.toHaveBeenCalled();
+      expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+    });
+
+    it('a DM edit in follower mode also emits (the DM path is a PC endpoint)', () => {
+      component.editable = true;
+      const applied = makePC({ id: -12, ac: 18 });
+      component.onDmEditRequested({ label: 'AC', value: 16, min: 0, max: null, apply: () => applied });
+
+      component.onDmEditConfirmed({ value: 18, description: 'shield' });
+
+      expect(changed).toHaveBeenCalledWith(applied);
+      expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+    });
+
+    it('grants mutate the follower sheet directly, never through GrantService', () => {
+      component.onItemGrant({ name: 'Rope', category: 'gear', qty: 1 });
+      component.onFeatureGrant({ name: 'Blessing', source: 'DM Grant', desc: '' });
+
+      expect(grantService.grantToPc).not.toHaveBeenCalled();
+      expect(changed.calls.argsFor(0)[0].inventory).toEqual([{ name: 'Rope', category: 'gear', qty: 1 }]);
+      expect(changed.calls.argsFor(1)[0].features).toEqual([{ name: 'Blessing', source: 'DM Grant', desc: '' }]);
+    });
+
+    it('inspiration is plain sheet data: filling the meter grants the badge locally', () => {
+      component.onInspirationChange(3);
+      component.onInspirationChange(5);
+      component.useInspiration();
+
+      expect(changed.calls.argsFor(0)[0].inspirationPips).toBe(3);
+      expect(changed.calls.argsFor(1)[0]).toEqual(
+        jasmine.objectContaining({ inspirationPips: 0, heroicInspiration: true }));
+      expect(changed.calls.argsFor(2)[0].heroicInspiration).toBeFalse();
+      expect(pcService.setInspirationPips).not.toHaveBeenCalled();
+      expect(pcService.useInspiration).not.toHaveBeenCalled();
+    });
+
+    it('leaves the bottom-tab-bar body flag to its character\'s sheet', () => {
+      document.body.classList.add('has-bottom-tab-bar'); // set by the outer sheet
+
+      component.ngOnInit();
+      component.ngOnDestroy(); // "Back to Character" destroys only the nested sheet
+
+      expect(document.body.classList.contains('has-bottom-tab-bar')).toBeTrue();
+      document.body.classList.remove('has-bottom-tab-bar');
+    });
+
+    it('its own pc changing on every save never closes a follower view', () => {
+      const closing = spyOn(uiState, 'closeFollower');
+      const previous = component.pc;
+      component.pc = makePC({ id: -13 });
+
+      component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+      component.ngOnDestroy();
+
+      expect(closing).not.toHaveBeenCalled();
+    });
   });
 });
