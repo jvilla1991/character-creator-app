@@ -75,4 +75,62 @@ describe('HeroClassPanelComponent', () => {
       expect(component.specializationDesc).toContain('tank');
     });
   });
+
+  describe('Demon Hunter', () => {
+    function makeDemonHunter(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 8, name: 'Shalassa', clazz: 'Ranger', subclass: 'Demon Hunter', specialization: 'Havoc',
+        level: 7, playerName: 'Gina', stats: { STR: 10, DEX: 17, CON: 14, INT: 10, WIS: 14, CHA: 8 },
+        ...overrides,
+      };
+    }
+
+    it('shows the bare specialization name and the Arcane Focus feature', () => {
+      component.pc = makeDemonHunter();
+      expect(component.specializationTitle).toBe('Havoc');
+      expect(component.specializationDesc).toContain('melee');
+      expect(component.hero?.level1Feature.desc).toContain('Arcane Focus');
+    });
+
+    it('lists the Demon Hunter spells for the level and specialization', () => {
+      component.pc = makeDemonHunter();
+      expect(component.spells.map(s => s.name))
+        .toEqual(['Throw Glaive', 'Fel Rush', 'Sigil of Flame', 'Eye Beam']);
+      component.pc = makeDemonHunter({ specialization: 'Devourer', level: 9 });
+      expect(component.spells.map(s => s.name)).toEqual([
+        'Throw Glaive', 'Consume Soul', 'Sigil of Flame', 'Misty Step', 'Metamorphosis', 'Soul Reap',
+      ]);
+      component.pc = makeDemonHunter({ specialization: 'Vengeance', level: 20 });
+      expect(component.spells.slice(-2).map(s => s.name)).toEqual(['Destructive Wave', 'Sigil of Chains']);
+      expect(component.spells.length).toBe(10);
+    });
+
+    it('has no spells or Soul Fragments before Ranger 3', () => {
+      component.pc = makeDemonHunter({ level: 2 });
+      expect(component.spells).toEqual([]);
+      expect(component.resource).toBeNull();
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+    });
+
+    it('grants Soul Fragments = WIS mod per Long Rest at 3, +1 at 13, +2 at 17', () => {
+      const wis = (WIS: number) => ({ STR: 10, DEX: 10, CON: 10, INT: 10, WIS, CHA: 10 });
+      component.pc = makeDemonHunter({ level: 3, stats: wis(16) });     // +3
+      expect(component.resource).toEqual({ name: 'Soul Fragments', amount: '3 per Long Rest', fromLevel: 3 });
+      component.pc = makeDemonHunter({ level: 12, stats: wis(16) });
+      expect(component.resource?.amount).toBe('3 per Long Rest');
+      component.pc = makeDemonHunter({ level: 13, stats: wis(16) });
+      expect(component.resource?.amount).toBe('4 per Long Rest');
+      component.pc = makeDemonHunter({ level: 17, stats: wis(16) });
+      expect(component.resource?.amount).toBe('5 per Long Rest');
+    });
+
+    it('never grants fewer than one Soul Fragment when WIS mod is 0 or less', () => {
+      component.pc = makeDemonHunter({ level: 3, stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
+      expect(component.resource?.amount).toBe('1 per Long Rest');
+      component.pc = makeDemonHunter({ level: 3, stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 6, CHA: 10 } });
+      expect(component.resource?.amount).toBe('1 per Long Rest');
+      component.pc = makeDemonHunter({ level: 13, stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 6, CHA: 10 } });
+      expect(component.resource?.amount).toBe('2 per Long Rest');
+    });
+  });
 });

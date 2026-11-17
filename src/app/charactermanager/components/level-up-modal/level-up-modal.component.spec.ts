@@ -523,4 +523,18 @@ describe('LevelUpModalComponent', () => {
       expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
     });
   });
+
+  describe('Demon Hunter (no respec)', () => {
+    it('hides the change control and never sends a specialization', () => {
+      component.pc = makePC({ clazz: 'Ranger', subclass: 'Demon Hunter', specialization: 'Havoc', level: 4 });
+      pcService.levelUpPreview.and.returnValue(of(makePreview()));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+      component.ngOnInit();
+      expect(component.heroClass?.name).toBe('Demon Hunter');
+      expect(component.canRespec).toBeFalse();
+      component.selectedSpecialization = 'Vengeance';
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+    });
+  });
 });

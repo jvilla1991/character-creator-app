@@ -136,7 +136,53 @@ const DEATH_KNIGHT: HeroClassOption = {
   ],
 };
 
-export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT];
+// ── Demon Hunter (Ranger) ────────────────────────────────────────────────────
+
+export const DEMON_HUNTER_SUBCLASS = 'Demon Hunter';
+
+/**
+ * Soul Fragments per Long Rest from Ranger level 3: the Wisdom modifier (at
+ * least 1), plus 1 from Ranger 13, or plus 2 from Ranger 17. 0 before level 3.
+ */
+export function soulFragments(level: number, stats: HeroStats | undefined): number {
+  if (level < 3) return 0;
+  const bonus = level >= 17 ? 2 : level >= 13 ? 1 : 0;
+  return Math.max(1, modFromScore(stats?.WIS ?? 10)) + bonus;
+}
+
+const DEMON_HUNTER: HeroClassOption = {
+  label: 'Demon Hunter (Ranger)',
+  name: 'Demon Hunter',
+  baseClass: 'Ranger',
+  subclass: DEMON_HUNTER_SUBCLASS,
+  source: 'World of Warcraft',
+  blurb: 'A hunter who took demonic power into themselves to fight the Burning Legion, '
+    + 'giving up their eyesight for spectral senses. Demon hunters are usually elves — '
+    + 'blood, night, or void elves; check with your DM before playing another species.',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Devourer',  desc: 'A void-magic caster who feeds on the souls of the fallen.' },
+    { name: 'Havoc',     desc: 'A fel-fueled melee striker who fights with a blade in each hand.' },
+    { name: 'Vengeance', desc: 'A tank who turns demonic power into a shield for their allies.' },
+  ],
+  respecOnLevelUp: false,
+  level1Feature: {
+    name: 'Spellcasting Change',
+    desc: 'You can use an Arcane Focus (instead of a Druidic Focus) as the spellcasting focus for your Ranger spells.',
+  },
+  resource: (level, stats) => level >= 3
+    ? { name: 'Soul Fragments', amount: `${soulFragments(level, stats)} per Long Rest`, fromLevel: 3 }
+    : null,
+  spellTable: [
+    { classLevel: 3,  all: 'Throw Glaive',     bySpecialization: { Devourer: 'Consume Soul',      Havoc: 'Fel Rush',       Vengeance: 'Infernal Strike' } },
+    { classLevel: 5,  all: 'Sigil of Flame',   bySpecialization: { Devourer: 'Misty Step',        Havoc: 'Eye Beam',       Vengeance: 'Fiery Brand' } },
+    { classLevel: 9,  all: 'Metamorphosis',    bySpecialization: { Devourer: 'Soul Reap',         Havoc: 'Blink',          Vengeance: 'Demon Spikes' } },
+    { classLevel: 13, all: 'Chaos Nova',       bySpecialization: { Devourer: 'Collapsing Star',   Havoc: 'Fire Shield',    Vengeance: 'Banishment' } },
+    { classLevel: 17, all: 'Destructive Wave', bySpecialization: { Devourer: 'Steel Wind Strike', Havoc: 'Conjure Volley', Vengeance: 'Sigil of Chains' } },
+  ],
+};
+
+export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT, DEMON_HUNTER];
 
 /** One row of the class step: a base class or a hero class layered on one. */
 export interface ClassOption {

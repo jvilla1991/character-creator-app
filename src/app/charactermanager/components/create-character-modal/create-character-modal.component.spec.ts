@@ -764,19 +764,20 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.contentSources).toEqual({ 'Base Game': true, 'World of Warcraft': true });
     });
 
-    it('shows the base classes then Death Knight (Paladin) with both sources on', () => {
+    it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
     });
 
-    it('hides Death Knight with World of Warcraft off', () => {
+    it('hides the WoW hero classes with World of Warcraft off', () => {
       component.toggleContentSource('World of Warcraft');
       expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Barbarian', 'Bard', 'Wizard']);
     });
 
-    it('shows only Death Knight with Base Game off', () => {
+    it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
-      expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Death Knight (Paladin)']);
+      expect(component.visibleClassOptions.map(o => o.label))
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -911,6 +912,65 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(restored.specialization).toBe('Frost');
       expect(restored.selectedSubclass).toBe('Oath of the Ebon Blade');
       expect(restored.contentSources['Base Game']).toBeFalse();
+    });
+  });
+
+  describe('Demon Hunter (Ranger)', () => {
+    beforeEach(() => {
+      dndResources.getClassDetail.calls.reset();
+      component.toggleClass('Demon Hunter (Ranger)');
+    });
+
+    it('stores the Ranger base class with the Demon Hunter subclass locked in', () => {
+      expect(component.clazz).toBe('Ranger');
+      expect(component.selectedSubclass).toBe('Demon Hunter');
+      expect(component.selectedClassLabel).toBe('Demon Hunter (Ranger)');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Ranger');
+    });
+
+    it('requires a specialization before the class step can advance', () => {
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Devourer', 'Havoc', 'Vengeance']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Havoc');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('clears the specialization when switching to another hero class', () => {
+      component.selectSpecialization('Vengeance');
+      component.toggleClass('Death Knight (Paladin)');
+      expect(component.specialization).toBe('');
+      expect(component.selectedSubclass).toBe('Oath of the Ebon Blade');
+    });
+
+    it('emits clazz Ranger + subclass Demon Hunter + specialization in the create payload', (done) => {
+      component.name = 'Shalassa';
+      component.selectSpecialization('Havoc');
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Ranger');
+        expect(draft.subclass).toBe('Demon Hunter');
+        expect(draft.specialization).toBe('Havoc');
+        done();
+      });
+      component.submit();
+    });
+
+    it('restores a legacy draft that saved the specialization as rune', () => {
+      component.ngOnDestroy();
+      const key = (component as any).draftKey as string;
+      const saved = JSON.parse(localStorage.getItem(key) ?? '{}');
+      delete saved.specialization;
+      saved.heroClassLabel = 'Death Knight (Paladin)';
+      saved.clazz = 'Paladin';
+      saved.rune = 'Blood';
+      saved.name = 'Isolde';
+      localStorage.setItem(key, JSON.stringify(saved));
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.specialization).toBe('Blood');
+      localStorage.removeItem(key);
     });
   });
 });
