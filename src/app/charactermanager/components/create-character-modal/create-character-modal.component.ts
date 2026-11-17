@@ -719,6 +719,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       feat:             this.backgroundFeatName || undefined,
       skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
+      toolProfs:        [...this.backgroundToolProfs],
       languages:        ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))],
       coins:            this.buildStartingCoins(),
       weapons:          this.equipmentChoice === 'A'
