@@ -19,6 +19,7 @@ import { SettingsPanelComponent } from './components/settings-panel/settings-pan
 import { DiceFabComponent } from './components/dice-fab/dice-fab.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { ToastComponent } from './components/toast/toast.component';
+import { LevelUpPromptComponent } from './components/level-up-prompt/level-up-prompt.component';
 
 @Component({
     selector: 'app-charactermanager-app',
@@ -91,11 +92,16 @@ import { ToastComponent } from './components/toast/toast.component';
       </div>
     }
     
+    <!-- Level-up: the gold-glow "Level Up Now / Later" prompt and the single
+         level-up modal, reachable from the sheet and the live session alike.
+         LevelUpPromptService decides when it opens. -->
+    <app-level-up-prompt></app-level-up-prompt>
+
     <!-- App-wide transient notifications (e.g. the DM ended the session) -->
     <app-toast></app-toast>
     `,
     styles: [],
-    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent, DiceFabComponent, DiceRollerModalComponent]
+    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent, DiceFabComponent, DiceRollerModalComponent, LevelUpPromptComponent]
 })
 export class CharactermanagerAppComponent implements OnInit {
   pcs: PC[] = [];

@@ -1,0 +1,92 @@
+// Layers, bottom to top: the dimming backdrop, the gold glow, the dialog.
+// They sit above the session's turn vignette (900) so a level-up announced
+// mid-combat isn't tinted green, and below the toasts (1000).
+$z-backdrop: 940;
+$z-glow: 941;
+$z-dialog: 942;
+
+// Whole-viewport gold glow — an inward frame around the screen edge, built
+// from the theme's --gold so it holds in all three themes. The frame lives on
+// the element itself; the pulse only breathes an extra halo on ::after, so
+// with reduced motion the static frame stays and only the pulse goes.
+.levelup-glow {
+  position: fixed;
+  inset: 0;
+  z-index: $z-glow;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s ease-out;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklch, var(--gold) 75%, transparent),
+    inset 0 0 44px 10px color-mix(in oklch, var(--gold) 34%, transparent),
+    inset 0 0 120px 32px color-mix(in oklch, var(--gold) 16%, transparent);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    box-shadow: inset 0 0 70px 20px color-mix(in oklch, var(--gold-2) 32%, transparent);
+  }
+
+  &.open {
+    opacity: 1;
+  }
+
+  // Starts once the bloom has finished, so it reads as bloom → breathe.
+  &.open::after {
+    animation: levelup-glow-pulse 2.8s ease-in-out 0.7s infinite;
+  }
+}
+
+@keyframes levelup-glow-pulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelup-glow.open::after { animation: none; }
+}
+
+.modal-backdrop.levelup-backdrop {
+  z-index: $z-backdrop;
+}
+
+// Centres the dialog over the glow. Clicks outside the dialog fall through to
+// the backdrop (which answers "Later").
+.levelup-layer {
+  position: fixed;
+  inset: 0;
+  z-index: $z-dialog;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  .levelup-prompt {
+    pointer-events: auto;
+    width: min(420px, 92vw);
+  }
+}
+
+.levelup-body {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 12px 0 4px;
+}
+
+.levelup-reason {
+  margin: 0;
+}
+
+.modal-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .levelup-layer .levelup-prompt {
+    padding: 24px 20px 20px;
+  }
+}

@@ -1,0 +1,38 @@
+<!-- Gold glow around the whole viewport while the prompt is open. Always in
+the DOM so opening blooms it in and answering fades it out. Ambient only. -->
+<div class="levelup-glow" [class.open]="levelUp.prompt() !== null" aria-hidden="true"></div>
+
+@if (levelUp.prompt(); as p) {
+  <!-- Backdrop, glow and dialog are separate layers so the glow sits above the
+  dimmed page but behind the dialog. A backdrop click answers "Later". -->
+  <div class="modal-backdrop levelup-backdrop" (click)="levelUp.later()"></div>
+  <div class="levelup-layer">
+    <app-modal class="levelup-prompt" title="Level up" [closable]="false"
+      [attr.aria-describedby]="'levelup-prompt-body'" (dismiss)="levelUp.later()">
+      <div id="levelup-prompt-body">
+        <p class="levelup-body">{{ p.name }} can advance to level {{ p.targetLevel }}.</p>
+        <p class="modal-sub levelup-reason">
+          {{ p.reason === 'grant' ? 'Your DM granted a level-up.' : 'You have enough experience.' }}
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="levelUp.later()">Later</button>
+        <button type="button" class="btn primary" cdkFocusInitial (click)="levelUp.levelUpNow()">
+          Level Up Now
+        </button>
+      </div>
+    </app-modal>
+  </div>
+}
+
+<!-- The one level-up modal, for the prompt and the sheet's Level Up button. -->
+@if (levelUp.levelUp(); as lu) {
+  <div class="modal-backdrop" (click)="closeLevelUp()">
+    <app-level-up-modal
+      [pc]="lu.pc"
+      [asDm]="lu.asDm"
+      (click)="$event.stopPropagation()"
+      (close)="closeLevelUp()">
+    </app-level-up-modal>
+  </div>
+}

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
@@ -10,17 +10,17 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { JoinModalService } from '../../services/join-modal.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
+import { LevelUpPromptService } from '../../services/level-up-prompt.service';
 import { RouterOutlet } from '@angular/router';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { EmptyStateComponent } from '../character-sheet/empty-state/empty-state.component';
 import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
-import { LevelUpModalComponent } from '../level-up-modal/level-up-modal.component';
 
 @Component({
     selector: 'app-main-content',
     templateUrl: './main-content.component.html',
     styleUrls: ['./main-content.component.scss'],
-    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent, LevelUpModalComponent]
+    imports: [RouterOutlet, CharacterSheetComponent, EmptyStateComponent, DeleteConfirmationModalComponent]
 })
 export class MainContentComponent implements OnInit, OnDestroy {
   pc: PC | null = null;
@@ -35,7 +35,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   /** The active PC's campaign's current party location (null when none). */
   location: CampaignLocation | null = null;
   isDeleteModalOpen = false;
-  isLevelUpModalOpen = false;
+
+  private readonly levelUpPrompt = inject(LevelUpPromptService);
 
   constructor(
     private pcService: PCService,
@@ -82,12 +83,30 @@ export class MainContentComponent implements OnInit, OnDestroy {
         this.pc = pc;
         this.resolveVariants(pc);
         this.refetchOnActivation(pc);
+        this.promptIfReady(pc);
       });
     document.addEventListener('visibilitychange', this.onVisible);
   }
 
   ngOnDestroy(): void {
     document.removeEventListener('visibilitychange', this.onVisible);
+    // A DM's level-up of a member belongs to this sheet: leaving it (e.g. Back
+    // to the campaign) closes the modal. A player's own modal stays put.
+    if (this.levelUpPrompt.levelUp()?.asDm) this.levelUpPrompt.closeLevelUp();
+  }
+
+  // ── Level-up prompt ────────────────────────────────────────────────────────
+  // Every emission of the active PC — selection, the activation/refocus
+  // refetch below, a local patch — is a chance to notice it can now level (a
+  // DM grant or an XP threshold) and offer the gold-glow prompt. Only for the
+  // player's own character: never in DM cross-link view (so the DM's own
+  // Grant Level-Up click can't prompt the DM), and only for a PC in the
+  // signed-in user's roster.
+
+  private promptIfReady(pc: PC | null): void {
+    if (!pc || this.editable()) return;
+    if (!this.pcService.getPCById(pc.id)) return;
+    this.levelUpPrompt.evaluate(pc);
   }
 
   // ── Cross-client freshness ─────────────────────────────────────────────────
@@ -161,10 +180,14 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   // ── Level-up modal ─────────────────────────────────────────────────────────
   // The modal owns the preview→confirm→commit flow; PCService pushes the updated PC
-  // into activePC$, so the sheet refreshes itself. Here we only toggle visibility.
+  // into activePC$, so the sheet refreshes itself. The modal itself is hosted
+  // once at the shell (it also opens from the level-up prompt, including over a
+  // live session); this only asks for it. In DM cross-link view it uses the
+  // DM-authorized endpoints.
 
-  openLevelUpModal(): void  { this.isLevelUpModalOpen = true;  }
-  closeLevelUpModal(): void { this.isLevelUpModalOpen = false; }
+  openLevelUpModal(): void {
+    if (this.pc) this.levelUpPrompt.openLevelUp(this.pc, this.editable());
+  }
 
   onDeleteConfirm(): void {
     if (!this.pc) return;

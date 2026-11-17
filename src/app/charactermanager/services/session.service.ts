@@ -1155,6 +1155,7 @@ export class SessionService {
       lootStatus: null,
       lootName: null,
       myXp: null,
+      myLevelGrant: null,
       gameTime: this.campaignService.getLocalCampaign(campaignId)?.gameTime ?? null,
       location: this.campaignService.getLocalCampaign(campaignId)?.location ?? null,
       weekDays: this.campaignService.getLocalCampaign(campaignId)?.weekDays ?? null,
@@ -1169,7 +1170,7 @@ export class SessionService {
       sessionId, campaignId: '', status: 'LOBBY', round: 1,
       activeParticipantId: null, onDeckParticipantId: null, version: 0, dm: true,
       enemiesHidden: true, enemyHpHidden: false, shortRestOpen: false, turnSound: null,
-      lootStatus: null, lootName: null, myXp: null,
+      lootStatus: null, lootName: null, myXp: null, myLevelGrant: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
       restVote: null,
@@ -1229,6 +1230,7 @@ export class SessionService {
       lootStatus: dto.lootStatus ?? null,
       lootName: dto.lootName ?? null,
       myXp: dto.myXp ?? null,
+      myLevelGrant: dto.myLevelGrant ?? null,
       gameTime: normalizeGameTime(this.parseJsonObject<CampaignGameTime>(dto.gameTime)),
       location: this.parseLocation(this.parseJsonObject<CampaignLocation>(dto.location)),
       weekDays: Array.isArray(dto.weekDays) && dto.weekDays.length ? dto.weekDays : null,
@@ -1356,6 +1358,7 @@ interface SessionStateDto {
   lootStatus?: SessionState['lootStatus'];
   lootName?: string | null;
   myXp?: number | null;
+  myLevelGrant?: boolean | null;
   gameTime?: unknown;
   location?: unknown;
   weekDays?: string[] | null;
