@@ -67,7 +67,15 @@
   }
   <details class="milestones"><summary>Reputation milestones <span>−100 to +100</span></summary>
     <!-- One scale from −100 to +100. Each standing's segment is as wide as the
-         number of scores it covers, so the narrow middle tiers read as narrow. -->
+         number of scores it covers, so the narrow middle tiers read as narrow.
+         The numbers above mark where each standing begins; a negative label
+         ends on its boundary and a positive one starts on it, so ±3 never
+         collide across the thin Neutral segment. -->
+    <div class="scale-thresholds numeric" aria-hidden="true">
+      @for (t of thresholds; track t.value) {
+        <span [class.neg]="t.value < 0" [class.minor]="t.minor" [style.left.%]="t.percent">{{ t.value < 0 ? '−' : '+' }}{{ t.value < 0 ? -t.value : t.value }}</span>
+      }
+    </div>
     <div class="scale" aria-hidden="true">
       @for (tier of milestones; track tier.name) {
         <span class="segment" [style.flex-grow]="span(tier)" [style.background]="tier.color" [title]="tier.name + ' (' + tier.label + ')'"></span>

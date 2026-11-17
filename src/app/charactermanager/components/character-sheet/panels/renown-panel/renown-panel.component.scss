@@ -183,10 +183,38 @@ summary {
   &:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 }
 
+/* Each label is pinned to its boundary by an inline `left` %. The row is a
+   size container so the ±10 labels can drop out when it gets too narrow for
+   them to sit between ±25 and ±3. */
+.scale-thresholds {
+  position: relative;
+  height: 15px;
+  margin-top: 14px;
+  margin-bottom: 3px;
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  container-type: inline-size;
+
+  span {
+    position: absolute;
+    bottom: 0;
+    padding-left: 3px;
+    white-space: nowrap;
+  }
+
+  .neg {
+    transform: translateX(-100%);
+    padding: 0 3px 0 0;
+  }
+}
+
+@container (max-width: 600px) {
+  .scale-thresholds .minor { display: none; }
+}
+
 .scale {
   display: flex;
   height: 14px;
-  margin-top: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sharp);
   overflow: hidden;

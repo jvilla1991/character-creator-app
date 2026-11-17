@@ -29,6 +29,24 @@ export function renownSpan(tier: RenownMilestone): number {
   return tier.max - tier.min + 1;
 }
 
+/** Where a standing begins, read outward from Neutral: −3, −10, −25 below
+ *  and +3, +10, +25, +50 above. `percent` is that boundary's position on the
+ *  −100…+100 scale, where every whole score is one equal slice. `minor` marks
+ *  the ±10 labels, which are dropped when the scale is too narrow to fit
+ *  them between their neighbours. */
+export interface RenownThreshold { value: number; percent: number; minor: boolean; }
+
+const SCALE_SCORES = 201;
+
+export const RENOWN_THRESHOLDS: RenownThreshold[] = RENOWN_MILESTONES
+  .filter(tier => tier.max < 0 || tier.min > 0)
+  .map(tier => {
+    const value: number = tier.max < 0 ? tier.max : tier.min;
+    // A negative standing ends on its right edge; a positive one starts on its left.
+    const edge = tier.max < 0 ? tier.max + 1 : tier.min;
+    return { value, percent: (edge + 100) / SCALE_SCORES * 100, minor: Math.abs(value) === 10 };
+  });
+
 /** Fill within the current standing: 0% at its lowest score, 100% at its
  *  highest. Measuring to the highest score (not the next standing's floor)
  *  puts a standing's middle score at exactly half, e.g. Neutral 0 → 50%. */
