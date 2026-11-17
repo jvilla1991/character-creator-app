@@ -1,0 +1,23 @@
+/* Use the same global panel, portrait, field, and button tokens as Followers. */
+.intro, .muted, .details-hint { color: var(--text-dim); font-size: 13px; }
+.intro { margin: 0 0 16px; }
+.intro span { white-space: nowrap; }
+.grant-form { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border-soft); }
+.actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.error { color: var(--crimson); font-size: 13px; }
+.empty { color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0; }
+.profession-row { padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.profession-row summary { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 4px; }
+.profession-portrait { background: color-mix(in oklch, var(--gold) 22%, var(--surface-3)); flex-shrink: 0; }
+.identity { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.profession-name { font-size: 16px; color: var(--text); }
+summary:hover .profession-name, .requirement { color: var(--gold); }
+.rules { padding: 0 4px; font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+.revoke { margin-top: 6px; }
+.reference { margin-top: 20px; font-size: 13px; line-height: 1.6; color: var(--text-dim); }
+.reference summary { cursor: pointer; color: var(--gold); }
+.reference a { color: var(--gold); }
+@media (max-width: 520px) {
+  .panel-header { flex-wrap: wrap; gap: 10px; }
+  .details-hint { display: none; }
+}

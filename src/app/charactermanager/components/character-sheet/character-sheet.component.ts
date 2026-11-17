@@ -34,6 +34,7 @@ import { EquipmentPanelComponent } from './panels/equipment-panel/equipment-pane
 import { InventoryPanelComponent } from './panels/inventory-panel/inventory-panel.component';
 import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
 import { PcLogComponent } from './panels/pc-log/pc-log.component';
+import { ProfessionsPanelComponent } from './panels/professions-panel/professions-panel.component';
 import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
 
 @Component({
@@ -41,7 +42,7 @@ import { FollowersPanelComponent } from './panels/followers-panel/followers-pane
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, DmEditModalComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;
@@ -174,8 +175,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /** Active section tab. The sheet is split so Notes (and Spells/Inventory) get
    *  their own space; on mobile the tab bar is pinned to the bottom of the screen. */
-  activeTab: 'sheet' | 'spells' | 'inventory' | 'renown' | 'followers' | 'notes' | 'log' = 'sheet';
-  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'renown' | 'followers' | 'notes' | 'log'): void { this.activeTab = tab; }
+  activeTab: 'sheet' | 'spells' | 'inventory' | 'renown' | 'followers' | 'professions' | 'notes' | 'log' = 'sheet';
+  setTab(tab: 'sheet' | 'spells' | 'inventory' | 'renown' | 'followers' | 'professions' | 'notes' | 'log'): void { this.activeTab = tab; }
 
   editingName = false;
   nameDraft = '';
