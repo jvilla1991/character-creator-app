@@ -56,8 +56,8 @@
 // bottom-right corner (56px tall, 24px up; 52px, 14px up below 561px), and on
 // the character sheet over the pinned tab bar too. It rises above both.
 @media (max-width: 640px) {
-  .toast { bottom: calc(92px + var(--pinned-bottom)); max-width: 92vw; }
+  .toast { bottom: calc(92px + var(--bottom-bar-height, 0px)); max-width: 92vw; }
 }
 @media (max-width: 560px) {
-  .toast { bottom: calc(76px + var(--pinned-bottom)); }
+  .toast { bottom: calc(76px + var(--bottom-bar-height, 0px)); }
 }

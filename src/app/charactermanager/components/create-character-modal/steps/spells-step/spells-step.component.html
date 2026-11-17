@@ -27,7 +27,10 @@
   @if (!loadingSpells()) {
     <div class="spell-scroll">
       @for (group of spellGroups(); track group.level) {
-      <details class="spell-group" open>
+      <!-- A group folds itself away once its allowance is spent, so the list
+      left to pick from is the one still open. Clicking the summary reopens it;
+      the binding only takes over again when the counts change. -->
+      <details class="spell-group" [open]="!isGroupComplete(group.level)">
         <summary>{{ group.level === 0 ? 'Cantrips' : 'Level ' + group.level + ' Spells' }}</summary>
       @for (s of group.spells; track trackBySpellName($index, s)) {
         @let selected = isSpellSelected(s);

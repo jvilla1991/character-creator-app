@@ -23,4 +23,44 @@ describe('spell creation level groups', () => {
     expect(fixture.nativeElement.querySelector('details').open).toBeFalse();
     expect(fixture.componentInstance.isSpellSelected(cantrip)).toBeTrue();
   });
+
+  it('folds a group away once its allowance is spent, and reopens it when a slot frees up', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const cantrip: DndSpell = { name: 'Light', level: 0, school: 'evocation',
+      classes: ['wizard'], actionType: 'action', concentration: false, ritual: false,
+      range: 'Touch', components: ['v'], duration: '1 hour', description: 'Creates light.' };
+    const first: DndSpell = { ...cantrip, name: 'Shield', level: 1, school: 'abjuration' };
+    fixture.componentRef.setInput('filteredSpellList', [cantrip, first]);
+    fixture.componentRef.setInput('maxCantrips', 1);
+    fixture.componentRef.setInput('maxKnownSpells', 1);
+    fixture.componentRef.setInput('selectedCantrips', 1);
+    fixture.componentRef.setInput('selectedLeveled', 0);
+    fixture.detectChanges();
+
+    const groups = fixture.nativeElement.querySelectorAll('details') as NodeListOf<HTMLDetailsElement>;
+    // Cantrips are done, so that group folds; the 1st-level list stays open.
+    expect(groups[0].open).toBeFalse();
+    expect(groups[1].open).toBeTrue();
+
+    fixture.componentRef.setInput('selectedLeveled', 1);
+    fixture.detectChanges();
+    expect(groups[1].open).toBeFalse();
+
+    // Removing a cantrip hands the slot back and the list comes out again.
+    fixture.componentRef.setInput('selectedCantrips', 0);
+    fixture.detectChanges();
+    expect(groups[0].open).toBeTrue();
+  });
+
+  it('leaves a group open when the class has no picks of that kind', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const cantrip: DndSpell = { name: 'Light', level: 0, school: 'evocation',
+      classes: ['wizard'], actionType: 'action', concentration: false, ritual: false,
+      range: 'Touch', components: ['v'], duration: '1 hour', description: 'Creates light.' };
+    fixture.componentRef.setInput('filteredSpellList', [cantrip]);
+    fixture.componentRef.setInput('maxCantrips', 0);
+    fixture.componentRef.setInput('selectedCantrips', 0);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('details').open).toBeTrue();
+  });
 });

@@ -41,6 +41,24 @@ describe('SurvivalPanelComponent', () => {
     expect(component.pc.survival!.thirst).toBe(2); // input untouched
   });
 
+  it('offers Eat and Drink to the DM only', () => {
+    const fixture = TestBed.createComponent(SurvivalPanelComponent);
+    fixture.componentRef.setInput('pc', basePc({ hunger: 4, thirst: 4, fatigue: 2 }));
+    fixture.componentRef.setInput('editable', false);
+    fixture.detectChanges();
+    const labels = (): string[] =>
+      [...fixture.nativeElement.querySelectorAll('button')].map((b: HTMLButtonElement) => b.textContent!.trim());
+
+    // A player reads their stages; they do not decide when the character eats.
+    expect(labels()).not.toContain('Eat');
+    expect(labels()).not.toContain('Drink');
+
+    fixture.componentRef.setInput('editable', true);
+    fixture.detectChanges();
+    expect(labels()).toContain('Eat');
+    expect(labels()).toContain('Drink');
+  });
+
   it('computes the exhaustion badge from the stages', () => {
     component.pc = basePc({ hunger: 5, thirst: 6, fatigue: 2 });
     expect(component.exhaustion).toBe(2);

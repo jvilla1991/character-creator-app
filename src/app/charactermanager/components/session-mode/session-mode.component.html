@@ -284,7 +284,6 @@
           <textarea aria-label="Session note"
             [(ngModel)]="noteDraft"
             rows="2"
-            placeholder="Log a ruling, a roll, or a moment from this session…"
             (keydown.control.enter)="addNote(state)"
           ></textarea>
           <button class="btn primary" [disabled]="!noteDraft.trim() || savingNote" (click)="addNote(state)">Add Note</button>

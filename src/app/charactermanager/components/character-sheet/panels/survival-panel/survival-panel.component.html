@@ -32,9 +32,11 @@
     </div>
   }
 
-  <!-- Owner relief actions: eating/drinking consumes a supply charge and
-  improves the stage. Sleep relief is the DM's Long Rest in Session Mode. -->
-  @if (ownControls) {
+  <!-- Relief actions: eating/drinking consumes a supply charge and improves
+  the stage. DM-only, like the steppers above it — a player does not decide
+  when their character eats. Sleep relief is the DM's Long Rest in Session
+  Mode. -->
+  @if (editable) {
     <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
       <button class="btn" (click)="actionRequested.emit('EAT')"
       title="Consume a ration: −1 hunger">Eat</button>

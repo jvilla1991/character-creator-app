@@ -125,7 +125,7 @@
     backdrop-filter: blur(8px);
     padding: 4px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
     // Exactly --sheet-tabbar-h above the safe area, so the dice launcher and
-    // toast, which rise by that much, clear it (see --pinned-bottom).
+    // toast, which rise by that much, clear it (see --bottom-bar-height).
     box-sizing: border-box;
     height: calc(var(--sheet-tabbar-h) + env(safe-area-inset-bottom, 0px));
   }
