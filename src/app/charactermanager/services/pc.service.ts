@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
+import { Rune } from '../models/hero-class';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
@@ -393,6 +394,8 @@ export class PCService {
     }
     const body: LevelUpChoices = {};
     if (choices?.subclass) body.subclass = choices.subclass;
+    // Ebon Blade rune change — the modal only sets it when the player picked a different rune.
+    if (choices?.rune) body.rune = choices.rune;
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     if (choices?.feat) body.feat = choices.feat;
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
@@ -501,6 +504,7 @@ export class PCService {
         : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
       subclass: choices?.subclass || existing.subclass,
+      rune: choices?.rune ?? existing.rune ?? null,
       features,
       spells,
     };
@@ -558,6 +562,8 @@ export class PCService {
       // Scalar passthrough (rides on the spread, but kept explicit + defaulted so
       // a never-awarded PC sends 0 rather than undefined against the NOT NULL column).
       xp: pc.xp ?? 0,
+      // Death Knight rune — explicit null (not undefined) for every other character.
+      rune: pc.rune ?? null,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -606,6 +612,7 @@ export class PCService {
       init: (pc['initiative'] as number) ?? pc.init,
       prof: (pc['profBonus'] as number) ?? pc.prof,
       xp: (pc['xp'] as number) ?? pc.xp ?? 0,
+      rune: (pc['rune'] as Rune | null | undefined) ?? null,
       stats: {
         STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
         DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,

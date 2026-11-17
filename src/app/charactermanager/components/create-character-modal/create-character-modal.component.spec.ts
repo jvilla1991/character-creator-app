@@ -751,4 +751,163 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.reviewStartingGp).toBe(40);
     });
   });
+
+  // ── Content sources + Death Knight (Paladin) hero class ────────────────────
+
+  describe('content-source filter', () => {
+    function spell(name: string, source?: 'Base Game' | 'World of Warcraft') {
+      return { level: 1, name, school: 'necromancy' as const, actionType: 'action', classes: [], concentration: false,
+        ritual: false, range: '', components: [], duration: '', description: '', ...(source ? { source } : {}) };
+    }
+
+    it('starts with both sources enabled', () => {
+      expect(component.contentSources).toEqual({ 'Base Game': true, 'World of Warcraft': true });
+    });
+
+    it('shows the base classes then Death Knight (Paladin) with both sources on', () => {
+      expect(component.visibleClassOptions.map(o => o.label))
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)']);
+    });
+
+    it('hides Death Knight with World of Warcraft off', () => {
+      component.toggleContentSource('World of Warcraft');
+      expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Barbarian', 'Bard', 'Wizard']);
+    });
+
+    it('shows only Death Knight with Base Game off', () => {
+      component.toggleContentSource('Base Game');
+      expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Death Knight (Paladin)']);
+    });
+
+    it('shows no classes (without throwing) with both sources off', () => {
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(component.visibleClassOptions).toEqual([]);
+    });
+
+    it('filters the spell step list by source (both on / one off / both off)', () => {
+      component.spellList = [spell('Bless'), spell('Death Grip', 'World of Warcraft')];
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless', 'Death Grip']);
+      component.toggleContentSource('World of Warcraft');
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless']);
+      component.toggleContentSource('Base Game');
+      expect(component.filteredSpellList).toEqual([]);
+    });
+
+    it('keeps a chosen class selected when the filter hides it, and flags it', () => {
+      component.toggleClass('Death Knight (Paladin)');
+      component.toggleContentSource('World of Warcraft');
+      expect(component.selectedClassLabel).toBe('Death Knight (Paladin)');
+      expect(component.clazz).toBe('Paladin');
+      expect(component.selectedClassHidden).toBeTrue();
+      component.toggleContentSource('World of Warcraft');
+      expect(component.selectedClassHidden).toBeFalse();
+    });
+  });
+
+  describe('Death Knight (Paladin)', () => {
+    beforeEach(() => {
+      dndResources.getClassDetail.calls.reset();
+      dndResources.getClassSkillChoices.calls.reset();
+      component.toggleClass('Death Knight (Paladin)');
+    });
+
+    it('stores the Paladin base class with the Ebon Blade subclass locked in', () => {
+      expect(component.clazz).toBe('Paladin');
+      expect(component.selectedSubclass).toBe('Oath of the Ebon Blade');
+      expect(component.heroClass?.label).toBe('Death Knight (Paladin)');
+      expect(component.selectedClassLabel).toBe('Death Knight (Paladin)');
+    });
+
+    it('loads Paladin class detail and keys lookups on the base class', () => {
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Paladin');
+      void component.classSkillConfig;
+      expect(dndResources.getClassSkillChoices).toHaveBeenCalledWith('Paladin');
+      component.classEquipmentData = { paladin: { optionA: { weapons: [], gear: [], gp: 3 }, optionB: { gp: 150 } } };
+      expect(component.currentClassEquipment?.optionB.gp).toBe(150);
+    });
+
+    it('keeps the Paladin step layout (no level-1 spells step)', () => {
+      expect(component.isSpellcastingClass).toBeFalse();
+      expect(component.totalSteps).toBe(8);
+    });
+
+    it('requires a rune before the class step can advance', () => {
+      component.step = 3;
+      expect(component.canAdvance).toBeFalse();
+      component.selectRune('Blood');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('clears the rune and subclass when switching to base Paladin', () => {
+      component.selectRune('Frost');
+      component.toggleClass('Paladin');
+      expect(component.clazz).toBe('Paladin');
+      expect(component.heroClass).toBeUndefined();
+      expect(component.selectedSubclass).toBe('');
+      expect(component.rune).toBe('');
+      component.step = 3;
+      expect(component.canAdvance).toBeTrue();   // base Paladin needs no rune
+    });
+
+    it('deselects on a second click of the same row', () => {
+      component.toggleClass('Death Knight (Paladin)');
+      expect(component.clazz).toBe('');
+      expect(component.selectedClassLabel).toBe('');
+    });
+
+    it('emits clazz Paladin + subclass + rune in the create payload', (done) => {
+      component.name = 'Isolde';
+      component.species = 'Human';
+      component.background = 'Sage';
+      component.selectRune('Unholy');
+      component.selectedSkills = ['Athletics', 'Religion'];
+      component.assignments = { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 13 };
+      component.bonusPlus2 = 'INT';
+      component.bonusPlus1 = 'WIS';
+      component.equipmentChoice = 'B';
+      component.classEquipmentData = { paladin: { optionA: { weapons: [], gear: [], gp: 0 }, optionB: { gp: 150 } } };
+      (component as any).classDetail = { hit_die: 10, saving_throws: [{ name: 'WIS' }, { name: 'CHA' }] };
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+      component.step = component.reviewStep;
+
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Paladin');
+        expect(draft.subclass).toBe('Oath of the Ebon Blade');
+        expect(draft.rune).toBe('Unholy');
+        expect(draft.hp.max).toBe(12);          // Paladin d10 + CON 14
+        expect(draft.spellSlots).toEqual({});   // Paladin has no level-1 slots here
+        done();
+      });
+      component.submit();
+    });
+
+    it('sends a null rune for a base class', (done) => {
+      component.toggleClass('Wizard');
+      component.name = 'Aelindra';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.rune).toBeNull();
+        expect(draft.subclass).toBeUndefined();
+        done();
+      });
+      component.submit();
+    });
+
+    it('restores the hero class, rune and source filter from a saved draft', () => {
+      component.name = 'Isolde';
+      component.selectRune('Frost');
+      component.toggleContentSource('Base Game');
+      component.ngOnDestroy();   // saves the draft
+
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.clazz).toBe('Paladin');
+      expect(restored.selectedClassLabel).toBe('Death Knight (Paladin)');
+      expect(restored.rune).toBe('Frost');
+      expect(restored.selectedSubclass).toBe('Oath of the Ebon Blade');
+      expect(restored.contentSources['Base Game']).toBeFalse();
+    });
+  });
 });

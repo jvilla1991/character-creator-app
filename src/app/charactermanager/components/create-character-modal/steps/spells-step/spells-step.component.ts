@@ -24,6 +24,8 @@ export class SpellsStepComponent {
       .map(level => ({ level, spells: spells.filter(s => s.level === level) }));
   });
   readonly loadingSpells = input(false);
+  /** True when the wizard's content-source filter has every source off. */
+  readonly noSourcesEnabled = input(false);
   readonly maxCantrips = input(0);
   readonly maxKnownSpells = input(0);
   readonly selectedCantrips = input(0);
