@@ -87,7 +87,7 @@
         </div>
       } @else {
         <div style="overflow-y: auto; flex: 1;">
-          <app-campaign-sidebar></app-campaign-sidebar>
+          <app-campaign-sidebar (picked)="closeDrawer()"></app-campaign-sidebar>
         </div>
       }
 
@@ -151,7 +151,8 @@
     ═══════════════════════════════════════════════ -->
     <main class="main" [attr.inert]="drawerOpen ? '' : null">
 
-      <!-- Mobile-only top bar: hamburger + brand + active hero name (hidden at >=821px via CSS) -->
+      <!-- Mobile-only top bar: hamburger + brand + what the page shows: the hero in
+      player view, the chosen campaign in DM view (hidden at >=821px via CSS) -->
       <div class="mobile-topbar">
         <button #mobileMenuButton class="mobile-menu-btn" (click)="toggleDrawer()" aria-label="Open party menu"
           aria-controls="party-drawer" [attr.aria-expanded]="drawerOpen">
@@ -166,7 +167,7 @@
             <polygon points="24,6 28,20 42,22 30,30 34,44 24,36 14,44 18,30 6,22 20,20" stroke-linejoin="round"/>
             <circle cx="24" cy="24" r="3" fill="currentColor"/>
           </svg>
-          <span class="mobile-topbar-title">{{ activePc?.name || 'Table Mimic' }}</span>
+          <span class="mobile-topbar-title">{{ isDm() ? (dmTitle() || 'Table Mimic') : (activePc?.name || 'Table Mimic') }}</span>
         </div>
       </div>
 
