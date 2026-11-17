@@ -192,7 +192,7 @@ export class InitiativePanelComponent {
         this.addingEnemy = false;
       },
       error: err => {
-        console.error('Failed to add enemy', err);
+        this.notifications.error('Could not add the enemy. Try again.', err);
         this.addingEnemy = false;
       },
     });
@@ -204,12 +204,19 @@ export class InitiativePanelComponent {
     return this.enemyHpHidden ? 'no-hp' : 'full';
   }
 
-  /** DM picked a visibility mode — mapped back onto the two session flags. */
-  onVisibilityChange(mode: string): void {
+  /**
+   * DM picked a visibility mode — mapped back onto the two session flags.
+   * `field` is the select it came from: on failure it goes back to the mode
+   * the players actually have, not the one the DM picked.
+   */
+  onVisibilityChange(mode: string, field?: HTMLSelectElement): void {
     const enemiesHidden = mode === 'hidden';
     const enemyHpHidden = mode === 'no-hp';
     this.sessionService.setVisibility(this.sessionId, enemiesHidden, enemyHpHidden).subscribe({
-      error: err => console.error('Failed to set enemy visibility', err),
+      error: err => {
+        if (field) field.value = this.visibilityMode;
+        this.notifications.error('Could not change what players see. Try again.', err);
+      },
     });
   }
 
@@ -221,10 +228,13 @@ export class InitiativePanelComponent {
   }
 
   /** DM picks the encounter cue; preview it immediately so they hear the choice. */
-  onSoundChange(key: string): void {
+  onSoundChange(key: string, field?: HTMLSelectElement): void {
     const sound = key || null;
     this.sessionService.setSound(this.sessionId, sound).subscribe({
-      error: err => console.error('Failed to set turn sound', err),
+      error: err => {
+        if (field) field.value = this.turnSound || '';
+        this.notifications.error('Could not change the turn sound. Try again.', err);
+      },
     });
     if (sound) this.sessionService.playCue(sound);
   }
@@ -291,11 +301,15 @@ export class InitiativePanelComponent {
     this.cueError = null;
   }
 
-  onInitiative(p: ParticipantView, raw: string): void {
+  /** `field` is the input it was typed into; a failed save puts it back. */
+  onInitiative(p: ParticipantView, raw: string, field?: HTMLInputElement): void {
     const value = parseInt(raw, 10);
     if (isNaN(value)) return;
     this.sessionService.setInitiative(this.sessionId, p.participantId, value).subscribe({
-      error: err => console.error('Failed to set initiative', err),
+      error: err => {
+        if (field) field.value = p.initRolled && p.initiative != null ? String(p.initiative) : '';
+        this.notifications.error(`Could not set ${p.name}'s initiative. Try again.`, err);
+      },
     });
   }
 
@@ -305,7 +319,10 @@ export class InitiativePanelComponent {
     if (amt == null || amt <= 0) return;
     this.sessionService.applyDamage(this.sessionId, p.participantId, sign * amt).subscribe({
       next: () => (this.amounts[p.participantId] = null),
-      error: err => console.error('Failed to adjust HP', err),
+      // The typed amount stays in the box, ready to resend.
+      error: err => this.notifications.error(sign > 0
+        ? `Could not damage ${p.name}. Try again.`
+        : `Could not heal ${p.name}. Try again.`, err),
     });
   }
 
@@ -319,7 +336,7 @@ export class InitiativePanelComponent {
         const e = result.awarded[0];
         if (e) this.notifications.notify(`${e.name}: ${e.xp} XP (${this.signed(e.delta)})`);
       },
-      error: err => console.error('Failed to award XP', err),
+      error: err => this.notifications.error(`Could not award XP to ${p.name}. Try again.`, err),
     });
   }
 
@@ -333,7 +350,7 @@ export class InitiativePanelComponent {
         const n = result.awarded.length;
         this.notifications.notify(`Awarded ${this.signed(amt)} XP to ${n} character${n === 1 ? '' : 's'}`);
       },
-      error: err => console.error('Failed to award XP to all', err),
+      error: err => this.notifications.error('Could not award the XP. Try again.', err),
     });
   }
 
@@ -362,7 +379,7 @@ export class InitiativePanelComponent {
           ? `${p.name} gains Heroic Inspiration!`
           : `${p.name}: inspiration ${row?.inspirationPips ?? 0}/5`);
       },
-      error: err => console.error('Failed to set inspiration', err),
+      error: err => this.notifications.error(`Could not change ${p.name}'s inspiration. Try again.`, err),
     });
   }
 
@@ -374,7 +391,7 @@ export class InitiativePanelComponent {
   removeParticipant(p: ParticipantView): void {
     if (!p.npc && !window.confirm(`Remove ${p.name} from the session?`)) return;
     this.sessionService.leave(this.sessionId, p.participantId).subscribe({
-      error: err => console.error('Failed to remove participant', err),
+      error: err => this.notifications.error(`Could not remove ${p.name} from the session. Try again.`, err),
     });
   }
 
