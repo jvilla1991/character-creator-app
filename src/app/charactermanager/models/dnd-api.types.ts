@@ -1,3 +1,5 @@
+import { ContentSource } from './content-source';
+
 /** Generic reference returned in D&D API list items and nested objects */
 export interface DndResource {
   index: string;
@@ -83,6 +85,10 @@ export interface DndSpell {
   castingTrigger?: string;    // reaction trigger condition
   cantripUpgrade?: string;    // cantrip damage scaling text
   higherLevelSlot?: string;   // upcast description
+  /** Content source; absent = 'Base Game' (read it via spellSource()). */
+  source?: ContentSource;
+  /** Subclasses that get this spell (e.g. WoW oath spells); absent = none. */
+  subclasses?: string[];
 }
 
 // ── Starting equipment types ──────────────────────────────────────────────────

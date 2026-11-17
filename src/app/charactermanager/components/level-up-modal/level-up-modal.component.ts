@@ -9,6 +9,7 @@ import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
+import { EBON_BLADE_SUBCLASS, RUNE_OPTIONS, Rune } from '../../models/hero-class';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -42,6 +43,10 @@ export class LevelUpModalComponent implements OnInit {
   error: string | null = null;
   selectedSubclass: string | null = null;
 
+  /** Death Knight rune options, and the rune picked in the optional "Change rune" select. */
+  readonly runeOptions = RUNE_OPTIONS;
+  selectedRune: Rune | null = null;
+
   /**
    * HP mode for this level: take the fixed average (default) or roll the hit die. In 'ROLL' the
    * server does the rolling on confirm — the preview keeps showing the average, so the displayed
@@ -65,6 +70,7 @@ export class LevelUpModalComponent implements OnInit {
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
+    this.selectedRune = this.pc.rune ?? null;
     const preview$ = this.asDm
       ? this.pcService.levelUpPreviewAsDm(this.pc.id)
       : this.pcService.levelUpPreview(this.pc.id);
@@ -164,6 +170,16 @@ export class LevelUpModalComponent implements OnInit {
     return !!this.preview && this.preview.newCantripsKnown > this.preview.currentCantripsKnown;
   }
 
+  /** Death Knight (Oath of the Ebon Blade) — offers the optional rune change. */
+  get isEbonBlade(): boolean {
+    return this.pc?.subclass === EBON_BLADE_SUBCLASS;
+  }
+
+  /** True when the player picked a rune different from the current one. */
+  get runeChanged(): boolean {
+    return this.isEbonBlade && !!this.selectedRune && this.selectedRune !== (this.pc.rune ?? null);
+  }
+
   /** Whether to show the subclass picker: a choice is due AND the server offered options. */
   get needsSubclass(): boolean {
     return !!this.preview?.subclassDue && (this.preview?.subclassOptions?.length ?? 0) > 0;
@@ -254,6 +270,8 @@ export class LevelUpModalComponent implements OnInit {
     // Only send the mode when rolling — omitting it lets the server default to AVERAGE.
     if (this.hpMode === 'ROLL') choices.hpMode = 'ROLL';
     if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
+    // Only send a rune when it actually changed — the server keeps the current one otherwise.
+    if (this.runeChanged) choices.rune = this.selectedRune!;
     if (this.needsAsi) {
       if (this.milestoneMode === 'asi') {
         const increases = this.allocatedAbilities();

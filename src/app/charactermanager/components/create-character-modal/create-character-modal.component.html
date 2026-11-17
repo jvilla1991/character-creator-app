@@ -15,6 +15,13 @@
     <span class="ruleset-coming-soon">Coming Soon</span>
   </div>
 
+  <!-- Content sources — filters the class list and the spell list -->
+  <app-content-source-filter
+    class="wizard-sources"
+    [selection]="contentSources"
+    (toggle)="toggleContentSource($event)">
+  </app-content-source-filter>
+
   <!-- Step indicator -->
   <!-- The dots are visual only; this line tells a screen reader where it is. -->
   <div class="visually-hidden" role="status">Step {{ step }} of {{ totalSteps }}: {{ stepName }}</div>
@@ -64,7 +71,12 @@
     <!-- ── Step 3: Class ───────────────────────────────────────────────── -->
     @if (step === 3) {
       <app-class-step
-        [classList]="classList"
+        [classOptions]="visibleClassOptions"
+        [selectedLabel]="selectedClassLabel"
+        [selectedHidden]="selectedClassHidden"
+        [runeOptions]="runeOptions"
+        [rune]="rune"
+        (runeChange)="selectRune($event)"
         [clazz]="clazz"
         [classDetail]="classDetail"
         [loadingClassList]="loadingClassList"
@@ -141,6 +153,7 @@
     @if (step === 7 && isSpellcastingClass) {
       <app-spells-step
         [filteredSpellList]="filteredSpellList"
+        [noSourcesEnabled]="!contentSources['Base Game'] && !contentSources['World of Warcraft']"
         [loadingSpells]="loadingSpells"
         [maxCantrips]="maxCantrips"
         [maxKnownSpells]="maxKnownSpells"
@@ -177,8 +190,9 @@
         [species]="species"
         [speciesDetail]="speciesDetail"
         [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
-        [clazz]="clazz"
+        [clazz]="selectedClassLabel"
         [selectedSubclass]="selectedSubclass"
+        [rune]="rune"
         [classDetail]="classDetail"
         [classSavingThrows]="classSavingThrows"
         [background]="background"

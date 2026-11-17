@@ -21,6 +21,9 @@ import { AbilityScoresStepComponent } from './steps/ability-scores-step/ability-
 import { SpellsStepComponent } from './steps/spells-step/spells-step.component';
 import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.component';
 import { ReviewStepComponent } from './steps/review-step/review-step.component';
+import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
+import { ContentSource, ContentSourceSelection, allContentSources, filterBySource } from '../../models/content-source';
+import { ClassOption, HeroClassOption, RUNE_OPTIONS, Rune, buildClassOptions, heroClassByLabel } from '../../models/hero-class';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -37,6 +40,11 @@ interface WizardDraft {
   name: string;
   species: string;
   clazz: string;
+  /** Hero class label (e.g. 'Death Knight (Paladin)'); absent/'' for a base class. */
+  heroClassLabel?: string;
+  rune?: Rune | '';
+  /** Content-source filter (Base Game / World of Warcraft). */
+  contentSources?: ContentSourceSelection;
   selectedSubclass: string;
   background: string;
   enabledSources: Record<string, boolean>;
@@ -56,7 +64,7 @@ interface WizardDraft {
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
     styleUrls: ['./create-character-modal.component.scss'],
-    imports: [DialogDirective, MatTooltip, MatSlideToggle, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
+    imports: [DialogDirective, MatTooltip, MatSlideToggle, ContentSourceFilterComponent, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
@@ -121,9 +129,30 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.onSpeciesChange();
   }
 
+  // ── Content-source filter (top of the wizard; filters classes and spells) ─
+  contentSources: ContentSourceSelection = allContentSources();
+
+  toggleContentSource(source: ContentSource): void {
+    this.contentSources = { ...this.contentSources, [source]: !this.contentSources[source] };
+    // A selected class or spells hidden by the filter stay selected: the filter
+    // narrows what's offered, it never discards a choice the player made. The
+    // class step says so when the chosen class is hidden.
+  }
+
   // ── Step 3: Class ────────────────────────────────────────────────────────
+  /** Base class names from the 2024 API, in API order. */
   classList:    string[]   = [];
+  /**
+   * The BASE class (e.g. 'Paladin') — what is stored on the PC and what every
+   * rules lookup keys on. A hero class sets this to its base class and records
+   * itself in `heroClassLabel`.
+   */
   clazz        = '';
+  /** Chosen hero class label ('Death Knight (Paladin)'), or '' for a base class. */
+  heroClassLabel = '';
+  /** Death Knight rune — required when the hero class asks for one. */
+  rune: Rune | '' = '';
+  readonly runeOptions = RUNE_OPTIONS;
   classDetail:  DndClass | null = null;
   loadingClassList   = true;
   loadingClassDetail = false;
@@ -138,6 +167,32 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   get availableSubclasses(): { name: string; desc: string }[] {
     return this.dndResources.getSubclassesForClass(this.clazz);
+  }
+
+  /** The chosen hero class, or undefined for a base class. */
+  get heroClass(): HeroClassOption | undefined {
+    return heroClassByLabel(this.heroClassLabel);
+  }
+
+  /** The label of the chosen class row — the hero label, else the base class. */
+  get selectedClassLabel(): string {
+    return this.heroClass?.label ?? this.clazz;
+  }
+
+  /** Every class row: base classes (API order) then WoW hero classes. */
+  get classOptions(): ClassOption[] {
+    return buildClassOptions(this.classList);
+  }
+
+  /** Class rows allowed by the content-source filter. */
+  get visibleClassOptions(): ClassOption[] {
+    return filterBySource(this.classOptions, this.contentSources);
+  }
+
+  /** True when the chosen class is hidden by the content-source filter (it stays chosen). */
+  get selectedClassHidden(): boolean {
+    const label = this.selectedClassLabel;
+    return !!label && !this.visibleClassOptions.some(o => o.label === label);
   }
 
   // ── Step 4: Background ───────────────────────────────────────────────────
@@ -267,7 +322,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   get selectedLeveled(): number   { return this.selectedSpells.filter(s => s.level > 0).length; }
 
   get filteredSpellList(): DndSpell[] {
-    return this.spellList.filter(s => {
+    return filterBySource(this.spellList, this.contentSources).filter(s => {
       const levelOk = this.spellLevelFilter === 'all'
         ? s.level <= 1
         : s.level === this.spellLevelFilter;
@@ -421,7 +476,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       case 1: return this.name.trim().length > 0;
       case 2: return !!this.species;
       case 3: return !!this.clazz
-                  && (!this.requiresLevel1Subclass || !!this.selectedSubclass);
+                  && (!this.requiresLevel1Subclass || !!this.selectedSubclass)
+                  && (!this.heroClass?.runeRequired || !!this.rune);
       case 4: return !!this.background;
       case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
       case 6: {
@@ -584,15 +640,33 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   onClassChange(): void {
     this.selectedSkills  = [];
-    this.selectedSubclass = '';
+    // A hero class locks its subclass in; a base class starts with none.
+    this.selectedSubclass = this.heroClass?.subclass ?? '';
+    this.rune = '';
     if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 
-  /** Click a class to choose+expand it; click the chosen one again to clear it. */
-  toggleClass(c: string): void {
-    this.clazz = this.clazz === c ? '' : c;
+  /**
+   * Click a class row (by its label) to choose+expand it; click the chosen one
+   * again to clear it. A hero-class row stores its BASE class in `clazz` (so all
+   * lookups stay keyed on e.g. 'Paladin') and remembers itself in heroClassLabel.
+   */
+  toggleClass(label: string): void {
+    if (this.selectedClassLabel === label) {
+      this.clazz = '';
+      this.heroClassLabel = '';
+    } else {
+      const option = this.classOptions.find(o => o.label === label);
+      this.clazz = option?.baseClass ?? label;
+      this.heroClassLabel = option?.hero ? option.label : '';
+    }
     this.classDetail = null;
     this.onClassChange();
+  }
+
+  /** Pick the Death Knight rune (class step). */
+  selectRune(rune: Rune): void {
+    this.rune = rune;
   }
 
   get classSavingThrows(): string {
@@ -704,6 +778,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       race:             this.species,
       clazz:            this.clazz,
       subclass:         this.selectedSubclass || undefined,
+      rune:             this.heroClass?.runeRequired && this.rune ? this.rune : null,
       background:       this.background,
       level:            1,
       prof:             2,
@@ -793,6 +868,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       name: this.name,
       species: this.species,
       clazz: this.clazz,
+      heroClassLabel: this.heroClassLabel,
+      rune: this.rune,
+      contentSources: this.contentSources,
       selectedSubclass: this.selectedSubclass,
       background: this.background,
       enabledSources: this.enabledSources,
@@ -827,6 +905,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.name             = d.name ?? '';
       this.species          = d.species ?? '';
       this.clazz            = d.clazz ?? '';
+      this.heroClassLabel   = heroClassByLabel(d.heroClassLabel) ? d.heroClassLabel! : '';
+      this.rune             = d.rune ?? '';
+      this.contentSources   = { ...allContentSources(), ...(d.contentSources ?? {}) };
       this.selectedSubclass = d.selectedSubclass ?? '';
       this.background       = d.background ?? '';
       this.selectedSkills   = d.selectedSkills ?? [];

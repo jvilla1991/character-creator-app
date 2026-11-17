@@ -398,6 +398,51 @@ describe('PCService', () => {
     });
   });
 
+  // ── Death Knight rune (Oath of the Ebon Blade) ──────────────────────────────
+
+  describe('rune round-trip', () => {
+    it('sends subclass and rune on create', () => {
+      service.addPC(makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', rune: 'Unholy' })).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + 'add');
+      const body = req.request.body as Record<string, unknown>;
+      expect(body['clazz']).toBe('Paladin');
+      expect(body['subclass']).toBe('Oath of the Ebon Blade');
+      expect(body['rune']).toBe('Unholy');
+      req.flush(makePC());
+    });
+
+    it('sends an explicit null rune for everyone else', () => {
+      service.updatePC(makePC()).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + '1');
+      expect((req.request.body as Record<string, unknown>)['rune']).toBeNull();
+      req.flush(makePC());
+    });
+
+    it('reads the rune back from the server row, defaulting a missing one to null', (done) => {
+      const HttpParams = require('@angular/common/http').HttpParams;
+      service.PCById(new HttpParams().set('id', '6')).subscribe((dk: PC) => {
+        expect(dk.rune).toBe('Blood');
+        expect(dk.subclass).toBe('Oath of the Ebon Blade');
+        service.PCById(new HttpParams().set('id', '7')).subscribe((other: PC) => {
+          expect(other.rune).toBeNull();
+          done();
+        });
+        httpMock.expectOne(service.pcUrl + 'find/7').flush({ id: 7, name: 'Plain', clazz: 'Fighter', level: 1 });
+      });
+      httpMock.expectOne(service.pcUrl + 'find/6').flush({
+        id: 6, name: 'Isolde', clazz: 'Paladin', level: 3,
+        subclass: 'Oath of the Ebon Blade', rune: 'Blood',
+      });
+    });
+
+    it('sends a changed rune on level-up', () => {
+      service.levelUp(6, { rune: 'Frost' }).subscribe();
+      const req = httpMock.expectOne(`${service.pcUrl}6/level-up`);
+      expect(req.request.body).toEqual({ rune: 'Frost' });
+      req.flush({ id: 6, name: 'Isolde', clazz: 'Paladin', level: 4, rune: 'Frost' });
+    });
+  });
+
   // ── deserializePC — JSON field parsing ─────────────────────────────────────
 
   describe('deserializePC (via PCById)', () => {

@@ -1,4 +1,5 @@
 import { PcSpell } from './pc';
+import { Rune } from './hero-class';
 
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
@@ -59,4 +60,6 @@ export interface LevelUpChoices {
   feat?: string;
   newSpells?: PcSpell[];
   hpMode?: HpMode;
+  /** Ebon Blade only: a new rune, sent only when the player changes it. */
+  rune?: Rune;
 }

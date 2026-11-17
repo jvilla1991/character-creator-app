@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { PC } from '../../../models/pc';
 import { passiveScore, tintFor } from '../../../utils/character-math';
 import { DecimalPipe } from '@angular/common';
+import { ClassDisplayPipe } from '../../../pipes/class-display.pipe';
 
 /**
  * Party Vitals Board — one row per campaign member with HP bar, AC, passive
@@ -12,7 +13,7 @@ import { DecimalPipe } from '@angular/common';
     templateUrl: './party-board.component.html',
     styleUrls: ['./party-board.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DecimalPipe]
+    imports: [DecimalPipe, ClassDisplayPipe]
 })
 export class PartyBoardComponent {
   readonly members = input<PC[]>([]);

@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
+import { ContentSource, spellSource } from '../models/content-source';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -485,17 +486,20 @@ export class DndResourcesService {
   // ── Spell methods — loaded lazily from asset, cached for the session ────────
 
   /**
-   * The full 2024 spell list: 339 SRD 5.2 spells plus the 52 remaining 2024 PHB
-   * spells from the supplement file (SRD entries first). Fetched once on first
-   * call; cached via shareReplay.
+   * The full spell list: 339 SRD 5.2 spells, the 52 remaining 2024 PHB spells
+   * from the supplement file, then the World of Warcraft module's spells (in that
+   * order). WoW entries carry `source: 'World of Warcraft'` and `classes: []`, so
+   * class-filtered pickers never offer them. Fetched once on first call; cached
+   * via shareReplay.
    */
   getSpells(): Observable<DndSpell[]> {
     if (!this.spells$) {
       this.spells$ = forkJoin([
         this.http.get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json'),
         this.http.get<DndSpell[]>('/assets/data/spells/phb-2024-supplement.json'),
+        this.http.get<DndSpell[]>('/assets/data/spells/wow-spells.json'),
       ]).pipe(
-        map(([srd, supplement]) => [...srd, ...supplement]),
+        map(([srd, supplement, wow]) => [...srd, ...supplement, ...wow]),
         retry(1),
         // Don't let a transient failure (e.g. a dev-server blip) poison the
         // cache — drop it so the next request re-fetches instead of replaying
@@ -505,6 +509,11 @@ export class DndResourcesService {
       );
     }
     return this.spells$;
+  }
+
+  /** A spell's content source — absent means 'Base Game'. */
+  spellSource(spell: DndSpell): ContentSource {
+    return spellSource(spell);
   }
 
   /** Short description for an Origin feat, or empty string if unknown. */

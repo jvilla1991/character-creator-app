@@ -1,0 +1,11 @@
+<fieldset class="source-filter">
+  <legend class="source-filter-legend">Content sources</legend>
+  @for (source of sources; track source) {
+    <label class="source-filter-option" [class.off]="!selection()[source]">
+      <input type="checkbox"
+        [checked]="selection()[source]"
+        (change)="toggle.emit(source)">
+      {{ source }}
+    </label>
+  }
+</fieldset>

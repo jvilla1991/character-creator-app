@@ -32,7 +32,7 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
           <select id="session-character" [(ngModel)]="selectedPcId">
             @for (pc of eligiblePcs; track pc) {
               <option [ngValue]="pc.id">
-                {{ pc.name }} — {{ pc.race }} {{ pc.clazz }}
+                {{ pc.name }} — {{ pc.race }} {{ pc | classDisplay }}
               </option>
             }
           </select>

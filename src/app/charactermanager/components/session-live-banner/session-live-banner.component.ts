@@ -10,6 +10,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
+import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 
 interface LiveSession {
   session: SessionState;
@@ -28,7 +29,7 @@ interface LiveSession {
     templateUrl: './session-live-banner.component.html',
     styleUrls: ['./session-live-banner.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FormsModule]
+    imports: [ModalComponent, FormsModule, ClassDisplayPipe]
 })
 export class SessionLiveBannerComponent implements OnInit {
   // Signals: all four are written from the discovery poll / join HTTP callbacks,

@@ -223,10 +223,15 @@ describe('DndResourcesService', () => {
       { name: 'Witch Bolt', level: 1, school: 'evocation', actionType: 'action', classes: ['sorcerer', 'warlock', 'wizard'], concentration: true, ritual: false, range: '60 feet', components: ['v','s','m'], duration: 'up to 1 minute', description: '', material: 'a twig struck by lightning' },
     ];
 
-    /** Flushes both spell files getSpells() fetches (SRD + 2024 PHB supplement). */
-    function flushSpellFiles(supplement: DndSpell[] = mockSupplement): void {
+    const mockWow: DndSpell[] = [
+      { name: 'Death Grip', level: 1, school: 'necromancy', actionType: 'action', classes: [], subclasses: ['Oath of the Ebon Blade'], source: 'World of Warcraft', concentration: false, ritual: false, range: 'TBD', components: ['v','s'], duration: 'TBD', description: 'TBD' },
+    ];
+
+    /** Flushes the three spell files getSpells() fetches (SRD + 2024 PHB supplement + WoW). */
+    function flushSpellFiles(supplement: DndSpell[] = mockSupplement, wow: DndSpell[] = mockWow): void {
       httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json').flush(mockSpells);
       httpMock.expectOne('/assets/data/spells/phb-2024-supplement.json').flush(supplement);
+      httpMock.expectOne('/assets/data/spells/wow-spells.json').flush(wow);
     }
 
     it('returns only spells for the given class', (done) => {
@@ -242,7 +247,26 @@ describe('DndResourcesService', () => {
     it('merges the PHB supplement after the SRD spells', (done) => {
       service.getSpells().subscribe(spells => {
         expect(spells.map(s => s.name))
-          .toEqual(['Fireball', 'Healing Word', 'Eldritch Blast', 'Witch Bolt']);
+          .toEqual(['Fireball', 'Healing Word', 'Eldritch Blast', 'Witch Bolt', 'Death Grip']);
+        done();
+      });
+
+      flushSpellFiles();
+    });
+
+    it('never offers World of Warcraft stubs to a class list (classes: [])', (done) => {
+      service.getSpellsForClass('paladin').subscribe(spells => {
+        expect(spells.map(s => s.name)).not.toContain('Death Grip');
+        done();
+      });
+
+      flushSpellFiles();
+    });
+
+    it('reports a spell source, defaulting to Base Game', (done) => {
+      service.getSpells().subscribe(spells => {
+        expect(spells.map(s => service.spellSource(s)))
+          .toEqual(['Base Game', 'Base Game', 'Base Game', 'Base Game', 'World of Warcraft']);
         done();
       });
 

@@ -1,3 +1,5 @@
+import { Rune } from './hero-class';
+
 /** A spell as stored on a character — lean subset of DndSpell plus enrichment fields */
 export interface PcSpell {
   lvl: number;
@@ -74,6 +76,8 @@ export interface PC {
   campaignId?: number | string | null;
   race?: string;
   subclass?: string;
+  // Death Knight (Oath of the Ebon Blade) rune specialization; null for everyone else.
+  rune?: Rune | null;
   background?: string;
   alignment?: string;
   portraitInitials?: string;
