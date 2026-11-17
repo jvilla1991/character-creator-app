@@ -298,13 +298,17 @@
     </div>
   }
 
-  @if (activeTab === 'renown' || activeTab === 'followers') {
+  @if (activeTab === 'renown') {
+    <div class="sheet-tab-panel"><app-renown-panel [pc]="pc" [canManage]="editable"></app-renown-panel></div>
+  }
+
+  @if (activeTab === 'followers') {
     <section class="sheet-tab-panel panel" role="tabpanel"
-      [attr.aria-label]="activeTab === 'renown' ? 'Renown' : 'Followers'">
+      aria-label="Followers">
       <div class="panel-header">
-        <span class="panel-title">{{ activeTab === 'renown' ? 'Renown' : 'Followers' }}</span>
+        <span class="panel-title">Followers</span>
       </div>
-      <p>{{ activeTab === 'renown' ? 'Renown' : 'Followers' }} will be available here in a future update.</p>
+      <p>Followers will be available here in a future update.</p>
     </section>
   }
 
