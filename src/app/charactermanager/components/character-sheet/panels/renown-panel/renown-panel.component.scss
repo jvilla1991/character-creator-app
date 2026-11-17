@@ -156,6 +156,10 @@
   transition: width .2s;
 }
 
+/* Below Neutral the meter fills from the right, so losing renown visibly
+   pushes the fill leftward, toward the worse end of the scale. */
+.fill.from-right { inset: 0 0 0 auto; }
+
 .adjustments {
   display: flex;
   gap: 6px;

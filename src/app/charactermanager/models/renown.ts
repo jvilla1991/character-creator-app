@@ -63,10 +63,20 @@ export const RENOWN_THRESHOLDS: RenownThreshold[] = RENOWN_MILESTONES
     return { value, percent: (edge - RENOWN_SCALE.min) / SCALE_SCORES * 100, minor: Math.abs(value) === 10 };
   });
 
-/** Fill within the current standing: 0% at its lowest score, 100% at its
- *  highest. Measuring to the highest score (not the next standing's floor)
- *  puts a standing's middle score at exactly half, e.g. Neutral 0 → 50%. */
+/** True for the standings below Neutral (Unfriendly, Hostile, Hated), whose
+ *  meters fill from the right: losing renown pushes the fill leftward. */
+export function renownFillsFromRight(score: number): boolean {
+  return renownStanding(score).max < 0;
+}
+
+/** Fill within the current standing, measured away from Neutral: 0% on the
+ *  score where you enter the standing, 100% on its far end. Above Neutral
+ *  that is lowest → highest; below Neutral it runs the other way (−3 is the
+ *  start of Unfriendly, −9 its end), drawn from the right by the panel.
+ *  Neutral itself runs −2 → +2, so 0 sits at exactly half. */
 export function renownProgress(score: number): number {
   const tier = renownStanding(score);
-  return Math.max(0, Math.min(100, (score - tier.min) / (tier.max - tier.min) * 100));
+  const span = tier.max - tier.min;
+  const into = tier.max < 0 ? tier.max - score : score - tier.min;
+  return Math.max(0, Math.min(100, into / span * 100));
 }
