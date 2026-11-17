@@ -1,3 +1,18 @@
+<!-- An open follower takes over the whole sheet: the same component, nested in
+follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
+@if (openFollowerPc(); as followerPc) {
+  <app-character-sheet
+    [pc]="followerPc"
+    [followerMode]="true"
+    [followerOwnerName]="pc.name"
+    [editable]="editable"
+    [showActions]="false"
+    [inventoryEditable]="showActions || inventoryEditable"
+    [strictComponents]="strictComponents"
+    (followerChanged)="onFollowerChanged($event)"
+    (backRequested)="closeFollower()">
+  </app-character-sheet>
+} @else {
 <div class="fade-in">
 
   <!-- ═══════════════════════════════════════════════
@@ -12,7 +27,11 @@
 
     <!-- Identity column -->
     <div class="sheet-id">
-      <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
+      @if (followerMode) {
+        <div class="eyebrow">follower of {{ followerOwnerName }}</div>
+      } @else {
+        <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
+      }
 
       <!-- Editable hero name -->
       @if (editingName) {
@@ -34,9 +53,14 @@
       }
 
       <div class="sheet-subtitle">
-        {{ pc.race }}
-        <span class="dot">✦</span>
-        {{ pc.clazz }} <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
+        @if (pc.race) {
+          {{ pc.race }}
+          <span class="dot">✦</span>
+        }
+        {{ pc.clazz }}
+        @if (pc.subclass || !followerMode) {
+          <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
+        }
         <span class="dot">✦</span>
         Level
         <app-editable-number
@@ -65,7 +89,9 @@
         }
       </div>
 
-      <!-- XP progress through the current level, with the XP total beside it -->
+      <!-- XP progress through the current level, with the XP total beside it.
+      Followers don't earn XP, so their sheet has no bar. -->
+      @if (!followerMode) {
       <div class="xp-row">
         <div
           class="xp-track"
@@ -93,10 +119,24 @@
           / {{ xpForNextLevel }}
         } XP</span>
       </div>
+      }
 
       <!-- Heroic Inspiration lives with Exhaustion in the Conditions panel — both
       are DM-driven pip trackers, so they share one place and one gesture. -->
     </div>
+
+    <!-- Follower sheet: the one action is the way back to its character. -->
+    @if (followerMode) {
+      <div class="sheet-actions">
+        <button class="btn" (click)="backRequested.emit()">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
+            style="margin-right: 6px; vertical-align: -2px;" aria-hidden="true">
+            <path d="M10 3L5 8l5 5"/>
+          </svg>
+          Back to Character
+        </button>
+      </div>
+    }
 
     <!-- Action buttons -->
     @if (showActions) {
@@ -173,14 +213,17 @@
     [attr.aria-selected]="activeTab === 'spells'" (click)="setTab('spells')">Spells</button>
     <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'inventory'"
     [attr.aria-selected]="activeTab === 'inventory'" (click)="setTab('inventory')">Inventory</button>
-    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'renown'"
-      [attr.aria-selected]="activeTab === 'renown'" (click)="setTab('renown')">Renown</button>
-    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'followers'"
-      [attr.aria-selected]="activeTab === 'followers'" (click)="setTab('followers')">Followers</button>
-    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
-    [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
-    <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
-    [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
+    <!-- A follower's sheet stops here: no Renown, Followers, Notes or Log of its own. -->
+    @if (!followerMode) {
+      <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'renown'"
+        [attr.aria-selected]="activeTab === 'renown'" (click)="setTab('renown')">Renown</button>
+      <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'followers'"
+        [attr.aria-selected]="activeTab === 'followers'" (click)="setTab('followers')">Followers</button>
+      <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
+      [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
+      <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
+      [attr.aria-selected]="activeTab === 'log'" (click)="setTab('log')">Log</button>
+    }
   </nav>
 
   <!-- Vitals (HP/AC/…) belong to the main Sheet tab only — they were following
@@ -281,7 +324,7 @@
           (pcChange)="onPcChange($event)">
         </app-supplies-panel>
       }
-      @if (!slotInventory) {
+      @if (!slotInventory && !followerMode) {
         <app-equipment-panel [pc]="pc"></app-equipment-panel>
       }
       <app-inventory-panel
@@ -302,14 +345,16 @@
     <div class="sheet-tab-panel"><app-renown-panel [pc]="pc" [canManage]="editable"></app-renown-panel></div>
   }
 
+  <!-- FOLLOWERS TAB: companions the DM granted. Everyone sees the list; only
+  the DM's cross-link view (editable) can grant or dismiss. -->
   @if (activeTab === 'followers') {
-    <section class="sheet-tab-panel panel" role="tabpanel"
-      aria-label="Followers">
-      <div class="panel-header">
-        <span class="panel-title">Followers</span>
-      </div>
-      <p>Followers will be available here in a future update.</p>
-    </section>
+    <div class="sheet-tab-panel">
+      <app-followers-panel
+        [pc]="pc"
+        [canGrant]="editable"
+        (followerOpened)="onFollowerOpened($event)">
+      </app-followers-panel>
+    </div>
   }
 
   <!-- NOTES TAB -->
@@ -343,4 +388,5 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
       (close)="closeDmEdit()">
     </app-dm-edit-modal>
   </div>
+}
 }
