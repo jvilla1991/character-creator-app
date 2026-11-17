@@ -37,14 +37,22 @@
   outline-offset: 3px;
 }
 
-/* Clears the toast (centred, 16px up) and sits in the thumb zone on phones. */
+/* Sits in the thumb zone on phones. --pinned-bottom (styles.css) lifts it
+   clear of bottom-pinned chrome: on the character sheet the tab bar is pinned
+   there, and the launcher used to cover its fourth and fifth tabs. The toast
+   rises above the launcher in turn (toast.component.scss). */
 @media (max-width: 560px) {
   .dice-fab {
     right: 14px;
-    bottom: 14px;
+    bottom: calc(14px + var(--pinned-bottom));
     width: 52px;
     height: 52px;
   }
+}
+
+/* 561–820px: the tab bar is pinned there too. */
+@media (min-width: 561px) and (max-width: 820px) {
+  .dice-fab { bottom: calc(24px + var(--pinned-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
