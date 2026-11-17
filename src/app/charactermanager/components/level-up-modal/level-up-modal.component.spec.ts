@@ -25,6 +25,7 @@ function makePreview(overrides: Partial<LevelUpPreview> = {}): LevelUpPreview {
     subclassDue: false, subclassOptions: [],
     asiDue: false, featOptions: [],
     featuresGained: [],
+    fightingStyleDue: false, fightingStyleOptions: [],
     currentCantripsKnown: 0, newCantripsKnown: 0,
     currentSpellsKnown: 0, newSpellsKnown: 0,
     ...overrides,
@@ -535,6 +536,111 @@ describe('LevelUpModalComponent', () => {
       component.selectedSpecialization = 'Vengeance';
       component.confirm();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+    });
+  });
+
+  // --- Level-2 Fighting Style and the Void Warrior cantrips ---
+
+  describe('Fighting Style (level 2)', () => {
+    const cantrip = (name: string, classes = ['warlock']) => ({
+      name, level: 0, school: 'necromancy', classes, actionType: 'action', concentration: false,
+      ritual: false, range: '120 feet', components: ['v', 's'], duration: 'Instantaneous', description: '',
+    }) as any;
+    const styles = ['Archery', 'Defense', 'Two-Weapon Fighting', 'Void Warrior'];
+
+    beforeEach(() => {
+      component.pc = makePC({
+        clazz: 'Ranger', subclass: 'Demon Hunter', specialization: 'Havoc', level: 1,
+        spells: [{ lvl: 0, name: 'Eldritch Blast', school: 'Evocation', time: '1 action', prepared: true }],
+      });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 1, newLevel: 2, fightingStyleDue: true, fightingStyleOptions: styles,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 2 })));
+      dndResources.getSpellsForClass.and.returnValue(of([
+        cantrip('Chill Touch'), cantrip('Mind Sliver'), cantrip('Eldritch Blast'), cantrip('Toll the Dead'),
+        { ...cantrip('Hex'), level: 1 },
+      ]));
+      component.ngOnInit();
+    });
+
+    it('shows the picker with the server options when a fighting style is due', () => {
+      expect(component.needsFightingStyle).toBeTrue();
+      expect(component.fightingStyleOptions).toEqual(styles);
+    });
+
+    it('hides the picker when no fighting style is due', () => {
+      pcService.levelUpPreview.and.returnValue(of(makePreview({ fightingStyleOptions: styles })));
+      component.ngOnInit();
+      expect(component.needsFightingStyle).toBeFalse();
+    });
+
+    it('is optional: confirming without a style sends no fightingStyle', () => {
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+    });
+
+    it('sends a plain fighting style on its own', () => {
+      component.selectFightingStyle('Archery');
+      expect(component.isVoidWarrior).toBeFalse();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { fightingStyle: 'Archery' });
+    });
+
+    it('clicking the chosen style again clears it', () => {
+      component.selectFightingStyle('Defense');
+      component.selectFightingStyle('Defense');
+      expect(component.selectedFightingStyle).toBe('');
+    });
+
+    it('Void Warrior offers unknown Warlock cantrips only and requires exactly two', () => {
+      component.selectFightingStyle('Void Warrior');
+      expect(component.isVoidWarrior).toBeTrue();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('warlock');
+      expect(component.warlockCantrips.map(s => s.name)).toEqual(['Chill Touch', 'Mind Sliver', 'Toll the Dead']);
+      expect(component.canConfirm).toBeFalse();
+      component.voidWarriorCantrips = [component.warlockCantrips[0]];
+      expect(component.canConfirm).toBeFalse();
+      component.confirm();
+      expect(pcService.levelUp).not.toHaveBeenCalled();
+      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      expect(component.canConfirm).toBeTrue();
+    });
+
+    it('sends Void Warrior with its two cantrips in newSpells', () => {
+      component.selectFightingStyle('Void Warrior');
+      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        fightingStyle: 'Void Warrior',
+        newSpells: [
+          jasmine.objectContaining({ lvl: 0, name: 'Chill Touch' }),
+          jasmine.objectContaining({ lvl: 0, name: 'Mind Sliver' }),
+        ],
+      });
+    });
+
+    it('drops the Void Warrior cantrips when another style is picked', () => {
+      component.selectFightingStyle('Void Warrior');
+      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      component.selectFightingStyle('Archery');
+      expect(component.voidWarriorCantrips).toEqual([]);
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { fightingStyle: 'Archery' });
+    });
+
+    it('sends the fighting style through the DM path too', () => {
+      const dm = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
+      dm.pc = component.pc;
+      dm.asDm = true;
+      pcService.levelUpPreviewAsDm.and.returnValue(of(makePreview({ fightingStyleDue: true, fightingStyleOptions: styles })));
+      pcService.levelUpAsDm.and.returnValue(of(makePC({ level: 2 })));
+      dm.ngOnInit();
+      dm.selectFightingStyle('Defense');
+      dm.confirm();
+      expect(pcService.levelUpAsDm).toHaveBeenCalledWith(7, { fightingStyle: 'Defense' });
     });
   });
 });

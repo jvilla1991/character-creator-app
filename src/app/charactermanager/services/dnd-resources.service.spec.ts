@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS } from './dnd-resources.service';
+import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS, ALL_LANGUAGE_NAMES, LANGUAGE_OPTIONS, languageNames } from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -95,6 +95,34 @@ describe('DndResourcesService', () => {
   });
 
   // ── Origin feat names ───────────────────────────────────────────────────────
+
+  describe('Void Warrior fighting style', () => {
+    it('has a description mentioning Warlock cantrips and Wisdom', () => {
+      const desc = service.getFeatDescription('Void Warrior');
+      expect(desc).toContain('Warlock cantrips');
+      expect(desc).toContain('Wisdom');
+    });
+  });
+
+  describe('languages', () => {
+    it('tags the World of Warcraft languages with their source and defaults the rest to Base Game', () => {
+      expect(LANGUAGE_OPTIONS.filter(l => l.source === 'World of Warcraft').map(l => l.name))
+        .toEqual(['Eredun', 'Nathrezim']);
+      expect(LANGUAGE_OPTIONS.find(l => l.name === 'Elvish')?.source).toBeUndefined();
+    });
+
+    it('filters language names by content source', () => {
+      const all = languageNames({ 'Base Game': true, 'World of Warcraft': true });
+      expect(all).toContain('Eredun');
+      expect(all).toContain('Elvish');
+      const baseOnly = languageNames({ 'Base Game': true, 'World of Warcraft': false });
+      expect(baseOnly).not.toContain('Eredun');
+      expect(baseOnly).not.toContain('Nathrezim');
+      expect(baseOnly).toContain('Elvish');
+      expect(languageNames({ 'Base Game': false, 'World of Warcraft': true })).toEqual(['Eredun', 'Nathrezim']);
+      expect(ALL_LANGUAGE_NAMES).toEqual(all);
+    });
+  });
 
   describe('getFeatNames', () => {
     it('returns names sorted alphabetically', () => {

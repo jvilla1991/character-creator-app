@@ -973,4 +973,26 @@ describe('CreateCharacterModalComponent — logic', () => {
       localStorage.removeItem(key);
     });
   });
+
+  describe('World of Warcraft languages', () => {
+    it('offers Eredun and Nathrezim only while World of Warcraft is on', () => {
+      expect(component.standardLanguages).toContain('Eredun');
+      expect(component.standardLanguages).toContain('Nathrezim');
+      component.toggleContentSource('World of Warcraft');
+      expect(component.standardLanguages).not.toContain('Eredun');
+      expect(component.standardLanguages).not.toContain('Nathrezim');
+      expect(component.standardLanguages).toContain('Elvish');
+    });
+
+    it('keeps an already-picked WoW language offered when the filter hides it', () => {
+      component.languageChoice = 'Eredun';
+      component.toggleContentSource('World of Warcraft');
+      expect(component.standardLanguages).toContain('Eredun');
+      expect(component.standardLanguages).not.toContain('Nathrezim');
+    });
+
+    it('returns the same array between checks while nothing changes', () => {
+      expect(component.standardLanguages).toBe(component.standardLanguages);
+    });
+  });
 });

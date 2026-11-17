@@ -157,6 +157,41 @@
           }
         </div>
       }
+      <!-- Level-2 Fighting Style (optional); Void Warrior also needs two Warlock cantrips -->
+      @if (needsFightingStyle) {
+        <div class="subclass-pick">
+          <div class="subclass-label">Choose a Fighting Style <span class="optional-note">(optional)</span></div>
+          @for (option of fightingStyleOptions; track option) {
+            <label class="subclass-option"
+              [class.is-selected]="selectedFightingStyle === option">
+              <input type="radio" name="fighting-style" [value]="option"
+                [checked]="selectedFightingStyle === option"
+                (click)="selectFightingStyle(option)">
+              <span class="feat-text">
+                <span class="feat-name">{{ option }}</span>
+                <span class="feat-desc">{{ featDescription(option) }}</span>
+              </span>
+            </label>
+          }
+        </div>
+        @if (isVoidWarrior) {
+          <div class="spell-pick">
+            <div class="spell-label">
+              Void Warrior Cantrips
+              <span class="spell-counts">Warlock cantrips {{ voidWarriorCantrips.length }}/2</span>
+            </div>
+            <div class="void-warrior-hint">Pick two Warlock cantrips — Chill Touch and Mind Sliver are a strong pair.</div>
+            <app-spell-picker
+              [spells]="warlockCantrips"
+              [selected]="voidWarriorCantrips"
+              [cantripLimit]="2"
+              [spellLimit]="0"
+              [loading]="loadingWarlockCantrips"
+              (selectedChange)="voidWarriorCantrips = $event">
+            </app-spell-picker>
+          </div>
+        }
+      }
       <!-- Hero classes that respec (e.g. Death Knight runes): optionally swap specialization -->
       @if (canRespec && heroClass; as hero) {
         <div class="subclass-pick">

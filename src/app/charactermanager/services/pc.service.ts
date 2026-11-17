@@ -12,6 +12,8 @@ import {
   DEMO_PCS,
   DEMO_ACTIVITY_LOGS,
   demoFeatOptions,
+  demoFightingStyleDue,
+  demoFightingStyleOptions,
   demoProfBonus,
   demoLevelUpFields,
   demoSlotsFor,
@@ -397,6 +399,7 @@ export class PCService {
     if (choices?.specialization) body.specialization = choices.specialization;
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     if (choices?.feat) body.feat = choices.feat;
+    if (choices?.fightingStyle) body.fightingStyle = choices.fightingStyle;
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
     // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
     if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
@@ -439,6 +442,8 @@ export class PCService {
       featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
+      fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),
+      fightingStyleOptions: demoFightingStyleOptions(pc.clazz, pc.subclass, newLevel),
       currentCantripsKnown: demoCantripsKnown(pc.clazz, current),
       newCantripsKnown: demoCantripsKnown(pc.clazz, newLevel),
       currentSpellsKnown: demoPreparedSpells(pc.clazz, current),
@@ -488,6 +493,11 @@ export class PCService {
     if (choices?.feat) {
       features = [...(existing.features ?? []),
         { name: choices.feat, source: `Feat (Level ${newLevel})`, desc: '' }];
+    }
+    // A chosen level-2 Fighting Style is recorded among the features too.
+    if (choices?.fightingStyle) {
+      features = [...(features ?? []),
+        { name: choices.fightingStyle, source: `Fighting Style (Level ${newLevel})`, desc: '' }];
     }
     // Newly-learned spells are appended to the character's spell list.
     const spells = choices?.newSpells?.length

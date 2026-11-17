@@ -461,6 +461,17 @@ describe('PCService', () => {
       });
     });
 
+    it('forwards the fighting style and Void Warrior cantrips on level-up', () => {
+      const cantrips = [
+        { lvl: 0, name: 'Chill Touch', school: 'Necromancy', time: '1 action', prepared: true },
+        { lvl: 0, name: 'Mind Sliver', school: 'Enchantment', time: '1 action', prepared: true },
+      ];
+      service.levelUp(8, { fightingStyle: 'Void Warrior', newSpells: cantrips }).subscribe();
+      const req = httpMock.expectOne(`${service.pcUrl}8/level-up`);
+      expect(req.request.body).toEqual({ fightingStyle: 'Void Warrior', newSpells: cantrips });
+      req.flush({ id: 8, name: 'Shalassa', clazz: 'Ranger', level: 2 });
+    });
+
     it('sends a changed specialization on level-up', () => {
       service.levelUp(6, { specialization: 'Frost' }).subscribe();
       const req = httpMock.expectOne(`${service.pcUrl}6/level-up`);

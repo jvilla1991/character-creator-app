@@ -5,7 +5,7 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { PC, PcSpell } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
-import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, STANDARD_LANGUAGES } from '../../services/dnd-resources.service';
+import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, languageNames } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
@@ -223,7 +223,25 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // 2024 PHB: every character knows Common plus TWO chosen standard languages
   languageChoice = '';
   languageChoice2 = '';
-  readonly standardLanguages = STANDARD_LANGUAGES;
+  /**
+   * Languages offered for the background bonus, narrowed by the content-source
+   * filter (Eredun/Nathrezim are World of Warcraft). Like a hidden class, an
+   * already-picked language stays offered so the filter never discards a choice.
+   */
+  get standardLanguages(): string[] {
+    // Memoized on its inputs: a fresh array per change-detection pass would trip
+    // dev-mode's ExpressionChanged check on the [standardLanguages] binding.
+    const key = `${JSON.stringify(this.contentSources)}|${this.languageChoice}|${this.languageChoice2}`;
+    if (key !== this.languagesKey) {
+      const visible = languageNames(this.contentSources);
+      const kept = [this.languageChoice, this.languageChoice2].filter(l => !!l && !visible.includes(l));
+      this.languagesCache = [...visible, ...kept];
+      this.languagesKey = key;
+    }
+    return this.languagesCache;
+  }
+  private languagesKey = '';
+  private languagesCache: string[] = [];
 
   get classSkillConfig(): { choose: number; from: string[] } {
     return this.dndResources.getClassSkillChoices(this.clazz);

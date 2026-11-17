@@ -456,6 +456,22 @@ export const DEMO_FIGHTING_STYLE_FEATS = [
   'Unarmed Fighting',
 ];
 
+// DEMO-ONLY mirror of the server level-2 Fighting Style choice: due at Paladin 2 and
+// Ranger 2; the 10 PHB styles, plus Void Warrior for a Demon Hunter ranger.
+export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
+  const key = (clazz ?? '').trim().toLowerCase();
+  return newLevel === 2 && (key === 'paladin' || key === 'ranger');
+}
+
+export function demoFightingStyleOptions(clazz: string, subclass: string | undefined, newLevel: number): string[] {
+  if (!demoFightingStyleDue(clazz, newLevel)) return [];
+  const options = [...DEMO_FIGHTING_STYLE_FEATS];
+  if ((clazz ?? '').trim().toLowerCase() === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
+    options.push('Void Warrior');
+  }
+  return options.sort((a, b) => a.localeCompare(b));
+}
+
 // DEMO-ONLY mirror of the server Epic Boon feat list (level 19+).
 export const DEMO_EPIC_BOONS = [
   'Boon of Combat Prowess', 'Boon of Dimensional Travel', 'Boon of Energy Resistance',

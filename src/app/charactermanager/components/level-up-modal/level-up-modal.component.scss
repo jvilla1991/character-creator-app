@@ -343,3 +343,18 @@
   border-radius: 7px;
   font-size: 0.9rem;
 }
+
+// Level-2 Fighting Style: "(optional)" tag and the Void Warrior cantrip hint.
+.optional-note {
+  font-size: 0.72rem;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-dim);
+}
+
+.void-warrior-hint {
+  margin: 2px 0 6px;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
