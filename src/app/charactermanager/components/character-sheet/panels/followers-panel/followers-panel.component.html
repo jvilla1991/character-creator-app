@@ -1,0 +1,80 @@
+<section class="panel" role="tabpanel" aria-label="Followers">
+  <div class="panel-header">
+    <span class="panel-title">Followers</span>
+    @if (canGrant && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrantForm()">+ Grant Follower</button>
+    }
+  </div>
+
+  <!-- DM grant form: a name plus the follower's stat block as JSON. -->
+  @if (grantFormOpen) {
+    <div class="grant-form">
+      <div class="field">
+        <label for="follower-grant-name">Name</label>
+        <input id="follower-grant-name" type="text" [(ngModel)]="nameDraft" maxlength="100"
+          placeholder="e.g. Brannoc the Guard" autofocus>
+      </div>
+      <div class="field">
+        <div class="follower-json-label">
+          <label for="follower-grant-json">Stat block (JSON)</label>
+          <button type="button" class="btn sm" (click)="insertExample()">Insert example</button>
+        </div>
+        <textarea id="follower-grant-json" class="follower-json" rows="12" spellcheck="false"
+          [(ngModel)]="statBlockDraft"
+          placeholder='{ "clazz": "Guard", "level": 2, "hp": 16, "ac": 16, "stats": { "STR": 14 } }'
+          [attr.aria-invalid]="formError() ? 'true' : null"
+          [attr.aria-describedby]="formError() ? 'follower-grant-error' : 'follower-grant-help'"></textarea>
+        <p id="follower-grant-help" class="follower-help">
+          Every field is optional — anything you leave out gets a sensible default. The sheet reads
+          <code>hp</code>, <code>ac</code>, <code>speed</code>, <code>stats</code>, <code>saves</code>,
+          <code>skills</code>, <code>features</code>, <code>spells</code>, <code>spellSlots</code>,
+          <code>inventory</code> and <code>coins</code>.
+        </p>
+        @if (formError(); as error) {
+          <p id="follower-grant-error" class="follower-error" role="alert">{{ error }}</p>
+        }
+      </div>
+      <div class="grant-form-actions">
+        <button class="btn primary sm" [disabled]="!nameDraft.trim() || !statBlockDraft.trim() || saving()"
+          (click)="submitGrant()">Grant</button>
+        <button class="btn sm" (click)="closeGrantForm()">Cancel</button>
+      </div>
+    </div>
+  }
+
+  @if (followers().length) {
+    <ul class="follower-list">
+      @for (f of followers(); track f.id) {
+        <li class="follower-row">
+          <button type="button" class="follower-open" (click)="followerOpened.emit(f)"
+            [attr.aria-label]="'Open ' + f.name + '\'s sheet'">
+            <span class="portrait" [style.background]="tintFor(f)" aria-hidden="true">{{ initialsFor(f) }}</span>
+            <span class="follower-id">
+              <span class="follower-name">{{ f.name }}</span>
+              <span class="follower-summary">{{ summaryFor(f) }}</span>
+            </span>
+            <span class="follower-stats numeric">
+              HP {{ f.statBlock.hp?.cur ?? '—' }}/{{ f.statBlock.hp?.max ?? '—' }} · AC {{ f.statBlock.ac ?? '—' }}
+            </span>
+          </button>
+          @if (canGrant) {
+            @if (confirmingDismissId() === f.id) {
+              <button class="btn danger sm" [disabled]="saving()" (click)="confirmDismiss(f)">Dismiss for good</button>
+              <button class="btn sm" (click)="cancelDismiss()">Keep</button>
+            } @else {
+              <button class="btn sm" (click)="askDismiss(f)" [attr.aria-label]="'Dismiss ' + f.name">Dismiss</button>
+            }
+          }
+        </li>
+      }
+    </ul>
+  } @else if (!loading()) {
+    <p class="follower-empty">
+      @if (canGrant) {
+        No followers yet. Grant one to give this character a companion with its own sheet.
+      } @else {
+        No followers yet. Your DM can grant you one.
+      }
+    </p>
+  }
+</section>

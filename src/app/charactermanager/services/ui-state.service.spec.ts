@@ -142,4 +142,40 @@ describe('UiStateService', () => {
       expect(service.activeSessionId()).toBeNull();
     });
   });
+
+  // A follower's sheet replaces its character's sheet in place; like the other
+  // in-app views it is mirrored in history so Back returns to the character.
+  describe('follower sheet', () => {
+    it('opens and closes on the in-app "Back to Character" path', () => {
+      const service = create();
+      expect(service.openFollowerId()).toBeNull();
+
+      service.openFollower(12);
+      expect(service.openFollowerId()).toBe(12);
+
+      service.closeFollower();
+      expect(service.openFollowerId()).toBeNull();
+    });
+
+    it('returning to the campaign closes a follower opened from the member sheet', () => {
+      const service = create();
+      service.viewHeroAsDm();
+      service.openFollower(12);
+
+      service.returnToCampaign();
+
+      expect(service.openFollowerId()).toBeNull();
+      expect(service.dmReturn()).toBeFalse();
+      expect(service.isDm()).toBeTrue();
+    });
+
+    it('is torn down with the other overlays on sign-out', () => {
+      const service = create();
+      service.openFollower(12);
+
+      service.resetOverlays();
+
+      expect(service.openFollowerId()).toBeNull();
+    });
+  });
 });

@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
+import { Follower, followerToPc, pcToStatBlock } from '../../models/follower';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
+import { FollowerService } from '../../services/follower.service';
+import { UiStateService } from '../../services/ui-state.service';
 import { tintFor } from '../../utils/character-math';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 // NOTE: the type import is kept separate from the component import — sharing
@@ -30,13 +33,14 @@ import { EquipmentPanelComponent } from './panels/equipment-panel/equipment-pane
 import { InventoryPanelComponent } from './panels/inventory-panel/inventory-panel.component';
 import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
 import { PcLogComponent } from './panels/pc-log/pc-log.component';
+import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, DmEditModalComponent]
+    imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;
@@ -79,6 +83,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** The party's current location (campaign-level), shown at the top of the
    *  sheet. Set by the DM in Session Mode; null until then. */
   @Input() location: CampaignLocation | null = null;
+  /** True when this sheet shows a FOLLOWER rather than a character: only the
+   *  Sheet/Spells/Inventory tabs exist, the header offers "Back to Character"
+   *  in place of the character actions, and every save is emitted through
+   *  `followerChanged` (the owning character's sheet persists it) instead of
+   *  going to the PC endpoints — a follower is not a PC row. */
+  @Input() followerMode = false;
+  /** Follower mode only: the name of the character this follower belongs to. */
+  @Input() followerOwnerName = '';
   readonly deleteRequested = output<void>();
   readonly rollRequested = output<void>();
   readonly levelUpRequested = output<void>();
@@ -96,6 +108,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** In-session hit-die spend (short rest); bubbled from the vitals strip so the
    *  host can call the server-authoritative spend endpoint. */
   readonly spendHitDieRequested = output<void>();
+  /** Follower mode only: the follower's sheet changed; carries the full updated sheet. */
+  readonly followerChanged = output<PC>();
+  /** Follower mode only: "Back to Character" was clicked. */
+  readonly backRequested = output<void>();
 
   /** Whether this PC belongs to a campaign (gates the Connect button). */
   get inCampaign(): boolean {
@@ -169,6 +185,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     private pcService: PCService,
     private grantService: GrantService,
     private sessionService: SessionService,
+    private followerService: FollowerService,
+    private uiState: UiStateService,
   ) {}
 
   /**
@@ -179,11 +197,16 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * flag into --bottom-bar-height, and the button lifts itself clear.
    */
   ngOnInit(): void {
-    document.body.classList.add('has-bottom-tab-bar');
+    // A follower sheet is nested inside its character's sheet, which already
+    // owns the flag — it must not clear it when the player goes back.
+    if (!this.followerMode) document.body.classList.add('has-bottom-tab-bar');
   }
 
   ngOnDestroy(): void {
+    if (this.followerMode) return;
     document.body.classList.remove('has-bottom-tab-bar');
+    // Leaving the sheet (role switch, session close, …) abandons the follower view.
+    this.closeFollower();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -193,7 +216,66 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       this.nameDraft = this.pc?.name ?? '';
       this.editingLevel = false;
       this.levelDraft = this.pc?.level ?? 1;
+      // A different character took over this sheet — its predecessor's
+      // follower must not stay open on top of it. (A follower sheet's own
+      // `pc` changes on every save and must NOT close anything.)
+      const previous = changes['pc'].previousValue as PC | undefined;
+      if (!this.followerMode && previous && previous.id !== this.pc?.id) {
+        this.closeFollower();
+      }
     }
+  }
+
+  // ── Followers ──────────────────────────────────────────────────────────────
+  // Clicking a follower on the Followers tab swaps this sheet for a nested copy
+  // of itself in follower mode. Which follower is open is mirrored in UiState so
+  // the browser Back button returns to the character; the follower's data lives
+  // here, since this sheet is what saves it.
+
+  private readonly openedFollower = signal<Follower | null>(null);
+
+  /** The follower whose sheet is showing — null once it is closed in-app or via Back. */
+  readonly openFollower = computed(() => {
+    const follower = this.openedFollower();
+    return follower && this.uiState.openFollowerId() === follower.id ? follower : null;
+  });
+
+  /** The open follower as a PC, for the nested follower-mode sheet. */
+  readonly openFollowerPc = computed(() => {
+    const follower = this.openFollower();
+    return follower ? followerToPc(follower, this.pc) : null;
+  });
+
+  onFollowerOpened(follower: Follower): void {
+    this.openedFollower.set(follower);
+    this.uiState.openFollower(follower.id);
+  }
+
+  closeFollower(): void {
+    const follower = this.openedFollower();
+    if (!follower) return;
+    this.openedFollower.set(null);
+    // Only unwind the history entry if it is still ours (Back may have consumed it).
+    if (this.uiState.openFollowerId() === follower.id) this.uiState.closeFollower();
+  }
+
+  /**
+   * The nested follower sheet saved something. Applied locally at once so the
+   * sheet stays responsive (its panels re-render from the new `pc`), then
+   * persisted; a failed save reverts to the last server-confirmed sheet.
+   */
+  onFollowerChanged(updated: PC): void {
+    const before = this.openedFollower();
+    if (!before) return;
+    const optimistic: Follower = { ...before, name: updated.name, statBlock: pcToStatBlock(updated) };
+    this.openedFollower.set(optimistic);
+    this.followerService.update(before.pcId, before.id, optimistic.name, optimistic.statBlock).subscribe({
+      error: err => {
+        console.error('Failed to save follower', err);
+        // Revert only if no newer edit has landed on top of this one.
+        if (this.openedFollower() === optimistic) this.openedFollower.set(before);
+      },
+    });
   }
 
   /**
@@ -207,6 +289,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * behavior unchanged.
    */
   private persist(updated: PC, description: string | null = null): void {
+    if (this.followerMode) {
+      // A follower has no activity log, so the DM's description has nowhere to go.
+      this.followerChanged.emit(updated);
+      return;
+    }
     const save$ = this.editable
       ? this.pcService.updatePCAsDm(updated, description)
       : this.pcService.updatePC(updated);
@@ -340,6 +427,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * endpoint, not part of a generic sheet save.
    */
   onInspirationChange(pips: number): void {
+    if (this.followerMode) {
+      // No server-owned meter for a follower — apply the same fill rule locally.
+      const value = Math.max(0, Math.min(5, pips));
+      this.persist(value >= 5
+        ? { ...this.pc, inspirationPips: 0, heroicInspiration: true }
+        : { ...this.pc, inspirationPips: value });
+      return;
+    }
     if (this.inspirationBusy()) return;
     this.inspirationBusy.set(true);
     this.pcService.setInspirationPips(this.pc.id, pips).subscribe({
@@ -353,6 +448,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /** Owner (or DM) spends Heroic Inspiration after using the reroll. */
   useInspiration(): void {
+    if (this.followerMode) {
+      this.persist({ ...this.pc, heroicInspiration: false });
+      return;
+    }
     if (this.inspirationBusy()) return;
     this.inspirationBusy.set(true);
     this.pcService.useInspiration(this.pc.id).subscribe({
@@ -416,70 +515,74 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   // the sheet's `pc` copy can be stale by the time the DM submits the form, and
   // PUTting it directly risks clobbering a concurrent player edit.
 
+  /**
+   * Apply a grant. A character goes through GrantService (above); a follower
+   * has no PC row to refetch, so the same pure mutation runs on the sheet's
+   * copy and is saved like any other follower edit.
+   */
+  private grant(mutate: (fresh: PC) => PC, what: string): void {
+    if (this.followerMode) {
+      this.followerChanged.emit(mutate(this.pc));
+      return;
+    }
+    this.grantService.grantToPc(this.pc.id, mutate)
+      .subscribe({ error: err => console.error('Failed to grant ' + what, err) });
+  }
+
   onFeatureGrant(f: { name: string; source: string; desc: string }): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }))
-      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+    this.grant(fresh => ({ ...fresh, features: [...(fresh.features ?? []), f] }), 'feature');
   }
 
   /** Same refetch-merge-save as onFeatureGrant, but the entry lands in the
    *  Other Features panel — tagged category 'other' here (the single place the
    *  tag is stamped) so the panels can split one features array cleanly. */
   onOtherFeatureGrant(f: { name: string; source: string; desc: string }): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => ({
-        ...fresh,
-        features: [...(fresh.features ?? []), { ...f, category: 'other' as const }],
-      }))
-      .subscribe({ error: err => console.error('Failed to grant feature', err) });
+    this.grant(fresh => ({
+      ...fresh,
+      features: [...(fresh.features ?? []), { ...f, category: 'other' as const }],
+    }), 'feature');
   }
 
   onSpellsGrant(granted: PcSpell[]): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => {
-        // Dedupe against the FRESH copy — the player may have learned one of these
-        // spells (e.g. via level-up) in the moments between the picker opening and
-        // the DM confirming the grant.
-        const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
-        const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
-        return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
-      })
-      .subscribe({ error: err => console.error('Failed to grant spells', err) });
+    this.grant(fresh => {
+      // Dedupe against the FRESH copy — the player may have learned one of these
+      // spells (e.g. via level-up) in the moments between the picker opening and
+      // the DM confirming the grant.
+      const known = new Set((fresh.spells ?? []).map(s => s.name.toLowerCase()));
+      const toAdd = granted.filter(s => !known.has(s.name.toLowerCase()));
+      return { ...fresh, spells: [...(fresh.spells ?? []), ...toAdd] };
+    }, 'spells');
   }
 
   onLanguageGrant(language: string): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => {
-        // Dedupe against the FRESH copy — the player may have gained the language
-        // between the form opening and the DM confirming the grant.
-        const known = new Set((fresh.languages ?? []).map(l => l.toLowerCase()));
-        if (known.has(language.toLowerCase())) return fresh;
-        return { ...fresh, languages: [...(fresh.languages ?? []), language] };
-      })
-      .subscribe({ error: err => console.error('Failed to grant language', err) });
+    this.grant(fresh => {
+      // Dedupe against the FRESH copy — the player may have gained the language
+      // between the form opening and the DM confirming the grant.
+      const known = new Set((fresh.languages ?? []).map(l => l.toLowerCase()));
+      if (known.has(language.toLowerCase())) return fresh;
+      return { ...fresh, languages: [...(fresh.languages ?? []), language] };
+    }, 'language');
   }
 
   onItemGrant(item: PcItem): void {
-    this.grantService
-      .grantToPc(this.pc.id, fresh => {
-        // Stack onto an existing catalog line (mirrors the backend purchase path);
-        // ad-hoc items have no catalogKey and always append. Granted items arrive
-        // unequipped, so there's no AC to recompute.
-        const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
-        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
-        if (line) {
-          line.qty = (line.qty ?? 0) + (item.qty ?? 1);
-          // Backfill the catalog bulk/weight onto a pre-slot-variant line that
-          // never got stamped — otherwise the stack keeps deriving its bulk
-          // from a weight band that can disagree with the official rating.
-          // Never overwrites an existing value (same rule as the conversion).
-          if (line.bulk == null && item.bulk != null) line.bulk = item.bulk;
-          if (line.weight == null && item.weight != null) line.weight = item.weight;
-        } else {
-          inventory.push(item);
-        }
-        return { ...fresh, inventory };
-      })
-      .subscribe({ error: err => console.error('Failed to grant item', err) });
+    this.grant(fresh => {
+      // Stack onto an existing catalog line (mirrors the backend purchase path);
+      // ad-hoc items have no catalogKey and always append. Granted items arrive
+      // unequipped, so there's no AC to recompute.
+      const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
+      const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+      if (line) {
+        line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+        // Backfill the catalog bulk/weight onto a pre-slot-variant line that
+        // never got stamped — otherwise the stack keeps deriving its bulk
+        // from a weight band that can disagree with the official rating.
+        // Never overwrites an existing value (same rule as the conversion).
+        if (line.bulk == null && item.bulk != null) line.bulk = item.bulk;
+        if (line.weight == null && item.weight != null) line.weight = item.weight;
+      } else {
+        inventory.push(item);
+      }
+      return { ...fresh, inventory };
+    }, 'item');
   }
 }

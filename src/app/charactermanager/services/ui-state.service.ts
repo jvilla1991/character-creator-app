@@ -11,12 +11,13 @@ export const UI_ACTIVE_CAMPAIGN_KEY = 'tm_active_campaign';
 /**
  * In-app, full-screen-ish views that are *not* routes but should still respond
  * to the browser Back button: the live-session overlay, the settings slide-over,
- * a DM cross-linked into a member's sheet, and the app-wide dice roller. Each
+ * a DM cross-linked into a member's sheet, a follower's sheet opened from its
+ * character's Followers tab, and the app-wide dice roller. Each
  * one pushes a single history entry when opened; pressing Back (or an in-app
  * close button) unwinds exactly one. See the history plumbing at the bottom of
  * this service.
  */
-type Overlay = 'session' | 'settings' | 'dmHero' | 'dice';
+type Overlay = 'session' | 'settings' | 'dmHero' | 'dice' | 'follower';
 
 /**
  * Holds app-level UI state that is *not* a route: the Player/DM role, which
@@ -64,6 +65,12 @@ export class UiStateService {
   // clicking a hero on the campaign dashboard). Drives the "back to campaign" bar.
   private readonly _dmReturn = signal(false);
   readonly dmReturn = this._dmReturn.asReadonly();
+
+  // The follower whose sheet is open in place of its character's sheet (null =
+  // none). Lives here rather than in the sheet component so the browser Back
+  // button returns to the character, like the other in-app views.
+  private readonly _openFollowerId = signal<number | null>(null);
+  readonly openFollowerId = this._openFollowerId.asReadonly();
 
   /**
    * Session Mode owns the main content area — except while a DM has cross-linked
@@ -195,9 +202,27 @@ export class UiStateService {
    * also unwind the matching history entry so the browser stays in lock-step.
    */
   returnToCampaign(): void {
+    // A follower sheet opened from the member's sheet sits on top of the
+    // cross-link in history — close it first so both entries unwind in order.
+    this.closeFollower();
     this._dmReturn.set(false);
     this._role.set('dm');
     this.unwind('dmHero');
+  }
+
+  // ── Follower sheet ────────────────────────────────────────────────────────
+  /** Open a follower's sheet in place of its character's sheet. */
+  openFollower(followerId: number): void {
+    const firstOpen = this._openFollowerId() === null;
+    this._openFollowerId.set(followerId);
+    if (firstOpen) this.pushOverlay('follower');         // guard against re-push
+  }
+
+  /** In-app "Back to Character" (also called when the owning sheet goes away). */
+  closeFollower(): void {
+    if (this._openFollowerId() === null) return;
+    this._openFollowerId.set(null);
+    this.unwind('follower');
   }
 
   /**
@@ -210,6 +235,7 @@ export class UiStateService {
     this._settingsOpen.set(false);
     this._diceOpen.set(false);
     this._activeSessionId.set(null);
+    this._openFollowerId.set(null);
   }
 
   // ── history plumbing ──────────────────────────────────────────────────────
@@ -262,6 +288,9 @@ export class UiStateService {
         // SessionMode's ngOnDestroy stops polling and clears the snapshot when
         // the overlay leaves the DOM; we only drop the route-level flag here.
         this._activeSessionId.set(null);
+        break;
+      case 'follower':
+        this._openFollowerId.set(null);
         break;
       case 'dmHero':
         // Back from a cross-linked hero sheet returns the DM to their dashboard
