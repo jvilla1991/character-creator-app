@@ -4,6 +4,9 @@
 .sheet-xp {
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
+  // "0 / 34000 XP" is one reading; on a phone the bar beside it shrinks
+  // instead of the figure breaking across two lines.
+  white-space: nowrap;
 }
 
 // "Ready to level up" badge — appears once XP crosses the next 2024 PHB
@@ -121,6 +124,10 @@
     background: color-mix(in oklch, var(--surface) 96%, transparent);
     backdrop-filter: blur(8px);
     padding: 4px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+    // Exactly --sheet-tabbar-h above the safe area, so the dice launcher and
+    // toast, which rise by that much, clear it (see --bottom-bar-height).
+    box-sizing: border-box;
+    height: calc(var(--sheet-tabbar-h) + env(safe-area-inset-bottom, 0px));
   }
 
   .sheet-tab {
@@ -131,7 +138,7 @@
     &.active { border-bottom-color: transparent; border-top: 2px solid var(--celestial-2, #c9b6ff); }
   }
 
-  :host { display: block; padding-bottom: 64px; }
+  :host { display: block; padding-bottom: calc(var(--sheet-tabbar-h) + 12px); }
 }
 
 /* @defer placeholder — lightweight stub shown while a heavy panel (e.g. the

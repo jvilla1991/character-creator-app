@@ -1,3 +1,4 @@
+import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
@@ -40,7 +41,7 @@ import { FollowersPanelComponent } from './panels/followers-panel/followers-pane
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, DmEditModalComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, DmEditModalComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;

@@ -10,8 +10,10 @@
   first change. -->
   <div class="visually-hidden" role="status">{{ turnAnnouncement }}</div>
 
-  <div class="board">
-    <div class="board-row head" [style.grid-template-columns]="columns">
+  <!-- Columns come from the stylesheet (.board / .board.dm). Below 720px of
+  board width each combatant becomes a card instead (see SCSS). -->
+  <div class="board" [class.dm]="dm">
+    <div class="board-row head">
       <span class="num">Init</span>
       <span>Combatant</span>
       <span>Hit Points</span>
@@ -35,10 +37,10 @@
         [class.current-turn]="isActive(p)"
         [class.on-deck]="isOnDeck(p)"
         [attr.aria-current]="isActive(p) ? 'true' : null"
-        [style.grid-template-columns]="columns"
         style="cursor: default;"
         >
-        <div class="board-num lit numeric">
+        <div class="board-num lit numeric init-cell">
+          <span class="num-label">Init</span>
           @if (canEditInitiative(p)) {
             <input
               type="number"
@@ -88,7 +90,9 @@
             </div>
           }
         </div>
-        <div class="board-num lit">{{ p.ac != null ? p.ac : '—' }}</div>
+        <div class="board-num lit ac-cell">
+          <span class="num-label">AC</span>{{ p.ac != null ? p.ac : '—' }}
+        </div>
         <div class="board-conditions">
           @if (!p.conditions?.length) {
             <span class="board-cond calm">steady</span>

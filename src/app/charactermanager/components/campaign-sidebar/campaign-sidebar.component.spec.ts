@@ -74,4 +74,13 @@ describe('CampaignSidebarComponent', () => {
       done();
     });
   });
+
+  it('selects the campaign and reports the pick, so the phone drawer can close', () => {
+    const c = build();
+    const picked: string[] = [];
+    c.picked.subscribe(id => picked.push(id));
+    c.select('camp-7');
+    expect(uiState.setActiveCampaign).toHaveBeenCalledWith('camp-7');
+    expect(picked).toEqual(['camp-7']);
+  });
 });
