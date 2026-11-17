@@ -51,6 +51,36 @@ describe('RenownPanelComponent', () => {
     expect(segments.map(segment => segment.style.flexGrow)).toEqual(['76', '15', '7', '5', '7', '15', '25', '51']);
   });
 
+  it('labels the scale with where each standing begins', () => {
+    const labels = Array.from(element().querySelectorAll<HTMLElement>('.scale-thresholds span'));
+    expect(labels.map(label => label.textContent!.trim())).toEqual(['−25', '−10', '−3', '+3', '+10', '+25', '+50']);
+    expect(labels.filter(label => label.classList.contains('neg')).length).toBe(3);
+  });
+
+  it('lists every standing best-first with its threshold and note', () => {
+    const rows = Array.from(element().querySelectorAll<HTMLTableRowElement>('.standings-table tbody tr'));
+    const cells = (row: HTMLTableRowElement) => Array.from(row.cells).map(cell => cell.textContent!.trim());
+    expect(rows.map(row => cells(row)[0])).toEqual(
+      ['Exalted', 'Revered', 'Honored', 'Friendly', 'Neutral', 'Unfriendly', 'Hostile', 'Hated']);
+    expect(rows.map(row => cells(row)[1])).toEqual(['50+', '25+', '10+', '3+', '0', '−3', '−10', '−25']);
+    expect(cells(rows[2])[2]).toContain('10% discount');
+    expect(rows[0].querySelector('th')!.style.color).toBe('var(--renown-exalted)');
+  });
+
+  it('keeps the empty state to a plain line for the DM', () => {
+    service.list.and.returnValue(of([]));
+    fixture.componentRef.setInput('canManage', true);
+    component.load(); fixture.detectChanges();
+    expect(element().querySelector('.renown-empty')!.textContent!.trim()).toBe('No factions yet.');
+  });
+
+  it('tells a player the DM adds factions when there are none', () => {
+    service.list.and.returnValue(of([]));
+    component.load(); fixture.detectChanges();
+    expect(element().querySelector('.renown-empty')!.textContent!.trim())
+      .toBe('No factions yet. Your DM can add factions for this campaign.');
+  });
+
   it('fills a Neutral 0 bar to the centre', () => {
     const fill = element().querySelector<HTMLElement>('.faction-row .fill')!;
     expect(fill.style.width).toBe('50%');

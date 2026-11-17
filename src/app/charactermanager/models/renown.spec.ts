@@ -1,4 +1,4 @@
-import { RENOWN_MILESTONES, renownProgress, renownSpan, renownStanding } from './renown';
+import { RENOWN_MILESTONES, RENOWN_THRESHOLDS, renownProgress, renownSpan, renownStanding } from './renown';
 
 describe('renown milestones', () => {
   const ranges: [number, number, string][] = [
@@ -30,5 +30,17 @@ describe('renown milestones', () => {
       const next = RENOWN_MILESTONES[i + 1];
       if (next) expect(next.min as number).toBe(tier.max + 1);
     });
+  });
+  it('marks where each standing begins, outward from Neutral', () => {
+    expect(RENOWN_THRESHOLDS.map(t => t.value)).toEqual([-25, -10, -3, 3, 10, 25, 50]);
+    expect(RENOWN_THRESHOLDS.filter(t => t.minor).map(t => t.value)).toEqual([-10, 10]);
+  });
+  it('pins each threshold to the boundary between its two standings', () => {
+    // −3 sits between −3 and −2 (98 of 201 scores in); +3 between +2 and +3 (103).
+    const at = (value: number) => RENOWN_THRESHOLDS.find(t => t.value === value)!.percent;
+    expect(at(-3)).toBeCloseTo(98 / 201 * 100, 6);
+    expect(at(3)).toBeCloseTo(103 / 201 * 100, 6);
+    expect(at(-25)).toBeCloseTo(76 / 201 * 100, 6);
+    expect(at(50)).toBeCloseTo(150 / 201 * 100, 6);
   });
 });
