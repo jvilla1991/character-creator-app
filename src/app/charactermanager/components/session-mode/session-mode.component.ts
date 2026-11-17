@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnDestroy, OnInit, input } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SessionState } from '../../models/session';
 import { PC } from '../../models/pc';
@@ -9,6 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
+import { LevelUpPromptService } from '../../services/level-up-prompt.service';
 import { formatCp } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
@@ -78,6 +79,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   private handledEnd = false;
   private variantsResolvedFor: string | null = null;
 
+  private readonly levelUpPrompt = inject(LevelUpPromptService);
+
   constructor(
     private sessionService: SessionService,
     private uiState: UiStateService,
@@ -100,6 +103,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
           this.resolveVariants(state);
           this.trackClock(state);
           this.trackRestVote(state);
+          this.trackLevelUp(state);
         }
       });
   }
@@ -448,6 +452,38 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Level-up prompt (rides the existing poll) ──────────────────────────────
+
+  /**
+   * Feed the caller's own seated PC to the level-up prompt on every snapshot.
+   * The poll already carries what it needs: the level on the participant row,
+   * XP as the caller-scoped `myXp`, and the DM grant as `myLevelGrant` (null
+   * from a backend that predates it → the local store's flag). The DM is never
+   * prompted here — they have no seated PC (`myXp`/`myLevelGrant` null) and the
+   * snapshot says `dm`.
+   *
+   * Snapshot values that differ from the local PC store are mirrored into it,
+   * so the sheet's badges and the level-up modal's gating agree with what the
+   * prompt offered. A snapshot behind the store on level (a poll that left
+   * before a level-up committed here) is ignored until the refetch lands.
+   */
+  private trackLevelUp(state: SessionState): void {
+    if (state.dm || state.status === 'ENDED') return;
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    const local = mine?.pcId != null ? this.pcService.getPCById(mine.pcId) : undefined;
+    if (!mine || !local) return;
+    if (mine.level != null && local.level != null && mine.level < local.level) return;
+
+    const patch: Partial<PC> = {};
+    if (state.myXp != null && state.myXp !== local.xp) patch.xp = state.myXp;
+    if (state.myLevelGrant != null && state.myLevelGrant !== (local.pendingLevelGrant === true)) {
+      patch.pendingLevelGrant = state.myLevelGrant;
+    }
+    if (Object.keys(patch).length) this.pcService.patchLocalPC(local.id, patch);
+
+    this.levelUpPrompt.evaluate({ ...local, ...patch, level: mine.level ?? local.level });
+  }
+
   /** The requesting player's own participant id in this session, if any. */
   myParticipantId(state: SessionState): number | null {
     const mine = state.participants.find(p => p.ownedByMe);
@@ -482,6 +518,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       survival: mine.survival ?? pc.survival,
       spellSlots: mine.spellSlots ?? pc.spellSlots,
       xp: state.myXp ?? pc.xp,
+      pendingLevelGrant: state.myLevelGrant ?? pc.pendingLevelGrant,
       // Short-rest / inspiration state rides the snapshot (spends and DM pip
       // awards bump the version), so the embedded sheet stays live like slots.
       hitDiceUsed: mine.hitDiceUsed ?? pc.hitDiceUsed,
