@@ -16,8 +16,8 @@
 
 .exhaustion-label {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-2);
 }
@@ -86,7 +86,7 @@
   height: 24px;
   padding: 0 7px;
   font: inherit;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   line-height: 1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -133,7 +133,7 @@
   height: 24px;
   padding: 0;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   line-height: 1;
   border: 1px solid var(--border);
   border-radius: 100px;
@@ -168,8 +168,8 @@
   .exhaustion-effect.dead {
     font-family: 'Cinzel', serif;
     font-style: normal;
-    font-size: 10px;
-    letter-spacing: 0.16em;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
     text-transform: uppercase;
     color: var(--crimson);
   }

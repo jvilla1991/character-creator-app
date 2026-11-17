@@ -73,8 +73,8 @@
   .num-label {
     display: block;
     font-family: 'Cinzel', serif;
-    font-size: 9px;
-    letter-spacing: 0.14em;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
     text-transform: uppercase;
     color: var(--text-dim);
   }

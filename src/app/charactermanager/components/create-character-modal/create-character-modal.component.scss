@@ -18,9 +18,9 @@
 
 .ruleset-active {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   color: var(--gold);
   white-space: nowrap;
@@ -42,9 +42,9 @@
 
 .ruleset-coming-soon {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   border: 1px solid var(--border);

@@ -61,9 +61,9 @@
 .score-method-tab {
   padding: 5px 12px;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border);
@@ -94,9 +94,9 @@
 }
 
 .score-method-soon {
-  font-size: 7px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-label);
   padding: 1px 4px;
   border: 1px solid currentColor;
   border-radius: 100px;
@@ -124,7 +124,7 @@
 }
 
 .pb-budget-remaining {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
 
   &.pb-budget-low { color: var(--gold); } // gold warning when ≤3 points left

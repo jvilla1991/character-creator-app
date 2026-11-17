@@ -49,9 +49,9 @@
 
 .background-group-label {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   color: var(--text-dim);
   margin-bottom: 6px;
@@ -70,9 +70,9 @@
 
   .feat-card-eyebrow {
     font-family: 'Cinzel', serif;
-    font-size: 9px;
+    font-size: var(--text-2xs);
     font-weight: 700;
-    letter-spacing: 0.2em;
+    letter-spacing: var(--track-micro);
     text-transform: uppercase;
     color: var(--gold);
     margin-bottom: 4px;
