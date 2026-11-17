@@ -66,7 +66,7 @@
     }
   }
   <details class="milestones"><summary>Reputation milestones <span>−100 to +100</span></summary>
-    <!-- One scale from −100 to +100. Each standing's segment is as wide as the
+    <!-- One scale from −60 to +60 (Hated and Exalted run on past its ends). Each standing's segment is as wide as the
          number of scores it covers, so the narrow middle tiers read as narrow.
          The numbers above mark where each standing begins; a negative label
          ends on its boundary and a positive one starts on it, so ±3 never
@@ -81,7 +81,7 @@
         <span class="segment" [style.flex-grow]="span(tier)" [style.background]="tier.color" [title]="tier.name + ' (' + tier.label + ')'"></span>
       }
     </div>
-    <div class="scale-ticks numeric" aria-hidden="true"><span>−100</span><span>0</span><span>+100</span></div>
+    <div class="scale-ticks numeric" aria-hidden="true"><span>0</span></div>
     <table class="standings-table">
       <thead><tr><th scope="col">Standing</th><th scope="col">Threshold</th><th scope="col">Notes</th></tr></thead>
       <tbody>
