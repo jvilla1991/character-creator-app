@@ -10,6 +10,12 @@ describe('classDisplayName', () => {
     expect(classDisplayName('paladin', 'Oath of the Ebon Blade')).toBe('Death Knight (Paladin)');
   });
 
+  it('shows a Demon Hunter ranger as Demon Hunter (Ranger)', () => {
+    expect(classDisplayName('Ranger', 'Demon Hunter')).toBe('Demon Hunter (Ranger)');
+    expect(classDisplayName('Ranger', 'Hunter')).toBe('Ranger');
+    expect(classDisplayName('Paladin', 'Demon Hunter')).toBe('Paladin');
+  });
+
   it('leaves other paladins and classes unchanged', () => {
     expect(classDisplayName('Paladin', 'Oath of Devotion')).toBe('Paladin');
     expect(classDisplayName('Paladin', undefined)).toBe('Paladin');

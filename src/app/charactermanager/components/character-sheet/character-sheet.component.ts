@@ -37,14 +37,15 @@ import { PcLogComponent } from './panels/pc-log/pc-log.component';
 import { ProfessionsPanelComponent } from './panels/professions-panel/professions-panel.component';
 import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
 import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
-import { EbonBladePanelComponent, isEbonBlade } from './panels/ebon-blade-panel/ebon-blade-panel.component';
+import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
+import { heroClassFor, specializationTitle } from '../../models/hero-class';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, EbonBladePanelComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;
@@ -349,8 +350,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** CSS background value for portrait circle. Delegates to shared utility. */
   tintFor(pc: PC): string { return tintFor(pc); }
 
-  /** Death Knight (Oath of the Ebon Blade) — shows the oath panel on the sheet tab. */
-  get ebonBlade(): boolean { return isEbonBlade(this.pc); }
+  /** Hero classes (Death Knight, Demon Hunter, …) — show the hero-class panel on the sheet tab. */
+  get heroClass(): boolean { return isHeroClass(this.pc); }
+
+  /** Header suffix for a hero-class specialization ("Frost Rune", "Havoc"); '' otherwise. */
+  get specializationTitle(): string {
+    const hero = heroClassFor(this.pc);
+    return hero && this.pc?.specialization ? specializationTitle(hero, this.pc.specialization) : '';
+  }
 
   initialsFor(pc: PC): string {
     return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();

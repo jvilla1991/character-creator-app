@@ -398,36 +398,50 @@ describe('PCService', () => {
     });
   });
 
-  // ── Death Knight rune (Oath of the Ebon Blade) ──────────────────────────────
+  // ── Hero-class specialization (Death Knight rune, Demon Hunter spec) ──────────
 
-  describe('rune round-trip', () => {
-    it('sends subclass and rune on create', () => {
-      service.addPC(makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', rune: 'Unholy' })).subscribe();
+  describe('specialization round-trip', () => {
+    it('sends subclass and specialization on create (never the legacy rune key)', () => {
+      service.addPC(makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Unholy' })).subscribe();
       const req = httpMock.expectOne(service.pcUrl + 'add');
       const body = req.request.body as Record<string, unknown>;
       expect(body['clazz']).toBe('Paladin');
       expect(body['subclass']).toBe('Oath of the Ebon Blade');
-      expect(body['rune']).toBe('Unholy');
+      expect(body['specialization']).toBe('Unholy');
+      expect('rune' in body).toBeFalse();
       req.flush(makePC());
     });
 
-    it('sends an explicit null rune for everyone else', () => {
+    it('sends an explicit null specialization for everyone else', () => {
       service.updatePC(makePC()).subscribe();
       const req = httpMock.expectOne(service.pcUrl + '1');
-      expect((req.request.body as Record<string, unknown>)['rune']).toBeNull();
+      expect((req.request.body as Record<string, unknown>)['specialization']).toBeNull();
       req.flush(makePC());
     });
 
-    it('reads the rune back from the server row, defaulting a missing one to null', (done) => {
+    it('reads the new specialization field, defaulting a missing one to null', (done) => {
       const HttpParams = require('@angular/common/http').HttpParams;
-      service.PCById(new HttpParams().set('id', '6')).subscribe((dk: PC) => {
-        expect(dk.rune).toBe('Blood');
-        expect(dk.subclass).toBe('Oath of the Ebon Blade');
+      service.PCById(new HttpParams().set('id', '8')).subscribe((dh: PC) => {
+        expect(dh.specialization).toBe('Havoc');
+        expect(dh.subclass).toBe('Demon Hunter');
         service.PCById(new HttpParams().set('id', '7')).subscribe((other: PC) => {
-          expect(other.rune).toBeNull();
+          expect(other.specialization).toBeNull();
           done();
         });
         httpMock.expectOne(service.pcUrl + 'find/7').flush({ id: 7, name: 'Plain', clazz: 'Fighter', level: 1 });
+      });
+      httpMock.expectOne(service.pcUrl + 'find/8').flush({
+        id: 8, name: 'Shalassa', clazz: 'Ranger', level: 7,
+        subclass: 'Demon Hunter', specialization: 'Havoc',
+      });
+    });
+
+    it('reads a legacy rune payload as the specialization and drops the old key', (done) => {
+      const HttpParams = require('@angular/common/http').HttpParams;
+      service.PCById(new HttpParams().set('id', '6')).subscribe((dk: PC) => {
+        expect(dk.specialization).toBe('Blood');
+        expect('rune' in (dk as unknown as Record<string, unknown>)).toBeFalse();
+        done();
       });
       httpMock.expectOne(service.pcUrl + 'find/6').flush({
         id: 6, name: 'Isolde', clazz: 'Paladin', level: 3,
@@ -435,11 +449,34 @@ describe('PCService', () => {
       });
     });
 
-    it('sends a changed rune on level-up', () => {
-      service.levelUp(6, { rune: 'Frost' }).subscribe();
+    it('prefers specialization over a stale rune when both are present', (done) => {
+      const HttpParams = require('@angular/common/http').HttpParams;
+      service.PCById(new HttpParams().set('id', '6')).subscribe((dk: PC) => {
+        expect(dk.specialization).toBe('Frost');
+        done();
+      });
+      httpMock.expectOne(service.pcUrl + 'find/6').flush({
+        id: 6, name: 'Isolde', clazz: 'Paladin', level: 3,
+        subclass: 'Oath of the Ebon Blade', rune: 'Blood', specialization: 'Frost',
+      });
+    });
+
+    it('forwards the fighting style and Void Warrior cantrips on level-up', () => {
+      const cantrips = [
+        { lvl: 0, name: 'Chill Touch', school: 'Necromancy', time: '1 action', prepared: true },
+        { lvl: 0, name: 'Mind Sliver', school: 'Enchantment', time: '1 action', prepared: true },
+      ];
+      service.levelUp(8, { fightingStyle: 'Void Warrior', newSpells: cantrips }).subscribe();
+      const req = httpMock.expectOne(`${service.pcUrl}8/level-up`);
+      expect(req.request.body).toEqual({ fightingStyle: 'Void Warrior', newSpells: cantrips });
+      req.flush({ id: 8, name: 'Shalassa', clazz: 'Ranger', level: 2 });
+    });
+
+    it('sends a changed specialization on level-up', () => {
+      service.levelUp(6, { specialization: 'Frost' }).subscribe();
       const req = httpMock.expectOne(`${service.pcUrl}6/level-up`);
-      expect(req.request.body).toEqual({ rune: 'Frost' });
-      req.flush({ id: 6, name: 'Isolde', clazz: 'Paladin', level: 4, rune: 'Frost' });
+      expect(req.request.body).toEqual({ specialization: 'Frost' });
+      req.flush({ id: 6, name: 'Isolde', clazz: 'Paladin', level: 4, specialization: 'Frost' });
     });
   });
 

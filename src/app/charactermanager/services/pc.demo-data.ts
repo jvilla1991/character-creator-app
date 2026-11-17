@@ -14,11 +14,11 @@
 import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
-import { EBON_BLADE_SUBCLASS } from '../models/hero-class';
+import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
 
 // ---------------------------------------------------------------------------
-// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus one
-// unbound World of Warcraft Death Knight.
+// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
+// unbound World of Warcraft Death Knight and Demon Hunter.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -210,7 +210,7 @@ export const DEMO_PCS: PC[] = [
     race: 'Human',
     clazz: 'Paladin',
     subclass: EBON_BLADE_SUBCLASS,
-    rune: 'Frost',
+    specialization: 'Frost',
     level: 5,
     background: 'Soldier',
     alignment: 'Lawful Neutral',
@@ -249,6 +249,59 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'The cold in her veins makes her slow to trust the living.',
     },
     bio: 'Raised in death to serve a tyrant, freed by the Ebon Blade, and still learning what to do with a second life.',
+    notes: '',
+  },
+  // World of Warcraft hero class: Demon Hunter (Ranger) — stored as a Ranger with the
+  // Demon Hunter subclass, Havoc specialization.
+  {
+    id: 7,
+    name: 'Shalassa Felbrand',
+    playerName: 'Gina',
+    player: 'Gina',
+    campaignId: null,
+    race: 'Elf',
+    clazz: 'Ranger',
+    subclass: DEMON_HUNTER_SUBCLASS,
+    specialization: 'Havoc',
+    level: 7,
+    background: 'Guard',
+    alignment: 'Chaotic Good',
+    portraitInitials: 'SF',
+    portraitTint: 'emerald',
+    hp: { cur: 60, max: 60, temp: 0 },
+    ac: 16, init: 4, speed: 35, prof: 3,
+    stats: { STR: 10, DEX: 18, CON: 14, INT: 10, WIS: 14, CHA: 8 },
+    saves: ['STR', 'DEX'],
+    skills: { Acrobatics: 'prof', Athletics: 'prof', Perception: 'expert', Stealth: 'prof', Survival: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 22, ep: 0, gp: 64, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 } },
+    spells: [
+      { lvl: 1, name: "Hunter's Mark", school: 'Divination', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Ensnaring Strike', school: 'Conjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Pass without Trace', school: 'Abjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Scimitar', dmg: '1d6+4 slashing', notes: 'Light, Finesse (warglaive)' },
+      { name: 'Scimitar', dmg: '1d6 slashing', notes: 'Off hand (warglaive)' },
+    ],
+    gear: [
+      { name: 'Studded Leather Armor', equipped: true },
+      { name: 'Blindfold (fel-scorched)' },
+      { name: 'Arcane Focus (fel crystal)' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Ranger 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Fighting Style', source: 'Ranger 2', desc: 'Two-Weapon Fighting.' },
+      { name: 'Extra Attack', source: 'Ranger 5', desc: 'Attack twice when you take the Attack action.' },
+    ],
+    traits: {
+      Personality: 'Restless; she hears the demon inside her more clearly in silence.',
+      Ideals: 'Sacrifice. Whatever it costs, the Legion must fall.',
+      Bonds: 'The Illidari who stood with her at the Black Temple.',
+      Flaws: 'Most people see a monster, and some days she agrees.',
+    },
+    bio: "A night elf who gave up her eyes and took a demon's power to hunt the Burning Legion; the kin who once shunned her now need her.",
     notes: '',
   },
 ];
@@ -402,6 +455,22 @@ export const DEMO_FIGHTING_STYLE_FEATS = [
   'Interception', 'Protection', 'Thrown Weapon Fighting', 'Two-Weapon Fighting',
   'Unarmed Fighting',
 ];
+
+// DEMO-ONLY mirror of the server level-2 Fighting Style choice: due at Paladin 2 and
+// Ranger 2; the 10 PHB styles, plus Void Warrior for a Demon Hunter ranger.
+export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
+  const key = (clazz ?? '').trim().toLowerCase();
+  return newLevel === 2 && (key === 'paladin' || key === 'ranger');
+}
+
+export function demoFightingStyleOptions(clazz: string, subclass: string | undefined, newLevel: number): string[] {
+  if (!demoFightingStyleDue(clazz, newLevel)) return [];
+  const options = [...DEMO_FIGHTING_STYLE_FEATS];
+  if ((clazz ?? '').trim().toLowerCase() === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
+    options.push('Void Warrior');
+  }
+  return options.sort((a, b) => a.localeCompare(b));
+}
 
 // DEMO-ONLY mirror of the server Epic Boon feat list (level 19+).
 export const DEMO_EPIC_BOONS = [

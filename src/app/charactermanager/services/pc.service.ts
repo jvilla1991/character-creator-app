@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PC } from '../models/pc';
-import { Rune } from '../models/hero-class';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
@@ -13,6 +12,8 @@ import {
   DEMO_PCS,
   DEMO_ACTIVITY_LOGS,
   demoFeatOptions,
+  demoFightingStyleDue,
+  demoFightingStyleOptions,
   demoProfBonus,
   demoLevelUpFields,
   demoSlotsFor,
@@ -394,10 +395,11 @@ export class PCService {
     }
     const body: LevelUpChoices = {};
     if (choices?.subclass) body.subclass = choices.subclass;
-    // Ebon Blade rune change — the modal only sets it when the player picked a different rune.
-    if (choices?.rune) body.rune = choices.rune;
+    // Hero-class respec — the modal only sets it when the player picked a different specialization.
+    if (choices?.specialization) body.specialization = choices.specialization;
     if (choices?.abilityIncreases) body.abilityIncreases = choices.abilityIncreases;
     if (choices?.feat) body.feat = choices.feat;
+    if (choices?.fightingStyle) body.fightingStyle = choices.fightingStyle;
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
     // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
     if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
@@ -440,6 +442,8 @@ export class PCService {
       featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
+      fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),
+      fightingStyleOptions: demoFightingStyleOptions(pc.clazz, pc.subclass, newLevel),
       currentCantripsKnown: demoCantripsKnown(pc.clazz, current),
       newCantripsKnown: demoCantripsKnown(pc.clazz, newLevel),
       currentSpellsKnown: demoPreparedSpells(pc.clazz, current),
@@ -490,6 +494,11 @@ export class PCService {
       features = [...(existing.features ?? []),
         { name: choices.feat, source: `Feat (Level ${newLevel})`, desc: '' }];
     }
+    // A chosen level-2 Fighting Style is recorded among the features too.
+    if (choices?.fightingStyle) {
+      features = [...(features ?? []),
+        { name: choices.fightingStyle, source: `Fighting Style (Level ${newLevel})`, desc: '' }];
+    }
     // Newly-learned spells are appended to the character's spell list.
     const spells = choices?.newSpells?.length
       ? [...(existing.spells ?? []), ...choices.newSpells]
@@ -504,7 +513,7 @@ export class PCService {
         : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
       subclass: choices?.subclass || existing.subclass,
-      rune: choices?.rune ?? existing.rune ?? null,
+      specialization: choices?.specialization ?? existing.specialization ?? null,
       features,
       spells,
     };
@@ -562,8 +571,8 @@ export class PCService {
       // Scalar passthrough (rides on the spread, but kept explicit + defaulted so
       // a never-awarded PC sends 0 rather than undefined against the NOT NULL column).
       xp: pc.xp ?? 0,
-      // Death Knight rune — explicit null (not undefined) for every other character.
-      rune: pc.rune ?? null,
+      // Hero-class specialization — explicit null (not undefined) for every other character.
+      specialization: pc.specialization ?? null,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -606,13 +615,17 @@ export class PCService {
     // The wire row is PC-shaped plus the flat backend columns (species,
     // abilityStr, hpCurrent, …) folded in below via bracket access.
     const pc = raw as PC & Record<string, unknown>;
+    // Drop the legacy `rune` key so it never rides back to the server on save.
+    const { rune: legacyRune, ...rest } = pc;
     return {
-      ...pc,
+      ...rest,
       race: (pc['species'] as string) ?? pc.race,
       init: (pc['initiative'] as number) ?? pc.init,
       prof: (pc['profBonus'] as number) ?? pc.prof,
       xp: (pc['xp'] as number) ?? pc.xp ?? 0,
-      rune: (pc['rune'] as Rune | null | undefined) ?? null,
+      // `rune` is the pre-specialization name of the field (older payloads/rows).
+      specialization: (pc['specialization'] as string | null | undefined)
+        ?? (legacyRune as string | null | undefined) ?? null,
       stats: {
         STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
         DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,

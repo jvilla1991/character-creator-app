@@ -1,0 +1,58 @@
+@if (hero; as h) {
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ h.subclass }}</span>
+    </div>
+
+    @if (specializationTitle) {
+      <div class="feature">
+        <div class="feature-head">
+          <span class="feature-name">{{ specializationTitle }}</span>
+          <span class="feature-source">{{ h.name }}</span>
+        </div>
+        <div class="feature-desc">{{ specializationDesc }}</div>
+      </div>
+    }
+
+    <div class="feature">
+      <div class="feature-head">
+        <span class="feature-name">{{ h.level1Feature.name }}</span>
+        <span class="feature-source">{{ h.baseClass }} 1</span>
+      </div>
+      <div class="feature-desc">{{ h.level1Feature.desc }}</div>
+    </div>
+
+    @if (resource; as r) {
+      <div class="hero-resource">
+        <span class="hero-resource-name">{{ r.name }}</span>
+        <span class="hero-resource-amount">{{ r.amount }}</span>
+      </div>
+    }
+
+    @if (spells.length) {
+      <h3 class="hero-spells-title">{{ h.subclass }} Spells</h3>
+      <p class="hero-spells-note">Always prepared; they don't count against your prepared spells.</p>
+      <ul class="hero-spells">
+        @for (entry of spells; track entry.name) {
+          @let spell = spellFor(entry.name);
+          <li>
+            <details class="hero-spell">
+              <summary>
+                <span class="hero-spell-name">{{ entry.name }}</span>
+                <span class="hero-spell-meta">
+                  {{ h.baseClass }} {{ entry.classLevel }} · {{ entry.grantedBy }}
+                  @if (spell) {
+                    · {{ spell.level === 0 ? 'Cantrip' : 'Level ' + spell.level }} {{ spell.school }}
+                  }
+                </span>
+              </summary>
+              <p class="hero-spell-desc">
+                {{ spell?.description || (spellIndex() ? 'No description available.' : 'Loading spell text…') }}
+              </p>
+            </details>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}
