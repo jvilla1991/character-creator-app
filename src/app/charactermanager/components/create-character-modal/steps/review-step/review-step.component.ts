@@ -35,8 +35,16 @@ export class ReviewStepComponent {
   /** Class as shown to the player — the hero-class label for e.g. Death Knight (Paladin). */
   readonly clazz = input('');
   readonly selectedSubclass = input('');
-  /** Death Knight rune; '' for everyone else. */
-  readonly rune = input('');
+  /** Hero-class specialization; '' for everyone else. */
+  readonly specialization = input('');
+  /** What the hero class calls it ('rune', 'specialization'); '' for everyone else. */
+  readonly specializationLabel = input('');
+
+  /** "Rune" / "Specialization" — the review row label. */
+  get specializationHeading(): string {
+    const l = this.specializationLabel() || 'specialization';
+    return l.charAt(0).toUpperCase() + l.slice(1);
+  }
   readonly classDetail = input<DndClass | null>(null);
   readonly classSavingThrows = input('…');
   readonly background = input('');

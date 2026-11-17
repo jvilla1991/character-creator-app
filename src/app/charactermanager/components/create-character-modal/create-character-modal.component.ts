@@ -23,7 +23,7 @@ import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.co
 import { ReviewStepComponent } from './steps/review-step/review-step.component';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
 import { ContentSource, ContentSourceSelection, allContentSources, filterBySource } from '../../models/content-source';
-import { ClassOption, HeroClassOption, RUNE_OPTIONS, Rune, buildClassOptions, heroClassByLabel } from '../../models/hero-class';
+import { ClassOption, HeroClassOption, SpecializationOption, buildClassOptions, heroClassByLabel } from '../../models/hero-class';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -42,7 +42,10 @@ interface WizardDraft {
   clazz: string;
   /** Hero class label (e.g. 'Death Knight (Paladin)'); absent/'' for a base class. */
   heroClassLabel?: string;
-  rune?: Rune | '';
+  /** Hero-class specialization (Death Knight rune, Demon Hunter spec). */
+  specialization?: string;
+  /** Pre-specialization name of the same field — read from older drafts only. */
+  rune?: string;
   /** Content-source filter (Base Game / World of Warcraft). */
   contentSources?: ContentSourceSelection;
   selectedSubclass: string;
@@ -150,9 +153,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   clazz        = '';
   /** Chosen hero class label ('Death Knight (Paladin)'), or '' for a base class. */
   heroClassLabel = '';
-  /** Death Knight rune — required when the hero class asks for one. */
-  rune: Rune | '' = '';
-  readonly runeOptions = RUNE_OPTIONS;
+  /** Hero-class specialization (e.g. a Death Knight rune) — required for every hero class. */
+  specialization = '';
   classDetail:  DndClass | null = null;
   loadingClassList   = true;
   loadingClassDetail = false;
@@ -172,6 +174,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   /** The chosen hero class, or undefined for a base class. */
   get heroClass(): HeroClassOption | undefined {
     return heroClassByLabel(this.heroClassLabel);
+  }
+
+  /** The chosen hero class's specialization options; empty for a base class. */
+  get specializationOptions(): readonly SpecializationOption[] {
+    return this.heroClass?.specializations ?? [];
+  }
+
+  /** True when the chosen class needs a specialization before the class step can advance. */
+  get specializationRequired(): boolean {
+    return this.specializationOptions.length > 0;
   }
 
   /** The label of the chosen class row — the hero label, else the base class. */
@@ -477,7 +489,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       case 2: return !!this.species;
       case 3: return !!this.clazz
                   && (!this.requiresLevel1Subclass || !!this.selectedSubclass)
-                  && (!this.heroClass?.runeRequired || !!this.rune);
+                  && (!this.specializationRequired || !!this.specialization);
       case 4: return !!this.background;
       case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
       case 6: {
@@ -642,7 +654,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.selectedSkills  = [];
     // A hero class locks its subclass in; a base class starts with none.
     this.selectedSubclass = this.heroClass?.subclass ?? '';
-    this.rune = '';
+    this.specialization = '';
     if (this.clazz) this.classTrigger$.next(this.clazz);
   }
 
@@ -664,9 +676,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     this.onClassChange();
   }
 
-  /** Pick the Death Knight rune (class step). */
-  selectRune(rune: Rune): void {
-    this.rune = rune;
+  /** Pick the hero-class specialization (class step). */
+  selectSpecialization(name: string): void {
+    this.specialization = name;
   }
 
   get classSavingThrows(): string {
@@ -778,7 +790,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       race:             this.species,
       clazz:            this.clazz,
       subclass:         this.selectedSubclass || undefined,
-      rune:             this.heroClass?.runeRequired && this.rune ? this.rune : null,
+      specialization:   this.specializationRequired && this.specialization ? this.specialization : null,
       background:       this.background,
       level:            1,
       prof:             2,
@@ -869,7 +881,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       species: this.species,
       clazz: this.clazz,
       heroClassLabel: this.heroClassLabel,
-      rune: this.rune,
+      specialization: this.specialization,
       contentSources: this.contentSources,
       selectedSubclass: this.selectedSubclass,
       background: this.background,
@@ -906,7 +918,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.species          = d.species ?? '';
       this.clazz            = d.clazz ?? '';
       this.heroClassLabel   = heroClassByLabel(d.heroClassLabel) ? d.heroClassLabel! : '';
-      this.rune             = d.rune ?? '';
+      this.specialization   = d.specialization ?? d.rune ?? '';
       this.contentSources   = { ...allContentSources(), ...(d.contentSources ?? {}) };
       this.selectedSubclass = d.selectedSubclass ?? '';
       this.background       = d.background ?? '';

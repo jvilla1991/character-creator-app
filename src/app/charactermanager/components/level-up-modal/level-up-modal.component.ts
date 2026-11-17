@@ -9,7 +9,7 @@ import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
-import { EBON_BLADE_SUBCLASS, RUNE_OPTIONS, Rune } from '../../models/hero-class';
+import { HeroClassOption, heroClassFor } from '../../models/hero-class';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -43,9 +43,8 @@ export class LevelUpModalComponent implements OnInit {
   error: string | null = null;
   selectedSubclass: string | null = null;
 
-  /** Death Knight rune options, and the rune picked in the optional "Change rune" select. */
-  readonly runeOptions = RUNE_OPTIONS;
-  selectedRune: Rune | null = null;
+  /** The specialization picked in the optional "Change …" select (hero classes that respec). */
+  selectedSpecialization: string | null = null;
 
   /**
    * HP mode for this level: take the fixed average (default) or roll the hit die. In 'ROLL' the
@@ -70,7 +69,7 @@ export class LevelUpModalComponent implements OnInit {
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
-    this.selectedRune = this.pc.rune ?? null;
+    this.selectedSpecialization = this.pc.specialization ?? null;
     const preview$ = this.asDm
       ? this.pcService.levelUpPreviewAsDm(this.pc.id)
       : this.pcService.levelUpPreview(this.pc.id);
@@ -170,14 +169,20 @@ export class LevelUpModalComponent implements OnInit {
     return !!this.preview && this.preview.newCantripsKnown > this.preview.currentCantripsKnown;
   }
 
-  /** Death Knight (Oath of the Ebon Blade) — offers the optional rune change. */
-  get isEbonBlade(): boolean {
-    return this.pc?.subclass === EBON_BLADE_SUBCLASS;
+  /** The character's hero class (e.g. Death Knight), or undefined for everyone else. */
+  get heroClass(): HeroClassOption | undefined {
+    return heroClassFor(this.pc);
   }
 
-  /** True when the player picked a rune different from the current one. */
-  get runeChanged(): boolean {
-    return this.isEbonBlade && !!this.selectedRune && this.selectedRune !== (this.pc.rune ?? null);
+  /** Show the optional "Change …" select: only hero classes whose table allows a respec. */
+  get canRespec(): boolean {
+    return !!this.heroClass?.respecOnLevelUp;
+  }
+
+  /** True when the player picked a specialization different from the current one. */
+  get specializationChanged(): boolean {
+    return this.canRespec && !!this.selectedSpecialization
+      && this.selectedSpecialization !== (this.pc.specialization ?? null);
   }
 
   /** Whether to show the subclass picker: a choice is due AND the server offered options. */
@@ -270,8 +275,8 @@ export class LevelUpModalComponent implements OnInit {
     // Only send the mode when rolling — omitting it lets the server default to AVERAGE.
     if (this.hpMode === 'ROLL') choices.hpMode = 'ROLL';
     if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
-    // Only send a rune when it actually changed — the server keeps the current one otherwise.
-    if (this.runeChanged) choices.rune = this.selectedRune!;
+    // Only send a specialization when it actually changed — the server keeps the current one otherwise.
+    if (this.specializationChanged) choices.specialization = this.selectedSpecialization!;
     if (this.needsAsi) {
       if (this.milestoneMode === 'asi') {
         const increases = this.allocatedAbilities();

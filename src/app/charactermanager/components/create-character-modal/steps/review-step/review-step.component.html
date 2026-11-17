@@ -84,10 +84,10 @@
         <span class="review-value">{{ selectedSubclass() }}</span>
       </div>
     }
-    @if (rune()) {
+    @if (specialization()) {
       <div class="review-row">
-        <span class="review-label">Rune</span>
-        <span class="review-value">{{ rune() }}</span>
+        <span class="review-label">{{ specializationHeading }}</span>
+        <span class="review-value">{{ specialization() }}</span>
       </div>
     }
     @if (classDetail(); as detail) {

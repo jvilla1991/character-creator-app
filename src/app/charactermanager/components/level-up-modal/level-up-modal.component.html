@@ -157,16 +157,16 @@
           }
         </div>
       }
-      <!-- Death Knight: optionally swap rune specialization on level-up -->
-      @if (isEbonBlade) {
+      <!-- Hero classes that respec (e.g. Death Knight runes): optionally swap specialization -->
+      @if (canRespec && heroClass; as hero) {
         <div class="subclass-pick">
-          <label class="subclass-label" for="level-up-rune">Change rune (optional)</label>
-          <select id="level-up-rune" class="rune-select" [(ngModel)]="selectedRune">
-            @if (!pc.rune) {
-              <option [ngValue]="null" disabled>Choose a rune…</option>
+          <label class="subclass-label" for="level-up-specialization">Change {{ hero.specializationLabel }} (optional)</label>
+          <select id="level-up-specialization" class="specialization-select" [(ngModel)]="selectedSpecialization">
+            @if (!pc.specialization) {
+              <option [ngValue]="null" disabled>Choose a {{ hero.specializationLabel }}…</option>
             }
-            @for (r of runeOptions; track r.name) {
-              <option [ngValue]="r.name">{{ r.name }}{{ r.name === pc.rune ? ' (current)' : '' }}</option>
+            @for (o of hero.specializations; track o.name) {
+              <option [ngValue]="o.name">{{ o.name }}{{ o.name === pc.specialization ? ' (current)' : '' }}</option>
             }
           </select>
         </div>

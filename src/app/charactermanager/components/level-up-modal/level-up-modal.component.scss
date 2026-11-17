@@ -336,8 +336,8 @@
 // Search input + list styles now live in app-spell-picker's own stylesheet
 // (components/spell-picker/spell-picker.component.scss) since the markup moved there.
 
-// Death Knight rune change — colors/border come from the global themed-input baseline.
-.rune-select {
+// Hero-class specialization change — colors/border come from the global themed-input baseline.
+.specialization-select {
   width: 100%;
   padding: 8px 10px;
   border-radius: 7px;

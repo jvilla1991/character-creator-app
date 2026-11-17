@@ -485,40 +485,41 @@ describe('LevelUpModalComponent', () => {
     });
   });
 
-  // --- Death Knight (Oath of the Ebon Blade) rune change ---
+  // --- Hero-class specialization change (respecOnLevelUp) ---
 
-  describe('Ebon Blade rune change', () => {
+  describe('Death Knight rune change (respec allowed)', () => {
     beforeEach(() => {
-      component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', rune: 'Frost', level: 4 });
+      component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Frost', level: 4 });
       pcService.levelUpPreview.and.returnValue(of(makePreview()));
       pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
       component.ngOnInit();
     });
 
-    it('offers the rune select only to Ebon Blade characters, defaulting to the current rune', () => {
-      expect(component.isEbonBlade).toBeTrue();
-      expect(component.selectedRune).toBe('Frost');
+    it('shows the change control, defaulting to the current rune', () => {
+      expect(component.canRespec).toBeTrue();
+      expect(component.heroClass?.specializationLabel).toBe('rune');
+      expect(component.selectedSpecialization).toBe('Frost');
     });
 
-    it('does not send a rune when it is left unchanged', () => {
+    it('does not send a specialization when it is left unchanged', () => {
       component.confirm();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
     });
 
-    it('sends the new rune when the player changes it', () => {
-      component.selectedRune = 'Unholy';
+    it('sends the new specialization when the player changes it', () => {
+      component.selectedSpecialization = 'Unholy';
       component.confirm();
-      expect(pcService.levelUp).toHaveBeenCalledWith(7, { rune: 'Unholy' });
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { specialization: 'Unholy' });
     });
 
-    it('never sends a rune for a non-Ebon Blade character', () => {
+    it('never sends a specialization for a non-hero character', () => {
       const other = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
       other.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of Devotion' });
       other.ngOnInit();
-      other.selectedRune = 'Blood';
+      other.selectedSpecialization = 'Blood';
       pcService.levelUp.calls.reset();
       other.confirm();
-      expect(other.isEbonBlade).toBeFalse();
+      expect(other.canRespec).toBeFalse();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
     });
   });

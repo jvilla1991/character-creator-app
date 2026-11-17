@@ -210,7 +210,7 @@ export const DEMO_PCS: PC[] = [
     race: 'Human',
     clazz: 'Paladin',
     subclass: EBON_BLADE_SUBCLASS,
-    rune: 'Frost',
+    specialization: 'Frost',
     level: 5,
     background: 'Soldier',
     alignment: 'Lawful Neutral',
