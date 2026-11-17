@@ -48,7 +48,7 @@ describe('RenownPanelComponent', () => {
   it('draws the milestones as one scale with a segment per standing, sized by its range', () => {
     const segments = Array.from(element().querySelectorAll<HTMLElement>('.scale .segment'));
     expect(segments.length).toBe(8);
-    expect(segments.map(segment => segment.style.flexGrow)).toEqual(['76', '15', '7', '5', '7', '15', '25', '51']);
+    expect(segments.map(segment => segment.style.flexGrow)).toEqual(['36', '15', '7', '5', '7', '15', '25', '11']);
   });
 
   it('labels the scale with where each standing begins', () => {

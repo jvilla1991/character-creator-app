@@ -34,19 +34,25 @@ export function renownStanding(score: number): RenownMilestone {
   return [...RENOWN_MILESTONES].reverse().find(tier => score >= tier.min) ?? RENOWN_MILESTONES[0];
 }
 
-/** How many whole scores a standing covers (Neutral, −2…+2, covers 5). */
+/** The milestones bar draws −60…+60, not the full −100…+100 score range:
+ *  the far ends of Hated and Exalted add nothing to read, and trimming them
+ *  gives the narrow middle standings more room. Scores are unchanged. */
+export const RENOWN_SCALE = { min: -60, max: 60 } as const;
+
+const SCALE_SCORES = RENOWN_SCALE.max - RENOWN_SCALE.min + 1;
+
+/** How many whole scores of a standing fall on the drawn scale
+ *  (Neutral, −2…+2, covers 5; Hated is cut to −60…−25, 36). */
 export function renownSpan(tier: RenownMilestone): number {
-  return tier.max - tier.min + 1;
+  return Math.min(tier.max, RENOWN_SCALE.max) - Math.max(tier.min, RENOWN_SCALE.min) + 1;
 }
 
 /** Where a standing begins, read outward from Neutral: −3, −10, −25 below
  *  and +3, +10, +25, +50 above. `percent` is that boundary's position on the
- *  −100…+100 scale, where every whole score is one equal slice. `minor` marks
+ *  drawn −60…+60 scale, where every whole score is one equal slice. `minor` marks
  *  the ±10 labels, which are dropped when the scale is too narrow to fit
  *  them between their neighbours. */
 export interface RenownThreshold { value: number; percent: number; minor: boolean; }
-
-const SCALE_SCORES = 201;
 
 export const RENOWN_THRESHOLDS: RenownThreshold[] = RENOWN_MILESTONES
   .filter(tier => tier.max < 0 || tier.min > 0)
@@ -54,7 +60,7 @@ export const RENOWN_THRESHOLDS: RenownThreshold[] = RENOWN_MILESTONES
     const value: number = tier.max < 0 ? tier.max : tier.min;
     // A negative standing ends on its right edge; a positive one starts on its left.
     const edge = tier.max < 0 ? tier.max + 1 : tier.min;
-    return { value, percent: (edge + 100) / SCALE_SCORES * 100, minor: Math.abs(value) === 10 };
+    return { value, percent: (edge - RENOWN_SCALE.min) / SCALE_SCORES * 100, minor: Math.abs(value) === 10 };
   });
 
 /** Fill within the current standing: 0% at its lowest score, 100% at its

@@ -163,7 +163,7 @@
   .btn.icon { font-size: 18px; line-height: 1; letter-spacing: 0; }
 }
 
-// ── Milestones: one −100…+100 scale ────────────────────────────────────────
+// ── Milestones: one −60…+60 scale ────────────────────────────────────────
 
 .milestones {
   margin-top: 18px;
@@ -230,7 +230,7 @@ summary {
 
 .scale-ticks {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   margin-top: 4px;
   font-size: var(--text-2xs);
   color: var(--text-dim);
