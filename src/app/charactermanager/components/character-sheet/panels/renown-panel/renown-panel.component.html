@@ -82,10 +82,17 @@
       }
     </div>
     <div class="scale-ticks numeric" aria-hidden="true"><span>−100</span><span>0</span><span>+100</span></div>
-    <ol class="milestone-legend">
-      @for (tier of milestones; track tier.name) {
-        <li><i [style.background]="tier.color"></i><strong>{{ tier.name }}</strong><span>{{ tier.label }}</span></li>
-      }
-    </ol>
+    <table class="standings-table">
+      <thead><tr><th scope="col">Standing</th><th scope="col">Threshold</th><th scope="col">Notes</th></tr></thead>
+      <tbody>
+        @for (tier of standingsTable; track tier.name) {
+          <tr>
+            <th scope="row" [style.color]="tier.color">{{ tier.name }}</th>
+            <td class="numeric">{{ tier.threshold }}</td>
+            <td>{{ tier.note }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
   </details>
 </section>

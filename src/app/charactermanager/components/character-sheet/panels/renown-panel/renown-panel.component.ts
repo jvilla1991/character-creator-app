@@ -21,6 +21,8 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
   readonly error = signal('');
   readonly milestones = RENOWN_MILESTONES;
   readonly thresholds = RENOWN_THRESHOLDS;
+  /** Best standing first, as the milestones table reads top to bottom. */
+  readonly standingsTable = [...RENOWN_MILESTONES].reverse();
   readonly standing = renownStanding;
   readonly progress = renownProgress;
   readonly span = renownSpan;
