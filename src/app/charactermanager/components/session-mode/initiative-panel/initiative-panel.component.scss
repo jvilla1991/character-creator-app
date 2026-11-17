@@ -1,3 +1,17 @@
+// Board columns. They used to be an inline style, which no stylesheet rule
+// could override; as classes, the phone card layout below can replace them.
+// The 720px row minimum stays global (styles.css) for wide screens.
+.board { container-type: inline-size; }
+.board-row {
+  grid-template-columns: 44px minmax(140px, 1.6fr) 150px 56px minmax(110px, 1.2fr);
+}
+.board.dm .board-row {
+  grid-template-columns: 44px minmax(140px, 1.6fr) 150px 56px minmax(110px, 1.2fr) 184px;
+}
+
+// Each cell's label lives in the header row on wide boards.
+.num-label { display: none; }
+
 // Turn indication: the WHOLE combatant card glows — emerald for the active
 // combatant, gold for on-deck. Both target ids come from the per-viewer
 // snapshot — when a hidden enemy acts, players simply have no active row (and
@@ -198,6 +212,7 @@
 
   .enemy-form {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 6px;
   }
@@ -213,7 +228,9 @@
     border-radius: 6px;
 
     &.name {
+      flex: 1 1 140px;
       width: 140px;
+      max-width: 220px;
       text-align: left;
     }
   }
@@ -373,4 +390,93 @@
   cursor: pointer;
 
   &:hover .board-hero-name { color: var(--celestial); }
+}
+
+// ── Narrow boards: one card per combatant ─────────────────────────────────
+// Below 720px of board width (any phone, and a narrow desktop pane) the
+// seven-column row needed a sideways scroll: AC, conditions and every DM
+// control sat off-screen. Each row becomes a card instead, the way the
+// campaign dashboard's party board does. A container query, because the
+// board's own width is what decides whether the columns fit.
+@container (max-width: 719px) {
+  .board-row { min-width: 0; }
+  .board-row.head { display: none; }
+
+  // .board raises this above .board.dm .board-row's DM columns.
+  .board .board-row.member {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "init hero hero"
+      "hp   hp   ac"
+      "cond cond cond"
+      "adj  adj  adj";
+    align-items: center;
+    gap: 10px 12px;
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+    background: color-mix(in oklch, var(--bg-2) 60%, transparent);
+  }
+
+  .init-cell { grid-area: init; }
+  .board-hero { grid-area: hero; }
+  .ac-cell { grid-area: ac; }
+  .board-hp { grid-area: hp; }
+  .board-conditions { grid-area: cond; }
+  .dm-adjust { grid-area: adj; }
+
+  // Initiative and AC read as labelled tiles: initiative leads the name, AC
+  // sits beside the health bar, so the name keeps the card's full width.
+  .init-cell,
+  .ac-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 48px;
+    padding: 5px 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+  }
+  .num-label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .init-input { width: 44px; height: 32px; }
+
+  // The name gets room to wrap instead of clipping to an ellipsis.
+  .board-hero-name {
+    font-size: var(--text-base);
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  .board-hero-sub { font-size: var(--text-xs); }
+
+  // DM controls flow along one or two lines under the card, finger-sized.
+  .dm-adjust {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding-top: 10px;
+    border-top: 1px dotted var(--border-soft);
+
+    .adjust-row { gap: 6px; }
+    .dmg-input { width: 56px; height: 36px; }
+    .btn-mini { width: 36px; height: 36px; }
+    .btn-mini.xp { width: auto; padding: 0 12px; }
+  }
+}
+
+// The narrowest boards (a 320px phone leaves 238px): the initials portrait
+// gives way so a long name wraps by word rather than mid-word.
+@container (max-width: 279px) {
+  .board-hero { grid-template-columns: minmax(0, 1fr); }
+  .board-hero .portrait { display: none; }
 }
