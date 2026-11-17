@@ -1,4 +1,4 @@
-<div class="modal-title">Choose Your Spells</div>
+<h2 class="modal-title">Choose Your Spells</h2>
 <div class="modal-sub">
   Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
   {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
@@ -15,7 +15,7 @@
   <button type="button" class="spell-level-tab"
     [class.active]="spellLevelFilter() === 1"
   (click)="spellLevelFilterChange.emit(1)">1st</button>
-  <input class="spell-search" type="text" placeholder="Search…"
+  <input aria-label="Search spells" class="spell-search" type="text" placeholder="Search…"
     [ngModel]="spellSearch()" (ngModelChange)="spellSearchChange.emit($event)" name="spellSearch">
   </div>
 
@@ -27,7 +27,10 @@
   @if (!loadingSpells()) {
     <div class="spell-scroll">
       @for (group of spellGroups(); track group.level) {
-      <details class="spell-group" open>
+      <!-- A group folds itself away once its allowance is spent, so the list
+      left to pick from is the one still open. Clicking the summary reopens it;
+      the binding only takes over again when the counts change. -->
+      <details class="spell-group" [open]="!isGroupComplete(group.level)">
         <summary>{{ group.level === 0 ? 'Cantrips' : 'Level ' + group.level + ' Spells' }}</summary>
       @for (s of group.spells; track trackBySpellName($index, s)) {
         @let selected = isSpellSelected(s);

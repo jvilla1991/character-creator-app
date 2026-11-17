@@ -11,10 +11,9 @@ import { AsyncPipe } from '@angular/common';
     selector: 'app-toast',
     templateUrl: './toast.component.html',
     styleUrls: ['./toast.component.scss'],
-    // The live region lives on the always-rendered host element so screen
-    // readers register it before any message is inserted — a live region
-    // that appears together with its content is often not announced.
-    host: { 'role': 'status', 'aria-live': 'polite' },
+    // The live region is an always-rendered element in the template (not the
+    // toast itself), so the dismiss button can sit in the toast without being
+    // read out as part of every message.
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [AsyncPipe]
 })

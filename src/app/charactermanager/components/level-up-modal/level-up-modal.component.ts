@@ -5,8 +5,7 @@ import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { toPcSpell } from '../../utils/spell-mapping';
-import { EscapeCloseDirective } from '../../directives/escape-close.directive';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
@@ -25,7 +24,7 @@ import { ModifierPipe } from '../../pipes/modifier.pipe';
     selector: 'app-level-up-modal',
     templateUrl: './level-up-modal.component.html',
     styleUrls: ['./level-up-modal.component.scss'],
-    imports: [EscapeCloseDirective, CdkTrapFocus, FormsModule, SpellPickerComponent, ModifierPipe]
+    imports: [ModalComponent, FormsModule, SpellPickerComponent, ModifierPipe]
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;

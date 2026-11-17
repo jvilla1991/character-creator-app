@@ -9,8 +9,8 @@
   @if (grantFormOpen) {
     <div class="grant-form">
       <div class="field feat-combobox">
-        <label>Name</label>
-        <input type="text" [(ngModel)]="nameDraft" placeholder="e.g. Blessing of the Old Gods"
+        <label for="feat-grant-name">Name</label>
+        <input id="feat-grant-name" type="text" [(ngModel)]="nameDraft" placeholder="e.g. Blessing of the Old Gods"
           role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="featDropdownOpen"
           (focus)="onNameFocus()" (input)="onNameInput()" (blur)="onNameBlur()"
           (keydown.enter)="submitGrant()" (keydown.escape)="onNameEscape()" autofocus>
@@ -25,12 +25,12 @@
           }
         </div>
         <div class="field">
-          <label>Source</label>
-          <input type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
+          <label for="feat-grant-source">Source</label>
+          <input id="feat-grant-source" type="text" [(ngModel)]="sourceDraft" placeholder="DM Grant">
         </div>
         <div class="field">
-          <label>Description (optional)</label>
-          <textarea rows="2" [(ngModel)]="descDraft"
+          <label for="feat-grant-desc">Description (optional)</label>
+          <textarea id="feat-grant-desc" rows="2" [(ngModel)]="descDraft"
           placeholder="What it does…"></textarea>
         </div>
         <div class="grant-form-actions">

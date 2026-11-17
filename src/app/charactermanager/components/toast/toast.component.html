@@ -1,8 +1,23 @@
-@if (message$ | async; as message) {
-  <div class="toast" (click)="dismiss()" title="Dismiss">
-    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" style="flex: none;">
+@let message = message$ | async;
+<!-- The live region is always rendered, so screen readers register it before
+any message is inserted (a region that appears with its content is often not
+announced). It speaks the message; the visible toast below repeats it for
+sighted users and carries the keyboard-reachable dismiss button. -->
+<div class="visually-hidden" role="status">{{ message }}</div>
+
+@if (message) {
+  <div class="toast" (click)="dismiss()">
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4"
+      style="flex: none;" aria-hidden="true">
       <circle cx="8" cy="8" r="6.5"/><path d="M8 4.8v3.6M8 11h.01"/>
     </svg>
-    <span>{{ message }}</span>
+    <span aria-hidden="true">{{ message }}</span>
+    <button type="button" class="toast-dismiss" aria-label="Dismiss notification"
+      (click)="$event.stopPropagation(); dismiss()">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+        stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <path d="M4 4l8 8M12 4l-8 8"/>
+      </svg>
+    </button>
   </div>
 }

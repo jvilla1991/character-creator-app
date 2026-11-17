@@ -7,10 +7,9 @@
   </div>
 
   <div class="note-compose">
-    <textarea
+    <textarea aria-label="New campaign note"
       [(ngModel)]="draft"
       rows="2"
-      placeholder="Jot a note — a ruling, a clue, a thread to pull next time…"
       (keydown.control.enter)="add()"
     ></textarea>
     <button class="btn primary" [disabled]="!draft.trim() || saving()" (click)="add()">Add Note</button>

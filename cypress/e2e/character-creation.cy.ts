@@ -41,6 +41,8 @@ function stubBackend(): void {
     req.reply(created);
   }).as('addPc');
 
+  cy.intercept('GET', '**/api/v1/pc/find/*', (req) => req.reply(db[0])).as('getPc');
+
   // The shell also loads the user's campaigns — none for this spec, but stub
   // it anyway: every request the page makes should have a controlled answer
   // (an unstubbed call would just error to the console and hide real issues).
@@ -62,12 +64,15 @@ function stubBackend(): void {
 /** Re-queried fresh on every call — immune to step-transition re-renders. */
 const next = () => cy.contains('button', 'Next →').click();
 
-describe('character creation wizard', () => {
+for (const mobile of [false, true]) {
+describe(`character creation wizard (${mobile ? 'phone' : 'desktop'})`, () => {
   beforeEach(() => {
     // ORDER MATTERS: intercepts before the visit that triggers the requests.
+    cy.viewport(mobile ? 390 : 1280, mobile ? 664 : 900);
     stubBackend();
     cy.visitAuthed('/charactermanager', USER);
     cy.wait('@getPcs'); // shell loaded and fetched the (empty) roster
+    if (mobile) cy.get('.mobile-menu-btn').click();
     cy.contains('button', 'Create Character').click();
     cy.get('.modal.wizard').should('be.visible');
   });
@@ -164,7 +169,45 @@ describe('character creation wizard', () => {
     // Modal closes; the roster refetch (our stateful stub) shows the new hero.
     cy.get('.modal.wizard').should('not.exist');
     cy.wait('@getPcs');
-    cy.contains('.roster-name', 'Borin Ironfoot').should('be.visible');
+    cy.contains('.sheet-name', 'Borin Ironfoot').should('be.visible');
+    if (mobile) {
+      cy.get('.mobile-menu-btn').should('be.focused');
+      const checkChrome = () => {
+        cy.get('.mobile-topbar').should($bar => {
+          expect($bar[0].getBoundingClientRect().top, 'header at viewport top').to.be.closeTo(0, 1);
+        });
+        cy.get('.sheet-tabs').should($tabs => {
+          const rect = $tabs[0].getBoundingClientRect();
+          expect(rect.bottom, 'tabs at viewport bottom').to.be.closeTo($tabs[0].ownerDocument.defaultView!.innerHeight, 1);
+          expect(rect.top).to.be.greaterThan(0);
+        });
+      };
+      checkChrome();
+      // Model outer-page scrolling left by an auth form / mobile keyboard.
+      // The app shell must stay anchored even when the document can scroll.
+      cy.window().then(win => {
+        win.document.body.style.minHeight = '1200px';
+        win.scrollTo(0, 60);
+      });
+      checkChrome();
+      cy.window().then(win => {
+        win.document.body.style.minHeight = '';
+        win.scrollTo(0, 0);
+      });
+      cy.viewport(390, 500);
+      checkChrome();
+      cy.viewport(390, 844);
+      checkChrome();
+      cy.viewport(390, 664);
+      cy.get('.main').scrollTo('bottom');
+      checkChrome();
+      cy.contains('button.sheet-tab', 'Inventory').click();
+      cy.get('app-inventory-panel').should('exist');
+      cy.contains('button.sheet-tab', 'Sheet').click();
+      cy.screenshot('created-character-phone', { capture: 'viewport' });
+    } else {
+      cy.contains('.roster-name', 'Borin Ironfoot').should('be.visible');
+    }
   });
 
   it('restores a draft after reload', () => {
@@ -179,6 +222,7 @@ describe('character creation wizard', () => {
     });
 
     cy.reload();
+    if (mobile) cy.get('.mobile-menu-btn').click();
     cy.contains('button', 'Create Character').click();
     cy.get('.modal.wizard').should('be.visible');
 
@@ -207,3 +251,5 @@ describe('character creation wizard', () => {
     cy.get('.wizard-steps .step-dot').should('have.length', 8);
   });
 });
+
+}

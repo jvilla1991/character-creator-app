@@ -616,6 +616,7 @@ All four took the recommended option. These are settled; later slices should not
 | 7 | `fix/login-double-submit` | Done — one Enter sent two login requests; with the password empty it sent one anyway. Measured 2 → 1 and 1 → 0. |
 | 8 | `fix/pc-notes-label` | Done — relabelled "DM Notes" to "Notes"; the field was the player's all along. No backend change. |
 | 1–5 | `chore/impeccable-token-sweep` (slice 1) | Done — colour only, no px or font-size changes. Both P0s fixed, the seven undefined tokens mapped onto existing ones (no new tokens), every white-alpha literal gone, `.seg-btn.active` retuned, wizard violet → gold + celestial, and `npm run check:tokens` added to CI. See "Slice 1 results" below. |
+| 12–15, 18, 25 + a11y notes | `fix/a11y-deferred-backlog` (slice 2) | Done — disabled `.btn` state, a shared modal shell (Escape on all 13 dialogs, topmost only), the phone drawer as a modal dialog, turn / session / rest-vote live regions, named controls, app-wide reduced motion with a static turn cue, and the remaining a11y-notes items. See "Slice 2 results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -670,3 +671,40 @@ failure in any theme. They are a candidate follow-up, not slice-1 scope.
 before `npm ci`. It fails on `var(--x)` for an `--x` declared nowhere in `src/`, and on
 `rgba(255,255,255,` in any stylesheet under `src/` (component styles and `styles.css`) unless
 the line carries `token-check: allow-white: <reason>`. Verified by planting both leaks: exit 1.
+
+#### Slice 2 results (2026-11-15)
+
+Branch `fix/a11y-deferred-backlog`, cut from `develop` at `a56c50a` (after #234, #236, #238,
+#239 and #241). `/impeccable harden` drove it; `doctor` ran first (no auto fixes; it mentions
+the stale `design.json` sidecar and routes a `document` refresh, 34 commits since DESIGN.md's
+last edit). Every finding was re-checked on that `develop` before fixing: all were still present
+except the wizard's ability `select`s, which already carried `aria-label`s.
+
+| Rank | Finding | Fix | Measured / verified |
+|---|---|---|---|
+| 12 | Disabled `.btn` / `.btn.primary` look enabled | One disabled look for every variant: dashed `--text-dim` hairline and label, no fill, glow or hover. Shop/loot Buy lost their `opacity` override. | Boundary 4.52:1 (vellum) – 4.57:1 at worst against any ground; 15 specs over 4 variants × 3 themes |
+| 13 | Escape on 2 of 13 dialogs; level-up focus on `<body>`; no shared chrome | `appDialog` + `<app-modal>` (`components/modal/`): Escape for the topmost dialog only, focus in, Tab trap, focus back, `<h2>` titles | 15 shell specs; in-browser: dice roller over level-up closes one Escape at a time, focus walks back; level-up focus inside the dialog |
+| 13 | Phone header live above modal backdrops | `.main-inner` no longer sets `z-index` (its stacking context held every in-page dialog under the z 90 top bar) | `elementFromPoint` on the top bar returns the backdrop |
+| 14 | Drawer: no close, Escape, focus or `inert` | Modal dialog while open: close button (initial focus), Escape, Tab trap, focus back to the hamburger, `<main inert>`, `aria-expanded`; closed drawer `visibility: hidden` | Real Tab / Shift+Tab stay inside; scrim, close and Escape all return focus |
+| 15 | Turn changes and session start silent; countdown every second | Hidden `role="status"` lines on the initiative board (visible rows only) and an always-present one in the session banner; the rest-vote number is out of every live region and a line speaks at open / 10 s / 0 | Demo session: "Lyra Moonwhisper's turn. Throk Ironjaw is on deck." then the swap on Next Turn; banner and countdown by spec |
+| 18 | Unnamed controls; account fields save nothing | Settings toggles are `role="switch"` named by their rows; display name and email are read-only text with a note (no save path invented); 22 visible labels bound with `for`/`id`; placeholder-only fields and the encounter / loot / shop selects named | In-browser read of names and `aria-checked` / `aria-pressed` |
+| 25 | Reduced motion in 3 files; turn cue lives in an infinite animation | One global rule in `styles.css`; the my-turn vignette holds its green frame statically | Rule body forced in-page: animation ends after one 0.01 ms pass, frame stays at full strength |
+| notes | Curated rows, spellbook rows, toast, wizard step, initiative hero cell | Name buttons, a disclosure button, a toast dismiss button, a hidden "Step N of M", a conditional `role="button"` | Specs (curated / spellbook panels are viewport-deferred and do not render in a hidden browser pane) |
+
+Also added: a palette focus ring (`:focus-visible`, 2px `--gold`, 2px offset; worst 4.54:1, vellum)
+for controls without their own focus state. DESIGN.md now documents the disabled state, the
+focus ring, the dialog shell and the drawer, and its reduced-motion claim matches the code.
+
+**Gates.** `check:tokens` OK (1117 `var()` uses), `check:contrast` 135/135, `ng test` 929/929,
+production build 444.04 kB initial (budget 497 kB; ~441 kB before).
+
+**Known gaps, not fixed here:**
+- Focus returns to the opener only if it can still take focus: dialogs opened from the drawer
+  footer close the drawer first, so focus falls to `<body>` when they close.
+- The turn vignette (z 900) now paints over modal backdrops (z 100) instead of being trapped
+  under the phone top bar. It is `pointer-events: none` and only an edge glow, so it was left.
+- Not exercised in a browser: the session banner (hidden in demo mode), the players' rest-vote
+  dialog, and the delete-character dialog from a standalone sheet. Each is covered by a spec or
+  uses the shell unchanged.
+- Slice 3 still owns closing the drawer after navigating (campaign rows) and the sub-24px
+  targets; this branch also touches `styles.css`, so slice 3 should start from it.

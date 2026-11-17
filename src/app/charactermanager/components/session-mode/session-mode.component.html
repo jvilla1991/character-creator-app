@@ -281,10 +281,9 @@
           <span class="panel-title">Session Note</span>
         </div>
         <div class="note-compose">
-          <textarea
+          <textarea aria-label="Session note"
             [(ngModel)]="noteDraft"
             rows="2"
-            placeholder="Log a ruling, a roll, or a moment from this session…"
             (keydown.control.enter)="addNote(state)"
           ></textarea>
           <button class="btn primary" [disabled]="!noteDraft.trim() || savingNote" (click)="addNote(state)">Add Note</button>
@@ -322,27 +321,24 @@
     <!-- Long rest modal (DM): was the rest undisturbed? -->
     @if (state.dm && longRestModalOpen) {
       <div class="modal-backdrop" (click)="cancelLongRest()">
-        <div class="panel" style="max-width: 420px;" (click)="$event.stopPropagation()"
-          role="dialog" aria-modal="true" aria-labelledby="long-rest-title"
-          cdkTrapFocus cdkTrapFocusAutoCapture>
-          <div class="panel-header"><span class="panel-title" id="long-rest-title">Long Rest</span></div>
-          <p>The party settles in to rest — spell slots recover for everyone.
+        <app-modal title="Long Rest" (dismiss)="cancelLongRest()">
+          <div class="modal-sub">The party settles in to rest — spell slots recover for everyone.
             @if (survivalConditions) {
               Was the rest undisturbed?
             }
-          </p>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
-            <button class="btn primary" (click)="confirmLongRest(true, state)">
-              {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
-            </button>
+          </div>
+          <div class="modal-actions" style="flex-wrap: wrap;">
+            <button class="btn" (click)="cancelLongRest()">Cancel</button>
             @if (survivalConditions) {
               <button class="btn" (click)="confirmLongRest(false, state)">
                 Disturbed (−1 fatigue)
               </button>
             }
-            <button class="btn" (click)="cancelLongRest()">Cancel</button>
+            <button class="btn primary" style="flex: none;" (click)="confirmLongRest(true, state)">
+              {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
+            </button>
           </div>
-        </div>
+        </app-modal>
       </div>
     }
   </div>

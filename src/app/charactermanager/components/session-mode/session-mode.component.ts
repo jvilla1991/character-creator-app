@@ -24,7 +24,7 @@ import { ShopPanelComponent } from './shop-panel/shop-panel.component';
 import { LootPanelComponent } from './loot-panel/loot-panel.component';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.component';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { ModalComponent } from '../modal/modal.component';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
 
 /**
@@ -39,7 +39,7 @@ import { AsyncPipe, TitleCasePipe } from '@angular/common';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, CdkTrapFocus, AsyncPipe, TitleCasePipe]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, ModalComponent, AsyncPipe, TitleCasePipe]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();

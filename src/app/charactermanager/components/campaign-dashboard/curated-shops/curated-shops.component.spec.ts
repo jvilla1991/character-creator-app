@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
+import { CuratedShopService } from '../../../services/curated-shop.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedShopsComponent', () => {
@@ -102,5 +103,28 @@ describe('CuratedShopsComponent', () => {
     expect(service.delete).toHaveBeenCalledWith(5);
     expect(component.selected).toBeNull();
     expect(service.list).toHaveBeenCalled(); // back() reloads
+  });
+
+  it('opens a shop from the keyboard through the name button, not a row role', () => {
+    TestBed.resetTestingModule(); // beforeEach built the class without a DOM
+    TestBed.configureTestingModule({
+      imports: [CuratedShopsComponent],
+      providers: [{ provide: CuratedShopService, useValue: service }],
+    });
+    service.list.and.returnValue(of([{ id: 5, campaignId: 1, name: 'Smithy', settlement: 'Phandalin', itemCount: 1 }]));
+    service.get.and.returnValue(of(shop));
+    const fixture = TestBed.createComponent(CuratedShopsComponent);
+    fixture.componentInstance.campaign = campaign;
+    fixture.componentInstance.ngOnChanges({ campaign: {} as any });
+    fixture.detectChanges();
+
+    const row: HTMLElement = fixture.nativeElement.querySelector('.shop-row');
+    expect(row.getAttribute('role')).toBeNull(); // would nest the Copy JSON button
+    const open: HTMLButtonElement = row.querySelector('button.shop-open')!;
+    expect(open.textContent).toContain('Smithy');
+
+    open.click();
+    expect(service.get).toHaveBeenCalledTimes(1); // the row's own click did not fire again
+    expect(fixture.componentInstance.selected).toBe(shop);
   });
 });

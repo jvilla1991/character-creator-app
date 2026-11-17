@@ -1,3 +1,8 @@
+<!-- Spoken session start. Lives outside the @if so the region exists before
+the banner appears; a region created together with its text is often not
+announced. The 5s poll re-sets the same text, which stays silent. -->
+<div class="visually-hidden" role="status">@if (live(); as l) {A session is live in {{ l.campaignName }}. Join Session to take your place.}</div>
+
 <!-- Live-session banner (player view). Hidden when no session is live. -->
 @if (live(); as live) {
   <div class="session-banner">
@@ -8,7 +13,6 @@
     </div>
     <div class="session-banner-text">
       <span class="session-banner-title">A session is live</span>
-      <span class="session-banner-sub">{{ live.campaignName }} · take your place in the order</span>
     </div>
     <button class="btn primary" (click)="openPicker()">Join Session</button>
   </div>
@@ -17,18 +21,15 @@
 <!-- PC picker (reuses the join-campaign-modal pattern) -->
 @if (pickerOpen()) {
   <div class="modal-backdrop" (click)="closePicker()">
-    <div class="modal" style="border-color: var(--celestial);" (click)="$event.stopPropagation()"
-      role="dialog" aria-modal="true" aria-labelledby="session-picker-title"
-      cdkTrapFocus cdkTrapFocusAutoCapture>
-      <div class="modal-title" id="session-picker-title" style="color: var(--celestial-2);">Join the Session</div>
+    <app-modal title="Join the Session" tone="celestial" (dismiss)="closePicker()">
       <div class="modal-sub">
         Choose which hero takes the field in
         <em style="color: var(--text); font-style: normal;">{{ live()?.campaignName }}</em>.
       </div>
       @if (eligiblePcs.length) {
         <div class="field">
-          <label>Character</label>
-          <select [(ngModel)]="selectedPcId">
+          <label for="session-character">Character</label>
+          <select id="session-character" [(ngModel)]="selectedPcId">
             @for (pc of eligiblePcs; track pc) {
               <option [ngValue]="pc.id">
                 {{ pc.name }} — {{ pc.race }} {{ pc.clazz }}
@@ -54,6 +55,6 @@
           {{ joining() ? 'Joining…' : 'Take the Field' }}
         </button>
       </div>
-    </div>
+    </app-modal>
   </div>
 }

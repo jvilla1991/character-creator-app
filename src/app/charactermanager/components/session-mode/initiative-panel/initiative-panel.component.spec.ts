@@ -51,6 +51,42 @@ describe('InitiativePanelComponent', () => {
     ...overrides,
   });
 
+  // --- turnAnnouncement (hidden status line) ---
+
+  describe('turnAnnouncement', () => {
+    const aria = participant({ participantId: 1, name: 'Aria' });
+    const goblin = participant({ participantId: 2, name: 'Goblin', npc: true, pcId: null });
+
+    beforeEach(() => {
+      component.status = 'ACTIVE';
+      component.participants = [aria, goblin];
+    });
+
+    it('names whose turn it is and who is on deck', () => {
+      component.activeParticipantId = 1;
+      component.onDeckParticipantId = 2;
+      expect(component.turnAnnouncement).toBe("Aria's turn. Goblin is on deck.");
+    });
+
+    it('drops the on-deck clause when nobody visible is on deck', () => {
+      component.activeParticipantId = 2;
+      component.onDeckParticipantId = null;
+      expect(component.turnAnnouncement).toBe("Goblin's turn.");
+    });
+
+    it("says nothing when the active combatant is not in this viewer's rows (a hidden enemy)", () => {
+      component.activeParticipantId = 99;
+      component.onDeckParticipantId = 1;
+      expect(component.turnAnnouncement).toBe('');
+    });
+
+    it('says nothing in the lobby', () => {
+      component.status = 'LOBBY';
+      component.activeParticipantId = 1;
+      expect(component.turnAnnouncement).toBe('');
+    });
+  });
+
   // --- canOpenSheet ---
 
   describe('canOpenSheet', () => {

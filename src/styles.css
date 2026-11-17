@@ -187,13 +187,57 @@ body {
 }
 
 /* Angular root element — replaces React's #root */
-app-root { display: block; height: 100vh; width: 100vw; }
+app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 
 /* Typography helpers */
 .display    { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: 0.04em; }
 .eyebrow    { font-family: 'Cinzel', serif; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; font-size: 10px; color: var(--text-dim); }
 .numeric    { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
 .serif      { font-family: 'Newsreader', Georgia, serif; }
+/* Read by screen readers, never drawn: live-region lines and spoken context
+   the visual layout already carries. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === KEYBOARD FOCUS ===
+   One ring for every control that does not draw its own focus state (inputs
+   keep their gold border + glow). Gold clears 3:1 against every ground in
+   all three themes; the 2px offset keeps it off gold-bordered buttons.
+   :where() keeps it at zero specificity, so a component's own focus style
+   still wins. Pointer clicks do not show it (:focus-visible). */
+:where(button, a[href], summary, [role="button"], [role="tab"], [role="switch"],
+       [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* === REDUCED MOTION ===
+   One rule for the whole app, component styles included (it is global and
+   !important). Every animation and transition collapses to an instant change:
+   things still arrive in their final state, nothing slides, fades or pulses.
+   0.01ms rather than none so animationend/transitionend still fire for any
+   code that waits on them. Infinite animations run once and stop at rest, so
+   any state an animation carries must also live on the element itself — see
+   the my-turn vignette in session-mode, which keeps a static green frame. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* === LAYOUT === */
 .app {
@@ -468,6 +512,26 @@ app-root { display: block; height: 100vh; width: 100vw; }
   width: 34px; height: 34px;
   display: inline-flex; align-items: center; justify-content: center;
 }
+/* Disabled: one look for every variant. The hairline turns dashed (a cue that
+   does not depend on colour) and both border and label drop to --text-dim,
+   which clears 4.5:1 on every surface in every theme, so the boundary clears
+   the 3:1 non-text floor. Fill, glow and hover go: an inert control does not
+   announce itself or answer the pointer. The selector list out-ranks the
+   variant and :hover rules above (and vellum's primary label override). */
+.btn:disabled,
+.btn:disabled:hover,
+.btn.primary:disabled,
+.btn.primary:disabled:hover,
+.btn.danger:disabled:hover,
+.btn.play:disabled:hover,
+[data-theme] .btn.primary:disabled {
+  background: transparent;
+  border-color: var(--text-dim);
+  border-style: dashed;
+  color: var(--text-dim);
+  box-shadow: none;
+  cursor: not-allowed;
+}
 
 /* === MAIN === */
 .main {
@@ -493,8 +557,12 @@ app-root { display: block; height: 100vh; width: 100vw; }
   max-width: 1180px;
   margin: 0 auto;
   padding: 28px 36px 80px;
+  /* Positioned (no z-index) so it paints over the fixed .main::before sigil
+     by source order. A z-index here would make it a stacking context and trap
+     every dialog opened from the sheet, dashboard or session (backdrop z 100)
+     beneath the sticky phone top bar (z 90), leaving the bar live above the
+     backdrop. */
   position: relative;
-  z-index: 1;
 }
 
 /* === HEADER STRIP === */
@@ -1204,6 +1272,35 @@ app-root { display: block; height: 100vh; width: 100vw; }
   color: var(--gold);
   margin: 0 0 4px;
 }
+/* <app-modal> shell: title row with room for the close button, and the two
+   accent tones the dialogs used to set inline. */
+.modal-head { position: relative; }
+.modal-head.has-close { padding-right: 40px; }
+.modal-close {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.modal-close:hover { color: var(--gold); border-color: var(--border); }
+.modal.tone-celestial { border-color: var(--celestial); }
+.modal.tone-celestial .modal-title { color: var(--celestial-2); }
+.modal.tone-crimson { border-color: var(--crimson); }
+.modal.tone-crimson .modal-title { color: var(--crimson); }
+/* A dialog only takes focus itself when it has nothing tabbable yet (e.g.
+   level-up while its preview loads); the box needs no ring for that. */
+.dialog-active:focus { outline: none; }
 .modal-sub {
   font-family: 'Newsreader', serif;
   font-style: italic;
@@ -1887,6 +1984,22 @@ select:focus {
 }
 .pref-row:last-child { border-bottom: none; }
 .pref-label { font-family: 'Newsreader', serif; font-size: 15px; color: var(--text); }
+/* Account name and email: read-only facts, labelled like fields. */
+.account-facts { margin: 0 0 6px; display: grid; gap: 12px; }
+.account-facts dt {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.account-facts dd {
+  margin: 4px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
 .pref-sub { font-family: 'Newsreader', serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 .toggle {
   width: 42px; height: 24px;
@@ -1998,4 +2111,19 @@ select:focus {
 
   /* The account row at the drawer footer is also a tap target. */
   .account-row { min-height: 48px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   BOTTOM BAR CLEARANCE
+   A screen that pins a tab bar to the bottom edge adds .has-bottom-tab-bar to
+   <body> while it is on screen (CharacterSheetComponent does this). The token
+   is inherited by everything in the page, so the fixed dice launcher — which
+   lives in the app shell, far from the sheet in the DOM — can lift itself off
+   the bar instead of sitting on top of the Followers/Log tabs.
+   The bar itself only exists below 820px; above that the token stays 0.
+   ════════════════════════════════════════════════════════════════════════ */
+body { --bottom-bar-height: 0px; }
+
+@media (max-width: 820px) {
+  body.has-bottom-tab-bar { --bottom-bar-height: calc(48px + env(safe-area-inset-bottom)); }
 }

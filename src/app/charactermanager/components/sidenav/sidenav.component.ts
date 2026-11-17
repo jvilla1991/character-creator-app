@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, input } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject, input, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
@@ -14,13 +14,14 @@ import { SessionModeComponent } from '../session-mode/session-mode.component';
 import { SessionLiveBannerComponent } from '../session-live-banner/session-live-banner.component';
 import { RouterOutlet } from '@angular/router';
 import { CampaignDashboardComponent } from '../campaign-dashboard/campaign-dashboard.component';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, DOCUMENT } from '@angular/common';
+import { DialogDirective } from '../modal/dialog.directive';
 
 @Component({
     selector: 'app-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
-    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe]
+    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe, DialogDirective]
 })
 export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
@@ -30,6 +31,7 @@ export class SidenavComponent implements OnInit {
   query = '';
   /** Mobile only: whether the party pane is slid in over the sheet. Ignored at desktop widths. */
   drawerOpen = false;
+  private readonly mobileMenuButton = viewChild<ElementRef<HTMLButtonElement>>('mobileMenuButton');
   activePC$ = this.pcService.activePC$;
   readonly isPlayer = this.uiState.isPlayer;
   readonly isDm = this.uiState.isDm;
@@ -41,6 +43,8 @@ export class SidenavComponent implements OnInit {
   user = this.currentUser.getUser();
 
   private allPcs: PC[] = [];
+  private readonly doc = inject(DOCUMENT);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private pcService: PCService,
@@ -53,6 +57,15 @@ export class SidenavComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // The drawer only exists below 820px. If the window grows past that with
+    // the drawer open, drop it, or <main> would stay inert on a desktop layout.
+    const desktop = this.doc.defaultView?.matchMedia?.('(min-width: 821px)');
+    if (desktop) {
+      const onChange = (e: MediaQueryListEvent) => { if (e.matches) this.closeDrawer(); };
+      desktop.addEventListener('change', onChange);
+      this.destroyRef.onDestroy(() => desktop.removeEventListener('change', onChange));
+    }
+
     this.pcService.pcs$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(pcs => {
@@ -74,7 +87,19 @@ export class SidenavComponent implements OnInit {
 
   /** Mobile drawer controls — no-ops visually at desktop widths (drawer CSS only applies <=820px). */
   toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; }
-  closeDrawer(): void { this.drawerOpen = false; }
+  closeDrawer(): void {
+    if (!this.drawerOpen) return;
+    this.drawerOpen = false;
+    // Render now, so <main> drops `inert` before focus moves into it. While the
+    // drawer is open the page behind it is inert, and an inert element cannot
+    // take focus: without this the focus() below silently fails, and a wizard
+    // opened from the drawer records the hidden drawer button as its opener.
+    this.cdr.detectChanges();
+    // The wizard captures its opener and restores focus when it closes.
+    // Give it a visible return target before opening it, rather than leaving
+    // focus on a button in the off-screen drawer that can scroll the page.
+    this.mobileMenuButton()?.nativeElement.focus({ preventScroll: true });
+  }
 
   setActivePC(pc: PC): void {
     this.pcService.setActivePC(pc);

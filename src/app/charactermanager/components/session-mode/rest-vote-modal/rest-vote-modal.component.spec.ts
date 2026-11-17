@@ -119,4 +119,51 @@ describe('RestVoteModalComponent', () => {
     fixture.detectChanges();
     expect(component.secondsLeft()).toBe(0);
   });
+
+  describe('screen-reader countdown', () => {
+    /** Move the component's clock (the 500ms tick writes the same signal). */
+    const advanceTo = (ms: number) => component['now'].set(frozenNow + ms);
+    const status = () => fixture.debugElement.queryAll(By.css('[role="status"]'));
+
+    for (const dm of [false, true]) {
+      it(`speaks only at open, at ten seconds and at zero (${dm ? 'DM' : 'player'} face)`, () => {
+        fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(frozenNow + 60_000).toISOString() }));
+        fixture.componentRef.setInput('dm', dm);
+        fixture.componentRef.setInput('myParticipantId', 7);
+        fixture.detectChanges();
+
+        // One hidden status line, empty at creation so the opening line is
+        // a change the reader announces.
+        expect(status().length).toBe(1);
+        expect(component.countdownAnnouncement()).toBe('');
+
+        advanceTo(500);
+        const opening = component.countdownAnnouncement();
+        expect(opening).toBe('Gorath calls for a short rest. Every hero must agree.');
+
+        // Every tick from 59s down to 11s leaves the spoken text unchanged.
+        for (let left = 59; left > 10; left--) {
+          advanceTo(60_000 - left * 1000);
+          expect(component.countdownAnnouncement()).toBe(opening);
+        }
+
+        advanceTo(50_000);
+        expect(component.countdownAnnouncement()).toBe('Ten seconds left in the short rest vote.');
+        advanceTo(55_000);
+        expect(component.countdownAnnouncement()).toBe('Ten seconds left in the short rest vote.');
+
+        advanceTo(60_000);
+        expect(component.countdownAnnouncement()).toBe('Time is up for the short rest vote.');
+      });
+
+      it(`keeps the ticking number out of every live region (${dm ? 'DM' : 'player'} face)`, () => {
+        fixture.componentRef.setInput('restVote', vote());
+        fixture.componentRef.setInput('dm', dm);
+        fixture.detectChanges();
+
+        const countdown: HTMLElement = fixture.debugElement.query(By.css('.vote-countdown')).nativeElement;
+        expect(countdown.closest('[aria-live], [role="status"], [role="alert"]')).toBeNull();
+      });
+    }
+  });
 });

@@ -7,6 +7,7 @@
 /* The mobile top bar and scrim are hidden by default (desktop). */
 .mobile-topbar { display: none; }
 .drawer-scrim { display: none; }
+.drawer-close { display: none; }
 
 @media (max-width: 820px) {
 
@@ -14,6 +15,10 @@
      overlays as a drawer. 100dvh tracks the real visible height as mobile
      browser chrome shows/hides (plain 100vh over-shoots and clips). */
   .app {
+    // Keep document scrolling (e.g. after focusing an auth field) from moving
+    // the shell off-screen. Only .main scrolls within the mobile shell.
+    position: fixed;
+    inset: 0;
     grid-template-columns: 1fr;
     height: 100dvh;
   }
@@ -27,13 +32,37 @@
     width: min(86vw, 340px);
     z-index: 120;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
     box-shadow: none;
+    /* Closed, it is off-screen but would still take Tab focus and be read
+       out. visibility hides it from both, flipping only after the slide-out
+       finishes (and at once on the way in). */
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
   }
   .sidebar.open {
     transform: translateX(0);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    visibility: visible;
+    transition: transform 0.25s ease;
   }
+
+  /* The drawer's own way out, beside the brand. */
+  .drawer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-2);
+    cursor: pointer;
+  }
+  .drawer-close:active { border-color: var(--gold); color: var(--gold); }
 
   /* Dim layer behind the open drawer; tap to dismiss. */
   .drawer-scrim {
