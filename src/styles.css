@@ -751,7 +751,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .ability {
   text-align: center;
-  padding: 14px 8px 10px;
+  padding: 18px 8px 10px;
   background: var(--bg-2);
   border: 1px solid var(--border-soft);
   border-radius: 3px;
@@ -768,7 +768,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   font-size: var(--text-2xs);
   letter-spacing: var(--track-label);
   color: var(--text-dim);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .ability-mod {
   font-family: 'Cinzel', serif;
@@ -787,7 +787,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .ability-save {
   position: absolute;
-  top: 6px; right: 6px;
+  top: 5px; right: 6px;
+  line-height: 1;
   font-size: var(--text-2xs);
   color: var(--celestial);
   font-family: 'JetBrains Mono', monospace;
@@ -892,6 +893,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
      control on a page can scroll out from under it. */
   .main-inner { padding: 20px 16px 84px; }
   .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Two columns leave ~107px of label at 320px with 16px sides, and an 11px
+     eyebrow like "Top Pass. Perc" needs ~115px. Tighter sides, same type. */
+  .vital { padding-left: 10px; padding-right: 10px; }
   .equip-grid { grid-template-columns: minmax(0, 1fr); }
 
   /* The header gave a 120px portrait its own column and pushed the vitals
@@ -1805,7 +1809,9 @@ select:focus {
 .board { overflow-x: auto; }
 .board-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.7fr) 150px 56px 64px 64px minmax(120px, 1.3fr) 16px;
+  /* The two passive columns fit their 11px heads on one line ("Pass. Perc"
+     is ~77px wide with label tracking). The initiative board sets its own. */
+  grid-template-columns: minmax(160px, 1.7fr) 150px 56px 78px 66px minmax(120px, 1.3fr) 16px;
   align-items: center;
   gap: 14px;
   padding: 11px 8px;
@@ -2033,6 +2039,22 @@ select:focus {
   border-top: 1px solid var(--border-soft);
 }
 .theme-swatch.active .theme-swatch-label { color: var(--gold); }
+/* Three across leaves ~70px per label below ~360px, and "Candlelit" needs
+   ~81px at 11px with label tracking. Stack the swatches as rows there:
+   preview strip on the left, name on the right. */
+@media (max-width: 360px) {
+  .theme-swatches { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .theme-swatch { display: grid; grid-template-columns: 72px minmax(0, 1fr); }
+  .theme-swatch-preview { height: 36px; }
+  .theme-swatch-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    text-align: left;
+    border-top: 0;
+    border-left: 1px solid var(--border-soft);
+  }
+}
 
 /* Preference toggle rows */
 .pref-row {

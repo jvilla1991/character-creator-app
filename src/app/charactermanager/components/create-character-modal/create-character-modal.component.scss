@@ -8,8 +8,9 @@
 
 .ruleset-bar {
   display: flex;
+  flex-wrap: wrap;          // the pill drops to its own line at 320px instead of breaking in two
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   margin-bottom: 18px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-soft);
@@ -50,6 +51,7 @@
   border: 1px solid var(--border);
   border-radius: 100px;
   padding: 2px 7px;
+  white-space: nowrap;
 }
 
 // ── Wizard step indicator ─────────────────────────────────────────────────

@@ -53,7 +53,7 @@
 
 .score-method-tabs {
   display: flex;
-  align-items: center;
+  align-items: stretch;     // tabs keep one height when a label wraps
   gap: 4px;
   margin-bottom: 14px;
 }

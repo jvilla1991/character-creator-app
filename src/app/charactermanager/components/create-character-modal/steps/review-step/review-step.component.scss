@@ -10,11 +10,15 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
+// A label can wrap ("Prof Bonus" in a narrow column), so the value is pinned
+// to the foot of each cell and the five stay level.
 .review-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   gap: 3px;
+  text-align: center;
 }
 
 .review-stat-label {
