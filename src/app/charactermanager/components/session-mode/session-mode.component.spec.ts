@@ -1,4 +1,5 @@
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
+import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { SessionModeComponent } from './session-mode.component';
 import { ParticipantView, RestVoteView, SessionState } from '../../models/session';
@@ -8,6 +9,7 @@ import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
 import { PC } from '../../models/pc';
+import { LEVEL_UP_ANSWERED_KEY, LevelUpPromptService } from '../../services/level-up-prompt.service';
 
 // Class-only test of the initiative-visibility predicate (no TestBed; only
 // sessionService.state$ is touched during construction, so stub just that).
@@ -216,5 +218,92 @@ describe('SessionModeComponent rest vote', () => {
 
     track(state({ restVote: restVote('FAILED') }));
     expect(notifications.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionModeComponent level-up prompt (rides the session poll)', () => {
+  let component: SessionModeComponent;
+  let states: Subject<SessionState | null>;
+  let pcService: { store: PC[]; getPCById: (id: number) => PC | undefined; patchLocalPC: jasmine.Spy };
+  let prompt: LevelUpPromptService;
+
+  const seated = (over: Partial<ParticipantView> = {}): ParticipantView =>
+    ({ participantId: 1, pcId: 7, npc: false, ownedByMe: true, name: 'Aria', level: 3, ...over } as ParticipantView);
+
+  const snapshot = (over: Partial<SessionState> = {}): SessionState => ({
+    sessionId: 1, campaignId: 1, status: 'ACTIVE', dm: false, version: 1,
+    gameTime: null, restVote: null, myXp: 0, myLevelGrant: false,
+    participants: [seated()], ...over,
+  } as SessionState);
+
+  beforeEach(() => {
+    localStorage.removeItem(LEVEL_UP_ANSWERED_KEY);
+    TestBed.resetTestingModule();
+    states = new Subject<SessionState | null>();
+    pcService = {
+      store: [{ id: 7, name: 'Aria', level: 3, xp: 0, pendingLevelGrant: false } as PC],
+      getPCById(id: number) { return this.store.find(p => p.id === id); },
+      patchLocalPC: jasmine.createSpy('patchLocalPC'),
+    };
+    const sessionServiceStub = { state$: states.asObservable(), startPolling: () => undefined, clear: () => undefined };
+    const campaignStub = { getSummary: () => of({}) };
+    const notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionServiceStub as never, null as never, pcService as never, notifications, campaignStub as never,
+      null as never, null as never, TestBed.inject(DestroyRef)));
+    // The required signal input has no template to bind it here; supply it directly.
+    (component as unknown as { sessionId: () => string }).sessionId = () => '1';
+    component.ngOnInit();
+    prompt = TestBed.inject(LevelUpPromptService);
+  });
+
+  afterEach(() => localStorage.removeItem(LEVEL_UP_ANSWERED_KEY));
+
+  it('a snapshot with myLevelGrant: true prompts the seated player and mirrors the grant locally', () => {
+    states.next(snapshot({ myLevelGrant: true }));
+
+    expect(prompt.prompt()).toEqual(jasmine.objectContaining({ pcId: 7, targetLevel: 4, reason: 'grant' }));
+    expect(pcService.patchLocalPC).toHaveBeenCalledWith(7, { pendingLevelGrant: true });
+  });
+
+  it('myLevelGrant null (older backend) falls back to the local store', () => {
+    pcService.store[0].pendingLevelGrant = true;
+
+    states.next(snapshot({ myLevelGrant: null }));
+
+    expect(prompt.prompt()).toEqual(jasmine.objectContaining({ reason: 'grant' }));
+    expect(pcService.patchLocalPC).not.toHaveBeenCalled();
+  });
+
+  it('myLevelGrant null with no local grant does not prompt', () => {
+    states.next(snapshot({ myLevelGrant: null }));
+
+    expect(prompt.prompt()).toBeNull();
+  });
+
+  it('an XP award crossing the threshold (myXp) prompts and mirrors the XP', () => {
+    states.next(snapshot({ myXp: 2_700 }));
+
+    expect(prompt.prompt()).toEqual(jasmine.objectContaining({ targetLevel: 4, reason: 'xp' }));
+    expect(pcService.patchLocalPC).toHaveBeenCalledWith(7, { xp: 2_700 });
+  });
+
+  it('never prompts the DM (no seated PC; myXp/myLevelGrant null)', () => {
+    pcService.store[0].pendingLevelGrant = true; // even if the DM's own PC holds a grant
+    states.next(snapshot({
+      dm: true, myXp: null, myLevelGrant: null,
+      participants: [seated({ ownedByMe: false })],
+    }));
+
+    expect(prompt.prompt()).toBeNull();
+    expect(pcService.patchLocalPC).not.toHaveBeenCalled();
+  });
+
+  it('ignores a snapshot that is behind a level-up already committed here', () => {
+    pcService.store[0].level = 4; // levelled up; the poll hasn't caught up
+    states.next(snapshot({ myLevelGrant: true, participants: [seated({ level: 3 })] }));
+
+    expect(prompt.prompt()).toBeNull();
+    expect(pcService.patchLocalPC).not.toHaveBeenCalled();
   });
 });

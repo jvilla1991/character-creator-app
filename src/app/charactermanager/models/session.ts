@@ -166,6 +166,11 @@ export interface SessionState {
   // they're the DM or have no PC seated. Not on ParticipantView — that's broadcast
   // to every participant, and XP shouldn't leak between players.
   myXp: number | null;
+  // Caller-scoped, like myXp: whether the requester's own seated PC holds an
+  // unspent DM level grant (pendingLevelGrant). null for the DM / no seated PC,
+  // and while the backend predates the field — callers then fall back to the
+  // local PC store.
+  myLevelGrant: boolean | null;
   // The campaign's in-world clock (null until the DM sets or advances it).
   // Broadcast to every viewer; only the DM can change it.
   gameTime: CampaignGameTime | null;
