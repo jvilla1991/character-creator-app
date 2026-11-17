@@ -24,8 +24,8 @@ describe('renown milestones', () => {
   it('tops out at 100% on the highest score of every standing', () => {
     for (const [, max] of ranges) expect(renownProgress(max)).toBe(100);
   });
-  it('spans the whole −100…+100 scale with no gaps or overlaps', () => {
-    expect(RENOWN_MILESTONES.reduce((sum, tier) => sum + renownSpan(tier), 0)).toBe(201);
+  it('fills the drawn −60…+60 scale with no gaps or overlaps', () => {
+    expect(RENOWN_MILESTONES.reduce((sum, tier) => sum + renownSpan(tier), 0)).toBe(121);
     RENOWN_MILESTONES.forEach((tier, i) => {
       const next = RENOWN_MILESTONES[i + 1];
       if (next) expect(next.min as number).toBe(tier.max + 1);
@@ -36,11 +36,11 @@ describe('renown milestones', () => {
     expect(RENOWN_THRESHOLDS.filter(t => t.minor).map(t => t.value)).toEqual([-10, 10]);
   });
   it('pins each threshold to the boundary between its two standings', () => {
-    // −3 sits between −3 and −2 (98 of 201 scores in); +3 between +2 and +3 (103).
+    // −3 sits between −3 and −2 (58 of 121 scores in); +3 between +2 and +3 (63).
     const at = (value: number) => RENOWN_THRESHOLDS.find(t => t.value === value)!.percent;
-    expect(at(-3)).toBeCloseTo(98 / 201 * 100, 6);
-    expect(at(3)).toBeCloseTo(103 / 201 * 100, 6);
-    expect(at(-25)).toBeCloseTo(76 / 201 * 100, 6);
-    expect(at(50)).toBeCloseTo(150 / 201 * 100, 6);
+    expect(at(-3)).toBeCloseTo(58 / 121 * 100, 6);
+    expect(at(3)).toBeCloseTo(63 / 121 * 100, 6);
+    expect(at(-25)).toBeCloseTo(36 / 121 * 100, 6);
+    expect(at(50)).toBeCloseTo(110 / 121 * 100, 6);
   });
 });
