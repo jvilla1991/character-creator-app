@@ -1,0 +1,143 @@
+/* Panel chrome, .field, .btn and .portrait come from global styles.css. */
+
+// ── DM "Grant follower" form (mirrors the features-list grant form) ─────────
+
+.grant-form {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.grant-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.follower-json-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+// .field styles input/select globally but not textarea — extend it here.
+// Monospace: the DM is editing JSON, where alignment and quotes matter.
+.follower-json {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 2px;
+  outline: none;
+  resize: vertical;
+  tab-size: 2;
+
+  &:focus {
+    border-color: var(--gold);
+    box-shadow: var(--glow-gold);
+  }
+
+  &[aria-invalid='true'] { border-color: var(--crimson); }
+}
+
+.follower-help {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+
+  code {
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+}
+
+.follower-error {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--crimson);
+}
+
+// ── Follower list ──────────────────────────────────────────────────────────
+
+.follower-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.follower-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child { border-bottom: none; }
+}
+
+// The whole row (minus the DM's Dismiss) is one button that opens the sheet.
+.follower-open {
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover .follower-name,
+  &:focus-visible .follower-name { color: var(--gold); }
+}
+
+.follower-id {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.follower-name {
+  color: var(--text);
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.follower-summary,
+.follower-stats {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.follower-stats {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.follower-empty {
+  margin: 0;
+  padding: 8px 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+// Narrow sheets: let the HP/AC line drop under the name rather than squeeze it.
+@media (max-width: 520px) {
+  .follower-open { flex-wrap: wrap; row-gap: 4px; }
+  .follower-stats { flex-basis: 100%; padding-left: 48px; }
+}
