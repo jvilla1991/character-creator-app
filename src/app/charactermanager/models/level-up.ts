@@ -1,5 +1,4 @@
 import { PcSpell } from './pc';
-import { Rune } from './hero-class';
 
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
@@ -35,6 +34,11 @@ export interface LevelUpPreview {
   // Class features automatically gained at the new level (name + server-owned description).
   // Empty when the class/level has no seeded features. Read-only — no choice involved.
   featuresGained: { name: string; desc: string }[];
+  // Level-2 Fighting Style feature (Paladin 2, Ranger 2): whether the choice is due and the
+  // selectable style names (sorted). A Demon Hunter ranger also gets 'Void Warrior'. Optional —
+  // the player may skip it. Descriptions are looked up locally (FEAT_DESCRIPTIONS).
+  fightingStyleDue: boolean;
+  fightingStyleOptions: string[];
   // Cantrips known before/after the level (caster classes; 0 for non-casters). Informational.
   currentCantripsKnown: number;
   newCantripsKnown: number;
@@ -60,6 +64,11 @@ export interface LevelUpChoices {
   feat?: string;
   newSpells?: PcSpell[];
   hpMode?: HpMode;
-  /** Ebon Blade only: a new rune, sent only when the player changes it. */
-  rune?: Rune;
+  /**
+   * The level-2 Fighting Style, only when `fightingStyleDue`. 'Void Warrior' must come with
+   * exactly two Warlock cantrips in `newSpells` (on top of any class cantrip allowance).
+   */
+  fightingStyle?: string;
+  /** Hero classes that respec on level-up only: the new specialization, sent only when it changes. */
+  specialization?: string;
 }

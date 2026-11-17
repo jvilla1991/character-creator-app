@@ -764,19 +764,20 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.contentSources).toEqual({ 'Base Game': true, 'World of Warcraft': true });
     });
 
-    it('shows the base classes then Death Knight (Paladin) with both sources on', () => {
+    it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
     });
 
-    it('hides Death Knight with World of Warcraft off', () => {
+    it('hides the WoW hero classes with World of Warcraft off', () => {
       component.toggleContentSource('World of Warcraft');
       expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Barbarian', 'Bard', 'Wizard']);
     });
 
-    it('shows only Death Knight with Base Game off', () => {
+    it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
-      expect(component.visibleClassOptions.map(o => o.label)).toEqual(['Death Knight (Paladin)']);
+      expect(component.visibleClassOptions.map(o => o.label))
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -834,18 +835,20 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('requires a rune before the class step can advance', () => {
       component.step = 3;
+      expect(component.specializationRequired).toBeTrue();
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Blood', 'Frost', 'Unholy']);
       expect(component.canAdvance).toBeFalse();
-      component.selectRune('Blood');
+      component.selectSpecialization('Blood');
       expect(component.canAdvance).toBeTrue();
     });
 
     it('clears the rune and subclass when switching to base Paladin', () => {
-      component.selectRune('Frost');
+      component.selectSpecialization('Frost');
       component.toggleClass('Paladin');
       expect(component.clazz).toBe('Paladin');
       expect(component.heroClass).toBeUndefined();
       expect(component.selectedSubclass).toBe('');
-      expect(component.rune).toBe('');
+      expect(component.specialization).toBe('');
       component.step = 3;
       expect(component.canAdvance).toBeTrue();   // base Paladin needs no rune
     });
@@ -856,11 +859,11 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.selectedClassLabel).toBe('');
     });
 
-    it('emits clazz Paladin + subclass + rune in the create payload', (done) => {
+    it('emits clazz Paladin + subclass + specialization in the create payload', (done) => {
       component.name = 'Isolde';
       component.species = 'Human';
       component.background = 'Sage';
-      component.selectRune('Unholy');
+      component.selectSpecialization('Unholy');
       component.selectedSkills = ['Athletics', 'Religion'];
       component.assignments = { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 13 };
       component.bonusPlus2 = 'INT';
@@ -874,7 +877,8 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.confirm.subscribe((draft: any) => {
         expect(draft.clazz).toBe('Paladin');
         expect(draft.subclass).toBe('Oath of the Ebon Blade');
-        expect(draft.rune).toBe('Unholy');
+        expect(draft.specialization).toBe('Unholy');
+        expect('rune' in draft).toBeFalse();
         expect(draft.hp.max).toBe(12);          // Paladin d10 + CON 14
         expect(draft.spellSlots).toEqual({});   // Paladin has no level-1 slots here
         done();
@@ -882,12 +886,12 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
-    it('sends a null rune for a base class', (done) => {
+    it('sends a null specialization for a base class', (done) => {
       component.toggleClass('Wizard');
       component.name = 'Aelindra';
       component.step = component.reviewStep;
       component.confirm.subscribe((draft: any) => {
-        expect(draft.rune).toBeNull();
+        expect(draft.specialization).toBeNull();
         expect(draft.subclass).toBeUndefined();
         done();
       });
@@ -896,7 +900,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('restores the hero class, rune and source filter from a saved draft', () => {
       component.name = 'Isolde';
-      component.selectRune('Frost');
+      component.selectSpecialization('Frost');
       component.toggleContentSource('Base Game');
       component.ngOnDestroy();   // saves the draft
 
@@ -905,9 +909,90 @@ describe('CreateCharacterModalComponent — logic', () => {
       restored.ngOnInit();
       expect(restored.clazz).toBe('Paladin');
       expect(restored.selectedClassLabel).toBe('Death Knight (Paladin)');
-      expect(restored.rune).toBe('Frost');
+      expect(restored.specialization).toBe('Frost');
       expect(restored.selectedSubclass).toBe('Oath of the Ebon Blade');
       expect(restored.contentSources['Base Game']).toBeFalse();
+    });
+  });
+
+  describe('Demon Hunter (Ranger)', () => {
+    beforeEach(() => {
+      dndResources.getClassDetail.calls.reset();
+      component.toggleClass('Demon Hunter (Ranger)');
+    });
+
+    it('stores the Ranger base class with the Demon Hunter subclass locked in', () => {
+      expect(component.clazz).toBe('Ranger');
+      expect(component.selectedSubclass).toBe('Demon Hunter');
+      expect(component.selectedClassLabel).toBe('Demon Hunter (Ranger)');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Ranger');
+    });
+
+    it('requires a specialization before the class step can advance', () => {
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Devourer', 'Havoc', 'Vengeance']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Havoc');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('clears the specialization when switching to another hero class', () => {
+      component.selectSpecialization('Vengeance');
+      component.toggleClass('Death Knight (Paladin)');
+      expect(component.specialization).toBe('');
+      expect(component.selectedSubclass).toBe('Oath of the Ebon Blade');
+    });
+
+    it('emits clazz Ranger + subclass Demon Hunter + specialization in the create payload', (done) => {
+      component.name = 'Shalassa';
+      component.selectSpecialization('Havoc');
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Ranger');
+        expect(draft.subclass).toBe('Demon Hunter');
+        expect(draft.specialization).toBe('Havoc');
+        done();
+      });
+      component.submit();
+    });
+
+    it('restores a legacy draft that saved the specialization as rune', () => {
+      component.ngOnDestroy();
+      const key = (component as any).draftKey as string;
+      const saved = JSON.parse(localStorage.getItem(key) ?? '{}');
+      delete saved.specialization;
+      saved.heroClassLabel = 'Death Knight (Paladin)';
+      saved.clazz = 'Paladin';
+      saved.rune = 'Blood';
+      saved.name = 'Isolde';
+      localStorage.setItem(key, JSON.stringify(saved));
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.specialization).toBe('Blood');
+      localStorage.removeItem(key);
+    });
+  });
+
+  describe('World of Warcraft languages', () => {
+    it('offers Eredun and Nathrezim only while World of Warcraft is on', () => {
+      expect(component.standardLanguages).toContain('Eredun');
+      expect(component.standardLanguages).toContain('Nathrezim');
+      component.toggleContentSource('World of Warcraft');
+      expect(component.standardLanguages).not.toContain('Eredun');
+      expect(component.standardLanguages).not.toContain('Nathrezim');
+      expect(component.standardLanguages).toContain('Elvish');
+    });
+
+    it('keeps an already-picked WoW language offered when the filter hides it', () => {
+      component.languageChoice = 'Eredun';
+      component.toggleContentSource('World of Warcraft');
+      expect(component.standardLanguages).toContain('Eredun');
+      expect(component.standardLanguages).not.toContain('Nathrezim');
+    });
+
+    it('returns the same array between checks while nothing changes', () => {
+      expect(component.standardLanguages).toBe(component.standardLanguages);
     });
   });
 });

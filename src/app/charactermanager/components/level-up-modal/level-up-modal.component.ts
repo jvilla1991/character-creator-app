@@ -9,7 +9,11 @@ import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
-import { EBON_BLADE_SUBCLASS, RUNE_OPTIONS, Rune } from '../../models/hero-class';
+import { HeroClassOption, heroClassFor } from '../../models/hero-class';
+
+/** The Demon Hunter's fighting style (World of Warcraft): two Warlock cantrips cast with Wisdom. */
+export const VOID_WARRIOR = 'Void Warrior';
+const VOID_WARRIOR_CANTRIPS = 2;
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -43,9 +47,8 @@ export class LevelUpModalComponent implements OnInit {
   error: string | null = null;
   selectedSubclass: string | null = null;
 
-  /** Death Knight rune options, and the rune picked in the optional "Change rune" select. */
-  readonly runeOptions = RUNE_OPTIONS;
-  selectedRune: Rune | null = null;
+  /** The specialization picked in the optional "Change …" select (hero classes that respec). */
+  selectedSpecialization: string | null = null;
 
   /**
    * HP mode for this level: take the fixed average (default) or roll the hit die. In 'ROLL' the
@@ -62,6 +65,14 @@ export class LevelUpModalComponent implements OnInit {
   milestoneMode: 'asi' | 'feat' = 'asi';
   selectedFeat: string | null = null;
 
+  /** Level-2 Fighting Style pick ('' = none chosen; the choice is optional). */
+  selectedFightingStyle = '';
+  /** Warlock cantrips offered / picked for the Void Warrior fighting style. */
+  warlockCantrips: DndSpell[] = [];
+  voidWarriorCantrips: DndSpell[] = [];
+  loadingWarlockCantrips = false;
+  private warlockCantripsRequested = false;
+
   /** Spell selection (casters who gain cantrips/spells this level). */
   spellList: DndSpell[] = [];
   selectedSpells: DndSpell[] = [];
@@ -70,7 +81,7 @@ export class LevelUpModalComponent implements OnInit {
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 
   ngOnInit(): void {
-    this.selectedRune = this.pc.rune ?? null;
+    this.selectedSpecialization = this.pc.specialization ?? null;
     const preview$ = this.asDm
       ? this.pcService.levelUpPreviewAsDm(this.pc.id)
       : this.pcService.levelUpPreview(this.pc.id);
@@ -170,14 +181,68 @@ export class LevelUpModalComponent implements OnInit {
     return !!this.preview && this.preview.newCantripsKnown > this.preview.currentCantripsKnown;
   }
 
-  /** Death Knight (Oath of the Ebon Blade) — offers the optional rune change. */
-  get isEbonBlade(): boolean {
-    return this.pc?.subclass === EBON_BLADE_SUBCLASS;
+  /** The character's hero class (e.g. Death Knight), or undefined for everyone else. */
+  get heroClass(): HeroClassOption | undefined {
+    return heroClassFor(this.pc);
   }
 
-  /** True when the player picked a rune different from the current one. */
-  get runeChanged(): boolean {
-    return this.isEbonBlade && !!this.selectedRune && this.selectedRune !== (this.pc.rune ?? null);
+  /** Show the optional "Change …" select: only hero classes whose table allows a respec. */
+  get canRespec(): boolean {
+    return !!this.heroClass?.respecOnLevelUp;
+  }
+
+  /** True when the player picked a specialization different from the current one. */
+  get specializationChanged(): boolean {
+    return this.canRespec && !!this.selectedSpecialization
+      && this.selectedSpecialization !== (this.pc.specialization ?? null);
+  }
+
+  // ── Fighting Style (level 2) and the Void Warrior cantrips ─────────────────
+
+  /** Whether to show the Fighting Style picker: due this level AND the server offered options. */
+  get needsFightingStyle(): boolean {
+    return !!this.preview?.fightingStyleDue && (this.preview?.fightingStyleOptions?.length ?? 0) > 0;
+  }
+
+  get fightingStyleOptions(): string[] {
+    return this.preview?.fightingStyleOptions ?? [];
+  }
+
+  /** True when the player picked Void Warrior (needs two Warlock cantrips). */
+  get isVoidWarrior(): boolean {
+    return this.needsFightingStyle && this.selectedFightingStyle === VOID_WARRIOR;
+  }
+
+  /** Pick (or clear) a fighting style; leaving Void Warrior drops its cantrip picks. */
+  selectFightingStyle(name: string): void {
+    this.selectedFightingStyle = this.selectedFightingStyle === name ? '' : name;
+    if (this.isVoidWarrior) {
+      this.loadWarlockCantrips();
+    } else {
+      this.voidWarriorCantrips = [];
+    }
+  }
+
+  /** Void Warrior is satisfied once exactly two Warlock cantrips are picked. */
+  get voidWarriorSatisfied(): boolean {
+    return !this.isVoidWarrior || this.voidWarriorCantrips.length === VOID_WARRIOR_CANTRIPS;
+  }
+
+  private loadWarlockCantrips(): void {
+    if (this.warlockCantripsRequested) return;
+    this.warlockCantripsRequested = true;
+    this.loadingWarlockCantrips = true;
+    const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    this.dndResources.getSpellsForClass('warlock').subscribe({
+      next: spells => {
+        this.warlockCantrips = spells.filter(s => s.level === 0 && !known.has(s.name.toLowerCase()));
+        this.loadingWarlockCantrips = false;
+      },
+      error: () => {
+        this.loadingWarlockCantrips = false;
+        this.warlockCantripsRequested = false;
+      },
+    });
   }
 
   /** Whether to show the subclass picker: a choice is due AND the server offered options. */
@@ -256,9 +321,13 @@ export class LevelUpModalComponent implements OnInit {
     return this.milestoneMode === 'asi' ? this.asiValid : !!this.selectedFeat;
   }
 
-  /** Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made. */
+  /**
+   * Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made,
+   * and — when Void Warrior is picked — its two Warlock cantrips.
+   */
   get canConfirm(): boolean {
-    return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied;
+    return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied
+      && this.voidWarriorSatisfied;
   }
 
   confirm(): void {
@@ -270,8 +339,8 @@ export class LevelUpModalComponent implements OnInit {
     // Only send the mode when rolling — omitting it lets the server default to AVERAGE.
     if (this.hpMode === 'ROLL') choices.hpMode = 'ROLL';
     if (this.selectedSubclass) choices.subclass = this.selectedSubclass;
-    // Only send a rune when it actually changed — the server keeps the current one otherwise.
-    if (this.runeChanged) choices.rune = this.selectedRune!;
+    // Only send a specialization when it actually changed — the server keeps the current one otherwise.
+    if (this.specializationChanged) choices.specialization = this.selectedSpecialization!;
     if (this.needsAsi) {
       if (this.milestoneMode === 'asi') {
         const increases = this.allocatedAbilities();
@@ -280,8 +349,13 @@ export class LevelUpModalComponent implements OnInit {
         choices.feat = this.selectedFeat;
       }
     }
-    if (this.selectedSpells.length) {
-      choices.newSpells = this.selectedSpells.map(toPcSpell);
+    if (this.needsFightingStyle && this.selectedFightingStyle) {
+      choices.fightingStyle = this.selectedFightingStyle;
+    }
+    // Void Warrior's Warlock cantrips ride along with any spells learned this level.
+    const learned = [...this.selectedSpells, ...(this.isVoidWarrior ? this.voidWarriorCantrips : [])];
+    if (learned.length) {
+      choices.newSpells = learned.map(toPcSpell);
     }
 
     const commit$ = this.asDm

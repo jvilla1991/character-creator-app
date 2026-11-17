@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
-import { ClassOption, Rune, RuneOption } from '../../../../models/hero-class';
+import { ClassOption, specializationHeading } from '../../../../models/hero-class';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
  * subclass. Hero classes (e.g. Death Knight (Paladin)) show their blurb, their
- * locked subclass and — for Death Knight — the required rune picker.
+ * locked subclass and the required specialization picker (a Death Knight's rune,
+ * a Demon Hunter's specialization), all read from the hero-class table.
  * Presentational — the parent owns selection logic, the source filter and the
  * detail fetch, and passes the already-filtered rows and derived strings in.
  */
@@ -22,8 +23,8 @@ export class ClassStepComponent {
   readonly selectedLabel = input('');
   /** True when the chosen class is hidden by the source filter (it stays chosen). */
   readonly selectedHidden = input(false);
-  readonly runeOptions = input<readonly RuneOption[]>([]);
-  readonly rune = input<Rune | ''>('');
+  /** The chosen hero-class specialization; '' when none is picked. */
+  readonly specialization = input('');
   /** The chosen BASE class — used in the level-1 subclass note. */
   readonly clazz = input('');
   readonly classDetail = input<DndClass | null>(null);
@@ -41,6 +42,8 @@ export class ClassStepComponent {
   readonly toggle = output<string>();
   /** A subclass card was picked (two-way [(selectedSubclass)] on the parent). */
   readonly selectedSubclassChange = output<string>();
-  /** A rune card was picked — parent runs selectRune. */
-  readonly runeChange = output<Rune>();
+  /** A specialization card was picked — parent runs selectSpecialization. */
+  readonly specializationChange = output<string>();
+
+  readonly specializationHeading = specializationHeading;
 }

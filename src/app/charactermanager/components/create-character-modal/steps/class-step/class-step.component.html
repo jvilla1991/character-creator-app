@@ -57,25 +57,27 @@
               }
             </div>
           }
-          <!-- Rune picker — a Death Knight must choose one -->
-          @if (o.hero?.runeRequired) {
-            <div class="subclass-header">
-              <span class="eyebrow" id="rune-picker-label">Choose a Rune <span aria-label="required">*</span></span>
-              <span class="subclass-note">Your Death Knight's specialization</span>
-            </div>
-            <div class="subclass-list" role="group" aria-labelledby="rune-picker-label">
-              @for (r of runeOptions(); track r.name) {
-                <button
-                  type="button"
-                  class="subclass-card"
-                  [class.active]="rune() === r.name"
-                  [attr.aria-pressed]="rune() === r.name"
-                  (click)="runeChange.emit(r.name)">
-                  <span class="subclass-name">{{ r.name }}</span>
-                  <span class="subclass-desc">{{ r.desc }}</span>
-                </button>
-              }
-            </div>
+          <!-- Specialization picker — every hero class must choose one (e.g. a Death Knight's rune) -->
+          @if (o.hero; as hero) {
+            @if (hero.specializations.length) {
+              <div class="subclass-header">
+                <span class="eyebrow" id="specialization-picker-label">Choose a {{ specializationHeading(hero) }} <span aria-label="required">*</span></span>
+                <span class="subclass-note">Your {{ hero.name }}'s specialization</span>
+              </div>
+              <div class="subclass-list" role="group" aria-labelledby="specialization-picker-label">
+                @for (s of hero.specializations; track s.name) {
+                  <button
+                    type="button"
+                    class="subclass-card"
+                    [class.active]="specialization() === s.name"
+                    [attr.aria-pressed]="specialization() === s.name"
+                    (click)="specializationChange.emit(s.name)">
+                    <span class="subclass-name">{{ s.name }}</span>
+                    <span class="subclass-desc">{{ s.desc }}</span>
+                  </button>
+                }
+              </div>
+            }
           }
           <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->
           @if (requiresLevel1Subclass() && classDetail() && !loadingClassDetail()) {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
-import { STANDARD_LANGUAGES } from '../../../../services/dnd-resources.service';
+import { ALL_LANGUAGE_NAMES } from '../../../../services/dnd-resources.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -61,11 +61,11 @@ export class BackgroundStoryComponent {
     this.resetGrantForm();
   }
 
-  /** Standard languages the PC doesn't know yet, filtered by the current draft. */
+  /** Known languages (standard + World of Warcraft) the PC doesn't know yet, filtered by the current draft. */
   get filteredLanguages(): string[] {
     const known = new Set(this.languages.map(l => l.toLowerCase()));
     const q = this.languageDraft.trim().toLowerCase();
-    return STANDARD_LANGUAGES
+    return ALL_LANGUAGE_NAMES
       .filter(l => !known.has(l.toLowerCase()))
       .filter(l => !q || l.toLowerCase().includes(q));
   }

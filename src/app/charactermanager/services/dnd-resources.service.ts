@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
-import { ContentSource, spellSource } from '../models/content-source';
+import { ContentSource, ContentSourceSelection, filterBySource, spellSource } from '../models/content-source';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -272,6 +272,9 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'When you make the extra attack of the Light weapon property, you can add your ability modifier to the damage of that attack.',
   'Unarmed Fighting':
     'Your Unarmed Strikes deal 1d6 + Strength bludgeoning damage, or 1d8 if you aren\'t holding weapons or a Shield. At the start of each of your turns, you can deal 1d4 bludgeoning damage to one creature you are grappling.',
+  // ── World of Warcraft fighting style (Demon Hunter rangers only, at Ranger 2). ──
+  'Void Warrior':
+    'You learn two Warlock cantrips of your choice. They count as Ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a Ranger level, you can replace one of them with another Warlock cantrip.',
   // ── Epic Boon feats (level 19+; ability increases can exceed 20, up to 30). ──
   'Boon of Combat Prowess':
     'Increase an ability score by 1 (max 30). Once on each of your turns when you miss with an attack roll, you can hit instead.',
@@ -304,6 +307,33 @@ export const STANDARD_LANGUAGES: string[] = [
   'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish',
   'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc', 'Primordial',
 ];
+
+/** A pickable language and where it comes from; no source means the base game. */
+export interface LanguageOption {
+  name: string;
+  source?: ContentSource;
+}
+
+/** Languages added by the World of Warcraft module (demonic tongues). */
+export const WOW_LANGUAGES: readonly string[] = ['Eredun', 'Nathrezim'];
+
+/**
+ * Every pickable language: the standard languages (base game), then the World of
+ * Warcraft ones tagged with their source so the wizard's content-source filter can
+ * hide them. Languages aren't server-validated (free text), so this list is UI-only.
+ */
+export const LANGUAGE_OPTIONS: readonly LanguageOption[] = [
+  ...STANDARD_LANGUAGES.map((name): LanguageOption => ({ name })),
+  ...WOW_LANGUAGES.map((name): LanguageOption => ({ name, source: 'World of Warcraft' })),
+];
+
+/** Every language name, all sources (the DM grant typeahead has no source filter). */
+export const ALL_LANGUAGE_NAMES: readonly string[] = LANGUAGE_OPTIONS.map(l => l.name);
+
+/** Language names allowed by a content-source selection, in list order. */
+export function languageNames(selection: ContentSourceSelection): string[] {
+  return filterBySource(LANGUAGE_OPTIONS, selection).map(l => l.name);
+}
 
 /**
  * Short descriptions for common 2024 PHB species traits.
