@@ -219,6 +219,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         [attr.aria-selected]="activeTab === 'renown'" (click)="setTab('renown')">Renown</button>
       <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'followers'"
         [attr.aria-selected]="activeTab === 'followers'" (click)="setTab('followers')">Followers</button>
+      <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'professions'"
+        [attr.aria-selected]="activeTab === 'professions'" (click)="setTab('professions')">Professions</button>
       <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'notes'"
       [attr.aria-selected]="activeTab === 'notes'" (click)="setTab('notes')">Notes</button>
       <button type="button" class="sheet-tab" role="tab" [class.active]="activeTab === 'log'"
@@ -355,6 +357,10 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         (followerOpened)="onFollowerOpened($event)">
       </app-followers-panel>
     </div>
+  }
+
+  @if (activeTab === 'professions' && !followerMode) {
+    <div class="sheet-tab-panel"><app-professions-panel [pc]="pc" [canGrant]="editable"></app-professions-panel></div>
   }
 
   <!-- NOTES TAB -->

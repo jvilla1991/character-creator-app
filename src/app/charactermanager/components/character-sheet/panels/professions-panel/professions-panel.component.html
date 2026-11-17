@@ -1,0 +1,65 @@
+<section class="panel" role="tabpanel" aria-label="Professions">
+  <div class="panel-header">
+    <span class="panel-title">Gathering Professions</span>
+    @if (canGrant && loaded() && available.length && !grantFormOpen) {
+      <button class="btn sm" (click)="openGrant()">+ Grant Profession</button>
+    }
+  </div>
+  <p class="intro">The trades of Azeroth <span class="numeric">· Proficiency Bonus +{{ bonus }}</span></p>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+    @if (!loaded() && !loading()) { <button class="btn sm" (click)="load()">Retry</button> }
+  }
+  @if (grantFormOpen && canGrant) {
+    <form class="grant-form" (ngSubmit)="grant()">
+      <div class="field">
+        <label for="profession-choice">Gathering profession</label>
+        <select id="profession-choice" name="profession" [(ngModel)]="selected" [disabled]="saving()">
+          @for (p of available; track p.key) { <option [value]="p.key">{{ p.name }}</option> }
+        </select>
+      </div>
+      <p class="muted">{{ chosen.requirement }}</p>
+      @if (!eligible(chosen)) { <p class="error">This character needs the required proficiency before it can be granted.</p> }
+      <div class="actions">
+        <button type="submit" class="btn primary sm" [disabled]="saving() || !eligible(chosen)">{{ saving() ? 'Granting…' : 'Grant' }}</button>
+        <button type="button" class="btn sm" [disabled]="saving()" (click)="grantFormOpen = false">Cancel</button>
+      </div>
+    </form>
+  }
+  @if (loading()) { <p class="muted" role="status">Loading professions…</p> }
+  @if (loaded() && !assigned.length) { <p class="empty">No professions yet. Your DM can grant a gathering profession once its prerequisite is met.</p> }
+  @for (p of assigned; track p.key) {
+    <article class="profession-row">
+      <details>
+        <summary>
+          <span class="portrait profession-portrait" aria-hidden="true">{{ p.initials }}</span>
+          <span class="identity"><span class="profession-name">{{ p.name }}</span><span class="muted">{{ p.check }} · +{{ bonus }} proficiency</span></span>
+          <span class="details-hint">Rules</span>
+        </summary>
+        <div class="rules">
+          <p>{{ p.summary }}</p><p class="requirement">{{ p.requirement }}</p>
+          @if (!eligible(p)) { <p class="error">Required proficiency is missing. Restore it before practicing this profession.</p> }
+          @for (rule of p.rules; track $index) { <p>{{ rule }}</p> }
+        </div>
+      </details>
+      @if (canGrant) {
+        <div class="actions revoke">
+          @if (confirming === p.key) {
+            <span class="muted">Revoke {{ p.name }}?</span>
+            <button class="btn danger sm" [disabled]="saving()" (click)="revoke(p.key)">Confirm revoke</button>
+            <button class="btn sm" [disabled]="saving()" (click)="confirming = null">Keep</button>
+          } @else { <button class="btn sm" [disabled]="saving()" (click)="confirming = p.key" [attr.aria-label]="'Revoke ' + p.name">Revoke</button> }
+        </div>
+      }
+    </article>
+  }
+  <details class="reference">
+    <summary>Gathering in Azeroth</summary>
+    <p>For journey gathering, make a Wisdom (Survival) check once per journey stage, or once per day if stages are shorter than a day. The DM sets the DC using the region’s level.</p>
+    <p>Failure finds nothing. Success finds one resource per day of the stage. Beating the DC by 5 or more makes one of those resources rare. The DM chooses the resources and their GP values. Archaeology, fishing, and skinning have the special rules listed in their entries.</p>
+    <p>Resources are measured in GP value and can be sold or combined with money for crafting. Specific ingredients and recipes are optional and chosen by the DM.</p>
+    <p>Your Proficiency Bonus measures profession skill: +2 is apprentice, +3 journeyman, +5 artisan, and +6 master. If your campaign uses training to gain levels, improving each profession takes days equal to your new bonus, at 2 GP per day. At +3, that is 3 days and 6 GP per profession.</p>
+    <p>Region DCs, resource values, dig-site origins, and magic-item rarity are set with your DM using the source tables.</p>
+    <a href="https://5e.tools/book.html#wow,3,gathering%20professions,0" target="_blank" rel="noopener noreferrer">Gathering professions reference ↗</a>
+  </details>
+</section>

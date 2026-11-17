@@ -81,6 +81,15 @@ describe('RenownPanelComponent', () => {
       .toBe('No factions yet. Your DM can add factions for this campaign.');
   });
 
+  it('fills a below-Neutral bar from the right', () => {
+    component.factions.set([{ ...root, score: -17 }, { ...child, score: 7 }]);
+    fixture.detectChanges();
+    const [hostile, friendly] = Array.from(element().querySelectorAll<HTMLElement>('.faction-row .fill'));
+    expect(hostile.classList).toContain('from-right');
+    expect(hostile.style.width).toBe('50%');
+    expect(friendly.classList).not.toContain('from-right');
+  });
+
   it('fills a Neutral 0 bar to the centre', () => {
     const fill = element().querySelector<HTMLElement>('.faction-row .fill')!;
     expect(fill.style.width).toBe('50%');

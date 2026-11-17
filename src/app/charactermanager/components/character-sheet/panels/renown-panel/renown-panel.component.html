@@ -50,7 +50,7 @@
                 <strong class="numeric">{{ row.score > 0 ? '+' : '' }}{{ row.score }}</strong>
               </div>
               <div class="bar" role="meter" [attr.aria-label]="row.name + ': ' + standing(row.score).name" aria-valuemin="-100" aria-valuemax="100" [attr.aria-valuenow]="row.score" [attr.aria-valuetext]="standing(row.score).name + ', ' + row.score + ' renown'">
-                <span class="fill" [style.width.%]="progress(row.score)" [style.background]="standing(row.score).color"></span>
+                <span class="fill" [class.from-right]="fillsFromRight(row.score)" [style.width.%]="progress(row.score)" [style.background]="standing(row.score).color"></span>
               </div>
               <small>{{ standing(row.score).label }} · {{ row.score === 100 ? 'Maximum renown' : 'Progress within standing' }}</small>
             </div>

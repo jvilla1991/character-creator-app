@@ -592,6 +592,29 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
+    for (const tool of ['Herbalism Kit', "Mason's Tools", "Leatherworker's Tools"]) {
+      it(`preserves ${tool} in the saved draft separately from skill proficiencies`, (done) => {
+        prepareFullWizard();
+        component.step = component.equipmentStep;
+        component.backgroundDetail = {
+          ...SAGE_BACKGROUND_DETAIL,
+          proficiencies: [
+            { index: 'medicine', name: 'Medicine', url: '' },
+            { index: 'tool', name: tool, url: '' },
+          ],
+        };
+
+        component.confirm.subscribe(draft => {
+          expect(draft.toolProfs).toEqual([tool]);
+          expect(draft.skills?.['Medicine']).toBe('prof');
+          expect(draft.skills?.[tool]).toBeUndefined();
+          done();
+        });
+
+        component.submit();
+      });
+    }
+
     it('emits feat from background', (done) => {
       prepareFullWizard();
       component.step = component.equipmentStep;
