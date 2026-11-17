@@ -1,8 +1,9 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary, parseImportPayload, toImportPayload } from '../../../models/curated-shop';
 import { formatCp } from '../../../models/shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
+import { NotificationService } from '../../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 import { LowerCasePipe } from '@angular/common';
 
@@ -25,6 +26,8 @@ export class CuratedShopsComponent implements OnChanges {
   selected: CuratedShop | null = null;
   newName = '';
   busy = false;
+  /** The list request failed — say so instead of showing an empty list. */
+  loadFailed = false;
 
   // Paste-a-shop import (whole shop as JSON; keys validated server-side).
   importOpen = false;
@@ -47,6 +50,8 @@ export class CuratedShopsComponent implements OnChanges {
 
   readonly formatCp = formatCp;
 
+  private readonly notifications = inject(NotificationService);
+
   constructor(private curatedShops: CuratedShopService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -56,11 +61,14 @@ export class CuratedShopsComponent implements OnChanges {
     }
   }
 
-  private loadShops(): void {
+  loadShops(): void {
     if (!this.campaign) { this.shops = []; return; }
     this.curatedShops.list(this.campaign.id).subscribe({
-      next: shops => (this.shops = shops),
-      error: err => console.error('Failed to load curated shops', err),
+      next: shops => { this.shops = shops; this.loadFailed = false; },
+      error: err => {
+        this.loadFailed = true;
+        this.notifications.error('Could not load the shops. Try again.', err);
+      },
     });
   }
 
@@ -75,14 +83,17 @@ export class CuratedShopsComponent implements OnChanges {
         this.selected = shop;
         this.loadShops();
       },
-      error: err => { this.busy = false; console.error('Failed to create shop', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not create the shop. Try again.', err);
+      },
     });
   }
 
   open(summary: ShopSummary): void {
     this.curatedShops.get(summary.id).subscribe({
       next: shop => (this.selected = shop),
-      error: err => console.error('Failed to open shop', err),
+      error: err => this.notifications.error('Could not open that shop. Try again.', err),
     });
   }
 
@@ -131,7 +142,7 @@ export class CuratedShopsComponent implements OnChanges {
         this.copiedShopId = summary.id;
         setTimeout(() => (this.copiedShopId = null), 1500);
       },
-      error: err => console.error('Failed to copy shop JSON', err),
+      error: err => this.notifications.error('Could not copy the shop. Try again.', err),
     });
   }
 
@@ -140,7 +151,10 @@ export class CuratedShopsComponent implements OnChanges {
     this.busy = true;
     this.curatedShops.importCategory(this.selected.id, category).subscribe({
       next: shop => { this.selected = shop; this.busy = false; },
-      error: err => { this.busy = false; console.error('Failed to import category', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not stock that category. Try again.', err);
+      },
     });
   }
 
@@ -148,12 +162,17 @@ export class CuratedShopsComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedShops.removeItem(this.selected.id, item.id).subscribe({
       next: shop => (this.selected = shop),
-      error: err => console.error('Failed to remove item', err),
+      error: err => this.notifications.error(`Could not remove ${item.name}. Try again.`, err),
     });
   }
 
-  /** Save a price override typed in gp; empty clears it back to the catalog price. */
-  setOverride(item: CuratedShop['items'][number], gpValue: string): void {
+  /**
+   * Save a price override typed in gp; empty clears it back to the catalog
+   * price. `field`, when given, is the input it was typed into: a failed save
+   * puts it back to the saved override, so the shop never shows a price it
+   * does not charge.
+   */
+  setOverride(item: CuratedShop['items'][number], gpValue: string, field?: HTMLInputElement): void {
     if (!this.selected) return;
     const trimmed = (gpValue ?? '').trim();
     let priceCp: number | null;
@@ -166,7 +185,10 @@ export class CuratedShopsComponent implements OnChanges {
     }
     this.curatedShops.updateItem(this.selected.id, item.id, priceCp).subscribe({
       next: shop => (this.selected = shop),
-      error: err => console.error('Failed to update price', err),
+      error: err => {
+        if (field) field.value = item.priceOverrideCp != null ? String(item.priceOverrideCp / 100) : '';
+        this.notifications.error(`Could not change the price of ${item.name}. Try again.`, err);
+      },
     });
   }
 
@@ -175,7 +197,7 @@ export class CuratedShopsComponent implements OnChanges {
     const id = this.selected.id;
     this.curatedShops.delete(id).subscribe({
       next: () => this.back(),
-      error: err => console.error('Failed to delete shop', err),
+      error: err => this.notifications.error('Could not delete the shop. Try again.', err),
     });
   }
 

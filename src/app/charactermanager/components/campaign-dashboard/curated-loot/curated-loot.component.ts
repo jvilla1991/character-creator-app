@@ -1,10 +1,11 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootItem, CuratedLootSummary } from '../../../models/curated-loot';
 import { parseLootImportPayload, toLootImportPayload } from '../../../models/loot';
 import { formatCp } from '../../../models/shop';
 import { AuthoredItem } from '../../item-composer/authored-item';
 import { CuratedLootService } from '../../../services/curated-loot.service';
+import { NotificationService } from '../../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 import { ItemComposerComponent } from '../../item-composer/item-composer.component';
 
@@ -31,6 +32,8 @@ export class CuratedLootComponent implements OnChanges {
   newName = '';
   notesDraft = '';
   busy = false;
+  /** The list request failed — the empty state must not claim there are none. */
+  loadFailed = false;
 
   /** The coin pile input, in gp (persisted as copper). */
   coinGpDraft: number | null = null;
@@ -50,6 +53,8 @@ export class CuratedLootComponent implements OnChanges {
 
   readonly formatCp = formatCp;
 
+  private readonly notifications = inject(NotificationService);
+
   constructor(private curatedLoot: CuratedLootService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -59,11 +64,14 @@ export class CuratedLootComponent implements OnChanges {
     }
   }
 
-  private loadLists(): void {
+  loadLists(): void {
     if (!this.campaign) { this.lists = []; return; }
     this.curatedLoot.list(this.campaign.id).subscribe({
-      next: lists => (this.lists = lists),
-      error: err => console.error('Failed to load curated loot', err),
+      next: lists => { this.lists = lists; this.loadFailed = false; },
+      error: err => {
+        this.loadFailed = true;
+        this.notifications.error('Could not load the loot lists. Try again.', err);
+      },
     });
   }
 
@@ -78,14 +86,17 @@ export class CuratedLootComponent implements OnChanges {
         this.select(loot);
         this.loadLists();
       },
-      error: err => { this.busy = false; console.error('Failed to create loot list', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not create the loot list. Try again.', err);
+      },
     });
   }
 
   open(summary: CuratedLootSummary): void {
     this.curatedLoot.get(summary.id).subscribe({
       next: loot => this.select(loot),
-      error: err => console.error('Failed to open loot list', err),
+      error: err => this.notifications.error('Could not open that loot list. Try again.', err),
     });
   }
 
@@ -99,7 +110,7 @@ export class CuratedLootComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedLoot.update(this.selected.id, this.selected.name, this.notesDraft.trim() || null).subscribe({
       next: loot => this.select(loot),
-      error: err => console.error('Failed to save loot notes', err),
+      error: err => this.notifications.error('Could not save the notes. Your text is still here — try again.', err),
     });
   }
 
@@ -107,7 +118,7 @@ export class CuratedLootComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedLoot.delete(this.selected.id).subscribe({
       next: () => this.back(),
-      error: err => console.error('Failed to delete loot list', err),
+      error: err => this.notifications.error('Could not delete the loot list. Try again.', err),
     });
   }
 
@@ -119,7 +130,10 @@ export class CuratedLootComponent implements OnChanges {
     this.busy = true;
     this.curatedLoot.addItem(this.selected.id, item).subscribe({
       next: loot => { this.select(loot); this.busy = false; },
-      error: err => { this.busy = false; console.error('Failed to add loot item', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not add the item. Try again.', err);
+      },
     });
   }
 
@@ -129,7 +143,7 @@ export class CuratedLootComponent implements OnChanges {
     this.curatedLoot.updateItem(this.selected.id, item.id, Math.floor(qty), null, null).subscribe({
       next: loot => this.select(loot),
       error: err => {
-        console.error('Failed to update loot item', err);
+        this.notifications.error(`Could not change the quantity of ${item.name}. Try again.`, err);
         this.open({ id: this.selected!.id } as CuratedLootSummary);
       },
     });
@@ -139,15 +153,20 @@ export class CuratedLootComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedLoot.removeItem(this.selected.id, item.id).subscribe({
       next: loot => this.select(loot),
-      error: err => console.error('Failed to remove loot item', err),
+      error: err => this.notifications.error(`Could not remove ${item.name}. Try again.`, err),
     });
   }
 
   saveCoins(): void {
     if (!this.selected || this.coinGpDraft == null || this.coinGpDraft < 0) return;
-    this.curatedLoot.setCoins(this.selected.id, this.coinGpDraft).subscribe({
+    const saved = this.selected;
+    this.curatedLoot.setCoins(saved.id, this.coinGpDraft).subscribe({
       next: loot => this.select(loot),
-      error: err => console.error('Failed to save loot coins', err),
+      error: err => {
+        // Put the field back to the pile that is actually saved (notes draft untouched).
+        if (this.selected === saved) this.coinGpDraft = saved.coinCp > 0 ? saved.coinCp / 100 : null;
+        this.notifications.error('Could not save the coins. Try again.', err);
+      },
     });
   }
 

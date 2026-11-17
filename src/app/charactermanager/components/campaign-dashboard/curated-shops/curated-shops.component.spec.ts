@@ -1,9 +1,10 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
+import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedShopsComponent', () => {
@@ -77,6 +78,17 @@ describe('CuratedShopsComponent', () => {
 
     component.setOverride(shop.items[0], '');
     expect(service.updateItem).toHaveBeenCalledWith(5, 9, null);
+  });
+
+  it('a failed price save puts the field back to the saved override and says so', () => {
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    component.selected = shop;
+    const field = document.createElement('input');
+    field.value = '99';
+    service.updateItem.and.returnValue(throwError(() => new Error('down')));
+    component.setOverride(shop.items[0], '99', field);
+    expect(field.value).toBe('');
+    expect(notify).toHaveBeenCalled();
   });
 
   it('setOverride ignores non-numeric / negative input', () => {

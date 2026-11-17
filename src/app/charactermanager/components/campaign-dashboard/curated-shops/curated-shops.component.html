@@ -44,6 +44,11 @@
             </li>
           }
         </ul>
+      } @else if (loadFailed) {
+        <div class="muted">
+          Could not load the shops.
+          <button type="button" class="btn link" (click)="loadShops()">Try again</button>
+        </div>
       }
     }
 
@@ -75,7 +80,7 @@
               <input [attr.aria-label]="'Price override for ' + item.name + ', in gold'" class="price-input" type="number" min="0" step="0.01"
                 [value]="item.priceOverrideCp != null ? (item.priceOverrideCp / 100) : ''"
                 [placeholder]="'gp'"
-                (change)="setOverride(item, $any($event.target).value)" />
+                (change)="setOverride(item, $any($event.target).value, $any($event.target))" />
                 <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + item.name" (click)="removeItem(item)">✕</button>
               </li>
             }

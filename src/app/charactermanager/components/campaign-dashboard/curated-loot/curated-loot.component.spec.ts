@@ -4,6 +4,7 @@ import { CuratedLootComponent } from './curated-loot.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootSummary } from '../../../models/curated-loot';
 import { AuthoredItem } from '../../item-composer/authored-item';
+import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedLootComponent', () => {
@@ -86,6 +87,18 @@ describe('CuratedLootComponent', () => {
     service.setCoins.and.returnValue(of({ ...loot, coinCp: 1000 }));
     component.saveCoins();
     expect(service.setCoins).toHaveBeenCalledWith(5, 10);
+  });
+
+  it('a failed coin save puts the field back to the saved pile and keeps the notes draft', () => {
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    component.selected = loot;
+    component.notesDraft = 'half-typed';
+    component.coinGpDraft = 999;
+    service.setCoins.and.returnValue(throwError(() => new Error('down')));
+    component.saveCoins();
+    expect(component.coinGpDraft).toBe(125.5);
+    expect(component.notesDraft).toBe('half-typed');
+    expect(notify).toHaveBeenCalledWith('Could not save the coins. Try again.', jasmine.any(Error));
   });
 
   it('itemMeta summarizes a custom line’s attributes (notes render separately)', () => {

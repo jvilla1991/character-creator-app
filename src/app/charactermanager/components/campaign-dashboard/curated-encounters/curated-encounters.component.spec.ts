@@ -1,8 +1,9 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { CuratedEncountersComponent } from './curated-encounters.component';
 import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterSummary } from '../../../models/encounter';
+import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedEncountersComponent', () => {
@@ -22,6 +23,27 @@ describe('CuratedEncountersComponent', () => {
     service.list.and.returnValue(of([] as EncounterSummary[]));
     component = TestBed.runInInjectionContext(() => new CuratedEncountersComponent(service));
     component.campaign = campaign;
+  });
+
+  it('a failed list load says so instead of claiming there are none', () => {
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    service.list.and.returnValue(throwError(() => new Error('down')));
+    component.ngOnChanges({ campaign: {} as any });
+    expect(component.loadFailed).toBeTrue();
+    expect(notify).toHaveBeenCalledWith('Could not load the encounters. Try again.', jasmine.any(Error));
+
+    service.list.and.returnValue(of([] as EncounterSummary[]));
+    component.loadEncounters();
+    expect(component.loadFailed).toBeFalse();
+  });
+
+  it('a failed delete keeps the encounter open and says so', () => {
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    component.selected = encounter;
+    service.delete.and.returnValue(throwError(() => new Error('down')));
+    component.deleteEncounter();
+    expect(component.selected).toBe(encounter);
+    expect(notify).toHaveBeenCalledWith('Could not delete the encounter. Try again.', jasmine.any(Error));
   });
 
   it('loads encounters when the campaign changes', () => {

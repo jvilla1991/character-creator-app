@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -8,6 +8,7 @@ import { CampaignService } from '../../services/campaign.service';
 import { PCService } from '../../services/pc.service';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { NotificationService } from '../../services/notification.service';
 import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
 import { describeGameTime } from '../../utils/survival';
@@ -82,6 +83,8 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
     if (document.visibilityState === 'visible') this.membersRefresh$.next();
   };
 
+  private readonly notifications = inject(NotificationService);
+
   constructor(
     private campaignService: CampaignService,
     private pcService: PCService,
@@ -114,7 +117,7 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
       error: err => {
         // Lost a race with an existing live session — just resume it.
         if (err?.status === 409) { this.resumeSession(campaign); return; }
-        console.error('Failed to start session', err);
+        this.notifications.error('Could not start the session. Try again.', err);
       },
     });
   }
@@ -157,8 +160,9 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
         this.uiState.viewHeroAsDm();
       },
       error: err => {
-        // Fall back to the projection (read-only edits will 403) so the sheet still opens.
-        console.error('Failed to load full character for DM edit', err);
+        // Fall back to the projection so the sheet still opens — but say so,
+        // since edits made on it will be refused.
+        this.notifications.error(`Could not load all of ${pc.name}'s sheet. Edits may not save — reopen it to retry.`, err);
         this.pcService.setActivePC(pc);
         this.uiState.viewHeroAsDm();
       },
@@ -187,7 +191,7 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.deletingCampaign = false;
-        console.error('Failed to delete campaign', err);
+        this.notifications.error('Could not delete the campaign. Try again.', err);
       },
     });
   }
@@ -213,7 +217,8 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
     const campaignId = this.isBound(pc, campaign) ? null : campaign.id;
     this.pcService.updatePC({ ...pc, campaignId }).subscribe({
       next: () => this.membersRefresh$.next(),
-      error: err => console.error('Failed to update campaign binding', err),
+      error: err => this.notifications.error(
+        campaignId ? `Could not add ${pc.name} to the party. Try again.` : `Could not remove ${pc.name} from the party. Try again.`, err),
     });
   }
 }
