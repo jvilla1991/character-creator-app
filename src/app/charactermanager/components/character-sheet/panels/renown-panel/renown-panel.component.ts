@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, signal
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { PC } from '../../../../models/pc';
-import { RENOWN_MILESTONES, RenownFaction, renownProgress, renownStanding } from '../../../../models/renown';
+import { RENOWN_MILESTONES, RenownFaction, renownProgress, renownSpan, renownStanding } from '../../../../models/renown';
 import { RenownService } from '../../../../services/renown.service';
 
 @Component({
@@ -22,6 +22,7 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
   readonly milestones = RENOWN_MILESTONES;
   readonly standing = renownStanding;
   readonly progress = renownProgress;
+  readonly span = renownSpan;
   collapsed = new Set<number>();
   formOpen = false;
   name = '';
