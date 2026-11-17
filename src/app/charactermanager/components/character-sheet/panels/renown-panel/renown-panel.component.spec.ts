@@ -67,6 +67,20 @@ describe('RenownPanelComponent', () => {
     expect(rows[0].querySelector('th')!.style.color).toBe('var(--renown-exalted)');
   });
 
+  it('keeps the empty state to a plain line for the DM', () => {
+    service.list.and.returnValue(of([]));
+    fixture.componentRef.setInput('canManage', true);
+    component.load(); fixture.detectChanges();
+    expect(element().querySelector('.renown-empty')!.textContent!.trim()).toBe('No factions yet.');
+  });
+
+  it('tells a player the DM adds factions when there are none', () => {
+    service.list.and.returnValue(of([]));
+    component.load(); fixture.detectChanges();
+    expect(element().querySelector('.renown-empty')!.textContent!.trim())
+      .toBe('No factions yet. Your DM can add factions for this campaign.');
+  });
+
   it('fills a Neutral 0 bar to the centre', () => {
     const fill = element().querySelector<HTMLElement>('.faction-row .fill')!;
     expect(fill.style.width).toBe('50%');

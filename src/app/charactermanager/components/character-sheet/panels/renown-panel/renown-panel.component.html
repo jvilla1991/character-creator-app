@@ -33,7 +33,7 @@
     @if (error()) { <div class="error" role="alert">{{ error() }} <button type="button" class="btn sm" (click)="load()" [disabled]="loading() || saving()">Reload</button></div> }
     @if (loading()) { <p class="renown-empty" role="status">Loading reputations…</p> }
     @else if (!factions().length && !error()) {
-      <p class="renown-empty">No factions yet. {{ canManage ? 'Add a faction to begin shaping this campaign’s alliances.' : 'Your DM can add factions for this campaign.' }}</p>
+      <p class="renown-empty">No factions yet.{{ canManage ? '' : ' Your DM can add factions for this campaign.' }}</p>
     } @else {
       <div class="faction-list">
         @for (row of visibleRows; track row.id) {
