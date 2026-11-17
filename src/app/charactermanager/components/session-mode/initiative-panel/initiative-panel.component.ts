@@ -291,12 +291,6 @@ export class InitiativePanelComponent {
     this.cueError = null;
   }
 
-  // 5 columns read-only; a 6th DM "Adjust" column appears for the DM.
-  get columns(): string {
-    const base = '44px minmax(140px, 1.6fr) 150px 56px minmax(110px, 1.2fr)';
-    return this.dm ? `${base} 184px` : base;
-  }
-
   onInitiative(p: ParticipantView, raw: string): void {
     const value = parseInt(raw, 10);
     if (isNaN(value)) return;

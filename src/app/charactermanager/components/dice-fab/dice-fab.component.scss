@@ -41,7 +41,8 @@
   outline-offset: 3px;
 }
 
-/* Clears the toast (centred, 16px up) and sits in the thumb zone on phones. */
+/* Sits in the thumb zone on phones. The toast rises above the launcher in
+   turn (toast.component.scss). */
 @media (max-width: 560px) {
   .dice-fab {
     right: 14px;

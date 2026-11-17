@@ -68,10 +68,17 @@
   .note-actions {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
   }
 
+  // Edit and delete sit side by side, so each is a 32px square (they were
+  // 18-20 x 16px, 10px apart: a mis-tap on a phone lost the note).
   .note-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
     border: none;
     background: none;
     cursor: pointer;
