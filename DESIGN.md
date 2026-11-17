@@ -229,7 +229,10 @@ The scales above are declared as `--space-*`, `--radius-*`, `--text-*` and `--tr
 They were extracted from values the implementation already used, so defining them changed
 nothing visually; most existing declarations still carry raw px and migrating them is a separate
 pass. The type scale deliberately has **no step below 11px** — naming a smaller size would
-launder the floor. The 9px and 10px values still in the codebase are known debt, not a tier.
+launder the floor. No font size below 11px remains in `src/` (Phase 3 type-floor slice): every
+former 7–10px label is `var(--text-2xs)` with `--track-label` or `--track-micro`, and new or
+touched font sizes should consume `--text-*` rather than raw px. Spacing and radii are still raw
+px.
 
 Breakpoints observed: 820px (shell collapse), 640px, 560px, 480px.
 
