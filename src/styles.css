@@ -1494,10 +1494,14 @@ select:focus {
   /* The card centres with margin:auto rather than align/justify-content.
      A centred flex item that is TALLER than its container gets its top cut
      off and cannot be scrolled back to; auto margins collapse to 0 in that
-     case, so the card starts at the top and the page simply scrolls. */
+     case, so the card starts at the top and the page simply scrolls.
+     The page is its own scroll panel (The Panel Owns Its Scroll Rule): body
+     is overflow: hidden, so the page needs a fixed height for overflow-y to
+     take effect. With min-height it grew to fit the card instead, and on a
+     short phone the bottom of the register card could not be reached. */
   overflow-y: auto;
-  min-height: 100vh;        /* fallback for browsers without dvh */
-  min-height: 100dvh;       /* tracks the real visible area as mobile browser chrome shows/hides */
+  height: 100vh;            /* fallback for browsers without dvh */
+  height: 100dvh;           /* tracks the real visible area as mobile browser chrome shows/hides */
   padding: 24px;
   background:
     radial-gradient(ellipse at 20% 0%,   color-mix(in oklch, var(--celestial) 20%, transparent), transparent 50%),
