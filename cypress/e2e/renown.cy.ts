@@ -1,0 +1,31 @@
+describe('Campaign renown', () => {
+  it('lets the DM create independent faction standings and renders on mobile', () => {
+    cy.enterDemo();
+    cy.viewport(1280, 900);
+    cy.visit('/charactermanager', { onBeforeLoad: win => win.localStorage.setItem('tm_role', 'dm') });
+    cy.contains('The Veiled Compass').click();
+    cy.get('.board-row.member').first().click();
+    cy.contains('button.sheet-tab', 'Renown').click();
+    cy.contains('button', '+ Add faction').click();
+    cy.get('input[name=factionName]').type('The Silver Covenant');
+    cy.get('app-renown-panel button[type=submit]').click();
+    cy.get('.bar-label').should('contain.text', 'Neutral').and('contain.text', '0');
+    cy.contains('button', '+ Add faction').click();
+    cy.get('input[name=factionName]').type('Dawnwatch');
+    cy.get('select[name=parent]').select('The Silver Covenant');
+    cy.get('app-renown-panel button[type=submit]').click();
+    cy.get('button[aria-label="Add 1 renown to Dawnwatch"]').click();
+    cy.get('.subfaction .bar-label').should('contain.text', '+1');
+    cy.get('.faction-row').first().find('.bar-label').should('contain.text', '0');
+    cy.get('button[aria-label="Toggle sub-factions of The Silver Covenant"]').click();
+    cy.get('.subfaction').should('not.exist');
+    cy.get('button[aria-label="Toggle sub-factions of The Silver Covenant"]').click();
+    cy.contains('summary', 'Reputation milestones').click();
+    cy.screenshot('renown-desktop', { capture: 'viewport' });
+    cy.viewport(390, 844);
+    cy.get('app-renown-panel').scrollIntoView();
+    cy.get('.subfaction').should('be.visible');
+    cy.document().then(doc => expect(doc.documentElement.scrollWidth).to.be.at.most(390));
+    cy.screenshot('renown-mobile', { capture: 'viewport' });
+  });
+});
