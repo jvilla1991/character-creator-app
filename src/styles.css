@@ -695,12 +695,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   .vital:nth-child(3n) { border-right: none; }
   .vital:nth-last-child(-n+3) { border-bottom: none; }
 }
-@media (max-width: 720px) {
-  .main-inner { padding: 20px 16px 60px; }
-  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .abilities { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .equip-grid { grid-template-columns: minmax(0, 1fr); }
-}
+/* Phone-width overrides live in the "SHEET AT PHONE WIDTH" block after the
+   equipment rules: a media query has no extra specificity, so it has to come
+   after every base rule it overrides or it silently loses. */
 
 .col-left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .col-right { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -878,6 +875,46 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .equip-item-meta { flex-shrink: 0; }
 .equip-item:last-child { border-bottom: none; }
 .equip-item-name .magic { color: var(--celestial); font-style: italic; }
+
+/* === SHEET AT PHONE WIDTH ===
+   Kept after the base rules above (.main-inner, .vitals, .equip-grid, the
+   sheet header): a media query adds no specificity, so placed before them it
+   lost on source order and equipment names clipped to ~34px. Ability scores
+   stay three across: at 320px each box is still ~76px, and all six fit in
+   two rows instead of three. */
+@media (max-width: 720px) {
+  /* 84px at the foot clears the dice launcher (52px, 14px up), so the last
+     control on a page can scroll out from under it. */
+  .main-inner { padding: 20px 16px 84px; }
+  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equip-grid { grid-template-columns: minmax(0, 1fr); }
+
+  /* The header gave a 120px portrait its own column and pushed the vitals
+     below the first screen. A 64px portrait sits beside the name, the name
+     wraps instead of clipping, and the actions drop their icons so the row
+     fits on one line at 375px. The dashboard's header sets its own columns
+     inline, so it keeps them. */
+  .sheet-header {
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .sheet-header > .portrait.xl {
+    width: 64px;
+    height: 64px;
+    font-size: var(--text-2xl);
+    align-self: start;
+  }
+  .sheet-name {
+    font-size: var(--text-2xl) !important;
+    overflow-wrap: break-word;
+    margin-bottom: 6px;
+  }
+  .sheet-subtitle { font-size: var(--text-base); }
+  .sheet-actions .btn { padding-left: 10px; padding-right: 10px; }
+  .sheet-actions .btn:not(.icon) svg { display: none; }
+}
 .equip-item-meta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;

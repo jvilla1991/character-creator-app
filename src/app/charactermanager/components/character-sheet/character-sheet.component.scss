@@ -4,6 +4,9 @@
 .sheet-xp {
   font-variant-numeric: tabular-nums;
   color: var(--text-dim);
+  // "0 / 34000 XP" is one reading; on a phone the bar beside it shrinks
+  // instead of the figure breaking across two lines.
+  white-space: nowrap;
 }
 
 // "Ready to level up" badge — appears once XP crosses the next 2024 PHB
