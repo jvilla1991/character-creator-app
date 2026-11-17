@@ -14,9 +14,11 @@
 import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
+import { EBON_BLADE_SUBCLASS } from '../models/hero-class';
 
 // ---------------------------------------------------------------------------
-// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns.
+// Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus one
+// unbound World of Warcraft Death Knight.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -196,6 +198,58 @@ export const DEMO_PCS: PC[] = [
     },
     bio: 'Lifted his first purse at six. Lifted his first relic at sixteen. The Sleeping Crown wants its third lifting, and Pip is the only halfling small enough to fit the keyhole.',
     notes: 'Familiar: Ash (raven). Bounty in three cities.',
+  },
+  // World of Warcraft module: a Death Knight (Paladin, Oath of the Ebon Blade),
+  // unbound so it doesn't disturb the two seeded campaigns' stories.
+  {
+    id: 6,
+    name: 'Isolde Grimhallow',
+    playerName: 'Frank',
+    player: 'Frank',
+    campaignId: null,
+    race: 'Human',
+    clazz: 'Paladin',
+    subclass: EBON_BLADE_SUBCLASS,
+    rune: 'Frost',
+    level: 5,
+    background: 'Soldier',
+    alignment: 'Lawful Neutral',
+    portraitInitials: 'IG',
+    portraitTint: 'celestial',
+    hp: { cur: 44, max: 44, temp: 0 },
+    ac: 18, init: 0, speed: 30, prof: 3,
+    stats: { STR: 17, DEX: 10, CON: 15, INT: 8, WIS: 12, CHA: 14 },
+    saves: ['WIS', 'CHA'],
+    skills: { Athletics: 'prof', Intimidation: 'prof', Religion: 'prof', Survival: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 14, ep: 0, gp: 87, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 0 }, 2: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 1, name: 'Bless', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Shield of Faith', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Find Steed', school: 'Conjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Longsword', dmg: '1d8+3 slashing', notes: 'Versatile (1d10)' },
+      { name: 'Shortsword', dmg: '1d6+3 piercing', notes: 'Off hand' },
+    ],
+    gear: [
+      { name: 'Chain Mail', equipped: true },
+      { name: 'Holy Symbol (rune-carved)' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Paladin 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Fighting Style', source: 'Paladin 2', desc: 'Two-Weapon Fighting.' },
+      { name: 'Extra Attack', source: 'Paladin 5', desc: 'Attack twice when you take the Attack action.' },
+    ],
+    traits: {
+      Personality: 'Speaks rarely, and never above a whisper.',
+      Ideals: 'Atonement. Every life saved repays one taken.',
+      Bonds: 'The knights who broke free of the Lich King alongside her.',
+      Flaws: 'The cold in her veins makes her slow to trust the living.',
+    },
+    bio: 'Raised in death to serve a tyrant, freed by the Ebon Blade, and still learning what to do with a second life.',
+    notes: '',
   },
 ];
 

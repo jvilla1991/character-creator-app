@@ -36,13 +36,15 @@ import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
 import { PcLogComponent } from './panels/pc-log/pc-log.component';
 import { ProfessionsPanelComponent } from './panels/professions-panel/professions-panel.component';
 import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
+import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
+import { EbonBladePanelComponent, isEbonBlade } from './panels/ebon-blade-panel/ebon-blade-panel.component';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, EbonBladePanelComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() pc!: PC;
@@ -346,6 +348,9 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /** CSS background value for portrait circle. Delegates to shared utility. */
   tintFor(pc: PC): string { return tintFor(pc); }
+
+  /** Death Knight (Oath of the Ebon Blade) — shows the oath panel on the sheet tab. */
+  get ebonBlade(): boolean { return isEbonBlade(this.pc); }
 
   initialsFor(pc: PC): string {
     return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();

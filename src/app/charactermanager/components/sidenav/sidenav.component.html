@@ -77,7 +77,7 @@
                 <!-- Name + meta -->
                 <div style="min-width: 0;">
                   <div class="roster-name">{{ pc.name }}</div>
-                  <div class="roster-meta">{{ pc.race }} {{ pc.clazz }}</div>
+                  <div class="roster-meta">{{ pc.race }} {{ pc | classDisplay }}</div>
                 </div>
                 <!-- Level pill -->
                 <div class="roster-level">L{{ pc.level }}</div>

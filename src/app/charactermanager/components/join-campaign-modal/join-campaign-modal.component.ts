@@ -4,6 +4,7 @@ import { JoinConsentState, JoinRequest } from '../../services/join-modal.service
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
+import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 
 /**
  * "Join a Campaign" — a player enters an invite code and picks one of their
@@ -14,7 +15,7 @@ import { AsyncPipe } from '@angular/common';
     selector: 'app-join-campaign-modal',
     templateUrl: './join-campaign-modal.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FormsModule, AsyncPipe]
+    imports: [ModalComponent, FormsModule, AsyncPipe, ClassDisplayPipe]
 })
 export class JoinCampaignModalComponent implements OnChanges {
   pcs$ = this.pcService.pcs$;

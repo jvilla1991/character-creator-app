@@ -157,6 +157,20 @@
           }
         </div>
       }
+      <!-- Death Knight: optionally swap rune specialization on level-up -->
+      @if (isEbonBlade) {
+        <div class="subclass-pick">
+          <label class="subclass-label" for="level-up-rune">Change rune (optional)</label>
+          <select id="level-up-rune" class="rune-select" [(ngModel)]="selectedRune">
+            @if (!pc.rune) {
+              <option [ngValue]="null" disabled>Choose a rune…</option>
+            }
+            @for (r of runeOptions; track r.name) {
+              <option [ngValue]="r.name">{{ r.name }}{{ r.name === pc.rune ? ' (current)' : '' }}</option>
+            }
+          </select>
+        </div>
+      }
       <!-- Learn new cantrips/spells (casters who gain them this level) -->
       @if (showSpellPicker) {
         <div class="spell-pick">

@@ -17,12 +17,14 @@ import { RouterOutlet } from '@angular/router';
 import { CampaignDashboardComponent } from '../campaign-dashboard/campaign-dashboard.component';
 import { AsyncPipe, DOCUMENT } from '@angular/common';
 import { DialogDirective } from '../modal/dialog.directive';
+import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
+import { classDisplayName } from '../../utils/class-display';
 
 @Component({
     selector: 'app-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
-    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe, DialogDirective]
+    imports: [FormsModule, CampaignSidebarComponent, SessionModeComponent, SessionLiveBannerComponent, RouterOutlet, CampaignDashboardComponent, AsyncPipe, DialogDirective, ClassDisplayPipe]
 })
 export class SidenavComponent implements OnInit {
   // Still declared so the parent template's [pcs]="pcs" binding compiles cleanly.
@@ -92,7 +94,7 @@ export class SidenavComponent implements OnInit {
     return this.allPcs.filter(pc =>
       pc.name.toLowerCase().includes(q) ||
       (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
-      pc.clazz.toLowerCase().includes(q)
+      classDisplayName(pc.clazz, pc.subclass).toLowerCase().includes(q)
     );
   }
 
