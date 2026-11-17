@@ -1,0 +1,47 @@
+:host { display: block; }
+.reputation { color: #eee5cf; background: #181b19; border: 1px solid #65573a; border-radius: 8px; padding: 24px; box-shadow: inset 0 0 36px #0005; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.eyebrow { color: #c8b27c; font-size: 10px; letter-spacing: 2px; }
+h2 { font: 28px Georgia, serif; margin: 6px 0; color: #efdb9e; }
+p { color: #c4bfaf; font-size: 13px; margin: 0; }
+button, input, select { font: inherit; color: #eee5cf; background: #282c26; border: 1px solid #756744; border-radius: 4px; padding: 8px 12px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { background: #3c4132; border-color: #d0b77b; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #f1cf72; outline-offset: 3px; }
+.add-form { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; padding: 16px; margin-bottom: 16px; background: #242820; border: 1px solid #65573a; }
+label { display: grid; gap: 6px; font-size: 12px; flex: 1; }
+input, select { min-width: 0; width: 100%; box-sizing: border-box; }
+small { color: #c4bfaf; font-size: 11px; }
+.add-form small { flex-basis: 100%; }
+.empty { padding: 28px 0; }
+.error { padding: 12px; color: #ffc3b6; }
+.faction-list { border: 1px solid #514b38; border-radius: 4px; overflow: hidden; }
+.faction-row { display: flex; align-items: center; gap: 18px; padding: 14px 16px; background: linear-gradient(90deg, #303329, #22271f); border-bottom: 1px solid #514b38; }
+.faction-row:last-child { border-bottom: 0; }
+.faction-name { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; font: bold 15px Georgia, serif; overflow-wrap: anywhere; }
+.expand, .crest { width: 26px; flex: 0 0 26px; padding: 2px 0; text-align: center; color: #d8bd78; }
+.subfaction { background: #1c211c; }
+.subfaction .faction-name { padding-left: 24px; font: 14px inherit; }
+.standing { width: 46%; max-width: 430px; }
+.bar { position: relative; height: 28px; background: #101511; border: 1px solid #8c7951; border-radius: 3px; overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; opacity: .85; transition: width .2s; box-shadow: inset 0 1px #ffffff40; }
+.bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: white; font-size: 12px; text-shadow: 0 1px 3px #000, 0 0 3px #000; background: #0002; }
+.standing small { display: block; margin-top: 5px; }
+.adjustments { display: flex; gap: 5px; }
+.adjustments button { font-size: 20px; line-height: 1; width: 34px; padding: 7px 0; }
+.milestones { margin-top: 22px; border-top: 1px solid #514b38; padding-top: 14px; font-size: 12px; }
+summary { cursor: pointer; color: #dac58f; }
+summary span { float: right; color: #c4bfaf; }
+.milestone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 18px; }
+.milestone-grid div { display: grid; grid-template-columns: 8px 1fr; gap: 5px 8px; }
+.milestone-grid i { width: 8px; height: 8px; margin-top: 3px; border-radius: 50%; }
+.milestone-grid span { grid-column: 2; color: #c4bfaf; font-size: 11px; }
+@media (max-width: 600px) {
+  .reputation { padding: 16px; } header { align-items: start; flex-direction: column; }
+  .faction-row { flex-wrap: wrap; gap: 10px; padding: 12px; }
+  .faction-name { flex-basis: 100%; } .standing { flex: 1; width: auto; }
+  .milestone-grid { grid-template-columns: repeat(2, 1fr); }
+  .add-form label { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
