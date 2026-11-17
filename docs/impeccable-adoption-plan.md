@@ -618,6 +618,7 @@ All four took the recommended option. These are settled; later slices should not
 | 1–5 | `chore/impeccable-token-sweep` (slice 1) | Done — colour only, no px or font-size changes. Both P0s fixed, the seven undefined tokens mapped onto existing ones (no new tokens), every white-alpha literal gone, `.seg-btn.active` retuned, wizard violet → gold + celestial, and `npm run check:tokens` added to CI. See "Slice 1 results" below. |
 | 12–15, 18, 25 + a11y notes | `fix/a11y-deferred-backlog` (slice 2) | Done — disabled `.btn` state, a shared modal shell (Escape on all 13 dialogs, topmost only), the phone drawer as a modal dialog, turn / session / rest-vote live regions, named controls, app-wide reduced motion with a static turn cue, and the remaining a11y-notes items. See "Slice 2 results" below. |
 | 9–11, 13–14, 20, 23 + launcher bug | `fix/responsive-pass` (slice 3) | Done — initiative board as cards on narrow boards, auth pages scroll, phone sheet header and source-order fix, drawer closes on campaign pick with a contextual top bar, full-width toasts, every listed target at 24px or more, and the dice launcher / toast / settings stacking. See "Slice 3 results" below. |
+| 19 | `chore/type-floor` | Done — all 61 sub-11px declarations lifted to `var(--text-2xs)` with the tracking ladder, 0 sub-11px nodes on every reachable screen at 320 / 375 / 414 / 1280, seven tight spots re-laid out instead of shrunk, two faded wizard labels brought up to AA. See "Type-floor results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -745,3 +746,83 @@ Cypress 9/9 specs (run before and after the `develop` merge), production build 4
 touch); the session banner and player-side session views, which demo mode does not reach in the
 player role; landscape phones; the level-up spell picker (its checkbox rows are sized from the
 CSS, about 40px+, not measured: demo data offers no level-up to open).
+
+#### Type-floor results (2026-11-17)
+
+Branch `chore/type-floor`, cut from `develop` at `8b56779` (after the reputation UI merge) and merged
+with `develop` at `7560349` (DM-granted followers) before reporting. `/impeccable typeset` drove
+it; `doctor` ran first (no auto fixes; it mentions the stale `design.json` sidecar and routes a
+`document` refresh, 25 commits since DESIGN.md's last edit). Measured in demo mode with
+transitions off, at 320, 375 and 414px plus 1280px; contrast in all three themes.
+
+**Before / after.**
+
+| Measure | Before | After |
+|---|---|---|
+| `font-size` under 11px in `src/` (grep, px + rem) | 58 px + 3 × `0.62rem` = **61** | **0** |
+| Computed sub-11px text nodes, sheet tab at 375px | **70** | 0 |
+| — other sheet tabs (Spells, Inventory, Renown, Followers, Notes, Log) | 9 / 3 / 2 / 1 / 1 / 1 | 0 |
+| — wizard, worst steps (review / spells / proficiencies) | 47 / 35 / 8 | 0 |
+| — settings panel · dashboard · session · dice roller | 7 · 18 · 10 · 1 | 0 |
+| Detector `design-system-font-size`, the 18 changed files | 133 | 72 (none below 11px) |
+| Detector `design-system-font-size`, all of `src/` | 181 | 121 (after the `develop` merge) |
+
+The detector's static rules have no `undersized-ui-text` finding (that rule is DOM-only), so the
+computed counts above come from a script that walks every visible text node and reads its
+computed `font-size`. It found 0 below 11px on every surface demo mode reaches, at all four
+widths.
+
+**What changed.** Every sub-11px size became `var(--text-2xs)`; no smaller token was added.
+Uppercase Cinzel labels that grew follow the Tracking Ladder: rules already at ≥ 0.2em (the
+global `.eyebrow`, sidenav party names, ruleset / group / feat eyebrows, the dice result label)
+use `--track-micro` (0.22em); every other label, chip and small button (conditions, skill
+abilities, coin names, board chips and column heads, role switch, seg buttons, wizard tabs and
+badges) uses `--track-label` (0.18em). Single-glyph badges, numerals, the JetBrains Mono rules
+and three uppercase Newsreader labels keep their tracking. `.btn.sm` now inherits the 11px
+`.btn` label; the renown panel's local `.eyebrow` dropped its 10px copy of the global rule.
+
+**Layout the bigger type broke, and the fix** (density from padding and layout, not smaller
+type; each checked against the old sizes injected over the new build, so only real regressions
+were fixed):
+
+| Spot | Problem at 11px | Fix |
+|---|---|---|
+| Ability boxes (73px at 320) | "save" overlapped DEX by 11 × 6px | 4px more top padding, 2px less name margin; boxes 2px taller net |
+| Dashboard vitals (2 across on phones) | "Top Pass. Perc" wrapped, values out of line | 10px side padding instead of 16px below 720px |
+| Theme swatches (≤ 360px) | "Candlelit" needs 81px, label box 70px — clipped | Rows below 360px: 72px preview strip + name |
+| Party board, desktop | "Pass. Perc" / "Pass. Ins" heads wrapped, head row 34 → 53px | Columns 64 / 64 → 78 / 66px, party-board row floor 720 → 730px; head row 37px |
+| Party board, phone tiles | "Pass. Ins" now wraps like "Pass. Perc" did | Tile is a column with the number pinned to the foot; all three level |
+| Wizard ruleset bar | "Coming Soon" pill broke in two at 320 | `nowrap` pill; the bar wraps it to its own line |
+| Wizard review stats / score tabs | "Prof Bonus" wraps at desktop too; tabs uneven | Values pinned to the foot (all at one y); tabs stretch to one height |
+
+`--sheet-tabbar-h` stays 52px: the tab font (13px) was not touched and the bar measured 52px at
+320 / 375 / 414 after the change, so the dice launcher and toast clearance are unchanged.
+
+**Also fixed (own commit):** the wizard's "Origin Feat" eyebrow (opacity 0.75) and review
+section titles (0.8) faded `--gold` to 3.37:1 and 4.04:1 in vellum; full-strength `--gold` now.
+
+**Gates.** `check:tokens` OK (1247 `var()` uses), `check:contrast` 135/135, `ng test` 993/993,
+Cypress 4/4 specs (10 tests, on the merged branch), production build 448.89 kB initial (budget
+497 kB; ~445 kB before, the rest is `develop`'s followers feature). Computed contrast of every
+changed label on every reachable surface: midnight ≥ 5.16:1, candlelit ≥ 5.29:1, vellum ≥ 4.3:1
+— the two vellum cases below are pre-existing colour-token issues, not caused by size.
+
+**Deliberately left:**
+- Two vellum contrast misses on lifted labels, both colour tokens (slice-1 territory): the
+  dashboard's "Invite" eyebrow on the invite chip, 4.4:1 (already recorded in slice 1), and the
+  settings dice-style `.seg-mini button.active` ("digital"), `--gold` on a gold tint, 4.3:1.
+- Wraps that predate this slice and were not made worse in kind: wizard score-method tabs at
+  phone widths ("Roll Dice Soon" over four lines, as before; tabs 3px taller), "Prof Bonus" in
+  the review strip at 320–414, the role switch's two-line "Dungeon Master".
+- Three uppercase **Newsreader** micro-labels (`.detail-label`, `.review-label`,
+  `.species-traits-header`) at 0.06–0.07em: the ladder rule is written for Cinzel, and moving
+  them onto the Cinzel label role is a typeface change, not a size fix.
+- Sizes of 11px and above that sit off DESIGN.md's documented ramp (12px, 14px, the `0.7x rem`
+  sizes in the curated lists and level-up): not below the floor, so not in this slice. The px →
+  `--text-*` migration covered only the declarations this slice touched.
+- The renown panel styles itself with literal colours (`#181b19` ground, `Georgia` headings)
+  outside the token system; only its eyebrow size was in scope.
+
+**Not covered:** the level-up modal's `.slot-lvl` and the session spell-reference card's `dt` /
+`.tag` (demo data opens neither; checked in source only: both are 11px now); the spellbook in the in-app browser (viewport-deferred while the pane was hidden; the
+Cypress `sheet-spell-groups` screenshot shows the 11px `PREPARED` chips at 1280px); real devices.

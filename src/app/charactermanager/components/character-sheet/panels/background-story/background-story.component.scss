@@ -79,9 +79,9 @@
 
 .story-prof-label {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   white-space: nowrap;

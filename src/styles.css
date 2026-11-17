@@ -196,7 +196,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 
 /* Typography helpers */
 .display    { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: 0.04em; }
-.eyebrow    { font-family: 'Cinzel', serif; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; font-size: 10px; color: var(--text-dim); }
+.eyebrow    { font-family: 'Cinzel', serif; font-weight: 500; letter-spacing: var(--track-micro); text-transform: uppercase; font-size: var(--text-2xs); color: var(--text-dim); }
 .numeric    { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
 .serif      { font-family: 'Newsreader', Georgia, serif; }
 /* Read by screen readers, never drawn: live-region lines and spoken context
@@ -352,8 +352,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .party-header.collapsed .party-chevron { transform: rotate(-90deg); }
 .party-name {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   color: var(--text-2);
   flex: 1;
@@ -361,7 +361,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .party-count {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
 }
 
@@ -452,7 +452,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .roster-level {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--gold);
   background: color-mix(in oklch, var(--gold) 14%, transparent);
   padding: 2px 6px;
@@ -511,7 +511,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .btn.danger:hover { background: color-mix(in oklch, var(--crimson) 20%, transparent); border-color: var(--crimson); }
 .btn.play { color: var(--emerald); border-color: color-mix(in oklch, var(--emerald) 55%, transparent); }
 .btn.play:hover { background: color-mix(in oklch, var(--emerald) 22%, transparent); border-color: var(--emerald); color: var(--text); }
-.btn.sm { padding: 6px 10px; font-size: 9px; }
+.btn.sm { padding: 6px 10px; }
 .btn.icon {
   padding: 8px;
   width: 34px; height: 34px;
@@ -751,7 +751,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .ability {
   text-align: center;
-  padding: 14px 8px 10px;
+  padding: 18px 8px 10px;
   background: var(--bg-2);
   border: 1px solid var(--border-soft);
   border-radius: 3px;
@@ -765,10 +765,10 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .ability-name {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   color: var(--text-dim);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .ability-mod {
   font-family: 'Cinzel', serif;
@@ -787,8 +787,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .ability-save {
   position: absolute;
-  top: 6px; right: 6px;
-  font-size: 8px;
+  top: 5px; right: 6px;
+  line-height: 1;
+  font-size: var(--text-2xs);
   color: var(--celestial);
   font-family: 'JetBrains Mono', monospace;
   opacity: 0;
@@ -818,8 +819,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .skill-name { color: var(--text); }
 .skill-ability {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.15em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   color: var(--text-dim);
 }
 .skill-mod {
@@ -864,7 +865,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px 20px;
 }
-.equip-section .panel-title { font-size: 10px; margin-bottom: 8px; color: var(--text-2); }
+.equip-section .panel-title { font-size: var(--text-2xs); margin-bottom: 8px; color: var(--text-2); }
 .equip-item {
   display: flex;
   justify-content: space-between;
@@ -892,6 +893,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
      control on a page can scroll out from under it. */
   .main-inner { padding: 20px 16px 84px; }
   .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Two columns leave ~107px of label at 320px with 16px sides, and an 11px
+     eyebrow like "Top Pass. Perc" needs ~115px. Tighter sides, same type. */
+  .vital { padding-left: 10px; padding-right: 10px; }
   .equip-grid { grid-template-columns: minmax(0, 1fr); }
 
   /* The header gave a 120px portrait its own column and pushed the vitals
@@ -928,7 +932,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .equip-item.equipped .equip-item-name::before {
   content: '◆ ';
   color: var(--gold);
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 /* === SPELLS === */
@@ -998,9 +1002,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .spell-row:hover { opacity: 0.85; }
 .spell-cast-btn {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--gold);
   background: transparent;
@@ -1029,9 +1033,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .spell-cast-strip.blocked .spell-cast-note { color: #f87171; }
 .spell-cast-level {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--track-label);
   color: var(--gold);
   background: transparent;
   border: 1px solid rgba(212,175,55,0.45);
@@ -1049,7 +1053,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .spell-badge {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 1px 4px;
@@ -1066,12 +1070,12 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .spell-time {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
 }
 .spell-range {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
   white-space: nowrap;
 }
@@ -1092,7 +1096,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   display: flex;
   gap: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
   margin-top: 4px;
 }
@@ -1135,8 +1139,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .condition {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 5px 9px;
   border: 1px solid var(--border);
@@ -1180,8 +1184,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .coin-name {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   margin-top: 2px;
@@ -1234,8 +1238,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .traits dt {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   padding-top: 2px;
@@ -1686,8 +1690,8 @@ select:focus {
   border-radius: 2px;
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   transition: all .15s;
@@ -1734,7 +1738,7 @@ select:focus {
 }
 .account-email {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-dim);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -1794,7 +1798,7 @@ select:focus {
 }
 .campaign-next {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--celestial);
   margin-top: 3px;
 }
@@ -1805,7 +1809,9 @@ select:focus {
 .board { overflow-x: auto; }
 .board-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.7fr) 150px 56px 64px 64px minmax(120px, 1.3fr) 16px;
+  /* The two passive columns fit their 11px heads on one line ("Pass. Perc"
+     is ~77px wide with label tracking). The initiative board sets its own. */
+  grid-template-columns: minmax(160px, 1.7fr) 150px 56px 78px 66px minmax(120px, 1.3fr) 16px;
   align-items: center;
   gap: 14px;
   padding: 11px 8px;
@@ -1818,8 +1824,8 @@ select:focus {
 }
 .board-row.head > span {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -1871,8 +1877,8 @@ select:focus {
 .board-conditions { display: flex; flex-wrap: wrap; gap: 4px; }
 .board-cond {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 100px;
@@ -1919,8 +1925,8 @@ select:focus {
 }
 .treasury-total .label {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -2024,8 +2030,8 @@ select:focus {
 .theme-swatch-preview .bar { position: absolute; height: 3px; border-radius: 2px; }
 .theme-swatch-label {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   text-align: center;
   padding: 7px 2px;
@@ -2033,6 +2039,22 @@ select:focus {
   border-top: 1px solid var(--border-soft);
 }
 .theme-swatch.active .theme-swatch-label { color: var(--gold); }
+/* Three across leaves ~70px per label below ~360px, and "Candlelit" needs
+   ~81px at 11px with label tracking. Stack the swatches as rows there:
+   preview strip on the left, name on the right. */
+@media (max-width: 360px) {
+  .theme-swatches { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .theme-swatch { display: grid; grid-template-columns: 72px minmax(0, 1fr); }
+  .theme-swatch-preview { height: 36px; }
+  .theme-swatch-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    text-align: left;
+    border-top: 0;
+    border-left: 1px solid var(--border-soft);
+  }
+}
 
 /* Preference toggle rows */
 .pref-row {
@@ -2088,8 +2110,8 @@ select:focus {
 .seg-mini { display: flex; gap: 4px; }
 .seg-mini button {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 6px 10px;
   background: var(--bg-2);

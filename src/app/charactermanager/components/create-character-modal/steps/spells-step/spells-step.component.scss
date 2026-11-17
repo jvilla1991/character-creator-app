@@ -13,9 +13,9 @@
 .spell-level-tab {
   padding: 4px 10px;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border);
@@ -100,7 +100,7 @@
   display: inline-block;
   font-style: normal;
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   padding: 1px 4px;
   margin-left: 4px;
@@ -115,7 +115,7 @@
   align-items: center;
   gap: 8px;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-dim);
@@ -138,9 +138,9 @@
   display: inline-block;
   margin-left: 8px;
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 1px 6px;
   border-radius: 100px;
@@ -195,9 +195,9 @@
 .spell-desc-props strong,
 .spell-desc-upcast strong {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   font-style: normal;
   color: var(--celestial);

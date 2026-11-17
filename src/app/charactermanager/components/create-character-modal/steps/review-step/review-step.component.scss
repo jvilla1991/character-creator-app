@@ -10,18 +10,22 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
+// A label can wrap ("Prof Bonus" in a narrow column), so the value is pinned
+// to the foot of each cell and the five stay level.
 .review-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   gap: 3px;
+  text-align: center;
 }
 
 .review-stat-label {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
 }
@@ -61,19 +65,18 @@
 
 .review-section-title {
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--gold);
-  opacity: 0.8;
 }
 
 .review-edit-btn {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 3px 9px;
   color: var(--text-dim);
@@ -97,7 +100,7 @@
 }
 
 .review-label {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -143,9 +146,9 @@
 
 .review-ability-label {
   font-family: 'Cinzel', serif;
-  font-size: 8px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-label);
   color: var(--text-dim);
   text-transform: uppercase;
 }
