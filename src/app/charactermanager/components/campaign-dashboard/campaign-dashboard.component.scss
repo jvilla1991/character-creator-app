@@ -10,8 +10,14 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+// Named areas of its own: below 1100px the global sheet header assigns
+// .sheet-id and .sheet-actions to "id" / "actions" areas laid out around the
+// character portrait ("portrait id"). The dashboard has no portrait, so those
+// areas put a stray column before the title (a 210px hole at 1024px, 2px plus
+// a gap on a phone).
 .dashboard-header {
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id actions";
 }
 
 @media (max-width: 820px) {
@@ -30,6 +36,7 @@
   // Title and actions stack; 48px Cinzel does not fit 375px.
   .dashboard-header {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "id" "actions";
     gap: 12px;
     margin-bottom: 18px;
   }

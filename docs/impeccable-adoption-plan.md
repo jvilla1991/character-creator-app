@@ -617,6 +617,7 @@ All four took the recommended option. These are settled; later slices should not
 | 8 | `fix/pc-notes-label` | Done — relabelled "DM Notes" to "Notes"; the field was the player's all along. No backend change. |
 | 1–5 | `chore/impeccable-token-sweep` (slice 1) | Done — colour only, no px or font-size changes. Both P0s fixed, the seven undefined tokens mapped onto existing ones (no new tokens), every white-alpha literal gone, `.seg-btn.active` retuned, wizard violet → gold + celestial, and `npm run check:tokens` added to CI. See "Slice 1 results" below. |
 | 12–15, 18, 25 + a11y notes | `fix/a11y-deferred-backlog` (slice 2) | Done — disabled `.btn` state, a shared modal shell (Escape on all 13 dialogs, topmost only), the phone drawer as a modal dialog, turn / session / rest-vote live regions, named controls, app-wide reduced motion with a static turn cue, and the remaining a11y-notes items. See "Slice 2 results" below. |
+| 9–11, 13–14, 20, 23 + launcher bug | `fix/responsive-pass` (slice 3) | Done — initiative board as cards on narrow boards, auth pages scroll, phone sheet header and source-order fix, drawer closes on campaign pick with a contextual top bar, full-width toasts, every listed target at 24px or more, and the dice launcher / toast / settings stacking. See "Slice 3 results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -708,3 +709,39 @@ production build 444.04 kB initial (budget 497 kB; ~441 kB before).
   uses the shell unchanged.
 - Slice 3 still owns closing the drawer after navigating (campaign rows) and the sub-24px
   targets; this branch also touches `styles.css`, so slice 3 should start from it.
+
+#### Slice 3 results (2026-11-16)
+
+Branch `fix/responsive-pass`, cut from `develop` at `4690227` and merged with `develop` at
+`d270913` (#245, #247) before reporting. `/impeccable adapt` drove it; `doctor` ran first and
+reported two `mention`s only (the stale `design.json` sidecar, which `/impeccable document`
+refreshes, and an unset `buildPath`, which needs no answer without image generation). Measured
+in demo mode with transitions off, at 320, 375 and 414px plus 1280px, in all three themes.
+Every finding was re-checked on current `develop` first.
+
+| Rank | Finding on `develop` | Fix | Measured after |
+|---|---|---|---|
+| 9 | Initiative board rows 720px wide in a 293px panel: AC, conditions and DM controls behind a sideways scroll. Party board already fixed by #236. | Card per combatant below 720px of **board** width (container query): Init tile + name, health beside an AC tile, conditions, DM controls at 36px. Columns moved from an inline style to classes. Supersedes #247's flex wrap, which would have overridden the cards. | Board scrollWidth = clientWidth at 320 / 375 / 414 (238 / 293 / 332); desktop keeps its 6 columns |
+| 10 | Register card 666px tall at 320×568, page could not scroll (still true after #236) | `.login-page` gets a fixed `100dvh` height, so its own `overflow-y` scrolls | Bottom link reachable and tappable at 320×568 |
+| 11 | Sheet header 348px at 375px; name clipped to "MOONWHIS"; equipment names 34px wide (720px block lost on source order) | 720px block moved after the base rules; phone header with a 64px portrait beside a 24px wrapping name; action icons dropped. Ability scores deliberately stay 3 across. | Header 185px (213px before #247 dropped Roll); vitals start at y 286 instead of 461; no name clip at any width |
+| 14 | DM picking a campaign left the drawer open (page inert); top bar showed the last player-view hero | Campaign rows emit `picked` and the drawer closes (focus back to the menu button); the DM top bar shows the campaign, or "Table Mimic" | Drawer closed, `inert` gone, focus on `.mobile-menu-btn`, title "The Veiled Compass" |
+| 13 | Header above modal backdrops (phone) | Already fixed by slice 2 | `elementFromPoint` on the top bar hits the dialog |
+| 20 | Toast 160–188px wide on a phone | `width: max-content` under the existing max-width; on narrow screens it rises above the dice launcher | 345px wide at 375px, clear of the launcher and tab bar |
+| 23 | Exhaustion pips 22, inspiration pips 19, Use 20, note buttons 18×16, reveal toggle 16, auth link 13 tall, checkboxes 13, selects 23 | 24px pips (rings around the same dot), 24px Use, 32px note buttons, 36px reveal toggle, 25px link, 18px checkboxes inside 32–40px label rows, 28px selects | 0 controls under 24px on the sheet, dashboard and auth pages at all three widths. Left: the checkboxes themselves (18px, their full label row is the target) and the hidden file input behind "Upload sound" |
+| bug | Dice launcher covered the pinned tab bar's Followers tab | Fixed on `develop` too (#245 / #247: `--bottom-bar-height` from a body class). This branch keeps that mechanism, feeds it from `--sheet-tabbar-h` (the bar's measured 52px, not 48), and lifts the toast by it | Launcher 14px above the bar at every width; Followers hit-tests as itself |
+
+**Found while checking, also fixed:** the settings slide-over (z 90/91) sat under the launcher
+(z 95), which covered Sign Out on a phone; it now stacks at 96/97, still below dialogs (100). The
+dashboard header inherited the sheet's portrait grid areas, which put a stray column before the
+campaign title (a 210px hole at 1024px, a 14px indent on a phone). The page foot clears the
+launcher (84px bottom padding below 720px).
+
+**Gates.** `check:tokens` OK (1138 `var()` uses), `check:contrast` 135/135, `ng test` 933/933,
+Cypress 9/9 specs (run before and after the `develop` merge), production build 444.77 kB initial
+(budget 497 kB). The detector flagged three raw px font sizes on added lines; all now use
+`--text-*` tokens.
+
+**Not covered:** real devices (all evidence is Chromium device emulation; no Safari, no real
+touch); the session banner and player-side session views, which demo mode does not reach in the
+player role; landscape phones; the level-up spell picker (its checkbox rows are sized from the
+CSS, about 40px+, not measured: demo data offers no level-up to open).

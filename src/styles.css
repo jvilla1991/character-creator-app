@@ -167,6 +167,11 @@
   --track-title:   0.05em;
   --track-label:   0.18em;
   --track-micro:   0.22em;
+
+  /* The character sheet's bottom tab bar on phones: its height above the
+     safe area (character-sheet.component.scss). --bottom-bar-height, near
+     the end of this file, publishes it to the dice launcher and the toast. */
+  --sheet-tabbar-h: 52px;
 }
 
 * { box-sizing: border-box; }
@@ -695,12 +700,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   .vital:nth-child(3n) { border-right: none; }
   .vital:nth-last-child(-n+3) { border-bottom: none; }
 }
-@media (max-width: 720px) {
-  .main-inner { padding: 20px 16px 60px; }
-  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .abilities { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .equip-grid { grid-template-columns: minmax(0, 1fr); }
-}
+/* Phone-width overrides live in the "SHEET AT PHONE WIDTH" block after the
+   equipment rules: a media query has no extra specificity, so it has to come
+   after every base rule it overrides or it silently loses. */
 
 .col-left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .col-right { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -878,6 +880,46 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .equip-item-meta { flex-shrink: 0; }
 .equip-item:last-child { border-bottom: none; }
 .equip-item-name .magic { color: var(--celestial); font-style: italic; }
+
+/* === SHEET AT PHONE WIDTH ===
+   Kept after the base rules above (.main-inner, .vitals, .equip-grid, the
+   sheet header): a media query adds no specificity, so placed before them it
+   lost on source order and equipment names clipped to ~34px. Ability scores
+   stay three across: at 320px each box is still ~76px, and all six fit in
+   two rows instead of three. */
+@media (max-width: 720px) {
+  /* 84px at the foot clears the dice launcher (52px, 14px up), so the last
+     control on a page can scroll out from under it. */
+  .main-inner { padding: 20px 16px 84px; }
+  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equip-grid { grid-template-columns: minmax(0, 1fr); }
+
+  /* The header gave a 120px portrait its own column and pushed the vitals
+     below the first screen. A 64px portrait sits beside the name, the name
+     wraps instead of clipping, and the actions drop their icons so the row
+     fits on one line at 375px. The dashboard's header sets its own columns
+     inline, so it keeps them. */
+  .sheet-header {
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .sheet-header > .portrait.xl {
+    width: 64px;
+    height: 64px;
+    font-size: var(--text-2xl);
+    align-self: start;
+  }
+  .sheet-name {
+    font-size: var(--text-2xl) !important;
+    overflow-wrap: break-word;
+    margin-bottom: 6px;
+  }
+  .sheet-subtitle { font-size: var(--text-base); }
+  .sheet-actions .btn { padding-left: 10px; padding-right: 10px; }
+  .sheet-actions .btn:not(.icon) svg { display: none; }
+}
 .equip-item-meta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -1374,9 +1416,13 @@ select:focus {
   width: 100%;
   box-sizing: border-box;
 }
+/* The icon stays 16px; the button around it is a 36px square (WCAG 2.5.8
+   asks for 24), filling the 38px the input reserves on its right. */
 .reveal-toggle {
   position: absolute;
-  right: 8px;
+  right: 1px;
+  width: 36px;
+  height: 36px;
   background: none;
   border: none;
   padding: 0;
@@ -1384,6 +1430,7 @@ select:focus {
   color: var(--text-dim);
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: color 0.15s;
 }
 .reveal-toggle:hover { color: var(--text); }
@@ -1494,10 +1541,14 @@ select:focus {
   /* The card centres with margin:auto rather than align/justify-content.
      A centred flex item that is TALLER than its container gets its top cut
      off and cannot be scrolled back to; auto margins collapse to 0 in that
-     case, so the card starts at the top and the page simply scrolls. */
+     case, so the card starts at the top and the page simply scrolls.
+     The page is its own scroll panel (The Panel Owns Its Scroll Rule): body
+     is overflow: hidden, so the page needs a fixed height for overflow-y to
+     take effect. With min-height it grew to fit the card instead, and on a
+     short phone the bottom of the register card could not be reached. */
   overflow-y: auto;
-  min-height: 100vh;        /* fallback for browsers without dvh */
-  min-height: 100dvh;       /* tracks the real visible area as mobile browser chrome shows/hides */
+  height: 100vh;            /* fallback for browsers without dvh */
+  height: 100dvh;           /* tracks the real visible area as mobile browser chrome shows/hides */
   padding: 24px;
   background:
     radial-gradient(ellipse at 20% 0%,   color-mix(in oklch, var(--celestial) 20%, transparent), transparent 50%),
@@ -1588,6 +1639,12 @@ select:focus {
   text-decoration: none;
   margin-left: 4px;
   transition: color 0.15s;
+  /* A 13px-tall inline link is a hard tap on a phone. Padding grows the hit
+     area to 25px; the matching negative margin keeps the line where it was. */
+  display: inline-block;
+  padding: 6px 2px;
+  margin-top: -6px;
+  margin-bottom: -6px;
 }
 .auth-link:hover { color: var(--gold-2); }
 
@@ -1874,12 +1931,15 @@ select:focus {
   color: var(--gold);
 }
 
-/* === PROFILE / SETTINGS SLIDE-OVER === */
+/* === PROFILE / SETTINGS SLIDE-OVER ===
+   A modal dialog, so it stacks above the shell's dice launcher (z 95), which
+   otherwise sat on top of Sign Out on a phone, and below .modal-backdrop
+   (z 100), so the roller's "R" shortcut still opens over it. */
 .slideover-backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
-  z-index: 90;
+  z-index: 96;
 }
 .slideover {
   position: fixed;
@@ -1888,7 +1948,7 @@ select:focus {
   background: var(--surface);
   border-right: 1px solid var(--gold);
   box-shadow: 20px 0 60px rgba(0,0,0,0.5), var(--glow-gold);
-  z-index: 91;
+  z-index: 97;
   display: flex;
   flex-direction: column;
   transform: translateX(0);
@@ -2125,5 +2185,7 @@ select:focus {
 body { --bottom-bar-height: 0px; }
 
 @media (max-width: 820px) {
-  body.has-bottom-tab-bar { --bottom-bar-height: calc(48px + env(safe-area-inset-bottom)); }
+  /* The bar's own height token, so the lift and the bar cannot drift apart
+     (it measures 52px; a 48px lift left the launcher 4px closer). */
+  body.has-bottom-tab-bar { --bottom-bar-height: calc(var(--sheet-tabbar-h) + env(safe-area-inset-bottom)); }
 }

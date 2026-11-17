@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject, input, viewChild } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, computed, inject, input, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { CampaignService } from '../../services/campaign.service';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
@@ -41,6 +42,16 @@ export class SidenavComponent implements OnInit {
   readonly dmReturn = this.uiState.dmReturn;
   readonly sessionOverlayVisible = this.uiState.sessionOverlayVisible;
   user = this.currentUser.getUser();
+
+  private readonly campaigns = toSignal(inject(CampaignService).campaigns$, { initialValue: [] });
+  /**
+   * The phone top bar's title in DM view: the campaign on screen. It used to
+   * show the last hero opened in player view, which the DM was not looking at.
+   */
+  readonly dmTitle = computed(() => {
+    const id = this.uiState.activeCampaignId();
+    return this.campaigns().find(c => c.id === id)?.name ?? null;
+  });
 
   private allPcs: PC[] = [];
   private readonly doc = inject(DOCUMENT);

@@ -81,11 +81,21 @@
   margin-bottom: 16px;
 }
 
+// The label is the tap target: at least 32px tall, with an 18px box (the
+// native one is 13px).
 .roster-row {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 32px;
   cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--gold);
+  }
 }
 
 .catalog {

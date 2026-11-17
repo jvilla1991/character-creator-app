@@ -40,7 +40,7 @@
 .insp-pips {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
 }
 
 .insp-pip {
@@ -58,13 +58,13 @@
   }
 }
 
-// DM cross-link: the pips ARE the control. Padding widens the tap target past
-// the 9px dot and the negative margin cancels it, so the dots don't drift apart.
+// DM cross-link: the pips ARE the control. The ring around the 9px dot is the
+// tap target, 24px (WCAG 2.5.8). It was 19px, with negative margins pulling the
+// rings into each other.
 .insp-pip.clickable {
   cursor: pointer;
   box-sizing: content-box;
-  margin: -4px;
-  padding: 4px;
+  padding: 6.5px;
   background-clip: content-box;
 
   &:hover:not(:disabled) {
@@ -83,7 +83,7 @@
 }
 
 .insp-use {
-  height: 20px;
+  height: 24px;
   padding: 0 7px;
   font: inherit;
   font-size: 10px;
@@ -129,8 +129,8 @@
 }
 
 .exhaustion-pip {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   font-family: 'Cinzel', serif;
   font-size: 10px;

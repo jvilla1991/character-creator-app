@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, output } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { Campaign } from '../../models/campaign';
@@ -23,6 +23,8 @@ interface CampaignRow {
 })
 export class CampaignSidebarComponent implements OnInit, OnDestroy {
   readonly activeCampaignId = this.uiState.activeCampaignId;
+  /** A campaign row was chosen. The phone drawer closes on it to reveal the dashboard. */
+  readonly picked = output<string>();
 
   // Refetch valve: fired on window refocus so a player joining while the DM
   // was in another tab shows up without a manual reload. No background polling.
@@ -75,6 +77,7 @@ export class CampaignSidebarComponent implements OnInit, OnDestroy {
 
   select(id: string): void {
     this.uiState.setActiveCampaign(id);
+    this.picked.emit(id);
   }
 
   padCount(n: number): string {
