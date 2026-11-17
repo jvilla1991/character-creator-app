@@ -84,6 +84,12 @@
         <span class="review-value">{{ selectedSubclass() }}</span>
       </div>
     }
+    @if (rune()) {
+      <div class="review-row">
+        <span class="review-label">Rune</span>
+        <span class="review-value">{{ rune() }}</span>
+      </div>
+    }
     @if (classDetail(); as detail) {
       <div class="review-row">
         <span class="review-label">Hit Die</span>

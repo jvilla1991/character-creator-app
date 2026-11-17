@@ -20,6 +20,7 @@ import { CampaignNotesComponent } from './campaign-notes/campaign-notes.componen
 import { CampaignWeekComponent } from './campaign-week/campaign-week.component';
 import { ModalComponent } from '../modal/modal.component';
 import { AsyncPipe } from '@angular/common';
+import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 
 interface DashboardVm {
   campaign: Campaign;
@@ -42,7 +43,7 @@ interface DashboardVm {
     selector: 'app-campaign-dashboard',
     templateUrl: './campaign-dashboard.component.html',
     styleUrls: ['./campaign-dashboard.component.scss'],
-    imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, ModalComponent, AsyncPipe]
+    imports: [PartyBoardComponent, PartyTreasuryComponent, CuratedShopsComponent, CuratedEncountersComponent, CuratedLootComponent, CampaignNotesComponent, CampaignWeekComponent, ModalComponent, AsyncPipe, ClassDisplayPipe]
 })
 export class CampaignDashboardComponent implements OnInit, OnDestroy {
   /** In-world clock label for the header chip (campaigns$ keeps it fresh). */

@@ -32,8 +32,11 @@ export class ReviewStepComponent {
   readonly species = input('');
   readonly speciesDetail = input<DndSpecies | null>(null);
   readonly reviewSpeciesTraitNames = input('');
+  /** Class as shown to the player — the hero-class label for e.g. Death Knight (Paladin). */
   readonly clazz = input('');
   readonly selectedSubclass = input('');
+  /** Death Knight rune; '' for everyone else. */
+  readonly rune = input('');
   readonly classDetail = input<DndClass | null>(null);
   readonly classSavingThrows = input('…');
   readonly background = input('');

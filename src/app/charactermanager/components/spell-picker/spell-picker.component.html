@@ -1,4 +1,5 @@
 <div class="spell-picker">
+  <app-content-source-filter [selection]="sources" (toggle)="toggleSource($event)"></app-content-source-filter>
   <input aria-label="Search spells" class="spell-search" type="text" [(ngModel)]="search" placeholder="Search spells…">
   @if (loading) {
     <div class="spell-loading">Consulting the grimoire…</div>
@@ -13,6 +14,9 @@
             <span class="spell-meta">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school }}</span>
           </span>
         </label>
+      }
+      @if (noSourcesEnabled) {
+        <div class="spell-loading">No spells to show. Turn on a content source above.</div>
       }
     </div>
   }

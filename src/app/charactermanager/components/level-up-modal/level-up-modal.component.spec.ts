@@ -484,4 +484,42 @@ describe('LevelUpModalComponent', () => {
       newSpells: [jasmine.objectContaining({ lvl: 1, name: 'Hold Person', prepared: true })],
     });
   });
+
+  // --- Death Knight (Oath of the Ebon Blade) rune change ---
+
+  describe('Ebon Blade rune change', () => {
+    beforeEach(() => {
+      component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', rune: 'Frost', level: 4 });
+      pcService.levelUpPreview.and.returnValue(of(makePreview()));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+      component.ngOnInit();
+    });
+
+    it('offers the rune select only to Ebon Blade characters, defaulting to the current rune', () => {
+      expect(component.isEbonBlade).toBeTrue();
+      expect(component.selectedRune).toBe('Frost');
+    });
+
+    it('does not send a rune when it is left unchanged', () => {
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+    });
+
+    it('sends the new rune when the player changes it', () => {
+      component.selectedRune = 'Unholy';
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { rune: 'Unholy' });
+    });
+
+    it('never sends a rune for a non-Ebon Blade character', () => {
+      const other = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
+      other.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of Devotion' });
+      other.ngOnInit();
+      other.selectedRune = 'Blood';
+      pcService.levelUp.calls.reset();
+      other.confirm();
+      expect(other.isEbonBlade).toBeFalse();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+    });
+  });
 });

@@ -99,7 +99,9 @@
       </details>
       }
       @if (filteredSpellList().length === 0) {
-        <div class="loading">No spells match your search.</div>
+        <div class="loading">
+          {{ noSourcesEnabled() ? 'No spells to show. Turn on a content source above.' : 'No spells match your search.' }}
+        </div>
       }
     </div>
   }

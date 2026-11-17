@@ -57,9 +57,9 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           {{ pc.race }}
           <span class="dot">✦</span>
         }
-        {{ pc.clazz }}
+        {{ pc | classDisplay }}
         @if (pc.subclass || !followerMode) {
-          <em style="color: var(--text-dim)">({{ pc.subclass }})</em>
+          <em style="color: var(--text-dim)">({{ pc.subclass }}@if (pc.rune) { · {{ pc.rune }} Rune })</em>
         }
         <span class="dot">✦</span>
         Level
@@ -279,6 +279,9 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           </app-survival-panel>
         }
         <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
+        @if (ebonBlade) {
+          <app-ebon-blade-panel [pc]="pc"></app-ebon-blade-panel>
+        }
         <app-other-features   [pc]="pc" [addAllowed]="editable" (featureGranted)="onOtherFeatureGrant($event)"></app-other-features>
         <app-coin-purse
           [pc]="pc"

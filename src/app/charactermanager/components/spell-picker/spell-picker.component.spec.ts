@@ -159,4 +159,42 @@ describe('SpellPickerComponent', () => {
     expect(component.isSelected(spells[0])).toBeTrue();
     expect(component.isSelected(spells[1])).toBeFalse();
   });
+
+  // --- content-source filter (Base Game / World of Warcraft) ---
+
+  describe('source filter', () => {
+    const wow = (name: string): DndSpell => ({ ...dndSpell(1, name), classes: [], source: 'World of Warcraft' });
+
+    beforeEach(() => {
+      component.spells = [dndSpell(1, 'Bless'), wow('Death Grip')];
+    });
+
+    it('shows both sources by default', () => {
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless', 'Death Grip']);
+      expect(component.noSourcesEnabled).toBeFalse();
+    });
+
+    it('hides World of Warcraft spells when that source is unchecked', () => {
+      component.toggleSource('World of Warcraft');
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless']);
+    });
+
+    it('hides base spells (no source = Base Game) when Base Game is unchecked', () => {
+      component.toggleSource('Base Game');
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Death Grip']);
+    });
+
+    it('shows nothing — and flags it — with both sources unchecked', () => {
+      component.toggleSource('Base Game');
+      component.toggleSource('World of Warcraft');
+      expect(component.filteredSpells).toEqual([]);
+      expect(component.noSourcesEnabled).toBeTrue();
+    });
+
+    it('re-enables a source when toggled back on', () => {
+      component.toggleSource('World of Warcraft');
+      component.toggleSource('World of Warcraft');
+      expect(component.filteredSpells.length).toBe(2);
+    });
+  });
 });

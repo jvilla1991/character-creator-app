@@ -35,7 +35,7 @@
           <div class="portrait" [style.background]="tintFor(pc)">{{ initialsFor(pc) }}</div>
           <div style="min-width: 0;">
             <div class="board-hero-name">{{ pc.name }}</div>
-            <div class="board-hero-sub">{{ pc.clazz }} {{ pc.level }}</div>
+            <div class="board-hero-sub">{{ pc | classDisplay }} {{ pc.level }}</div>
           </div>
         </div>
         <div class="board-hp" [class.bloodied]="bloodied(pc)">

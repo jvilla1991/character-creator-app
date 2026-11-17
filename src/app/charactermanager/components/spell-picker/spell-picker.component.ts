@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { DndSpell } from '../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
+import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
+import { ContentSource, ContentSourceSelection, allContentSources, isSourceEnabled, spellSource } from '../../models/content-source';
 
 /**
  * Reusable spell search-and-select list — extracted from the level-up modal so
@@ -19,7 +21,7 @@ import { FormsModule } from '@angular/forms';
     templateUrl: './spell-picker.component.html',
     styleUrls: ['./spell-picker.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule]
+    imports: [FormsModule, ContentSourceFilterComponent]
 })
 export class SpellPickerComponent {
   @Input() spells: DndSpell[] = [];
@@ -30,11 +32,23 @@ export class SpellPickerComponent {
   readonly selectedChange = output<DndSpell[]>();
 
   search = '';
+  /** Base Game / World of Warcraft filter — both on by default. */
+  sources: ContentSourceSelection = allContentSources();
 
-  /** Candidates filtered by search and limited to the kinds the caller allows. */
+  toggleSource(source: ContentSource): void {
+    this.sources = { ...this.sources, [source]: !this.sources[source] };
+  }
+
+  /** True when every content source is unchecked (the list is empty by choice). */
+  get noSourcesEnabled(): boolean {
+    return !Object.values(this.sources).some(Boolean);
+  }
+
+  /** Candidates filtered by source and search, limited to the kinds the caller allows. */
   get filteredSpells(): DndSpell[] {
     const q = this.search.trim().toLowerCase();
     return this.spells.filter(s => {
+      if (!isSourceEnabled(this.sources, spellSource(s))) return false;
       if (s.level === 0 && this.cantripLimit === 0) return false;
       if (s.level > 0 && this.spellLimit === 0) return false;
       return !q || s.name.toLowerCase().includes(q);

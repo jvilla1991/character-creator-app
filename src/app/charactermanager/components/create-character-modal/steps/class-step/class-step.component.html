@@ -5,20 +5,37 @@
   <div class="loading">Loading classes…</div>
 }
 @if (!loadingClassList()) {
+  @if (selectedHidden()) {
+    <p class="class-filter-note" role="status">
+      Your chosen class, {{ selectedLabel() }}, is hidden by the content-source filter.
+      It stays selected — turn its source back on above to change it.
+    </p>
+  }
+  @if (classOptions().length === 0) {
+    <div class="loading">No classes to show. Turn on a content source above.</div>
+  }
   <div class="picker-accordion">
-    @for (c of classList(); track c) {
+    @for (o of classOptions(); track o.label) {
       <button class="class-pick accordion-head"
-        [class.active]="clazz() === c"
+        [class.active]="selectedLabel() === o.label"
         type="button"
-        (click)="toggle.emit(c)">
-        <span>{{ c }}</span>
-        <svg class="accordion-chev" [class.open]="clazz() === c" viewBox="0 0 10 10" aria-hidden="true">
+        (click)="toggle.emit(o.label)">
+        <span>
+          {{ o.label }}
+          @if (o.hero) {
+            <span class="source-tag">{{ o.source }}</span>
+          }
+        </span>
+        <svg class="accordion-chev" [class.open]="selectedLabel() === o.label" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M2 4l3 3 3-3"/>
         </svg>
       </button>
       <!-- Selected class: hit die / saves (and subclass if required) below it -->
-      @if (clazz() === c) {
+      @if (selectedLabel() === o.label) {
         <div class="accordion-body">
+          @if (o.hero) {
+            <p class="hero-blurb">{{ o.hero.blurb }}</p>
+          }
           @if (!classDetail()) {
             <div class="loading">Loading class details…</div>
           }
@@ -32,6 +49,32 @@
                 <span class="detail-label">Saving Throws</span>
                 <span class="detail-value">{{ classSavingThrows() }}</span>
               </div>
+              @if (o.hero) {
+                <div class="detail-row">
+                  <span class="detail-label">Subclass</span>
+                  <span class="detail-value">{{ o.hero.subclass }} <span class="locked-note">(fixed)</span></span>
+                </div>
+              }
+            </div>
+          }
+          <!-- Rune picker — a Death Knight must choose one -->
+          @if (o.hero?.runeRequired) {
+            <div class="subclass-header">
+              <span class="eyebrow" id="rune-picker-label">Choose a Rune <span aria-label="required">*</span></span>
+              <span class="subclass-note">Your Death Knight's specialization</span>
+            </div>
+            <div class="subclass-list" role="group" aria-labelledby="rune-picker-label">
+              @for (r of runeOptions(); track r.name) {
+                <button
+                  type="button"
+                  class="subclass-card"
+                  [class.active]="rune() === r.name"
+                  [attr.aria-pressed]="rune() === r.name"
+                  (click)="runeChange.emit(r.name)">
+                  <span class="subclass-name">{{ r.name }}</span>
+                  <span class="subclass-desc">{{ r.desc }}</span>
+                </button>
+              }
             </div>
           }
           <!-- Subclass picker — Sorcerer and Warlock choose at level 1 (2024 PHB) -->

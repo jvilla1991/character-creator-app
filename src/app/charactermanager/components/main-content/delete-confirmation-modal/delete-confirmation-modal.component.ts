@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
 import { ModalComponent } from '../../modal/modal.component';
+import { ClassDisplayPipe } from '../../../pipes/class-display.pipe';
 
 @Component({
     selector: 'app-delete-confirmation-modal',
     templateUrl: './delete-confirmation-modal.component.html',
     styleUrls: ['./delete-confirmation-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent]
+    imports: [ModalComponent, ClassDisplayPipe]
 })
 export class DeleteConfirmationModalComponent {
   readonly pc = input.required<PC>();

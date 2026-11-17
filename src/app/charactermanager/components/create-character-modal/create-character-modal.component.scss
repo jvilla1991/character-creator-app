@@ -54,6 +54,13 @@
   white-space: nowrap;
 }
 
+// ── Content-source filter (under the ruleset bar) ─────────────────────────
+
+.wizard-sources {
+  display: block;
+  margin: -6px 0 16px;
+}
+
 // ── Wizard step indicator ─────────────────────────────────────────────────
 
 .wizard-steps {
