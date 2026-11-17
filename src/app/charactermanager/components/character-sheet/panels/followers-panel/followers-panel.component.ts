@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PC } from '../../../../models/pc';
 import { Follower, STAT_BLOCK_EXAMPLE, parseStatBlock } from '../../../../models/follower';
 import { FollowerService } from '../../../../services/follower.service';
+import { NotificationService } from '../../../../services/notification.service';
 import { tintFor } from '../../../../utils/character-math';
 
 /**
@@ -39,6 +40,8 @@ export class FollowersPanelComponent implements OnChanges {
   grantFormOpen = false;
   nameDraft = '';
   statBlockDraft = '';
+
+  private readonly notifications = inject(NotificationService);
 
   constructor(private followerService: FollowerService) {}
 
@@ -134,7 +137,7 @@ export class FollowersPanelComponent implements OnChanges {
         this.saving.set(false);
       },
       error: err => {
-        console.error('Failed to dismiss follower', err);
+        this.notifications.error(`Could not dismiss ${follower.name}. They are still with you — try again.`, err);
         this.confirmingDismissId.set(null);
         this.saving.set(false);
       },
