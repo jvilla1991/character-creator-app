@@ -1,47 +1,240 @@
-:host { display: block; }
-.reputation { color: #eee5cf; background: #181b19; border: 1px solid #65573a; border-radius: 8px; padding: 24px; box-shadow: inset 0 0 36px #0005; }
-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
-.eyebrow { color: #c8b27c; }
-h2 { font: 28px Georgia, serif; margin: 6px 0; color: #efdb9e; }
-p { color: #c4bfaf; font-size: 13px; margin: 0; }
-button, input, select { font: inherit; color: #eee5cf; background: #282c26; border: 1px solid #756744; border-radius: 4px; padding: 8px 12px; }
-button { cursor: pointer; }
-button:hover:not(:disabled) { background: #3c4132; border-color: #d0b77b; }
-button:disabled { opacity: .45; cursor: default; }
-button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #f1cf72; outline-offset: 3px; }
-.add-form { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; padding: 16px; margin-bottom: 16px; background: #242820; border: 1px solid #65573a; }
-label { display: grid; gap: 6px; font-size: 12px; flex: 1; }
-input, select { min-width: 0; width: 100%; box-sizing: border-box; }
-small { color: #c4bfaf; font-size: 11px; }
-.add-form small { flex-basis: 100%; }
-.empty { padding: 28px 0; }
-.error { padding: 12px; color: #ffc3b6; }
-.faction-list { border: 1px solid #514b38; border-radius: 4px; overflow: hidden; }
-.faction-row { display: flex; align-items: center; gap: 18px; padding: 14px 16px; background: linear-gradient(90deg, #303329, #22271f); border-bottom: 1px solid #514b38; }
-.faction-row:last-child { border-bottom: 0; }
-.faction-name { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; font: bold 15px Georgia, serif; overflow-wrap: anywhere; }
-.expand, .crest { width: 26px; flex: 0 0 26px; padding: 2px 0; text-align: center; color: #d8bd78; }
-.subfaction { background: #1c211c; }
-.subfaction .faction-name { padding-left: 24px; font: 14px inherit; }
-.standing { width: 46%; max-width: 430px; }
-.bar { position: relative; height: 28px; background: #101511; border: 1px solid #8c7951; border-radius: 3px; overflow: hidden; }
-.fill { position: absolute; inset: 0 auto 0 0; opacity: .85; transition: width .2s; box-shadow: inset 0 1px #ffffff40; }
-.bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: white; font-size: 12px; text-shadow: 0 1px 3px #000, 0 0 3px #000; background: #0002; }
-.standing small { display: block; margin-top: 5px; }
-.adjustments { display: flex; gap: 5px; }
-.adjustments button { font-size: 20px; line-height: 1; width: 34px; padding: 7px 0; }
-.milestones { margin-top: 22px; border-top: 1px solid #514b38; padding-top: 14px; font-size: 12px; }
-summary { cursor: pointer; color: #dac58f; }
-summary span { float: right; color: #c4bfaf; }
-.milestone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 18px; }
-.milestone-grid div { display: grid; grid-template-columns: 8px 1fr; gap: 5px 8px; }
-.milestone-grid i { width: 8px; height: 8px; margin-top: 3px; border-radius: 50%; }
-.milestone-grid span { grid-column: 2; color: #c4bfaf; font-size: 11px; }
-@media (max-width: 600px) {
-  .reputation { padding: 16px; } header { align-items: start; flex-direction: column; }
-  .faction-row { flex-wrap: wrap; gap: 10px; padding: 12px; }
-  .faction-name { flex-basis: 100%; } .standing { flex: 1; width: auto; }
-  .milestone-grid { grid-template-columns: repeat(2, 1fr); }
-  .add-form label { flex-basis: 100%; }
+/* Panel chrome, .field and .btn come from global styles.css. Every colour
+   here is a theme token, so the panel follows midnight, vellum and candlelit. */
+
+:host {
+  display: block;
+
+  /* Standing colours, worst to best. Built from theme tokens (crimson → gold
+     → neutral → emerald → celestial → violet) so each theme recolours them.
+     RENOWN_MILESTONES in models/renown.ts points at these. */
+  --renown-hated:      var(--crimson);
+  --renown-hostile:    color-mix(in oklch, var(--crimson) 60%, var(--gold));
+  --renown-unfriendly: color-mix(in oklch, var(--crimson) 25%, var(--gold));
+  --renown-neutral:    var(--text-dim);
+  --renown-friendly:   var(--emerald);
+  --renown-honored:    color-mix(in oklch, var(--emerald) 50%, var(--celestial));
+  --renown-revered:    var(--celestial);
+  --renown-exalted:    var(--violet);
 }
+
+.renown-empty {
+  margin: 0;
+  padding: 24px 0;
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: var(--text-base);
+  color: var(--text-dim);
+}
+
+.hint, small {
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: var(--text-sm);
+  color: var(--crimson);
+}
+
+// ── DM "Add faction" form ──────────────────────────────────────────────────
+
+.add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+
+  .field { flex: 1 1 200px; }
+  .hint { flex-basis: 100%; margin: 0; }
+}
+
+.add-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+// ── Faction list ───────────────────────────────────────────────────────────
+
+.faction-list {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+}
+
+.faction-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 14px;
+  background: color-mix(in oklch, var(--surface-2) 55%, transparent);
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child { border-bottom: 0; }
+}
+
+.subfaction { background: color-mix(in oklch, var(--bg-2) 45%, transparent); }
+
+.faction-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-base);
+  letter-spacing: var(--track-title);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.subfaction .faction-name {
+  padding-left: 24px;
+  font-size: var(--text-md);
+  color: var(--text-2);
+}
+
+.expand, .crest {
+  flex: 0 0 26px;
+  width: 26px;
+  min-height: 24px;
+  padding: 0;
+  text-align: center;
+  color: var(--gold);
+  background: transparent;
+  border: 0;
+}
+
+.expand {
+  cursor: pointer;
+  border-radius: var(--radius-sharp);
+
+  &:hover { color: var(--gold-2); }
+  &:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+}
+
+.standing {
+  width: 46%;
+  max-width: 430px;
+
+  small { display: block; margin-top: 5px; }
+}
+
+/* Name and score sit above the meter in theme ink rather than on top of the
+   fill, so they stay readable on the light vellum theme too. */
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+
+  strong { font-size: var(--text-sm); letter-spacing: 0; color: var(--text); }
+}
+
+.bar {
+  position: relative;
+  height: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  transition: width .2s;
+}
+
+.adjustments {
+  display: flex;
+  gap: 6px;
+
+  .btn.icon { font-size: 18px; line-height: 1; letter-spacing: 0; }
+}
+
+// ── Milestones: one −100…+100 scale ────────────────────────────────────────
+
+.milestones {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+summary {
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+
+  span { float: right; color: var(--text-dim); letter-spacing: 0; }
+  &:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+}
+
+.scale {
+  display: flex;
+  height: 14px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  overflow: hidden;
+}
+
+/* flex-grow is set per segment to the number of scores it covers. */
+.segment {
+  flex: 0 1 0;
+  min-width: 0;
+
+  & + .segment { box-shadow: inset 1px 0 0 var(--bg-2); }
+}
+
+.scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+}
+
+.milestone-legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: 10px 1fr;
+    gap: 2px 8px;
+    align-items: center;
+    font-size: var(--text-sm);
+    color: var(--text);
+  }
+
+  i { width: 10px; height: 10px; border-radius: var(--radius-sharp); }
+  strong { font-weight: 500; }
+  span { grid-column: 2; font-size: var(--text-2xs); color: var(--text-dim); }
+}
+
+@media (max-width: 600px) {
+  .faction-row { flex-wrap: wrap; gap: 10px; padding: 12px; }
+  .faction-name { flex-basis: 100%; }
+  .standing { flex: 1; width: auto; }
+  .milestone-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }

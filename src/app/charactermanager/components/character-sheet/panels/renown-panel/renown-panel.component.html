@@ -1,30 +1,39 @@
-<section class="reputation" role="tabpanel" aria-label="Renown" [attr.aria-busy]="loading() || saving()">
-  <header>
-    <div><span class="eyebrow">FACTIONS & ALLEGIANCES</span><h2>Renown</h2>
-      <p>{{ pc.name }}’s standing with the powers of this realm.</p></div>
+<!-- Panel chrome, .field and .btn come from global styles.css, so the box
+     follows whichever theme is active. -->
+<section class="panel" role="tabpanel" aria-label="Renown" [attr.aria-busy]="loading() || saving()">
+  <div class="panel-header">
+    <span class="panel-title">Renown</span>
     @if (canManage && pc.campaignId != null) {
-      <button type="button" (click)="formOpen = !formOpen" [attr.aria-expanded]="formOpen">+ Add faction</button>
+      <button type="button" class="btn sm" (click)="formOpen = !formOpen" [attr.aria-expanded]="formOpen">+ Add faction</button>
     }
-  </header>
+  </div>
   @if (pc.campaignId == null) {
-    <p class="empty">Join a campaign to discover its factions and track your renown.</p>
+    <p class="renown-empty">Join a campaign to discover its factions and track your renown.</p>
   } @else {
     @if (formOpen && canManage) {
       <form (ngSubmit)="add()" class="add-form">
-        <label>Faction name<input name="factionName" [(ngModel)]="name" maxlength="100" required placeholder="e.g. The Silver Covenant"></label>
-        <label>Belongs under<select name="parent" [(ngModel)]="parentId">
-          <option [ngValue]="null">New main faction</option>
-          @for (root of roots; track root.id) { <option [ngValue]="root.id">{{ root.name }}</option> }
-        </select></label>
-        <button type="submit" [disabled]="saving() || !name.trim()">Add</button>
-        <button type="button" (click)="formOpen = false" [disabled]="saving()">Cancel</button>
-        <small>Added for the whole campaign. Each character starts at 0; sub-faction scores are independent.</small>
+        <div class="field">
+          <label for="renown-faction-name">Faction name</label>
+          <input id="renown-faction-name" name="factionName" [(ngModel)]="name" maxlength="100" required placeholder="e.g. The Silver Covenant">
+        </div>
+        <div class="field">
+          <label for="renown-faction-parent">Belongs under</label>
+          <select id="renown-faction-parent" name="parent" [(ngModel)]="parentId">
+            <option [ngValue]="null">New main faction</option>
+            @for (root of roots; track root.id) { <option [ngValue]="root.id">{{ root.name }}</option> }
+          </select>
+        </div>
+        <div class="add-form-actions">
+          <button type="submit" class="btn primary sm" [disabled]="saving() || !name.trim()">Add</button>
+          <button type="button" class="btn sm" (click)="formOpen = false" [disabled]="saving()">Cancel</button>
+        </div>
+        <p class="hint">Added for the whole campaign. Each character starts at 0; sub-faction scores are independent.</p>
       </form>
     }
-    @if (error()) { <div class="error" role="alert">{{ error() }} <button type="button" (click)="load()" [disabled]="loading() || saving()">Reload</button></div> }
-    @if (loading()) { <p class="empty" role="status">Loading reputations…</p> }
+    @if (error()) { <div class="error" role="alert">{{ error() }} <button type="button" class="btn sm" (click)="load()" [disabled]="loading() || saving()">Reload</button></div> }
+    @if (loading()) { <p class="renown-empty" role="status">Loading reputations…</p> }
     @else if (!factions().length && !error()) {
-      <p class="empty">No factions yet. {{ canManage ? 'Add a faction to begin shaping this campaign’s alliances.' : 'Your DM can add factions for this campaign.' }}</p>
+      <p class="renown-empty">No factions yet. {{ canManage ? 'Add a faction to begin shaping this campaign’s alliances.' : 'Your DM can add factions for this campaign.' }}</p>
     } @else {
       <div class="faction-list">
         @for (row of visibleRows; track row.id) {
@@ -36,16 +45,19 @@
               <span>{{ row.name }}</span>
             </div>
             <div class="standing">
+              <div class="bar-label" aria-hidden="true">
+                <span class="tier-name" [style.color]="standing(row.score).color">{{ standing(row.score).name }}</span>
+                <strong class="numeric">{{ row.score > 0 ? '+' : '' }}{{ row.score }}</strong>
+              </div>
               <div class="bar" role="meter" [attr.aria-label]="row.name + ': ' + standing(row.score).name" aria-valuemin="-100" aria-valuemax="100" [attr.aria-valuenow]="row.score" [attr.aria-valuetext]="standing(row.score).name + ', ' + row.score + ' renown'">
                 <span class="fill" [style.width.%]="progress(row.score)" [style.background]="standing(row.score).color"></span>
-                <span class="bar-label">{{ standing(row.score).name }} <strong>{{ row.score > 0 ? '+' : '' }}{{ row.score }}</strong></span>
               </div>
               <small>{{ standing(row.score).label }} · {{ row.score === 100 ? 'Maximum renown' : 'Progress within standing' }}</small>
             </div>
             @if (canManage) {
               <div class="adjustments">
-                <button type="button" [attr.aria-label]="'Subtract 1 renown from ' + row.name" [disabled]="saving() || row.score <= -100" (click)="adjust(row, -1)">−</button>
-                <button type="button" [attr.aria-label]="'Add 1 renown to ' + row.name" [disabled]="saving() || row.score >= 100" (click)="adjust(row, 1)">+</button>
+                <button type="button" class="btn icon" [attr.aria-label]="'Subtract 1 renown from ' + row.name" [disabled]="saving() || row.score <= -100" (click)="adjust(row, -1)">−</button>
+                <button type="button" class="btn icon" [attr.aria-label]="'Add 1 renown to ' + row.name" [disabled]="saving() || row.score >= 100" (click)="adjust(row, 1)">+</button>
               </div>
             }
           </div>
@@ -54,8 +66,18 @@
     }
   }
   <details class="milestones"><summary>Reputation milestones <span>−100 to +100</span></summary>
-    <div class="milestone-grid">@for (tier of milestones; track tier.name) {
-      <div><i [style.background]="tier.color"></i><strong>{{ tier.name }}</strong><span>{{ tier.label }}</span></div>
-    }</div>
+    <!-- One scale from −100 to +100. Each standing's segment is as wide as the
+         number of scores it covers, so the narrow middle tiers read as narrow. -->
+    <div class="scale" aria-hidden="true">
+      @for (tier of milestones; track tier.name) {
+        <span class="segment" [style.flex-grow]="span(tier)" [style.background]="tier.color" [title]="tier.name + ' (' + tier.label + ')'"></span>
+      }
+    </div>
+    <div class="scale-ticks numeric" aria-hidden="true"><span>−100</span><span>0</span><span>+100</span></div>
+    <ol class="milestone-legend">
+      @for (tier of milestones; track tier.name) {
+        <li><i [style.background]="tier.color"></i><strong>{{ tier.name }}</strong><span>{{ tier.label }}</span></li>
+      }
+    </ol>
   </details>
 </section>

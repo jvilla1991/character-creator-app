@@ -41,6 +41,21 @@ describe('RenownPanelComponent', () => {
     expect(service.adjust).not.toHaveBeenCalled();
   });
 
+  it('does not show a standing blurb under the title', () => {
+    expect(element().textContent).not.toContain('standing with the powers of this realm');
+  });
+
+  it('draws the milestones as one scale with a segment per standing, sized by its range', () => {
+    const segments = Array.from(element().querySelectorAll<HTMLElement>('.scale .segment'));
+    expect(segments.length).toBe(8);
+    expect(segments.map(segment => segment.style.flexGrow)).toEqual(['76', '15', '7', '5', '7', '15', '25', '51']);
+  });
+
+  it('fills a Neutral 0 bar to the centre', () => {
+    const fill = element().querySelector<HTMLElement>('.faction-row .fill')!;
+    expect(fill.style.width).toBe('50%');
+  });
+
   it('disables only the outward adjustment at each absolute limit', () => {
     fixture.componentRef.setInput('canManage', true);
     component.factions.set([{ ...root, score: -100 }, { ...child, score: 100 }]);
