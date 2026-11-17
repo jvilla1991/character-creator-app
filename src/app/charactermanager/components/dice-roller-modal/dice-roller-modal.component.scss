@@ -123,7 +123,7 @@
   align-items: center;
   justify-content: center;
   font-family: 'Cinzel', serif;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   color: var(--bg);
   background: var(--gold);
@@ -285,8 +285,8 @@
 }
 .result-total-label {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
-  letter-spacing: 0.22em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   color: var(--text-dim);
   margin-top: 4px;

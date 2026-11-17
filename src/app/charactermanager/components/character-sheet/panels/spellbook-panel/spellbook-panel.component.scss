@@ -27,9 +27,9 @@
 // capped skill-chip pattern (.class-pick.disabled).
 .spell-prep-btn {
   font-family: 'Cinzel', serif;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-dim);
   background: transparent;

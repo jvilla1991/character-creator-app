@@ -12,6 +12,9 @@
 // stay hidden there.
 .num-label { display: none; }
 
+// The widened passive columns need 730px of row, not the shared 720px floor.
+.board-row { min-width: 730px; }
+
 @media (max-width: 820px) {
 
   // Cancel the 720px floor that forces the sideways scroll.
@@ -62,7 +65,13 @@
     gap: 6px;
   }
 
+  // A label can wrap to two lines at 320px ("Pass. Perc"), so the number is
+  // pinned to the foot of every tile and the three stay level.
   .board-num {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2px;
     padding: 7px 4px;
     text-align: center;
     background: var(--bg-2);
@@ -73,8 +82,8 @@
   .num-label {
     display: block;
     font-family: 'Cinzel', serif;
-    font-size: 9px;
-    letter-spacing: 0.14em;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
     text-transform: uppercase;
     color: var(--text-dim);
   }
