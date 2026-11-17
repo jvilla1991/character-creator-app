@@ -114,8 +114,7 @@
   .insp-pips {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 1px 0;
+    gap: 2px;
   }
 
   .insp-pip {
@@ -134,10 +133,11 @@
 
     &.clickable {
       cursor: pointer;
-      // Widen the tap target past the 9px dot without spreading the dots out.
+      // The ring is the tap target: 24px (WCAG 2.5.8), with the 9px dot
+      // inside it. It was 19px, with negative margins pulling the rings into
+      // each other.
       box-sizing: content-box;
-      margin: -4px;
-      padding: 4px;
+      padding: 6.5px;
       background-clip: content-box;
 
       &:hover {
@@ -271,6 +271,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 3px 6px;
+      min-height: 28px;
     }
   }
 }
@@ -310,6 +311,7 @@
 
     input[type='range'] {
       width: 96px;
+      height: 24px;
       accent-color: var(--gold, #d9b25f);
       cursor: pointer;
     }

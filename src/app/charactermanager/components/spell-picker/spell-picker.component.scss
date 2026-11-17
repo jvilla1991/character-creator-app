@@ -45,6 +45,16 @@
   &.is-selected {
     border-color: var(--celestial);
   }
+
+  // The whole row is the label, so the tap target is the row (at least 40px
+  // tall); the box itself grows from the native 13px so it reads on a phone.
+  input[type='checkbox'] {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--celestial);
+  }
 }
 
 .spell-row {

@@ -1424,9 +1424,13 @@ select:focus {
   width: 100%;
   box-sizing: border-box;
 }
+/* The icon stays 16px; the button around it is a 36px square (WCAG 2.5.8
+   asks for 24), filling the 38px the input reserves on its right. */
 .reveal-toggle {
   position: absolute;
-  right: 8px;
+  right: 1px;
+  width: 36px;
+  height: 36px;
   background: none;
   border: none;
   padding: 0;
@@ -1434,6 +1438,7 @@ select:focus {
   color: var(--text-dim);
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: color 0.15s;
 }
 .reveal-toggle:hover { color: var(--text); }
@@ -1642,6 +1647,12 @@ select:focus {
   text-decoration: none;
   margin-left: 4px;
   transition: color 0.15s;
+  /* A 13px-tall inline link is a hard tap on a phone. Padding grows the hit
+     area to 25px; the matching negative margin keeps the line where it was. */
+  display: inline-block;
+  padding: 6px 2px;
+  margin-top: -6px;
+  margin-bottom: -6px;
 }
 .auth-link:hover { color: var(--gold-2); }
 
