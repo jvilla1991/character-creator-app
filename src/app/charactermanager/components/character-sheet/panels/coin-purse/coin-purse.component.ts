@@ -26,10 +26,7 @@ export class CoinPurseComponent {
     { key: 'gp', label: 'Gold' },
   ];
 
-  /** Gold-piece value of the purse. Only the three denominations the sheet
-   *  shows are counted, so the total always reconciles with the visible tiles.
-   *  Electrum and platinum stay on the PC (shops and loot still use them) but
-   *  are deliberately excluded here. */
+  /** Gold-piece value of the purse (copper, silver and gold — the game's three coins). */
   get gpEquiv(): string {
     if (!this.pc.coins) return '0.00';
     const { cp, sp, gp } = this.pc.coins;
@@ -42,7 +39,7 @@ export class CoinPurseComponent {
 
   /** Pure builder: apply one coin denomination. */
   private buildCoin(key: CoinKey, value: number): PC {
-    const coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...(this.pc.coins ?? {}) };
+    const coins = { cp: 0, sp: 0, gp: 0, ...(this.pc.coins ?? {}) };
     coins[key] = value;
     return { ...this.pc, coins };
   }
@@ -53,7 +50,7 @@ export class CoinPurseComponent {
   }
 
   /** DM clicked (intercepted) a coin amount — request the edit modal instead of the inline editor.
-   *  Label is the denomination key itself (cp/sp/ep/gp/pp) — the backend's own diff only ever
+   *  Label is the denomination key itself (cp/sp/gp) — the backend's own diff only ever
    *  summarizes the whole purse ("DM changed coins X → Y"), never a single denomination. */
   requestCoin(key: CoinKey): void {
     this.editRequested.emit({

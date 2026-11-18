@@ -4,7 +4,7 @@
  * {@link costToCoins} / {@link formatCp} to render gp/sp/cp.
  */
 
-import { PcItem } from './pc';
+import { PcItem, Coins } from './pc';
 import { bulkFromWeight } from '../utils/slot-inventory';
 
 export type ShopCategory = 'WEAPON' | 'ARMOR' | 'MATERIAL_COMPONENT' | 'GEAR' | 'TRANSPORT';
@@ -89,18 +89,18 @@ export interface ShopView {
 }
 
 export interface PurchaseResult {
-  coins: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  coins: Coins;
   inventory: PcItem[];
   totalCostCp: number;
 }
 
 export interface SellResult {
-  coins: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  coins: Coins;
   inventory: PcItem[];
   totalGainCp: number;
 }
 
-/** Break a copper price into whole gp/sp/cp (no electrum), matching the purse rates. */
+/** Break a copper price into whole gp/sp/cp, matching the purse rates. */
 export function costToCoins(costCp: number): { gp: number; sp: number; cp: number } {
   let rem = Math.max(0, Math.floor(costCp));
   const gp = Math.floor(rem / 100); rem %= 100;

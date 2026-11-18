@@ -27,7 +27,7 @@ const ABILITY_ALIASES: Record<string, Ability> = {
 };
 const ITEM_CATEGORIES: PcItem['category'][] =
   ['weapon', 'armor', 'material-component', 'gear', 'transport', 'treasure'];
-const COIN_KEYS = ['cp', 'sp', 'ep', 'gp', 'pp'] as const;
+const COIN_KEYS = ['cp', 'sp', 'gp'] as const;
 
 /** Pre-filled into the grant form so a DM can author by example. */
 export const STAT_BLOCK_EXAMPLE = JSON.stringify(
@@ -206,12 +206,17 @@ function readInventory(value: unknown): PcItem[] {
 }
 
 function readCoins(value: unknown): NonNullable<PC['coins']> {
-  const coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+  const coins = { cp: 0, sp: 0, gp: 0 };
   if (value === undefined) return coins;
   if (!isObject(value)) throw new StatBlockError('"coins" must be an object, e.g. { "gp": 12 }.');
   for (const key of COIN_KEYS) {
     coins[key] = Math.max(0, num(value[key], `coins.${key}`) ?? 0);
   }
+  // Forgiving, like the rest of the parser: a block pasted from a source that
+  // still lists electrum or platinum converts it at full value (1 ep = 5 sp,
+  // 1 pp = 10 gp) rather than erroring — the game itself uses three coins.
+  coins.sp += 5 * Math.max(0, num(value['ep'], 'coins.ep') ?? 0);
+  coins.gp += 10 * Math.max(0, num(value['pp'], 'coins.pp') ?? 0);
   return coins;
 }
 

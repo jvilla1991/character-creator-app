@@ -49,7 +49,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['DEX', 'CHA'],
     skills: { Deception: 'expert', Persuasion: 'expert', Insight: 'prof', Stealth: 'prof', Investigation: 'prof', Performance: 'prof' },
     conditions: [],
-    coins: { cp: 12, sp: 48, ep: 0, gp: 234, pp: 3 },
+    coins: { cp: 12, sp: 48, gp: 264 },
     spellSlots: { 1: { max: 4, used: 2 }, 2: { max: 3, used: 1 }, 3: { max: 3, used: 0 }, 4: { max: 1, used: 0 } },
     spells: [
       { lvl: 0, name: 'Vicious Mockery', school: 'Enchantment', time: '1 action', prepared: true },
@@ -113,7 +113,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['STR', 'CON'],
     skills: { Athletics: 'expert', Survival: 'prof', Perception: 'prof', Intimidation: 'prof', Nature: 'prof' },
     conditions: ['raging'],
-    coins: { cp: 4, sp: 12, ep: 0, gp: 89, pp: 0 },
+    coins: { cp: 4, sp: 12, gp: 89 },
     spellSlots: {},
     spells: [],
     weapons: [
@@ -162,7 +162,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['DEX', 'INT'],
     skills: { Stealth: 'expert', Sleight: 'expert', Acrobatics: 'prof', Perception: 'prof', Investigation: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 0, ep: 0, gp: 412, pp: 6 },
+    coins: { cp: 0, sp: 0, gp: 472 },
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 0 } },
     spells: [
       { lvl: 0, name: 'Mage Hand', school: 'Conjuration', time: '1 action', prepared: true },
@@ -229,7 +229,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['WIS', 'CHA'],
     skills: { Athletics: 'prof', Intimidation: 'prof', Religion: 'prof', Survival: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 14, ep: 0, gp: 87, pp: 0 },
+    coins: { cp: 0, sp: 14, gp: 87 },
     spellSlots: { 1: { max: 4, used: 0 }, 2: { max: 2, used: 0 } },
     spells: [
       { lvl: 1, name: 'Bless', school: 'Enchantment', time: '1 action', prepared: true },
@@ -281,7 +281,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['STR', 'DEX'],
     skills: { Acrobatics: 'prof', Athletics: 'prof', Perception: 'expert', Stealth: 'prof', Survival: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 22, ep: 0, gp: 64, pp: 0 },
+    coins: { cp: 0, sp: 22, gp: 64 },
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 } },
     spells: [
       { lvl: 1, name: "Hunter's Mark", school: 'Divination', time: '1 bonus action', prepared: true },
@@ -334,7 +334,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['INT', 'WIS'],
     skills: { Animal: 'prof', Nature: 'prof', Survival: 'prof', Stealth: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 18, ep: 0, gp: 41, pp: 0 },
+    coins: { cp: 0, sp: 18, gp: 41 },
     spellSlots: { 1: { max: 4, used: 0 }, 2: { max: 3, used: 1 }, 3: { max: 3, used: 0 } },
     spells: [
       { lvl: 0, name: 'Druidcraft', school: 'Transmutation', time: '1 action', prepared: true },
@@ -391,7 +391,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['WIS', 'CHA'],
     skills: { Insight: 'prof', Medicine: 'prof', Persuasion: 'prof', Religion: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 22, ep: 0, gp: 64, pp: 0 },
+    coins: { cp: 0, sp: 22, gp: 64 },
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 } },
     spells: [
       { lvl: 0, name: 'Sacred Flame', school: 'Evocation', time: '1 action', prepared: true },
@@ -449,7 +449,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['DEX', 'INT'],
     skills: { Acrobatics: 'expert', Persuasion: 'expert', Athletics: 'prof', Deception: 'prof', Perception: 'prof', Sleight: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 31, ep: 0, gp: 155, pp: 2 },
+    coins: { cp: 0, sp: 31, gp: 175 },
     weapons: [
       { name: 'Rapier', dmg: '1d8+4 piercing', notes: 'Finesse; mastery: Vex' },
       { name: 'Dagger', dmg: '1d4+4 piercing', notes: 'Finesse, light, thrown (20/60); mastery: Nick' },
@@ -503,7 +503,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['STR', 'CON'],
     skills: { Athletics: 'prof', Nature: 'prof', Perception: 'prof', Survival: 'prof' },
     conditions: [],
-    coins: { cp: 12, sp: 20, ep: 0, gp: 74, pp: 0 },
+    coins: { cp: 12, sp: 20, gp: 74 },
     spellSlots: {},
     spells: [],
     weapons: [
@@ -560,7 +560,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['WIS', 'CHA'],
     skills: { Arcana: 'prof', Deception: 'prof', Intimidation: 'prof', Sleight: 'prof' },
     conditions: [],
-    coins: { cp: 4, sp: 12, ep: 0, gp: 63, pp: 0 },
+    coins: { cp: 4, sp: 12, gp: 63 },
     spellSlots: { 3: { max: 2, used: 0 } },
     spells: [
       { lvl: 0, name: 'Eldritch Blast', school: 'Evocation', time: '1 action', prepared: true },
@@ -615,7 +615,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['STR', 'CON'],
     skills: { Athletics: 'prof', Intimidation: 'prof', Perception: 'prof', Survival: 'prof' },
     conditions: [],
-    coins: { cp: 8, sp: 15, ep: 0, gp: 52, pp: 0 },
+    coins: { cp: 8, sp: 15, gp: 52 },
     spellSlots: {},
     spells: [],
     weapons: [
@@ -675,7 +675,7 @@ export const DEMO_PCS: PC[] = [
     saves: ['WIS', 'CHA'],
     skills: { Insight: 'prof', Medicine: 'prof', Persuasion: 'prof', Religion: 'prof' },
     conditions: [],
-    coins: { cp: 6, sp: 22, ep: 0, gp: 48, pp: 0 },
+    coins: { cp: 6, sp: 22, gp: 48 },
     spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 3, used: 0 } },
     spells: [
       { lvl: 0, name: 'Mending', school: 'Transmutation', time: '1 minute', prepared: true },
