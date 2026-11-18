@@ -24,7 +24,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     .help-trigger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     dialog { box-sizing: border-box; width: min(420px, calc(100vw - 32px));
       max-height: 80dvh; overflow: auto; padding: 24px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text); border-radius: 8px; }
+      background: var(--surface); color: var(--text); border-radius: var(--radius-sm); }
     dialog::backdrop { background: rgb(0 0 0 / 65%); }
     h2 { margin: 0 0 12px; font-size: 1.1rem; }
     p { white-space: normal; line-height: 1.6; }

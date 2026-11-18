@@ -59,7 +59,7 @@
   gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
   box-shadow: var(--shadow);
 
@@ -89,7 +89,7 @@
   height: 22px;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   background: transparent;
   color: var(--text-dim);
   font-size: 18px;
@@ -176,7 +176,7 @@
   white-space: pre-line;
 }
 
-.card-note em { color: var(--text); font-style: italic; }
+.card-note em { color: var(--text); font-weight: 600; }
 
 // ── Trailing "+" silhouette ─────────────────────────────────────────────────
 .add-silhouette {
@@ -188,7 +188,7 @@
   justify-content: center;
   gap: 6px;
   border: 1px dashed var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
@@ -217,7 +217,7 @@
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
 }
 
 .search-panel {
@@ -227,7 +227,7 @@
   margin-top: 44px;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-2);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }

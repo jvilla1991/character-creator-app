@@ -16,7 +16,6 @@
   padding: 2px 8px;
   font-family: 'Newsreader', serif;
   font-size: 11px;
-  font-style: normal;
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--gold, #d9b25f);
@@ -146,7 +145,6 @@
 .panel-defer-placeholder {
   text-align: center;
   color: var(--text-dim);
-  font-style: italic;
   font-size: 13px;
   padding: 40px 0;
 }

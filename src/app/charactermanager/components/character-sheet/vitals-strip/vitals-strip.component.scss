@@ -11,7 +11,7 @@
   color: var(--emerald, #4caf7d);
   background: rgba(76, 175, 125, 0.08);
   border: 1px solid var(--emerald, #4caf7d);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   cursor: pointer;
   transition: background 0.15s ease;
 

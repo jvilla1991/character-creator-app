@@ -2,7 +2,7 @@
   display: block;
   border: 1px solid var(--border);
   background: color-mix(in oklch, var(--text) 4%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   padding: 14px 16px;
 }
 
@@ -24,14 +24,13 @@
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sharp);
 }
 
 .notes {
   margin-top: 10px;
   font-size: 0.82rem;
-  color: var(--text-dim);
-  font-style: italic;
+  color: var(--text-2);
 }
 
 .muted {

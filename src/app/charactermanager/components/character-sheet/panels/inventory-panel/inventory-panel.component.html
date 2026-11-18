@@ -3,16 +3,16 @@
     <span class="panel-title">Inventory</span>
     @if (slotInventory) {
       <span class="inv-slots" [class.over]="encumbered"
-        style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+        style="font-family: 'Newsreader', serif; font-size: 13px; color: var(--text-dim);">
         @if (encumbered) {
           <span class="inv-encumbered" [title]="encumberedPenalty"
-          style="color: var(--crimson); font-style: normal; font-weight: 600; margin-right: 8px;">Encumbered</span>
+          style="color: var(--crimson); font-weight: 600; margin-right: 8px;">Encumbered</span>
         }
         Slots {{ usedSlots }} / {{ slotCapacity }}
       </span>
     }
     @if (!slotInventory && items.length) {
-      <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+      <span style="font-family: 'Newsreader', serif; font-size: 13px; color: var(--text-dim);">
         {{ totalWeight }} lb
       </span>
     }

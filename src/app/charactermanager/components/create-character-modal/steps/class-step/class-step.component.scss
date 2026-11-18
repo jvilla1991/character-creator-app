@@ -12,7 +12,6 @@
 .subclass-note {
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 }
 
@@ -38,7 +37,6 @@
   &.active {
     border-color: var(--celestial);
     background: color-mix(in oklch, var(--celestial) 10%, var(--bg-2));
-    box-shadow: 0 0 6px rgba(143, 180, 255, 0.2);
   }
 
   &:hover:not(.active) {
@@ -60,7 +58,6 @@
   font-size: 12px;
   line-height: 1.4;
   color: var(--text-dim);
-  font-style: italic;
 }
 
 // ── Hero classes (World of Warcraft module) ───────────────────────────────
@@ -72,7 +69,6 @@
   border: 1px solid var(--border);
   font-family: 'Newsreader', serif;
   font-size: var(--text-2xs);
-  font-style: italic;
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -84,14 +80,12 @@
   margin: 0 0 4px;
   font-family: 'Newsreader', serif;
   font-size: 13px;
-  font-style: italic;
   line-height: 1.45;
   color: var(--text-2);
 }
 
 .locked-note {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-weight: 400;
   color: var(--text-dim);
 }
@@ -100,7 +94,6 @@
   margin: 0 0 10px;
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 }
 
@@ -142,7 +135,7 @@
   font-size: 13px;
   line-height: 1.4;
 
-  dt { color: var(--text-dim); font-style: italic; }
+  dt { color: var(--text-dim); }
   dd { margin: 0; color: var(--text); }
 }
 
@@ -150,6 +143,5 @@
   margin: 6px 0 0;
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 }

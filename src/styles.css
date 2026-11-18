@@ -194,6 +194,15 @@ body {
 /* Angular root element — replaces React's #root */
 app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 
+/* === NO ITALICS ===
+   Nothing in the app is set in italic (owner decision, 2026-11-18). These are
+   the elements a browser slants by default: they keep their meaning for
+   assistive tech and render upright. Secondary text is told apart by the text
+   ramp (--text, --text-2, --text-dim), a step on the --text-* scale, weight or
+   an accent token; emphasis (<em>) steps up the ramp. `npm run check:tokens`
+   fails if an italic declaration comes back. See DESIGN.md, Typography. */
+em, i, cite, dfn, address, var { font-style: normal; }
+
 /* Typography helpers */
 .display    { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: 0.04em; }
 .eyebrow    { font-family: 'Cinzel', serif; font-weight: 500; letter-spacing: var(--track-micro); text-transform: uppercase; font-size: var(--text-2xs); color: var(--text-dim); }
@@ -288,7 +297,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   width: 36px; height: 36px;
   flex-shrink: 0;
   color: var(--gold);
-  filter: drop-shadow(var(--glow-gold));
 }
 .brand-name {
   font-family: 'Cinzel', serif;
@@ -299,7 +307,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .brand-sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
   letter-spacing: 0.05em;
@@ -397,7 +404,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   left: -8px; top: 4px; bottom: 4px;
   width: 2px;
   background: var(--gold);
-  box-shadow: var(--glow-gold);
 }
 
 .portrait {
@@ -417,13 +423,11 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   width: 96px; height: 96px;
   font-size: 36px;
   border: 2px solid var(--gold);
-  box-shadow: var(--glow-gold);
 }
 .portrait.xl {
   width: 140px; height: 140px;
   font-size: 48px;
   border: 2px solid var(--gold);
-  box-shadow: var(--glow-gold);
 }
 .portrait .portrait-ring {
   position: absolute; inset: -2px;
@@ -443,7 +447,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .roster-meta {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
   white-space: nowrap;
@@ -599,7 +602,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   letter-spacing: 0.02em;
   color: var(--text);
   margin: 0 0 8px;
-  text-shadow: 0 0 30px color-mix(in oklch, var(--gold) 30%, transparent);
 }
 .sheet-name-edit {
   background: transparent;
@@ -616,9 +618,12 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .sheet-subtitle {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 18px;
   color: var(--text-2);
+  /* Upright Newsreader runs wider than the italic it replaced, so a long
+     subtitle now reaches a second line on a phone. Balance the two lines
+     rather than strand one word. */
+  text-wrap: balance;
 }
 .sheet-subtitle .dot { color: var(--gold); margin: 0 8px; }
 
@@ -666,7 +671,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .vital-value .sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-weight: 400;
   font-size: 14px;
   color: var(--text-dim);
@@ -814,8 +818,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   background: transparent;
   margin: 0 auto;
 }
-.skill.prof .skill-dot { background: var(--gold); border-color: var(--gold); box-shadow: var(--glow-gold); }
-.skill.expert .skill-dot { background: var(--celestial); border-color: var(--celestial); box-shadow: var(--glow); }
+.skill.prof .skill-dot { background: var(--gold); border-color: var(--gold); }
+.skill.expert .skill-dot { background: var(--celestial); border-color: var(--celestial); }
 .skill-name { color: var(--text); }
 .skill-ability {
   font-family: 'Cinzel', serif;
@@ -880,7 +884,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .equip-item-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .equip-item-meta { flex-shrink: 0; }
 .equip-item:last-child { border-bottom: none; }
-.equip-item-name .magic { color: var(--celestial); font-style: italic; }
+.equip-item-name .magic { color: var(--celestial); }
 
 /* === SHEET AT PHONE WIDTH ===
    Kept after the base rules above (.main-inner, .vitals, .equip-grid, the
@@ -968,7 +972,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   padding: 0;
   transition: background .15s;
 }
-.spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
+.spell-slot.used { background: var(--gold); }
 
 /* === SUPPLIES (travel rations/water tracked as charges) === */
 .supply-row {
@@ -985,7 +989,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   border-radius: 50%;
   background: transparent;
 }
-.supply-pip.full { background: var(--gold); box-shadow: var(--glow-gold); }
+.supply-pip.full { background: var(--gold); }
 .supply-count { min-width: 34px; text-align: right; color: var(--text-dim); font-size: 13px; }
 .supply-steppers { display: inline-flex; gap: 4px; }
 .supply-steppers .btn { padding: 0 8px; line-height: 20px; }
@@ -1025,7 +1029,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .spell-cast-strip .spell-cast-note {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
 }
@@ -1064,7 +1067,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .spell-badge.ritual { color: var(--gold); border: 1px solid rgba(212,175,55,0.4); }
 .spell-school {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
 }
@@ -1091,7 +1093,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   margin: 0 0 5px;
   line-height: 1.5;
 }
-.spell-higher em, .spell-material em { color: var(--text-dim); font-style: italic; }
+.spell-higher em, .spell-material em { color: var(--text); font-weight: 600; }
 .spell-expand-meta {
   display: flex;
   gap: 12px;
@@ -1228,7 +1230,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   padding: 4px 8px 0 0;
   color: var(--gold);
 }
-.prose em { color: var(--text); font-style: italic; }
+.prose em { color: var(--text); }
 .traits {
   display: grid;
   grid-template-columns: 110px 1fr;
@@ -1244,7 +1246,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   color: var(--text-dim);
   padding-top: 2px;
 }
-.traits dd { margin: 0; color: var(--text); font-style: italic; }
+.traits dd { margin: 0; color: var(--text); }
 
 /* === FEATURES === */
 .feature {
@@ -1267,7 +1269,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 }
 .feature-source {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
 }
@@ -1294,7 +1295,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .modal {
   background: var(--surface);
   border: 1px solid var(--gold);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6), var(--glow-gold);
+  /* The ambient shadow only: a dialog sits above the page, but it does not
+     glow at rest (The Glow Is State Rule). */
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   border-radius: 4px;
   width: min(520px, 92vw);
   padding: 28px 32px 24px;
@@ -1349,7 +1352,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .dialog-active:focus { outline: none; }
 .modal-sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 14px;
   color: var(--text-2);
   margin-bottom: 18px;
@@ -1399,7 +1401,7 @@ select {
   background: var(--bg-2);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   padding: 8px 10px;
   font-family: inherit;
   font-size: 14px;
@@ -1463,7 +1465,6 @@ select:focus {
   color: var(--gold);
   border-color: var(--gold);
   background: color-mix(in oklch, var(--gold) 14%, var(--bg-2));
-  box-shadow: var(--glow-gold);
 }
 .modal-actions {
   display: flex;
@@ -1488,7 +1489,6 @@ select:focus {
   width: 120px; height: 120px;
   color: var(--gold);
   opacity: 0.5;
-  filter: drop-shadow(var(--glow-gold));
 }
 .empty-title {
   font-family: 'Cinzel', serif;
@@ -1499,7 +1499,6 @@ select:focus {
 }
 .empty-sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 16px;
   color: var(--text-dim);
   max-width: 360px;
@@ -1567,7 +1566,7 @@ select:focus {
   border-radius: 4px;
   padding: 36px 40px 32px;
   position: relative;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), var(--glow-gold);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
 }
 .login-card::before {
   content: '';
@@ -1584,7 +1583,6 @@ select:focus {
   width: 64px; height: 64px;
   margin: 0 auto 18px;
   color: var(--gold);
-  filter: drop-shadow(var(--glow-gold));
 }
 .login-brand-mark svg { width: 100%; height: 100%; }
 .login-brand-name {
@@ -1594,12 +1592,10 @@ select:focus {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text);
-  text-shadow: 0 0 30px color-mix(in oklch, var(--gold) 35%, transparent);
   margin-bottom: 6px;
 }
 .login-brand-sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 13px;
   color: var(--text-dim);
   letter-spacing: 0.05em;
@@ -1618,7 +1614,6 @@ select:focus {
   border-radius: 2px;
   color: var(--crimson);
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 14px;
   text-align: center;
 }
@@ -1634,7 +1629,6 @@ select:focus {
   margin-top: 18px;
   text-align: center;
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 13px;
   color: var(--text-dim);
 }
@@ -1702,14 +1696,12 @@ select:focus {
   color: var(--gold-2);
   border-color: color-mix(in oklch, var(--gold) 50%, transparent);
   background: color-mix(in oklch, var(--gold) 16%, var(--surface-2));
-  box-shadow: var(--glow-gold);
 }
 .role-seg.active svg { opacity: 1; }
 .role-seg.dm.active {
   color: var(--celestial-2);
   border-color: color-mix(in oklch, var(--celestial) 50%, transparent);
   background: color-mix(in oklch, var(--celestial) 16%, var(--surface-2));
-  box-shadow: var(--glow);
 }
 
 /* === ACCOUNT ROW (sidebar footer) === */
@@ -1770,7 +1762,6 @@ select:focus {
   left: -8px; top: 6px; bottom: 6px;
   width: 2px;
   background: var(--celestial);
-  box-shadow: var(--glow);
 }
 .campaign-crest {
   width: 40px; height: 40px;
@@ -1791,7 +1782,6 @@ select:focus {
 }
 .campaign-meta {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
   margin-top: 1px;
@@ -1804,7 +1794,7 @@ select:focus {
 }
 
 /* === DM DASHBOARD === */
-.vital-caption { font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 8px; }
+.vital-caption { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
 /* Party Vitals Board */
 .board { overflow-x: auto; }
 .board-row {
@@ -1853,7 +1843,6 @@ select:focus {
 }
 .board-hero-sub {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1953,7 +1942,7 @@ select:focus {
   width: min(440px, 94vw);
   background: var(--surface);
   border-right: 1px solid var(--gold);
-  box-shadow: 20px 0 60px rgba(0,0,0,0.5), var(--glow-gold);
+  box-shadow: 20px 0 60px rgba(0,0,0,0.5);
   z-index: 97;
   display: flex;
   flex-direction: column;
@@ -2003,7 +1992,6 @@ select:focus {
 }
 .profile-title {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 13px;
   color: var(--gold);
   margin-top: 4px;
@@ -2025,7 +2013,7 @@ select:focus {
   transition: border-color .15s, box-shadow .15s, transform .1s;
 }
 .theme-swatch:hover { transform: translateY(-1px); }
-.theme-swatch.active { border-color: var(--gold); box-shadow: var(--glow-gold); }
+.theme-swatch.active { border-color: var(--gold); }
 .theme-swatch-preview { height: 46px; position: relative; }
 .theme-swatch-preview .bar { position: absolute; height: 3px; border-radius: 2px; }
 .theme-swatch-label {
@@ -2082,7 +2070,7 @@ select:focus {
   color: var(--text);
   overflow-wrap: anywhere;
 }
-.pref-sub { font-family: 'Newsreader', serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+.pref-sub { font-family: 'Newsreader', serif; font-size: 12px; color: var(--text-dim); margin-top: 1px; }
 .toggle {
   width: 42px; height: 24px;
   border-radius: 100px;

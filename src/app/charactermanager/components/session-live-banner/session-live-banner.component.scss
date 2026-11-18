@@ -6,7 +6,7 @@
   margin-bottom: 20px;
   padding: 14px 18px;
   border: 1px solid var(--celestial, #6f8cff);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   background: rgba(120, 170, 255, 0.08);
 
   .session-banner-glyph {
