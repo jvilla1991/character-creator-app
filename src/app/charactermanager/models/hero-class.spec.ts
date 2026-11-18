@@ -2,6 +2,7 @@ import {
   DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByKey, heroClassFor,
   heroClassForSubclass, heroClassSpells, orList, recommendedFightingStylesFor, recommendedStartingSpells,
   recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle, subclassSource, subclassSpellsFor,
+  weaponMasteryLead,
 } from './hero-class';
 
 describe('hero-class', () => {
@@ -11,10 +12,10 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
-        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
       ]);
     });
 
@@ -304,6 +305,58 @@ describe('hero-class', () => {
       expect(subclassSource('swashbuckler')).toBe('World of Warcraft');
       expect(subclassSource('Soulknife')).toBeUndefined();
       expect(subclassSpellsFor(wowRogue, 'Swashbuckler', 20)).toEqual([]);
+    });
+  });
+
+  describe('World of Warcraft Shaman (Barbarian)', () => {
+    const shaman = heroClassByKey('Barbarian (World of Warcraft)') as HeroClassOption;
+
+    it('is a "Shaman (Barbarian)" row beside the base Barbarian, with no fixed subclass', () => {
+      const rows = buildClassOptions(['Barbarian', 'Rogue']).filter(o => o.baseClass === 'Barbarian');
+      expect(rows.map(o => [o.key, o.label, o.source])).toEqual([
+        ['Barbarian', 'Barbarian', 'Base Game'],
+        ['Barbarian (World of Warcraft)', 'Shaman (Barbarian)', 'World of Warcraft'],
+      ]);
+      expect(shaman.subclass).toBeUndefined();
+      expect(shaman.respecOnLevelUp).toBeTrue();
+      expect(specializationTitle(shaman, 'Elemental')).toBe('Elemental');
+      expect(specializationHeading(shaman)).toBe('Specialization');
+    });
+
+    it('identifies a WoW barbarian by clazz barbarian + a shaman specialization, or a WoW-only path', () => {
+      expect(heroClassFor({ clazz: 'Barbarian', subclass: null, specialization: 'Elemental' })).toBe(shaman);
+      expect(heroClassFor({ clazz: 'barbarian', subclass: 'Path of the Zealot', specialization: 'Enhancement' })).toBe(shaman);
+      expect(heroClassFor({ clazz: 'Barbarian', subclass: 'Path of the Elements', specialization: null })).toBe(shaman);
+      expect(heroClassFor({ clazz: 'Barbarian', subclass: 'Path of the Spiritual Guardian' })).toBe(shaman);
+      expect(heroClassFor({ clazz: 'Barbarian', subclass: 'Path of the Berserker', specialization: null })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Fighter', subclass: 'Path of the Elements' })).toBeUndefined();
+      // Restoration is also a Druid spec: the base class decides which variant it is.
+      expect(heroClassFor({ clazz: 'Barbarian', specialization: 'Restoration' })).toBe(shaman);
+      expect(heroClassFor({ clazz: 'Druid', specialization: 'Restoration' })?.key).toBe('Druid (World of Warcraft)');
+      expect(heroClassFor({ clazz: 'Barbarian', specialization: 'Balance' })).toBeUndefined();
+    });
+
+    it('recommends a path per specialization, and no fighting styles or starting spells', () => {
+      expect(recommendedSubclassFor(shaman, 'Elemental')).toBe('Path of the Elements');
+      expect(recommendedSubclassFor(shaman, 'Enhancement')).toBe('Path of the Spiritual Guardian');
+      expect(recommendedSubclassFor(shaman, 'Restoration')).toBe('Path of the World Tree');
+      for (const spec of ['Elemental', 'Enhancement', 'Restoration']) {
+        expect(recommendedFightingStylesFor(shaman, spec)).toEqual([]);
+        expect(recommendedStartingSpells(shaman, spec)).toEqual([]);
+      }
+    });
+
+    it('tags both WoW-only paths World of Warcraft, and no PHB path', () => {
+      expect(subclassSource('Path of the Elements')).toBe('World of Warcraft');
+      expect(subclassSource('path of the spiritual guardian')).toBe('World of Warcraft');
+      expect(subclassSource('Path of the World Tree')).toBeUndefined();
+      expect(subclassSource('Path of the Berserker')).toBeUndefined();
+      expect(subclassSpellsFor(shaman, 'Path of the Elements', 20)).toEqual([]);
+    });
+
+    it('reads the Weapon Mastery count in running text', () => {
+      expect(weaponMasteryLead(shaman.guidance!['Elemental'])).toBe('Any two of');
+      expect(weaponMasteryLead({ subclass: { name: 'Assassin' }, feats: [], weaponMastery: ['Daggers'] })).toBe('At least one of');
     });
   });
 

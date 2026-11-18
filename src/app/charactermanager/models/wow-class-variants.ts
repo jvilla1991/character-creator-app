@@ -1,6 +1,7 @@
 import type {
   HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
+import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN } from './wow-shaman';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -15,6 +16,15 @@ import type {
  * never special-case a variant. Everything here is guidance — never something
  * the app grants or forces. Text is paraphrased.
  */
+
+/**
+ * A variant's class-list label, following the `[WoW class] ([Base class])` rule:
+ * `Shaman (Barbarian)`, but just `Druid` when the WoW name equals the base name
+ * (the World of Warcraft source tag tells that row apart from the base one).
+ */
+export function variantLabel(name: string, baseClass: string): string {
+  return name.toLowerCase() === baseClass.toLowerCase() ? baseClass : `${name} (${baseClass})`;
+}
 
 // ── Druid ────────────────────────────────────────────────────────────────────
 
@@ -105,9 +115,7 @@ export const WOW_DRUID_SUGGESTED_SPELLS: Readonly<Record<string, readonly Sugges
 
 export const WOW_DRUID: HeroClassOption = {
   key: 'Druid (World of Warcraft)',
-  // The WoW name equals the base name, so the row reads just "Druid"; the
-  // World of Warcraft source tag tells it apart from the base Druid row.
-  label: 'Druid',
+  label: variantLabel('Druid', 'Druid'),
   name: 'Druid',
   baseClass: 'Druid',
   source: 'World of Warcraft',
@@ -200,8 +208,7 @@ export const WOW_PALADIN_SUGGESTED_SPELLS: Readonly<Record<string, readonly Sugg
 
 export const WOW_PALADIN: HeroClassOption = {
   key: 'Paladin (World of Warcraft)',
-  // Same rule as the Druid: the WoW name equals the base name, so no parenthetical.
-  label: 'Paladin',
+  label: variantLabel('Paladin', 'Paladin'),
   name: 'Paladin',
   baseClass: 'Paladin',
   source: 'World of Warcraft',
@@ -251,8 +258,7 @@ export const WOW_ROGUE_GUIDANCE: Readonly<Record<string, SpecializationGuidance>
 
 export const WOW_ROGUE: HeroClassOption = {
   key: 'Rogue (World of Warcraft)',
-  // Same rule as the Druid: the WoW name equals the base name, so no parenthetical.
-  label: 'Rogue',
+  label: variantLabel('Rogue', 'Rogue'),
   name: 'Rogue',
   baseClass: 'Rogue',
   source: 'World of Warcraft',
@@ -272,5 +278,58 @@ export const WOW_ROGUE: HeroClassOption = {
   wowSubclasses: [SWASHBUCKLER],
 };
 
+// ── Shaman (Barbarian) ───────────────────────────────────────────────────────
+
+export const WOW_SHAMAN_SPECIALIZATIONS = ['Elemental', 'Enhancement', 'Restoration'] as const;
+
+/** Every WoW barbarian's level-3 Totems replace Primal Knowledge (feature text comes from the server). */
+const TOTEMS_NOTE = 'plus Totems instead of Primal Knowledge.';
+
+/** Per-specialization picks (class step box + sheet panel). Barbarians have no spells, so there are none to suggest. */
+export const WOW_SHAMAN_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Elemental: {
+    weaponMastery: ['Battleaxes', 'Longswords', 'Maces'],
+    weaponMasteryCount: 2,
+    subclass: { name: PATH_OF_THE_ELEMENTS, note: TOTEMS_NOTE },
+    feats: ['Athlete', 'Crusher', 'Durable', 'Medium Armor Master', 'Ritual Caster', 'Slasher'],
+  },
+  Enhancement: {
+    weaponMastery: ['Handaxes', 'Light Hammers', 'Scimitars', 'Shortswords'],
+    weaponMasteryCount: 2,
+    subclass: { name: PATH_OF_THE_SPIRITUAL_GUARDIAN, note: TOTEMS_NOTE },
+    feats: ['Athlete', 'Charger', 'Crusher', 'Dual Wielder', 'Durable', 'Medium Armor Master', 'Slasher'],
+  },
+  Restoration: {
+    weaponMastery: ['Flails', 'Maces', 'Warhammers'],
+    weaponMasteryCount: 2,
+    subclass: { name: 'Path of the World Tree', note: TOTEMS_NOTE },
+    feats: ['Chef', 'Crusher', 'Durable', 'Inspiring Leader', 'Medium Armor Master', 'Sentinel', 'Shield Master'],
+  },
+};
+
+export const WOW_SHAMAN: HeroClassOption = {
+  key: 'Barbarian (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Shaman (Barbarian)".
+  label: variantLabel('Shaman', 'Barbarian'),
+  name: 'Shaman',
+  baseClass: 'Barbarian',
+  source: 'World of Warcraft',
+  blurb: 'A shaman communes with the elemental spirits of air, earth, fire and water, keeping them '
+    + 'in balance, and channels them through totems and auras rather than traditional spellcasting.',
+  subclassNote: 'Chosen as normal at Barbarian level 3',
+  subclassTerm: 'path',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Elemental',   desc: 'Channels storms of lightning, fire, and frost into destructive surges.' },
+    { name: 'Enhancement', desc: 'Charges weapon strikes with elemental power in the thick of melee.' },
+    { name: 'Restoration', desc: "Draws on water's restorative power to heal and protect allies." },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_SHAMAN_GUIDANCE,
+  wowSubclasses: [PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN],
+  renownNote: 'Adopting the Shaman raises your Renown with the Earthen Ring by 3 — ask your DM to record it.',
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN];

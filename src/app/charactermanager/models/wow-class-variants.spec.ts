@@ -1,7 +1,7 @@
 import { HERO_CLASSES } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
-  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE,
+  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, variantLabel,
 } from './wow-class-variants';
 
 describe('wow-class-variants', () => {
@@ -10,8 +10,8 @@ describe('wow-class-variants', () => {
       expect(HERO_CLASSES).toContain(variant);
       expect(variant.subclass).toBeUndefined();
       expect(variant.source).toBe('World of Warcraft');
-      // WoW name == base name → the row reads just the base name, told apart by the source tag.
-      expect(variant.label).toBe(variant.baseClass);
+      // `[WoW class] ([Base class])`, or just the base name when the two match.
+      expect(variant.label).toBe(variantLabel(variant.name, variant.baseClass));
       expect(variant.key).toBe(`${variant.baseClass} (World of Warcraft)`);
     }
   });
@@ -142,6 +142,69 @@ describe('wow-class-variants', () => {
       expect(tip.text).toContain('Poison');
       expect(WOW_ROGUE_GUIDANCE['Outlaw'].levelTip).toBeUndefined();
       expect(WOW_ROGUE_GUIDANCE['Subtlety'].levelTip).toBeUndefined();
+    });
+  });
+
+  describe('label rule', () => {
+    it('reads `[WoW class] ([Base class])`, or the bare base name when they match', () => {
+      expect(variantLabel('Shaman', 'Barbarian')).toBe('Shaman (Barbarian)');
+      expect(variantLabel('Druid', 'Druid')).toBe('Druid');
+      expect(variantLabel('rogue', 'Rogue')).toBe('Rogue');
+      expect(WOW_DRUID.label).toBe('Druid');
+      expect(WOW_PALADIN.label).toBe('Paladin');
+      expect(WOW_ROGUE.label).toBe('Rogue');
+      expect(WOW_SHAMAN.label).toBe('Shaman (Barbarian)');
+    });
+  });
+
+  describe('Shaman (Barbarian)', () => {
+    it('is a Barbarian variant that calls its subclass a path, with no spells and two WoW-only paths', () => {
+      expect(WOW_SHAMAN.name).toBe('Shaman');
+      expect(WOW_SHAMAN.baseClass).toBe('Barbarian');
+      expect(WOW_SHAMAN.subclassTerm).toBe('path');
+      expect(WOW_SHAMAN.subclassNote).toBe('Chosen as normal at Barbarian level 3');
+      const specs = WOW_SHAMAN.specializations.map(s => s.name);
+      expect(specs).toEqual(['Elemental', 'Enhancement', 'Restoration']);
+      expect(Object.keys(WOW_SHAMAN_GUIDANCE)).toEqual(specs);
+      expect(WOW_SHAMAN.suggestedSpells).toBeUndefined();
+      expect(WOW_SHAMAN.subclassSpells).toBeUndefined();
+      expect(WOW_SHAMAN.spellTable).toEqual([]);
+      expect(WOW_SHAMAN.wowSubclasses).toEqual(['Path of the Elements', 'Path of the Spiritual Guardian']);
+      expect(WOW_SHAMAN.blurb).toContain('totems');
+      expect(WOW_SHAMAN.blurb).toContain('air, earth, fire and water');
+    });
+
+    it('reminds the player about Earthen Ring renown', () => {
+      expect(WOW_SHAMAN.renownNote).toContain('Earthen Ring');
+      expect(WOW_SHAMAN.renownNote).toContain('by 3');
+      expect(WOW_SHAMAN.renownNote).toContain('ask your DM');
+    });
+
+    it('recommends two weapon masteries, a path with Totems, and feats per specialization', () => {
+      expect(WOW_SHAMAN_GUIDANCE['Elemental']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Battleaxes', 'Longswords', 'Maces'],
+        weaponMasteryCount: 2,
+        subclass: { name: 'Path of the Elements', note: 'plus Totems instead of Primal Knowledge.' },
+        feats: ['Athlete', 'Crusher', 'Durable', 'Medium Armor Master', 'Ritual Caster', 'Slasher'],
+      }));
+      expect(WOW_SHAMAN_GUIDANCE['Enhancement']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Handaxes', 'Light Hammers', 'Scimitars', 'Shortswords'],
+        weaponMasteryCount: 2,
+        subclass: { name: 'Path of the Spiritual Guardian', note: 'plus Totems instead of Primal Knowledge.' },
+        feats: ['Athlete', 'Charger', 'Crusher', 'Dual Wielder', 'Durable', 'Medium Armor Master', 'Slasher'],
+      }));
+      expect(WOW_SHAMAN_GUIDANCE['Restoration']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Flails', 'Maces', 'Warhammers'],
+        weaponMasteryCount: 2,
+        subclass: { name: 'Path of the World Tree', note: 'plus Totems instead of Primal Knowledge.' },
+        feats: ['Chef', 'Crusher', 'Durable', 'Inspiring Leader', 'Medium Armor Master', 'Sentinel', 'Shield Master'],
+      }));
+      for (const g of Object.values(WOW_SHAMAN_GUIDANCE)) {
+        expect(g.level1Spells).toBeUndefined();
+        expect(g.cantrips).toBeUndefined();
+        expect(g.fightingStyles).toBeUndefined();
+        expect(g.levelTip).toBeUndefined();
+      }
     });
   });
 });

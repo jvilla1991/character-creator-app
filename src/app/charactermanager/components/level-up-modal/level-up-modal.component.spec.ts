@@ -911,4 +911,69 @@ describe('LevelUpModalComponent', () => {
         .toContain('Recommended for Outlaw');
     });
   });
+
+  describe('World of Warcraft Shaman (WoW paths, recommended path, respec)', () => {
+    const paths = [
+      'Path of the Berserker', 'Path of the Elements', 'Path of the Spiritual Guardian',
+      'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot',
+    ];
+
+    function renderModal(): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Barbarian', level: 2, specialization: 'Elemental', ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: paths,
+        recommendedFightingStyles: [], ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('highlights the recommended path per specialization and allows a respec', () => {
+      open({});
+      expect(component.canRespec).toBeTrue();
+      expect(component.recommendedSubclass).toBe('Path of the Elements');
+      open({ specialization: 'Enhancement' });
+      expect(component.recommendedSubclass).toBe('Path of the Spiritual Guardian');
+      open({ specialization: 'Restoration' });
+      expect(component.recommendedSubclass).toBe('Path of the World Tree');
+      component.selectedSpecialization = 'Elemental';
+      expect(component.recommendedSubclass).toBe('Path of the Elements');
+      expect(component.recommendedFightingStyles).toEqual([]);
+    });
+
+    it('prefers the server\'s recommendedSubclass while the specialization is unchanged', () => {
+      open({ specialization: 'Enhancement' }, { recommendedSubclass: 'Path of the Spiritual Guardian' });
+      expect(component.recommendedSubclass).toBe('Path of the Spiritual Guardian');
+      expect(component.selectedSubclass).toBeFalsy();   // never pre-selected
+    });
+
+    it('tags both WoW paths as World of Warcraft and badges the recommended one', () => {
+      open({});
+      expect(component.subclassSourceTag('Path of the Elements')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Path of the Spiritual Guardian')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Path of the World Tree')).toBeUndefined();
+      const el = renderModal();
+      const tagged = Array.from(el.querySelectorAll('.subclass-option')).filter(n => n.querySelector('.source-tag'));
+      expect(tagged.map(n => n.textContent)).toEqual([
+        jasmine.stringContaining('Path of the Elements'), jasmine.stringContaining('Path of the Spiritual Guardian'),
+      ]);
+      expect(el.querySelector('.subclass-option.is-recommended')?.textContent).toContain('Path of the Elements');
+      expect(el.querySelector('.subclass-option.is-recommended .recommended-badge')?.textContent)
+        .toContain('Recommended for Elemental');
+    });
+  });
 });
