@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { PC, PcSpell } from '../../models/pc';
+import { PC, PcSpell, Coins } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
 import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, languageNames } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
@@ -655,12 +655,12 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Starting coins ───────────────────────────────────────────────────────
 
-  private buildStartingCoins(): { cp: number; sp: number; ep: number; gp: number; pp: number } {
+  private buildStartingCoins(): Coins {
     const bgGold = this.backgroundStartingGold;
     const classGold = this.equipmentChoice === 'A'
       ? (this.currentClassEquipment?.optionA.gp ?? 0)
       : (this.currentClassEquipment?.optionB.gp ?? 0);
-    return { cp: 0, sp: 0, ep: 0, gp: bgGold + classGold, pp: 0 };
+    return { cp: 0, sp: 0, gp: bgGold + classGold };
   }
 
   // ── Starting spell slots (level 1) ───────────────────────────────────────

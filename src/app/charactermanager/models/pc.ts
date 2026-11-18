@@ -53,6 +53,16 @@ export interface PcSurvival {
   seeded?: boolean;
 }
 
+/**
+ * A purse. The game uses three coins: copper, silver and gold
+ * (1 gp = 10 sp = 100 cp). Electrum and platinum are not part of it.
+ */
+export interface Coins {
+  cp: number;
+  sp: number;
+  gp: number;
+}
+
 export interface PC {
   // --- Core (backend-persisted) ---
   id: number;
@@ -112,7 +122,7 @@ export interface PC {
   survival?: PcSurvival;
 
   // Wealth
-  coins?: { cp: number; sp: number; ep: number; gp: number; pp: number };
+  coins?: Coins;
 
   // Spells
   spellSlots?: { [level: number]: { max: number; used: number } };
