@@ -1010,9 +1010,14 @@ the level-up dialog.
 
 #### Slice 4 results (2026-11-18)
 
-Branch `chore/ui-copy-clarify`, cut from `develop` at `64bf24a` and merged with `develop` twice
-before reporting: at `571fcd7` (World of Warcraft Warlock and Warrior, the Give item modal, locked
-class features) and at `5bfff8f` (ELI5 spell summaries). Both merges were clean. `/impeccable clarify` drove it; `doctor` ran first and reported no `auto` fixes,
+Branch `chore/ui-copy-clarify`, cut from `develop` at `64bf24a` and merged with `develop` three
+times before reporting: at `571fcd7` (World of Warcraft Warlock and Warrior, the Give item modal,
+locked class features), at `5bfff8f` (ELI5 spell summaries) and at `02d80ba` (the owner's own
+filler-copy removal, the phone login fit and starting gear in the inventory). The first two were
+clean; the third had one conflict, the character sheet's `imports` list, resolved as `develop`'s
+list plus the help component. The owner's copy commit (`a4a5f77`: placeholders removed from the
+sign-in fields, "Inscribe" → "Create") touched none of the strings below, and the sign-in card
+still fits a 375×667 screen without scrolling with the longer reset line. `/impeccable clarify` drove it; `doctor` ran first and reported no `auto` fixes,
 only the two usual `mention`s (the stale `.impeccable/design.json` sidecar, which
 `/impeccable document` refreshes, and an unset `buildPath`, which needs no answer without image
 generation). Every item was re-read on current `develop` before it was changed. Checked in demo
@@ -1086,11 +1091,11 @@ on touch, so it fits beside pips, chips and buttons; at 44px it pushed the exhau
 second line, which is why that help sits in the panel header. Its dialog no longer inherits the
 uppercase label styling of the row it sits in.
 
-**Gates.** All re-run after each `develop` merge; these are the final numbers. `check:tokens` OK
-(1576 `var()` uses, no italics), `check:contrast` 135/135, `ng test` 1522/1522 (the first run
-after the first merge had one failure: a spec still asserting an old toast string, updated),
-Cypress 7/7 specs (17 tests, including `develop`'s new `give-items` spec), production build
-**449.83 kB** initial (budget 497 kB). New specs cover the DM
+**Gates.** All re-run after each `develop` merge; these are the final numbers, on `02d80ba`.
+`check:tokens` OK (1575 `var()` uses, no italics), `check:contrast` 135/135, `ng test` 1549/1549
+(the first run after the first merge had one failure: a spec still asserting an old toast string,
+updated), Cypress 7/7 specs (17 tests, including `develop`'s new `give-items` spec), production
+build **450.30 kB** initial (budget 497 kB). New specs cover the DM
 edit hints, the conditions and session help text, the register minimum and the roster's
 load-failed state.
 
