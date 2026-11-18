@@ -533,3 +533,127 @@ describe('ClassStepComponent — World of Warcraft Priest (Cleric)', () => {
     expect(render('Discipline').querySelector('.spec-guidance')!.textContent).toContain('Discipline Domain');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Evoker (Sorcerer)', () => {
+  const EVOKER_KEY = 'Sorcerer (World of Warcraft)';
+  const detail = { hit_die: 6, saving_throws: [{ name: 'CON' }, { name: 'CHA' }] } as unknown as DndClass;
+
+  /** The parent passes requiresLevel1Subclass false for the Evoker (its subclass is locked). */
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(EVOKER_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Sorcerer']));
+    fixture.componentRef.setInput('selectedKey', EVOKER_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Evoker (Sorcerer)');
+    fixture.componentRef.setInput('clazz', 'Sorcerer');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.componentRef.setInput('requiresLevel1Subclass', false);
+    fixture.componentRef.setInput('selectedSubclass', 'Draconic Sorcery');
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Sorcerer" and a tagged "Evoker (Sorcerer)" row with the dragonflight blurb and the hero-class note', () => {
+    const el = render();
+    const heads = Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[];
+    expect(heads[0].textContent!.trim()).toBe('Sorcerer');
+    const evokerRow = heads.find(h => h.textContent!.includes('Evoker (Sorcerer)'))!;
+    expect(evokerRow.querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(evokerRow.classList).toContain('active');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('five dragonflights');
+    const note = el.querySelector('.hero-note')?.textContent ?? '';
+    expect(note).toContain('level 3');
+    expect(note).toContain('dracthyr');
+  });
+
+  it('shows Draconic Sorcery as the fixed subclass with no subclass picker', () => {
+    const el = render();
+    expect(el.textContent).toContain('Draconic Sorcery');
+    expect(el.textContent).toContain('(fixed)');
+    expect(el.textContent).not.toContain('Choose a Subclass');
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Augmentation', 'Devastation', 'Preservation']);
+  });
+
+  it('shows the Devastation box: cantrips, spells to prepare, Metamagic, Elemental Affinity and feats — no subclass row', () => {
+    const box = render('Devastation').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim());
+    expect(terms).toEqual(['Cantrips', 'Spells to prepare', 'Metamagic', 'Level 6 Elemental Affinity', 'Feats']);
+    expect(box.textContent).toContain('Ray of Frost');
+    expect(box.textContent).toContain('Living Flame');
+    expect(box.textContent).toContain('Empowered Spell, Transmuted Spell');
+    expect(box.textContent).toContain('Sorcerer level 2');
+    expect(box.textContent).toContain('Cold or Fire');
+    expect(box.textContent).toContain('Elemental Adept (Cold and Fire)');
+    expect(box.textContent).not.toContain('Level 3');
+    expect(box.textContent).not.toContain('marked “Recommended” in the picker');
+  });
+
+  it('shows the Augmentation and Preservation picks', () => {
+    const aug = render('Augmentation').querySelector('.spec-guidance')!.textContent!;
+    expect(aug).toContain('Thunderclap');
+    expect(aug).toContain('Extended Spell');
+    expect(aug).toContain('Speedy');
+    const pres = render('Preservation').querySelector('.spec-guidance')!.textContent!;
+    expect(pres).toContain('Blade Ward');
+    expect(pres).toContain('Ray of Sickness');
+    expect(pres).toContain('Heightened Spell, Twinned Spell');
+    expect(pres).toContain('Lightning or Poison');
+  });
+});
+
+describe('ClassStepComponent — World of Warcraft Hunter (Ranger)', () => {
+  const HUNTER_KEY = 'Ranger (World of Warcraft)';
+  const detail = { hit_die: 10, saving_throws: [{ name: 'STR' }, { name: 'DEX' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(HUNTER_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Ranger']));
+    fixture.componentRef.setInput('selectedKey', HUNTER_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Hunter (Ranger)');
+    fixture.componentRef.setInput('clazz', 'Ranger');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Ranger", "Demon Hunter (Ranger)" and a tagged "Hunter (Ranger)" row', () => {
+    const el = render();
+    const heads = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[]).map(h => h.textContent!.trim());
+    expect(heads[0]).toBe('Ranger');
+    expect(heads.filter(h => h.includes('Hunter (Ranger)')).length).toBe(2);   // Demon Hunter + Hunter
+    const active = el.querySelector('.accordion-head.active') as HTMLElement;
+    expect(active.textContent).toContain('Hunter (Ranger)');
+    expect(active.textContent).not.toContain('Demon');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('call of the wild');
+    expect(el.textContent).toContain('Chosen as normal at Ranger level 3');
+  });
+
+  it('shows the Beast Mastery box: spells, two masteries, Archery, Beast Master, the level-6 tip and feats', () => {
+    const box = render('Beast Mastery').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim());
+    expect(terms).toEqual(['Level 1 spells', 'Weapon Mastery', 'Level 2 fighting style', 'Level 3 subclass', 'Level 6', 'Feats']);
+    expect(box.textContent).toContain('Ensnaring Strike, Speak with Animals');
+    expect(box.textContent).toContain('Any two of Heavy Crossbows, Longbows, Muskets');
+    expect(box.textContent).toContain('Archery');
+    expect(box.textContent).toContain('Beast Master');
+    expect(box.textContent).toContain('Pet Specialization instead of Roving');
+    expect(box.textContent).toContain('Weapon Master');
+  });
+
+  it('shows the Marksmanship and Survival picks', () => {
+    const mm = render('Marksmanship').querySelector('.spec-guidance')!.textContent!;
+    expect(mm).toContain('Cure Wounds');
+    expect(mm).toContain('Hunter');
+    expect(mm).toContain('Sharpshooter');
+    const sv = render('Survival').querySelector('.spec-guidance')!.textContent!;
+    expect(sv).toContain('Any two of Glaives, Halberds, Pikes');
+    expect(sv).toContain('Great Weapon Fighting');
+    expect(sv).toContain('Polearm Master');
+  });
+});

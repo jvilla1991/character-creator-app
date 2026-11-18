@@ -47,13 +47,14 @@ export interface HeroResource {
 export type HeroStats = Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>;
 
 /**
- * One base-class-level row of an always-prepared spell table: the spell every
- * member gets (`all`) plus one per specialization, keyed by specialization name.
+ * One base-class-level row of an always-prepared spell table: the spell (or
+ * spells — an Evoker row grants two) every member gets (`all`) plus the spell(s)
+ * per specialization, keyed by specialization name.
  */
 export interface HeroSpellRow {
   classLevel: number;
-  all: string;
-  bySpecialization: Readonly<Record<string, string>>;
+  all: string | readonly string[];
+  bySpecialization: Readonly<Record<string, string | readonly string[]>>;
 }
 
 /** A spell granted outside the table (e.g. the Death Knight's Rune Strike at Paladin 2). */
@@ -87,6 +88,16 @@ export interface SpecializationGuidance {
   fightingStyles?: readonly string[];
   /** The cantrips to learn with that style when it teaches some (e.g. Blessed Warrior). */
   fightingStyleCantrips?: readonly string[];
+  /**
+   * Spells worth preparing beyond the cantrips and level-1 picks (a WoW Evoker's
+   * list mixes level-1 and level-2 spells). Badged in the spells step like
+   * `level1Spells`; spells above level 1 simply don't appear there yet.
+   */
+  extraPrepared?: readonly string[];
+  /** Metamagic options to take (Sorcerer, from level 2). Text only — Metamagic isn't modelled. */
+  metamagic?: readonly string[];
+  /** The damage type(s) to pick for Draconic Sorcery's level-6 Elemental Affinity, as running text ('Cold or Fire'). */
+  elementalAffinity?: string;
   /** The subclass to take when it comes due, with an optional flavour note. */
   subclass: { name: string; note?: string };
   feats: readonly string[];
@@ -191,6 +202,17 @@ export interface HeroClassOption {
    * of a base class (the WoW Druid), whose subclass is chosen normally.
    */
   subclass?: string;
+  /**
+   * True when the locked subclass is an ordinary base-game one (the Evoker's
+   * Draconic Sorcery): the subclass alone then does NOT mark the hero class —
+   * the character also needs one of its specializations — and the subclass
+   * keeps its base-game source tag.
+   */
+  sharedSubclass?: boolean;
+  /** Heading of the always-prepared spell table on the sheet; absent reads '<subclass> Spells'. */
+  spellTableTitle?: string;
+  /** A one-line aside under the blurb (class step) and on the sheet panel, e.g. the usual starting level. */
+  heroNote?: string;
   /** Class-step note for a variant without a fixed subclass ('Chosen as normal at Druid level 3'). */
   subclassNote?: string;
   /** What the base class calls its subclass, lower-case ('circle', 'oath'); absent reads 'subclass'. */
@@ -250,6 +272,11 @@ export interface HeroClassOption {
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
+  /**
+   * True when a Beast Master of this variant keeps a WoW pet (the WoW Hunter):
+   * the sheet panel shows the Pet card with its family selector.
+   */
+  hunterPets?: boolean;
   /** Computed sheet cards for this character (e.g. the WoW Shaman's Totems and path cards). */
   featureCards?: (input: FeatureCardInput) => readonly FeatureCard[];
 }
@@ -384,9 +411,13 @@ export function heroClassByKey(key: string | null | undefined): HeroClassOption 
   return key ? HERO_CLASSES.find(h => h.key === key) : undefined;
 }
 
-/** The hero class a stored subclass represents (e.g. Ebon Blade → Death Knight), if any. */
+/**
+ * The hero class a stored subclass represents (e.g. Ebon Blade → Death Knight), if
+ * any. A shared base-game subclass (the Evoker's Draconic Sorcery) represents
+ * nothing on its own.
+ */
 export function heroClassForSubclass(subclass: string | null | undefined): HeroClassOption | undefined {
-  return subclass ? HERO_CLASSES.find(h => h.subclass === subclass) : undefined;
+  return subclass ? HERO_CLASSES.find(h => h.subclass === subclass && !h.sharedSubclass) : undefined;
 }
 
 /**
@@ -397,6 +428,11 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
  *   + one of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler,
  *   Path of the Elements, Shadow Domain). A druid, paladin, cleric, rogue, barbarian or fighter with neither is a
  *   plain base-game character.
+ * - A hero class whose locked subclass is a shared base-game one (Evoker: Sorcerer +
+ *   Draconic Sorcery): base class + that subclass + one of its specializations. A
+ *   Draconic Sorcery sorcerer without one is a plain sorcerer.
+ * Subclass-based hero classes are matched first, so a Demon Hunter ranger is never
+ * read as the WoW Hunter.
  */
 export function heroClassFor(
   pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
@@ -411,7 +447,9 @@ export function heroClassFor(
   if (!spec) return undefined;
   // The specialization must be one of the variant's own (a paladin with 'Frost' and no
   // Ebon Blade is not a WoW Paladin).
-  return HERO_CLASSES.find(h => !h.subclass && h.baseClass.toLowerCase() === clazz
+  const sub = (pc?.subclass ?? '').toLowerCase();
+  return HERO_CLASSES.find(h => (!h.subclass || (!!h.sharedSubclass && h.subclass.toLowerCase() === sub))
+    && h.baseClass.toLowerCase() === clazz
     && h.specializations.some(s => s.name.toLowerCase() === spec));
 }
 
@@ -519,7 +557,7 @@ export function recommendedStartingSpells(
   const cacheKey = `${hero.key}|${specialization}`;
   let list = RECOMMENDED_SPELLS_CACHE.get(cacheKey);
   if (!list) {
-    list = [...(guidance.cantrips ?? []), ...(guidance.level1Spells ?? [])];
+    list = [...(guidance.cantrips ?? []), ...(guidance.level1Spells ?? []), ...(guidance.extraPrepared ?? [])];
     RECOMMENDED_SPELLS_CACHE.set(cacheKey, list);
   }
   return list;
@@ -605,9 +643,15 @@ export function heroClassSpells(
   }
   for (const row of hero.spellTable) {
     if (level < row.classLevel) break;
-    out.push({ name: row.all, classLevel: row.classLevel, grantedBy: 'All' });
+    for (const name of spellNames(row.all)) out.push({ name, classLevel: row.classLevel, grantedBy: 'All' });
     const own = specialization ? row.bySpecialization[specialization] : undefined;
-    if (own) out.push({ name: own, classLevel: row.classLevel, grantedBy: specialization! });
+    for (const name of spellNames(own)) out.push({ name, classLevel: row.classLevel, grantedBy: specialization! });
   }
   return out;
+}
+
+/** A spell-table cell as a list: one name, several, or none. */
+export function spellNames(cell: string | readonly string[] | undefined): readonly string[] {
+  if (!cell) return [];
+  return typeof cell === 'string' ? [cell] : cell;
 }

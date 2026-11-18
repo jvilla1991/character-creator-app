@@ -35,6 +35,9 @@
         <div class="accordion-body">
           @if (o.hero) {
             <p class="hero-blurb">{{ o.hero.blurb }}</p>
+            @if (o.hero.heroNote) {
+              <p class="hero-renown hero-note">{{ o.hero.heroNote }}</p>
+            }
             @if (o.hero.renownNote) {
               <p class="hero-renown">{{ o.hero.renownNote }}</p>
             }
@@ -101,6 +104,14 @@
                       <dt>Level 1 spells</dt>
                       <dd>{{ g.level1Spells!.join(', ') }}</dd>
                     }
+                    @if (g.extraPrepared?.length) {
+                      <dt>Spells to prepare</dt>
+                      <dd>{{ g.extraPrepared!.join(', ') }}</dd>
+                    }
+                    @if (g.metamagic?.length) {
+                      <dt>Metamagic</dt>
+                      <dd>{{ g.metamagic!.join(', ') }} <span class="locked-note">({{ hero.baseClass }} level 2)</span></dd>
+                    }
                     @if (g.weaponMastery?.length) {
                       <dt>Weapon Mastery</dt>
                       <dd>{{ weaponMasteryLead(g) }} {{ g.weaponMastery!.join(', ') }}</dd>
@@ -114,8 +125,15 @@
                         }
                       </dd>
                     }
-                    <dt>{{ subclassGuidanceLabel(hero) }}</dt>
-                    <dd>{{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
+                    <!-- A hero class's locked subclass is already shown "(fixed)" above -->
+                    @if (!hero.subclass) {
+                      <dt>{{ subclassGuidanceLabel(hero) }}</dt>
+                      <dd>{{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
+                    }
+                    @if (g.elementalAffinity) {
+                      <dt>Level 6 Elemental Affinity</dt>
+                      <dd>{{ g.elementalAffinity }}</dd>
+                    }
                     <!-- Eldritch Invocations: recommendation text only (not modelled in this app) -->
                     @for (row of invocationRows(g); track row.label) {
                       <dt>{{ row.label }}</dt>

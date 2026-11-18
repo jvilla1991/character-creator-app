@@ -88,6 +88,11 @@ export interface PC {
   // Hero-class specialization (a Death Knight's rune, a Demon Hunter's spec — see
   // HERO_CLASSES); null for everyone else. Older payloads called this `rune`.
   specialization?: string | null;
+  // World of Warcraft Hunter pet family (bare name from HUNTER_PET_FAMILIES, e.g.
+  // 'Wolf', 'Mechanized Animal'). Only a WoW hunter with the Beast Master subclass
+  // may set it (the server 400s otherwise); null for everyone else. Omitting it on
+  // an update keeps the stored value.
+  petFamily?: string | null;
   background?: string;
   alignment?: string;
   portraitInitials?: string;

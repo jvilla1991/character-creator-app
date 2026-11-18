@@ -1,17 +1,29 @@
-import { HERO_CLASSES } from './hero-class';
+import {
+  HERO_CLASSES, heroClassFor, heroClassForSubclass, heroClassSpells, recommendedFightingStylesFor,
+  recommendedStartingSpells, recommendedSubclassFor, subclassSource,
+} from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
   WOW_PALADIN_SUGGESTED_SPELLS, WOW_PRIEST, WOW_PRIEST_EXTRA_SPELLS, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SPECIALIZATIONS,
   WOW_PRIEST_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, WOW_WARLOCK,
   WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, WOW_WARRIOR, WOW_WARRIOR_GUIDANCE,
-  WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel,
+  WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel, WOW_EVOKER, WOW_EVOKER_GUIDANCE,
+  WOW_EVOKER_SPECIALIZATIONS, WOW_EVOKER_SPELL_TABLE, WOW_EVOKER_SUGGESTED_SPELLS, DRACONIC_SORCERY,
+  WOW_HUNTER, WOW_HUNTER_GUIDANCE, WOW_HUNTER_SPECIALIZATIONS, WOW_HUNTER_SUGGESTED_SPELLS,
 } from './wow-class-variants';
+import { classDisplayName } from '../utils/class-display';
 
 describe('wow-class-variants', () => {
-  it('registers every variant as a hero class without a fixed subclass', () => {
+  it('registers every variant as a hero class without a fixed subclass (the Evoker locks a base-game one)', () => {
     for (const variant of WOW_CLASS_VARIANTS) {
       expect(HERO_CLASSES).toContain(variant);
-      expect(variant.subclass).toBeUndefined();
+      if (variant === WOW_EVOKER) {
+        expect(variant.subclass).toBe(DRACONIC_SORCERY);
+        expect(variant.sharedSubclass).toBeTrue();
+      } else {
+        expect(variant.subclass).withContext(variant.key).toBeUndefined();
+        expect(variant.sharedSubclass).withContext(variant.key).toBeUndefined();
+      }
       expect(variant.source).toBe('World of Warcraft');
       // `[WoW class] ([Base class])`, or just the base name when the two match.
       expect(variant.label).toBe(variantLabel(variant.name, variant.baseClass));
@@ -514,5 +526,209 @@ describe('wow-class-variants', () => {
         expect(g.invocations).withContext(v.key).toBeUndefined();
       }
     }
+  });
+
+  describe('Evoker (Sorcerer)', () => {
+    const evoker = (overrides: { subclass?: string | null; specialization?: string | null; clazz?: string } = {}) =>
+      ({ clazz: 'Sorcerer', subclass: DRACONIC_SORCERY, specialization: 'Devastation', ...overrides });
+
+    it('reads "Evoker (Sorcerer)" on the Sorcerer base class, keyed apart from the base row', () => {
+      expect(WOW_EVOKER.label).toBe('Evoker (Sorcerer)');
+      expect(WOW_EVOKER.key).toBe('Sorcerer (World of Warcraft)');
+      expect(WOW_EVOKER.baseClass).toBe('Sorcerer');
+      expect(WOW_EVOKER.specializations.map(s => s.name)).toEqual([...WOW_EVOKER_SPECIALIZATIONS]);
+      expect(WOW_EVOKER.respecOnLevelUp).toBeTrue();
+      expect(WOW_EVOKER.subclassLevel).toBe(1);
+      expect(WOW_EVOKER.spellTableTitle).toBe('Evoker Spells');
+    });
+
+    it('describes the dragonflights, the usual starting level and the dracthyr species', () => {
+      expect(WOW_EVOKER.blurb).toContain('five dragonflights');
+      for (const word of ['flame', 'arcane', 'might', 'life', 'time', 'empower', 'extend', 'transmute']) {
+        expect(WOW_EVOKER.blurb).withContext(word).toContain(word);
+      }
+      expect(WOW_EVOKER.heroNote).toContain('level 3');
+      expect(WOW_EVOKER.heroNote).toContain('permission');
+      expect(WOW_EVOKER.heroNote).toContain('dracthyr');
+      const desc = (name: string) => WOW_EVOKER.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Augmentation')).toContain('black dragonflight');
+      expect(desc('Devastation')).toContain('fire');
+      expect(desc('Preservation')).toContain('Emerald Dream');
+    });
+
+    it('is an Evoker only with Draconic Sorcery AND an Evoker specialization', () => {
+      expect(heroClassFor(evoker())).toBe(WOW_EVOKER);
+      expect(heroClassFor(evoker({ clazz: 'sorcerer', subclass: 'draconic sorcery' }))).toBe(WOW_EVOKER);
+      expect(heroClassFor(evoker({ specialization: null }))).toBeUndefined();          // a plain Draconic sorcerer
+      expect(heroClassFor(evoker({ subclass: 'Wild Magic Sorcery' }))).toBeUndefined();
+      expect(heroClassFor(evoker({ subclass: null }))).toBeUndefined();
+      expect(heroClassFor(evoker({ specialization: 'Havoc' }))).toBeUndefined();
+      expect(heroClassFor(evoker({ clazz: 'Wizard' }))).toBeUndefined();
+      // The shared subclass alone marks nothing, and keeps its base-game tag.
+      expect(heroClassForSubclass(DRACONIC_SORCERY)).toBeUndefined();
+      expect(subclassSource(DRACONIC_SORCERY)).toBeUndefined();
+    });
+
+    it('shows "Evoker (Sorcerer)" as the class name, and a base sorcerer unchanged', () => {
+      expect(classDisplayName('Sorcerer', DRACONIC_SORCERY, 'Preservation')).toBe('Evoker (Sorcerer)');
+      expect(classDisplayName('Sorcerer', DRACONIC_SORCERY, null)).toBe('Sorcerer');
+      expect(classDisplayName('Sorcerer', 'Clockwork Sorcery', null)).toBe('Sorcerer');
+    });
+
+    it('grants the Evoker Spells at Sorcerer 3, 5, 7 and 9 (All + the specialization)', () => {
+      expect(WOW_EVOKER_SPELL_TABLE.map(r => r.classLevel)).toEqual([3, 5, 7, 9]);
+      expect(heroClassSpells(WOW_EVOKER, 2, 'Devastation')).toEqual([]);
+      expect(heroClassSpells(WOW_EVOKER, 4, 'Augmentation').map(s => s.name))
+        .toEqual(['Chromatic Orb', "Dragon's Breath", 'Ebon Might', 'Eruption']);
+      expect(heroClassSpells(WOW_EVOKER, 7, 'Devastation').map(s => s.name)).toEqual([
+        'Chromatic Orb', "Dragon's Breath", 'Azure Strike', 'Scorching Ray', 'Fly', 'Fireball', 'Arcane Eye', 'Emberstorm',
+      ]);
+      expect(heroClassSpells(WOW_EVOKER, 9, 'Preservation').map(s => `${s.classLevel} ${s.grantedBy}: ${s.name}`)).toEqual([
+        '3 All: Chromatic Orb', "3 All: Dragon's Breath", '3 Preservation: Dream Breath', '3 Preservation: Living Flame',
+        '5 All: Fly', '5 Preservation: Emerald Blossom', '7 All: Arcane Eye', '7 Preservation: Time Dilation',
+        '9 All: Summon Dragon', '9 Preservation: Dream Flight',
+      ]);
+      // No specialization: only the shared column.
+      expect(heroClassSpells(WOW_EVOKER, 5, null).map(s => s.name)).toEqual(['Chromatic Orb', "Dragon's Breath", 'Fly']);
+    });
+
+    it('recommends cantrips, spells to prepare, Metamagic, Elemental Affinity and feats per specialization', () => {
+      expect(Object.keys(WOW_EVOKER_GUIDANCE)).toEqual([...WOW_EVOKER_SPECIALIZATIONS]);
+      const aug = WOW_EVOKER_GUIDANCE['Augmentation'];
+      expect(aug.cantrips).toEqual(['Elementalism', 'Light', 'Sorcerous Burst', 'Thunderclap']);
+      expect(aug.extraPrepared).toEqual(['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame']);
+      expect(aug.metamagic).toEqual(['Empowered Spell', 'Extended Spell']);
+      expect(aug.elementalAffinity).toBe('Fire');
+      expect(aug.feats).toEqual(['Elemental Adept (Fire)', 'Speedy', 'Spell Sniper', 'War Caster']);
+      const dev = WOW_EVOKER_GUIDANCE['Devastation'];
+      expect(dev.cantrips).toEqual(['Elementalism', 'Light', 'Ray of Frost', 'Sorcerous Burst']);
+      expect(dev.metamagic).toEqual(['Empowered Spell', 'Transmuted Spell']);
+      expect(dev.elementalAffinity).toBe('Cold or Fire');
+      expect(dev.feats).toEqual(['Elemental Adept (Cold and Fire)', 'Spell Sniper', 'War Caster']);
+      const pres = WOW_EVOKER_GUIDANCE['Preservation'];
+      expect(pres.cantrips).toEqual(['Blade Ward', 'Elementalism', 'Light', 'Sorcerous Burst']);
+      expect(pres.extraPrepared).toEqual(['Alter Self', 'Arcane Vigor', 'False Life', 'Hold Person', 'Ray of Sickness', 'Witch Bolt']);
+      expect(pres.metamagic).toEqual(['Heightened Spell', 'Twinned Spell']);
+      expect(pres.elementalAffinity).toBe('Lightning or Poison');
+      for (const g of Object.values(WOW_EVOKER_GUIDANCE)) {
+        expect(g.subclass.name).toBe(DRACONIC_SORCERY);
+        expect(g.level1Spells).toBeUndefined();
+        expect(g.fightingStyles).toBeUndefined();
+      }
+    });
+
+    it('badges the cantrips and the spells to prepare in the spells step', () => {
+      expect(recommendedStartingSpells(WOW_EVOKER, 'Preservation')).toEqual([
+        'Blade Ward', 'Elementalism', 'Light', 'Sorcerous Burst',
+        'Alter Self', 'Arcane Vigor', 'False Life', 'Hold Person', 'Ray of Sickness', 'Witch Bolt',
+      ]);
+      expect(recommendedStartingSpells(WOW_EVOKER, 'Preservation')).toBe(recommendedStartingSpells(WOW_EVOKER, 'Preservation'));
+    });
+
+    it('suggests spells for levels 3 to 9 per specialization', () => {
+      const flat = (spec: string) => WOW_EVOKER_SUGGESTED_SPELLS[spec].flatMap(r => r.spells);
+      for (const spec of WOW_EVOKER_SPECIALIZATIONS) {
+        expect(WOW_EVOKER_SUGGESTED_SPELLS[spec].map(r => r.level)).withContext(spec).toEqual([3, 4, 5, 6, 7, 8, 9]);
+      }
+      expect(WOW_EVOKER_SUGGESTED_SPELLS['Augmentation'][0].spells).toEqual(['Fireball', 'Haste', 'Slow']);
+      expect(flat('Devastation')).toContain("Otiluke's Freezing Sphere");
+      expect(flat('Devastation')).toContain('Azure Sweep');
+      expect(flat('Devastation')).toContain('Lay Waste');
+      expect(flat('Preservation')).toContain('Rescue');
+      expect(flat('Augmentation')[flat('Augmentation').length - 1]).toBe('Time Stop');
+    });
+
+    it('leaves the other variants unchanged by the new guidance fields', () => {
+      for (const v of WOW_CLASS_VARIANTS.filter(x => x !== WOW_EVOKER)) {
+        expect(v.spellTable).withContext(v.key).toEqual([]);
+        expect(v.heroNote).withContext(v.key).toBeUndefined();
+        for (const g of Object.values(v.guidance ?? {})) {
+          expect(g.extraPrepared).withContext(v.key).toBeUndefined();
+          expect(g.metamagic).withContext(v.key).toBeUndefined();
+          expect(g.elementalAffinity).withContext(v.key).toBeUndefined();
+        }
+      }
+    });
+  });
+
+  describe('Hunter (Ranger)', () => {
+    const hunter = (overrides: { subclass?: string | null; specialization?: string | null; clazz?: string } = {}) =>
+      ({ clazz: 'Ranger', subclass: null, specialization: 'Beast Mastery', ...overrides });
+
+    it('reads "Hunter (Ranger)" on the Ranger base class with no fixed subclass', () => {
+      expect(WOW_HUNTER.label).toBe('Hunter (Ranger)');
+      expect(WOW_HUNTER.key).toBe('Ranger (World of Warcraft)');
+      expect(WOW_HUNTER.baseClass).toBe('Ranger');
+      expect(WOW_HUNTER.subclass).toBeUndefined();
+      expect(WOW_HUNTER.subclassNote).toBe('Chosen as normal at Ranger level 3');
+      expect(WOW_HUNTER.specializations.map(s => s.name)).toEqual([...WOW_HUNTER_SPECIALIZATIONS]);
+      expect(WOW_HUNTER.respecOnLevelUp).toBeTrue();
+      expect(WOW_HUNTER.hunterPets).toBeTrue();
+      expect(WOW_HUNTER.spellTable).toEqual([]);
+      expect(WOW_HUNTER.blurb).toContain('call of the wild');
+      expect(WOW_HUNTER.blurb).toContain('traps');
+      expect(WOW_HUNTER.blurb).toContain('pet');
+      const desc = (name: string) => WOW_HUNTER.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Beast Mastery')).toContain('animal companion');
+      expect(desc('Marksmanship')).toContain('sharpshooter');
+      expect(desc('Survival')).toContain('polearm');
+    });
+
+    it('is a WoW hunter with any of its specializations, and the Demon Hunter stays its own hero class', () => {
+      expect(heroClassFor(hunter())).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ subclass: 'Beast Master' }))).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ specialization: 'Marksmanship', subclass: 'Hunter' }))).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ specialization: null, subclass: 'Beast Master' }))).toBeUndefined();
+      expect(heroClassFor(hunter({ specialization: 'Havoc' }))).toBeUndefined();
+      // The Demon Hunter hero subclass is matched first, whatever the specialization says.
+      expect(heroClassFor(hunter({ subclass: 'Demon Hunter', specialization: 'Havoc' }))?.label).toBe('Demon Hunter (Ranger)');
+      expect(heroClassFor(hunter({ subclass: 'Demon Hunter', specialization: 'Beast Mastery' }))?.label).toBe('Demon Hunter (Ranger)');
+      expect(classDisplayName('Ranger', 'Beast Master', 'Survival')).toBe('Hunter (Ranger)');
+      expect(classDisplayName('Ranger', 'Beast Master', null)).toBe('Ranger');
+      expect(classDisplayName('Ranger', 'Demon Hunter', 'Vengeance')).toBe('Demon Hunter (Ranger)');
+    });
+
+    it('recommends Beast Master / Hunter / Beast Master and Archery / Archery / Great Weapon Fighting', () => {
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Beast Mastery')).toBe('Beast Master');
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Marksmanship')).toBe('Hunter');
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Survival')).toBe('Beast Master');
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Beast Mastery')).toEqual(['Archery']);
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Marksmanship')).toEqual(['Archery']);
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Survival')).toEqual(['Great Weapon Fighting']);
+    });
+
+    it('recommends level-1 spells, two Weapon Masteries and feats per specialization', () => {
+      const bm = WOW_HUNTER_GUIDANCE['Beast Mastery'];
+      expect(bm.level1Spells).toEqual(['Ensnaring Strike', 'Speak with Animals']);
+      expect(bm.weaponMastery).toEqual(['Heavy Crossbows', 'Longbows', 'Muskets']);
+      expect(bm.weaponMasteryCount).toBe(2);
+      expect(bm.levelTip).toEqual({ level: 6, text: 'You gain Pet Specialization instead of Roving.' });
+      expect(bm.feats).toEqual(['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter', 'Weapon Master']);
+      const mm = WOW_HUNTER_GUIDANCE['Marksmanship'];
+      expect(mm.level1Spells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+      expect(mm.weaponMastery).toEqual(['Heavy Crossbows', 'Longbows', 'Muskets']);
+      expect(mm.feats).toEqual(['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter']);
+      expect(mm.levelTip).toBeUndefined();
+      const sv = WOW_HUNTER_GUIDANCE['Survival'];
+      expect(sv.level1Spells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+      expect(sv.weaponMastery).toEqual(['Glaives', 'Halberds', 'Pikes']);
+      expect(sv.feats).toEqual(['Great Weapon Master', 'Poisoner', 'Polearm Master', 'Sentinel']);
+      for (const g of Object.values(WOW_HUNTER_GUIDANCE)) expect(g.cantrips).toBeUndefined();
+      expect(recommendedStartingSpells(WOW_HUNTER, 'Survival')).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+    });
+
+    it('suggests spells for levels 1 to 5, with the WoW traps and Serpent Sting', () => {
+      for (const spec of WOW_HUNTER_SPECIALIZATIONS) {
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec].map(r => r.level)).withContext(spec).toEqual([1, 2, 3, 4, 5]);
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec][0].spells).withContext(spec).toEqual(['Freezing Trap']);
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec][2].spells).withContext(spec).toContain('Serpent Sting');
+      }
+      expect(WOW_HUNTER_SUGGESTED_SPELLS['Survival'][4].spells).toEqual(['Explosive Trap', 'Steel Wind Strike']);
+      expect(WOW_HUNTER_SUGGESTED_SPELLS['Marksmanship'][4].spells).toEqual(['Conjure Volley', 'Swift Quiver']);
+    });
+
+    it('is the only variant that keeps hunter pets', () => {
+      expect(HERO_CLASSES.filter(h => h.hunterPets)).toEqual([WOW_HUNTER]);
+    });
   });
 });

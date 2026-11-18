@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
@@ -12,6 +12,10 @@ import {
   isMoonCircle,
 } from '../../../../models/wow-beast-forms';
 import { spellKey } from '../../../../models/spell-names';
+import {
+  HUNTER_PET_FAMILIES, PET_HP_NOTE, PET_MASTERY_NOTE, PET_SPECIALIZATION_LEVEL, PET_UNUSUAL_NOTE, PetFamily,
+  PetSpecializationView, PetStatCard, keepsHunterPet, petFamilyByName, petFamilyLabel, petSpecialization, petStatCards,
+} from '../../../../models/wow-hunter';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { modFromScore, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
@@ -52,7 +56,11 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
  * computed Totems and path cards (Raging Elements, Spiritual Guardian); for a WoW Warrior,
  * the level-1 fighting style, subclass and maneuvers to consider (text only); for a WoW Priest, the
- * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards. Derived from the PC's
+ * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards; for a WoW Evoker,
+ * the Evoker Spells table, Metamagic, spells to prepare, Elemental Affinity and suggested spells; for a WoW Hunter
+ * Beast Master, the Pet card (family selector — the one thing this panel saves, as `petFamily` through `pcChange` —
+ * plus the family's stat block, specialization, mastery and, for Beast Mastery at Ranger 6+, Pet Specialization).
+ * Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -68,6 +76,16 @@ export class HeroClassPanelComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly beastFormUnchanged = BEAST_FORM_UNCHANGED;
+  readonly petFamilies = HUNTER_PET_FAMILIES;
+  readonly petFamilyLabel = petFamilyLabel;
+  readonly petUnusualNote = PET_UNUSUAL_NOTE;
+  readonly petMasteryNote = PET_MASTERY_NOTE;
+  readonly petHpNote = PET_HP_NOTE;
+
+  /** True when the viewer may change the pet family (the owner, or the DM's cross-link view). */
+  @Input() canEdit = false;
+  /** The pet family was changed — the sheet persists the updated PC through the normal update path. */
+  readonly pcChange = output<PC>();
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
 
@@ -78,6 +96,8 @@ export class HeroClassPanelComponent {
 
   /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];
+  /** The specialization's recommended spells to prepare (WoW Evoker), with what the character has. */
+  extraPrepared: SuggestedSpellView[] = [];
   /** Always-prepared spell lists — the hero table, then a WoW-only subclass's (Oath of the Holy). */
   spellSections: HeroSpellSection[] = [];
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
@@ -85,12 +105,22 @@ export class HeroClassPanelComponent {
   classicForms: ClassicBeastForm[] = [];
   /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Priest: domain cards). */
   featureCards: FeatureCard[] = [];
+  /** True for a WoW Hunter with the Beast Master subclass — shows the Pet card. */
+  showPet = false;
+  /** The chosen pet family; undefined until one is picked (or for an unknown stored value). */
+  petFamily: PetFamily | undefined;
+  /** The family's Primal Companion stat card(s) — two for the Serpent (Land or Sea). */
+  petCards: PetStatCard[] = [];
+  /** Beast Mastery spec only, from Ranger 6: the family's Pet Specialization; null otherwise. */
+  petSpec: PetSpecializationView | null = null;
 
   @Input() set pc(value: PC) {
     this._pc = value;
     this.deriveVariant();
     const cardSpells = this.featureCards.some(card => card.rows.some(row => row.spells?.length));
-    if (this.spellSections.length || this.suggestedSpells.length || cardSpells) this.loadSpells();
+    if (this.spellSections.length || this.suggestedSpells.length || this.extraPrepared.length || cardSpells) {
+      this.loadSpells();
+    }
   }
   get pc(): PC { return this._pc; }
 
@@ -98,11 +128,25 @@ export class HeroClassPanelComponent {
     return heroClassFor(this._pc);
   }
 
-  /** The panel heading: the hero subclass, or e.g. "World of Warcraft Druid" for a variant. */
+  /**
+   * The panel heading: the hero subclass, or e.g. "World of Warcraft Druid" for a
+   * variant — and for the Evoker, whose locked Draconic Sorcery is a base-game subclass.
+   */
   get panelTitle(): string {
     const hero = this.hero;
     if (!hero) return '';
-    return hero.subclass ?? `${hero.source} ${hero.name}`;
+    return hero.subclass && !hero.sharedSubclass ? hero.subclass : `${hero.source} ${hero.name}`;
+  }
+
+  /** True when the hero class locks its subclass at creation (Death Knight, Evoker) — no subclass to recommend. */
+  get subclassLocked(): boolean {
+    return !!this.hero?.subclass;
+  }
+
+  /** "Empowered Spell and Extended Spell" — the recommended Metamagic (WoW Evoker); '' when none. */
+  get metamagicText(): string {
+    const picks = this.guidance?.metamagic ?? [];
+    return picks.length ? picks.join(' and ') : '';
   }
 
   /** "Frost Rune" / "Havoc"; '' when no specialization is set. */
@@ -221,12 +265,16 @@ export class HeroClassPanelComponent {
     const hero = this.hero;
     const pc = this._pc;
     this.spellSections = [
-      { title: `${hero?.subclass ?? ''} Spells`, entries: this.spells },
+      { title: hero?.spellTableTitle ?? `${hero?.subclass ?? ''} Spells`, entries: this.spells },
       { title: `${pc?.subclass ?? ''} Spells`, entries: this.subclassSpells },
     ].filter(section => section.entries.length > 0);
     const spec = pc?.specialization;
     const levels = (spec && hero?.suggestedSpells?.[spec]) || [];
     const owned = new Map((pc?.spells ?? []).map(s => [s.name.toLowerCase(), s]));
+    this.extraPrepared = ((spec && hero?.guidance?.[spec]?.extraPrepared) || []).map(name => {
+      const have = owned.get(name.toLowerCase());
+      return { name, known: !!have, prepared: !!have?.prepared };
+    });
     this.suggestedSpells = levels.map(row => ({
       level: row.level,
       spells: row.spells.map(name => {
@@ -238,6 +286,8 @@ export class HeroClassPanelComponent {
     this.featureCards = hero?.featureCards
       ? [...hero.featureCards({ level: pc.level ?? 1, subclass: pc.subclass, stats: pc.stats, prof: pc.prof })]
       : [];
+
+    this.derivePet(hero, pc);
 
     if (!hero?.beastForms) {
       this.formCards = [];
@@ -252,6 +302,35 @@ export class HeroClassPanelComponent {
       this.formCards = [];
     }
     this.classicForms = classicBeastForms(pc.level ?? 1, moon);
+  }
+
+  /** Pick a pet family ('' clears it) and hand the updated PC to the sheet to save. */
+  selectPetFamily(name: string): void {
+    if (!this.canEdit) return;
+    const next = name || null;
+    if (next === (this._pc.petFamily ?? null)) return;
+    this.pcChange.emit({ ...this._pc, petFamily: next });
+  }
+
+  /** The Ranger level Pet Specialization arrives at (for the "from Ranger 6" note). */
+  readonly petSpecializationLevel = PET_SPECIALIZATION_LEVEL;
+
+  private derivePet(hero: HeroClassOption | undefined, pc: PC): void {
+    this.showPet = !!hero?.hunterPets && keepsHunterPet(pc);
+    this.petFamily = this.showPet ? petFamilyByName(pc.petFamily) : undefined;
+    if (!this.petFamily) {
+      this.petCards = [];
+      this.petSpec = null;
+      return;
+    }
+    const input = beastFormInput(pc);
+    const wisMod = modFromScore(input.wis);
+    this.petCards = petStatCards(this.petFamily, {
+      level: input.level, wisMod, spellAttack: input.spellAttack, spellDc: input.spellDc,
+    });
+    this.petSpec = pc.specialization === 'Beast Mastery'
+      ? petSpecialization(this.petFamily, input.level, wisMod)
+      : null;
   }
 
   private loadSpells(): void {

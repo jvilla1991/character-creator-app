@@ -16,16 +16,18 @@ import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
 import {
-  CIRCLE_OF_THE_MOON, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
+  CIRCLE_OF_THE_MOON, DRACONIC_SORCERY, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
 } from '../models/wow-class-variants';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
 import { BATTLE_MASTER } from '../models/wow-warrior';
+import { BEAST_MASTER } from '../models/wow-hunter';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Priest, Rogue, Shaman, Warlock and Warrior.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Evoker, Hunter, Paladin, Priest, Rogue, Shaman, Warlock and
+// Warrior.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -714,6 +716,131 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Hears whispers in the dark, and has started answering them.',
     },
     bio: 'A night elf priestess of Elune who lost her temple to fire and found that the Void listened when the moon did not. She still wears the moonstone, though it no longer shines.',
+    notes: '',
+  },
+  // World of Warcraft Evoker (Sorcerer) — a Sorcerer locked to Draconic Sorcery with the
+  // Devastation specialization, so the "Evoker (Sorcerer)" header and the Evoker Spells
+  // (Sorcerer 3 and 5 rows) render. Dragonborn stands in for a dracthyr.
+  {
+    id: 15,
+    name: 'Kazrethos Emberwing',
+    playerName: 'Omar',
+    player: 'Omar',
+    campaignId: null,
+    race: 'Dragonborn',
+    clazz: 'Sorcerer',
+    subclass: DRACONIC_SORCERY,
+    specialization: 'Devastation',
+    level: 5,
+    background: 'Sage',
+    alignment: 'Neutral Good',
+    portraitInitials: 'KE',
+    portraitTint: 'crimson',
+    hp: { cur: 37, max: 37, temp: 0 },
+    ac: 15, init: 2, speed: 30, prof: 3,
+    stats: { STR: 10, DEX: 14, CON: 14, INT: 12, WIS: 10, CHA: 18 },
+    saves: ['CON', 'CHA'],
+    skills: { Arcana: 'prof', History: 'prof', Intimidation: 'prof', Insight: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 14, gp: 52 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Elementalism', school: 'Transmutation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Light', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Ray of Frost', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Sorcerous Burst', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Fire Bolt', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Burning Hands', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Ice Knife', school: 'Conjuration', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Living Flame', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Arcane Vigor', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Cloud of Daggers', school: 'Conjuration', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Flame Blade', school: 'Evocation', time: '1 bonus action', prepared: false },
+      { lvl: 3, name: 'Counterspell', school: 'Abjuration', time: '1 reaction', prepared: true },
+      { lvl: 3, name: 'Sleet Storm', school: 'Conjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Dagger', dmg: '1d4+2 piercing', notes: 'Finesse, Light, Thrown' },
+    ],
+    gear: [
+      { name: 'Arcane Focus (a scale of the red flight)' },
+      { name: "Scholar's Pack" },
+    ],
+    features: [
+      { name: 'Innate Sorcery', source: 'Sorcerer 1', desc: 'Bonus Action: for 1 minute, +1 spell save DC and Advantage on sorcerer spell attacks.' },
+      { name: 'Draconic Resilience', source: 'Draconic Sorcery 1', desc: 'Extra Hit Points, and AC 10 + DEX + CHA without armor.' },
+      { name: 'Font of Magic', source: 'Sorcerer 2', desc: 'Sorcery Points to fuel Metamagic and create spell slots.' },
+      { name: 'Metamagic', source: 'Sorcerer 2', desc: 'Empowered Spell and Transmuted Spell.' },
+      { name: 'Evoker Spells', source: 'Sorcerer 3', desc: 'Always-prepared Evoker spells for your specialization.' },
+      { name: 'Sorcerous Restoration', source: 'Sorcerer 5', desc: 'Regain some Sorcery Points on a Short Rest.' },
+    ],
+    traits: {
+      Personality: 'Talks fast, flies faster, and treats every problem as something to be breathed on.',
+      Ideals: 'Purpose. The dracthyr were made for war; Kazrethos means to choose what that war is for.',
+      Bonds: 'The Obsidian Warders who woke beside him on the Forbidden Reach.',
+      Flaws: 'Forgets that most people cannot shrug off a blast of flame.',
+    },
+    bio: 'A dracthyr evoker who woke after ages of slumber and found the world had moved on. He channels red and blue dragonfire, and is still learning which of his new allies flinch at it.',
+    notes: '',
+  },
+  // World of Warcraft Hunter (Ranger) — an ordinary Ranger with the Beast Mastery
+  // specialization and the Beast Master subclass, with a Wolf pet, so the "Hunter (Ranger)"
+  // header, the Pet card and the level-6 Pet Specialization (Ferocity) render.
+  {
+    id: 16,
+    name: 'Rhonna Stoneclaw',
+    playerName: 'Pia',
+    player: 'Pia',
+    campaignId: null,
+    race: 'Dwarf',
+    clazz: 'Ranger',
+    subclass: BEAST_MASTER,
+    specialization: 'Beast Mastery',
+    petFamily: 'Wolf',
+    level: 6,
+    background: 'Guide',
+    alignment: 'Neutral Good',
+    portraitInitials: 'RS',
+    portraitTint: 'emerald',
+    hp: { cur: 55, max: 55, temp: 0 },
+    ac: 15, init: 3, speed: 30, prof: 3,
+    stats: { STR: 12, DEX: 16, CON: 14, INT: 10, WIS: 16, CHA: 8 },
+    saves: ['STR', 'DEX'],
+    skills: { 'Animal Handling': 'prof', Perception: 'prof', Stealth: 'prof', Survival: 'expert' },
+    conditions: [],
+    coins: { cp: 12, sp: 30, gp: 58 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 1, name: 'Ensnaring Strike', school: 'Conjuration', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Speak with Animals', school: 'Divination', time: '1 action', prepared: true },
+      { lvl: 1, name: "Hunter's Mark", school: 'Divination', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Freezing Trap', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Beast Sense', school: 'Divination', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Summon Beast', school: 'Conjuration', time: '1 action', prepared: false },
+    ],
+    weapons: [
+      { name: 'Heavy Crossbow', dmg: '1d10+3 piercing', notes: 'Mastery: Push' },
+      { name: 'Longbow', dmg: '1d8+3 piercing', notes: 'Mastery: Slow' },
+    ],
+    gear: [
+      { name: 'Scale Mail', equipped: true },
+      { name: 'Quiver of bolts' },
+      { name: 'Wolf-fang charm' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Ranger 1', desc: 'Heavy Crossbows and Longbows.' },
+      { name: 'Fighting Style', source: 'Ranger 2', desc: 'Archery.' },
+      { name: 'Primal Companion', source: 'Beast Master 3', desc: 'A Beast of the Land companion: her wolf, Ashmane.' },
+      { name: 'Extra Attack', source: 'Ranger 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Pet Specialization', source: 'Ranger 6', desc: 'Ferocity: Bloodied healing on Beast\'s Strike hits, and Haste once per Long Rest.' },
+    ],
+    traits: {
+      Personality: 'Says more to her wolf in a glance than to most people in a day.',
+      Ideals: 'Loyalty. A pack looks after its own.',
+      Bonds: 'Ashmane, the wolf she raised from a pup in the snows of Dun Morogh.',
+      Flaws: 'Trusts a beast\'s growl over a stranger\'s smile, every time.',
+    },
+    bio: 'A dwarven hunter from the hills of Dun Morogh who never goes anywhere without Ashmane, the grey wolf at her side.',
     notes: '',
   },
 ];
