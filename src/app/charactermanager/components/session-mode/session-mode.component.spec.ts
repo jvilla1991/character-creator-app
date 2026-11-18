@@ -354,7 +354,7 @@ describe('SessionModeComponent help copy', () => {
   beforeEach(() => {
     const sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['clear'], { state$: of(null) });
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionService, null as never, null as never, null as never, null as never, null as never, null as never, null as never));
+      sessionService, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
   it('says what Short Rest does when it is available', () => {
