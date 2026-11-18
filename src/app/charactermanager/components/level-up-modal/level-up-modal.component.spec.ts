@@ -1012,4 +1012,72 @@ describe('LevelUpModalComponent', () => {
       }
     });
   });
+
+  describe('World of Warcraft Priest (WoW domains, recommended domain, added spells, respec)', () => {
+    const domains = [
+      'Discipline Domain', 'Life Domain', 'Light Domain', 'Shadow Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain',
+    ];
+
+    function renderModal(): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Cleric', level: 2, specialization: 'Shadow', spells: [], ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: domains,
+        recommendedFightingStyles: [], ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('highlights the recommended domain per specialization and allows a respec', () => {
+      open({});
+      expect(component.canRespec).toBeTrue();
+      expect(component.recommendedSubclass).toBe('Shadow Domain');
+      open({ specialization: 'Discipline' });
+      expect(component.recommendedSubclass).toBe('Discipline Domain');
+      open({ specialization: 'Holy' });
+      expect(component.recommendedSubclass).toBe('Life Domain');
+      component.selectedSpecialization = 'Shadow';
+      expect(component.recommendedSubclass).toBe('Shadow Domain');
+      expect(component.selectedSubclass).toBeFalsy();   // never pre-selected
+    });
+
+    it('tags both WoW domains as World of Warcraft and badges the recommended one', () => {
+      open({ specialization: 'Discipline' }, { recommendedSubclass: 'Discipline Domain' });
+      expect(component.subclassSourceTag('Discipline Domain')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Shadow Domain')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Life Domain')).toBeUndefined();
+      const el = renderModal();
+      const tagged = Array.from(el.querySelectorAll('.subclass-option')).filter(n => n.querySelector('.source-tag'));
+      expect(tagged.map(n => n.textContent)).toEqual([
+        jasmine.stringContaining('Discipline Domain'), jasmine.stringContaining('Shadow Domain'),
+      ]);
+      expect(el.querySelector('.subclass-option.is-recommended')?.textContent).toContain('Discipline Domain');
+      expect(el.querySelector('.subclass-option.is-recommended .recommended-badge')?.textContent)
+        .toContain('Recommended for Discipline');
+    });
+
+    it('loads the cleric list plus Blur and Levitate when a WoW priest learns spells, and the plain list for a base cleric', () => {
+      const learn = { currentSpellsKnown: 5, newSpellsKnown: 6, newSpellSlots: { 1: 4, 2: 2 } };
+      open({}, learn);
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Cleric', ['Blur', 'Levitate']);
+      dndResources.getSpellsForClass.calls.reset();
+      open({ specialization: null, subclass: undefined }, learn);
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Cleric');
+      expect(dndResources.getSpellsForClass).not.toHaveBeenCalledWith('Cleric', jasmine.anything());
+    });
+  });
 });

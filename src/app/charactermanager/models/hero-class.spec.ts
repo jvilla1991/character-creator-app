@@ -3,7 +3,7 @@ import {
   heroClassForSubclass, heroClassSpells, orList, recommendedFightingStylesFor, recommendedStartingSpells,
   recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle, subclassSource, subclassSpellsFor,
   weaponMasteryLead, invocationRows, isWowInvocation, subclassGuidanceLabel, subclassLevelOf, WOW_INVOCATION_NOTE,
-  WOW_MANEUVER_NOTE, fightingStyleLevelOf, isWowManeuver,
+  WOW_MANEUVER_NOTE, fightingStyleLevelOf, isWowManeuver, HERO_CLASSES, isExtraListSpell,
 } from './hero-class';
 
 describe('hero-class', () => {
@@ -13,11 +13,11 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
         'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
-        'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
       ]);
     });
 
@@ -262,6 +262,81 @@ describe('hero-class', () => {
       expect(subclassSource(EBON_BLADE_SUBCLASS)).toBe('World of Warcraft');
       expect(subclassSource('Oath of Devotion')).toBeUndefined();
       expect(subclassSource(null)).toBeUndefined();
+    });
+  });
+
+  describe('World of Warcraft Priest (Cleric)', () => {
+    const wowPriest = heroClassByKey('Cleric (World of Warcraft)') as HeroClassOption;
+
+    it('is a "Priest (Cleric)" row tagged World of Warcraft beside the base Cleric', () => {
+      const rows = buildClassOptions(['Cleric', 'Wizard']).filter(o => o.baseClass === 'Cleric');
+      expect(rows.map(o => [o.key, o.label, o.source])).toEqual([
+        ['Cleric', 'Cleric', 'Base Game'], ['Cleric (World of Warcraft)', 'Priest (Cleric)', 'World of Warcraft'],
+      ]);
+      expect(wowPriest.subclass).toBeUndefined();
+    });
+
+    it('recognizes a WoW priest by cleric + one of its specializations, or a WoW-only domain', () => {
+      expect(heroClassFor({ clazz: 'Cleric', subclass: null, specialization: 'Shadow' })).toBe(wowPriest);
+      expect(heroClassFor({ clazz: 'cleric', subclass: 'Life Domain', specialization: 'Holy' })).toBe(wowPriest);
+      expect(heroClassFor({ clazz: 'Cleric', subclass: 'Discipline Domain', specialization: null })).toBe(wowPriest);
+      expect(heroClassFor({ clazz: 'Cleric', subclass: 'shadow domain', specialization: null })).toBe(wowPriest);
+      // A base cleric stays a base cleric.
+      expect(heroClassFor({ clazz: 'Cleric', subclass: 'Life Domain', specialization: null })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Cleric', subclass: null, specialization: null })).toBeUndefined();
+      // Holy belongs to the WoW Paladin as well — the base class tells them apart.
+      expect(heroClassFor({ clazz: 'Paladin', subclass: null, specialization: 'Holy' })?.name).toBe('Paladin');
+      expect(heroClassFor({ clazz: 'Paladin', subclass: 'Shadow Domain' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Cleric', subclass: null, specialization: 'Frost' })).toBeUndefined();
+    });
+
+    it('recommends a domain per specialization', () => {
+      expect(recommendedSubclassFor(wowPriest, 'Discipline')).toBe('Discipline Domain');
+      expect(recommendedSubclassFor(wowPriest, 'Holy')).toBe('Life Domain');
+      expect(recommendedSubclassFor(wowPriest, 'Shadow')).toBe('Shadow Domain');
+      expect(subclassGuidanceLabel(wowPriest)).toBe('Level 3 subclass');
+    });
+
+    it('recommends four cantrips and four level-1 spells per specialization', () => {
+      expect(recommendedStartingSpells(wowPriest, 'Shadow')).toEqual([
+        'Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead', 'Bane', 'Command', 'Healing Word', 'Shadow Word: Pain',
+      ]);
+      expect(recommendedStartingSpells(wowPriest, 'Holy')).toContain('Purify Food and Drink');
+      expect(recommendedStartingSpells(wowPriest, 'Discipline')).toContain('Word of Radiance');
+    });
+
+    it('owns the Discipline and Shadow domains and their always-prepared spells by Cleric level', () => {
+      const at = (subclass: string, level: number) => subclassSpellsFor(wowPriest, subclass, level).map(e => e.name);
+      expect(at('Discipline Domain', 2)).toEqual([]);
+      expect(at('Discipline Domain', 3)).toEqual(['Arcane Vigor', 'Guiding Bolt', 'Magic Weapon', 'Shield of Faith']);
+      expect(at('Discipline Domain', 5).slice(4)).toEqual(['Prayer of Mending', 'Protection from Energy']);
+      expect(at('Discipline Domain', 7).slice(6)).toEqual(['Guardian of Faith', 'Stoneskin']);
+      expect(at('Discipline Domain', 9).slice(8)).toEqual(['Circle of Power', 'Destructive Wave']);
+      expect(at('Discipline Domain', 20).length).toBe(10);
+      expect(at('Shadow Domain', 3)).toEqual(['Crown of Madness', 'Dissonant Whispers', 'Mind Spike', 'Shadow Word: Pain']);
+      expect(at('Shadow Domain', 6).slice(4)).toEqual(['Summon Undead', 'Vampiric Touch']);
+      expect(at('Shadow Domain', 8).slice(6)).toEqual(["Evard's Black Tentacles", 'Psychic Horror']);
+      expect(at('Shadow Domain', 9).slice(8)).toEqual(['Dominate Person', 'Void Eruption']);
+      expect(subclassSpellsFor(wowPriest, 'Shadow Domain', 7).map(e => e.classLevel)).toEqual([3, 3, 3, 3, 5, 5, 7, 7]);
+      // Life Domain is the base-game domain: its spells come from the server, not this table.
+      expect(at('Life Domain', 20)).toEqual([]);
+    });
+
+    it('tags the two WoW domains with their source, but not Life Domain', () => {
+      expect(subclassSource('Discipline Domain')).toBe('World of Warcraft');
+      expect(subclassSource('Shadow Domain')).toBe('World of Warcraft');
+      expect(subclassSource('Life Domain')).toBeUndefined();
+    });
+
+    it('adds Blur and Levitate to its spell list, and no other class adds anything', () => {
+      expect(isExtraListSpell(wowPriest, 'Blur')).toBeTrue();
+      expect(isExtraListSpell(wowPriest, 'levitate')).toBeTrue();
+      expect(isExtraListSpell(wowPriest, 'Cure Wounds')).toBeFalse();
+      expect(isExtraListSpell(undefined, 'Blur')).toBeFalse();
+      for (const hero of HERO_CLASSES.filter(h => h !== wowPriest)) {
+        expect(hero.extraSpellList).withContext(hero.key).toBeUndefined();
+        expect(isExtraListSpell(hero, 'Blur')).withContext(hero.key).toBeFalse();
+      }
     });
   });
 

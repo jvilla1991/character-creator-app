@@ -5,12 +5,13 @@ import { DndSpell } from '../../../../models/dnd-api.types';
 import {
   FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, InvocationRow, SpecializationGuidance,
   WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, heroClassFor, heroClassSpells, invocationRows,
-  isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
+  isExtraListSpell, isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
   isMoonCircle,
 } from '../../../../models/wow-beast-forms';
+import { spellKey } from '../../../../models/spell-names';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { modFromScore, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
@@ -50,7 +51,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * for Circle of the Moon, classic beasts otherwise); for a WoW Warlock, the
  * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
  * computed Totems and path cards (Raging Elements, Spiritual Guardian); for a WoW Warrior,
- * the level-1 fighting style, subclass and maneuvers to consider (text only). Derived from the PC's
+ * the level-1 fighting style, subclass and maneuvers to consider (text only); for a WoW Priest, the
+ * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards. Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -81,7 +83,7 @@ export class HeroClassPanelComponent {
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
   classicForms: ClassicBeastForm[] = [];
-  /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian). */
+  /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Priest: domain cards). */
   featureCards: FeatureCard[] = [];
 
   @Input() set pc(value: PC) {
@@ -190,13 +192,24 @@ export class HeroClassPanelComponent {
     return (spec === 'Feral' && card.name === 'Cat Form') || (spec === 'Guardian' && card.name === 'Bear Form');
   }
 
-  /** True for a World of Warcraft stub spell (from the loaded spell data). */
+  /**
+   * True for a World of Warcraft spell (from the loaded spell data), or a base
+   * spell the variant adds to its class list (the WoW Priest's Blur and Levitate).
+   */
   isWowSpell(name: string): boolean {
-    return this.spellFor(name)?.source === 'World of Warcraft';
+    return this.spellFor(name)?.source === 'World of Warcraft' || isExtraListSpell(this.hero, name);
   }
 
+  /** Hover text for a suggested spell's ✦ mark. */
+  wowSpellTitle(name: string): string {
+    return isExtraListSpell(this.hero, name)
+      ? `Added to the ${this.hero!.baseClass} spell list by the World of Warcraft ${this.hero!.name}`
+      : 'World of Warcraft spell';
+  }
+
+  /** The spell data for a table name, aliases resolved (Evard's Black Tentacles → Black Tentacles). */
   spellFor(name: string): DndSpell | undefined {
-    return this.spellIndex()?.get(name.toLowerCase());
+    return this.spellIndex()?.get(spellKey(name));
   }
 
   /** "+5" / "−1" for an attack bonus. */

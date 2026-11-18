@@ -19,12 +19,13 @@ import {
   CIRCLE_OF_THE_MOON, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
 } from '../models/wow-class-variants';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
+import { SHADOW_DOMAIN } from '../models/wow-priest';
 import { BATTLE_MASTER } from '../models/wow-warrior';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue, Shaman, Warlock and Warrior.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Priest, Rogue, Shaman, Warlock and Warrior.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -648,6 +649,71 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Treats every retreat as a personal failure.',
     },
     bio: 'An orc shieldbearer who held the gate of a Durotar outpost through a three-day siege, and has carried the dented shield from that wall ever since.',
+    notes: '',
+  },
+  // World of Warcraft Priest (Cleric) — an ordinary Cleric with the Shadow specialization
+  // and the WoW-only Shadow Domain (chosen at level 3), so the "Priest (Cleric)" header,
+  // the Shadow Domain spells and the Shadowform / Devouring Plague / Dispersion card render.
+  {
+    id: 14,
+    name: 'Ilyara Duskwhisper',
+    playerName: 'Nora',
+    player: 'Nora',
+    campaignId: null,
+    race: 'Elf',
+    clazz: 'Cleric',
+    subclass: SHADOW_DOMAIN,
+    specialization: 'Shadow',
+    level: 6,
+    background: 'Acolyte',
+    alignment: 'Neutral',
+    portraitInitials: 'ID',
+    portraitTint: 'violet',
+    hp: { cur: 45, max: 45, temp: 0 },
+    ac: 15, init: 2, speed: 30, prof: 3,
+    stats: { STR: 8, DEX: 14, CON: 14, INT: 10, WIS: 17, CHA: 13 },
+    saves: ['WIS', 'CHA'],
+    skills: { Insight: 'prof', Medicine: 'prof', Persuasion: 'prof', Religion: 'prof' },
+    conditions: [],
+    coins: { cp: 6, sp: 22, ep: 0, gp: 48, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 3, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Mending', school: 'Transmutation', time: '1 minute', prepared: true },
+      { lvl: 0, name: 'Resistance', school: 'Abjuration', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Thaumaturgy', school: 'Transmutation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Toll the Dead', school: 'Necromancy', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Bane', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Command', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Healing Word', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Blur', school: 'Illusion', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Hold Person', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Silence', school: 'Illusion', time: '1 action', prepared: false },
+      { lvl: 3, name: 'Speak with Dead', school: 'Necromancy', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Mace', dmg: '1d6-1 bludgeoning', notes: 'Mastery: Sap' },
+    ],
+    gear: [
+      { name: 'Chain Shirt', equipped: true },
+      { name: 'Holy Symbol (a moonstone gone dark)' },
+      { name: 'Prayer beads of violet glass' },
+    ],
+    features: [
+      { name: 'Divine Order', source: 'Cleric 1', desc: 'Thaumaturge: one extra cantrip, and add your Wisdom modifier to Arcana and Religion checks.' },
+      { name: 'Channel Divinity', source: 'Cleric 2', desc: 'Divine Spark or Turn Undead; 3 uses, one back on a Short Rest.' },
+      { name: 'Shadowform', source: 'Shadow Domain 3', desc: 'Channel Divinity: wrap yourself in shadow for 1 minute.' },
+      { name: 'Devouring Plague', source: 'Shadow Domain 3', desc: 'Drain 1d10 Necrotic from a foe and heal that much.' },
+      { name: 'Telepathic', source: 'Cleric 4', desc: 'Speak mind to mind within 60 feet; cast Detect Thoughts once per Long Rest.' },
+      { name: 'Sear Undead', source: 'Cleric 5', desc: 'Turn Undead also deals Radiant damage to the Undead it affects.' },
+      { name: 'Dispersion', source: 'Shadow Domain 6', desc: 'Reaction: dissolve into shadow and shrug off harm.' },
+    ],
+    traits: {
+      Personality: 'Speaks softly, and always seems to know what you were about to say.',
+      Ideals: 'Balance. The Light alone could not save Teldrassil; the Shadow will have its turn.',
+      Bonds: 'The sisters of Elune who still pray for her return.',
+      Flaws: 'Hears whispers in the dark, and has started answering them.',
+    },
+    bio: 'A night elf priestess of Elune who lost her temple to fire and found that the Void listened when the moon did not. She still wears the moonstone, though it no longer shines.',
     notes: '',
   },
 ];

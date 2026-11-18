@@ -154,7 +154,7 @@
           <dd>
             @for (s of row.spells; track s.name; let last = $last) {
               <span class="suggested-spell" [class.known]="s.known">
-                {{ s.name }}@if (isWowSpell(s.name)) {<span class="wow-mark" title="World of Warcraft spell">✦</span>}
+                {{ s.name }}@if (isWowSpell(s.name)) {<span class="wow-mark" [attr.title]="wowSpellTitle(s.name)">✦</span>}
                 @if (s.prepared) {
                   <span class="spell-tag">prepared</span>
                 } @else if (s.known) {
@@ -173,7 +173,7 @@
       }
     }
 
-    <!-- Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Warrior: Battle Master) -->
+    <!-- Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Warrior: Battle Master; WoW Priest: Discipline and Shadow Domain) -->
     @if (featureCards.length) {
       <h3 class="hero-spells-title">{{ h.name }} Features</h3>
       <div class="form-cards feature-cards">
