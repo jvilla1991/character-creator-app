@@ -72,7 +72,9 @@
     @if (step === 3) {
       <app-class-step
         [classOptions]="visibleClassOptions"
+        [selectedKey]="selectedClassKey"
         [selectedLabel]="selectedClassLabel"
+        [guidance]="specializationGuidance"
         [selectedHidden]="selectedClassHidden"
         [specialization]="specialization"
         (specializationChange)="selectSpecialization($event)"
@@ -162,6 +164,8 @@
         [(spellSearch)]="spellSearch"
         [selectedSpells]="selectedSpells"
         [expandedSpellName]="expandedSpellName"
+        [recommendedSpells]="recommendedSpells"
+        [recommendedFor]="specialization"
         (toggleDesc)="toggleSpellDesc($event)"
         (toggleSpell)="toggleSpell($event)">
       </app-spells-step>

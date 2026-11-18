@@ -539,6 +539,61 @@ describe('LevelUpModalComponent', () => {
     });
   });
 
+  describe('World of Warcraft Druid (respec allowed, recommended circle)', () => {
+    const circles = ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'];
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Druid', level: 2, ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: circles, ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('shows the "Change specialization" control for a WoW druid', () => {
+      open({ specialization: 'Balance' });
+      expect(component.canRespec).toBeTrue();
+      expect(component.heroClass?.specializationLabel).toBe('specialization');
+      expect(component.heroClass?.specializations.map(s => s.name))
+        .toEqual(['Balance', 'Feral', 'Guardian', 'Restoration']);
+      component.selectedSpecialization = 'Feral';
+      component.selectedSubclass = 'Circle of the Moon';
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Circle of the Moon', specialization: 'Feral' });
+    });
+
+    it('does not offer a respec to a base druid (no specialization)', () => {
+      open({ specialization: null });
+      expect(component.heroClass).toBeUndefined();
+      expect(component.canRespec).toBeFalse();
+      expect(component.recommendedSubclass).toBeNull();
+    });
+
+    it('derives the recommended circle from the specialization when the server sends none', () => {
+      open({ specialization: 'Guardian' });
+      expect(component.recommendedSubclass).toBe('Circle of the Moon');
+      expect(component.recommendationSpecialization).toBe('Guardian');
+    });
+
+    it("uses the server's recommendedSubclass while the specialization is unchanged", () => {
+      open({ specialization: 'Balance' }, { recommendedSubclass: 'Circle of the Stars' });
+      expect(component.recommendedSubclass).toBe('Circle of the Stars');
+    });
+
+    it('follows a respec picked in the same level-up', () => {
+      open({ specialization: 'Balance' }, { recommendedSubclass: 'Circle of the Stars' });
+      component.selectedSpecialization = 'Restoration';
+      expect(component.recommendedSubclass).toBe('Circle of the Land');
+      expect(component.recommendationSpecialization).toBe('Restoration');
+    });
+
+    it('never highlights a circle that is not on offer, and never pre-selects one', () => {
+      open({ specialization: 'Feral' }, { subclassOptions: ['Circle of the Land'] });
+      expect(component.recommendedSubclass).toBeNull();
+      expect(component.selectedSubclass).toBeNull();
+    });
+  });
+
   // --- Level-2 Fighting Style and the Void Warrior cantrips ---
 
   describe('Fighting Style (level 2)', () => {

@@ -61,6 +61,23 @@ describe('CharacterSheetComponent', () => {
     expect(component.inCampaign).toBeFalse();
   });
 
+  // --- Header class suffix (hero classes) ---
+
+  it('builds the header suffix from subclass and specialization', () => {
+    component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Frost' });
+    expect(component.subtitleSuffix).toBe('Oath of the Ebon Blade · Frost Rune');
+    // WoW Druid before level 3: "Druid (Balance)"
+    component.pc = makePC({ clazz: 'Druid', specialization: 'Balance' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Balance');
+    component.pc = makePC({ clazz: 'Druid', subclass: 'Circle of the Moon', specialization: 'Guardian' });
+    expect(component.subtitleSuffix).toBe('Circle of the Moon · Guardian');
+    // A base druid is unchanged.
+    component.pc = makePC({ clazz: 'Druid', subclass: 'Circle of the Land', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Circle of the Land');
+  });
+
   // --- Level Up gating ---
 
   it('canLevelUp is false without XP, a grant, or DM cross-link mode', () => {

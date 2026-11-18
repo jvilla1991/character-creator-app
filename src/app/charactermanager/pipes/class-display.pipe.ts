@@ -8,7 +8,7 @@ import { classDisplayName } from '../utils/class-display';
  */
 @Pipe({ name: 'classDisplay' })
 export class ClassDisplayPipe implements PipeTransform {
-  transform(pc: { clazz?: string | null; subclass?: string | null } | null | undefined): string {
-    return pc ? classDisplayName(pc.clazz, pc.subclass) : '';
+  transform(pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined): string {
+    return pc ? classDisplayName(pc.clazz, pc.subclass, pc.specialization) : '';
   }
 }

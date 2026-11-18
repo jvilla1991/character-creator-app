@@ -63,4 +63,36 @@ describe('spell creation level groups', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('details').open).toBeTrue();
   });
+
+  it('badges recommended spells without selecting them', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const base: DndSpell = { name: 'Druidcraft', level: 0, school: 'transmutation',
+      classes: ['druid'], actionType: 'action', concentration: false, ritual: false,
+      range: '30 feet', components: ['v', 's'], duration: 'Instantaneous', description: 'Nature trick.' };
+    const wrath: DndSpell = { ...base, name: 'Wrath', school: 'evocation', source: 'World of Warcraft' };
+    const shillelagh: DndSpell = { ...base, name: 'Shillelagh' };
+    fixture.componentRef.setInput('filteredSpellList', [base, wrath, shillelagh]);
+    fixture.componentRef.setInput('recommendedSpells', ['Druidcraft', 'wrath']);
+    fixture.componentRef.setInput('recommendedFor', 'Balance');
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+    expect(cmp.isRecommended(base)).toBeTrue();
+    expect(cmp.isRecommended(wrath)).toBeTrue();
+    expect(cmp.isRecommended(shillelagh)).toBeFalse();
+    const badges = fixture.nativeElement.querySelectorAll('.spell-recommended-badge') as NodeListOf<HTMLElement>;
+    expect(badges.length).toBe(2);
+    expect(badges[0].getAttribute('title')).toBe('Recommended for Balance');
+    expect(fixture.nativeElement.querySelectorAll('.spell-selected-badge').length).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('suit the Balance specialization');
+  });
+
+  it('shows no recommendation badges by default', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const light: DndSpell = { name: 'Light', level: 0, school: 'evocation',
+      classes: ['wizard'], actionType: 'action', concentration: false, ritual: false,
+      range: 'Touch', components: ['v'], duration: '1 hour', description: 'Creates light.' };
+    fixture.componentRef.setInput('filteredSpellList', [light]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.spell-recommended-badge').length).toBe(0);
+  });
 });

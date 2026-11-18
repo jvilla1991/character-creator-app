@@ -46,6 +46,10 @@ export interface LevelUpPreview {
   // level-up delta is how many new spells the player may add.
   currentSpellsKnown: number;
   newSpellsKnown: number;
+  // WoW Druid: the subclass the character's specialization recommends (e.g. Guardian →
+  // 'Circle of the Moon'), when the server sends it. Optional — the SPA derives the same
+  // value from the hero-class table when it is absent. A highlight only, never enforced.
+  recommendedSubclass?: string | null;
 }
 
 /**

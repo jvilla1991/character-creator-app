@@ -9,7 +9,7 @@ import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
-import { HeroClassOption, heroClassFor } from '../../models/hero-class';
+import { HeroClassOption, heroClassFor, recommendedSubclassFor } from '../../models/hero-class';
 
 /** The Demon Hunter's fighting style (World of Warcraft): two Warlock cantrips cast with Wisdom. */
 export const VOID_WARRIOR = 'Void Warrior';
@@ -189,6 +189,27 @@ export class LevelUpModalComponent implements OnInit {
   /** Show the optional "Change …" select: only hero classes whose table allows a respec. */
   get canRespec(): boolean {
     return !!this.heroClass?.respecOnLevelUp;
+  }
+
+  /**
+   * The specialization the recommendation is for: the one picked in the "Change …"
+   * select this level, else the current one.
+   */
+  get recommendationSpecialization(): string | null {
+    return this.selectedSpecialization ?? this.pc.specialization ?? null;
+  }
+
+  /**
+   * The subclass to highlight as "Recommended for <spec>" in the subclass picker
+   * (WoW Druid). The server's `recommendedSubclass` wins while the specialization
+   * is unchanged; a respec this level (or no server value) derives it from the
+   * hero-class table. Only returned when it is one of the offered options.
+   */
+  get recommendedSubclass(): string | null {
+    const options = this.preview?.subclassOptions ?? [];
+    const fromServer = !this.specializationChanged ? this.preview?.recommendedSubclass : null;
+    const name = fromServer || recommendedSubclassFor(this.heroClass, this.recommendationSpecialization);
+    return name && options.includes(name) ? name : null;
   }
 
   /** True when the player picked a specialization different from the current one. */
