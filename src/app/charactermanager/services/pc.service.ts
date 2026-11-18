@@ -583,6 +583,8 @@ export class PCService {
       specialization: pc.specialization ?? null,
       // WoW Hunter pet family — explicit null (not undefined) when none is chosen.
       petFamily: pc.petFamily ?? null,
+      // Rune weapon — null lets the backend keep the stored one.
+      runeWeapon: pc.runeWeapon ?? null,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)

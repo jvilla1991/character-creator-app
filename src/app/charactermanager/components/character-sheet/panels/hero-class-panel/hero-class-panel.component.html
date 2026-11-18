@@ -14,6 +14,9 @@
       </div>
     }
 
+    <app-rune-weapon-field [pc]="pc" [editable]="canEdit"
+      (runeWeaponChange)="pcChange.emit({ ...pc, runeWeapon: $event })"></app-rune-weapon-field>
+
     @if (h.renownNote) {
       <p class="hero-note">{{ h.renownNote }}</p>
     }

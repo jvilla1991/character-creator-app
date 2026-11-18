@@ -44,6 +44,12 @@
     }
   </div>
 
+  @if (longRest().readyCount < longRest().ableCount) {
+    <p class="lr-finish-note" data-finish-note>
+      Heroes who are not ready keep their current spells and rune weapon if you finish now.
+    </p>
+  }
+
   <div class="lr-actions">
     <button type="button" class="btn danger" data-interrupt (click)="interrupt.emit()"
       title="End the rest now. Nobody recovers.">

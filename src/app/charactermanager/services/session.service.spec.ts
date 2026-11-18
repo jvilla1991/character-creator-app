@@ -77,6 +77,7 @@ describe('SessionService rests', () => {
           { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false },
           { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: true },
         ],
+        myChoices: null,
       });
       let published: SessionState | null = null;
       service.state$.subscribe(s => (published = s));
@@ -89,6 +90,28 @@ describe('SessionService rests', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({ pcId: 7, ready: true });
       req.flush(snapshot());
+    });
+
+    it('a Ready carries the hero\'s choices; taking Ready back sends none', () => {
+      service.setLongRestReady(1, 7, true, { preparedSpells: ['Bless', 'Aid'], runeWeapon: 'Maul' }).subscribe();
+      const ready = httpMock.expectOne(`${base}/1/long-rest/ready`);
+      expect(ready.request.body).toEqual({ pcId: 7, ready: true, preparedSpells: ['Bless', 'Aid'], runeWeapon: 'Maul' });
+      ready.flush(snapshot());
+
+      service.setLongRestReady(1, 7, false, { preparedSpells: ['Bless'] }).subscribe();
+      const unready = httpMock.expectOne(`${base}/1/long-rest/ready`);
+      expect(unready.request.body).toEqual({ pcId: 7, ready: false });
+      unready.flush(snapshot());
+    });
+
+    it('reads back the choices the server is holding for this player', () => {
+      let state: SessionState | undefined;
+      service.setLongRestReady(1, 7, true, { preparedSpells: ['Bless'] }).subscribe(s => (state = s));
+      httpMock.expectOne(`${base}/1/long-rest/ready`).flush(snapshot({
+        longRest: { readiness: [], myChoices: { preparedSpells: ['Bless'], runeWeapon: null } },
+      }));
+
+      expect(state!.longRest!.myChoices).toEqual({ preparedSpells: ['Bless'] });
     });
 
     it('setLongRestOptions PUTs only the option that changed', () => {
@@ -212,6 +235,7 @@ describe('SessionService rests', () => {
       expect(current().longRest).toEqual({
         advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
         readiness: [{ participantId: 7, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false }],
+        myChoices: null,
       });
       expect(current().shortRestOpen).toBeFalse();
       expect(pcService.patchLocalPC).not.toHaveBeenCalled();
@@ -286,6 +310,91 @@ describe('SessionService rests', () => {
       expect(current().gameTime!.timeOfDay).toBe('morning');
       expect(current().gameTime!.day).toBe('2');
       expect(current().longRestResult!.clockAdvanced).toBeTrue();
+    });
+
+    describe('choices', () => {
+      const cleric = (over: Partial<PC> = {}): PC => hero({
+        clazz: 'Cleric',
+        spells: [
+          { name: 'Bless', lvl: 1, prepared: true, school: 'Enchantment', time: '1 action' },
+          { name: 'Command', lvl: 1, prepared: false, school: 'Enchantment', time: '1 action' },
+        ],
+        ...over,
+      });
+
+      const knight = (over: Partial<PC> = {}): PC => hero({
+        id: 8, name: 'Thorne', clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Blood',
+        stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 16 },
+        inventory: [
+          { name: 'Greatsword', category: 'weapon', qty: 1 },
+          { name: 'Maul', category: 'weapon', qty: 1 },
+        ],
+        ...over,
+      });
+
+      const preparedOf = (pc: PC): string[] => pc.spells!.filter(s => s.prepared).map(s => s.name);
+
+      it('a ready hero\'s prepared list is applied when the rest finishes, not before', () => {
+        seed([cleric(), hero({ id: 8, name: 'Mira' })]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+
+        service.setLongRestReady('demo-session', 7, true, { preparedSpells: ['Command'] }).subscribe();
+        expect(current().longRest!.myChoices).toEqual({ preparedSpells: ['Command'] });
+        expect(preparedOf(store.get(7)!)).toEqual(['Bless']);
+
+        service.finishLongRest('demo-session').subscribe();
+        expect(preparedOf(store.get(7)!)).toEqual(['Command']);
+      });
+
+      it('taking Ready back discards the choices', () => {
+        seed([cleric(), hero({ id: 8, name: 'Mira' })]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+        service.setLongRestReady('demo-session', 7, true, { preparedSpells: ['Command'] }).subscribe();
+
+        service.setLongRestReady('demo-session', 7, false).subscribe();
+        expect(current().longRest!.myChoices).toBeNull();
+
+        service.finishLongRest('demo-session').subscribe();
+        expect(preparedOf(store.get(7)!)).toEqual(['Bless']); // rested, list untouched
+        expect(store.get(7)!.hp!.cur).toBe(44);
+      });
+
+      it('interrupting leaves the choices unapplied', () => {
+        seed([cleric(), hero({ id: 8, name: 'Mira' })]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestReady('demo-session', 7, true, { preparedSpells: ['Command'] }).subscribe();
+
+        service.interruptLongRest('demo-session').subscribe();
+
+        expect(preparedOf(store.get(7)!)).toEqual(['Bless']);
+      });
+
+      it('inscribes the rune, and a Blood Rune leaves temporary Hit Points', () => {
+        seed([hero(), knight()]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+        service.setLongRestReady('demo-session', 8, true, { runeWeapon: 'Maul' }).subscribe();
+
+        service.finishLongRest('demo-session').subscribe();
+
+        const rested = store.get(8)!;
+        expect(rested.runeWeapon).toBe('Maul');
+        expect(rested.hp!.temp).toBe(8); // the old 5 faded; +3 Charisma + level 5
+        expect(current().participants[1].hpTemp).toBe(8);
+      });
+
+      it('a knight who did not ready keeps the rune where it was', () => {
+        seed([hero(), knight({ runeWeapon: 'Greatsword' })]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+
+        service.finishLongRest('demo-session').subscribe();
+
+        expect(store.get(8)!.runeWeapon).toBe('Greatsword');
+        expect(store.get(8)!.hp!.temp).toBe(8); // already inscribed, so the Blood Rune still gives
+      });
     });
 
     it('interrupting closes the phase and nobody recovers', () => {

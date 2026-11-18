@@ -139,6 +139,18 @@ export interface LongRestReadiness {
 }
 
 /**
+ * What a hero chooses as a long rest ends. They travel with the player's
+ * Ready and are applied with recovery when the rest finishes; an absent part
+ * means "leave it as it is". `preparedSpells` is the complete list of leveled
+ * spells to have prepared; `runeWeapon` the melee weapon a Death Knight's rune
+ * goes on.
+ */
+export interface LongRestChoices {
+  preparedSpells?: string[];
+  runeWeapon?: string;
+}
+
+/**
  * The open long rest phase (null on the snapshot when none is open). Nothing
  * has been recovered while it is present: recovery lands for the whole party
  * when the DM finishes the rest or the last able hero marks Ready.
@@ -150,6 +162,9 @@ export interface LongRestView {
   readyCount: number;
   ableCount: number;
   readiness: LongRestReadiness[];
+  // Caller-scoped: the choices this viewer's own READY hero is waiting to have
+  // applied, so the screen can show them again after a reload. Null otherwise.
+  myChoices: LongRestChoices | null;
 }
 
 /**

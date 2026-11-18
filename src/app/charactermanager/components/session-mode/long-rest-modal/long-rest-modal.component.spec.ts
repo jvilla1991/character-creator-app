@@ -27,6 +27,7 @@ describe('LongRestModalComponent', () => {
       { participantId: 6, pcId: 8, displayName: 'Mira', ready: true, cannotRest: false },
       { participantId: 9, pcId: 9, displayName: 'Oswin', ready: false, cannotRest: false },
     ],
+    myChoices: null,
     ...over,
   });
 
@@ -127,6 +128,50 @@ describe('LongRestModalComponent', () => {
     expect(text()).toContain('1 of 2 ready');
   });
 
+  it('holds Ready back, with the reason, while a choice is still to be made', () => {
+    const emitted: boolean[] = [];
+    component.readyChange.subscribe(v => emitted.push(v));
+    render(pc());
+    fixture.componentRef.setInput('readyBlocked', 'Choose the weapon that carries your rune first.');
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.debugElement.query(By.css('[data-ready]')).nativeElement;
+    expect(button.disabled).toBeTrue();
+    expect(button.getAttribute('aria-describedby')).toBe('lr-ready-blocked');
+    expect(fixture.debugElement.query(By.css('#lr-ready-blocked')).nativeElement.textContent)
+      .toContain('Choose the weapon that carries your rune first.');
+    button.click();
+    expect(emitted).toEqual([]);
+
+    fixture.componentRef.setInput('readyBlocked', null);
+    fixture.detectChanges();
+    expect(button.disabled).toBeFalse();
+    expect(fixture.debugElement.query(By.css('#lr-ready-blocked'))).toBeNull();
+  });
+
+  it('never blocks taking Ready back', () => {
+    const view = phase();
+    view.readiness[0] = { ...view.readiness[0], ready: true };
+    render(pc(), view);
+    fixture.componentRef.setInput('readyBlocked', 'Choose the weapon that carries your rune first.');
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.debugElement.query(By.css('[data-unready]')).nativeElement;
+    expect(button.disabled).toBeFalse();
+  });
+
+  it('shows the temporary Hit Points the Blood Rune leaves, instead of zero', () => {
+    render(pc());
+    fixture.componentRef.setInput('tempHpAfter', 8);
+    fixture.detectChanges();
+    expect(row('temp-hp')).toContain('8');
+    expect(row('temp-hp')).toContain('from the Blood Rune');
+
+    // Also for a hero who had no temporary Hit Points coming in.
+    render(pc({ hp: { cur: 18, max: 44, temp: 0 } }));
+    expect(row('temp-hp')).toContain('from the Blood Rune');
+  });
+
   it('is a blocking dialog: no close button', () => {
     render(pc());
     expect(fixture.debugElement.query(By.css('.modal-close'))).toBeNull();
@@ -148,6 +193,7 @@ class SlotHostComponent {
   view: LongRestView = {
     advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
     readiness: [{ participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false }],
+    myChoices: null,
   };
 }
 

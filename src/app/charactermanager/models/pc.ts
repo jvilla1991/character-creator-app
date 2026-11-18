@@ -93,6 +93,11 @@ export interface PC {
   // may set it (the server 400s otherwise); null for everyone else. Omitting it on
   // an update keeps the stored value.
   petFamily?: string | null;
+  // Death Knight Runeforging: the NAME of the melee weapon the rune is inscribed
+  // on (weapons have no id). Set as a long rest ends or from the sheet; a name
+  // that no longer matches a melee weapon on the sheet counts as unset — read it
+  // through runeWeaponOf() in utils/rune-weapon.ts.
+  runeWeapon?: string | null;
   background?: string;
   alignment?: string;
   portraitInitials?: string;

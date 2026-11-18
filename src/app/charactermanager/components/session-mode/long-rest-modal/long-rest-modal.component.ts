@@ -31,6 +31,13 @@ export class LongRestModalComponent {
   /** The viewer's own seated hero, with the live HP/slot values overlaid. */
   readonly pc = input.required<PC>();
   readonly myParticipantId = input<number | null>(null);
+  /**
+   * Why Ready is not available yet (a choice the hero still has to make), or
+   * null. Shown beside the disabled button.
+   */
+  readonly readyBlocked = input<string | null>(null);
+  /** Temporary Hit Points the rest will leave the hero with (the Blood Rune's). */
+  readonly tempHpAfter = input(0);
 
   /** The viewer marks their hero ready (true) or takes it back (false). */
   readonly readyChange = output<boolean>();

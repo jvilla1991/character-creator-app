@@ -1,0 +1,270 @@
+:host {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.lc-section {
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.lc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lc-title {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.lc-count {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+// "Choose one" is a status, so it gets the pill.
+.lc-required {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklch, var(--gold) 50%, transparent);
+  background: color-mix(in oklch, var(--gold) 12%, transparent);
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.lc-hint {
+  margin: 6px 0 10px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-md);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lc-note {
+  margin: 10px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+// ── Always-ready spells: read-only chips ────────────────────────────────────
+.lc-always {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.lc-always-label {
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.lc-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-sharp);
+  border: 1px solid color-mix(in oklch, var(--celestial) 40%, transparent);
+  background: color-mix(in oklch, var(--celestial) 10%, transparent);
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-xs);
+  color: var(--text);
+}
+
+// ── The prepared list: scrolls in its own region ────────────────────────────
+.lc-list {
+  max-height: min(240px, 34vh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+}
+
+.lc-spell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+
+  li:last-child & {
+    border-bottom: 0;
+  }
+
+  input {
+    flex: none;
+    width: auto;
+    margin: 0;
+    accent-color: var(--gold);
+  }
+
+  // A row that cannot change right now steps down the text ramp; the
+  // disabled checkbox is the cue that does not rely on colour.
+  &.off {
+    cursor: not-allowed;
+
+    .lc-spell-name {
+      color: var(--text-dim);
+    }
+  }
+}
+
+.lc-spell-name {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-base);
+  color: var(--text);
+}
+
+.lc-spell-level {
+  flex: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+
+.lc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.lc-status {
+  flex: 1 1 160px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+// ── Rune weapon: radio cards ────────────────────────────────────────────────
+.lc-weapons {
+  display: grid;
+  gap: 8px;
+}
+
+.lc-weapon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: auto;
+    margin: 0;
+    accent-color: var(--gold);
+  }
+
+  &.selected {
+    border-color: var(--gold);
+    background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
+  }
+
+  &.locked {
+    cursor: not-allowed;
+  }
+}
+
+.lc-weapon-body {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lc-weapon-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-md);
+  letter-spacing: var(--track-title);
+  color: var(--text);
+}
+
+.lc-weapon-note {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+
+.lc-weapon-damage {
+  flex: none;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+// ── What the Blood Rune gives ───────────────────────────────────────────────
+.lc-bonus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklch, var(--crimson) 45%, transparent);
+  border-radius: var(--radius-sharp);
+  background: color-mix(in oklch, var(--crimson) 8%, transparent);
+
+  // Not earned until a weapon carries the rune: the outline goes dashed.
+  &.pending {
+    border-style: dashed;
+
+    .lc-bonus-gain {
+      color: var(--text-dim);
+    }
+  }
+}
+
+.lc-bonus-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lc-bonus-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  letter-spacing: var(--track-title);
+  color: var(--text);
+}
+
+.lc-bonus-how {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.lc-bonus-gain {
+  flex: none;
+  font-size: var(--text-md);
+  color: var(--emerald);
+}

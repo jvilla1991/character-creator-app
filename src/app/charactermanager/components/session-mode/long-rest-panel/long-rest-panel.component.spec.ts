@@ -17,6 +17,7 @@ describe('LongRestPanelComponent', () => {
       { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: false },
       { participantId: 9, pcId: 9, displayName: 'Thorne', ready: false, cannotRest: true },
     ],
+    myChoices: null,
     ...over,
   });
 
@@ -107,6 +108,15 @@ describe('LongRestPanelComponent', () => {
 
     q('[data-disturbed]').nativeElement.click();
     expect(emitted).toEqual([{ undisturbed: false }]);
+  });
+
+  it('warns that heroes who are not ready keep their choices, until everyone is ready', () => {
+    render();
+    expect(q('[data-finish-note]').nativeElement.textContent)
+      .toContain('Heroes who are not ready keep their current spells and rune weapon if you finish now.');
+
+    render(phase({ readyCount: 2 }));
+    expect(q('[data-finish-note]')).toBeNull();
   });
 
   it('Finish the Rest and Interrupt emit their own events', () => {

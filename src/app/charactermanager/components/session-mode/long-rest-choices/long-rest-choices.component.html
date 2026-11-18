@@ -1,0 +1,98 @@
+@let d = draft();
+
+@if (runeforger()) {
+  <section class="lc-section" data-section="rune" aria-labelledby="lc-rune-title">
+    <div class="lc-head">
+      <h3 class="lc-title" id="lc-rune-title">Runeforging</h3>
+      @if (!d.rune && weapons().length) {
+        <span class="lc-required">Choose one</span>
+      }
+    </div>
+
+    @if (weapons().length) {
+      <p class="lc-hint" id="lc-rune-question">Which melee weapon carries your {{ runeName() }}?</p>
+      <div class="lc-weapons" role="radiogroup" aria-labelledby="lc-rune-question">
+        @for (w of weapons(); track w.name) {
+          <label class="lc-weapon" [class.selected]="d.rune === w.name" [class.locked]="locked()">
+            <input type="radio" name="lc-rune-weapon"
+              [checked]="d.rune === w.name" [disabled]="locked()" (change)="setRune(w.name)">
+            <span class="lc-weapon-body">
+              <span class="lc-weapon-name">{{ w.name }}</span>
+              <span class="lc-weapon-note">{{ weaponNote(w.name) }}</span>
+            </span>
+            @if (w.damage) {
+              <span class="lc-weapon-damage numeric">{{ w.damage }}</span>
+            }
+          </label>
+        }
+      </div>
+    } @else {
+      <p class="lc-hint" data-no-weapon>
+        {{ pc().name }} has no melee weapon for the rune. Add one to the sheet, then inscribe it
+        there or at the next long rest.
+      </p>
+    }
+
+    <p class="lc-note">The rune itself (Blood, Frost or Unholy) changes only when you gain a level.</p>
+
+    @if (blood() && weapons().length) {
+      <div class="lc-bonus" data-blood-bonus [class.pending]="!d.rune">
+        <span class="lc-bonus-body">
+          <span class="lc-bonus-name">Blood Rune</span>
+          <span class="lc-bonus-how">{{ bloodHow() }}</span>
+        </span>
+        <span class="lc-bonus-gain numeric">+{{ bloodTempHp() }} temp HP</span>
+      </div>
+    }
+  </section>
+}
+
+@if (showSpells()) {
+  <section class="lc-section" data-section="spells" aria-labelledby="lc-spells-title">
+    <div class="lc-head">
+      <h3 class="lc-title" id="lc-spells-title">Prepare Spells</h3>
+      <span class="lc-count numeric">
+        {{ d.spells.length }}@if (cap() != null) { of {{ cap() }} }
+      </span>
+    </div>
+    <p class="lc-hint">{{ spellHint() }}</p>
+
+    @if (alwaysReady().length) {
+      <div class="lc-always">
+        <span class="lc-always-label">Always ready</span>
+        @for (name of alwaysReady(); track name) {
+          <span class="lc-chip">{{ name }}</span>
+        }
+      </div>
+    }
+
+    @if (listOpen()) {
+      <!-- The list scrolls inside its own region, so a long spellbook never
+      pushes Ready off a phone screen. -->
+      <ul class="lc-list" tabindex="0" aria-label="Spells you can prepare">
+        @for (s of spells(); track s.name) {
+          @let allowed = canToggle(s.name);
+          <li>
+            <label class="lc-spell" [class.off]="!allowed">
+              <input type="checkbox" [checked]="isSelected(s.name)" [disabled]="!allowed"
+                (change)="toggle(s.name)">
+              <span class="lc-spell-name">{{ s.name }}</span>
+              <span class="lc-spell-level">Lv {{ s.lvl }}</span>
+            </label>
+          </li>
+        }
+      </ul>
+      <div class="lc-foot">
+        <span class="lc-status" role="status">{{ spellStatus() }}</span>
+        <button type="button" class="btn sm" data-reset-spells
+          [disabled]="locked() || !spellsChanged()" (click)="resetSpells()">
+          Same as Before
+        </button>
+      </div>
+    } @else {
+      <button type="button" class="btn sm" data-open-spells [disabled]="locked()" (click)="openList()">
+        Change a Spell
+      </button>
+    }
+  </section>
+}

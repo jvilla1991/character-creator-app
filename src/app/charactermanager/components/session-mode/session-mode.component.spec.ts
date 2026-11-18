@@ -498,7 +498,7 @@ describe('SessionModeComponent long rest phase', () => {
     component.setLongRestReady(true, state());
     component.setLongRestReady(false, state());
 
-    expect(sessionService.setLongRestReady.calls.allArgs()).toEqual([[1, 7, true], [1, 7, false]]);
+    expect(sessionService.setLongRestReady.calls.allArgs()).toEqual([[1, 7, true, {}], [1, 7, false, {}]]);
   });
 
   it('Ready does nothing for a viewer with no seated hero', () => {
@@ -570,5 +570,123 @@ describe('SessionModeComponent long rest phase', () => {
 
     track(state({ longRestResult: result(78, 'INTERRUPTED') }));
     expect(notifications.notify).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SessionModeComponent long rest choices', () => {
+  let component: SessionModeComponent;
+  let sessionService: jasmine.SpyObj<SessionService>;
+  let pcService: jasmine.SpyObj<PCService>;
+
+  const mySeat = { participantId: 5, pcId: 7, ownedByMe: true, name: 'Mira' } as ParticipantView;
+
+  const cleric = {
+    id: 7, name: 'Mira', clazz: 'Cleric', level: 5,
+    spells: [
+      { name: 'Bless', lvl: 1, prepared: true },
+      { name: 'Command', lvl: 1, prepared: false },
+    ],
+  } as PC;
+
+  const knight = {
+    id: 7, name: 'Thorne', clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Blood',
+    level: 5, stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 16 },
+    inventory: [{ name: 'Maul', category: 'weapon', qty: 1 }],
+  } as PC;
+
+  const phase = (over: Partial<LongRestView> = {}): LongRestView => ({
+    advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
+    readiness: [{ participantId: 5, pcId: 7, displayName: 'Mira', ready: false, cannotRest: false }],
+    myChoices: null,
+    ...over,
+  });
+
+  const state = (overrides: Partial<SessionState> = {}): SessionState =>
+    ({
+      sessionId: 1, dm: false, status: 'LOBBY', participants: [mySeat], rolls: [],
+      restVote: null, longRest: phase(), longRestResult: null,
+      ...overrides,
+    } as SessionState);
+
+  const track = (s: SessionState) =>
+    (component as unknown as { trackLongRestDraft(s: SessionState): void }).trackLongRestDraft(s);
+
+  beforeEach(() => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['setLongRestReady'], { state$: of(null) });
+    sessionService.setLongRestReady.and.returnValue(of(state()));
+    pcService = jasmine.createSpyObj<PCService>('PCService', ['getPCById']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, pcService, null as never, null as never, null as never, null as never));
+  });
+
+  it('starts a draft from the sheet when a rest opens, and keeps it across polls', () => {
+    pcService.getPCById.and.returnValue(cleric);
+
+    track(state());
+    expect(component.longRestDraft).toEqual({
+      pcId: 7, originalSpells: ['Bless'], spells: ['Bless'], originalRune: null, rune: null,
+    });
+
+    component.longRestDraft = { ...component.longRestDraft!, spells: ['Command'] };
+    track(state()); // the next poll must not reset a half-made choice
+    expect(component.longRestDraft!.spells).toEqual(['Command']);
+  });
+
+  it('drops the draft when the rest closes, and has none for the DM or a hero with nothing to choose', () => {
+    pcService.getPCById.and.returnValue(cleric);
+    track(state());
+    track(state({ longRest: null }));
+    expect(component.longRestDraft).toBeNull();
+
+    track(state({ dm: true }));
+    expect(component.longRestDraft).toBeNull();
+
+    pcService.getPCById.and.returnValue({ id: 7, name: 'Bex', clazz: 'Fighter', level: 5 } as PC);
+    track(state());
+    expect(component.longRestDraft).toBeNull();
+  });
+
+  it('picks up the choices the server already holds (a reload while Ready)', () => {
+    pcService.getPCById.and.returnValue(cleric);
+
+    track(state({ longRest: phase({ myChoices: { preparedSpells: ['Command'] } }) }));
+
+    expect(component.longRestDraft!.spells).toEqual(['Command']);
+    expect(component.longRestDraft!.originalSpells).toEqual(['Bless']);
+  });
+
+  it('Ready sends what the player changed; taking it back sends nothing', () => {
+    pcService.getPCById.and.returnValue(cleric);
+    track(state());
+    component.longRestDraft = { ...component.longRestDraft!, spells: ['Command'] };
+
+    component.setLongRestReady(true, state());
+    component.setLongRestReady(false, state());
+
+    expect(sessionService.setLongRestReady.calls.allArgs()).toEqual([
+      [1, 7, true, { preparedSpells: ['Command'] }],
+      [1, 7, false, {}],
+    ]);
+  });
+
+  it('holds Ready back until a Death Knight picks the rune weapon, then shows the Blood Rune gift', () => {
+    pcService.getPCById.and.returnValue(knight);
+    track(state());
+
+    expect(component.longRestReadyBlocked(knight)).toBe('Choose the weapon that carries your rune first.');
+    expect(component.longRestTempHp(knight)).toBe(0);
+
+    component.longRestDraft = { ...component.longRestDraft!, rune: 'Maul' };
+
+    expect(component.longRestReadyBlocked(knight)).toBeNull();
+    expect(component.longRestTempHp(knight)).toBe(8);
+  });
+
+  it('knows when this player is Ready (their choices are then read-only)', () => {
+    expect(component.isLongRestReady(state())).toBeFalse();
+    const ready = phase();
+    ready.readiness[0] = { ...ready.readiness[0], ready: true };
+    expect(component.isLongRestReady(state({ longRest: ready }))).toBeTrue();
+    expect(component.isLongRestReady(state({ longRest: null }))).toBeFalse();
   });
 });

@@ -348,7 +348,19 @@
           [longRest]="state.longRest"
           [pc]="restingPc"
           [myParticipantId]="myParticipantId(state)"
+          [readyBlocked]="longRestReadyBlocked(restingPc)"
+          [tempHpAfter]="longRestTempHp(restingPc)"
           (readyChange)="setLongRestReady($event, state)">
+          <!-- The hero's choices for the day; heroes with nothing to choose
+          get the plain recovery screen. -->
+          @if (longRestDraft; as draft) {
+            <app-long-rest-choices longRestChoices
+              [pc]="restingPc"
+              [draft]="draft"
+              [locked]="isLongRestReady(state)"
+              (draftChange)="longRestDraft = $event">
+            </app-long-rest-choices>
+          }
         </app-long-rest-modal>
       }
     }

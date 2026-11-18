@@ -28,6 +28,10 @@ import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.compon
 import { RestChooserComponent } from './rest-chooser/rest-chooser.component';
 import { LongRestModalComponent } from './long-rest-modal/long-rest-modal.component';
 import { LongRestPanelComponent } from './long-rest-panel/long-rest-panel.component';
+import { LongRestChoicesComponent } from './long-rest-choices/long-rest-choices.component';
+import {
+  LongRestDraft, draftBlockedReason, draftChoices, draftTempHp, hasLongRestChoices, startLongRestDraft,
+} from '../../utils/long-rest-choices';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
 import { ContextHelpComponent } from '../context-help/context-help.component';
 
@@ -43,7 +47,7 @@ import { ContextHelpComponent } from '../context-help/context-help.component';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, RestChooserComponent, LongRestModalComponent, LongRestPanelComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, RestChooserComponent, LongRestModalComponent, LongRestPanelComponent, LongRestChoicesComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
@@ -107,6 +111,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
           this.trackClock(state);
           this.trackRestVote(state);
           this.trackLongRest(state);
+          this.trackLongRestDraft(state);
           this.trackLevelUp(state);
         }
       });
@@ -327,11 +332,45 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** The player marks their own hero ready, or takes it back. */
+  /**
+   * The player's long rest choices in progress (prepared spells, rune weapon),
+   * or null when there is no open rest or their hero has nothing to choose.
+   * Held here, not in the dialog, so the poll redrawing the dialog every two
+   * seconds never resets a half-made choice.
+   */
+  longRestDraft: LongRestDraft | null = null;
+
+  /** Start the draft when a rest opens for this player's hero; drop it when the rest closes. */
+  private trackLongRestDraft(state: SessionState): void {
+    if (!state.longRest || state.dm) { this.longRestDraft = null; return; }
+    const pc = this.myPc(state);
+    if (!pc) { this.longRestDraft = null; return; }
+    if (this.longRestDraft?.pcId === pc.id) return;
+    this.longRestDraft = hasLongRestChoices(pc) ? startLongRestDraft(pc, state.longRest.myChoices) : null;
+  }
+
+  /** Why Ready is not available yet (a choice still to make), or null. */
+  longRestReadyBlocked(pc: PC): string | null {
+    return draftBlockedReason(pc, this.longRestDraft);
+  }
+
+  /** Temporary Hit Points the rest will leave the hero with, given their rune choice. */
+  longRestTempHp(pc: PC): number {
+    return draftTempHp(pc, this.longRestDraft);
+  }
+
+  /** True once this player's hero is marked ready (their choices are then read-only). */
+  isLongRestReady(state: SessionState): boolean {
+    const id = this.myParticipantId(state);
+    return !!state.longRest?.readiness.some(r => r.participantId === id && r.ready);
+  }
+
+  /** The player marks their own hero ready — sending their choices — or takes it back. */
   setLongRestReady(ready: boolean, state: SessionState): void {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
     if (mine?.pcId == null) return;
-    this.sessionService.setLongRestReady(state.sessionId, mine.pcId, ready).subscribe({
+    const choices = ready ? draftChoices(this.longRestDraft) : {};
+    this.sessionService.setLongRestReady(state.sessionId, mine.pcId, ready, choices).subscribe({
       error: err => this.notifications.notify(this.restVoteError(err,
         'Could not mark you ready. Try again.')),
     });
