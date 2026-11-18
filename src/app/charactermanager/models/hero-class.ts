@@ -240,6 +240,12 @@ export interface HeroClassOption {
   subclassSpells?: Readonly<Record<string, readonly SubclassSpellRow[]>>;
   /** WoW-only subclasses a variant can take that have no always-prepared spells (e.g. Swashbuckler). */
   wowSubclasses?: readonly string[];
+  /**
+   * Base spells from other class lists that this variant adds to its base
+   * class's spell list (the WoW Priest's Blur and Levitate). Class spell
+   * pickers offer them to this variant only; the base class is unchanged.
+   */
+  extraSpellList?: readonly string[];
   /** A one-line reminder shown in the class step and on the sheet panel. */
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
@@ -386,10 +392,10 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
 /**
  * The hero class a character is; undefined for everyone else.
  * - Subclass-based hero classes: base class + the hero subclass.
- * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin, Shaman, Warrior): base
+ * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin, Priest, Shaman, Warrior): base
  *   class + one of the variant's specializations + no hero subclass, or base class
  *   + one of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler,
- *   Path of the Elements). A druid, paladin, rogue, barbarian or fighter with neither is a
+ *   Path of the Elements, Shadow Domain). A druid, paladin, cleric, rogue, barbarian or fighter with neither is a
  *   plain base-game character.
  */
 export function heroClassFor(
@@ -517,6 +523,15 @@ export function recommendedStartingSpells(
     RECOMMENDED_SPELLS_CACHE.set(cacheKey, list);
   }
   return list;
+}
+
+/**
+ * True when a spell name is on a variant's added spell list (the WoW Priest's
+ * Blur and Levitate), case-insensitive; false for every other class.
+ */
+export function isExtraListSpell(hero: HeroClassOption | undefined, name: string): boolean {
+  const n = name.toLowerCase();
+  return !!hero?.extraSpellList?.some(s => s.toLowerCase() === n);
 }
 
 /** The Fighting Style(s) a specialization's guidance recommends (e.g. Protection → Interception, Protection). */

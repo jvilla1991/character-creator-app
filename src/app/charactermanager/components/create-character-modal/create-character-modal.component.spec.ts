@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1268,6 +1268,103 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.toggleClass('Fighter');
       expect(component.selectedClassKey).toBe('Fighter');
       expect(component.specializationGuidance).toBeNull();
+    });
+  });
+
+  describe('World of Warcraft Priest (Cleric)', () => {
+    const WOW_PRIEST_KEY = 'Cleric (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Bard', 'Cleric', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+    });
+
+    function loadSpellsStep(): void {
+      component.step = 7;
+      (component as any).ensureStepData();
+    }
+
+    it('lists a "Priest (Cleric)" row tagged World of Warcraft beside the base Cleric, only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.baseClass === 'Cleric');
+      expect(rows().map(o => [o.key, o.label, o.source])).toEqual([
+        ['Cleric', 'Cleric', 'Base Game'], [WOW_PRIEST_KEY, 'Priest (Cleric)', 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.key)).toEqual([WOW_PRIEST_KEY]);
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.key)).toEqual(['Cleric']);
+    });
+
+    it('stores clazz Cleric with no subclass and requires a specialization', () => {
+      component.toggleClass(WOW_PRIEST_KEY);
+      expect(component.clazz).toBe('Cleric');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Priest (Cleric)');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Cleric');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Discipline', 'Holy', 'Shadow']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Holy');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.requiresLevel1Subclass).toBeFalse();
+      expect(component.recommendedLevel1Subclass).toBe('');
+    });
+
+    it('recommends each specialization\'s cantrips and level-1 spells and Thaumaturge (never auto-selected)', () => {
+      component.toggleClass(WOW_PRIEST_KEY);
+      component.selectSpecialization('Discipline');
+      expect(component.specializationGuidance?.featureChoice).toEqual({ feature: 'Divine Order', option: 'Thaumaturge' });
+      expect(component.specializationGuidance?.subclass.name).toBe('Discipline Domain');
+      expect(component.recommendedSpells).toEqual([
+        'Guidance', 'Resistance', 'Thaumaturgy', 'Word of Radiance', 'Cure Wounds', 'Guiding Bolt', 'Sanctuary', 'Shield of Faith',
+      ]);
+      component.selectSpecialization('Holy');
+      expect(component.specializationGuidance?.subclass.name).toBe('Life Domain');
+      expect(component.recommendedSpells).toEqual([
+        'Guidance', 'Light', 'Sacred Flame', 'Spare the Dying', 'Bless', 'Cure Wounds', 'Healing Word', 'Purify Food and Drink',
+      ]);
+      component.selectSpecialization('Shadow');
+      expect(component.specializationGuidance?.subclass.name).toBe('Shadow Domain');
+      expect(component.recommendedSpells).toContain('Shadow Word: Pain');
+      expect(component.recommendedSpells).toContain('Toll the Dead');
+      expect(component.selectedSpells).toEqual([]);
+    });
+
+    it('emits clazz Cleric + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_PRIEST_KEY);
+      component.selectSpecialization('Shadow');
+      component.name = 'Elara';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Cleric');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Shadow');
+        done();
+      });
+      component.submit();
+    });
+
+    it('loads the cleric list plus Blur and Levitate for a WoW priest, and the plain list for a base cleric', () => {
+      component.toggleClass(WOW_PRIEST_KEY);
+      component.selectSpecialization('Holy');
+      loadSpellsStep();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', ['Blur', 'Levitate']);
+      dndResources.getSpellsForClass.calls.reset();
+      component.toggleClass('Cleric');
+      loadSpellsStep();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric');
+    });
+
+    it('selecting the base Cleric row clears the specialization', () => {
+      component.toggleClass(WOW_PRIEST_KEY);
+      component.selectSpecialization('Discipline');
+      component.toggleClass('Cleric');
+      expect(component.selectedClassKey).toBe('Cleric');
+      expect(component.specializationGuidance).toBeNull();
+      expect(component.recommendedSpells).toEqual([]);
     });
   });
 

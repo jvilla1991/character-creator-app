@@ -5,7 +5,7 @@ import { DndSpell } from '../../../../models/dnd-api.types';
 import {
   FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, InvocationRow, SpecializationGuidance,
   WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, heroClassFor, heroClassSpells, invocationRows,
-  isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
+  isExtraListSpell, isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -191,9 +191,19 @@ export class HeroClassPanelComponent {
     return (spec === 'Feral' && card.name === 'Cat Form') || (spec === 'Guardian' && card.name === 'Bear Form');
   }
 
-  /** True for a World of Warcraft stub spell (from the loaded spell data). */
+  /**
+   * True for a World of Warcraft spell (from the loaded spell data), or a base
+   * spell the variant adds to its class list (the WoW Priest's Blur and Levitate).
+   */
   isWowSpell(name: string): boolean {
-    return this.spellFor(name)?.source === 'World of Warcraft';
+    return this.spellFor(name)?.source === 'World of Warcraft' || isExtraListSpell(this.hero, name);
+  }
+
+  /** Hover text for a suggested spell's ✦ mark. */
+  wowSpellTitle(name: string): string {
+    return isExtraListSpell(this.hero, name)
+      ? `Added to the ${this.hero!.baseClass} spell list by the World of Warcraft ${this.hero!.name}`
+      : 'World of Warcraft spell';
   }
 
   /** The spell data for a table name, aliases resolved (Evard's Black Tentacles → Black Tentacles). */

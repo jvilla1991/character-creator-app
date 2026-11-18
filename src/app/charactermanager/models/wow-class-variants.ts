@@ -230,6 +230,126 @@ export const WOW_PALADIN: HeroClassOption = {
   subclassSpells: { [OATH_OF_THE_HOLY]: OATH_OF_THE_HOLY_SPELLS },
 };
 
+// ── Priest (Cleric) ──────────────────────────────────────────────────────────
+
+export const WOW_PRIEST_SPECIALIZATIONS = ['Discipline', 'Holy', 'Shadow'] as const;
+
+/** The WoW-only cleric domains — the server offers them to WoW clerics only. Feature text comes from the server. */
+export const DISCIPLINE_DOMAIN = 'Discipline Domain';
+export const SHADOW_DOMAIN = 'Shadow Domain';
+
+/** Discipline Domain spells, always prepared, by Cleric level (✦ WoW spells are flagged from the spell data). */
+export const DISCIPLINE_DOMAIN_SPELLS: readonly SubclassSpellRow[] = [
+  { classLevel: 3, spells: ['Arcane Vigor', 'Guiding Bolt', 'Magic Weapon', 'Shield of Faith'] },
+  { classLevel: 5, spells: ['Prayer of Mending', 'Protection from Energy'] },
+  { classLevel: 7, spells: ['Guardian of Faith', 'Stoneskin'] },
+  { classLevel: 9, spells: ['Circle of Power', 'Destructive Wave'] },
+];
+
+/** Shadow Domain spells, always prepared, by Cleric level. */
+export const SHADOW_DOMAIN_SPELLS: readonly SubclassSpellRow[] = [
+  { classLevel: 3, spells: ['Crown of Madness', 'Dissonant Whispers', 'Mind Spike', 'Shadow Word: Pain'] },
+  { classLevel: 5, spells: ['Summon Undead', 'Vampiric Touch'] },
+  { classLevel: 7, spells: ["Evard's Black Tentacles", 'Psychic Horror'] },
+  { classLevel: 9, spells: ['Dominate Person', 'Void Eruption'] },
+];
+
+/** Base (non-cleric) spells the WoW Priest adds to its Cleric spell list. */
+export const WOW_PRIEST_EXTRA_SPELLS = ['Blur', 'Levitate'] as const;
+
+const THAUMATURGE = { feature: 'Divine Order', option: 'Thaumaturge' } as const;
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * The wizard has no Divine Order picker, so Thaumaturge stays text.
+ */
+export const WOW_PRIEST_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Discipline: {
+    featureChoice: THAUMATURGE,
+    cantrips: ['Guidance', 'Resistance', 'Thaumaturgy', 'Word of Radiance'],
+    level1Spells: ['Cure Wounds', 'Guiding Bolt', 'Sanctuary', 'Shield of Faith'],
+    subclass: { name: DISCIPLINE_DOMAIN },
+    feats: ['Durable', 'Inspiring Leader', 'Mage Slayer', 'War Caster'],
+  },
+  Holy: {
+    featureChoice: THAUMATURGE,
+    cantrips: ['Guidance', 'Light', 'Sacred Flame', 'Spare the Dying'],
+    level1Spells: ['Bless', 'Cure Wounds', 'Healing Word', 'Purify Food and Drink'],
+    subclass: { name: 'Life Domain' },
+    feats: ['Chef', 'Healer', 'Inspiring Leader', 'War Caster'],
+  },
+  Shadow: {
+    featureChoice: THAUMATURGE,
+    cantrips: ['Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead'],
+    level1Spells: ['Bane', 'Command', 'Healing Word', 'Shadow Word: Pain'],
+    subclass: { name: SHADOW_DOMAIN },
+    feats: ['Actor', 'Mage Slayer', 'Shadow Touched', 'Skulker', 'Telepathic'],
+  },
+};
+
+/** Suggested (not always-prepared) spells per specialization, by spell level. */
+export const WOW_PRIEST_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Discipline: [
+    { level: 1, spells: ['Bless', 'Protection from Evil and Good', 'Shadow Word: Pain'] },
+    { level: 2, spells: ['Aid', 'Blur', 'Levitate', 'Spiritual Weapon'] },
+    { level: 3, spells: ['Aura of Vitality', 'Dispel Magic', 'Spirit Guardians'] },
+    { level: 4, spells: ['Aura of Purity', 'Holy Nova'] },
+    { level: 5, spells: ['Flame Strike', 'Greater Restoration', 'Summon Celestial'] },
+    { level: 6, spells: ['Blade Barrier', 'Sunbeam'] },
+    { level: 7, spells: ['Fire Storm', 'Power Word Fortify'] },
+    { level: 8, spells: ['Sunburst'] },
+    { level: 9, spells: ['Gate'] },
+  ],
+  Holy: [
+    { level: 1, spells: ['Detect Evil and Good', 'Protection from Evil and Good', 'Shadow Word: Pain'] },
+    { level: 2, spells: ['Blur', 'Calm Emotions', 'Prayer of Healing', 'Protection from Poison'] },
+    { level: 3, spells: ['Beacon of Hope', 'Daylight', 'Prayer of Mending'] },
+    { level: 4, spells: ['Aura of Purity', 'Guardian of Faith', 'Holy Nova'] },
+    { level: 5, spells: ['Commune', 'Dispel Evil and Good', 'Raise Dead'] },
+    { level: 6, spells: ['Heal', 'Sunbeam'] },
+    { level: 7, spells: ['Conjure Celestial', 'Regenerate'] },
+    { level: 8, spells: ['Holy Aura'] },
+    { level: 9, spells: ['Apotheosis', 'Mass Heal'] },
+  ],
+  Shadow: [
+    { level: 1, spells: ['Detect Poison and Disease'] },
+    { level: 2, spells: ['Blindness/Deafness', 'Blur', 'Hold Person', 'Silence'] },
+    { level: 3, spells: ['Bestow Curse', 'Dispel Magic', 'Speak with Dead'] },
+    { level: 4, spells: ['Banishment', 'Freedom of Movement', 'Locate Creature'] },
+    { level: 5, spells: ['Contagion', 'Geas', 'Insect Plague'] },
+    { level: 6, spells: ['Create Undead', 'Harm'] },
+    { level: 7, spells: ['Etherealness', 'Plane Shift'] },
+    { level: 8, spells: ['Antimagic Field'] },
+    { level: 9, spells: ['Astral Projection'] },
+  ],
+};
+
+export const WOW_PRIEST: HeroClassOption = {
+  key: 'Cleric (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Priest (Cleric)".
+  label: variantLabel('Priest', 'Cleric'),
+  name: 'Priest',
+  baseClass: 'Cleric',
+  source: 'World of Warcraft',
+  blurb: 'A priest draws on two opposing forces. The Light — whether the Holy Light, Elune, or another '
+    + 'power — heals and protects; Shadow breaks the will and drains the life of foes. Priests wield '
+    + 'both to keep allies standing and lay enemies low.',
+  subclassNote: 'Chosen as normal at Cleric level 3',
+  subclassTerm: 'domain',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Discipline', desc: 'A pragmatist who balances Light and Shadow, shielding allies while smiting foes.' },
+    { name: 'Holy',       desc: 'A devout healer who blesses allies and mends their wounds with the Light.' },
+    { name: 'Shadow',     desc: 'Embraces the Void to wither flesh and twist the minds of enemies.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_PRIEST_GUIDANCE,
+  suggestedSpells: WOW_PRIEST_SUGGESTED_SPELLS,
+  subclassSpells: { [DISCIPLINE_DOMAIN]: DISCIPLINE_DOMAIN_SPELLS, [SHADOW_DOMAIN]: SHADOW_DOMAIN_SPELLS },
+  extraSpellList: WOW_PRIEST_EXTRA_SPELLS,
+};
+
 // ── Rogue ────────────────────────────────────────────────────────────────────
 
 export const WOW_ROGUE_SPECIALIZATIONS = ['Assassination', 'Outlaw', 'Subtlety'] as const;
@@ -539,5 +659,5 @@ export const WOW_WARRIOR: HeroClassOption = {
 
 /** Every WoW class variant, in class-list order. */
 export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
-  WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+  WOW_DRUID, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
 ];

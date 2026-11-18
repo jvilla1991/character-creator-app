@@ -12,6 +12,7 @@ function namedSpells(hero: HeroClassOption): string[] {
   for (const g of Object.values(hero.guidance ?? {})) {
     names.push(...(g.cantrips ?? []), ...(g.level1Spells ?? []), ...(g.fightingStyleCantrips ?? []));
   }
+  names.push(...(hero.extraSpellList ?? []));
   if (hero.featureCards) {
     const subclasses = [null, ...Object.keys(hero.subclassSpells ?? {}), ...(hero.wowSubclasses ?? [])];
     for (const subclass of subclasses) {
@@ -56,6 +57,13 @@ describe('spell-names', () => {
       const row = dk.spellTable.find(r => r.classLevel === 13)!;
       expect(row.bySpecialization['Blood']).toBe("Evard's Black Tentacles");
       expect(index.get(spellKey(row.bySpecialization['Blood']))?.name).toBe('Black Tentacles');
+    });
+
+    it("finds the Shadow Domain's Evard's Black Tentacles (Cleric 7) the same way", () => {
+      const priest = HERO_CLASSES.find(h => h.name === 'Priest')!;
+      const row = priest.subclassSpells!['Shadow Domain'].find(r => r.classLevel === 7)!;
+      expect(row.spells).toContain("Evard's Black Tentacles");
+      expect(index.get(spellKey("Evard's Black Tentacles"))?.name).toBe('Black Tentacles');
     });
 
     it('resolves every spell every World of Warcraft table names', () => {

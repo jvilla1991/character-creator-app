@@ -824,4 +824,113 @@ describe('HeroClassPanelComponent', () => {
       });
     });
   });
+
+  describe('World of Warcraft Priest (Cleric)', () => {
+    function makePriest(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 14, name: 'Elara', clazz: 'Cleric', subclass: undefined, specialization: 'Shadow',
+        level: 2, prof: 2, playerName: 'Ana', stats: { STR: 8, DEX: 14, CON: 14, INT: 10, WIS: 17, CHA: 12 },
+        spells: [
+          { lvl: 2, name: 'Blur', school: 'Illusion', time: '1 action', prepared: true },
+          { lvl: 2, name: 'Silence', school: 'Illusion', time: '1 action', prepared: false },
+        ],
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('renders for a WoW cleric but not for a base cleric', () => {
+      expect(isHeroClass(makePriest())).toBeTrue();
+      expect(isHeroClass(makePriest({ specialization: null, subclass: 'Life Domain' }))).toBeFalse();
+      expect(isHeroClass(makePriest({ specialization: null, subclass: 'Shadow Domain' }))).toBeTrue();
+    });
+
+    it('titles the panel and recommends a domain per specialization (informational)', () => {
+      component.pc = makePriest();
+      expect(component.panelTitle).toBe('World of Warcraft Priest');
+      expect(component.specializationTitle).toBe('Shadow');
+      expect(component.specializationDesc).toContain('Void');
+      expect(component.subclassTerm).toBe('domain');
+      expect(component.guidance?.subclass.name).toBe('Shadow Domain');
+      expect(component.subclassMatch).toBe('pending');
+      component.pc = makePriest({ specialization: 'Holy', subclass: 'Life Domain', level: 3 });
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makePriest({ specialization: 'Discipline', subclass: 'War Domain', level: 3 });
+      expect(component.subclassMatch).toBe('different');
+    });
+
+    it('lists the suggested spells per specialization and marks known / prepared ones', () => {
+      component.pc = makePriest();
+      expect(component.suggestedSpells.map(r => r.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(component.suggestedSpells[1].spells).toEqual([
+        { name: 'Blindness/Deafness', known: false, prepared: false },
+        { name: 'Blur', known: true, prepared: true },
+        { name: 'Hold Person', known: false, prepared: false },
+        { name: 'Silence', known: true, prepared: false },
+      ]);
+      component.pc = makePriest({ specialization: 'Discipline' });
+      expect(component.suggestedSpells[1].spells.map(s => s.name)).toEqual(['Aid', 'Blur', 'Levitate', 'Spiritual Weapon']);
+      component.pc = makePriest({ specialization: 'Holy' });
+      expect(component.suggestedSpells[8].spells.map(s => s.name)).toEqual(['Apotheosis', 'Mass Heal']);
+    });
+
+    it('marks the WoW spells and the added-list spells (Blur, Levitate) with ✦', () => {
+      dndResources.getSpells.and.returnValue(of([
+        { ...deathGrip, name: 'Shadow Word: Pain', classes: ['cleric'] } as DndSpell,
+        { ...deathGrip, name: 'Holy Nova', level: 4, classes: ['cleric'] } as DndSpell,
+        { ...deathGrip, name: 'Blur', level: 2, classes: ['sorcerer', 'wizard'], source: undefined } as DndSpell,
+        { ...deathGrip, name: 'Aid', level: 2, classes: ['cleric'], source: undefined } as DndSpell,
+      ]));
+      const el = render(makePriest({ specialization: 'Discipline', spells: [] }));
+      const text = el.textContent ?? '';
+      expect(text).toContain('World of Warcraft Priest');
+      expect(text).toContain('Recommended domain');
+      expect(text).toContain('You choose your domain at Cleric level 3.');
+      expect(text).toContain('Suggested Discipline Spells');
+      expect(text).toContain('like any other cleric spell');
+      expect(text).not.toContain('Beast Forms');
+      const marks = Array.from(el.querySelectorAll('.suggested-spell'))
+        .filter(n => n.querySelector('.wow-mark'))
+        .map(n => [n.textContent!.replace('✦', '').trim(), n.querySelector('.wow-mark')!.getAttribute('title')]);
+      expect(marks).toEqual([
+        ['Shadow Word: Pain', 'World of Warcraft spell'],
+        ['Blur', 'Added to the Cleric spell list by the World of Warcraft Priest'],
+        ['Levitate', 'Added to the Cleric spell list by the World of Warcraft Priest'],
+        ['Holy Nova', 'World of Warcraft spell'],
+      ]);
+    });
+
+    it('shows the always-prepared domain spells by Cleric level in their own section', () => {
+      component.pc = makePriest({ subclass: 'Shadow Domain', level: 5 });
+      expect(component.spells).toEqual([]);
+      expect(component.spellSections.map(sec => sec.title)).toEqual(['Shadow Domain Spells']);
+      expect(component.spellSections[0].entries.map(e => e.name)).toEqual([
+        'Crown of Madness', 'Dissonant Whispers', 'Mind Spike', 'Shadow Word: Pain', 'Summon Undead', 'Vampiric Touch',
+      ]);
+      component.pc = makePriest({ specialization: 'Discipline', subclass: 'Discipline Domain', level: 9 });
+      expect(component.spellSections[0].title).toBe('Discipline Domain Spells');
+      expect(component.spellSections[0].entries.length).toBe(10);
+      // The Life Domain's spells come from the server's features, not a panel table.
+      component.pc = makePriest({ specialization: 'Holy', subclass: 'Life Domain', level: 9 });
+      expect(component.spellSections).toEqual([]);
+    });
+
+    it("describes Evard's Black Tentacles from its SRD entry at Cleric 7 (Shadow Domain)", () => {
+      dndResources.getSpells.and.returnValue(of([
+        { ...deathGrip, name: 'Black Tentacles', level: 4, school: 'conjuration', description: 'Tentacle text.' } as DndSpell,
+      ]));
+      const el = render(makePriest({ subclass: 'Shadow Domain', level: 7 }));
+      const row = Array.from(el.querySelectorAll('.hero-spell'))
+        .find(n => n.querySelector('.hero-spell-name')!.textContent!.includes("Evard's Black Tentacles"))!;
+      expect(row.querySelector('.hero-spell-meta')!.textContent).toContain('Cleric 7');
+      expect(row.querySelector('.hero-spell-meta')!.textContent).toContain('Level 4 conjuration');
+      expect(row.querySelector('.hero-spell-desc')!.textContent).toContain('Tentacle text.');
+    });
+  });
 });

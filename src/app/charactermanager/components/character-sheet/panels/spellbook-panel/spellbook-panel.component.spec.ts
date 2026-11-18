@@ -272,6 +272,18 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(component.grantCandidates.map(s => s.name)).toEqual(['Mage Hand']);
   });
 
+  it('narrows a WoW priest to the cleric list plus Blur and Levitate', () => {
+    fixture.componentRef.setInput('pc', makePC({ clazz: 'Cleric', subclass: 'Shadow Domain', specialization: 'Shadow' }));
+    dndResources.getSpells.and.returnValue(of([]));
+    dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Blur', level: 2 })]));
+    component.openGrantForm();
+
+    component.toggleAllClasses(false);
+
+    expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', ['Blur', 'Levitate']);
+    expect(component.grantCandidates.map(s => s.name)).toEqual(['Blur']);
+  });
+
   it('emits the selection mapped to PcSpell and resets the form on confirm', () => {
     dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Mage Hand', level: 0 })]));
     const emitted: any[] = [];

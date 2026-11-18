@@ -4,6 +4,7 @@ import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 import { ContentSource, ContentSourceSelection, filterBySource, spellSource } from '../models/content-source';
+import { spellKey } from '../models/spell-names';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -569,11 +570,17 @@ export class DndResourcesService {
     return CLASS_SKILL_CHOICES[className.toLowerCase()] ?? { choose: 2, from: [] };
   }
 
-  /** Spells available to a specific class (case-insensitive). */
-  getSpellsForClass(className: string): Observable<DndSpell[]> {
+  /**
+   * Spells available to a specific class (case-insensitive), plus any spells a
+   * WoW variant adds to that class's list (`extraSpellList`, e.g. the WoW
+   * Priest's Blur and Levitate), matched by name. Without extras the list is the
+   * base class's own.
+   */
+  getSpellsForClass(className: string, extraSpellList: readonly string[] = []): Observable<DndSpell[]> {
     const key = className.toLowerCase();
+    const extras = new Set(extraSpellList.map(spellKey));
     return this.getSpells().pipe(
-      map(spells => spells.filter(s => s.classes.includes(key)))
+      map(spells => spells.filter(s => s.classes.includes(key) || extras.has(spellKey(s.name))))
     );
   }
 

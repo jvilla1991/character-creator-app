@@ -1,9 +1,13 @@
 import { DndSpell } from './dnd-api.types';
 import { filterBySource, spellSource } from './content-source';
+import { isExtraListSpell } from './hero-class';
+import { spellKey } from './spell-names';
+import { WOW_PRIEST, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SUGGESTED_SPELLS } from './wow-class-variants';
 
 /**
  * Checks the shipped spell data (the real assets, served by the Karma builder)
- * for the WoW Priest (Cleric): its six new World of Warcraft spells.
+ * for the WoW Priest (Cleric): its six new World of Warcraft spells, and that every
+ * spell its guidance, suggestions and domain tables name exists.
  */
 describe('World of Warcraft priest spells (wow-spells.json)', () => {
   const NEW_SPELLS: readonly [string, number, string][] = [
@@ -51,5 +55,51 @@ describe('World of Warcraft priest spells (wow-spells.json)', () => {
     expect(filterBySource(cleric, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
     expect(filterBySource(cleric, { 'Base Game': true, 'World of Warcraft': true }).map(s => s.name))
       .toEqual(NEW_SPELLS.map(([name]) => name));
+  });
+
+  it('has every spell the priest guidance and suggestions name, at its level, on the cleric list or the added list', () => {
+    const find = (name: string) => all.find(s => spellKey(s.name) === spellKey(name));
+    const onList = (s: DndSpell | undefined) => !!s && (s.classes.includes('cleric') || isExtraListSpell(WOW_PRIEST, s.name));
+    for (const g of Object.values(WOW_PRIEST_GUIDANCE)) {
+      for (const name of g.cantrips ?? []) {
+        expect(find(name)?.level).withContext(name).toBe(0);
+        expect(onList(find(name))).withContext(name).toBeTrue();
+      }
+      for (const name of g.level1Spells ?? []) {
+        expect(find(name)?.level).withContext(name).toBe(1);
+        expect(onList(find(name))).withContext(name).toBeTrue();
+      }
+    }
+    for (const rows of Object.values(WOW_PRIEST_SUGGESTED_SPELLS)) {
+      for (const row of rows) {
+        for (const name of row.spells) {
+          expect(find(name)?.level).withContext(name).toBe(row.level);
+          expect(onList(find(name))).withContext(name).toBeTrue();
+        }
+      }
+    }
+  });
+
+  it('adds Blur and Levitate as base-game spells that are not cleric spells', () => {
+    for (const name of WOW_PRIEST.extraSpellList!) {
+      const spell = all.find(s => s.name === name);
+      expect(spell).withContext(name).toBeDefined();
+      expect(spellSource(spell!)).withContext(name).toBe('Base Game');
+      expect(spell!.classes).withContext(name).not.toContain('cleric');
+    }
+  });
+
+  it('keeps every domain spell at a spell level the cleric can cast at that Cleric level', () => {
+    // Cleric 3 → level 2 slots, 5 → 3, 7 → 4, 9 → 5.
+    const maxSlot: Record<number, number> = { 3: 2, 5: 3, 7: 4, 9: 5 };
+    for (const rows of Object.values(WOW_PRIEST.subclassSpells!)) {
+      for (const row of rows) {
+        for (const name of row.spells) {
+          const spell = all.find(s => spellKey(s.name) === spellKey(name));
+          expect(spell).withContext(name).toBeDefined();
+          expect(spell!.level).withContext(name).toBeLessThanOrEqual(maxSlot[row.classLevel]);
+        }
+      }
+    }
   });
 });
