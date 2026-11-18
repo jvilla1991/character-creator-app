@@ -581,6 +581,8 @@ export class PCService {
       xp: pc.xp ?? 0,
       // Hero-class specialization — explicit null (not undefined) for every other character.
       specialization: pc.specialization ?? null,
+      // WoW Hunter pet family — explicit null (not undefined) when none is chosen.
+      petFamily: pc.petFamily ?? null,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -634,6 +636,7 @@ export class PCService {
       // `rune` is the pre-specialization name of the field (older payloads/rows).
       specialization: (pc['specialization'] as string | null | undefined)
         ?? (legacyRune as string | null | undefined) ?? null,
+      petFamily: (pc['petFamily'] as string | null | undefined) ?? null,
       stats: {
         STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
         DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,
