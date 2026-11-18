@@ -272,8 +272,7 @@
       }
       <div class="modal-actions">
         <button class="btn" type="button" (click)="cancel()" [disabled]="submitting">Not Yet</button>
-        <button class="btn" type="button" (click)="confirm()" [disabled]="submitting || !canConfirm"
-          style="border-color: var(--celestial); color: var(--celestial);">
+        <button class="btn primary" type="button" (click)="confirm()" [disabled]="submitting || !canConfirm">
           {{ submitting ? 'Ascending…' : 'Level Up' }}
         </button>
       </div>

@@ -38,7 +38,6 @@
   &.active {
     border-color: var(--celestial);
     background: color-mix(in oklch, var(--celestial) 10%, var(--bg-2));
-    box-shadow: 0 0 6px rgba(143, 180, 255, 0.2);
   }
 
   &:hover:not(.active) {

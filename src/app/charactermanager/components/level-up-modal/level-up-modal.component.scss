@@ -2,6 +2,18 @@
 // / .btn classes are global (shared with the other modals); only the delta rows are
 // styled here.
 
+// The system's Label style (DESIGN.md): Cinzel caps at the 11px floor with the
+// label tracking. Every section heading and tab in this dialog uses it, so
+// level-up reads as the same app as the other dialogs.
+@mixin section-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
 // The gain list grows with class features / spell picks and can exceed the
 // viewport (the global .modal has no height cap) — cap it and scroll inside,
 // so the Confirm/Cancel actions are always reachable.
@@ -9,6 +21,16 @@
   max-height: 88vh;
   overflow-y: auto;
   overscroll-behavior: contain;
+
+  // The global .modal::before frame is an absolutely positioned box, so in a
+  // scrolling dialog it scrolled away with the content and its bottom line cut
+  // across the ability rows. Inset shadows are glued to the visible box
+  // instead (the same fix as the create-campaign dialog).
+  &::before { display: none; }
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 6px var(--surface),
+    inset 0 0 0 7px var(--border);
 }
 
 .lvl-gains {
@@ -27,7 +49,7 @@
   gap: 16px;
   padding: 10px 14px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 
   &.is-bump {
@@ -36,13 +58,14 @@
 }
 
 .lvl-gain-label {
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  @include section-label;
+  // The label keeps its line; the value beside it is what wraps.
+  flex: none;
+  white-space: nowrap;
 }
 
 .lvl-gain-value {
+  min-width: 0;
   font-weight: 600;
   color: var(--text, #fff);
   text-align: right;
@@ -72,7 +95,7 @@
   min-width: 34px;
   padding: 3px 6px;
   border: 1px solid var(--surface-3);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   background: var(--surface-2);
   line-height: 1.2;
 
@@ -108,10 +131,7 @@
 }
 
 .subclass-label {
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  @include section-label;
 }
 
 .subclass-option {
@@ -120,7 +140,7 @@
   gap: 10px;
   padding: 10px 14px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
   cursor: pointer;
   color: var(--text, #fff);
@@ -161,10 +181,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  @include section-label;
 }
 
 .asi-remaining {
@@ -179,7 +196,7 @@
   gap: 10px;
   padding: 6px 12px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 
   &.is-raised {
@@ -213,10 +230,11 @@
   width: 26px;
   height: 26px;
   border: 1px solid var(--surface-3);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   background: transparent;
   color: var(--text, #fff);
-  font-size: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-lg);
   line-height: 1;
   cursor: pointer;
 
@@ -247,14 +265,16 @@
 }
 
 .milestone-tab {
-  flex: 1;
-  padding: 7px 10px;
+  // Sized by its label plus an equal share of the spare room, so "Ability
+  // Scores" is not squeezed to the same width as "Feat".
+  flex: 1 1 auto;
+  padding: 7px 8px;
   border: 1px solid var(--surface-3);
-  border-radius: 7px;
+  border-radius: var(--radius-sharp);
   background: transparent;
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  // A <button> does not inherit the page font: without this it rendered in
+  // the browser's default sans.
+  @include section-label;
   cursor: pointer;
 
   &.is-active {
@@ -299,10 +319,7 @@
 }
 
 .features-label {
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  @include section-label;
 }
 
 .feature-item {
@@ -310,9 +327,10 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 12px;
-  border: 1px solid var(--surface-3);
-  border-left: 2px solid var(--celestial);
-  border-radius: 6px;
+  // A celestial-tinted hairline marks a gained feature, the way .lvl-gain.is-bump
+  // marks a raised number (it was a 2px side stripe).
+  border: 1px solid color-mix(in oklch, var(--celestial) 45%, var(--surface-3));
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 }
 
@@ -339,10 +357,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  @include section-label;
 }
 
 .spell-counts {
@@ -357,7 +372,7 @@
 .specialization-select {
   width: 100%;
   padding: 8px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sharp);
   font-size: 0.9rem;
 }
 

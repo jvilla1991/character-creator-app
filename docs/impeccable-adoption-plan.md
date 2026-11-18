@@ -620,6 +620,7 @@ All four took the recommended option. These are settled; later slices should not
 | 9–11, 13–14, 20, 23 + launcher bug | `fix/responsive-pass` (slice 3) | Done — initiative board as cards on narrow boards, auth pages scroll, phone sheet header and source-order fix, drawer closes on campaign pick with a contextual top bar, full-width toasts, every listed target at 24px or more, and the dice launcher / toast / settings stacking. See "Slice 3 results" below. |
 | 19 | `chore/type-floor` | Done — all 61 sub-11px declarations lifted to `var(--text-2xs)` with the tracking ladder, 0 sub-11px nodes on every reachable screen at 320 / 375 / 414 / 1280, seven tight spots re-laid out instead of shrunk, two faded wizard labels brought up to AA. See "Type-floor results" below. |
 | 16–17 | `fix/harden-feedback` | Done — the 56 save / grant / curated-editor / session failures that only reached `console.error` now toast what did not happen (server 4xx message when there is one), failed list loads say so with a retry, and fields put back to the saved value; End Session and Leave stay put when refused. Curated deletes, note deletes, End Session — plus End Encounter and removing a player, which used `window.confirm` — go through one shared crimson confirm. See "Harden results" below. |
+| 22, 24 | `chore/ui-density-polish` (slice 6) | Done — every glow at rest removed except the primary button's (dialogs, login, brand marks, portraits, titles, role switch, dots and pips, selected options, the dice launcher), 65 off-scale corners moved onto `--radius-*` by role, and the level-up dialog brought into the app's dialect (Cinzel labels and tabs, `.btn.primary` commit, a frame that stays put). Rank 21 stays out by owner decision. See "Slice 6 results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -910,3 +911,35 @@ field revert paths.
 checked by spec only (demo mode cannot refuse them); real backend 4xx bodies (the helper reads
 `error.message`, as the loot and shop panels already did); real devices. The pre-existing NG8107
 warning in `initiative-panel.component.html:97` is from `develop`.
+
+#### Slice 6 results (2026-11-18)
+
+Branch `chore/ui-density-polish`, cut from `develop` at `b856e6f` and merged with `develop` at
+`3cfa722` before reporting. `/impeccable quieter` drove the glow pass and `/impeccable polish` the
+level-up dialog. Scope follows the owner's decisions: polish-sized, with the session prep/play
+split (rank 21) left out as its own feature. Measured in demo mode with transitions off.
+
+| Rank | Finding on `develop` | Fix | Measured after |
+|---|---|---|---|
+| 22 | Glows at rest on dialogs, the settings slide-over, the login card / mark / name, brand marks, the empty-state sigil, large portraits, the sheet and campaign title, the role switch, skill dots, spent slots, supply and inspiration pips, the dice launcher | Removed. Dialogs, the slide-over and the launcher keep their ambient shadow. Owner decision 1 (login) is done here. | A computed-style scan of the sheet (5 tabs), dashboard, session, drawer, settings and login finds one glowing element class: `.btn.primary`, the sanctioned standing glow |
+| 22 | Selected options glowed too: theme swatch, the wizard's class / equipment picks, the grant's class pick (one of them celestial), and the roster / campaign active-row markers | Removed; each already marks selection with a border and fill, or a 2px bar | Same scan |
+| 24 | 65 corners outside the scale (6–20px) across session panels, curated editors, level-up, spell carousel, banner, toast | By role onto `--radius-*`: 36 controls → 2px, 24 cards and rows → 3px, 4 chips / counts → pill, the context-help dialog → 4px. The d6 die keeps its 8px face. | 0 elements with a non-pill radius of 5px or more on those screens; detector `design-system-radius` 0 |
+| 24 / modals P1 | Level-up spoke its own dialect: Arial tabs and steppers, 13px body-serif labels, a commit button restyled inline (which also hid its disabled state), a side-stripe on gained features, an inner frame that scrolled across the ability rows | Cinzel Label style for tabs and section labels, numeric face for steppers, `.btn.primary` commit, tinted hairline, inset-shadow frame. Spell-picker names no longer centre over left-aligned details (a global `.spell-row` phone rule leaked in). | Tabs and labels compute to Cinzel 11px / 0.18em; every label and tab on one line at 375px; picker rows 56px tall |
+
+**Deliberately left:**
+- Rank 21 (prep inside play, dashboard grouping) — out of Phase 3 by owner decision 2.
+- State glows stay: focus, hover, the live turn and on-deck rows, the turn vignette, the level-up
+  prompt, ready-to-level XP, the "Inspired" badge.
+- The session screen shows three `.btn.primary` at once, so the one standing glow appears three
+  times there. That is a hierarchy question for the prep/play feature, not a glow bug.
+- Copy and the remaining literal status colours belong to slice 4.
+
+**Gates.** `check:tokens` OK (1454 `var()` uses), `check:contrast` 135/135, `ng test` 1321/1321,
+Cypress 6/6 specs (13 tests; run before and after the `develop` merge), production build
+448.46 kB initial (budget 497 kB). The detector reports no `design-system-radius` finding on the
+changed files; its two findings on added lines are the dialogs' black ambient shadow.
+
+**Not covered:** real devices (Chromium emulation only); the wizard's later steps and the session
+banner were not opened in a browser for this slice (their changes are a removed `box-shadow` or a
+radius token); the phone-width look was checked at 375px only, since no layout rule changed outside
+the level-up dialog.

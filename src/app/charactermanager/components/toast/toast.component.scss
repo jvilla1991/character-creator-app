@@ -16,7 +16,7 @@
   padding: 12px 18px;
   background: var(--surface-2, #1c1f2b);
   border: 1px solid var(--celestial, #8fb4ff);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: var(--text, #e8e6e3);
   font-family: 'Newsreader', serif;
   font-size: 15px;
