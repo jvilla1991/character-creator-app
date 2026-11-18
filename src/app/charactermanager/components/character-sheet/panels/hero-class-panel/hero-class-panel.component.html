@@ -1,7 +1,7 @@
 @if (hero; as h) {
   <div class="panel">
     <div class="panel-header">
-      <span class="panel-title">{{ h.subclass }}</span>
+      <span class="panel-title">{{ panelTitle }}</span>
     </div>
 
     @if (specializationTitle) {
@@ -14,13 +14,19 @@
       </div>
     }
 
-    <div class="feature">
-      <div class="feature-head">
-        <span class="feature-name">{{ h.level1Feature.name }}</span>
-        <span class="feature-source">{{ h.baseClass }} 1</span>
+    @if (h.renownNote) {
+      <p class="hero-note">{{ h.renownNote }}</p>
+    }
+
+    @if (h.level1Feature; as f) {
+      <div class="feature">
+        <div class="feature-head">
+          <span class="feature-name">{{ f.name }}</span>
+          <span class="feature-source">{{ h.baseClass }} 1</span>
+        </div>
+        <div class="feature-desc">{{ f.desc }}</div>
       </div>
-      <div class="feature-desc">{{ h.level1Feature.desc }}</div>
-    </div>
+    }
 
     @if (resource; as r) {
       <div class="hero-resource">
@@ -53,6 +59,104 @@
           </li>
         }
       </ul>
+    }
+
+    <!-- WoW Druid: recommended circle (informational) -->
+    @if (guidance; as g) {
+      <div class="feature">
+        <div class="feature-head">
+          <span class="feature-name">Recommended circle</span>
+          <span class="feature-source">{{ h.baseClass }} 3</span>
+        </div>
+        <div class="feature-desc">
+          {{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }
+        </div>
+        <div class="hero-subclass-match" [attr.data-match]="subclassMatch">
+          @switch (subclassMatch) {
+            @case ('match') { Your circle matches the {{ pc.specialization }} recommendation. }
+            @case ('different') { You chose {{ pc.subclass }} — that's fine; this is only a suggestion. }
+            @default { You choose your circle at {{ h.baseClass }} level 3. }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- WoW Druid: suggested spells (NOT always prepared) -->
+    @if (suggestedSpells.length) {
+      <h3 class="hero-spells-title">Suggested {{ pc.specialization }} Spells</h3>
+      <p class="hero-spells-note">Suggestions only — prepare them like any other druid spell. ✦ marks a World of Warcraft spell.</p>
+      <dl class="suggested-spells">
+        @for (row of suggestedSpells; track row.level) {
+          <dt>Level {{ row.level }}</dt>
+          <dd>
+            @for (s of row.spells; track s.name; let last = $last) {
+              <span class="suggested-spell" [class.known]="s.known">
+                {{ s.name }}@if (isWowSpell(s.name)) {<span class="wow-mark" title="World of Warcraft spell">✦</span>}
+                @if (s.prepared) {
+                  <span class="spell-tag">prepared</span>
+                } @else if (s.known) {
+                  <span class="spell-tag">known</span>
+                }
+              </span>@if (!last) {<span class="sep">, </span>}
+            }
+          </dd>
+        }
+      </dl>
+      @if (guidance?.tip; as tip) {
+        <p class="hero-note">{{ tip }}</p>
+      }
+    }
+
+    <!-- WoW Druid: beast forms -->
+    @if (h.beastForms) {
+      <h3 class="hero-spells-title">Beast Forms</h3>
+      @if (formCards.length) {
+        <p class="hero-spells-note">Circle of the Moon: your Wild Shape can take these forms.</p>
+        <div class="form-cards">
+          @for (card of formCards; track card.name) {
+            <section class="form-card" [class.emphasized]="isEmphasized(card)" [attr.aria-label]="card.name">
+              <header class="form-card-head">
+                <span class="form-card-name">{{ card.name }}</span>
+                <span class="form-card-size">{{ card.size }}</span>
+              </header>
+              <div class="form-stats">
+                <div><span class="k">AC</span><span class="v">{{ card.ac }}</span></div>
+                <div><span class="k">Temp HP</span><span class="v">{{ card.tempHp }}</span></div>
+                <div><span class="k">Speed</span><span class="v">{{ card.speed }}</span></div>
+                <div><span class="k">STR/DEX</span><span class="v">{{ card.strDex }}</span></div>
+              </div>
+              <p class="form-line">{{ card.senses }}@if (card.skills) { · {{ card.skills }} }</p>
+              <p class="form-line"><strong>Multiattack.</strong> {{ card.multiattack }}</p>
+              @for (a of card.attacks; track a.name) {
+                <p class="form-line">
+                  <strong>{{ a.name }}.</strong> Melee, {{ fmtBonus(a.toHit) }} to hit, reach {{ a.reach }}
+                  Hit: {{ a.damage }}.
+                </p>
+              }
+              @for (x of card.actions; track x.name) {
+                <p class="form-line"><strong>{{ x.name }}</strong> <em>({{ x.kind }})</em>. {{ x.text }}</p>
+              }
+            </section>
+          }
+        </div>
+        <p class="hero-spells-note">{{ beastFormUnchanged }}</p>
+      }
+      @if (classicForms.length) {
+        @if (formCards.length) {
+          <p class="hero-spells-note">Other forms use these classic beasts:</p>
+        } @else {
+          <p class="hero-spells-note">Your Wild Shape takes classic beast forms:</p>
+        }
+        <ul class="classic-forms">
+          @for (f of classicForms; track f.form + f.beast) {
+            <li [class.unavailable]="!f.available">
+              <span class="classic-form">{{ f.form }}</span>
+              <span class="classic-beast">{{ f.beast }}</span>
+              <span class="classic-level">{{ f.available ? 'Available' : 'From level ' + f.fromLevel }}</span>
+            </li>
+          }
+        </ul>
+      }
     }
   </div>
 }

@@ -129,6 +129,23 @@
     border-color: var(--celestial);
     color: var(--celestial);
   }
+
+  &.is-recommended {
+    border-style: dashed;
+    border-color: color-mix(in oklch, var(--celestial) 70%, var(--surface-3));
+  }
+}
+
+// WoW Druid: the circle the specialization recommends (a highlight, never enforced).
+.recommended-badge {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 100px;
+  border: 1px solid color-mix(in oklch, var(--celestial) 60%, transparent);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--celestial);
+  white-space: nowrap;
 }
 
 // ── Ability Score Improvement allocator ───────────────────────────────────────

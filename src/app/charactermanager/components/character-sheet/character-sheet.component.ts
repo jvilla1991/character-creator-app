@@ -362,10 +362,19 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** Hero classes (Death Knight, Demon Hunter, …) — show the hero-class panel on the sheet tab. */
   get heroClass(): boolean { return isHeroClass(this.pc); }
 
-  /** Header suffix for a hero-class specialization ("Frost Rune", "Havoc"); '' otherwise. */
+  /** Header suffix for a hero-class specialization ("Frost Rune", "Havoc", "Balance"); '' otherwise. */
   get specializationTitle(): string {
     const hero = heroClassFor(this.pc);
     return hero && this.pc?.specialization ? specializationTitle(hero, this.pc.specialization) : '';
+  }
+
+  /**
+   * The parenthesised part of the header after the class name: subclass and
+   * specialization joined by " · " ("Oath of the Ebon Blade · Frost Rune"), or
+   * just the specialization for a WoW Druid before level 3 ("Druid (Balance)").
+   */
+  get subtitleSuffix(): string {
+    return [this.pc?.subclass, this.specializationTitle].filter(p => !!p).join(' · ');
   }
 
   initialsFor(pc: PC): string {

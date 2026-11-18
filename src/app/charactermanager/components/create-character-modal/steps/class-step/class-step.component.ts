@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
-import { ClassOption, specializationHeading } from '../../../../models/hero-class';
+import { ClassOption, SpecializationGuidance, specializationHeading } from '../../../../models/hero-class';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
  * subclass. Hero classes (e.g. Death Knight (Paladin)) show their blurb, their
  * locked subclass and the required specialization picker (a Death Knight's rune,
- * a Demon Hunter's specialization), all read from the hero-class table.
+ * a Demon Hunter's specialization), all read from the hero-class table. A WoW
+ * variant without a fixed subclass (the WoW Druid) shows a "Recommended for
+ * <spec>" box once its specialization is picked — guidance only.
  * Presentational — the parent owns selection logic, the source filter and the
  * detail fetch, and passes the already-filtered rows and derived strings in.
  */
@@ -19,8 +21,12 @@ import { ClassOption, specializationHeading } from '../../../../models/hero-clas
 export class ClassStepComponent {
   /** Class rows after the content-source filter (base classes, then hero classes). */
   readonly classOptions = input<ClassOption[]>([]);
-  /** Label of the chosen row ('Death Knight (Paladin)' or a base class name). */
+  /** Key of the chosen row ('Death Knight (Paladin)', 'Druid (World of Warcraft)' or a base class name). */
+  readonly selectedKey = input('');
+  /** Display label of the chosen row (used in the hidden-by-filter note). */
   readonly selectedLabel = input('');
+  /** Recommended picks for the chosen specialization; null when there are none. */
+  readonly guidance = input<SpecializationGuidance | null>(null);
   /** True when the chosen class is hidden by the source filter (it stays chosen). */
   readonly selectedHidden = input(false);
   /** The chosen hero-class specialization; '' when none is picked. */
@@ -38,7 +44,7 @@ export class ClassStepComponent {
 }[]>([]);
   readonly selectedSubclass = input('');
 
-  /** A class row was clicked (by label) — parent runs toggleClass (select / collapse). */
+  /** A class row was clicked (by key) — parent runs toggleClass (select / collapse). */
   readonly toggle = output<string>();
   /** A subclass card was picked (two-way [(selectedSubclass)] on the parent). */
   readonly selectedSubclassChange = output<string>();

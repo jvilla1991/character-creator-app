@@ -58,8 +58,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           <span class="dot">✦</span>
         }
         {{ pc | classDisplay }}
-        @if (pc.subclass || !followerMode) {
-          <em style="color: var(--text-dim)">({{ pc.subclass }}@if (specializationTitle) { · {{ specializationTitle }} })</em>
+        @if (subtitleSuffix || !followerMode) {
+          <em style="color: var(--text-dim)">({{ subtitleSuffix }})</em>
         }
         <span class="dot">✦</span>
         Level

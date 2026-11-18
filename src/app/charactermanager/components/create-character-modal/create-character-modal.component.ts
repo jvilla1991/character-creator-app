@@ -23,7 +23,10 @@ import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.co
 import { ReviewStepComponent } from './steps/review-step/review-step.component';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
 import { ContentSource, ContentSourceSelection, allContentSources, filterBySource } from '../../models/content-source';
-import { ClassOption, HeroClassOption, SpecializationOption, buildClassOptions, heroClassByLabel } from '../../models/hero-class';
+import {
+  ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
+  recommendedStartingSpells,
+} from '../../models/hero-class';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -40,7 +43,10 @@ interface WizardDraft {
   name: string;
   species: string;
   clazz: string;
-  /** Hero class label (e.g. 'Death Knight (Paladin)'); absent/'' for a base class. */
+  /**
+   * Hero class row key (e.g. 'Death Knight (Paladin)', 'Druid (World of Warcraft)');
+   * absent/'' for a base class. Named for the label it held before keys existed.
+   */
   heroClassLabel?: string;
   /** Hero-class specialization (Death Knight rune, Demon Hunter spec). */
   specialization?: string;
@@ -148,11 +154,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   /**
    * The BASE class (e.g. 'Paladin') — what is stored on the PC and what every
    * rules lookup keys on. A hero class sets this to its base class and records
-   * itself in `heroClassLabel`.
+   * itself in `heroClassKey`.
    */
   clazz        = '';
-  /** Chosen hero class label ('Death Knight (Paladin)'), or '' for a base class. */
-  heroClassLabel = '';
+  /** Chosen hero class row key ('Death Knight (Paladin)', 'Druid (World of Warcraft)'), or '' for a base class. */
+  heroClassKey = '';
   /** Hero-class specialization (e.g. a Death Knight rune) — required for every hero class. */
   specialization = '';
   classDetail:  DndClass | null = null;
@@ -173,7 +179,17 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   /** The chosen hero class, or undefined for a base class. */
   get heroClass(): HeroClassOption | undefined {
-    return heroClassByLabel(this.heroClassLabel);
+    return heroClassByKey(this.heroClassKey);
+  }
+
+  /** "Recommended for <spec>" picks for the chosen hero class + specialization; null otherwise. */
+  get specializationGuidance(): SpecializationGuidance | null {
+    return (this.specialization && this.heroClass?.guidance?.[this.specialization]) || null;
+  }
+
+  /** Spells the spells step highlights as "Recommended" (stable array — never auto-selected). */
+  get recommendedSpells(): readonly string[] {
+    return recommendedStartingSpells(this.heroClass, this.specialization);
   }
 
   /** The chosen hero class's specialization options; empty for a base class. */
@@ -184,6 +200,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   /** True when the chosen class needs a specialization before the class step can advance. */
   get specializationRequired(): boolean {
     return this.specializationOptions.length > 0;
+  }
+
+  /** The key of the chosen class row — the hero key, else the base class. */
+  get selectedClassKey(): string {
+    return this.heroClass?.key ?? this.clazz;
   }
 
   /** The label of the chosen class row — the hero label, else the base class. */
@@ -203,8 +224,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   /** True when the chosen class is hidden by the content-source filter (it stays chosen). */
   get selectedClassHidden(): boolean {
-    const label = this.selectedClassLabel;
-    return !!label && !this.visibleClassOptions.some(o => o.label === label);
+    const key = this.selectedClassKey;
+    return !!key && !this.visibleClassOptions.some(o => o.key === key);
   }
 
   // ── Step 4: Background ───────────────────────────────────────────────────
@@ -677,18 +698,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Click a class row (by its label) to choose+expand it; click the chosen one
+   * Click a class row (by its key) to choose+expand it; click the chosen one
    * again to clear it. A hero-class row stores its BASE class in `clazz` (so all
-   * lookups stay keyed on e.g. 'Paladin') and remembers itself in heroClassLabel.
+   * lookups stay keyed on e.g. 'Paladin') and remembers itself in heroClassKey.
    */
-  toggleClass(label: string): void {
-    if (this.selectedClassLabel === label) {
+  toggleClass(key: string): void {
+    if (this.selectedClassKey === key) {
       this.clazz = '';
-      this.heroClassLabel = '';
+      this.heroClassKey = '';
     } else {
-      const option = this.classOptions.find(o => o.label === label);
-      this.clazz = option?.baseClass ?? label;
-      this.heroClassLabel = option?.hero ? option.label : '';
+      const option = this.classOptions.find(o => o.key === key);
+      this.clazz = option?.baseClass ?? key;
+      this.heroClassKey = option?.hero ? option.key : '';
     }
     this.classDetail = null;
     this.onClassChange();
@@ -898,7 +919,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       name: this.name,
       species: this.species,
       clazz: this.clazz,
-      heroClassLabel: this.heroClassLabel,
+      heroClassLabel: this.heroClassKey,
       specialization: this.specialization,
       contentSources: this.contentSources,
       selectedSubclass: this.selectedSubclass,
@@ -935,7 +956,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.name             = d.name ?? '';
       this.species          = d.species ?? '';
       this.clazz            = d.clazz ?? '';
-      this.heroClassLabel   = heroClassByLabel(d.heroClassLabel) ? d.heroClassLabel! : '';
+      this.heroClassKey     = heroClassByKey(d.heroClassLabel) ? d.heroClassLabel! : '';
       this.specialization   = d.specialization ?? d.rune ?? '';
       this.contentSources   = { ...allContentSources(), ...(d.contentSources ?? {}) };
       this.selectedSubclass = d.selectedSubclass ?? '';

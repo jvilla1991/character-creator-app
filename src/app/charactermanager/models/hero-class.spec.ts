@@ -1,18 +1,19 @@
 import {
-  DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByLabel, heroClassFor,
-  heroClassForSubclass, heroClassSpells, soulFragments, specializationHeading, specializationTitle,
+  DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByKey, heroClassFor,
+  heroClassForSubclass, heroClassSpells, recommendedStartingSpells, recommendedSubclassFor, soulFragments,
+  specializationHeading, specializationTitle,
 } from './hero-class';
 
 describe('hero-class', () => {
-  const deathKnight = heroClassByLabel('Death Knight (Paladin)') as HeroClassOption;
+  const deathKnight = heroClassByKey('Death Knight (Paladin)') as HeroClassOption;
 
   describe('buildClassOptions', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
       expect(options.map(o => o.source))
-        .toEqual(['Base Game', 'Base Game', 'Base Game', 'World of Warcraft', 'World of Warcraft']);
+        .toEqual(['Base Game', 'Base Game', 'Base Game', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft']);
     });
 
     it('maps Death Knight (Paladin) onto the Paladin base class with the Ebon Blade subclass', () => {
@@ -36,9 +37,9 @@ describe('hero-class', () => {
     });
   });
 
-  it('finds a hero class by label or by subclass', () => {
-    expect(heroClassByLabel('Death Knight (Paladin)')?.baseClass).toBe('Paladin');
-    expect(heroClassByLabel('Paladin')).toBeUndefined();
+  it('finds a hero class by key or by subclass', () => {
+    expect(heroClassByKey('Death Knight (Paladin)')?.baseClass).toBe('Paladin');
+    expect(heroClassByKey('Paladin')).toBeUndefined();
     expect(heroClassForSubclass(EBON_BLADE_SUBCLASS)?.label).toBe('Death Knight (Paladin)');
     expect(heroClassForSubclass('Oath of Devotion')).toBeUndefined();
     expect(heroClassForSubclass(undefined)).toBeUndefined();
@@ -60,7 +61,7 @@ describe('hero-class', () => {
   });
 
   describe('Demon Hunter spells and Soul Fragments', () => {
-    const demonHunter = heroClassByLabel('Demon Hunter (Ranger)') as HeroClassOption;
+    const demonHunter = heroClassByKey('Demon Hunter (Ranger)') as HeroClassOption;
     const names = (level: number, spec: string) => heroClassSpells(demonHunter, level, spec).map(e => e.name);
 
     it('grants nothing before Ranger 3 (no bonus spells)', () => {
@@ -127,6 +128,61 @@ describe('hero-class', () => {
 
     it('tags each entry with the column that granted it', () => {
       expect(heroClassSpells(deathKnight, 3, 'Blood').map(e => e.grantedBy)).toEqual(['Runic Smite', 'All', 'Blood']);
+    });
+  });
+
+  describe('World of Warcraft Druid', () => {
+    const wowDruid = heroClassByKey('Druid (World of Warcraft)') as HeroClassOption;
+
+    it('is a Druid variant with no fixed subclass, labelled just "Druid"', () => {
+      const row = buildClassOptions(['Druid']).filter(o => o.label === 'Druid');
+      expect(row.map(o => [o.key, o.source])).toEqual([
+        ['Druid', 'Base Game'], ['Druid (World of Warcraft)', 'World of Warcraft'],
+      ]);
+      expect(wowDruid.baseClass).toBe('Druid');
+      expect(wowDruid.subclass).toBeUndefined();
+      expect(wowDruid.respecOnLevelUp).toBeTrue();
+      expect(wowDruid.specializations.map(s => s.name)).toEqual(['Balance', 'Feral', 'Guardian', 'Restoration']);
+      expect(wowDruid.renownNote).toContain('Cenarion Circle by 3');
+      expect(heroClassByKey('Druid')).toBeUndefined();
+    });
+
+    it('identifies a WoW druid by clazz druid + specialization + no hero subclass', () => {
+      expect(heroClassFor({ clazz: 'Druid', subclass: null, specialization: 'Balance' })).toBe(wowDruid);
+      expect(heroClassFor({ clazz: 'druid', subclass: 'Circle of the Moon', specialization: 'Guardian' })).toBe(wowDruid);
+      expect(heroClassFor({ clazz: 'Druid', subclass: null, specialization: null })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Druid', subclass: 'Circle of the Land' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Druid', subclass: EBON_BLADE_SUBCLASS, specialization: 'Balance' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Wizard', specialization: 'Balance' })).toBeUndefined();
+      // Existing hero classes are unaffected by the specialization rule.
+      expect(heroClassFor({ clazz: 'Paladin', subclass: EBON_BLADE_SUBCLASS, specialization: 'Frost' })).toBe(deathKnight);
+      expect(heroClassFor({ clazz: 'Paladin', subclass: null, specialization: 'Frost' })).toBeUndefined();
+    });
+
+    it('shows the spec without a suffix and has no always-prepared table', () => {
+      expect(specializationTitle(wowDruid, 'Balance')).toBe('Balance');
+      expect(heroClassSpells(wowDruid, 20, 'Balance')).toEqual([]);
+    });
+
+    it('recommends a circle per specialization', () => {
+      expect(recommendedSubclassFor(wowDruid, 'Balance')).toBe('Circle of the Stars');
+      expect(recommendedSubclassFor(wowDruid, 'Feral')).toBe('Circle of the Moon');
+      expect(recommendedSubclassFor(wowDruid, 'Guardian')).toBe('Circle of the Moon');
+      expect(recommendedSubclassFor(wowDruid, 'Restoration')).toBe('Circle of the Land');
+      expect(recommendedSubclassFor(wowDruid, null)).toBeUndefined();
+      expect(recommendedSubclassFor(deathKnight, 'Frost')).toBeUndefined();
+    });
+
+    it('recommends starting cantrips and level-1 spells per specialization', () => {
+      expect(recommendedStartingSpells(wowDruid, 'Feral'))
+        .toEqual(['Druidcraft', 'Poison Spray', 'Cure Wounds', 'Entangle', 'Speak with Animals', 'Thunderwave']);
+      expect(recommendedStartingSpells(wowDruid, 'Guardian'))
+        .toEqual(['Druidcraft', 'Thorn Whip', 'Entangle', 'Healing Word', 'Speak with Animals', 'Thunderwave']);
+      expect(recommendedStartingSpells(wowDruid, 'Restoration'))
+        .toEqual(['Druidcraft', 'Produce Flame', 'Spare the Dying', 'Cure Wounds', 'Entangle', 'Goodberry', 'Healing Word']);
+      expect(recommendedStartingSpells(wowDruid, 'Balance')).toBe(recommendedStartingSpells(wowDruid, 'Balance'));
+      expect(recommendedStartingSpells(wowDruid, '')).toEqual([]);
+      expect(recommendedStartingSpells(deathKnight, 'Frost')).toEqual([]);
     });
   });
 });
