@@ -105,7 +105,7 @@ export class ShopPanelComponent implements OnChanges {
   get myCoinsCp(): number {
     const c = this.myPc?.coins;
     if (!c) return 0;
-    return (c.cp ?? 0) + (c.sp ?? 0) * 10 + (c.ep ?? 0) * 50 + (c.gp ?? 0) * 100 + (c.pp ?? 0) * 1000;
+    return (c.cp ?? 0) + (c.sp ?? 0) * 10 + (c.gp ?? 0) * 100;
   }
 
   canAfford(item: ShopItem): boolean {

@@ -54,7 +54,7 @@ describe('ShopPanelComponent', () => {
   });
 
   it('myCoinsCp sums the purse in copper', () => {
-    pcService.getPCById.and.returnValue({ id: 7, coins: { cp: 5, sp: 0, ep: 0, gp: 2, pp: 0 } } as PC);
+    pcService.getPCById.and.returnValue({ id: 7, coins: { cp: 5, sp: 0, gp: 2 } } as PC);
     component.state = state({ participants: [participant({ ownedByMe: true })] });
     expect(component.myCoinsCp).toBe(205); // 2 gp + 5 cp
   });
@@ -177,7 +177,7 @@ describe('ShopPanelComponent', () => {
   it('buy purchases, patches the local PC, and notifies', () => {
     pcService.getPCById.and.returnValue({ id: 7, coins: { gp: 20 } } as PC);
     shopService.purchase.and.returnValue(of({
-      coins: { cp: 0, sp: 0, ep: 0, gp: 5, pp: 0 },
+      coins: { cp: 0, sp: 0, gp: 5 },
       inventory: [{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1 }],
       totalCostCp: 1500,
     }));
