@@ -15,10 +15,11 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
+import { CIRCLE_OF_THE_MOON } from '../models/wow-druid';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight and Demon Hunter.
+// unbound World of Warcraft Death Knight, Demon Hunter and Druid.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -302,6 +303,63 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Most people see a monster, and some days she agrees.',
     },
     bio: "A night elf who gave up her eyes and took a demon's power to hunt the Burning Legion; the kin who once shunned her now need her.",
+    notes: '',
+  },
+  // World of Warcraft Druid — an ordinary Druid with the Guardian specialization and
+  // Circle of the Moon (chosen normally at level 3), so the Cat/Bear Form cards render.
+  {
+    id: 8,
+    name: 'Hrogar Earthhoof',
+    playerName: 'Hank',
+    player: 'Hank',
+    campaignId: null,
+    race: 'Goliath',
+    clazz: 'Druid',
+    subclass: CIRCLE_OF_THE_MOON,
+    specialization: 'Guardian',
+    level: 6,
+    background: 'Guide',
+    alignment: 'Neutral Good',
+    portraitInitials: 'HE',
+    portraitTint: 'emerald',
+    hp: { cur: 51, max: 51, temp: 0 },
+    ac: 14, init: 0, speed: 35, prof: 3,
+    stats: { STR: 14, DEX: 10, CON: 16, INT: 8, WIS: 17, CHA: 10 },
+    saves: ['INT', 'WIS'],
+    skills: { Animal: 'prof', Nature: 'prof', Survival: 'prof', Stealth: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 18, ep: 0, gp: 41, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 0 }, 2: { max: 3, used: 1 }, 3: { max: 3, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Druidcraft', school: 'Transmutation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Thorn Whip', school: 'Transmutation', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Entangle', school: 'Conjuration', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Healing Word', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Barkskin', school: 'Transmutation', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Aid', school: 'Abjuration', time: '1 action', prepared: false },
+      { lvl: 3, name: 'Call Lightning', school: 'Conjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Quarterstaff', dmg: '1d6+2 bludgeoning', notes: 'Versatile (1d8)' },
+    ],
+    gear: [
+      { name: 'Leather Armor', equipped: true },
+      { name: 'Shield', equipped: true },
+      { name: 'Druidic Focus (carved antler)' },
+    ],
+    features: [
+      { name: 'Primal Order', source: 'Druid 1', desc: 'Warden: martial weapons and medium armor training.' },
+      { name: 'Wild Shape', source: 'Druid 2', desc: 'Magically take a beast form a few times per rest.' },
+      { name: 'Circle Forms', source: 'Moon 3', desc: 'Wild Shape into tougher beasts; temp HP on transforming.' },
+      { name: 'Wild Resurgence', source: 'Druid 5', desc: 'Trade spell slots and Wild Shape uses.' },
+    ],
+    traits: {
+      Personality: 'Slow to speak, slower to anger, impossible to move once planted.',
+      Ideals: 'Balance. The land gives, and the land must be given back to.',
+      Bonds: 'The Cenarion Circle, who taught him the bear and the cat.',
+      Flaws: 'Trusts beasts more readily than people.',
+    },
+    bio: 'A plains wanderer who heard Ursoc in the thunder and took up the Guardian path, standing between his friends and whatever comes charging.',
     notes: '',
   },
 ];
