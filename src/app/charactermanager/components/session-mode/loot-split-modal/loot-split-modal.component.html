@@ -1,0 +1,214 @@
+<!-- Backdrop click and Escape only minimize: the split goes on without you. -->
+<div class="modal-backdrop" (click)="minimize.emit()">
+  <app-modal class="loot-split-modal" [title]="title()" closeLabel="Minimize the loot split"
+    (dismiss)="minimize.emit()">
+    <ol class="steps" aria-label="Progress">
+      <li [class.active]="!voting()" [class.done]="voting()"><span class="step-num">1</span> Split</li>
+      <li [class.active]="voting()"><span class="step-num">2</span> Vote</li>
+      <li><span class="step-num">3</span> Outcome</li>
+    </ol>
+
+    @if (!voting()) {
+      <!-- ================= SPLITTING ================= -->
+      <div class="split-grid">
+        <section class="pile" aria-labelledby="pile-h">
+          <div class="pile-head">
+            <h3 id="pile-h">The Pile</h3>
+            <span class="mono dim">{{ pileUnits() }} left</span>
+          </div>
+          @if (loot().coinCpTotal > 0) {
+            <div class="coin-row">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/></svg>
+              <span class="mono gold">{{ formatCp(loot().coinCpRemaining) || '0 gp' }}</span>
+              <span class="dim">unclaimed of {{ formatCp(loot().coinCpTotal) }}</span>
+              <button type="button" class="btn sm even" [disabled]="busy()" (click)="splitEvenly.emit()">Split evenly</button>
+            </div>
+          }
+          <div class="pile-list">
+            @for (item of pile(); track item.id) {
+              <button type="button" class="pile-item" [class.selected]="selectedId() === item.id"
+                [attr.aria-pressed]="selectedId() === item.id" (click)="pick(item)">
+                <span [class]="dotClass(item)" aria-hidden="true"></span>
+                <span class="pile-text">
+                  <span class="pile-name">{{ item.name }}</span>
+                  @if (itemMeta(item)) {
+                    <span class="mono dim small">{{ itemMeta(item) }}</span>
+                  }
+                </span>
+              </button>
+            }
+            @if (!pile().length) {
+              <p class="split-empty">
+                {{ nothingToSplit() ? 'The DM hasn’t put anything in the pool yet.' : 'No items left — every item has an owner.' }}
+              </p>
+            }
+          </div>
+          <p class="hint">
+            @if (selected(); as sel) {
+              Now choose who takes the {{ sel.name }}.
+            } @else {
+              Pick an item, then choose who takes it. Anyone at the table can move things around.
+            }
+          </p>
+        </section>
+
+        <div class="party">
+          @for (card of cards(); track card.recipient.participantId) {
+            <section class="card" [class.mine]="card.recipient.mine" [class.target]="!!selected()"
+              [attr.aria-label]="card.recipient.name">
+              <div class="card-head">
+                <span class="card-name">
+                  {{ card.recipient.name }}
+                  @if (card.recipient.mine) { <span class="you">You</span> }
+                </span>
+                <span class="mono dim small">≈ {{ gp(card.valueCp) }}</span>
+              </div>
+              @if (selected(); as sel) {
+                <button type="button" class="give" [disabled]="busy()" (click)="giveTo(card)">
+                  Give {{ sel.name }} to {{ card.recipient.name }}
+                </button>
+              }
+              <div class="lines">
+                @for (line of card.lines; track line.item.id) {
+                  <div class="line">
+                    <span [class]="dotClass(line.item)" aria-hidden="true"></span>
+                    <span class="line-name">{{ lineLabel(line) }}</span>
+                    <button type="button" class="icon-btn" [disabled]="busy()"
+                      [attr.aria-label]="'Return one ' + line.item.name + ' to the pile'" title="Return to pile"
+                      (click)="returnToPile(card, line)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
+                    </button>
+                  </div>
+                }
+                @if (!card.lines.length) {
+                  <span class="split-empty small">No items yet</span>
+                }
+              </div>
+              @if (loot().coinCpTotal > 0) {
+                <div class="gold-row">
+                  <span class="dim">Gold</span>
+                  <div class="stepper">
+                    <button type="button" class="step" [disabled]="busy() || card.coinCp <= 0"
+                      [attr.aria-label]="'Give ' + card.recipient.name + ' 10 gp less'" (click)="lessCoins(card)">−</button>
+                    <span class="mono gold amount">{{ gp(card.coinCp) }}</span>
+                    <button type="button" class="step" [disabled]="busy() || loot().coinCpRemaining <= 0"
+                      [attr.aria-label]="'Give ' + card.recipient.name + ' 10 gp more'" (click)="moreCoins(card)">+</button>
+                  </div>
+                </div>
+              }
+            </section>
+          }
+        </div>
+      </div>
+
+      @if (selected(); as sel) {
+        <!-- Phones: one big button per player, within thumb reach. -->
+        <div class="give-tray" role="group" [attr.aria-label]="'Give ' + sel.name + ' to'">
+          <div class="tray-head">
+            <span>Give <span class="gold">{{ sel.name }}</span> to…</span>
+            <button type="button" class="link" (click)="selectedId.set(null)">Cancel</button>
+          </div>
+          <div class="tray-grid">
+            @for (card of cards(); track card.recipient.participantId) {
+              <button type="button" class="tray-btn" [disabled]="busy()" (click)="giveTo(card)">
+                {{ card.recipient.name }}{{ card.recipient.mine ? ' (you)' : '' }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="footer" [class.tray-open]="!!selected()">
+        <p class="dim">{{ pileStatus() }}</p>
+        <button type="button" class="btn primary" [disabled]="busy() || !pileEmpty() || nothingToSplit()"
+          (click)="propose.emit()">Send split to vote</button>
+      </div>
+    } @else {
+      <!-- ================= VOTING ================= -->
+      <div class="vote-head">
+        <p>The split is locked while the party votes.
+          <span class="dim">It passes when {{ loot().majorityNeeded }} of {{ loot().ballots.length }} agree.</span></p>
+        <div class="tally mono" aria-label="Votes so far">
+          <span class="tally-yes">✓ {{ agreeCount() }}</span>
+          <span class="tally-no">✗ {{ objectCount() }}</span>
+          <span class="tally-wait">{{ pendingCount() }} deciding</span>
+        </div>
+      </div>
+
+      <div class="vote-grid">
+        @for (card of cards(); track card.recipient.participantId) {
+          <section class="card" [class.mine]="card.recipient.mine" [attr.aria-label]="card.recipient.name">
+            <div class="card-head">
+              <span class="card-name">
+                {{ card.recipient.name }}
+                @if (card.recipient.mine) { <span class="you">You</span> }
+              </span>
+              <span [class]="ballotClass(card)">{{ ballotText(card) }}</span>
+            </div>
+            @if (card.ballot?.pvp) {
+              <span class="pvp-tag mono">Wants PvP</span>
+            }
+            <p class="share">{{ shareLine(card) }}</p>
+            <span class="mono dim small">Share ≈ {{ gp(card.valueCp) }}</span>
+          </section>
+        }
+      </div>
+
+      <div class="visually-hidden" role="status">
+        @if (waiting()) { Your vote is in. }
+      </div>
+
+      @if (needBallot()) {
+        <section class="ballot" aria-labelledby="ballot-h">
+          <div>
+            <h3 id="ballot-h">Your vote</h3>
+            <p class="dim">Agree to take this split, or object to it.</p>
+          </div>
+          <div class="ballot-actions">
+            <button type="button" class="vote-btn no" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: false, pvp: null })">✗ Object</button>
+            <button type="button" class="vote-btn yes" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: true, pvp: null })">✓ Agree</button>
+          </div>
+        </section>
+      }
+
+      @if (needPvpChoice()) {
+        <section class="pvp" role="alertdialog" aria-labelledby="pvp-h" aria-describedby="pvp-d">
+          <div>
+            <h3 id="pvp-h">You objected. Settle it with steel?</h3>
+            <p id="pvp-d"><strong>Yes</strong> cancels this loot for everyone and starts PvP.
+              <strong>No</strong> keeps your ✗ as a vote against the split.</p>
+            <button type="button" class="link" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: null, pvp: null })">Change my vote</button>
+          </div>
+          <div class="pvp-actions">
+            <button type="button" class="btn" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: false, pvp: false })">No, just object</button>
+            <button type="button" class="vote-btn pvp-yes" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: false, pvp: true })">Yes, PvP</button>
+          </div>
+        </section>
+      }
+
+      @if (waiting()) {
+        <section class="waiting">
+          <p>
+            @if (myBallot()) {
+              Your vote: <span [class]="myBallot()!.vote ? 'yes-text' : 'no-text'">{{ myVoteText() }}</span>.
+            }
+            <span class="dim">
+              {{ waitingOn().length ? 'Waiting on ' + waitingOn().join(', ') + '…' : 'Tallying the votes…' }}
+            </span>
+          </p>
+          @if (myBallot()) {
+            <button type="button" class="btn" [disabled]="busy()"
+              (click)="ballotCast.emit({ vote: null, pvp: null })">Change my vote</button>
+          }
+        </section>
+      }
+    }
+  </app-modal>
+</div>

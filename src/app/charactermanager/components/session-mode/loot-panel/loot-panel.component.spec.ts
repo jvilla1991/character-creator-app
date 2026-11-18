@@ -32,7 +32,7 @@ describe('LootPanelComponent', () => {
       shortRestOpen: false, turnSound: null,
       shopOpen: false, shopForMe: false, shopCategory: null, lootStatus: null, lootName: null,
       myXp: null, myLevelGrant: null, gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
-      restVote: null, ...over,
+      restVote: null, lootResult: null, ...over,
     };
   }
 
@@ -41,7 +41,13 @@ describe('LootPanelComponent', () => {
       id: 20, sessionId: 1, name: 'Goblin Ambush', dropped: true,
       coinCpTotal: 12550, coinCpRemaining: 12550,
       items: [{ id: 30, catalogItemKey: 'longsword', name: 'Longsword', custom: false,
-                customNotes: null, qty: 2, qtyRemaining: 2 }],
+                customNotes: null, qty: 2, qtyRemaining: 2, valueCp: 1500 }],
+      phase: 'SPLITTING',
+      recipients: [
+        { participantId: 1, pcId: 7, name: 'Aria', mine: true },
+        { participantId: 2, pcId: 8, name: 'Brakka', mine: false },
+      ],
+      allocations: [], coinShares: [], ballots: [], majorityNeeded: 2,
       ...over,
     };
   }
@@ -49,10 +55,11 @@ describe('LootPanelComponent', () => {
   beforeEach(() => {
     lootService = jasmine.createSpyObj('LootService',
       ['open', 'drop', 'close', 'addItem', 'updateItem', 'removeItem', 'setCoins',
-       'getLoot', 'claimItem', 'claimCoins']);
+       'getLoot', 'assign', 'setCoinShare', 'splitCoinsEvenly', 'propose', 'vote', 'override']);
+    lootService.getLoot.and.returnValue(of(null)); // tests that care about the pool stub their own
     curatedLootService = jasmine.createSpyObj('CuratedLootService', ['list']);
     curatedLootService.list.and.returnValue(of([]));
-    pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC']);
+    pcService = jasmine.createSpyObj('PCService', ['getPCById', 'patchLocalPC', 'refreshPC']);
     notifications = jasmine.createSpyObj('NotificationService', ['notify']);
     component = TestBed.runInInjectionContext(() => new LootPanelComponent(
       lootService, curatedLootService, pcService, notifications));
@@ -70,7 +77,7 @@ describe('LootPanelComponent', () => {
     expect(lootService.getLoot).toHaveBeenCalledTimes(1);
 
     component.state = state({ lootStatus: 'DROPPED', version: 2 });
-    component.ngOnChanges(); // someone claimed — version bumped
+    component.ngOnChanges(); // someone moved an item — version bumped
     expect(lootService.getLoot).toHaveBeenCalledTimes(2);
   });
 
@@ -147,83 +154,171 @@ describe('LootPanelComponent', () => {
     expect(component.loot).toBeNull();
   });
 
-  // ── player claims ───────────────────────────────────────────────────────────
+  // ── party split ─────────────────────────────────────────────────────────────
 
-  it('claim mirrors coins/inventory into the PC store and replaces the pool', () => {
-    const remaining = pool({ items: [{ id: 30, catalogItemKey: 'longsword', name: 'Longsword',
-      custom: false, customNotes: null, qty: 2, qtyRemaining: 1 }] });
-    const result = {
-      coins: { cp: 0, sp: 0, ep: 0, gp: 5, pp: 0 },
-      inventory: [{ name: 'Longsword', category: 'weapon', qty: 1 }],
-      loot: remaining,
-    };
-    lootService.claimItem.and.returnValue(of(result));
-    component.state = state({ lootStatus: 'DROPPED',
-      participants: [participant({ ownedByMe: true, pcId: 7 })] });
+  function seatedPlayer(over: Partial<SessionState> = {}): SessionState {
+    return state({ lootStatus: 'DROPPED', participants: [participant({ ownedByMe: true, pcId: 7 })], ...over });
+  }
+
+  it('a move goes to the assign endpoint and the returned pool replaces ours', () => {
+    const moved = pool({ allocations: [{ participantId: 2, lootItemId: 30, qty: 1 }] });
+    lootService.assign.and.returnValue(of(moved));
+    component.state = seatedPlayer();
     component.loot = pool();
 
-    component.claim(component.loot.items[0]);
+    component.onMove({ lootItemId: 30, fromParticipantId: null, toParticipantId: 2 });
 
-    expect(lootService.claimItem).toHaveBeenCalledWith(1, 7, 30, 1);
-    expect(pcService.patchLocalPC).toHaveBeenCalledWith(7,
-      { coins: result.coins, inventory: result.inventory });
-    expect(component.loot).toBe(remaining);
-    expect(notifications.notify).toHaveBeenCalledWith('Claimed Longsword.');
+    expect(lootService.assign).toHaveBeenCalledWith(1, 30, null, 2);
+    expect(component.loot).toBe(moved);
+    expect(component.busy).toBeFalse();
   });
 
-  it('claim clamps the requested qty to what remains', () => {
-    lootService.claimItem.and.returnValue(of({ coins: {}, inventory: [], loot: pool() }));
-    component.state = state({ lootStatus: 'DROPPED',
-      participants: [participant({ ownedByMe: true, pcId: 7 })] });
-    component.loot = pool();
-    component.claimQty[30] = 99;
-    component.claim(component.loot.items[0]);
-    expect(lootService.claimItem).toHaveBeenCalledWith(1, 7, 30, 2); // only 2 remain
-  });
-
-  it('a lost race (409) shows a toast and refetches the pool', () => {
-    lootService.claimItem.and.returnValue(throwError(() => ({ status: 409 })));
-    lootService.getLoot.and.returnValue(of(pool({ items: [] })));
-    component.state = state({ lootStatus: 'DROPPED',
-      participants: [participant({ ownedByMe: true, pcId: 7 })] });
+  it('a lost race (409) shows the server message and refetches the pool', () => {
+    lootService.assign.and.returnValue(throwError(() => ({ status: 409, error: { message: 'That item already moved' } })));
+    lootService.getLoot.and.returnValue(of(pool()));
+    component.state = seatedPlayer();
     component.loot = pool();
 
-    component.claim(component.loot.items[0]);
+    component.onMove({ lootItemId: 30, fromParticipantId: null, toParticipantId: 2 });
 
-    expect(notifications.notify).toHaveBeenCalledWith('Someone got there first.');
+    expect(notifications.notify).toHaveBeenCalledWith('That item already moved');
     expect(lootService.getLoot).toHaveBeenCalled();
-    expect(component.busyItemId).toBeNull();
+    expect(component.busy).toBeFalse();
   });
 
-  it('takeCoins converts gp to copper and credits the purse', () => {
-    const result = { coins: { cp: 0, sp: 0, ep: 0, gp: 26, pp: 0 }, inventory: [],
-      loot: pool({ coinCpRemaining: 10050 }) };
-    lootService.claimCoins.and.returnValue(of(result));
-    component.state = state({ lootStatus: 'DROPPED',
-      participants: [participant({ ownedByMe: true, pcId: 7 })] });
+  it('coin, even-split, propose and ballot actions hit their endpoints', () => {
+    lootService.setCoinShare.and.returnValue(of(pool()));
+    lootService.splitCoinsEvenly.and.returnValue(of(pool()));
+    lootService.propose.and.returnValue(of(pool({ phase: 'VOTING' })));
+    lootService.vote.and.returnValue(of(pool({ phase: 'VOTING' })));
+    component.state = seatedPlayer();
     component.loot = pool();
-    component.takeGp = 25;
 
-    component.takeCoins();
+    component.onCoinChange({ participantId: 1, coinCp: 1000 });
+    component.onSplitEvenly();
+    component.onPropose();
+    component.onBallot({ vote: false, pvp: true });
 
-    expect(lootService.claimCoins).toHaveBeenCalledWith(1, 7, { cp: 2500 });
-    expect(pcService.patchLocalPC).toHaveBeenCalledWith(7, { coins: result.coins });
-    expect(component.takeGp).toBeNull();
+    expect(lootService.setCoinShare).toHaveBeenCalledWith(1, 1, 1000);
+    expect(lootService.splitCoinsEvenly).toHaveBeenCalledWith(1);
+    expect(lootService.propose).toHaveBeenCalledWith(1);
+    expect(lootService.vote).toHaveBeenCalledWith(1, false, true);
   });
 
-  it('takeCoins ignores a non-positive amount', () => {
-    component.state = state({ lootStatus: 'DROPPED',
-      participants: [participant({ ownedByMe: true, pcId: 7 })] });
-    component.loot = pool();
-    component.takeGp = 0;
-    component.takeCoins();
-    expect(lootService.claimCoins).not.toHaveBeenCalled();
+  it('a vote that resolves the split (204) clears the pool', () => {
+    lootService.vote.and.returnValue(of(null));
+    component.state = seatedPlayer();
+    component.loot = pool({ phase: 'VOTING' });
+
+    component.onBallot({ vote: true, pvp: null });
+
+    expect(component.loot).toBeNull();
   });
 
-  it('claim does nothing without an owned seated PC', () => {
-    component.state = state({ lootStatus: 'DROPPED', participants: [participant()] }); // not mine
+  it('shows the split modal to a seated player, and minimizing hides it until the phase moves', () => {
+    lootService.getLoot.and.returnValue(of(pool()));
+    component.state = seatedPlayer();
+    component.ngOnChanges();
+    expect(component.showSplitModal).toBeTrue();
+
+    component.minimize();
+    expect(component.showSplitModal).toBeFalse();
+
+    lootService.getLoot.and.returnValue(of(pool({ phase: 'VOTING' })));
+    component.state = seatedPlayer({ version: 2 });
+    component.ngOnChanges(); // the vote opened — the modal pops back up
+    expect(component.showSplitModal).toBeTrue();
+  });
+
+  it('never shows the split modal to the DM', () => {
+    lootService.getLoot.and.returnValue(of(pool()));
+    component.state = state({ dm: true, lootStatus: 'DROPPED' });
+    component.ngOnChanges();
+    expect(component.showSplitModal).toBeFalse();
+  });
+
+  it('the DM override goes to the override endpoint', () => {
+    lootService.override.and.returnValue(of(null));
+    component.state = state({ dm: true, lootStatus: 'DROPPED' });
     component.loot = pool();
-    component.claim(component.loot.items[0]);
-    expect(lootService.claimItem).not.toHaveBeenCalled();
+
+    component.overrideSplit('APPROVE');
+
+    expect(lootService.override).toHaveBeenCalledWith(1, 'APPROVE');
+    expect(component.loot).toBeNull();
+  });
+
+  // ── outcome ─────────────────────────────────────────────────────────────────
+
+  function result(outcome: 'APPROVED' | 'PVP' | 'NO_MAJORITY', id = 5) {
+    return { id, outcome, lootName: 'Goblin Ambush', pvpCallers: outcome === 'PVP' ? ['Brakka'] : [],
+      agreeCount: 2, objectCount: 1, createdAt: new Date().toISOString() };
+  }
+
+  it('an approved split shows the outcome with who got what, and refreshes my sheet', () => {
+    const voted = pool({ phase: 'VOTING', coinCpRemaining: 0,
+      items: [{ id: 30, catalogItemKey: 'longsword', name: 'Longsword', custom: false,
+                customNotes: null, qty: 2, qtyRemaining: 0, valueCp: 1500 }],
+      allocations: [{ participantId: 1, lootItemId: 30, qty: 2 }],
+      coinShares: [{ participantId: 2, coinCp: 12550 }] });
+    lootService.getLoot.and.returnValue(of(voted));
+    component.state = seatedPlayer({ version: 3 });
+    component.ngOnChanges();
+
+    component.state = seatedPlayer({ version: 4, lootStatus: null, lootResult: result('APPROVED') });
+    component.ngOnChanges();
+
+    expect(component.outcome!.result.outcome).toBe('APPROVED');
+    expect(component.outcome!.shares).toEqual([
+      { participantId: 1, name: 'Aria', share: 'Longsword ×2' },
+      { participantId: 2, name: 'Brakka', share: jasmine.stringContaining('gp') },
+    ]);
+    expect(pcService.refreshPC).toHaveBeenCalledWith(7);
+    expect(notifications.notify).toHaveBeenCalledWith('Loot split approved 2–1.');
+  });
+
+  it('a PvP cancel shows the outcome naming who drew steel; the DM only gets a toast', () => {
+    component.state = seatedPlayer({ lootResult: null });
+    component.ngOnChanges();
+    component.state = seatedPlayer({ version: 2, lootStatus: null, lootResult: result('PVP') });
+    component.ngOnChanges();
+    expect(component.outcomeMessage(component.outcome!.result)).toContain('Brakka chose PvP');
+    expect(pcService.refreshPC).not.toHaveBeenCalled();
+
+    const dmPanel = TestBed.runInInjectionContext(() => new LootPanelComponent(
+      lootService, curatedLootService, pcService, notifications));
+    dmPanel.state = state({ dm: true, lootResult: null });
+    dmPanel.ngOnChanges();
+    dmPanel.state = state({ dm: true, version: 2, lootResult: result('PVP', 6) });
+    dmPanel.ngOnChanges();
+    expect(dmPanel.outcome).toBeNull();
+    expect(notifications.notify).toHaveBeenCalledWith('Brakka called PvP — the loot is back in your draft.');
+  });
+
+  it('a no-majority result only toasts (the split re-opens in the modal)', () => {
+    component.state = seatedPlayer({ lootResult: null });
+    component.ngOnChanges();
+    component.state = seatedPlayer({ version: 2, lootResult: result('NO_MAJORITY') });
+    component.ngOnChanges();
+    expect(component.outcome).toBeNull();
+    expect(notifications.notify).toHaveBeenCalledWith('No majority (2–1) — back to the pile.');
+  });
+
+  it('a stale outcome seen on first load (a reload) is not announced', () => {
+    const old = { ...result('APPROVED'), createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString() };
+    component.state = seatedPlayer({ lootStatus: null, lootResult: old });
+    component.ngOnChanges();
+    expect(component.outcome).toBeNull();
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('announces each result once', () => {
+    component.state = seatedPlayer({ lootResult: null });
+    component.ngOnChanges();
+    component.state = seatedPlayer({ version: 2, lootResult: result('NO_MAJORITY') });
+    component.ngOnChanges();
+    component.state = seatedPlayer({ version: 3, lootResult: result('NO_MAJORITY') });
+    component.ngOnChanges();
+    expect(notifications.notify).toHaveBeenCalledTimes(1);
   });
 });
