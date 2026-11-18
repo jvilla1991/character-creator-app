@@ -619,6 +619,7 @@ All four took the recommended option. These are settled; later slices should not
 | 12–15, 18, 25 + a11y notes | `fix/a11y-deferred-backlog` (slice 2) | Done — disabled `.btn` state, a shared modal shell (Escape on all 13 dialogs, topmost only), the phone drawer as a modal dialog, turn / session / rest-vote live regions, named controls, app-wide reduced motion with a static turn cue, and the remaining a11y-notes items. See "Slice 2 results" below. |
 | 9–11, 13–14, 20, 23 + launcher bug | `fix/responsive-pass` (slice 3) | Done — initiative board as cards on narrow boards, auth pages scroll, phone sheet header and source-order fix, drawer closes on campaign pick with a contextual top bar, full-width toasts, every listed target at 24px or more, and the dice launcher / toast / settings stacking. See "Slice 3 results" below. |
 | 19 | `chore/type-floor` | Done — all 61 sub-11px declarations lifted to `var(--text-2xs)` with the tracking ladder, 0 sub-11px nodes on every reachable screen at 320 / 375 / 414 / 1280, seven tight spots re-laid out instead of shrunk, two faded wizard labels brought up to AA. See "Type-floor results" below. |
+| 16–17 | `fix/harden-feedback` | Done — the 56 save / grant / curated-editor / session failures that only reached `console.error` now toast what did not happen (server 4xx message when there is one), failed list loads say so with a retry, and fields put back to the saved value; End Session and Leave stay put when refused. Curated deletes, note deletes, End Session — plus End Encounter and removing a player, which used `window.confirm` — go through one shared crimson confirm. See "Harden results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -826,3 +827,86 @@ changed label on every reachable surface: midnight ≥ 5.16:1, candlelit ≥ 5.2
 **Not covered:** the level-up modal's `.slot-lvl` and the session spell-reference card's `dt` /
 `.tag` (demo data opens neither; checked in source only: both are 11px now); the spellbook in the in-app browser (viewport-deferred while the pane was hidden; the
 Cypress `sheet-spell-groups` screenshot shows the 11px `PREPARED` chips at 1280px); real devices.
+
+#### Harden results (2026-11-17)
+
+Branch `fix/harden-feedback`, cut from `develop` at `9f3b230` (Demon Hunter merge). `doctor`
+ran first: no `auto` fixes; it mentions the stale `.impeccable/design.json` sidecar (refresh with
+`/impeccable document`) and an unset `buildPath` (no choice to record without image generation).
+`/impeccable harden` drove the work, scoped to ranks 16–17 only. Every finding was re-read on
+`develop` before fixing: none had been fixed in the meantime, and three session failures (open a
+PC's sheet, start / end encounter) already toasted, so they only moved onto the new helper.
+
+**Rank 16 — silent failures.** `develop` had 62 `console.error` calls; 56 were failures the user
+never saw, plus End Session and Leave, which logged nothing and **exited the screen even when the
+server refused** — the DM saw the session end while players were still in it.
+
+| Area | Sites | What the user now gets |
+|---|---|---|
+| Curated encounters / loot / shops | 24 | A toast for create, open, notes, add, remove, price, coins, import category, copy, delete. A failed **list load** shows "Could not load … Try again" with a retry button instead of "No … yet". A failed **coin pile** or **price override** puts the field back to the saved value (the notes draft is kept). |
+| Dashboard | 10 | Session notes (load with retry, add, edit, delete), week editor, party binding, start session, delete campaign (dialog stays open to retry), create campaign, opening a hero whose full sheet failed (says edits may not save). |
+| Sheet | 9 | Sheet saves, level-up grant, feature / spell / language / item grants, inspiration, follower save (already reverted, now says so) and dismiss, character notes, character delete. The sheet renders from the server-confirmed character, so no optimistic value is left behind. |
+| Session | 13 + End / Leave | Initiative, HP, XP, XP to all, inspiration, add enemy, remove, visibility, turn sound, advance turn, session note, AC after a sale, the shared roll log. The initiative box and both selects go back to the saved value. End Session / Leave stay on screen on failure ("It is still running — try again"); a 404 / 409 (already gone) still exits. |
+
+One helper, `NotificationService.error(fallback, err)`: shows the server's own message for a 4xx
+that carries one (e.g. "Unknown catalog keys: …"), otherwise the fallback, which names what did
+not happen and the recovery. 5xx bodies and offline (status 0) never reach the toast. It still
+logs, and holds 6 s instead of 4. No new toast pattern; the existing one carries an always-present
+`role="status"` region, so every error is announced.
+
+**Left on `console.error` on purpose:** the three background loads in services — the campaign
+list, the PC list and the 2 s session poll. They are not saves or actions, and a poll that
+toasted on every blip would bury the table in noise. A failed initial PC or campaign load still
+reads as an empty roster; that belongs with the empty-state work in slice 4 (rank 27).
+
+**Rank 17 — unguarded destructive actions.** The app had two confirm patterns (the crimson
+`<app-modal>` alertdialog for character and campaign delete, and the followers panel's inline
+"Dismiss for good / Keep"). The modal one fits a one-tap delete, so it became **one shared
+confirm**: `ConfirmService.confirm({...})` opens a crimson `alertdialog` rendered once at the app
+shell (`ConfirmHostComponent`), on the slice-2 shell — Escape, focus-in, Tab trap, focus return.
+Cancel is first, so focus lands on it and Enter on a fresh dialog never destroys anything; Escape,
+the ✕ and the backdrop all cancel; one open at a time. Now guarded:
+
+| Action | Where | Confirm copy (subject + message) |
+|---|---|---|
+| Delete encounter | dashboard | *name* "will be erased along with its N combatants. This cannot be undone." |
+| Delete loot list / shop | dashboard | *name* "will be erased along with its items and coins / stock and prices." |
+| Delete session note | dashboard | *“opening 60 characters…”* "will be erased from the session notes." |
+| End Session | session | "The session closes for everyone…" — **Keep Playing** / End Session |
+| End Encounter, remove a player | session | were `window.confirm`; now the same dialog (Keep Fighting; enemies still remove without asking) |
+
+Removing a single creature, loot line or shop item stays one tap: each is cheap to re-add, and a
+confirm there would cost more than it saves.
+
+**Demo-mode verification** (in-app browser, `localStorage.demoMode='true'`, DM view). Demo mode
+already rejects most curated writes, which exercised the real paths; the rest were forced by
+swapping one service method for a failing observable through `ng.getComponent` in the dev build.
+
+| Path | Result |
+|---|---|
+| Create encounter (demo rejects) | Toast + live region "Could not create the encounter. Try again."; typed name kept; Create re-enabled |
+| Open encounter (demo rejects) | "Could not open that encounter. Try again." |
+| Delete encounter → backdrop / Cancel | Dialog closes, encounter still open |
+| Delete encounter → confirm, forced 500 with a Java message | Toast shows the fallback, not the server text; editor stays open |
+| Loot list load, forced offline | "Could not load the loot lists. TRY AGAIN" in place of the empty state; retry restores it |
+| Shop price override, forced 500 | Field back to its saved (empty) value + toast |
+| Delete note → Escape | Closes, note kept, focus back on that note's ✕; confirm deletes it |
+| End Session → Tab ×3 | Focus cycles Keep Playing → End Session → ✕ → Keep Playing (trapped) |
+| End Session → Keep Playing | Focus returns to End Session; session still live |
+| End Session → confirm, forced 503 | DM stays on the session screen; "Could not end the session. It is still running — try again." |
+| Initiative box / visibility select, forced 500 | Back to 4 / "hidden"; toast names the combatant / action |
+| Remove Lyra → Escape | Dialog "Lyra Moonwhisper leaves the session…", row kept |
+| End Encounter → Keep Fighting, then confirm | Stays active, then back to the lobby |
+| Confirm at 375px in vellum and candlelit | 345px wide, no horizontal scroll, Cancel focus ring visible |
+
+**Gates.** `check:tokens` OK (1365 `var()` uses), `check:contrast` 135/135, `ng test` 1177/1177
+(two full runs; a first run made in parallel with a production build had one unnamed failure that
+did not recur), Cypress 5/5 specs (12 tests) against the branch, production build **449.07 kB**
+initial (budget 497 kB). New specs: the error helper, the confirm host (render, focus, every cancel
+route, one-at-a-time), cancel paths for every guarded delete, End Session / Leave failure and the
+field revert paths.
+
+**Not covered:** the Leave failure and the dashboard's party-binding / start-session failures were
+checked by spec only (demo mode cannot refuse them); real backend 4xx bodies (the helper reads
+`error.message`, as the loot and shop panels already did); real devices. The pre-existing NG8107
+warning in `initiative-panel.component.html:97` is from `develop`.
