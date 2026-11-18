@@ -1,6 +1,7 @@
 import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, inject, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
+import { SellRequest } from '../../models/shop';
 import { CampaignLocation } from '../../models/campaign';
 import { Follower, followerToPc, pcToStatBlock } from '../../models/follower';
 import { PCService } from '../../services/pc.service';
@@ -107,8 +108,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   readonly connectRequested = output<void>();
   /** Character has no campaign — player asks to join one (opens the join modal). */
   readonly joinCampaignRequested = output<void>();
-  /** Player sells the inventory item at this index; bubbled from the inventory panel. */
-  readonly sellRequested = output<number>();
+  /** Player sells some of an inventory line; bubbled from the inventory panel. */
+  readonly sellRequested = output<SellRequest>();
   /** In-session survival action (eat/drink); bubbled from the survival panel so
    *  the host can call the server-authoritative consume endpoint. */
   readonly survivalActionRequested = output<SurvivalAction>();

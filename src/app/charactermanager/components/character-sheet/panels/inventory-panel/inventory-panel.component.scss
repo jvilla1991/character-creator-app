@@ -74,6 +74,18 @@
   gap: 6px;
 }
 
+// "Sell how many?" — takes the place of the row's buttons while it is open.
+.sell-confirm {
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+
+  .sell-qty {
+    width: 64px;
+    padding: 4px 6px;
+  }
+}
+
 .inv-btn {
   font-family: inherit;
   font-size: 12px;

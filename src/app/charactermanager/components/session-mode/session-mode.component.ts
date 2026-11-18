@@ -10,7 +10,7 @@ import { ConfirmService } from '../modal/confirm.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { LevelUpPromptService } from '../../services/level-up-prompt.service';
-import { formatCp } from '../../models/shop';
+import { formatCp, SellRequest } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
@@ -520,14 +520,14 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * The player sells the inventory item at `index` (bubbled up from the
-   * character sheet's inventory panel) back to the open shop.
+   * The player sells `qty` units of the inventory line at `index` (bubbled up
+   * from the character sheet's inventory panel) back to the open shop.
    */
-  sell(index: number, state: SessionState): void {
+  sell({ index, qty }: SellRequest, state: SessionState): void {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
     if (mine?.pcId == null) return;
     const pcId = mine.pcId;
-    this.shopService.sell(state.sessionId, pcId, index).subscribe({
+    this.shopService.sell(state.sessionId, pcId, index, qty).subscribe({
       next: result => {
         // Capture the pre-sell inventory first — selling an equipped armor
         // piece changes AC, and the comparison needs the old equipped set.

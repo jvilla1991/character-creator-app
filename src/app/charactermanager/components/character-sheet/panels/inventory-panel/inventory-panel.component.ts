@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
-import { categoryLabelFor, formatCp } from '../../../../models/shop';
+import { categoryLabelFor, formatCp, SellRequest } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
 import { withRecomputedAc } from '../../../../utils/armor-math';
 import { legacyEquipmentLines } from '../../../../utils/legacy-equipment';
@@ -113,9 +113,11 @@ export class InventoryPanelComponent {
    *  (which also drives the in-session sell/equip embed). */
   @Input() addAllowed = false;
   readonly pcChange = output<PC>();
-  /** Player sells the item at this inventory index; the host owns the actual
-   *  sell transaction (it needs the session/shop context this panel doesn't have). */
-  readonly sellRequested = output<number>();
+  /** Player sells some (or all) of a line; the host owns the actual sell
+   *  transaction (it needs the session/shop context this panel doesn't have).
+   *  `index` is the line's position in `pc.inventory`, which is what the server
+   *  addresses — not its position in the list shown here (supplies are hidden). */
+  readonly sellRequested = output<SellRequest>();
   /** DM grants this (already-denormalized) item; emitted as a bare payload so the
    *  host can route it through GrantService's refetch-merge-save rather than
    *  PUTting this panel's possibly-stale PC copy. */
@@ -237,8 +239,49 @@ export class InventoryPanelComponent {
     return !!item.catalogKey || (item.unitCostCp != null && item.unitCostCp > 0);
   }
 
+  /** The stack waiting on "sell how many?" — only stacks of 2+ ask. */
+  sellPrompt: { item: PcItem; qty: number } | null = null;
+
+  /** Sell clicked: a single item sells straight away; a stack first asks how
+   *  many (defaulting to all of it). */
   sell(index: number): void {
-    this.sellRequested.emit(index);
+    const item = this.items[index];
+    if (!item || !this.canSell(item)) return;
+    if ((item.qty ?? 1) > 1) {
+      this.sellPrompt = { item, qty: item.qty };
+      return;
+    }
+    this.emitSell(item, 1);
+  }
+
+  setSellQty(value: string): void {
+    if (this.sellPrompt) this.sellPrompt = { ...this.sellPrompt, qty: Number(value) };
+  }
+
+  /** True when the typed quantity is a whole number from 1 to the stack size. */
+  get sellQtyValid(): boolean {
+    const prompt = this.sellPrompt;
+    return !!prompt && Number.isInteger(prompt.qty) && prompt.qty >= 1 && prompt.qty <= (prompt.item.qty ?? 1);
+  }
+
+  confirmSell(): void {
+    const prompt = this.sellPrompt;
+    if (!prompt || !this.sellQtyValid) return;
+    this.sellPrompt = null;
+    this.emitSell(prompt.item, prompt.qty);
+  }
+
+  cancelSell(): void {
+    this.sellPrompt = null;
+  }
+
+  private emitSell(item: PcItem, qty: number): void {
+    // The server sells by position in pc.inventory. A line that is not there
+    // (starting gear not folded in yet, or the inventory changed under the
+    // prompt) has no position to send, so nothing is sold.
+    const index = (this.pc.inventory ?? []).indexOf(item);
+    if (index < 0) return;
+    this.sellRequested.emit({ index, qty });
   }
 
   private emit(inventory: PcItem[]): void {

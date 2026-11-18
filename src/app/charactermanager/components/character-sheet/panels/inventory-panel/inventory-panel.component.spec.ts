@@ -420,10 +420,61 @@ describe('InventoryPanelComponent', () => {
     });
   });
 
-  it('sell() emits the requested index via sellRequested', () => {
-    const spy = spyOn(component.sellRequested, 'emit');
-    component.sell(2);
-    expect(spy).toHaveBeenCalledWith(2);
+  describe('sell', () => {
+    const supply: PcItem = { name: 'Rations', category: 'gear', qty: 4, catalogKey: 'rations' };
+    const sword: PcItem = { name: 'Longsword', category: 'weapon', qty: 1, catalogKey: 'longsword' };
+    const arrows: PcItem = { name: 'Arrows', category: 'weapon', qty: 20, catalogKey: 'arrows' };
+    let spy: jasmine.Spy;
+
+    beforeEach(() => {
+      component.pc = { ...component.pc, inventory: [supply, sword, arrows], weapons: [], gear: [] };
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+      spy = spyOn(component.sellRequested, 'emit');
+    });
+
+    it('sells a single item straight away, by its position in pc.inventory', () => {
+      // The hidden supply line sits first, so the sword is row 0 here but
+      // index 1 in pc.inventory — the server needs the latter.
+      expect(component.items[0]).toBe(sword);
+      component.sell(0);
+      expect(spy).toHaveBeenCalledWith({ index: 1, qty: 1 });
+      expect(component.sellPrompt).toBeNull();
+    });
+
+    it('asks how many before selling from a stack, defaulting to all of it', () => {
+      component.sell(1);
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.sellPrompt).toEqual({ item: arrows, qty: 20 });
+
+      component.setSellQty('5');
+      component.confirmSell();
+      expect(spy).toHaveBeenCalledWith({ index: 2, qty: 5 });
+      expect(component.sellPrompt).toBeNull();
+    });
+
+    it('refuses a quantity outside the stack', () => {
+      component.sell(1);
+      for (const bad of ['0', '21', '2.5', '']) {
+        component.setSellQty(bad);
+        expect(component.sellQtyValid).withContext(bad).toBeFalse();
+        component.confirmSell();
+      }
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('cancel closes the prompt without selling', () => {
+      component.sell(1);
+      component.cancelSell();
+      expect(component.sellPrompt).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the shop will not buy the line', () => {
+      component.shopOpenForMe = false;
+      component.sell(0);
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 
   // --- DM grants (the shared composer authors; this panel maps → PcItem) ---
