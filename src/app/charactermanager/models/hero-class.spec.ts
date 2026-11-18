@@ -11,10 +11,10 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
-        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
       ]);
     });
 
@@ -259,6 +259,51 @@ describe('hero-class', () => {
       expect(subclassSource(EBON_BLADE_SUBCLASS)).toBe('World of Warcraft');
       expect(subclassSource('Oath of Devotion')).toBeUndefined();
       expect(subclassSource(null)).toBeUndefined();
+    });
+  });
+
+  describe('World of Warcraft Rogue', () => {
+    const wowRogue = heroClassByKey('Rogue (World of Warcraft)') as HeroClassOption;
+
+    it('is a Rogue variant with no fixed subclass, labelled just "Rogue", beside the base Rogue', () => {
+      const rows = buildClassOptions(['Paladin', 'Rogue']).filter(o => o.label === 'Rogue');
+      expect(rows.map(o => [o.key, o.source])).toEqual([
+        ['Rogue', 'Base Game'], ['Rogue (World of Warcraft)', 'World of Warcraft'],
+      ]);
+      expect(wowRogue.baseClass).toBe('Rogue');
+      expect(wowRogue.subclass).toBeUndefined();
+      expect(wowRogue.subclassNote).toBe('Chosen as normal at Rogue level 3');
+      expect(wowRogue.respecOnLevelUp).toBeTrue();
+      expect(wowRogue.specializations.map(s => s.name)).toEqual(['Assassination', 'Outlaw', 'Subtlety']);
+      expect(wowRogue.specializations.every(s => s.desc.length > 20)).toBeTrue();
+      expect(specializationTitle(wowRogue, 'Outlaw')).toBe('Outlaw');
+    });
+
+    it('identifies a WoW rogue by clazz rogue + a rogue specialization, or the Swashbuckler', () => {
+      expect(heroClassFor({ clazz: 'Rogue', subclass: null, specialization: 'Outlaw' })).toBe(wowRogue);
+      expect(heroClassFor({ clazz: 'rogue', subclass: 'Thief', specialization: 'Subtlety' })).toBe(wowRogue);
+      expect(heroClassFor({ clazz: 'Rogue', subclass: 'Swashbuckler', specialization: null })).toBe(wowRogue);
+      expect(heroClassFor({ clazz: 'Rogue', subclass: 'Arcane Trickster', specialization: null })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Fighter', subclass: 'Swashbuckler' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Rogue', specialization: 'Holy' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Paladin', specialization: 'Outlaw' })).toBeUndefined();
+    });
+
+    it('recommends a subclass per specialization, and no fighting styles or starting spells', () => {
+      expect(recommendedSubclassFor(wowRogue, 'Assassination')).toBe('Assassin');
+      expect(recommendedSubclassFor(wowRogue, 'Outlaw')).toBe('Swashbuckler');
+      expect(recommendedSubclassFor(wowRogue, 'Subtlety')).toBe('Soulknife');
+      for (const spec of ['Assassination', 'Outlaw', 'Subtlety']) {
+        expect(recommendedFightingStylesFor(wowRogue, spec)).toEqual([]);
+        expect(recommendedStartingSpells(wowRogue, spec)).toEqual([]);
+      }
+    });
+
+    it('owns the WoW-only Swashbuckler (no always-prepared spells) and tags it World of Warcraft', () => {
+      expect(subclassSource('Swashbuckler')).toBe('World of Warcraft');
+      expect(subclassSource('swashbuckler')).toBe('World of Warcraft');
+      expect(subclassSource('Soulknife')).toBeUndefined();
+      expect(subclassSpellsFor(wowRogue, 'Swashbuckler', 20)).toEqual([]);
     });
   });
 

@@ -1,7 +1,7 @@
 import { HERO_CLASSES } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
-  WOW_PALADIN_SUGGESTED_SPELLS,
+  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE,
 } from './wow-class-variants';
 
 describe('wow-class-variants', () => {
@@ -96,6 +96,52 @@ describe('wow-class-variants', () => {
         subclass: { name: 'Oath of Vengeance' },
         feats: ['Crusher', 'Great Weapon Master', 'Slasher'],
       }));
+    });
+  });
+
+  describe('Rogue', () => {
+    it('calls its subclass a subclass, has one guidance set per specialization and no spells', () => {
+      expect(WOW_ROGUE.subclassTerm).toBe('subclass');
+      const specs = WOW_ROGUE.specializations.map(s => s.name);
+      expect(specs).toEqual(['Assassination', 'Outlaw', 'Subtlety']);
+      expect(Object.keys(WOW_ROGUE_GUIDANCE)).toEqual(specs);
+      expect(WOW_ROGUE.suggestedSpells).toBeUndefined();
+      expect(WOW_ROGUE.subclassSpells).toBeUndefined();
+      expect(WOW_ROGUE.spellTable).toEqual([]);
+      expect(WOW_ROGUE.wowSubclasses).toEqual(['Swashbuckler']);
+      expect(WOW_ROGUE.blurb).toContain('SI:7');
+      for (const g of Object.values(WOW_ROGUE_GUIDANCE)) {
+        expect(g.level1Spells).toBeUndefined();
+        expect(g.cantrips).toBeUndefined();
+        expect(g.fightingStyles).toBeUndefined();
+      }
+    });
+
+    it('recommends weapon masteries, a subclass and feats per specialization', () => {
+      expect(WOW_ROGUE_GUIDANCE['Assassination']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Daggers', 'Shortbows'],
+        subclass: { name: 'Assassin' },
+        feats: ['Actor', 'Alert', 'Defensive Duelist', 'Piercer', 'Poisoner', 'Skulker', 'Speedy'],
+      }));
+      expect(WOW_ROGUE_GUIDANCE['Outlaw']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Daggers', 'Rapiers'],
+        subclass: { name: 'Swashbuckler' },
+        feats: ['Athlete', 'Defensive Duelist', 'Martial Weapon Training', 'Piercer', 'Speedy', 'Tough'],
+      }));
+      expect(WOW_ROGUE_GUIDANCE['Subtlety']).toEqual(jasmine.objectContaining({
+        weaponMastery: ['Daggers', 'Maces'],
+        subclass: { name: 'Soulknife' },
+        feats: ['Dual Wielder', 'Mage Slayer', 'Shadow Touched', 'Skulker'],
+      }));
+    });
+
+    it('gives Assassination a level-5 tip about the Poison Cunning Strike, and no one else', () => {
+      const tip = WOW_ROGUE_GUIDANCE['Assassination'].levelTip!;
+      expect(tip.level).toBe(5);
+      expect(tip.text).toContain('Cunning Strike');
+      expect(tip.text).toContain('Poison');
+      expect(WOW_ROGUE_GUIDANCE['Outlaw'].levelTip).toBeUndefined();
+      expect(WOW_ROGUE_GUIDANCE['Subtlety'].levelTip).toBeUndefined();
     });
   });
 });

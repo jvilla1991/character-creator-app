@@ -384,4 +384,73 @@ describe('HeroClassPanelComponent', () => {
       });
     });
   });
+
+  describe('World of Warcraft Rogue', () => {
+    function makeRogue(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 10, name: 'Vex', clazz: 'Rogue', subclass: undefined, specialization: 'Outlaw',
+        level: 2, prof: 2, playerName: 'Jack', stats: { STR: 10, DEX: 18, CON: 14, INT: 12, WIS: 10, CHA: 16 },
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('renders for a WoW rogue but not for a base rogue', () => {
+      expect(isHeroClass(makeRogue())).toBeTrue();
+      expect(isHeroClass(makeRogue({ specialization: null, subclass: 'Thief' }))).toBeFalse();
+      expect(isHeroClass(makeRogue({ specialization: null, subclass: 'Swashbuckler' }))).toBeTrue();
+    });
+
+    it('titles the panel and shows the spec, with no spells to load', () => {
+      component.pc = makeRogue({ level: 9, subclass: 'Swashbuckler' });
+      expect(component.panelTitle).toBe('World of Warcraft Rogue');
+      expect(component.specializationTitle).toBe('Outlaw');
+      expect(component.specializationDesc).toContain('swashbuckler');
+      expect(component.subclassTerm).toBe('subclass');
+      expect(component.spellSections).toEqual([]);
+      expect(component.suggestedSpells).toEqual([]);
+      expect(component.recommendedFightingStyleText).toBe('');
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+    });
+
+    it('recommends a subclass per specialization (informational)', () => {
+      component.pc = makeRogue();
+      expect(component.guidance?.subclass.name).toBe('Swashbuckler');
+      expect(component.subclassMatch).toBe('pending');
+      component.pc = makeRogue({ level: 3, subclass: 'Swashbuckler' });
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makeRogue({ specialization: 'Assassination', level: 3, subclass: 'Assassin' });
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makeRogue({ specialization: 'Subtlety', level: 3, subclass: 'Thief' });
+      expect(component.guidance?.subclass.name).toBe('Soulknife');
+      expect(component.subclassMatch).toBe('different');
+    });
+
+    it('renders the subclass recommendation with no spell or fighting-style headings', () => {
+      const el = render(makeRogue({ level: 9, subclass: 'Swashbuckler' }));
+      const text = el.textContent ?? '';
+      expect(text).toContain('World of Warcraft Rogue');
+      expect(text).toContain('Recommended subclass');
+      expect(text).toContain('Your subclass matches the Outlaw recommendation.');
+      expect(text).not.toContain('Recommended fighting style');
+      expect(text).not.toContain('Spells');
+      expect(text).not.toContain('Beast Forms');
+      expect(el.querySelector('.hero-spells-title')).toBeNull();
+      expect(el.querySelector('.hero-level-tip')).toBeNull();
+    });
+
+    it('shows the Assassination level-5 tip as a Rogue 5 entry', () => {
+      const el = render(makeRogue({ specialization: 'Assassination', level: 2 }));
+      const tip = el.querySelector('.hero-level-tip') as HTMLElement;
+      expect(tip.querySelector('.feature-source')?.textContent).toContain('Rogue 5');
+      expect(tip.querySelector('.feature-desc')?.textContent).toContain('Poison');
+      expect(el.textContent).toContain('You choose your subclass at Rogue level 3.');
+    });
+  });
 });

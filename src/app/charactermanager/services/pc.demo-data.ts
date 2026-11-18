@@ -14,13 +14,13 @@
 import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
-import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
-import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, WOW_PALADIN_SPECIALIZATIONS } from '../models/wow-class-variants';
+import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
+import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS } from '../models/wow-class-variants';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid and Paladin.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin and Rogue.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -421,6 +421,59 @@ export const DEMO_PCS: PC[] = [
     bio: 'A dwarf of the Silver Hand who would rather mend a wound than open one, though her warhammer says otherwise when it has to.',
     notes: '',
   },
+  // World of Warcraft Rogue — an ordinary Rogue with the Outlaw specialization and the
+  // WoW-only Swashbuckler (chosen at level 3), so the rogue panel and header render.
+  {
+    id: 10,
+    name: 'Vex Saltbrand',
+    playerName: 'Jack',
+    player: 'Jack',
+    campaignId: null,
+    race: 'Human',
+    clazz: 'Rogue',
+    subclass: SWASHBUCKLER,
+    specialization: 'Outlaw',
+    level: 9,
+    background: 'Sailor',
+    alignment: 'Chaotic Neutral',
+    portraitInitials: 'VS',
+    portraitTint: 'crimson',
+    hp: { cur: 66, max: 66, temp: 0 },
+    ac: 16, init: 4, speed: 30, prof: 4,
+    stats: { STR: 10, DEX: 18, CON: 14, INT: 12, WIS: 10, CHA: 16 },
+    saves: ['DEX', 'INT'],
+    skills: { Acrobatics: 'expert', Persuasion: 'expert', Athletics: 'prof', Deception: 'prof', Perception: 'prof', Sleight: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 31, ep: 0, gp: 155, pp: 2 },
+    weapons: [
+      { name: 'Rapier', dmg: '1d8+4 piercing', notes: 'Finesse; mastery: Vex' },
+      { name: 'Dagger', dmg: '1d4+4 piercing', notes: 'Finesse, light, thrown (20/60); mastery: Nick' },
+    ],
+    gear: [
+      { name: 'Studded Leather', equipped: true },
+      { name: "Thieves' Tools" },
+      { name: 'Spyglass (Booty Bay brass)' },
+    ],
+    features: [
+      { name: 'Sneak Attack', source: 'Rogue 1', desc: '+5d6 once per turn with advantage or an ally adjacent.' },
+      { name: 'Weapon Mastery', source: 'Rogue 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Cunning Action', source: 'Rogue 2', desc: 'Bonus action: Dash, Disengage, or Hide.' },
+      { name: 'Fancy Footwork', source: 'Swashbuckler 3', desc: 'A creature you attack in melee cannot make Opportunity Attacks against you this turn.' },
+      { name: 'Rakish Audacity', source: 'Swashbuckler 3', desc: 'Add CHA to Initiative; Sneak Attack a lone foe without needing advantage.' },
+      { name: 'Cunning Strike', source: 'Rogue 5', desc: 'Trade Sneak Attack dice for effects such as Poison or Trip.' },
+      { name: 'Uncanny Dodge', source: 'Rogue 5', desc: 'Halve damage from an attack you can see.' },
+      { name: 'Evasion', source: 'Rogue 7', desc: 'Take no damage on a successful DEX save against area effects.' },
+      { name: 'Panache', source: 'Swashbuckler 9', desc: 'Charm or goad a creature with a Persuasion contest.' },
+    ],
+    traits: {
+      Personality: 'Bows to every opponent, then cheats anyway.',
+      Ideals: 'Freedom. No flag, no crown, no master.',
+      Bonds: 'The crew of the Saltwind, wherever the tide took them.',
+      Flaws: 'Cannot walk away from a wager or a dare.',
+    },
+    bio: 'A Booty Bay deckhand turned duelist, who talks as fast as she fights and has never once paid full price for anything.',
+    notes: '',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -539,14 +592,15 @@ const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
 };
 
-// Plus the WoW-only Oath of the Holy, offered to World of Warcraft paladins only
-// (a paladin with a Holy / Protection / Retribution specialization).
+// Plus each WoW variant's WoW-only subclasses (Oath of the Holy, Swashbuckler), offered
+// only to that variant's characters (base class + one of its specializations).
 export function demoSubclassOptions(clazz: string, specialization?: string | null): string[] {
   const key = (clazz ?? '').trim().toLowerCase();
   const options = DEMO_SUBCLASSES[key] ?? [];
-  const wowPaladin = key === 'paladin'
-    && (WOW_PALADIN_SPECIALIZATIONS as readonly string[]).includes(specialization ?? '');
-  return wowPaladin ? [...options, OATH_OF_THE_HOLY].sort((a, b) => a.localeCompare(b)) : options;
+  const variant = WOW_CLASS_VARIANTS.find(v => v.baseClass.toLowerCase() === key
+    && v.specializations.some(s => s.name === specialization));
+  const extra = variant ? wowOnlySubclasses(variant) : [];
+  return extra.length ? [...options, ...extra].sort((a, b) => a.localeCompare(b)) : options;
 }
 
 // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
