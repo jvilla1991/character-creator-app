@@ -76,9 +76,6 @@
 
     @if (lockedFeatures.length) {
       @if (showLocked()) {
-        <div class="locked-divider">
-          <span class="eyebrow">Yet to unlock</span>
-        </div>
         @for (f of lockedFeatures; track $index) {
           <div class="feature locked">
             <div class="feature-head">

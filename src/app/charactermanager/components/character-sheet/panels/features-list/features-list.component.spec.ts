@@ -358,7 +358,7 @@ describe('FeaturesListComponent', () => {
       expect(text(locked[0].querySelector('.feature-name'))).toBe('Locked: Aura of Protection');
       expect(text(locked[1].querySelector('.feature-source'))).toBe('Oath of Devotion · Level 7');
       expect(locked[0].querySelector('svg.lock-mark')).not.toBeNull();
-      expect(text(el.querySelector('.locked-divider'))).toBe('Yet to unlock');
+      expect(el.textContent).not.toContain('Yet to unlock');
     });
 
     it('offers a pressed lock toggle counting the locked features', () => {
