@@ -1113,4 +1113,60 @@ describe('LevelUpModalComponent', () => {
       expect(component.subclassSourceTag('Draconic Sorcery')).toBeUndefined();
     });
   });
+
+  describe('World of Warcraft Hunter (recommended style at 2, subclass at 3, respec)', () => {
+    const styles = ['Archery', 'Defense', 'Druidic Warrior', 'Great Weapon Fighting', 'Two-Weapon Fighting'];
+    const subclasses = ['Beast Master', 'Fey Wanderer', 'Gloom Stalker', 'Hunter'];
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Ranger', specialization: 'Beast Mastery', level: 1, ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview(preview)));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 2 })));
+      component.ngOnInit();
+    }
+
+    it('badges Archery for Beast Mastery and Marksmanship, Great Weapon Fighting for Survival', () => {
+      const at2 = { currentLevel: 1, newLevel: 2, fightingStyleDue: true, fightingStyleOptions: styles };
+      open({}, at2);
+      expect(component.heroClass?.label).toBe('Hunter (Ranger)');
+      expect(component.recommendedFightingStyles).toEqual(['Archery']);
+      open({ specialization: 'Marksmanship' }, at2);
+      expect(component.recommendedFightingStyles).toEqual(['Archery']);
+      open({ specialization: 'Survival' }, at2);
+      expect(component.recommendedFightingStyles).toEqual(['Great Weapon Fighting']);
+      expect(component.selectedFightingStyle).toBeFalsy();   // never pre-selected
+      // A respec this level follows the new specialization.
+      component.selectedSpecialization = 'Beast Mastery';
+      expect(component.recommendedFightingStyles).toEqual(['Archery']);
+    });
+
+    it("prefers the server's recommendedFightingStyles while the specialization is unchanged", () => {
+      open({ specialization: 'Survival' }, {
+        currentLevel: 1, newLevel: 2, fightingStyleDue: true, fightingStyleOptions: styles,
+        recommendedFightingStyles: ['Great Weapon Fighting'],
+      });
+      expect(component.isRecommendedFightingStyle('Great Weapon Fighting')).toBeTrue();
+      expect(component.isRecommendedFightingStyle('Archery')).toBeFalse();
+    });
+
+    it('badges Beast Master for Beast Mastery and Survival, Hunter for Marksmanship, at Ranger 3', () => {
+      const at3 = { currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: subclasses };
+      open({ level: 2 }, at3);
+      expect(component.recommendedSubclass).toBe('Beast Master');
+      open({ level: 2, specialization: 'Survival' }, at3);
+      expect(component.recommendedSubclass).toBe('Beast Master');
+      open({ level: 2, specialization: 'Marksmanship' }, at3);
+      expect(component.recommendedSubclass).toBe('Hunter');
+      expect(component.selectedSubclass).toBeFalsy();
+      expect(component.subclassSourceTag('Beast Master')).toBeUndefined();
+    });
+
+    it('allows a respec and sends only the changed specialization', () => {
+      open({ level: 5, subclass: 'Beast Master' }, { currentLevel: 5, newLevel: 6 });
+      expect(component.canRespec).toBeTrue();
+      component.selectedSpecialization = 'Survival';
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { specialization: 'Survival' });
+    });
+  });
 });

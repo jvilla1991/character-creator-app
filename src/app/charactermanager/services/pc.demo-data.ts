@@ -21,11 +21,13 @@ import {
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
 import { BATTLE_MASTER } from '../models/wow-warrior';
+import { BEAST_MASTER } from '../models/wow-hunter';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Evoker, Paladin, Priest, Rogue, Shaman, Warlock and Warrior.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Evoker, Hunter, Paladin, Priest, Rogue, Shaman, Warlock and
+// Warrior.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -779,6 +781,66 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Forgets that most people cannot shrug off a blast of flame.',
     },
     bio: 'A dracthyr evoker who woke after ages of slumber and found the world had moved on. He channels red and blue dragonfire, and is still learning which of his new allies flinch at it.',
+    notes: '',
+  },
+  // World of Warcraft Hunter (Ranger) — an ordinary Ranger with the Beast Mastery
+  // specialization and the Beast Master subclass, with a Wolf pet, so the "Hunter (Ranger)"
+  // header, the Pet card and the level-6 Pet Specialization (Ferocity) render.
+  {
+    id: 16,
+    name: 'Rhonna Stoneclaw',
+    playerName: 'Pia',
+    player: 'Pia',
+    campaignId: null,
+    race: 'Dwarf',
+    clazz: 'Ranger',
+    subclass: BEAST_MASTER,
+    specialization: 'Beast Mastery',
+    petFamily: 'Wolf',
+    level: 6,
+    background: 'Guide',
+    alignment: 'Neutral Good',
+    portraitInitials: 'RS',
+    portraitTint: 'emerald',
+    hp: { cur: 55, max: 55, temp: 0 },
+    ac: 15, init: 3, speed: 30, prof: 3,
+    stats: { STR: 12, DEX: 16, CON: 14, INT: 10, WIS: 16, CHA: 8 },
+    saves: ['STR', 'DEX'],
+    skills: { 'Animal Handling': 'prof', Perception: 'prof', Stealth: 'prof', Survival: 'expert' },
+    conditions: [],
+    coins: { cp: 12, sp: 30, gp: 58 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 1, name: 'Ensnaring Strike', school: 'Conjuration', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Speak with Animals', school: 'Divination', time: '1 action', prepared: true },
+      { lvl: 1, name: "Hunter's Mark", school: 'Divination', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Freezing Trap', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Beast Sense', school: 'Divination', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Summon Beast', school: 'Conjuration', time: '1 action', prepared: false },
+    ],
+    weapons: [
+      { name: 'Heavy Crossbow', dmg: '1d10+3 piercing', notes: 'Mastery: Push' },
+      { name: 'Longbow', dmg: '1d8+3 piercing', notes: 'Mastery: Slow' },
+    ],
+    gear: [
+      { name: 'Scale Mail', equipped: true },
+      { name: 'Quiver of bolts' },
+      { name: 'Wolf-fang charm' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Ranger 1', desc: 'Heavy Crossbows and Longbows.' },
+      { name: 'Fighting Style', source: 'Ranger 2', desc: 'Archery.' },
+      { name: 'Primal Companion', source: 'Beast Master 3', desc: 'A Beast of the Land companion: her wolf, Ashmane.' },
+      { name: 'Extra Attack', source: 'Ranger 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Pet Specialization', source: 'Ranger 6', desc: 'Ferocity: Bloodied healing on Beast\'s Strike hits, and Haste once per Long Rest.' },
+    ],
+    traits: {
+      Personality: 'Says more to her wolf in a glance than to most people in a day.',
+      Ideals: 'Loyalty. A pack looks after its own.',
+      Bonds: 'Ashmane, the wolf she raised from a pup in the snows of Dun Morogh.',
+      Flaws: 'Trusts a beast\'s growl over a stranger\'s smile, every time.',
+    },
+    bio: 'A dwarven hunter from the hills of Dun Morogh who never goes anywhere without Ashmane, the grey wolf at her side.',
     notes: '',
   },
 ];

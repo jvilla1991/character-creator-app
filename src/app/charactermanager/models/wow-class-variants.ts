@@ -4,6 +4,7 @@ import type {
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
 import { DISCIPLINE_DOMAIN, SHADOW_DOMAIN, priestFeatureCards } from './wow-priest';
 import { BATTLE_MASTER, warriorFeatureCards } from './wow-warrior';
+import { BEAST_MASTER } from './wow-hunter';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -259,6 +260,101 @@ export const WOW_EVOKER: HeroClassOption = {
   spellTableTitle: 'Evoker Spells',
   guidance: WOW_EVOKER_GUIDANCE,
   suggestedSpells: WOW_EVOKER_SUGGESTED_SPELLS,
+};
+
+// ── Hunter (Ranger) ──────────────────────────────────────────────────────────
+
+export const WOW_HUNTER_SPECIALIZATIONS = ['Beast Mastery', 'Marksmanship', 'Survival'] as const;
+
+/**
+ * The World of Warcraft hunter spells (✦), on the Ranger list. Their full text is
+ * in the spell data; suggestions flag them from there.
+ */
+export const WOW_HUNTER_SPELLS = ['Freezing Trap', 'Serpent Sting', 'Explosive Trap'] as const;
+
+const HUNTER_RANGED_MASTERY = ['Heavy Crossbows', 'Longbows', 'Muskets'] as const;
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel
+ * + level-up badges). Rangers get no cantrips; the level-2 Fighting Style and the
+ * level-3 subclass are badged in the level-up modal. Muskets are text only.
+ */
+export const WOW_HUNTER_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  'Beast Mastery': {
+    level1Spells: ['Ensnaring Strike', 'Speak with Animals'],
+    weaponMastery: HUNTER_RANGED_MASTERY,
+    weaponMasteryCount: 2,
+    fightingStyles: ['Archery'],
+    subclass: { name: BEAST_MASTER, note: 'pick your pet family on your sheet.' },
+    levelTip: { level: 6, text: 'You gain Pet Specialization instead of Roving.' },
+    feats: ['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter', 'Weapon Master'],
+  },
+  Marksmanship: {
+    level1Spells: ['Cure Wounds', 'Ensnaring Strike'],
+    weaponMastery: HUNTER_RANGED_MASTERY,
+    weaponMasteryCount: 2,
+    fightingStyles: ['Archery'],
+    subclass: { name: 'Hunter' },
+    feats: ['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter'],
+  },
+  Survival: {
+    level1Spells: ['Cure Wounds', 'Ensnaring Strike'],
+    weaponMastery: ['Glaives', 'Halberds', 'Pikes'],
+    weaponMasteryCount: 2,
+    fightingStyles: ['Great Weapon Fighting'],
+    subclass: { name: BEAST_MASTER, note: 'pick your pet family on your sheet.' },
+    feats: ['Great Weapon Master', 'Poisoner', 'Polearm Master', 'Sentinel'],
+  },
+};
+
+/** Suggested (not always-prepared) spells per specialization, by spell level. */
+export const WOW_HUNTER_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  'Beast Mastery': [
+    { level: 1, spells: ['Freezing Trap'] },
+    { level: 2, spells: ['Beast Sense', 'Summon Beast'] },
+    { level: 3, spells: ['Conjure Animals', 'Serpent Sting'] },
+    { level: 4, spells: ['Dominate Beast'] },
+    { level: 5, spells: ['Conjure Volley'] },
+  ],
+  Marksmanship: [
+    { level: 1, spells: ['Freezing Trap'] },
+    { level: 2, spells: ['Cordon of Arrows', 'Magic Weapon'] },
+    { level: 3, spells: ['Conjure Barrage', 'Lightning Arrow', 'Serpent Sting'] },
+    { level: 4, spells: ['Conjure Woodland Beings', 'Grasping Vine'] },
+    { level: 5, spells: ['Conjure Volley', 'Swift Quiver'] },
+  ],
+  Survival: [
+    { level: 1, spells: ['Freezing Trap'] },
+    { level: 2, spells: ['Cordon of Arrows', 'Spike Growth'] },
+    { level: 3, spells: ['Serpent Sting'] },
+    { level: 4, spells: ['Grasping Vine', 'Stoneskin'] },
+    { level: 5, spells: ['Explosive Trap', 'Steel Wind Strike'] },
+  ],
+};
+
+export const WOW_HUNTER: HeroClassOption = {
+  key: 'Ranger (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Hunter (Ranger)".
+  label: variantLabel('Hunter', 'Ranger'),
+  name: 'Hunter',
+  baseClass: 'Ranger',
+  source: 'World of Warcraft',
+  blurb: 'A hunter hears the call of the wild, slipping through the wilderness and laying traps for prey. '
+    + 'Many fight beside a loyal pet while loosing arrows, firing guns or swinging polearms, staying on the '
+    + 'move and keeping the battlefield under control.',
+  subclassNote: 'Chosen as normal at Ranger level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Beast Mastery', desc: 'Commands a vicious animal companion while attacking from range.' },
+    { name: 'Marksmanship',  desc: 'A lone, precise sharpshooter who stalks prey from afar.' },
+    { name: 'Survival',      desc: 'A close-quarters polearm fighter who turns beasts, venom and traps on foes.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_HUNTER_GUIDANCE,
+  suggestedSpells: WOW_HUNTER_SUGGESTED_SPELLS,
+  hunterPets: true,
 };
 
 // ── Paladin ──────────────────────────────────────────────────────────────────
@@ -784,5 +880,5 @@ export const WOW_WARRIOR: HeroClassOption = {
  * though it locks its (base-game) subclass like a hero class.
  */
 export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
-  WOW_DRUID, WOW_EVOKER, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+  WOW_DRUID, WOW_EVOKER, WOW_HUNTER, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
 ];

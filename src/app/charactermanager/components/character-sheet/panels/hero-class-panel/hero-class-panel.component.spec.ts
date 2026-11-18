@@ -1068,3 +1068,152 @@ describe('HeroClassPanelComponent — World of Warcraft Evoker (Sorcerer)', () =
       .toEqual(['Alter Self', 'Arcane Vigor', 'False Life', 'Hold Person', 'Ray of Sickness', 'Witch Bolt']);
   });
 });
+
+describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', () => {
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
+  let component: HeroClassPanelComponent;
+
+  function makeHunter(overrides: Partial<PC> = {}): PC {
+    return {
+      id: 16, name: 'Rhonna', clazz: 'Ranger', subclass: 'Beast Master', specialization: 'Beast Mastery',
+      petFamily: 'Wolf', level: 6, prof: 3, playerName: 'Pia',
+      stats: { STR: 12, DEX: 16, CON: 14, INT: 10, WIS: 16, CHA: 8 },
+      ...overrides,
+    };
+  }
+
+  function render(pc: PC, canEdit = true) {
+    const fixture = TestBed.createComponent(HeroClassPanelComponent);
+    fixture.componentRef.setInput('pc', pc);
+    fixture.componentRef.setInput('canEdit', canEdit);
+    fixture.detectChanges();
+    return { el: fixture.nativeElement as HTMLElement, cmp: fixture.componentInstance };
+  }
+
+  beforeEach(() => {
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
+    dndResources.getSpells.and.returnValue(of([]));
+    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
+  });
+
+  it('shows the Pet card only for a WoW hunter with the Beast Master subclass', () => {
+    component.pc = makeHunter();
+    expect(component.showPet).toBeTrue();
+    component.pc = makeHunter({ specialization: 'Survival' });
+    expect(component.showPet).toBeTrue();
+    component.pc = makeHunter({ specialization: 'Marksmanship', subclass: 'Hunter', petFamily: null });
+    expect(component.showPet).toBeFalse();
+    component.pc = makeHunter({ subclass: undefined, level: 2, petFamily: null });
+    expect(component.showPet).toBeFalse();
+    // The Demon Hunter keeps its own panel, with no pet.
+    component.pc = makeHunter({ subclass: 'Demon Hunter', specialization: 'Havoc', petFamily: null });
+    expect(component.hero?.label).toBe('Demon Hunter (Ranger)');
+    expect(component.showPet).toBeFalse();
+  });
+
+  it('shows the family, its stat block, specialization and mastery, and the Beast of the Land card', () => {
+    const { el } = render(makeHunter());   // WIS 16 → +3, prof 3 → spell attack +6, DC 14
+    const card = el.querySelector('.pet-card') as HTMLElement;
+    expect(card.textContent).toContain('Land');
+    expect(card.textContent).toContain('Ferocity');
+    expect(card.textContent).toContain('Slow');
+    expect(el.querySelector('.pet-unusual')).toBeNull();
+    const stat = el.querySelector('.pet-stat-card') as HTMLElement;
+    expect(stat.getAttribute('aria-label')).toBe('Beast of the Land');
+    expect(stat.textContent).toContain('35');        // 5 + 5 × 6
+    expect(stat.textContent).toContain('+6 to hit');
+    expect(stat.textContent).toContain('Charge');
+    expect(el.textContent).toContain('Weapon Mastery weapons');
+  });
+
+  it('lists all 47 families in the selector and marks the current one', () => {
+    const { el } = render(makeHunter({ petFamily: 'Courser' }));
+    const select = el.querySelector('#pet-family-select') as HTMLSelectElement;
+    const options = Array.from(select.options);
+    expect(options.length).toBe(48);   // the "Choose" placeholder + 47 families
+    expect(options[0].value).toBe('');
+    expect(select.value).toBe('Courser');
+    expect(options.find(o => o.value === 'Courser')!.textContent!.trim()).toBe('Courser (horses)');
+    expect(options.find(o => o.value === 'Feathermane')!.textContent!.trim()).toBe('Feathermane (gryphons) ✦');
+  });
+
+  it('saves a new family through pcChange as the bare name, and clears it with the placeholder', () => {
+    const { el, cmp } = render(makeHunter());
+    const saved: PC[] = [];
+    cmp.pcChange.subscribe(pc => saved.push(pc));
+    const select = el.querySelector('#pet-family-select') as HTMLSelectElement;
+    select.value = 'Mechanized Animal';
+    select.dispatchEvent(new Event('change'));
+    expect(saved.length).toBe(1);
+    expect(saved[0].petFamily).toBe('Mechanized Animal');
+    expect(saved[0].name).toBe('Rhonna');
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
+    expect(saved[1].petFamily).toBeNull();
+  });
+
+  it('does not emit when the family is unchanged or the viewer cannot edit', () => {
+    const { cmp } = render(makeHunter());
+    const saved: PC[] = [];
+    cmp.pcChange.subscribe(pc => saved.push(pc));
+    cmp.selectPetFamily('Wolf');
+    expect(saved).toEqual([]);
+    const readOnly = render(makeHunter(), false);
+    readOnly.cmp.pcChange.subscribe(pc => saved.push(pc));
+    expect(readOnly.el.querySelector('#pet-family-select')).toBeNull();
+    expect(readOnly.el.querySelector('.pet-family-value')?.textContent).toContain('Wolf');
+    readOnly.cmp.selectPetFamily('Bear');
+    expect(saved).toEqual([]);
+  });
+
+  it('prompts to pick a family when none is chosen', () => {
+    const { el } = render(makeHunter({ petFamily: null }));
+    expect(el.querySelector('.pet-prompt')?.textContent).toContain('Pick your pet');
+    expect(el.querySelector('.pet-stat-card')).toBeNull();
+    expect(el.querySelector('.pet-specialization')).toBeNull();
+    expect((el.querySelector('#pet-family-select') as HTMLSelectElement).value).toBe('');
+  });
+
+  it('notes the special ability an unusual family needs, and gives the Serpent both stat blocks', () => {
+    const unusual = render(makeHunter({ petFamily: 'Direhorn' })).el;
+    expect(unusual.querySelector('.pet-unusual')?.textContent).toContain('magical tome');
+    const serpent = render(makeHunter({ petFamily: 'Serpent' })).el;
+    expect(Array.from(serpent.querySelectorAll('.pet-stat-card')).map(c => c.getAttribute('aria-label')))
+      .toEqual(['Beast of the Land', 'Beast of the Sea']);
+  });
+
+  it('adds Pet Specialization for Beast Mastery from Ranger 6, from the family specialization', () => {
+    component.pc = makeHunter({ level: 5 });
+    expect(component.petSpec).toBeNull();
+    component.pc = makeHunter();
+    expect(component.petSpec?.specialization).toBe('Ferocity');
+    expect(component.petSpec?.text).toContain('regain 3 Hit Points');
+    component.pc = makeHunter({ petFamily: 'Fox' });
+    expect(component.petSpec?.specialization).toBe('Cunning');
+    // Survival hunters keep a pet but keep Roving: no Pet Specialization.
+    component.pc = makeHunter({ specialization: 'Survival', level: 9 });
+    expect(component.showPet).toBeTrue();
+    expect(component.petSpec).toBeNull();
+  });
+
+  it('shows the computed Tenacity Hit Point bonuses and that they are not applied automatically', () => {
+    const { el } = render(makeHunter({ petFamily: 'Bear', level: 9 }));
+    const spec = el.querySelector('.pet-specialization') as HTMLElement;
+    expect(spec.textContent).toContain('Pet Specialization: Tenacity');
+    expect(spec.textContent).toContain('Ranger 6');
+    expect(spec.querySelector('.pet-hp-bonus')?.textContent).toContain('+9');
+    expect(spec.textContent).toContain('Stoneskin');
+    expect(spec.textContent).toContain('not applied automatically');
+  });
+
+  it('renders the Beast Mastery guidance: Archery, Beast Master and the level-6 tip', () => {
+    const { el } = render(makeHunter({ subclass: undefined, level: 2, petFamily: null }));
+    const text = el.textContent ?? '';
+    expect(text).toContain('World of Warcraft Hunter');
+    expect(text).toContain('Archery');
+    expect(text).toContain('Beast Master');
+    expect(text).toContain('Pet Specialization instead of Roving');
+    expect(el.querySelector('.pet-card')).toBeNull();
+  });
+});

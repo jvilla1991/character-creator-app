@@ -173,4 +173,23 @@ describe('pc.demo-data (WoW mirrors)', () => {
     // A sorcerer's subclass is chosen at level 1, so the demo never offers one on level-up.
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
   });
+
+  it('seeds a level-6 Beast Mastery hunter Beast Master with a Wolf pet', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Ranger' && p.specialization === 'Beast Mastery')!;
+    expect(pc).toBeDefined();
+    expect(pc.level).toBe(6);
+    expect(pc.subclass).toBe('Beast Master');
+    expect(pc.petFamily).toBe('Wolf');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Ranger (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Hunter (Ranger)');
+    expect((pc.features ?? []).map(f => f.name)).toContain('Pet Specialization');
+    expect((pc.features ?? []).map(f => f.name)).not.toContain('Roving');
+    // Every other demo character has no pet.
+    expect(DEMO_PCS.filter(p => p.petFamily).map(p => p.id)).toEqual([pc.id]);
+    // The Demon Hunter demo is still read as the Demon Hunter, not the WoW Hunter.
+    const dh = DEMO_PCS.find(p => p.subclass === 'Demon Hunter')!;
+    expect(heroClassFor(dh)?.label).toBe('Demon Hunter (Ranger)');
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
 });
