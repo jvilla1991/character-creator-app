@@ -63,7 +63,8 @@
           <div class="field">
             <label for="newPassword">New password</label>
             <input type="password" id="newPassword" [(ngModel)]="newPassword"
-              name="newPassword" placeholder="At least 8 characters" autocomplete="new-password">
+              name="newPassword" autocomplete="new-password" aria-describedby="settings-new-password-hint">
+            <div class="field-hint" id="settings-new-password-hint">At least 8 characters.</div>
           </div>
           <div class="field">
             <label for="confirmPassword">Confirm new password</label>

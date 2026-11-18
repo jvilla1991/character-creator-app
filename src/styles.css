@@ -1396,6 +1396,14 @@ body:has(.drawer-scrim.show) .dice-fab {
   border-radius: 2px;
   outline: none;
 }
+/* A rule the field enforces, shown under the control so it stays readable while
+   typing (a placeholder vanishes on the first keystroke). */
+.field-hint {
+  margin-top: 6px;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-dim);
+}
 .field input:focus, .field select:focus {
   border-color: var(--gold);
   box-shadow: var(--glow-gold);
