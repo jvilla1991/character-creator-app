@@ -2,7 +2,7 @@ import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
-import { DndResourcesService } from '../../services/dnd-resources.service';
+import { DndResourcesService, LEVEL1_SUBCLASSES } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
 
 /**
@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1204,6 +1204,112 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.selectSpecialization('Assassination');
       component.toggleClass('Rogue');
       expect(component.selectedClassKey).toBe('Rogue');
+      expect(component.specializationGuidance).toBeNull();
+    });
+  });
+
+  describe('World of Warcraft Warlock', () => {
+    const WOW_WARLOCK_KEY = 'Warlock (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Sorcerer', 'Warlock', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+      dndResources.getSubclassesForClass.and.callFake((c: string) => LEVEL1_SUBCLASSES[c.toLowerCase()] ?? []);
+    });
+
+    it('lists a "Warlock" row tagged World of Warcraft beside the base Warlock, and only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.label === 'Warlock');
+      expect(rows().map(o => [o.key, o.source])).toEqual([
+        ['Warlock', 'Base Game'], [WOW_WARLOCK_KEY, 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.key)).toEqual(['Warlock']);
+      component.toggleContentSource('World of Warcraft');
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.key)).toEqual([WOW_WARLOCK_KEY]);
+    });
+
+    it('stores clazz Warlock with no subclass and requires a specialization and a patron', () => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      expect(component.clazz).toBe('Warlock');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassKey).toBe(WOW_WARLOCK_KEY);
+      expect(component.selectedClassLabel).toBe('Warlock');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Warlock');
+      expect(component.requiresLevel1Subclass).toBeTrue();
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Affliction', 'Demonology', 'Destruction']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Demonology');
+      expect(component.canAdvance).toBeFalse();           // the patron is still required
+      component.selectedSubclass = 'Fiend Patron';
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('recommends the patron for the spec in the level-1 picker without selecting it', () => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      expect(component.recommendedLevel1Subclass).toBe('');
+      component.selectSpecialization('Affliction');
+      expect(component.recommendedLevel1Subclass).toBe('Great Old One Patron');
+      component.selectSpecialization('Demonology');
+      expect(component.recommendedLevel1Subclass).toBe('Fiend Patron');
+      component.selectSpecialization('Destruction');
+      expect(component.recommendedLevel1Subclass).toBe('Fiend Patron');
+      expect(component.selectedSubclass).toBe('');
+      // A different patron is fine — the recommendation stays a badge.
+      component.selectedSubclass = 'Archfey Patron';
+      expect(component.recommendedLevel1Subclass).toBe('Fiend Patron');
+      expect(component.selectedSubclass).toBe('Archfey Patron');
+    });
+
+    it('recommends no level-1 subclass for a base warlock, a sorcerer or a level-3 variant', () => {
+      component.toggleClass('Warlock');
+      expect(component.recommendedLevel1Subclass).toBe('');
+      component.toggleClass('Sorcerer');
+      expect(component.recommendedLevel1Subclass).toBe('');
+      component.classList = ['Druid'];
+      component.toggleClass('Druid (World of Warcraft)');
+      component.selectSpecialization('Balance');
+      expect(component.recommendedLevel1Subclass).toBe('');
+    });
+
+    it('offers spec guidance and the recommended starting spells (never auto-selected)', () => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      expect(component.isSpellcastingClass).toBeTrue();
+      component.selectSpecialization('Demonology');
+      expect(component.specializationGuidance?.subclass.name).toBe('Fiend Patron');
+      expect(component.specializationGuidance?.invocations?.level2).toEqual(['Health Funnel', 'Repelling Blast']);
+      expect(component.recommendedSpells).toEqual(['Eldritch Blast', 'Toll the Dead', 'Arms of Hadar', 'Hex']);
+      expect(component.selectedSpells).toEqual([]);
+      component.selectSpecialization('Affliction');
+      expect(component.recommendedSpells).toEqual(['Eldritch Blast', 'Poison Spray', 'Hex', 'Witch Bolt']);
+      component.selectSpecialization('Destruction');
+      expect(component.recommendedSpells).toEqual(['Eldritch Blast', 'Thunderclap', 'Hellish Rebuke', 'Hex']);
+    });
+
+    it('emits clazz Warlock + the chosen patron + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      component.selectSpecialization('Destruction');
+      component.selectedSubclass = 'Fiend Patron';
+      component.name = 'Nixa';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Warlock');
+        expect(draft.subclass).toBe('Fiend Patron');
+        expect(draft.specialization).toBe('Destruction');
+        done();
+      });
+      component.submit();
+    });
+
+    it('selecting the base Warlock row clears the specialization and the patron', () => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      component.selectSpecialization('Affliction');
+      component.selectedSubclass = 'Great Old One Patron';
+      component.toggleClass('Warlock');
+      expect(component.selectedClassKey).toBe('Warlock');
+      expect(component.specialization).toBe('');
+      expect(component.selectedSubclass).toBe('');
       expect(component.specializationGuidance).toBeNull();
     });
   });

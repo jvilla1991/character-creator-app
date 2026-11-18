@@ -79,7 +79,7 @@
       <div class="feature">
         <div class="feature-head">
           <span class="feature-name">Recommended {{ subclassTerm }}</span>
-          <span class="feature-source">{{ h.baseClass }} 3</span>
+          <span class="feature-source">{{ h.baseClass }} {{ subclassLevel }}</span>
         </div>
         <div class="feature-desc">
           {{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }
@@ -88,9 +88,31 @@
           @switch (subclassMatch) {
             @case ('match') { Your {{ subclassTerm }} matches the {{ pc.specialization }} recommendation. }
             @case ('different') { You chose {{ pc.subclass }} — that's fine; this is only a suggestion. }
-            @default { You choose your {{ subclassTerm }} at {{ h.baseClass }} level 3. }
+            @default { You choose your {{ subclassTerm }} at {{ h.baseClass }} level {{ subclassLevel }}. }
           }
         </div>
+      </div>
+    }
+
+    <!-- WoW Warlock: recommended Eldritch Invocations (text only — invocations aren't modelled) -->
+    @if (invocationRows.length) {
+      <div class="feature hero-invocations">
+        <div class="feature-head">
+          <span class="feature-name">Recommended invocations</span>
+          <span class="feature-source">{{ h.baseClass }}</span>
+        </div>
+        <dl class="suggested-spells invocation-rows">
+          @for (row of invocationRows; track row.label) {
+            <dt>{{ row.label }}</dt>
+            <dd>
+              @for (name of row.names; track name; let last = $last) {
+                <span class="invocation">{{ name }}@if (isWowInvocation(name)) {<span class="wow-mark" [attr.title]="wowInvocationNote" [attr.aria-label]="'World of Warcraft invocation. ' + wowInvocationNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+              }
+            </dd>
+          }
+        </dl>
+        <p class="hero-spells-note">Suggestions only — record invocations as features; they aren't tracked here.
+          ✦ marks a World of Warcraft invocation ({{ wowInvocationNote }})</p>
       </div>
     }
 
@@ -126,6 +148,9 @@
           </dd>
         }
       </dl>
+      @if (h.suggestedSpellsNote) {
+        <p class="hero-note hero-spells-flavor">{{ h.suggestedSpellsNote }}</p>
+      }
       @if (guidance?.tip; as tip) {
         <p class="hero-note">{{ tip }}</p>
       }
