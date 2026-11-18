@@ -461,5 +461,82 @@ export const WOW_WARLOCK: HeroClassOption = {
   wowInvocations: WOW_WARLOCK_INVOCATIONS,
 };
 
+// ── Warrior (Fighter) ────────────────────────────────────────────────────────
+
+export const WOW_WARRIOR_SPECIALIZATIONS = ['Arms', 'Fury', 'Protection'] as const;
+
+export const BATTLE_MASTER = 'Battle Master';
+export const CHAMPION = 'Champion';
+
+/**
+ * The World of Warcraft Battle Master maneuvers. Maneuvers aren't modelled in
+ * this app — they are recommendation text (marked ✦) and the sheet's Battle
+ * Master card describes them.
+ */
+export const WOW_WARRIOR_MANEUVERS = [
+  'Battle Shout', 'Demoralizing Shout', 'Heroic Leap', 'Mortal Strike', 'Warding Maneuver',
+] as const;
+
+/**
+ * Per-specialization picks (class step box + sheet panel). Fighters have no spells,
+ * so there are none to suggest. The Fighting Style is a level-1 choice the wizard
+ * has no picker for, so it stays text.
+ */
+export const WOW_WARRIOR_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Arms: {
+    fightingStyles: ['Great Weapon Fighting'],
+    weaponMastery: ['Greataxes', 'Greatswords', 'Mauls'],
+    subclass: { name: BATTLE_MASTER },
+    maneuvers: [
+      'Battle Shout', 'Disarming Attack', 'Distracting Strike', 'Mortal Strike', 'Pushing Attack',
+      'Sweeping Attack', 'Trip Attack',
+    ],
+    feats: ['Charger', 'Crusher', 'Great Weapon Master', 'Piercer', 'Speedy', 'Slasher'],
+  },
+  Fury: {
+    fightingStyles: ['Two-Weapon Fighting'],
+    weaponMastery: ['Scimitars'],
+    subclass: { name: CHAMPION },
+    feats: ['Charger', 'Crusher', 'Dual Wielder', 'Piercer', 'Slasher'],
+    note: 'A warrior can also be played as a Barbarian on the Path of the Berserker, following this same Fury guidance.',
+  },
+  Protection: {
+    fightingStyles: ['Interception', 'Protection'],
+    weaponMastery: ['Battleaxes', 'Longswords', 'Morningstars'],
+    subclass: { name: BATTLE_MASTER },
+    maneuvers: [
+      'Bait and Switch', 'Battle Shout', 'Demoralizing Shout', 'Goading Attack', 'Maneuvering Attack', 'Parry',
+      'Warding Maneuver',
+    ],
+    feats: ['Crusher', 'Durable', 'Heavy Armor Master', 'Piercer', 'Sentinel', 'Shield Master', 'Slasher'],
+  },
+};
+
+export const WOW_WARRIOR: HeroClassOption = {
+  key: 'Fighter (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Warrior (Fighter)".
+  label: variantLabel('Warrior', 'Fighter'),
+  name: 'Warrior',
+  baseClass: 'Fighter',
+  source: 'World of Warcraft',
+  blurb: 'A master of arms and armor who leads through sheer strength. Some warriors anchor the front '
+    + 'line behind a shield; others cast the shield aside and pour their rage into deadly weapons.',
+  subclassNote: 'Chosen as normal at Fighter level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Arms',       desc: 'A two-handed weapon master whose every blow is precise and devastating.' },
+    { name: 'Fury',       desc: 'A dual-wielding berserker who whirls into the thick of the fray.' },
+    { name: 'Protection', desc: 'A shield-bearing wall who guards allies and turns attacks back on foes.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_WARRIOR_GUIDANCE,
+  fightingStyleLevel: 1,
+  wowManeuvers: WOW_WARRIOR_MANEUVERS,
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
+  WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+];

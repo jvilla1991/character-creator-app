@@ -690,4 +690,82 @@ describe('HeroClassPanelComponent', () => {
       expect(druid.querySelector('.hero-spells-flavor')).toBeNull();
     });
   });
+
+  describe('World of Warcraft Warrior (Fighter)', () => {
+    function makeWarrior(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 13, name: 'Garrosh', clazz: 'Fighter', subclass: undefined, specialization: 'Arms',
+        level: 2, prof: 2, playerName: 'Lee', stats: { STR: 17, DEX: 12, CON: 15, INT: 8, WIS: 12, CHA: 10 },
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('renders for a WoW fighter but not for a base fighter', () => {
+      expect(isHeroClass(makeWarrior())).toBeTrue();
+      expect(isHeroClass(makeWarrior({ specialization: null, subclass: 'Battle Master' }))).toBeFalse();
+    });
+
+    it('titles the panel and shows the spec, with no spells to load', () => {
+      component.pc = makeWarrior();
+      expect(component.panelTitle).toBe('World of Warcraft Warrior');
+      expect(component.specializationTitle).toBe('Arms');
+      expect(component.specializationDesc).toContain('two-handed');
+      expect(component.subclassTerm).toBe('subclass');
+      expect(component.spells).toEqual([]);
+      expect(component.suggestedSpells).toEqual([]);
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+    });
+
+    it('recommends a level-1 fighting style and a subclass per specialization (informational)', () => {
+      component.pc = makeWarrior();
+      expect(component.recommendedFightingStyleText).toBe('Great Weapon Fighting');
+      expect(component.fightingStyleLevel).toBe(1);
+      expect(component.guidance?.subclass.name).toBe('Battle Master');
+      expect(component.subclassMatch).toBe('pending');
+      component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Champion', level: 3 });
+      expect(component.recommendedFightingStyleText).toBe('Two-Weapon Fighting');
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Eldritch Knight', level: 3 });
+      expect(component.recommendedFightingStyleText).toBe('Interception or Protection');
+      expect(component.subclassMatch).toBe('different');
+    });
+
+    it('renders the fighting style as Fighter 1 and the maneuvers with ✦ on the WoW ones', () => {
+      const el = render(makeWarrior({ specialization: 'Protection' }));
+      const text = el.textContent ?? '';
+      expect(text).toContain('Recommended fighting style');
+      expect(text).toContain('Fighter 1');
+      expect(text).not.toContain('Fighter 2');
+      expect(text).toContain('You choose your subclass at Fighter level 3.');
+      const box = el.querySelector('.hero-maneuvers') as HTMLElement;
+      expect(box.textContent).toContain('Maneuvers to consider');
+      expect(box.textContent).toContain('Battle Master 3');
+      const maneuvers = Array.from(box.querySelectorAll('.maneuver')) as HTMLElement[];
+      expect(maneuvers.filter(m => m.querySelector('.wow-mark')).map(m => m.textContent!.replace('✦', '').trim()))
+        .toEqual(['Battle Shout', 'Demoralizing Shout', 'Warding Maneuver']);
+      expect(maneuvers.length).toBe(7);
+      expect(box.textContent).toContain("maneuvers aren't tracked here");
+      expect(text).not.toContain('Suggested');
+      expect(text).not.toContain('Beast Forms');
+    });
+
+    it('shows no maneuvers for Fury, and keeps the paladin fighting style at Paladin 2', () => {
+      const fury = render(makeWarrior({ specialization: 'Fury' }));
+      expect(fury.querySelector('.hero-maneuvers')).toBeNull();
+      expect(fury.textContent).toContain('Two-Weapon Fighting');
+      const paladin = render({
+        id: 9, name: 'Aelira', clazz: 'Paladin', subclass: undefined, specialization: 'Protection', level: 2,
+        playerName: 'Ivy',
+      } as PC);
+      expect(paladin.textContent).toContain('Paladin 2');
+      expect(paladin.querySelector('.hero-maneuvers')).toBeNull();
+    });
+  });
 });

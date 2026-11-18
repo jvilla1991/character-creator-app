@@ -106,7 +106,7 @@
                       <dd>{{ weaponMasteryLead(g) }} {{ g.weaponMastery!.join(', ') }}</dd>
                     }
                     @if (g.fightingStyles?.length) {
-                      <dt>Level 2 fighting style</dt>
+                      <dt>Level {{ fightingStyleLevelOf(hero) }} fighting style</dt>
                       <dd>
                         {{ orList(g.fightingStyles!) }}
                         @if (g.fightingStyleCantrips?.length) {
@@ -125,6 +125,15 @@
                         }
                       </dd>
                     }
+                    <!-- Battle Master maneuvers: recommendation text only (not modelled in this app) -->
+                    @if (g.maneuvers?.length) {
+                      <dt>Maneuvers to consider</dt>
+                      <dd class="maneuver-list">
+                        @for (name of g.maneuvers!; track name; let last = $last) {
+                          <span class="maneuver">{{ name }}@if (isWowManeuver(hero, name)) {<span class="wow-mark" [attr.title]="wowManeuverNote" [attr.aria-label]="'World of Warcraft maneuver. ' + wowManeuverNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+                        }
+                      </dd>
+                    }
                     @if (g.levelTip; as lt) {
                       <dt>Level {{ lt.level }}</dt>
                       <dd>{{ lt.text }}</dd>
@@ -140,6 +149,10 @@
                   @if (invocationRows(g).length && hero.wowInvocations?.length) {
                     <p class="spec-guidance-note invocation-footnote">✦ World of Warcraft invocation — {{ wowInvocationNote }}
                       Invocations aren't tracked here; note them on your sheet.</p>
+                  }
+                  @if (g.maneuvers?.length && hero.wowManeuvers?.length) {
+                    <p class="spec-guidance-note maneuver-footnote">✦ World of Warcraft maneuver — {{ wowManeuverNote }}
+                      Maneuvers aren't tracked here; pick them on paper or with your DM.</p>
                   }
                   @if (recommendedSubclass()) {
                     <p class="spec-guidance-note">The {{ hero.subclassTerm ?? 'subclass' }} is marked “Recommended” in the picker below.</p>

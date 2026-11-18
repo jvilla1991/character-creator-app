@@ -61,12 +61,12 @@
       </ul>
     }
 
-    <!-- WoW variant: recommended level-2 fighting style (informational) -->
+    <!-- WoW variant: recommended fighting style (informational; level 2, or 1 for a Fighter) -->
     @if (guidance?.fightingStyles?.length) {
       <div class="feature">
         <div class="feature-head">
           <span class="feature-name">Recommended fighting style</span>
-          <span class="feature-source">{{ h.baseClass }} 2</span>
+          <span class="feature-source">{{ h.baseClass }} {{ fightingStyleLevel }}</span>
         </div>
         <div class="feature-desc">
           {{ recommendedFightingStyleText }}
@@ -113,6 +113,23 @@
         </dl>
         <p class="hero-spells-note">Suggestions only — record invocations as features; they aren't tracked here.
           ✦ marks a World of Warcraft invocation ({{ wowInvocationNote }})</p>
+      </div>
+    }
+
+    <!-- WoW Warrior: Battle Master maneuvers to consider (text only — maneuvers aren't modelled) -->
+    @if (guidance?.maneuvers?.length) {
+      <div class="feature hero-maneuvers">
+        <div class="feature-head">
+          <span class="feature-name">Maneuvers to consider</span>
+          <span class="feature-source">{{ guidance!.subclass.name }} 3</span>
+        </div>
+        <div class="feature-desc maneuver-list">
+          @for (name of guidance!.maneuvers!; track name; let last = $last) {
+            <span class="maneuver">{{ name }}@if (isWowManeuver(name)) {<span class="wow-mark" [attr.title]="wowManeuverNote" [attr.aria-label]="'World of Warcraft maneuver. ' + wowManeuverNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+          }
+        </div>
+        <p class="hero-spells-note">Suggestions only — maneuvers aren't tracked here; pick them on paper or with your DM.
+          ✦ marks a World of Warcraft maneuver ({{ wowManeuverNote }})</p>
       </div>
     }
 

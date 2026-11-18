@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
 import {
-  ClassOption, SpecializationGuidance, WOW_INVOCATION_NOTE, invocationRows, isWowInvocation, orList,
-  specializationHeading, subclassGuidanceLabel, weaponMasteryLead,
+  ClassOption, SpecializationGuidance, WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, invocationRows,
+  isWowInvocation, isWowManeuver, orList, specializationHeading, subclassGuidanceLabel, weaponMasteryLead,
 } from '../../../../models/hero-class';
 
 /**
@@ -13,7 +13,9 @@ import {
  * variant without a fixed subclass (WoW Druid, WoW Paladin) shows a
  * "Recommended for <spec>" box once its specialization is picked — guidance only.
  * A WoW Warlock's recommended patron is badged in the level-1 subclass picker
- * (never auto-selected), and its recommended invocations are text only.
+ * (never auto-selected), and its recommended invocations are text only. A WoW
+ * Warrior's recommended Battle Master maneuvers are text only too (✦ marks the
+ * WoW ones), and its level-1 Fighting Style is a recommendation (no picker here).
  * Presentational — the parent owns selection logic, the source filter and the
  * detail fetch, and passes the already-filtered rows and derived strings in.
  */
@@ -71,4 +73,7 @@ export class ClassStepComponent {
   readonly invocationRows = invocationRows;
   readonly isWowInvocation = isWowInvocation;
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
+  readonly isWowManeuver = isWowManeuver;
+  readonly wowManeuverNote = WOW_MANEUVER_NOTE;
+  readonly fightingStyleLevelOf = fightingStyleLevelOf;
 }

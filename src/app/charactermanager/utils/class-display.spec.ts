@@ -44,6 +44,16 @@ describe('classDisplayName', () => {
     expect(pipe.transform({ clazz: 'Barbarian', subclass: null, specialization: 'Enhancement' })).toBe('Shaman (Barbarian)');
   });
 
+  it('shows a WoW fighter as Warrior (Fighter), and a base fighter unchanged', () => {
+    expect(classDisplayName('Fighter', null, 'Arms')).toBe('Warrior (Fighter)');
+    expect(classDisplayName('fighter', 'Battle Master', 'Protection')).toBe('Warrior (Fighter)');
+    expect(classDisplayName('Fighter', 'Champion', 'Fury')).toBe('Warrior (Fighter)');
+    expect(classDisplayName('Fighter', 'Battle Master', null)).toBe('Fighter');
+    expect(classDisplayName('Fighter')).toBe('Fighter');
+    const pipe = new ClassDisplayPipe();
+    expect(pipe.transform({ clazz: 'Fighter', subclass: null, specialization: 'Fury' })).toBe('Warrior (Fighter)');
+  });
+
   it('copes with a missing class', () => {
     expect(classDisplayName(undefined, undefined)).toBe('');
   });
