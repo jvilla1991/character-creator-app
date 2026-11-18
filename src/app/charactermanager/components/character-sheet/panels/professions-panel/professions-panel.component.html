@@ -1,11 +1,11 @@
 <section class="panel" role="tabpanel" aria-label="Professions">
   <div class="panel-header">
-    <span class="panel-title">Gathering Professions</span>
+    <span class="panel-title">Professions</span>
     @if (canGrant && loaded() && available.length && !grantFormOpen) {
       <button class="btn sm" (click)="openGrant()">+ Grant Profession</button>
     }
   </div>
-  <p class="intro">The trades of Azeroth <span class="numeric">· Proficiency Bonus +{{ bonus }}</span></p>
+  <p class="intro">The trades of Azeroth <span class="numeric">· {{ rank }} · Proficiency Bonus +{{ bonus }}</span></p>
   @if (error(); as message) {
     <p class="error" role="alert">{{ message }}</p>
     @if (!loaded() && !loading()) { <button class="btn sm" (click)="load()">Retry</button> }
@@ -13,12 +13,19 @@
   @if (grantFormOpen && canGrant) {
     <form class="grant-form" (ngSubmit)="grant()">
       <div class="field">
-        <label for="profession-choice">Gathering profession</label>
+        <label for="profession-choice">Profession</label>
         <select id="profession-choice" name="profession" [(ngModel)]="selected" [disabled]="saving()">
-          @for (p of available; track p.key) { <option [value]="p.key">{{ p.name }}</option> }
+          @for (category of categories; track category.key) {
+            @if (availableFor(category.key).length) {
+              <optgroup [label]="category.label">
+                @for (p of availableFor(category.key); track p.key) { <option [value]="p.key">{{ p.name }}</option> }
+              </optgroup>
+            }
+          }
         </select>
       </div>
       <p class="muted">{{ chosen.requirement }}</p>
+      <p class="muted">{{ chosen.summary }}</p>
       @if (!eligible(chosen)) { <p class="error">This character needs the required proficiency before it can be granted.</p> }
       <div class="actions">
         <button type="submit" class="btn primary sm" [disabled]="saving() || !eligible(chosen)">{{ saving() ? 'Granting…' : 'Grant' }}</button>
@@ -27,19 +34,34 @@
     </form>
   }
   @if (loading()) { <p class="muted" role="status">Loading professions…</p> }
-  @if (loaded() && !assigned.length) { <p class="empty">No professions yet. Your DM can grant a gathering profession once its prerequisite is met.</p> }
-  @for (p of assigned; track p.key) {
+  @if (loaded() && !assigned.length) { <p class="empty">No professions yet. Your DM can grant a gathering or production profession once its prerequisite is met.</p> }
+  @for (category of categories; track category.key) {
+    @if (assignedFor(category.key).length) {
+      <h3 class="category-title">{{ category.label }} <span class="muted">{{ assignedFor(category.key).length }}</span></h3>
+    }
+    @for (p of assignedFor(category.key); track p.key) {
     <article class="profession-row">
       <details>
         <summary>
           <span class="portrait profession-portrait" aria-hidden="true">{{ p.initials }}</span>
-          <span class="identity"><span class="profession-name">{{ p.name }}</span><span class="muted">{{ p.check }} · +{{ bonus }} proficiency</span></span>
+          <span class="identity"><span class="profession-name">{{ p.name }}</span><span class="muted">{{ p.check || 'Recipes & crafting' }} · {{ rank }}</span></span>
           <span class="details-hint">Rules</span>
         </summary>
         <div class="rules">
           <p>{{ p.summary }}</p><p class="requirement">{{ p.requirement }}</p>
           @if (!eligible(p)) { <p class="error">Required proficiency is missing. Restore it before practicing this profession.</p> }
           @for (rule of p.rules; track $index) { <p>{{ rule }}</p> }
+          @if (p.recipeTiers?.length) {
+            <p class="recipe-help">Recipe reference: meeting a skill requirement does not mean every recipe is known. Basic recipes and special recipes are explained under Crafting in Azeroth below.</p>
+            @for (tier of p.recipeTiers; track tier.bonus) {
+              <details class="recipe-tier" [class.above-skill]="bonus < tier.bonus" [attr.data-bonus]="tier.bonus">
+                <summary>{{ tier.name }} (+{{ tier.bonus }}) <span class="tier-status">{{ bonus >= tier.bonus ? 'Skill requirement met' : 'Requires +' + tier.bonus + ' proficiency' }}</span></summary>
+                @if (tier.bonus === 5) { <p>Artisan recipes require extraordinary acquisition, such as a special quest or renown reward. They are not learned automatically.</p> }
+                @if (tier.bonus === 6) { <p>Master recipes can only be acquired as treasure or renown rewards.</p> }
+                <ul class="recipe-items">@for (item of tier.items; track $index) { <li>{{ item }}</li> }</ul>
+              </details>
+            }
+          }
         </div>
       </details>
       @if (canGrant) {
@@ -52,13 +74,38 @@
         </div>
       }
     </article>
+    }
   }
+  <details class="reference">
+    <summary>Crafting in Azeroth</summary>
+    <p>Production professions use the Player’s Handbook equipment crafting rules and Dungeon Master’s Guide magic-item crafting rules. Ingredients provide the magic: Arcana proficiency and prepared spells are not required, even when an item produces a spell. You still need the appropriate tool proficiency, a known recipe, and its ingredients.</p>
+    <p>Use resources gathered on journeys, found as treasure, or purchased from merchants, combined with money as your recipe allows. The DM may use abstract GP resources or specify individual ingredients and recipes.</p>
+    <p>Basic recipes are learned automatically as skill advances: mundane items and Common, Uncommon, and Rare magic Armor, Potions, Scrolls, Wands, and Weapons supported by the profession. Other recipes come from specialist trainers, treasure, or renown rewards. The lists above show crafting possibilities, not a list of recipes your character has learned.</p>
+    <div class="table-wrap">
+      <table class="profession-levels">
+        <caption>Profession levels</caption>
+        <thead><tr><th scope="col">Skill</th><th scope="col">Bonus</th><th scope="col">Magic item rarity</th></tr></thead>
+        <tbody>@for (level of levels; track level.bonus) { <tr><th scope="row">{{ level.name }}</th><td>+{{ level.bonus }}</td><td>{{ level.rarity }}</td></tr> }</tbody>
+      </table>
+    </div>
+    <p>Apprentice recipes usually combine two or three resources. Journeyman recipes can require intermediate products from other professions. Expert recipes may need unusual ingredients that give an item a minor property or quirk.</p>
+    <p>Artisan recipes require extraordinary means, often a special quest or Renown 10+ with a faction guarding the recipe. Master recipes can only come from treasure or renown rewards, and may require ingredients from other worlds or planes.</p>
+    <details class="recipe-examples">
+      <summary>Example ingredients and costs</summary>
+      <p>Apprentice: a 25 GP Common potion might use 20 GP of herbs and 5 GP of miscellaneous ingredients. Mundane Plate Armor costs 750 GP to craft, for example twelve 50 GP iron bars and three 50 GP heavy stones.</p>
+      <p>Journeyman: a 100 GP Potion of Water Breathing might combine oil from two rare 25 GP fish with 50 GP of stranglekelp. A 225 GP +1 Greatsword might use ten 10 GP copper bars, two 10 GP malachite stones, two 50 GP medium leather, and 5 GP extra.</p>
+      <p>Expert: +1 Plate Armor with the Guardian minor property (+2 to Initiative) costs 2,750 GP to craft. One recipe uses forty-eight 50 GP iron bars, five 50 GP heavy stones, and 100 GP of fangs and claws.</p>
+      <p>Artisan: a Potion of Giant Strength (cloud) recipe might require five Gromsblood and five sungrass, each worth 1,000 GP. A Frost Brand (Longsword) may require eighteen arcanite bars, each made via alchemy from a 250 GP thorium bar and a 100 GP arcane crystal; four enchanted leather, each made from 250 GP thick leather and 1,200 GP magical residue; four 100 GP water elemental essences; four 1,000 GP blue sapphires; four 1,000 GP Azerothian diamonds; and a 125 GP dense grinding stone.</p>
+      <p>Master: a Potion of Giant Strength (storm) might need twenty 5,000 GP rising glory from Bastion. Plate Armor of Etherealness might require five 5,000 GP laestrite ore; two each of 7,500 GP elethium, solenium, phaedrum, sinvyr, and oxxein ore; and 750 GP of luminous flux.</p>
+      <p>These are DM-defined recipe examples, not automatic purchases or resource deductions.</p>
+    </details>
+  </details>
   <details class="reference">
     <summary>Gathering in Azeroth</summary>
     <p>For journey gathering, make a Wisdom (Survival) check once per journey stage, or once per day if stages are shorter than a day. The DM sets the DC using the region’s level.</p>
     <p>Failure finds nothing. Success finds one resource per day of the stage. Beating the DC by 5 or more makes one of those resources rare. The DM chooses the resources and their GP values. Archaeology, fishing, and skinning have the special rules listed in their entries.</p>
     <p>Resources are measured in GP value and can be sold or combined with money for crafting. Specific ingredients and recipes are optional and chosen by the DM.</p>
-    <p>Your Proficiency Bonus measures profession skill: +2 is apprentice, +3 journeyman, +5 artisan, and +6 master. If your campaign uses training to gain levels, improving each profession takes days equal to your new bonus, at 2 GP per day. At +3, that is 3 days and 6 GP per profession.</p>
+    <p>Your Proficiency Bonus measures profession skill: +2 is apprentice, +3 journeyman, +4 expert, +5 artisan, and +6 master. If your campaign uses training to gain levels, improving each profession takes days equal to your new bonus, at 2 GP per day. At +3, that is 3 days and 6 GP per profession.</p>
     <p>Region DCs, resource values, dig-site origins, and magic-item rarity are set with your DM using the source tables.</p>
     <a href="https://5e.tools/book.html#wow,3,gathering%20professions,0" target="_blank" rel="noopener noreferrer">Gathering professions reference ↗</a>
   </details>
