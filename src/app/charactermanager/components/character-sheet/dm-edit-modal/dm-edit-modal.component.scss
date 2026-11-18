@@ -12,6 +12,11 @@
   outline: none;
   resize: vertical;
 }
+/* The live "That is 7 damage." readout: same size as the hint, full-strength ink. */
+.dm-edit-delta {
+  font-weight: 600;
+  color: var(--text);
+}
 .field textarea:focus {
   border-color: var(--gold);
   box-shadow: var(--glow-gold);
