@@ -195,7 +195,10 @@
           <div class="spell-pick">
             <div class="spell-label">
               {{ rule.style }} Cantrips
-              <span class="spell-counts">{{ rule.className }} cantrips {{ styleCantrips.length }}/{{ rule.count }}</span>
+              <span class="spell-label-end">
+                <span class="spell-counts">{{ rule.className }} cantrips {{ styleCantrips.length }}/{{ rule.count }}</span>
+                <app-eli5-toggle></app-eli5-toggle>
+              </span>
             </div>
             @if (rule.hint) {
               <div class="style-cantrip-hint">{{ rule.hint }}</div>
@@ -206,6 +209,7 @@
               [cantripLimit]="rule.count"
               [spellLimit]="0"
               [loading]="loadingStyleCantrips"
+              [showEli5]="eli5.active()"
               (selectedChange)="styleCantrips = $event">
             </app-spell-picker>
           </div>
@@ -230,16 +234,20 @@
         <div class="spell-pick">
           <div class="spell-label">
             Learn Spells
-            <span class="spell-counts">
-              @if (cantripDelta) {
-                Cantrips {{ selectedCantripCount }}/{{ cantripDelta }}
-              }
-              @if (cantripDelta && spellDelta) {
-                ·
-              }
-              @if (spellDelta) {
-                Spells {{ selectedSpellCount }}/{{ spellDelta }}
-              }
+            <span class="spell-label-end">
+              <span class="spell-counts">
+                @if (cantripDelta) {
+                  Cantrips {{ selectedCantripCount }}/{{ cantripDelta }}
+                }
+                @if (cantripDelta && spellDelta) {
+                  ·
+                }
+                @if (spellDelta) {
+                  Spells {{ selectedSpellCount }}/{{ spellDelta }}
+                }
+              </span>
+              <!-- Player-only: adds a one-sentence summary under each spell below. -->
+              <app-eli5-toggle></app-eli5-toggle>
             </span>
           </div>
           <app-spell-picker
@@ -248,6 +256,7 @@
             [cantripLimit]="cantripDelta"
             [spellLimit]="spellDelta"
             [loading]="loadingSpells"
+            [showEli5]="eli5.active()"
             (selectedChange)="selectedSpells = $event">
           </app-spell-picker>
         </div>

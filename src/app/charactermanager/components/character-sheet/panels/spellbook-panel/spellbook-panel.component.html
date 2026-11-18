@@ -19,6 +19,10 @@
     @if (addAllowed() && !grantFormOpen) {
       <button class="btn sm" (click)="openGrantForm()">Grant spells</button>
     }
+    <!-- Player-only: one plain sentence per spell instead of the full rules text. -->
+    @if (hasSpells()) {
+      <app-eli5-toggle></app-eli5-toggle>
+    }
   </div>
 
   <!-- DM grant form -->
@@ -184,7 +188,12 @@
             }
             @if (isExpanded(s.name)) {
               <div class="spell-expand">
-                @if (s.description) {
+                <!-- ELI5 on: the one-sentence summary stands in for the full text.
+                Spells without one (homebrew, placeholders) keep their description. -->
+                @let summary = eli5.summaryFor(s.name);
+                @if (summary) {
+                  <p class="spell-desc spell-eli5">{{ summary }}</p>
+                } @else if (s.description) {
                   <p class="spell-desc"    >{{ s.description }}</p>
                 }
                 @if (s.higherLevelSlot) {

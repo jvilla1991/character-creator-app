@@ -8,6 +8,8 @@ import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../..
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
 import { EditableNumberComponent } from '../../editable-number/editable-number.component';
+import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component';
+import { SpellEli5Service } from '../../../../services/spell-eli5.service';
 
 export interface SpellLevel {
   lvl: number;
@@ -28,7 +30,7 @@ export interface CastRequest {
     templateUrl: './spellbook-panel.component.html',
     styleUrls: ['./spellbook-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [SpellPickerComponent, EditableNumberComponent]
+    imports: [SpellPickerComponent, EditableNumberComponent, Eli5ToggleComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
   readonly collapsedLevels = new Set<number>();
@@ -65,7 +67,12 @@ export class SpellbookPanelComponent implements OnChanges {
    */
   readonly spellsGranted = output<PcSpell[]>();
 
-  constructor(private dndResources: DndResourcesService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private dndResources: DndResourcesService,
+    private cdr: ChangeDetectorRef,
+    /** One-sentence spell summaries for the player's ELI5 switch (signal-backed). */
+    readonly eli5: SpellEli5Service,
+  ) {}
 
   readonly hasSpells = computed(() => (this.pc().spells ?? []).length > 0);
   /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
