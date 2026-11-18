@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
+import { spellKey } from '../../../../models/spell-names';
 
 /**
  * Step 7 (spellcasting classes only): pick cantrips/1st-level spells with a
@@ -42,7 +43,7 @@ export class SpellsStepComponent {
   /** What the recommendation is for (the specialization), shown in the badge tooltip. */
   readonly recommendedFor = input('');
   private readonly recommendedSet = computed(
-    () => new Set(this.recommendedSpells().map(n => n.toLowerCase())),
+    () => new Set(this.recommendedSpells().map(spellKey)),
   );
 
   /** Filter tab clicked (two-way [(spellLevelFilter)] on the parent). */
@@ -72,7 +73,7 @@ export class SpellsStepComponent {
   }
 
   isRecommended(spell: DndSpell): boolean {
-    return this.recommendedSet().has(spell.name.toLowerCase());
+    return this.recommendedSet().has(spellKey(spell.name));
   }
 
   isSpellDescOpen(spell: DndSpell): boolean {

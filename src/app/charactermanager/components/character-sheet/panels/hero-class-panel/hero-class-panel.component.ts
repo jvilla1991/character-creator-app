@@ -11,6 +11,7 @@ import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
   isMoonCircle,
 } from '../../../../models/wow-beast-forms';
+import { spellKey } from '../../../../models/spell-names';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { modFromScore, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
@@ -195,8 +196,9 @@ export class HeroClassPanelComponent {
     return this.spellFor(name)?.source === 'World of Warcraft';
   }
 
+  /** The spell data for a table name, aliases resolved (Evard's Black Tentacles → Black Tentacles). */
   spellFor(name: string): DndSpell | undefined {
-    return this.spellIndex()?.get(name.toLowerCase());
+    return this.spellIndex()?.get(spellKey(name));
   }
 
   /** "+5" / "−1" for an attack bonus. */

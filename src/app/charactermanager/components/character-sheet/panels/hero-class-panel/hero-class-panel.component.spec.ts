@@ -51,6 +51,17 @@ describe('HeroClassPanelComponent', () => {
       expect(component.spellFor('death grip')?.description).toBe('Stub text.');
     });
 
+    it("finds Evard's Black Tentacles under its SRD name, Black Tentacles (Blood, Paladin 13)", () => {
+      const tentacles = {
+        ...deathGrip, name: 'Black Tentacles', level: 4, school: 'conjuration', description: 'Tentacle text.',
+      } as DndSpell;
+      dndResources.getSpells.and.returnValue(of([deathGrip, tentacles]));
+      component.pc = makeDeathKnight({ specialization: 'Blood', level: 13 });
+      expect(component.spells.map(s => s.name)).toContain("Evard's Black Tentacles");
+      expect(component.spellFor("Evard's Black Tentacles")?.description).toBe('Tentacle text.');
+      expect(component.spellFor('Black Tentacles')?.description).toBe('Tentacle text.');
+    });
+
     it('does not fetch spells at level 1 (no oath spells yet)', () => {
       component.pc = makeDeathKnight({ level: 1 });
       expect(component.spells).toEqual([]);
