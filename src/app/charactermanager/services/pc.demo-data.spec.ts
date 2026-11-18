@@ -80,4 +80,19 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect((pc.spells ?? []).filter(s => suggested.includes(s.name)).length).toBeGreaterThanOrEqual(2);
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
   });
+
+  it('seeds a level-5 Demonology WoW warlock with the Fiend Patron and the recommended starting picks', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Warlock' && p.specialization === 'Demonology')!;
+    expect(pc).toBeDefined();
+    expect(pc.level).toBe(5);
+    expect(pc.subclass).toBe('Fiend Patron');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Warlock (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Warlock');
+    expect((pc.spells ?? []).map(s => s.name)).toEqual(['Eldritch Blast', 'Toll the Dead', 'Hex', 'Arms of Hadar']);
+    expect(Object.keys(pc.spellSlots ?? {})).toEqual(['3']);
+    // Warlocks get no WoW-only patron: the demo offers the plain warlock list (none server-side).
+    expect(demoSubclassOptions('Warlock', 'Demonology')).toEqual([]);
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
 });

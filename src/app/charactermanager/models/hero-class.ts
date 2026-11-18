@@ -93,6 +93,27 @@ export interface SpecializationGuidance {
   levelTip?: { level: number; text: string };
   /** A short aside shown under the class-step box (e.g. another class that fits the role). */
   note?: string;
+  /**
+   * Eldritch Invocations to take (Warlock). Invocations are not modelled in this
+   * app, so these are recommendation text only — nothing is granted or tracked.
+   */
+  invocations?: InvocationGuidance;
+}
+
+/** Recommended Eldritch Invocations by when they are taken. */
+export interface InvocationGuidance {
+  /** The level-1 invocation. */
+  level1?: readonly string[];
+  /** The invocations gained at level 2. */
+  level2?: readonly string[];
+  /** Invocations worth considering from level 5. */
+  fromLevel5?: readonly string[];
+}
+
+/** One labelled row of recommended invocations, as shown in the class step and on the sheet. */
+export interface InvocationRow {
+  label: string;
+  names: readonly string[];
 }
 
 /** One base-class-level row of a WoW-only subclass's always-prepared spells (e.g. Oath of the Holy). */
@@ -161,6 +182,11 @@ export interface HeroClassOption {
   subclassNote?: string;
   /** What the base class calls its subclass, lower-case ('circle', 'oath'); absent reads 'subclass'. */
   subclassTerm?: string;
+  /**
+   * The base-class level the subclass is chosen at; absent reads 3. A Warlock
+   * picks its patron at level 1, in the creation wizard's subclass picker.
+   */
+  subclassLevel?: number;
   source: ContentSource;
   /** One- or two-sentence description shown in the class step. */
   blurb: string;
@@ -183,6 +209,10 @@ export interface HeroClassOption {
   guidance?: Readonly<Record<string, SpecializationGuidance>>;
   /** Suggested spells per specialization, by spell level (sheet panel). */
   suggestedSpells?: Readonly<Record<string, readonly SuggestedSpellLevel[]>>;
+  /** A one-line flavour note under the suggested spells (every specialization). */
+  suggestedSpellsNote?: string;
+  /** Recommended invocations that are World of Warcraft additions (marked ✦; full text not yet published). */
+  wowInvocations?: readonly string[];
   /**
    * WoW-only subclasses a variant can take (offered by the server), with their
    * always-prepared spells by base-class level — e.g. Oath of the Holy.
@@ -384,6 +414,54 @@ export function recommendedSubclassFor(
   hero: HeroClassOption | undefined, specialization: string | null | undefined,
 ): string | undefined {
   return specialization ? hero?.guidance?.[specialization]?.subclass.name : undefined;
+}
+
+/** The base-class level a variant's subclass is chosen at (3 unless the class says otherwise). */
+export function subclassLevelOf(hero: HeroClassOption | undefined): number {
+  return hero?.subclassLevel ?? 3;
+}
+
+/**
+ * The class-step guidance label for the recommended subclass: 'Level 3 subclass',
+ * or just the class's own term ('Patron') when it is picked at level 1 in the wizard.
+ */
+export function subclassGuidanceLabel(hero: HeroClassOption): string {
+  if (subclassLevelOf(hero) === 1) {
+    const term = hero.subclassTerm ?? 'subclass';
+    return term.charAt(0).toUpperCase() + term.slice(1);
+  }
+  return `Level ${subclassLevelOf(hero)} subclass`;
+}
+
+/** Hover text for a ✦ World of Warcraft invocation. */
+export const WOW_INVOCATION_NOTE = 'Full text TBD — World of Warcraft invocations update.';
+
+/** True when a recommended invocation is a World of Warcraft addition (case-insensitive). */
+export function isWowInvocation(hero: HeroClassOption | undefined, name: string): boolean {
+  const n = name.toLowerCase();
+  return !!hero?.wowInvocations?.some(i => i.toLowerCase() === n);
+}
+
+const INVOCATION_ROWS_CACHE = new WeakMap<InvocationGuidance, readonly InvocationRow[]>();
+
+/**
+ * A guidance's recommended invocations as labelled rows (level 1, level 2,
+ * from level 5), skipping empty ones; empty when there are none. Cached per
+ * guidance so template bindings see a stable array.
+ */
+export function invocationRows(guidance: SpecializationGuidance | null | undefined): readonly InvocationRow[] {
+  const inv = guidance?.invocations;
+  if (!inv) return [];
+  let rows = INVOCATION_ROWS_CACHE.get(inv);
+  if (!rows) {
+    rows = [
+      { label: 'Level 1 invocation', names: inv.level1 ?? [] },
+      { label: 'Level 2 invocations', names: inv.level2 ?? [] },
+      { label: 'From level 5, consider', names: inv.fromLevel5 ?? [] },
+    ].filter(r => r.names.length > 0);
+    INVOCATION_ROWS_CACHE.set(inv, rows);
+  }
+  return rows;
 }
 
 const NO_SPELLS: readonly string[] = [];

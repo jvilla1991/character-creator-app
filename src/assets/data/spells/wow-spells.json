@@ -514,5 +514,47 @@
     "components": ["v"],
     "duration": "1 round",
     "description": "A shell of radiant light closes around you until the start of your next turn. Until then you have Immunity to all damage, including the damage that triggered this spell. Your Speed can't be reduced, any reductions already affecting you are suspended, and nothing can move you against your will."
+  },
+  {
+    "name": "Curse of Agony",
+    "level": 2,
+    "school": "necromancy",
+    "classes": ["warlock"],
+    "source": "World of Warcraft",
+    "actionType": "action",
+    "concentration": false,
+    "ritual": false,
+    "range": "30 feet",
+    "components": ["v", "s"],
+    "duration": "1 minute",
+    "description": "You lay a festering curse on one creature you can see within range. The curse's damage starts at 1d4 Psychic. The target makes a Constitution saving throw at once and again at the end of each of its turns while the spell lasts. On a failed save, it takes the damage and the die grows one size, from d4 to d6, d8, d10 and at most d12. On a successful save, it takes the damage at its current size and the spell ends."
+  },
+  {
+    "name": "Hand of Gul'dan",
+    "level": 3,
+    "school": "conjuration",
+    "classes": ["warlock"],
+    "source": "World of Warcraft",
+    "actionType": "action",
+    "concentration": true,
+    "ritual": false,
+    "range": "TBD",
+    "components": ["v", "s"],
+    "duration": "TBD",
+    "description": "TBD — full text coming in the World of Warcraft spells update."
+  },
+  {
+    "name": "Rain of Fire",
+    "level": 3,
+    "school": "evocation",
+    "classes": ["warlock"],
+    "source": "World of Warcraft",
+    "actionType": "action",
+    "concentration": true,
+    "ritual": false,
+    "range": "TBD",
+    "components": ["v", "s"],
+    "duration": "TBD",
+    "description": "TBD — full text coming in the World of Warcraft spells update."
   }
 ]

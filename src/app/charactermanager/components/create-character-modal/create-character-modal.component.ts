@@ -25,7 +25,7 @@ import { ContentSourceFilterComponent } from '../content-source-filter/content-s
 import { ContentSource, ContentSourceSelection, allContentSources, filterBySource } from '../../models/content-source';
 import {
   ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
-  recommendedStartingSpells,
+  recommendedStartingSpells, recommendedSubclassFor,
 } from '../../models/hero-class';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
@@ -185,6 +185,17 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   /** "Recommended for <spec>" picks for the chosen hero class + specialization; null otherwise. */
   get specializationGuidance(): SpecializationGuidance | null {
     return (this.specialization && this.heroClass?.guidance?.[this.specialization]) || null;
+  }
+
+  /**
+   * The level-1 subclass the chosen specialization recommends (a WoW Warlock's
+   * patron), when it is one of the picker's options; '' otherwise. Badged in the
+   * class step's subclass picker — never auto-selected.
+   */
+  get recommendedLevel1Subclass(): string {
+    if (!this.requiresLevel1Subclass) return '';
+    const name = recommendedSubclassFor(this.heroClass, this.specialization);
+    return name && this.availableSubclasses.some(s => s.name === name) ? name : '';
   }
 
   /** Spells the spells step highlights as "Recommended" (stable array — never auto-selected). */
