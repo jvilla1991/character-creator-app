@@ -128,7 +128,6 @@
 
     &.filled {
       background: var(--gold, #d9b25f);
-      box-shadow: 0 0 5px rgba(217, 178, 95, 0.55);
     }
 
     &.clickable {
@@ -158,7 +157,6 @@
     color: var(--gold, #d9b25f);
     font-size: 12px;
     line-height: 1;
-    text-shadow: 0 0 6px rgba(217, 178, 95, 0.7);
   }
 
   .dmg-input {

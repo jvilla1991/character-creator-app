@@ -288,7 +288,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   width: 36px; height: 36px;
   flex-shrink: 0;
   color: var(--gold);
-  filter: drop-shadow(var(--glow-gold));
 }
 .brand-name {
   font-family: 'Cinzel', serif;
@@ -417,13 +416,11 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   width: 96px; height: 96px;
   font-size: 36px;
   border: 2px solid var(--gold);
-  box-shadow: var(--glow-gold);
 }
 .portrait.xl {
   width: 140px; height: 140px;
   font-size: 48px;
   border: 2px solid var(--gold);
-  box-shadow: var(--glow-gold);
 }
 .portrait .portrait-ring {
   position: absolute; inset: -2px;
@@ -599,7 +596,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   letter-spacing: 0.02em;
   color: var(--text);
   margin: 0 0 8px;
-  text-shadow: 0 0 30px color-mix(in oklch, var(--gold) 30%, transparent);
 }
 .sheet-name-edit {
   background: transparent;
@@ -814,8 +810,8 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   background: transparent;
   margin: 0 auto;
 }
-.skill.prof .skill-dot { background: var(--gold); border-color: var(--gold); box-shadow: var(--glow-gold); }
-.skill.expert .skill-dot { background: var(--celestial); border-color: var(--celestial); box-shadow: var(--glow); }
+.skill.prof .skill-dot { background: var(--gold); border-color: var(--gold); }
+.skill.expert .skill-dot { background: var(--celestial); border-color: var(--celestial); }
 .skill-name { color: var(--text); }
 .skill-ability {
   font-family: 'Cinzel', serif;
@@ -968,7 +964,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   padding: 0;
   transition: background .15s;
 }
-.spell-slot.used { background: var(--gold); box-shadow: var(--glow-gold); }
+.spell-slot.used { background: var(--gold); }
 
 /* === SUPPLIES (travel rations/water tracked as charges) === */
 .supply-row {
@@ -985,7 +981,7 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   border-radius: 50%;
   background: transparent;
 }
-.supply-pip.full { background: var(--gold); box-shadow: var(--glow-gold); }
+.supply-pip.full { background: var(--gold); }
 .supply-count { min-width: 34px; text-align: right; color: var(--text-dim); font-size: 13px; }
 .supply-steppers { display: inline-flex; gap: 4px; }
 .supply-steppers .btn { padding: 0 8px; line-height: 20px; }
@@ -1294,7 +1290,9 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
 .modal {
   background: var(--surface);
   border: 1px solid var(--gold);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6), var(--glow-gold);
+  /* The ambient shadow only: a dialog sits above the page, but it does not
+     glow at rest (The Glow Is State Rule). */
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   border-radius: 4px;
   width: min(520px, 92vw);
   padding: 28px 32px 24px;
@@ -1488,7 +1486,6 @@ select:focus {
   width: 120px; height: 120px;
   color: var(--gold);
   opacity: 0.5;
-  filter: drop-shadow(var(--glow-gold));
 }
 .empty-title {
   font-family: 'Cinzel', serif;
@@ -1567,7 +1564,7 @@ select:focus {
   border-radius: 4px;
   padding: 36px 40px 32px;
   position: relative;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), var(--glow-gold);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
 }
 .login-card::before {
   content: '';
@@ -1584,7 +1581,6 @@ select:focus {
   width: 64px; height: 64px;
   margin: 0 auto 18px;
   color: var(--gold);
-  filter: drop-shadow(var(--glow-gold));
 }
 .login-brand-mark svg { width: 100%; height: 100%; }
 .login-brand-name {
@@ -1594,7 +1590,6 @@ select:focus {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text);
-  text-shadow: 0 0 30px color-mix(in oklch, var(--gold) 35%, transparent);
   margin-bottom: 6px;
 }
 .login-brand-sub {
@@ -1702,14 +1697,12 @@ select:focus {
   color: var(--gold-2);
   border-color: color-mix(in oklch, var(--gold) 50%, transparent);
   background: color-mix(in oklch, var(--gold) 16%, var(--surface-2));
-  box-shadow: var(--glow-gold);
 }
 .role-seg.active svg { opacity: 1; }
 .role-seg.dm.active {
   color: var(--celestial-2);
   border-color: color-mix(in oklch, var(--celestial) 50%, transparent);
   background: color-mix(in oklch, var(--celestial) 16%, var(--surface-2));
-  box-shadow: var(--glow);
 }
 
 /* === ACCOUNT ROW (sidebar footer) === */
@@ -1953,7 +1946,7 @@ select:focus {
   width: min(440px, 94vw);
   background: var(--surface);
   border-right: 1px solid var(--gold);
-  box-shadow: 20px 0 60px rgba(0,0,0,0.5), var(--glow-gold);
+  box-shadow: 20px 0 60px rgba(0,0,0,0.5);
   z-index: 97;
   display: flex;
   flex-direction: column;
