@@ -155,7 +155,7 @@ describe('ClassStepComponent — World of Warcraft Rogue', () => {
     expect(box.textContent).toContain('Assassin');
     expect(box.textContent).toContain('Poison');
     expect(box.textContent).toContain('Poisoner');
-    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+    expect(box.textContent).not.toContain('Suggestions only');
   });
 
   it('shows Swashbuckler for Outlaw and Soulknife for Subtlety, with no level tip', () => {
@@ -213,7 +213,7 @@ describe('ClassStepComponent — World of Warcraft Shaman (Barbarian)', () => {
     expect(box.textContent).toContain('Any two of Battleaxes, Longswords, Maces');
     expect(box.textContent).toContain('Path of the Elements — plus Totems instead of Primal Knowledge.');
     expect(box.textContent).toContain('Ritual Caster');
-    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+    expect(box.textContent).not.toContain('Suggestions only');
   });
 
   it('shows the Enhancement and Restoration picks', () => {
@@ -258,7 +258,6 @@ describe('ClassStepComponent — World of Warcraft Warlock', () => {
     fixture.componentRef.setInput('selectedLabel', 'Warlock');
     fixture.componentRef.setInput('clazz', 'Warlock');
     fixture.componentRef.setInput('classDetail', detail);
-    fixture.componentRef.setInput('spellsStep', true);
     fixture.componentRef.setInput('specialization', specialization);
     fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
     fixture.componentRef.setInput('requiresLevel1Subclass', true);
@@ -308,7 +307,7 @@ describe('ClassStepComponent — World of Warcraft Warlock', () => {
     expect(box.textContent).toContain('Eldritch Blast, Toll the Dead');
     expect(box.textContent).toContain('Arms of Hadar, Hex');
     expect(box.textContent).toContain('Fiend Patron');
-    expect(box.textContent).toContain('marked “Recommended” on the Spells step');
+    expect(box.textContent).not.toContain('Suggestions only');
     expect(box.textContent).toContain('The patron is marked “Recommended” in the picker below.');
   });
 
@@ -432,7 +431,7 @@ describe('ClassStepComponent — World of Warcraft Warrior (Fighter)', () => {
     expect(box.textContent).toContain('Great Weapon Fighting');
     expect(box.textContent).toContain('Battle Master');
     expect(box.textContent).toContain('Great Weapon Master');
-    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+    expect(box.textContent).not.toContain('Suggestions only');
     expect(box.textContent).not.toContain('Level 2 fighting style');
   });
 

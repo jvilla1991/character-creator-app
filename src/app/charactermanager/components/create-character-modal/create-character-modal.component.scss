@@ -123,7 +123,9 @@
 @media (max-width: 820px) {
 
   :host ::ng-deep .modal.wizard {
-    width: 100vw;
+    // 100% of the fixed backdrop, not 100vw: vw counts a classic scrollbar's
+    // width, which makes the sheet wider than the screen it has to fit.
+    width: 100%;
     height: 100dvh;
     max-width: none;
     border-radius: 0;
@@ -155,10 +157,21 @@
     background: var(--surface);
   }
 
+  // The sheet has no padding of its own on phones, so each bar brings the
+  // 16px gutter; without it the source pills sat against the screen edge.
+  .wizard-sources {
+    margin: 0;
+    padding: 10px 16px 12px;
+  }
+
   // Scrolling step body between the two sticky bars.
   .wizard-body {
     flex: 1 1 auto;
+    min-height: 0;            // let the flex child shrink so its own scroll engages
     overflow-y: auto;
+    // overflow-y alone makes overflow-x compute to auto too; the step body
+    // only ever scrolls up and down.
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     padding: 18px 16px;
   }
@@ -180,11 +193,18 @@
     }
   }
 
-  // Bigger tap targets for the in-wizard choices.
+  // Bigger step dots where they fit. Nine dots at 34px are wider than a
+  // 375px phone, so they shrink together and stay round (aspect-ratio)
+  // instead of being squeezed into ovals; the gap tightens to match.
+  .wizard-steps { gap: 6px; }
   :host ::ng-deep .step-dot {
-    width: 34px;
-    height: 34px;
+    flex: 0 1 34px;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+    min-width: 0;
   }
+  .step-dot + .step-dot::before { width: 6px; }
   :host ::ng-deep .class-pick {
     min-height: 46px;
     font-size: 12px;

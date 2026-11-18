@@ -111,7 +111,7 @@
             </dd>
           }
         </dl>
-        <p class="hero-spells-note">Suggestions only — record invocations as features; they aren't tracked here.
+        <p class="hero-spells-note">Record invocations as features; they aren't tracked here.
           ✦ marks a World of Warcraft invocation ({{ wowInvocationNote }})</p>
       </div>
     }
@@ -128,7 +128,7 @@
             <span class="maneuver">{{ name }}@if (isWowManeuver(name)) {<span class="wow-mark" [attr.title]="wowManeuverNote" [attr.aria-label]="'World of Warcraft maneuver. ' + wowManeuverNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
           }
         </div>
-        <p class="hero-spells-note">Suggestions only — maneuvers aren't tracked here; pick them on paper or with your DM.
+        <p class="hero-spells-note">Maneuvers aren't tracked here; pick them on paper or with your DM.
           ✦ marks a World of Warcraft maneuver ({{ wowManeuverNote }})</p>
       </div>
     }
@@ -147,7 +147,7 @@
     <!-- WoW variant: suggested spells (NOT always prepared) -->
     @if (suggestedSpells.length) {
       <h3 class="hero-spells-title">Suggested {{ pc.specialization }} Spells</h3>
-      <p class="hero-spells-note">Suggestions only — prepare them like any other {{ baseClassLower }} spell. ✦ marks a World of Warcraft spell.</p>
+      <p class="hero-spells-note">✦ marks a World of Warcraft spell.</p>
       <dl class="suggested-spells">
         @for (row of suggestedSpells; track row.level) {
           <dt>Level {{ row.level }}</dt>

@@ -1445,6 +1445,25 @@ select:focus {
   outline: none;
   border-color: var(--celestial);
 }
+/* Touch screens: a text control is never set below 16px.
+   iOS Safari zooms the whole page in when a focused control is smaller than
+   that, and it stays zoomed once the keyboard closes. The page is then wider
+   and taller than the screen, so the player pans around it with a scrollbar on
+   the side and along the bottom (the login card and the first wizard step
+   were the two places this was met first). Keeping every control at 16px
+   stops the zoom at its cause and leaves pinch-zoom alone.
+   max(16px, 1em): 1em here is the parent's size, so a control that inherits
+   a larger size (an inline number edit in a stat block) keeps it. !important
+   because component styles set these sizes at higher specificity than any
+   global rule can reach. (pointer: coarse) leaves mouse-driven screens on the
+   compact desktop scale. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=button]):not([type=submit]),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
 .input-reveal {
   position: relative;
   display: flex;
@@ -1590,6 +1609,10 @@ select:focus {
      take effect. With min-height it grew to fit the card instead, and on a
      short phone the bottom of the register card could not be reached. */
   overflow-y: auto;
+  /* Setting only overflow-y makes overflow-x compute to auto as well, so a
+     card even 1px too wide would give the page a sideways scrollbar. The auth
+     page never scrolls sideways. */
+  overflow-x: hidden;
   height: 100vh;            /* fallback for browsers without dvh */
   height: 100dvh;           /* tracks the real visible area as mobile browser chrome shows/hides */
   padding: 24px;
@@ -1600,7 +1623,9 @@ select:focus {
 
 .login-card {
   margin: auto;
-  width: min(480px, 92vw);
+  /* 100% of the padded page, not a share of the viewport: 92vw plus the
+     page's own padding is wider than a phone narrower than 400px. */
+  width: min(480px, 100%);
   background: var(--surface);
   border: 1px solid var(--gold);
   border-radius: 4px;
@@ -1695,6 +1720,20 @@ select:focus {
   .login-brand { margin-bottom: 20px; }
   .login-brand-mark { width: 48px; height: 48px; margin: 0 auto 12px; }
   .auth-footer { margin-top: 14px; }
+}
+/* Short screens: a phone's browser bars leave roughly 550px of a 667px
+   screen, which the sign-in card overshot by a few lines, so the page scrolled
+   for the sake of its last footer. Tighten the spacing (never the text or the
+   44px buttons) until the whole card fits without scrolling. */
+@media (max-height: 640px) {
+  .login-page { padding: 8px 16px; }
+  .login-card { padding: 18px 20px 16px; }
+  .login-brand { margin-bottom: 12px; }
+  .login-brand-mark { width: 36px; height: 36px; margin: 0 auto 8px; }
+  .login-brand-name { margin-bottom: 0; }
+  .login-divider { margin-bottom: 16px; }
+  .login-card .auth-or { margin: 10px 0; }
+  .auth-footer { margin-top: 10px; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════

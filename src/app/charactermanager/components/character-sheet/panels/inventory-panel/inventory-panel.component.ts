@@ -3,6 +3,7 @@ import { PC, PcItem } from '../../../../models/pc';
 import { categoryLabelFor, formatCp } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
 import { withRecomputedAc } from '../../../../utils/armor-math';
+import { legacyEquipmentLines } from '../../../../utils/legacy-equipment';
 import {
   ENCUMBERED_PENALTY,
   isEncumbered,
@@ -16,17 +17,23 @@ import { GiveItemModalComponent } from './give-item-modal.component';
 import { InventoryTransferResult } from '../../../../services/inventory-transfer.service';
 
 /**
- * Displays and manages a character's structured inventory (`pc.inventory`).
- * Items are acquired only by buying them at a session shop (which writes them
- * through to `pc.inventory`); this panel lets the owner — or a DM via the
- * cross-link — manage what they already own: equip/unequip, drop a whole
- * stack (all of it at once), or discard a dropped stack one unit at a time.
- * It never adds new items.
+ * Displays and manages everything a character carries: the structured
+ * inventory (`pc.inventory` — shop purchases, DM grants, loot) followed by the
+ * starting equipment the creation wizard wrote to the legacy `pc.weapons` /
+ * `pc.gear` arrays, shown as ordinary lines (see legacy-equipment.ts). The
+ * owner — or a DM via the cross-link — manages what is already owned:
+ * equip/unequip, drop a whole stack (all of it at once), or discard a dropped
+ * stack one unit at a time. The first such edit folds the legacy lines into
+ * `pc.inventory` for good and empties the legacy arrays. The panel itself
+ * never adds items; a DM grant goes out through `itemGranted`.
  *
  * Mirrors {@link CoinPurseComponent}: emits a modified PC via `pcChange` when
  * `editable`; read-only otherwise (e.g. the in-session embed). `equipped` is a
  * display flag only — it does not recompute AC or any derived stat.
  */
+/** How long a Give waits for the starting-gear fold-in save before giving up. */
+const PENDING_GIVE_MS = 10_000;
+
 @Component({
     selector: 'app-inventory-panel',
     templateUrl: './inventory-panel.component.html',
@@ -35,7 +42,15 @@ import { InventoryTransferResult } from '../../../../services/inventory-transfer
     imports: [ItemComposerComponent, GiveItemModalComponent]
 })
 export class InventoryPanelComponent {
-  @Input() pc!: PC;
+  /** A setter so a Give that had to wait for the starting-gear fold-in can
+   *  resume the moment the saved character comes back (see openGive). */
+  @Input()
+  get pc(): PC { return this._pc; }
+  set pc(value: PC) {
+    this._pc = value;
+    this.resumePendingGive();
+  }
+  private _pc!: PC;
   /** When true, shows the manage controls (equip / reduce qty / drop) and emits pcChange. */
   @Input() editable = false;
   @Input() giveAllowed = false;
@@ -46,9 +61,37 @@ export class InventoryPanelComponent {
   openGive(item: PcItem): void {
     if (!this.editable || !this.giveAllowed || item.status === 'dropped') return;
     const index = (this.pc.inventory ?? []).indexOf(item);
-    if (index < 0) return;
+    if (index < 0) {
+      // A starting-gear line is not in pc.inventory yet, and the transfer
+      // endpoint addresses an item by its position there. Fold the legacy
+      // lines in first (an ordinary save through pcChange); the dialog opens
+      // when the saved character comes back — see resumePendingGive.
+      const at = this.items.indexOf(item);
+      if (at < 0) return;
+      this.transferMessage = '';
+      this.pendingGive = { at, name: item.name, until: Date.now() + PENDING_GIVE_MS };
+      this.emit(this.items.map(i => ({ ...i })));
+      return;
+    }
     this.transferMessage = '';
     this.giveSelection = { pc: structuredClone(this.pc), index };
+  }
+
+  /** A Give clicked on a starting-gear line, waiting for the fold-in save:
+   *  where the line sits in `items`, its name (a sanity check), and a deadline
+   *  so a save that failed cannot pop the dialog open much later. */
+  private pendingGive: { at: number; name: string; until: number } | null = null;
+
+  private resumePendingGive(): void {
+    const pending = this.pendingGive;
+    if (!pending) return;
+    if (Date.now() > pending.until) { this.pendingGive = null; return; }
+    // Still unfolded: this is some other update (a session poll, say) that
+    // arrived before the save did. Keep waiting.
+    if (this._pc?.weapons?.length || this._pc?.gear?.length) return;
+    this.pendingGive = null;
+    const line = this.items[pending.at];
+    if (line && line.name === pending.name) this.openGive(line);
   }
 
   onTransferred(result: InventoryTransferResult): void {
@@ -80,12 +123,32 @@ export class InventoryPanelComponent {
 
   readonly formatCp = formatCp;
 
-  /** The lines shown/managed here: everything except travel supplies, which the
-   *  Supplies pane owns. Index-based edits below run over this filtered list and
-   *  re-merge the supply lines in {@link emit}, so supplies are never dropped. */
+  /** The lines shown/managed here: everything in `pc.inventory` except travel
+   *  supplies (the Supplies pane owns those), FOLLOWED BY the legacy starting
+   *  equipment as inventory lines. Legacy lines go last so the position of every
+   *  real inventory line is the same as before they were listed. Index-based
+   *  edits below run over this merged list and re-merge the supply lines in
+   *  {@link emit}, so supplies are never dropped.
+   *
+   *  Memoized on the three source arrays: the legacy lines are built objects,
+   *  and the template tracks rows by identity, so a fresh list per read would
+   *  re-create those rows on every change-detection pass. Keyed on the arrays
+   *  rather than the PC because hosts hand over a new PC object for unrelated
+   *  changes (HP, conditions) while the arrays themselves stay the same. */
   get items(): PcItem[] {
-    return (this.pc?.inventory ?? []).filter(i => !isSupplyItem(i));
+    const pc = this.pc;
+    const src = this.itemsSource;
+    if (!src || src.inventory !== pc?.inventory || src.weapons !== pc?.weapons || src.gear !== pc?.gear) {
+      this.itemsSource = { inventory: pc?.inventory, weapons: pc?.weapons, gear: pc?.gear };
+      this.itemsMemo = [
+        ...(pc?.inventory ?? []).filter(i => !isSupplyItem(i)),
+        ...(pc ? legacyEquipmentLines(pc) : []),
+      ];
+    }
+    return this.itemsMemo;
   }
+  private itemsSource: Pick<PC, 'inventory' | 'weapons' | 'gear'> | null = null;
+  private itemsMemo: PcItem[] = [];
 
   get totalWeight(): number {
     return this.items.reduce((sum, i) => sum + (i.weight ?? 0) * (i.qty ?? 0), 0);
@@ -183,9 +246,15 @@ export class InventoryPanelComponent {
     // the Supplies pane owns so an inventory edit never discards them.
     const supplies = (this.pc.inventory ?? []).filter(isSupplyItem);
     const merged = [...inventory, ...supplies];
+    // The managed list already carries the legacy starting equipment as real
+    // lines, so the legacy arrays are emptied in the same save — otherwise the
+    // next read would list (and then persist) those items a second time.
+    const updated: PC = { ...this.pc, inventory: merged, weapons: [], gear: [] };
     // Equipping/unequipping (or losing) armor recomputes AC; unrelated edits
-    // leave a hand-set AC untouched.
-    this.pcChange.emit(withRecomputedAc({ ...this.pc, inventory: merged }, this.pc.inventory));
+    // leave a hand-set AC untouched. The pre-edit pc.inventory is the right
+    // baseline even though it lacks the legacy lines: only equipped armor lines
+    // with an armorClass formula count, and a legacy line never has one.
+    this.pcChange.emit(withRecomputedAc(updated, this.pc.inventory));
   }
 
   // ── DM grant form ──────────────────────────────────────────────────────────

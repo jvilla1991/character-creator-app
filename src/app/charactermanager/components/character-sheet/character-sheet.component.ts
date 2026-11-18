@@ -31,7 +31,6 @@ import { OtherFeaturesComponent } from './panels/other-features/other-features.c
 import { CoinPurseComponent } from './panels/coin-purse/coin-purse.component';
 import { BackgroundStoryComponent } from './panels/background-story/background-story.component';
 import { SuppliesPanelComponent } from './panels/supplies-panel/supplies-panel.component';
-import { EquipmentPanelComponent } from './panels/equipment-panel/equipment-panel.component';
 import { InventoryPanelComponent } from './panels/inventory-panel/inventory-panel.component';
 import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
 import { PcLogComponent } from './panels/pc-log/pc-log.component';
@@ -47,7 +46,7 @@ import { NotificationService } from '../../services/notification.service';
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -74,8 +73,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** The open shop's category (backend format), or null for curated/no shop. */
   @Input() shopCategory: string | null = null;
   /** True when this PC's campaign runs the Darker Dungeons slot-based inventory
-   *  variant — switches the inventory panel to slots/bulk and hides the legacy
-   *  equipment panel (a converted PC's weapons/gear were consolidated on join). */
+   *  variant — switches the inventory panel to slots/bulk (a converted PC's
+   *  legacy weapons/gear were consolidated into its inventory on join). */
   @Input() slotInventory = false;
   /** True when this PC's campaign runs the Darker Dungeons survival-conditions
    *  variant — reveals the hunger/thirst/fatigue tracker panel. */

@@ -26,7 +26,6 @@
             type="text"
             id="username"
             formControlName="userName"
-            placeholder="Enter your username"
             autocomplete="username">
           </div>
 
@@ -37,7 +36,6 @@
                 [type]="showPassword ? 'text' : 'password'"
                 id="password"
                 formControlName="password"
-                placeholder="Enter your password"
                 autocomplete="current-password">
                 <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
                   [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
