@@ -1,9 +1,18 @@
-import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, computed, inject, output, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { PC } from '../../../../models/pc';
+import { ClassFeatureProgressionEntry } from '../../../../models/class-feature';
+import { ClassFeatureService } from '../../../../services/class-feature.service';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { PreferencesService } from '../../../../services/preferences.service';
 import { FormsModule } from '@angular/forms';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
+
+/** A feature the character has yet to unlock: the roadmap entry plus its display label. */
+type LockedFeature = { name: string; desc: string; level: number; source: string };
+
+const nameKey = (name: string): string => name.trim().toLowerCase();
 
 @Component({
     selector: 'app-features-list',
@@ -13,7 +22,20 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
     imports: [FormsModule]
 })
 export class FeaturesListComponent {
-  @Input() pc!: PC;
+  private readonly classFeatureService = inject(ClassFeatureService);
+  private readonly preferences = inject(PreferencesService);
+
+  private readonly pcSignal = signal<PC | undefined>(undefined);
+
+  @Input({ required: true })
+  set pc(value: PC) {
+    this.pcSignal.set(value);
+    this.loadProgression(value);
+  }
+  get pc(): PC {
+    return this.pcSignal() as PC;
+  }
+
   /** True when the viewer is a DM cross-linked into this sheet — reveals the Grant control. */
   @Input() addAllowed = false;
   /**
@@ -24,15 +46,94 @@ export class FeaturesListComponent {
    */
   readonly featureGranted = output<Feature>();
 
-  constructor(private dndResources: DndResourcesService) {}
+  constructor(private dndResources: DndResourcesService) {
+    inject(DestroyRef).onDestroy(() => this.progressionSub?.unsubscribe());
+  }
+
+  // ── Class feature roadmap (levels 2–20) ──────────────────────────────────
+
+  /** The class + subclass roadmap from the server; empty until loaded, and in demo mode. */
+  private readonly progression = signal<ClassFeatureProgressionEntry[]>([]);
+  private progressionKey: string | null = null;
+  private progressionSub?: Subscription;
+
+  /** Refetches the roadmap only when the class, subclass or specialization actually changed. */
+  private loadProgression(pc: PC | undefined): void {
+    const key = pc?.clazz ? `${pc.clazz}|${pc.subclass ?? ''}|${pc.specialization ?? ''}` : '';
+    if (key === this.progressionKey) return;
+    this.progressionKey = key;
+    this.progressionSub?.unsubscribe();
+    this.progression.set([]);
+    if (!pc?.clazz) return;
+    this.progressionSub = this.classFeatureService
+      .progression(pc.clazz, pc.subclass, pc.specialization)
+      .subscribe(entries => this.progression.set(entries));
+  }
 
   /**
-   * Entries shown in this panel: everything NOT tagged category 'other' (absent =
-   * class, so every pre-existing entry stays here). 'other' entries render in the
-   * sibling Other Features panel.
+   * Splits the roadmap around the character's level. Entries at or below it that are not saved
+   * on the character are "filled in" as unlocked — a character who passed a level before its
+   * features were catalogued (every subclass feature, for older characters) would otherwise
+   * show a hole. Saved features are matched by name, one saved entry per roadmap entry, so a
+   * feature gained twice (a Bard's two Expertise picks) is not filled in twice.
+   */
+  private readonly roadmap = computed(() => {
+    const pc = this.pcSignal();
+    const level = pc?.level ?? 1;
+    const saved = new Map<string, number>();
+    for (const f of pc?.features ?? []) {
+      saved.set(nameKey(f.name), (saved.get(nameKey(f.name)) ?? 0) + 1);
+    }
+
+    const filledIn: Feature[] = [];
+    const locked: LockedFeature[] = [];
+    for (const entry of this.progression()) {
+      if (entry.level > level) {
+        const unlockAt = `Level ${entry.level}`;
+        locked.push({
+          name: entry.name,
+          desc: entry.desc,
+          level: entry.level,
+          source: entry.subclass && pc?.subclass ? `${pc.subclass} · ${unlockAt}` : unlockAt,
+        });
+        continue;
+      }
+      const left = saved.get(nameKey(entry.name)) ?? 0;
+      if (left > 0) {
+        saved.set(nameKey(entry.name), left - 1);
+      } else {
+        // Same source wording the server writes when a level-up grants the feature.
+        filledIn.push({ name: entry.name, source: `${pc?.clazz} ${entry.level}`, desc: entry.desc });
+      }
+    }
+    return { filledIn, locked };
+  });
+
+  private readonly unlocked = computed<Feature[]>(() => [
+    ...(this.pcSignal()?.features ?? []).filter(f => f.category !== 'other'),
+    ...this.roadmap().filledIn,
+  ]);
+
+  /**
+   * Unlocked entries shown in this panel: everything saved on the character that is NOT tagged
+   * category 'other' (absent = class, so every pre-existing entry stays here; 'other' entries
+   * render in the sibling Other Features panel), followed by any roadmap features at or below
+   * the character's level that are missing from the saved list.
    */
   get classFeatures(): Feature[] {
-    return (this.pc.features ?? []).filter(f => f.category !== 'other');
+    return this.unlocked();
+  }
+
+  /** Roadmap features above the character's level, in level order. */
+  get lockedFeatures(): LockedFeature[] {
+    return this.roadmap().locked;
+  }
+
+  /** Whether the locked features are listed; remembered across visits (PreferencesService). */
+  readonly showLocked = this.preferences.showLockedFeatures;
+
+  toggleLocked(): void {
+    this.preferences.setShowLockedFeatures(!this.showLocked());
   }
 
   /**
