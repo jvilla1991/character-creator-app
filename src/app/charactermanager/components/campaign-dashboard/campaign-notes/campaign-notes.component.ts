@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, inject, signal } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
 import { CampaignService } from '../../../services/campaign.service';
+import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 
@@ -24,10 +26,15 @@ export class CampaignNotesComponent implements OnChanges {
   readonly notes = signal<SessionNote[]>([]);
   draft = '';
   readonly saving = signal(false);
+  /** The log request failed — the empty state must not claim there are no notes. */
+  readonly loadFailed = signal(false);
 
   /** The note currently in edit mode (null = none) and its textarea draft. */
   editingId: SessionNote['id'] | null = null;
   editDraft = '';
+
+  private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private campaignService: CampaignService) {}
 
@@ -35,11 +42,14 @@ export class CampaignNotesComponent implements OnChanges {
     if (changes['campaign']) this.load();
   }
 
-  private load(): void {
+  load(): void {
     if (!this.campaign) { this.notes.set([]); return; }
     this.campaignService.getNotes(this.campaign.id).subscribe({
-      next: notes => this.notes.set(notes),
-      error: err => console.error('Failed to load session notes', err),
+      next: notes => { this.notes.set(notes); this.loadFailed.set(false); },
+      error: err => {
+        this.loadFailed.set(true);
+        this.notifications.error('Could not load the session notes. Try again.', err);
+      },
     });
   }
 
@@ -54,7 +64,7 @@ export class CampaignNotesComponent implements OnChanges {
         this.saving.set(false);
       },
       error: err => {
-        console.error('Failed to add session note', err);
+        this.notifications.error('Could not save the note. Your text is still here — try again.', err);
         this.saving.set(false);
       },
     });
@@ -83,20 +93,36 @@ export class CampaignNotesComponent implements OnChanges {
         this.saving.set(false);
       },
       error: err => {
-        console.error('Failed to update session note', err);
+        this.notifications.error('Could not save the edit. Your text is still here — try again.', err);
         this.saving.set(false);
       },
     });
   }
 
+  /** Asks first — the ✕ sits right beside Edit, and a note is the table's memory. */
   remove(note: SessionNote): void {
+    this.confirmations.confirm({
+      title: 'Delete Note',
+      subject: excerpt(note.body),
+      message: 'will be erased from the session notes. This cannot be undone.',
+      confirmLabel: 'Delete Note',
+    }).subscribe(() => this.reallyRemove(note));
+  }
+
+  private reallyRemove(note: SessionNote): void {
     this.campaignService.deleteNote(this.campaign.id, note.id).subscribe({
       next: () => this.notes.update(notes => notes.filter(n => n !== note)),
-      error: err => console.error('Failed to delete session note', err),
+      error: err => this.notifications.error('Could not delete the note. Try again.', err),
     });
   }
 
   trackById(_index: number, note: SessionNote): number | string {
     return note.id;
   }
+}
+
+/** The note's opening words, quoted, so the DM can tell which one they hit. */
+function excerpt(body: string): string {
+  const flat = body.replace(/\s+/g, ' ').trim();
+  return `“${flat.length > 60 ? flat.slice(0, 60).trimEnd() + '…' : flat}”`;
 }

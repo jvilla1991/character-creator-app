@@ -1,12 +1,15 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { ConfirmService } from '../../modal/confirm.service';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
+import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedShopsComponent', () => {
+  let confirm: jasmine.Spy;
   let component: CuratedShopsComponent;
   let service: any;
 
@@ -26,6 +29,7 @@ describe('CuratedShopsComponent', () => {
     service.list.and.returnValue(of([] as ShopSummary[]));
     component = TestBed.runInInjectionContext(() => new CuratedShopsComponent(service));
     component.campaign = campaign;
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
   });
 
   it('loads shops when the campaign changes', () => {
@@ -79,6 +83,17 @@ describe('CuratedShopsComponent', () => {
     expect(service.updateItem).toHaveBeenCalledWith(5, 9, null);
   });
 
+  it('a failed price save puts the field back to the saved override and says so', () => {
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    component.selected = shop;
+    const field = document.createElement('input');
+    field.value = '99';
+    service.updateItem.and.returnValue(throwError(() => new Error('down')));
+    component.setOverride(shop.items[0], '99', field);
+    expect(field.value).toBe('');
+    expect(notify).toHaveBeenCalled();
+  });
+
   it('setOverride ignores non-numeric / negative input', () => {
     component.selected = shop;
     service.updateItem.and.returnValue(of(shop));
@@ -126,5 +141,13 @@ describe('CuratedShopsComponent', () => {
     open.click();
     expect(service.get).toHaveBeenCalledTimes(1); // the row's own click did not fire again
     expect(fixture.componentInstance.selected).toBe(shop);
+  });
+
+  it('deleteShop() asks first and does nothing when the DM cancels', () => {
+    confirm.and.returnValue(of());
+    component.selected = shop;
+    component.deleteShop();
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: jasmine.any(String) }));
+    expect(service.delete).not.toHaveBeenCalled();
   });
 });

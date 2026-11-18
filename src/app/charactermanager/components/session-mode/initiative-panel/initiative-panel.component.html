@@ -47,7 +47,7 @@
               class="init-input"
               placeholder="0"
               [ngModel]="p.initRolled ? p.initiative : null"
-              (change)="onInitiative(p, $any($event.target).value)"
+              (change)="onInitiative(p, $any($event.target).value, $any($event.target))"
               aria-label="Initiative"
               />
           } @else {
@@ -215,7 +215,7 @@
                 </div>
                 <label class="visibility-toggle">
                   Players see
-                  <select [ngModel]="visibilityMode" (ngModelChange)="onVisibilityChange($event)"
+                  <select #visSelect [ngModel]="visibilityMode" (ngModelChange)="onVisibilityChange($event, visSelect)"
                     aria-label="Enemy visibility">
                     <option value="hidden">No enemies</option>
                     <option value="no-hp">Enemies, health hidden</option>
@@ -224,7 +224,7 @@
                 </label>
                 <label class="sound-picker">
                   Turn cue
-                  <select [ngModel]="turnSound || ''" (ngModelChange)="onSoundChange($event)" aria-label="Turn sound">
+                  <select #soundSelect [ngModel]="turnSound || ''" (ngModelChange)="onSoundChange($event, soundSelect)" aria-label="Turn sound">
                     <option value="">None</option>
                     @for (s of soundOptions; track s) {
                       <option [value]="s.key">{{ s.label }}</option>

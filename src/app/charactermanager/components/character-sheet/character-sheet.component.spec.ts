@@ -8,6 +8,7 @@ import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
 import { FollowerService } from '../../services/follower.service';
 import { UiStateService } from '../../services/ui-state.service';
+import { NotificationService } from '../../services/notification.service';
 import { PC } from '../../models/pc';
 import { Follower } from '../../models/follower';
 
@@ -120,6 +121,18 @@ describe('CharacterSheetComponent', () => {
     expect(pcService.updatePC).not.toHaveBeenCalled();
   });
 
+  it('tells the user when a sheet save fails and leaves the confirmed sheet showing', () => {
+    const error = new Error('network down');
+    pcService.updatePC.and.returnValue(throwError(() => error));
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+    const before = component.pc;
+
+    component.onExhaustionChange(3);
+
+    expect(notify).toHaveBeenCalledWith('Could not save that change. Try again.', error);
+    expect(component.pc).toBe(before);
+  });
+
   it('clamps the exhaustion level to the 0–6 range', () => {
     pcService.updatePC.and.returnValue(of(makePC()));
 
@@ -183,14 +196,14 @@ describe('CharacterSheetComponent', () => {
     expect(result.features).toEqual([granted]);
   });
 
-  it('logs an error if the grant fails', () => {
+  it('tells the user if the grant fails', () => {
     const error = new Error('network down');
     grantService.grantToPc.and.returnValue(throwError(() => error));
-    const consoleSpy = spyOn(console, 'error');
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
 
     component.onFeatureGrant({ name: 'Blessing', source: 'DM Grant', desc: '' });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
+    expect(notify).toHaveBeenCalledWith('Could not grant the feature. Try again.', error);
   });
 
   // --- DM "other feature" grants (Other Features panel) ---
@@ -231,14 +244,14 @@ describe('CharacterSheetComponent', () => {
     ]);
   });
 
-  it('logs an error if the other-feature grant fails', () => {
+  it('tells the user if the other-feature grant fails', () => {
     const error = new Error('network down');
     grantService.grantToPc.and.returnValue(throwError(() => error));
-    const consoleSpy = spyOn(console, 'error');
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
 
     component.onOtherFeatureGrant({ name: 'Darkvision', source: 'Species', desc: '' });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant feature', error);
+    expect(notify).toHaveBeenCalledWith('Could not grant the feature. Try again.', error);
   });
 
   // --- DM spell grants ---
@@ -277,14 +290,14 @@ describe('CharacterSheetComponent', () => {
     expect(result.spells).toEqual(granted);
   });
 
-  it('logs an error if the spell grant fails', () => {
+  it('tells the user if the spell grant fails', () => {
     const error = new Error('network down');
     grantService.grantToPc.and.returnValue(throwError(() => error));
-    const consoleSpy = spyOn(console, 'error');
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
 
     component.onSpellsGrant([{ lvl: 0, name: 'Light', school: 'Evocation', time: 'action', prepared: true }]);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant spells', error);
+    expect(notify).toHaveBeenCalledWith('Could not grant the spells. Try again.', error);
   });
 
   // --- DM equipment grants ---
@@ -334,14 +347,14 @@ describe('CharacterSheetComponent', () => {
     expect(result.inventory?.length).toBe(2);
   });
 
-  it('logs an error if the item grant fails', () => {
+  it('tells the user if the item grant fails', () => {
     const error = new Error('network down');
     grantService.grantToPc.and.returnValue(throwError(() => error));
-    const consoleSpy = spyOn(console, 'error');
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
 
     component.onItemGrant({ name: 'Rope', category: 'gear', qty: 1 });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to grant item', error);
+    expect(notify).toHaveBeenCalledWith('Could not grant the item. Try again.', error);
   });
 
   // --- persist / onPcChange: DM cross-link vs. player path ---
@@ -467,14 +480,15 @@ describe('CharacterSheetComponent', () => {
       expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
     });
 
-    it('a failed follower save reverts to the last confirmed sheet', () => {
-      spyOn(console, 'error');
+    it('a failed follower save reverts to the last confirmed sheet and says so', () => {
+      const notify = spyOn(TestBed.inject(NotificationService), 'error');
       followerService.update.and.returnValue(throwError(() => new Error('500')));
       component.onFollowerOpened(brannoc());
 
       component.onFollowerChanged({ ...component.openFollowerPc()!, ac: 18 });
 
       expect(component.openFollowerPc()?.ac).toBe(16);
+      expect(notify).toHaveBeenCalledWith(jasmine.stringMatching(/^Could not save .*undone/), jasmine.anything());
     });
 
     it('switching to a different character closes the open follower', () => {

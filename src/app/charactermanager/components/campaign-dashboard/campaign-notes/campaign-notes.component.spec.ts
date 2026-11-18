@@ -1,11 +1,13 @@
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { ConfirmService } from '../../modal/confirm.service';
 import { CampaignNotesComponent } from './campaign-notes.component';
 import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CampaignNotesComponent', () => {
+  let confirm: jasmine.Spy;
   let component: CampaignNotesComponent;
   let campaignService: any;
 
@@ -21,6 +23,7 @@ describe('CampaignNotesComponent', () => {
     component = TestBed.runInInjectionContext(() => new CampaignNotesComponent(campaignService));
     component.campaign = campaign;
     component.ngOnChanges({ campaign: {} as any });
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
   });
 
   it('loads notes when the campaign changes', () => {
@@ -69,5 +72,12 @@ describe('CampaignNotesComponent', () => {
     component.cancelEdit();
     expect(component.editingId).toBeNull();
     expect(campaignService.updateNote).not.toHaveBeenCalled();
+  });
+
+  it('remove(note) asks first and does nothing when the DM cancels', () => {
+    confirm.and.returnValue(of());
+    component.remove(note);
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: jasmine.any(String) }));
+    expect(campaignService.deleteNote).not.toHaveBeenCalled();
   });
 });

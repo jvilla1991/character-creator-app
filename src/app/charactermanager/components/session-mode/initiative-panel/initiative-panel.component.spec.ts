@@ -2,7 +2,9 @@ import { InitiativePanelComponent } from './initiative-panel.component';
 import { TestBed } from '@angular/core/testing';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
-import { ParticipantView } from '../../../models/session';
+import { ParticipantView, SessionState } from '../../../models/session';
+import { ConfirmService } from '../../modal/confirm.service';
+import { of, throwError } from 'rxjs';
 
 // Class-only test (no TestBed/DOM). The per-device cue settings (isMuted,
 // cueVolume, customCue) are read in the ctor, so the spy must stub them even
@@ -14,11 +16,11 @@ describe('InitiativePanelComponent', () => {
 
   beforeEach(() => {
     sessionService = jasmine.createSpyObj<SessionService>('SessionService',
-      ['isMuted', 'cueVolume', 'customCue', 'setCueVolume', 'setCustomCue', 'playCue']);
+      ['isMuted', 'cueVolume', 'customCue', 'setCueVolume', 'setCustomCue', 'playCue', 'leave', 'setInitiative']);
     sessionService.isMuted.and.returnValue(false);
     sessionService.cueVolume.and.returnValue(1);
     sessionService.customCue.and.returnValue(null);
-    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
     component = TestBed.runInInjectionContext(() => new InitiativePanelComponent(sessionService, notifications));
   });
 
@@ -154,5 +156,42 @@ describe('InitiativePanelComponent', () => {
 
       expect(emitted).not.toHaveBeenCalled();
     });
+  });
+
+  describe('removing a combatant', () => {
+    let confirm: jasmine.Spy;
+    beforeEach(() => {
+      component.sessionId = 3;
+      sessionService.leave.and.returnValue(of({} as SessionState));
+      confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
+    });
+
+    it('asks before removing a player character, and Cancel keeps them', () => {
+      confirm.and.returnValue(of());
+      component.removeParticipant(participant({ name: 'Aria' }));
+      expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ subject: 'Aria' }));
+      expect(sessionService.leave).not.toHaveBeenCalled();
+    });
+
+    it('removes the player character once confirmed', () => {
+      component.removeParticipant(participant());
+      expect(sessionService.leave).toHaveBeenCalledWith(3, 1);
+    });
+
+    it('removes an enemy without asking', () => {
+      component.removeParticipant(participant({ npc: true, pcId: null }));
+      expect(confirm).not.toHaveBeenCalled();
+      expect(sessionService.leave).toHaveBeenCalledWith(3, 1);
+    });
+  });
+
+  it('a failed initiative save puts the box back and says so', () => {
+    component.sessionId = 3;
+    sessionService.setInitiative.and.returnValue(throwError(() => ({ status: 500 })));
+    const field = document.createElement('input');
+    field.value = '19';
+    component.onInitiative(participant({ name: 'Aria', initRolled: true, initiative: 12 }), '19', field);
+    expect(field.value).toBe('12');
+    expect(notifications.error).toHaveBeenCalledWith("Could not set Aria's initiative. Try again.", jasmine.anything());
   });
 });

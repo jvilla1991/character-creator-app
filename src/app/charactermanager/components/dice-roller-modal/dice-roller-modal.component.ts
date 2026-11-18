@@ -3,6 +3,7 @@ import {
   ElementRef,
   Input,
   OnDestroy,
+  inject,
   input,
   output,
   viewChild
@@ -10,6 +11,7 @@ import {
 import { CdkDragDrop, CdkDropList, CdkDrag } from '@angular/cdk/drag-drop';
 import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
+import { NotificationService } from '../../services/notification.service';
 import { DialogDirective } from '../modal/dialog.directive';
 
 /** The seven polyhedral dice a player can summon. */
@@ -49,6 +51,8 @@ export class DiceRollerModalComponent implements OnDestroy {
   readonly close = output<void>();
 
   readonly arenaRef = viewChild<ElementRef<HTMLElement>>('arenaEl');
+
+  private readonly notifications = inject(NotificationService);
 
   constructor(private sessionService: SessionService) {}
 
@@ -343,7 +347,8 @@ export class DiceRollerModalComponent implements OnDestroy {
     if (sessionId == null || participantId == null) return;
     const groups = this.breakdown.map(row => ({ sides: row.sides, rolls: row.rolls }));
     this.sessionService.logRoll(sessionId, participantId, groups).subscribe({
-      error: err => console.error('Failed to log roll', err),
+      // The player keeps their result; the table just did not see it.
+      error: err => this.notifications.error('Your roll was not shared to the roll log. Tell the table, or roll again.', err),
     });
   }
 

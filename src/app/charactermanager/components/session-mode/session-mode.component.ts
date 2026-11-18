@@ -6,6 +6,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmService } from '../modal/confirm.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
@@ -80,6 +81,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   private variantsResolvedFor: string | null = null;
 
   private readonly levelUpPrompt = inject(LevelUpPromptService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(
     private sessionService: SessionService,
@@ -445,10 +447,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
         this.pcService.setActivePC(full);
         this.uiState.viewHeroAsDm();
       },
-      error: err => {
-        console.error('Failed to load full character for DM edit', err);
-        this.notifications.notify('Could not open that character sheet.');
-      },
+      error: err => this.notifications.error('Could not open that character sheet. Try again.', err),
     });
   }
 
@@ -546,7 +545,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
           const recomputed = withRecomputedAc(after, before.inventory);
           if (recomputed.ac !== after.ac) {
             this.pcService.updatePC(recomputed).subscribe({
-              error: err => console.error('Failed to persist recomputed AC', err),
+              error: err => this.notifications.error(
+                `Sold — but your AC could not be updated to ${recomputed.ac}. Reopen your sheet to fix it.`, err),
             });
           }
         }
@@ -559,10 +559,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   /** DM starts the encounter — initiative locks for players, turn one begins. */
   startEncounter(state: SessionState): void {
     this.sessionService.start(state.sessionId).subscribe({
-      error: err => {
-        console.error('Failed to start encounter', err);
-        this.notifications.notify('Could not start the encounter.');
-      },
+      error: err => this.notifications.error('Could not start the encounter. Try again.', err),
     });
   }
 
@@ -572,12 +569,18 @@ export class SessionModeComponent implements OnInit, OnDestroy {
    * mis-click mid-combat would be painful to reconstruct.
    */
   endEncounter(state: SessionState): void {
-    if (!window.confirm('Are you sure you want to end this encounter?')) return;
+    this.confirmations.confirm({
+      title: 'End the Encounter',
+      message: 'The turn order and everyone’s initiative are cleared and the table returns to the lobby. '
+        + 'The session stays open.',
+      confirmLabel: 'End Encounter',
+      cancelLabel: 'Keep Fighting',
+    }).subscribe(() => this.reallyEndEncounter(state));
+  }
+
+  private reallyEndEncounter(state: SessionState): void {
     this.sessionService.endEncounter(state.sessionId).subscribe({
-      error: err => {
-        console.error('Failed to end encounter', err);
-        this.notifications.notify('Could not end the encounter.');
-      },
+      error: err => this.notifications.error('Could not end the encounter. Try again.', err),
     });
   }
 
@@ -590,7 +593,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   advanceTurn(state: SessionState): void {
     if (state.activeParticipantId == null) return;
     this.sessionService.advance(state.sessionId, state.activeParticipantId).subscribe({
-      error: err => console.error('Failed to advance turn', err),
+      error: err => this.notifications.error('Could not pass the turn. Try again.', err),
     });
   }
 
@@ -606,11 +609,30 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     return id != null && id === state.onDeckParticipantId;
   }
 
-  /** The DM ends the session for everyone, then exits the screen. */
+  /**
+   * The DM ends the session for everyone, then exits the screen. A failure
+   * keeps the DM here: leaving would look like the session ended while the
+   * players are still in it. A session that is already gone (404 / 409) has
+   * nothing left to end, so that still exits.
+   */
   endSession(state: SessionState): void {
+    // Asked first: it is one tap beside Next Turn, and it ends play for everyone.
+    this.confirmations.confirm({
+      title: 'End the Session',
+      message: 'The session closes for everyone at the table and players return to their sheets. '
+        + 'You can start a new one from the campaign dashboard.',
+      confirmLabel: 'End Session',
+      cancelLabel: 'Keep Playing',
+    }).subscribe(() => this.reallyEndSession(state));
+  }
+
+  private reallyEndSession(state: SessionState): void {
     this.sessionService.end(state.sessionId).subscribe({
       next: () => this.close(),
-      error: () => this.close(),
+      error: err => {
+        if (isAlreadyGone(err)) { this.close(); return; }
+        this.notifications.error('Could not end the session. It is still running — try again.', err);
+      },
     });
   }
 
@@ -631,7 +653,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
         this.noteSaved = true;
       },
       error: err => {
-        console.error('Failed to add session note', err);
+        this.notifications.error('Could not save the note. Your text is still here — try again.', err);
         this.savingNote = false;
       },
     });
@@ -646,7 +668,17 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     }
     this.sessionService.leave(state.sessionId, id).subscribe({
       next: () => this.close(),
-      error: () => this.close(),
+      // Same rule as endSession: only leave the screen once the server agrees.
+      error: err => {
+        if (isAlreadyGone(err)) { this.close(); return; }
+        this.notifications.error('Could not leave the session. You are still in it — try again.', err);
+      },
     });
   }
+}
+
+/** The session or seat no longer exists, so there is nothing left to end or leave. */
+function isAlreadyGone(err: unknown): boolean {
+  const status = (err as { status?: number } | null)?.status;
+  return status === 404 || status === 409;
 }

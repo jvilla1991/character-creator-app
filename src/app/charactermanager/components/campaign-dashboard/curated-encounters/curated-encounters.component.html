@@ -22,6 +22,11 @@
             </li>
           }
         </ul>
+      } @else if (loadFailed) {
+        <div class="muted">
+          Could not load the encounters.
+          <button type="button" class="btn link" (click)="loadEncounters()">Try again</button>
+        </div>
       } @else {
         <div class="muted">No curated encounters yet. Create one, then add creatures to it.</div>
       }

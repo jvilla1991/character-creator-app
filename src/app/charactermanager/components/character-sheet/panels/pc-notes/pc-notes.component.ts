@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, inject, signal } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { PcNote } from '../../../../models/pc-note';
 import { PCService } from '../../../../services/pc.service';
+import { NotificationService } from '../../../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -29,6 +30,8 @@ export class PcNotesComponent implements OnChanges {
   draft = '';
   readonly saving = signal(false);
 
+  private readonly notifications = inject(NotificationService);
+
   constructor(private pcService: PCService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -49,7 +52,7 @@ export class PcNotesComponent implements OnChanges {
         this.saving.set(false);
       },
       error: err => {
-        console.error('Failed to add character note', err);
+        this.notifications.error('Could not save the note. Your text is still here — try again.', err);
         this.saving.set(false);
       },
     });

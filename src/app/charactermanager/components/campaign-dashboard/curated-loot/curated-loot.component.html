@@ -26,6 +26,11 @@
           </li>
         }
       </ul>
+    } @else if (loadFailed) {
+      <div class="muted">
+        Could not load the loot lists.
+        <button type="button" class="btn link" (click)="loadLists()">Try again</button>
+      </div>
     } @else {
       <div class="muted">No loot lists yet. Create one, fill it with spoils, then drop it from Session Mode.</div>
     }
