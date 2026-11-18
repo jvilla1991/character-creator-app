@@ -15,11 +15,12 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
-import { CIRCLE_OF_THE_MOON } from '../models/wow-druid';
+import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, WOW_PALADIN_SPECIALIZATIONS } from '../models/wow-class-variants';
+import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter and Druid.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid and Paladin.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -362,6 +363,64 @@ export const DEMO_PCS: PC[] = [
     bio: 'A plains wanderer who heard Ursoc in the thunder and took up the Guardian path, standing between his friends and whatever comes charging.',
     notes: '',
   },
+  // World of Warcraft Paladin — an ordinary Paladin with the Holy specialization and the
+  // WoW-only Oath of the Holy (chosen at level 3), so the always-prepared oath spells render.
+  {
+    id: 9,
+    name: 'Aelira Dawnmantle',
+    playerName: 'Ivy',
+    player: 'Ivy',
+    campaignId: null,
+    race: 'Dwarf',
+    clazz: 'Paladin',
+    subclass: OATH_OF_THE_HOLY,
+    specialization: 'Holy',
+    level: 7,
+    background: 'Acolyte',
+    alignment: 'Lawful Good',
+    portraitInitials: 'AD',
+    portraitTint: 'gold',
+    hp: { cur: 60, max: 60, temp: 0 },
+    ac: 18, init: 0, speed: 30, prof: 3,
+    stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 16 },
+    saves: ['WIS', 'CHA'],
+    skills: { Insight: 'prof', Medicine: 'prof', Persuasion: 'prof', Religion: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 22, ep: 0, gp: 64, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Sacred Flame', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Spare the Dying', school: 'Necromancy', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Bless', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Heroism', school: 'Enchantment', time: '1 action', prepared: false },
+      { lvl: 1, name: 'Shield of Faith', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Aid', school: 'Abjuration', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Warding Bond', school: 'Abjuration', time: '1 action', prepared: false },
+    ],
+    weapons: [
+      { name: 'Warhammer', dmg: '1d8+3 bludgeoning', notes: 'Versatile (1d10); mastery: Push' },
+    ],
+    gear: [
+      { name: 'Chain Mail', equipped: true },
+      { name: 'Shield', equipped: true },
+      { name: 'Holy Symbol (Silver Hand)' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Paladin 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Lay On Hands', source: 'Paladin 1', desc: 'A pool of healing you restore on a Long Rest.' },
+      { name: 'Fighting Style', source: 'Paladin 2', desc: 'Blessed Warrior: two Cleric cantrips cast with Charisma.' },
+      { name: 'Extra Attack', source: 'Paladin 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Aura of Protection', source: 'Paladin 6', desc: 'You and nearby allies add your CHA modifier to saving throws.' },
+    ],
+    traits: {
+      Personality: 'Hums hymns under her breath, louder the worse things get.',
+      Ideals: 'Mercy. The Light is for everyone who will take it.',
+      Bonds: 'The chapel in Ironforge that took her in.',
+      Flaws: 'Will heal a foe who begs, even when she should not.',
+    },
+    bio: 'A dwarf of the Silver Hand who would rather mend a wound than open one, though her warhammer says otherwise when it has to.',
+    notes: '',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -480,8 +539,14 @@ const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
 };
 
-export function demoSubclassOptions(clazz: string): string[] {
-  return DEMO_SUBCLASSES[(clazz ?? '').trim().toLowerCase()] ?? [];
+// Plus the WoW-only Oath of the Holy, offered to World of Warcraft paladins only
+// (a paladin with a Holy / Protection / Retribution specialization).
+export function demoSubclassOptions(clazz: string, specialization?: string | null): string[] {
+  const key = (clazz ?? '').trim().toLowerCase();
+  const options = DEMO_SUBCLASSES[key] ?? [];
+  const wowPaladin = key === 'paladin'
+    && (WOW_PALADIN_SPECIALIZATIONS as readonly string[]).includes(specialization ?? '');
+  return wowPaladin ? [...options, OATH_OF_THE_HOLY].sort((a, b) => a.localeCompare(b)) : options;
 }
 
 // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
@@ -515,7 +580,8 @@ export const DEMO_FIGHTING_STYLE_FEATS = [
 ];
 
 // DEMO-ONLY mirror of the server level-2 Fighting Style choice: due at Paladin 2 and
-// Ranger 2; the 10 PHB styles, plus Void Warrior for a Demon Hunter ranger.
+// Ranger 2; the 10 PHB styles, plus Blessed Warrior for every paladin, Druidic Warrior
+// for every ranger, and Void Warrior for a Demon Hunter ranger.
 export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
   const key = (clazz ?? '').trim().toLowerCase();
   return newLevel === 2 && (key === 'paladin' || key === 'ranger');
@@ -523,9 +589,12 @@ export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
 
 export function demoFightingStyleOptions(clazz: string, subclass: string | undefined, newLevel: number): string[] {
   if (!demoFightingStyleDue(clazz, newLevel)) return [];
+  const key = (clazz ?? '').trim().toLowerCase();
   const options = [...DEMO_FIGHTING_STYLE_FEATS];
-  if ((clazz ?? '').trim().toLowerCase() === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
-    options.push('Void Warrior');
+  if (key === 'paladin') options.push(BLESSED_WARRIOR);
+  if (key === 'ranger') options.push(DRUIDIC_WARRIOR);
+  if (key === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
+    options.push(VOID_WARRIOR);
   }
   return options.sort((a, b) => a.localeCompare(b));
 }

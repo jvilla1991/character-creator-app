@@ -96,6 +96,22 @@ describe('DndResourcesService', () => {
 
   // ── Origin feat names ───────────────────────────────────────────────────────
 
+  describe('Blessed Warrior and Druidic Warrior fighting styles', () => {
+    it('describes two Cleric cantrips cast with Charisma as Paladin spells', () => {
+      const desc = service.getFeatDescription('Blessed Warrior');
+      expect(desc).toContain('two Cleric cantrips');
+      expect(desc).toContain('Paladin spells');
+      expect(desc).toContain('Charisma');
+    });
+
+    it('describes two Druid cantrips cast with Wisdom as Ranger spells', () => {
+      const desc = service.getFeatDescription('Druidic Warrior');
+      expect(desc).toContain('two Druid cantrips');
+      expect(desc).toContain('Ranger spells');
+      expect(desc).toContain('Wisdom');
+    });
+  });
+
   describe('Void Warrior fighting style', () => {
     it('has a description mentioning Warlock cantrips and Wisdom', () => {
       const desc = service.getFeatDescription('Void Warrior');

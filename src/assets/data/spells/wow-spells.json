@@ -470,5 +470,49 @@
     "components": ["v", "s"],
     "duration": "TBD",
     "description": "TBD — full text coming in the World of Warcraft spells update."
+  },
+  {
+    "name": "Consecration",
+    "level": 2,
+    "school": "evocation",
+    "classes": ["paladin"],
+    "source": "World of Warcraft",
+    "actionType": "action",
+    "concentration": true,
+    "ritual": false,
+    "range": "Self (15-foot Emanation)",
+    "components": ["v"],
+    "duration": "up to 1 minute",
+    "description": "Holy light hallows the ground in a 15-foot Emanation around you for the duration. When you cast the spell, pick any number of creatures; each of them that starts its turn inside the Emanation takes 1d8 Radiant damage. Fiends and Undead treat the area as Difficult Terrain."
+  },
+  {
+    "name": "Guided Prayer",
+    "level": 3,
+    "school": "evocation",
+    "classes": ["paladin"],
+    "source": "World of Warcraft",
+    "actionType": "reaction",
+    "concentration": false,
+    "ritual": false,
+    "castingTrigger": "which you take when you become Bloodied or when you take damage while Bloodied",
+    "range": "Self",
+    "components": ["v"],
+    "duration": "Instantaneous",
+    "description": "You call on the Light in your moment of need. You regain Hit Points equal to 8d4 plus your spellcasting ability modifier, and you have Advantage on the next attack roll you make before the end of your next turn."
+  },
+  {
+    "name": "Divine Shield",
+    "level": 4,
+    "school": "abjuration",
+    "classes": ["paladin"],
+    "source": "World of Warcraft",
+    "actionType": "reaction",
+    "concentration": false,
+    "ritual": false,
+    "castingTrigger": "which you take when you take damage",
+    "range": "Self",
+    "components": ["v"],
+    "duration": "1 round",
+    "description": "A shell of radiant light closes around you until the start of your next turn. Until then you have Immunity to all damage, including the damage that triggered this spell. Your Speed can't be reduced, any reductions already affecting you are suspended, and nothing can move you against your will."
   }
 ]

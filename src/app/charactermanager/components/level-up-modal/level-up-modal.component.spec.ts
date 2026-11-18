@@ -594,14 +594,14 @@ describe('LevelUpModalComponent', () => {
     });
   });
 
-  // --- Level-2 Fighting Style and the Void Warrior cantrips ---
+  // --- Level-2 Fighting Style and the cantrip-teaching styles ---
 
   describe('Fighting Style (level 2)', () => {
     const cantrip = (name: string, classes = ['warlock']) => ({
       name, level: 0, school: 'necromancy', classes, actionType: 'action', concentration: false,
       ritual: false, range: '120 feet', components: ['v', 's'], duration: 'Instantaneous', description: '',
     }) as any;
-    const styles = ['Archery', 'Defense', 'Two-Weapon Fighting', 'Void Warrior'];
+    const styles = ['Archery', 'Defense', 'Druidic Warrior', 'Two-Weapon Fighting', 'Void Warrior'];
 
     beforeEach(() => {
       component.pc = makePC({
@@ -615,6 +615,10 @@ describe('LevelUpModalComponent', () => {
       dndResources.getSpellsForClass.and.returnValue(of([
         cantrip('Chill Touch'), cantrip('Mind Sliver'), cantrip('Eldritch Blast'), cantrip('Toll the Dead'),
         { ...cantrip('Hex'), level: 1 },
+      ]));
+      dndResources.getSpellsForClass.withArgs('druid').and.returnValue(of([
+        cantrip('Druidcraft', ['druid']), cantrip('Thorn Whip', ['druid']), cantrip('Guidance', ['druid']),
+        { ...cantrip('Entangle', ['druid']), level: 1 },
       ]));
       component.ngOnInit();
     });
@@ -638,7 +642,7 @@ describe('LevelUpModalComponent', () => {
 
     it('sends a plain fighting style on its own', () => {
       component.selectFightingStyle('Archery');
-      expect(component.isVoidWarrior).toBeFalse();
+      expect(component.cantripStyle).toBeNull();
       component.confirm();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, { fightingStyle: 'Archery' });
     });
@@ -651,21 +655,24 @@ describe('LevelUpModalComponent', () => {
 
     it('Void Warrior offers unknown Warlock cantrips only and requires exactly two', () => {
       component.selectFightingStyle('Void Warrior');
-      expect(component.isVoidWarrior).toBeTrue();
+      expect(component.cantripStyle?.spellList).toBe('warlock');
+      expect(component.cantripStyle?.hint).toContain('Chill Touch');
       expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('warlock');
-      expect(component.warlockCantrips.map(s => s.name)).toEqual(['Chill Touch', 'Mind Sliver', 'Toll the Dead']);
+      expect(component.styleCantripOptions.map(s => s.name)).toEqual(['Chill Touch', 'Mind Sliver', 'Toll the Dead']);
       expect(component.canConfirm).toBeFalse();
-      component.voidWarriorCantrips = [component.warlockCantrips[0]];
+      component.styleCantrips = [component.styleCantripOptions[0]];
       expect(component.canConfirm).toBeFalse();
       component.confirm();
       expect(pcService.levelUp).not.toHaveBeenCalled();
-      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      component.styleCantrips = component.styleCantripOptions.slice(0, 3);
+      expect(component.canConfirm).toBeFalse();
+      component.styleCantrips = component.styleCantripOptions.slice(0, 2);
       expect(component.canConfirm).toBeTrue();
     });
 
     it('sends Void Warrior with its two cantrips in newSpells', () => {
       component.selectFightingStyle('Void Warrior');
-      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      component.styleCantrips = component.styleCantripOptions.slice(0, 2);
       component.confirm();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, {
         fightingStyle: 'Void Warrior',
@@ -678,12 +685,41 @@ describe('LevelUpModalComponent', () => {
 
     it('drops the Void Warrior cantrips when another style is picked', () => {
       component.selectFightingStyle('Void Warrior');
-      component.voidWarriorCantrips = component.warlockCantrips.slice(0, 2);
+      component.styleCantrips = component.styleCantripOptions.slice(0, 2);
       component.selectFightingStyle('Archery');
-      expect(component.voidWarriorCantrips).toEqual([]);
+      expect(component.styleCantrips).toEqual([]);
       expect(component.canConfirm).toBeTrue();
       component.confirm();
       expect(pcService.levelUp).toHaveBeenCalledWith(7, { fightingStyle: 'Archery' });
+    });
+
+    it('Druidic Warrior requires exactly two Druid cantrips (no hint) and sends them', () => {
+      component.selectFightingStyle('Druidic Warrior');
+      expect(component.cantripStyle?.className).toBe('Druid');
+      expect(component.cantripStyle?.hint).toBeUndefined();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('druid');
+      expect(component.styleCantripOptions.map(s => s.name)).toEqual(['Druidcraft', 'Thorn Whip', 'Guidance']);
+      expect(component.canConfirm).toBeFalse();
+      component.styleCantrips = component.styleCantripOptions.slice(1, 3);
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        fightingStyle: 'Druidic Warrior',
+        newSpells: [
+          jasmine.objectContaining({ lvl: 0, name: 'Thorn Whip' }),
+          jasmine.objectContaining({ lvl: 0, name: 'Guidance' }),
+        ],
+      });
+    });
+
+    it('switching between cantrip styles swaps the list, clears picks and fetches each list once', () => {
+      component.selectFightingStyle('Void Warrior');
+      component.styleCantrips = component.styleCantripOptions.slice(0, 2);
+      component.selectFightingStyle('Druidic Warrior');
+      expect(component.styleCantrips).toEqual([]);
+      expect(component.styleCantripOptions.map(s => s.name)).toContain('Thorn Whip');
+      component.selectFightingStyle('Void Warrior');
+      expect(component.styleCantripOptions.map(s => s.name)).toContain('Chill Touch');
+      expect(dndResources.getSpellsForClass.calls.allArgs()).toEqual([['warlock'], ['druid']]);
     });
 
     it('sends the fighting style through the DM path too', () => {
@@ -696,6 +732,122 @@ describe('LevelUpModalComponent', () => {
       dm.selectFightingStyle('Defense');
       dm.confirm();
       expect(pcService.levelUpAsDm).toHaveBeenCalledWith(7, { fightingStyle: 'Defense' });
+    });
+  });
+  describe('World of Warcraft Paladin (oath, Blessed Warrior, recommended styles)', () => {
+    const cantrip = (name: string) => ({
+      name, level: 0, school: 'evocation', classes: ['cleric'], actionType: 'action', concentration: false,
+      ritual: false, range: '60 feet', components: ['v', 's'], duration: 'Instantaneous', description: '',
+    }) as any;
+    const styles = ['Blessed Warrior', 'Defense', 'Great Weapon Fighting', 'Interception', 'Protection'];
+    const oaths = ['Oath of Devotion', 'Oath of Glory', 'Oath of the Ancients', 'Oath of the Holy', 'Oath of Vengeance'];
+
+    /** Render the real template against the same spies (the shared TestBed is already in use). */
+    function renderModal(): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({
+        clazz: 'Paladin', level: 1, specialization: 'Holy',
+        spells: [{ lvl: 0, name: 'Spare the Dying', school: 'Necromancy', time: '1 action', prepared: true }],
+        ...pc,
+      });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 1, newLevel: 2, fightingStyleDue: true, fightingStyleOptions: styles, ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 2 })));
+      dndResources.getSpellsForClass.and.returnValue(of([
+        cantrip('Guidance'), cantrip('Sacred Flame'), cantrip('Spare the Dying'), cantrip('Thaumaturgy'),
+        { ...cantrip('Bless'), level: 1 },
+      ]));
+      component.ngOnInit();
+    }
+
+    it('Blessed Warrior offers unknown Cleric cantrips with a hint and requires exactly two', () => {
+      open({});
+      component.selectFightingStyle('Blessed Warrior');
+      expect(component.cantripStyle?.spellList).toBe('cleric');
+      expect(component.cantripStyle?.hint).toContain('Sacred Flame');
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('cleric');
+      expect(component.styleCantripOptions.map(s => s.name)).toEqual(['Guidance', 'Sacred Flame', 'Thaumaturgy']);
+      expect(component.canConfirm).toBeFalse();
+      component.styleCantrips = [component.styleCantripOptions[1], component.styleCantripOptions[2]];
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        fightingStyle: 'Blessed Warrior',
+        newSpells: [
+          jasmine.objectContaining({ lvl: 0, name: 'Sacred Flame' }),
+          jasmine.objectContaining({ lvl: 0, name: 'Thaumaturgy' }),
+        ],
+      });
+    });
+
+    it('badges the server\'s recommendedFightingStyles, keeping only offered ones', () => {
+      open({ specialization: 'Protection' }, { recommendedFightingStyles: ['Interception', 'Protection', 'Archery'] });
+      expect(component.recommendedFightingStyles).toEqual(['Interception', 'Protection']);
+      expect(component.isRecommendedFightingStyle('Protection')).toBeTrue();
+      expect(component.isRecommendedFightingStyle('Defense')).toBeFalse();
+      expect(component.selectedFightingStyle).toBe('');   // never pre-selected
+    });
+
+    it('falls back to the variant table when the field is absent, and follows a respec', () => {
+      open({ specialization: 'Retribution' });
+      expect(component.recommendedFightingStyles).toEqual(['Great Weapon Fighting']);
+      component.selectedSpecialization = 'Holy';
+      expect(component.recommendedFightingStyles).toEqual(['Blessed Warrior']);
+      expect(component.recommendationSpecialization).toBe('Holy');
+    });
+
+    it('renders the "Recommended for <spec>" badge on the recommended style only', () => {
+      open({ specialization: 'Holy' });
+      const el = renderModal();
+      const badged = Array.from(el.querySelectorAll('.subclass-option.is-recommended'))
+        .map(n => n.querySelector('.feat-name')?.textContent?.trim());
+      expect(badged).toEqual(['Blessed Warrior']);
+      expect(el.querySelector('.subclass-option.is-recommended .recommended-badge')?.textContent)
+        .toContain('Recommended for Holy');
+    });
+
+    it('recommends no styles for a Death Knight or a base paladin', () => {
+      open({ subclass: 'Oath of the Ebon Blade', specialization: 'Blood' });
+      expect(component.recommendedFightingStyles).toEqual([]);
+      open({ specialization: null });
+      expect(component.recommendedFightingStyles).toEqual([]);
+    });
+
+    it('tags Oath of the Holy as World of Warcraft and highlights it for Holy at level 3', () => {
+      open({ level: 2 }, {
+        currentLevel: 2, newLevel: 3, fightingStyleDue: false, fightingStyleOptions: [],
+        subclassDue: true, subclassOptions: oaths,
+      });
+      expect(component.recommendedSubclass).toBe('Oath of the Holy');
+      expect(component.subclassSourceTag('Oath of the Holy')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Oath of Devotion')).toBeUndefined();
+      const tagged = Array.from(renderModal().querySelectorAll('.subclass-option'))
+        .filter(n => n.querySelector('.source-tag'));
+      expect(tagged.length).toBe(1);
+      expect(tagged[0].textContent).toContain('Oath of the Holy');
+      expect(tagged[0].querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    });
+
+    it('recommends Oath of Devotion for Protection and Oath of Vengeance for Retribution', () => {
+      const lvl3 = { currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: oaths };
+      open({ level: 2, specialization: 'Protection' }, lvl3);
+      expect(component.recommendedSubclass).toBe('Oath of Devotion');
+      open({ level: 2, specialization: 'Retribution' }, lvl3);
+      expect(component.recommendedSubclass).toBe('Oath of Vengeance');
     });
   });
 });

@@ -1,6 +1,6 @@
 import { ContentSource } from './content-source';
 import { modFromScore } from '../utils/character-math';
-import { WOW_DRUID } from './wow-druid';
+import { WOW_CLASS_VARIANTS } from './wow-class-variants';
 
 /**
  * Hero classes from the World of Warcraft tabletop module. Most are a themed
@@ -10,9 +10,10 @@ import { WOW_DRUID } from './wow-druid';
  * `subclass: 'Oath of the Ebon Blade'` — so every rules lookup (hit die, saves,
  * skills, equipment, slots) keeps using the base class.
  *
- * A WoW *variant* (the WoW Druid) has no fixed subclass: it is the base class
- * plus a specialization, and the subclass is chosen normally. Such a character
- * is recognized by base class + a non-null specialization + no hero subclass.
+ * A WoW *variant* (the WoW Druid, see {@link WOW_CLASS_VARIANTS}) has no fixed
+ * subclass: it is the base class plus a specialization, and the subclass is
+ * chosen normally. Such a character is recognized by base class + a non-null
+ * specialization + no hero subclass.
  *
  * Everything class-specific — the specialization picker, the level-1 feature,
  * the resource line and the always-prepared spell table — lives in
@@ -71,13 +72,28 @@ export interface HeroBonusSpell {
 export interface SpecializationGuidance {
   /** A base-class feature choice to suggest, e.g. Primal Order → Magician. */
   featureChoice?: { feature: string; option: string };
-  cantrips: readonly string[];
+  /** Starting cantrips (classes with cantrips at level 1). */
+  cantrips?: readonly string[];
   level1Spells: readonly string[];
+  /** Weapon Mastery: take at least one of these weapons. */
+  weaponMastery?: readonly string[];
+  /** The level-2 Fighting Style(s) to take — any one of them. */
+  fightingStyles?: readonly string[];
+  /** The cantrips to learn with that style when it teaches some (e.g. Blessed Warrior). */
+  fightingStyleCantrips?: readonly string[];
   /** The subclass to take when it comes due, with an optional flavour note. */
   subclass: { name: string; note?: string };
   feats: readonly string[];
   /** An extra play tip shown on the sheet panel. */
   tip?: string;
+  /** A short aside shown under the class-step box (e.g. another class that fits the role). */
+  note?: string;
+}
+
+/** One base-class-level row of a WoW-only subclass's always-prepared spells (e.g. Oath of the Holy). */
+export interface SubclassSpellRow {
+  classLevel: number;
+  spells: readonly string[];
 }
 
 /** One spell level of a specialization's suggested (not always-prepared) spells. */
@@ -107,6 +123,8 @@ export interface HeroClassOption {
   subclass?: string;
   /** Class-step note for a variant without a fixed subclass ('Chosen as normal at Druid level 3'). */
   subclassNote?: string;
+  /** What the base class calls its subclass, lower-case ('circle', 'oath'); absent reads 'subclass'. */
+  subclassTerm?: string;
   source: ContentSource;
   /** One- or two-sentence description shown in the class step. */
   blurb: string;
@@ -129,6 +147,11 @@ export interface HeroClassOption {
   guidance?: Readonly<Record<string, SpecializationGuidance>>;
   /** Suggested spells per specialization, by spell level (sheet panel). */
   suggestedSpells?: Readonly<Record<string, readonly SuggestedSpellLevel[]>>;
+  /**
+   * WoW-only subclasses a variant can take (offered by the server), with their
+   * always-prepared spells by base-class level — e.g. Oath of the Holy.
+   */
+  subclassSpells?: Readonly<Record<string, readonly SubclassSpellRow[]>>;
   /** A one-line reminder shown in the class step and on the sheet panel. */
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
@@ -232,7 +255,7 @@ const DEMON_HUNTER: HeroClassOption = {
   ],
 };
 
-export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT, DEMON_HUNTER, WOW_DRUID];
+export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT, DEMON_HUNTER, ...WOW_CLASS_VARIANTS];
 
 /** One row of the class step: a base class or a hero class layered on one. */
 export interface ClassOption {
@@ -273,9 +296,10 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
 /**
  * The hero class a character is; undefined for everyone else.
  * - Subclass-based hero classes: base class + the hero subclass.
- * - WoW variants without a fixed subclass (the WoW Druid): base class + a
- *   non-null specialization + no hero subclass. A druid with no specialization
- *   is a plain base-game druid.
+ * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin): base class +
+ *   one of the variant's specializations + no hero subclass, or base class + one
+ *   of the variant's WoW-only subclasses (Oath of the Holy). A druid or paladin
+ *   with neither is a plain base-game character.
  */
 export function heroClassFor(
   pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
@@ -283,8 +307,30 @@ export function heroClassFor(
   const clazz = (pc?.clazz ?? '').toLowerCase();
   const bySubclass = heroClassForSubclass(pc?.subclass);
   if (bySubclass) return clazz === bySubclass.baseClass.toLowerCase() ? bySubclass : undefined;
-  if (!pc?.specialization) return undefined;
-  return HERO_CLASSES.find(h => !h.subclass && h.baseClass.toLowerCase() === clazz);
+  const spec = (pc?.specialization ?? '').toLowerCase();
+  // A WoW-only subclass (Oath of the Holy) marks its variant even without a specialization.
+  const byVariantSubclass = variantForSubclass(pc?.subclass);
+  if (byVariantSubclass && byVariantSubclass.baseClass.toLowerCase() === clazz) return byVariantSubclass;
+  if (!spec) return undefined;
+  // The specialization must be one of the variant's own (a paladin with 'Frost' and no
+  // Ebon Blade is not a WoW Paladin).
+  return HERO_CLASSES.find(h => !h.subclass && h.baseClass.toLowerCase() === clazz
+    && h.specializations.some(s => s.name.toLowerCase() === spec));
+}
+
+/** The variant that owns a WoW-only subclass (Oath of the Holy → WoW Paladin), case-insensitive. */
+function variantForSubclass(subclass: string | null | undefined): HeroClassOption | undefined {
+  const name = (subclass ?? '').toLowerCase();
+  if (!name) return undefined;
+  return HERO_CLASSES.find(h => Object.keys(h.subclassSpells ?? {}).some(k => k.toLowerCase() === name));
+}
+
+/**
+ * The content source of a subclass name when it comes from the WoW module (a
+ * hero subclass or a variant's WoW-only subclass); undefined for base-game ones.
+ */
+export function subclassSource(subclass: string | null | undefined): ContentSource | undefined {
+  return (heroClassForSubclass(subclass) ?? variantForSubclass(subclass))?.source;
 }
 
 /** The subclass a specialization's guidance recommends (e.g. Guardian → Circle of the Moon). */
@@ -309,10 +355,23 @@ export function recommendedStartingSpells(
   const cacheKey = `${hero.key}|${specialization}`;
   let list = RECOMMENDED_SPELLS_CACHE.get(cacheKey);
   if (!list) {
-    list = [...guidance.cantrips, ...guidance.level1Spells];
+    list = [...(guidance.cantrips ?? []), ...guidance.level1Spells];
     RECOMMENDED_SPELLS_CACHE.set(cacheKey, list);
   }
   return list;
+}
+
+/** The level-2 Fighting Style(s) a specialization's guidance recommends (e.g. Protection → Interception, Protection). */
+export function recommendedFightingStylesFor(
+  hero: HeroClassOption | undefined, specialization: string | null | undefined,
+): readonly string[] {
+  return (specialization && hero?.guidance?.[specialization]?.fightingStyles) || NO_SPELLS;
+}
+
+/** "A", "A or B", "A, B, or C" — a choice list in running text. */
+export function orList(items: readonly string[]): string {
+  if (items.length <= 2) return items.join(' or ');
+  return `${items.slice(0, -1).join(', ')}, or ${items[items.length - 1]}`;
 }
 
 /** "Frost Rune" / "Havoc" — a specialization as shown to people. */
@@ -330,8 +389,23 @@ export interface HeroSpellEntry {
   name: string;
   /** Base-class level the spell is gained at. */
   classLevel: number;
-  /** What granted it: a bonus-spell source (e.g. 'Runic Smite'), 'All', or the specialization. */
+  /** What granted it: a bonus-spell source (e.g. 'Runic Smite'), 'All', or the specialization; '' when obvious. */
   grantedBy: string;
+}
+
+/**
+ * The always-prepared spells of a variant's WoW-only subclass (Oath of the Holy)
+ * at `level`, in table order; empty for any other subclass.
+ */
+export function subclassSpellsFor(
+  hero: HeroClassOption | undefined, subclass: string | null | undefined, level: number,
+): HeroSpellEntry[] {
+  const name = (subclass ?? '').toLowerCase();
+  const key = Object.keys(hero?.subclassSpells ?? {}).find(k => k.toLowerCase() === name);
+  if (!hero || !key) return [];
+  return hero.subclassSpells![key]
+    .filter(row => level >= row.classLevel)
+    .flatMap(row => row.spells.map(spell => ({ name: spell, classLevel: row.classLevel, grantedBy: '' })));
 }
 
 /**
