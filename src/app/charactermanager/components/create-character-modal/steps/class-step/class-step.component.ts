@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
-import { ClassOption, SpecializationGuidance, orList, specializationHeading } from '../../../../models/hero-class';
+import {
+  ClassOption, SpecializationGuidance, orList, specializationHeading, weaponMasteryLead,
+} from '../../../../models/hero-class';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
@@ -55,4 +57,5 @@ export class ClassStepComponent {
 
   readonly specializationHeading = specializationHeading;
   readonly orList = orList;
+  readonly weaponMasteryLead = weaponMasteryLead;
 }

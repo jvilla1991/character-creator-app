@@ -453,4 +453,101 @@ describe('HeroClassPanelComponent', () => {
       expect(el.textContent).toContain('You choose your subclass at Rogue level 3.');
     });
   });
+
+  describe('World of Warcraft Shaman (Barbarian)', () => {
+    const daylight = {
+      name: 'Daylight', level: 3, school: 'evocation', classes: ['cleric'], actionType: 'action',
+      concentration: false, ritual: false, range: '60 feet', components: ['v', 's'], duration: '1 hour',
+      description: 'A 60-foot-radius sphere of light spreads out.',
+    } as DndSpell;
+
+    function makeShaman(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 11, name: 'Durak', clazz: 'Barbarian', subclass: undefined, specialization: 'Elemental',
+        level: 2, playerName: 'Kara', stats: { STR: 16, DEX: 14, CON: 16, INT: 8, WIS: 14, CHA: 10 },
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    beforeEach(() => dndResources.getSpells.and.returnValue(of([daylight])));
+
+    it('renders for a WoW barbarian but not for a base barbarian', () => {
+      expect(isHeroClass(makeShaman())).toBeTrue();
+      expect(isHeroClass(makeShaman({ specialization: null, subclass: 'Path of the Berserker' }))).toBeFalse();
+      expect(isHeroClass(makeShaman({ specialization: null, subclass: 'Path of the Elements' }))).toBeTrue();
+    });
+
+    it('titles the panel, shows the spec and the Earthen Ring reminder, and has no cards before level 3', () => {
+      component.pc = makeShaman();
+      expect(component.panelTitle).toBe('World of Warcraft Shaman');
+      expect(component.specializationTitle).toBe('Elemental');
+      expect(component.specializationDesc).toContain('lightning, fire, and frost');
+      expect(component.subclassTerm).toBe('path');
+      expect(component.guidance?.subclass.name).toBe('Path of the Elements');
+      expect(component.subclassMatch).toBe('pending');
+      expect(component.featureCards).toEqual([]);
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+      const el = render(makeShaman());
+      expect(el.querySelector('.hero-note')?.textContent).toContain('Earthen Ring by 3');
+      expect(el.textContent).toContain('You choose your path at Barbarian level 3.');
+      expect(el.querySelector('.feature-card')).toBeNull();
+    });
+
+    it('shows only the Totems card for a WoW barbarian on a PHB path', () => {
+      component.pc = makeShaman({ specialization: 'Restoration', level: 3, subclass: 'Path of the World Tree' });
+      expect(component.featureCards.map(c => c.name)).toEqual(['Totems']);
+      expect(component.subclassMatch).toBe('match');
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+    });
+
+    it('never shows the Totems card for a base barbarian', () => {
+      component.pc = makeShaman({ specialization: null, subclass: 'Path of the Zealot', level: 10 });
+      expect(component.hero).toBeUndefined();
+      expect(component.featureCards).toEqual([]);
+    });
+
+    it('renders the Totems and Raging Elements cards with computed numbers', () => {
+      const el = render(makeShaman({ level: 3, subclass: 'Path of the Elements', prof: 2 }));
+      const cards = Array.from(el.querySelectorAll('.feature-card')) as HTMLElement[];
+      expect(cards.map(c => c.querySelector('.form-card-name')?.textContent?.trim())).toEqual(['Totems', 'Raging Elements']);
+      expect(el.textContent).toContain('Shaman Features');
+      expect(cards[0].textContent).toContain('Earthbind');
+      expect(cards[0].textContent).toContain('Wind Rush');
+      const raging = cards[1];
+      expect(raging.textContent).toContain('Save DC13');
+      expect(raging.textContent).toContain('Spell attack+5');
+      expect(raging.textContent).toContain('(2d8 Cold)');
+      expect(raging.textContent).not.toContain('Echo of the Elements');
+      expect(raging.querySelector('.hero-spells')).toBeNull();
+    });
+
+    it('lists the Echo of the Elements spells from the spell data from level 6', () => {
+      component.pc = makeShaman({ level: 6, subclass: 'Path of the Elements' });
+      expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+      const el = render(makeShaman({ level: 10, subclass: 'Path of the Elements' }));
+      const names = Array.from(el.querySelectorAll('.feature-card .hero-spell-name')).map(n => n.textContent!.trim());
+      expect(names).toEqual(['Elementalism', 'Daylight', 'Water Walk', 'Wind Wall']);
+      expect(el.textContent).toContain('A 60-foot-radius sphere of light');
+      expect(el.textContent).toContain('Level 3 evocation');
+      expect(el.textContent).toContain('Primordial Bond');
+    });
+
+    it('renders the Spiritual Guardian card with Spirit Shield and Consult the Spirits spells', () => {
+      const el = render(makeShaman({ specialization: 'Enhancement', level: 10, subclass: 'Path of the Spiritual Guardian' }));
+      const card = (Array.from(el.querySelectorAll('.feature-card')) as HTMLElement[])
+        .find(c => c.textContent!.includes('Spiritual Guardian'))!;
+      expect(card.textContent).toContain('Spirit Shield');
+      expect(card.textContent).toContain('3d6');
+      expect(Array.from(card.querySelectorAll('.hero-spell-name')).map(n => n.textContent!.trim()))
+        .toEqual(['Augury', 'Clairvoyance']);
+      expect(card.textContent).not.toContain("Spirits' Fury");
+    });
+  });
 });

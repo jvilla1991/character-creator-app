@@ -89,6 +89,15 @@ describe('CharacterSheetComponent', () => {
     expect(component.subtitleSuffix).toBe('Outlaw');
     component.pc = makePC({ clazz: 'Rogue', subclass: 'Swashbuckler', specialization: 'Outlaw' });
     expect(component.subtitleSuffix).toBe('Swashbuckler · Outlaw');
+    // WoW Shaman: "Shaman (Barbarian) (Elemental)", then the path joins it from level 3.
+    component.pc = makePC({ clazz: 'Barbarian', subclass: undefined, specialization: 'Elemental' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Elemental');
+    component.pc = makePC({ clazz: 'Barbarian', subclass: 'Path of the Elements', specialization: 'Elemental' });
+    expect(component.subtitleSuffix).toBe('Path of the Elements · Elemental');
+    component.pc = makePC({ clazz: 'Barbarian', subclass: 'Path of the Berserker', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Path of the Berserker');
   });
 
   // --- Level Up gating ---

@@ -3,8 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
-  HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells, orList,
-  specializationTitle, subclassSpellsFor,
+  FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells,
+  orList, specializationTitle, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -46,7 +46,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * Fragments) and the always-prepared spells for the character's level and
  * specialization. For a WoW Druid it adds the recommended circle, the
  * specialization's suggested spells and the beast forms (Cat/Bear stat cards
- * for Circle of the Moon, classic beasts otherwise). Derived from the PC's
+ * for Circle of the Moon, classic beasts otherwise); for a WoW Shaman, the
+ * computed Totems and path cards (Raging Elements, Spiritual Guardian). Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -75,11 +76,14 @@ export class HeroClassPanelComponent {
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
   classicForms: ClassicBeastForm[] = [];
+  /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian). */
+  featureCards: FeatureCard[] = [];
 
   @Input() set pc(value: PC) {
     this._pc = value;
     this.deriveVariant();
-    if (this.spellSections.length || this.suggestedSpells.length) this.loadSpells();
+    const cardSpells = this.featureCards.some(card => card.rows.some(row => row.spells?.length));
+    if (this.spellSections.length || this.suggestedSpells.length || cardSpells) this.loadSpells();
   }
   get pc(): PC { return this._pc; }
 
@@ -192,6 +196,10 @@ export class HeroClassPanelComponent {
         return { name, known: !!have, prepared: !!have?.prepared };
       }),
     }));
+
+    this.featureCards = hero?.featureCards
+      ? [...hero.featureCards({ level: pc.level ?? 1, subclass: pc.subclass, stats: pc.stats, prof: pc.prof })]
+      : [];
 
     if (!hero?.beastForms) {
       this.formCards = [];

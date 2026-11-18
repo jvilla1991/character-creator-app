@@ -171,3 +171,71 @@ describe('ClassStepComponent — World of Warcraft Rogue', () => {
     expect(sub.textContent).toContain('Shadow Touched');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Shaman (Barbarian)', () => {
+  const SHAMAN_KEY = 'Barbarian (World of Warcraft)';
+  const detail = { hit_die: 12, saving_throws: [{ name: 'STR' }, { name: 'CON' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(SHAMAN_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Barbarian']));
+    fixture.componentRef.setInput('selectedKey', SHAMAN_KEY);
+    fixture.componentRef.setInput('clazz', 'Barbarian');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Barbarian" and a tagged "Shaman (Barbarian)" row, with the blurb, Earthen Ring note and subclass note', () => {
+    const el = render();
+    const heads = Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[];
+    expect(heads[0].textContent!.trim()).toBe('Barbarian');
+    const shamanRow = heads.find(h => h.textContent!.includes('Shaman (Barbarian)'))!;
+    expect(shamanRow).toBeTruthy();
+    expect(shamanRow.querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('totems');
+    expect(el.querySelector('.hero-renown')?.textContent).toContain('Earthen Ring by 3');
+    expect(el.textContent).toContain('Chosen as normal at Barbarian level 3');
+    expect(el.textContent).toContain("Your Shaman's specialization");
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Elemental', 'Enhancement', 'Restoration']);
+    expect(el.querySelector('.spec-guidance')).toBeNull();
+  });
+
+  it('shows the Elemental box: two masteries, the path plus Totems, and feats — no spell or style rows', () => {
+    const box = render('Elemental').querySelector('.spec-guidance') as HTMLElement;
+    expect(Array.from(box.querySelectorAll('dt')).map(n => n.textContent!.trim()))
+      .toEqual(['Weapon Mastery', 'Level 3 subclass', 'Feats']);
+    expect(box.textContent).toContain('Recommended for Elemental');
+    expect(box.textContent).toContain('Any two of Battleaxes, Longswords, Maces');
+    expect(box.textContent).toContain('Path of the Elements — plus Totems instead of Primal Knowledge.');
+    expect(box.textContent).toContain('Ritual Caster');
+    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+  });
+
+  it('shows the Enhancement and Restoration picks', () => {
+    const enh = render('Enhancement').querySelector('.spec-guidance') as HTMLElement;
+    expect(enh.textContent).toContain('Any two of Handaxes, Light Hammers, Scimitars, Shortswords');
+    expect(enh.textContent).toContain('Path of the Spiritual Guardian — plus Totems');
+    expect(enh.textContent).toContain('Dual Wielder');
+    const resto = render('Restoration').querySelector('.spec-guidance') as HTMLElement;
+    expect(resto.textContent).toContain('Any two of Flails, Maces, Warhammers');
+    expect(resto.textContent).toContain('Path of the World Tree — plus Totems');
+    expect(resto.textContent).toContain('Inspiring Leader');
+  });
+
+  it('keeps "At least one of" for the WoW Rogue', () => {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey('Rogue (World of Warcraft)')!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Rogue']));
+    fixture.componentRef.setInput('selectedKey', hero.key);
+    fixture.componentRef.setInput('specialization', 'Outlaw');
+    fixture.componentRef.setInput('guidance', hero.guidance!['Outlaw']);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.spec-guidance')?.textContent)
+      .toContain('At least one of Daggers, Rapiers');
+  });
+});

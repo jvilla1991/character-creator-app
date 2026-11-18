@@ -76,8 +76,10 @@ export interface SpecializationGuidance {
   cantrips?: readonly string[];
   /** Level-1 spells (absent for classes without spells, e.g. the Rogue). */
   level1Spells?: readonly string[];
-  /** Weapon Mastery: take at least one of these weapons. */
+  /** Weapon Mastery: take at least one of these weapons (or `weaponMasteryCount` of them). */
   weaponMastery?: readonly string[];
+  /** How many of `weaponMastery` to take ('Any two of …'); absent reads 'At least one of …'. */
+  weaponMasteryCount?: number;
   /** The level-2 Fighting Style(s) to take — any one of them. */
   fightingStyles?: readonly string[];
   /** The cantrips to learn with that style when it teaches some (e.g. Blessed Warrior). */
@@ -97,6 +99,37 @@ export interface SpecializationGuidance {
 export interface SubclassSpellRow {
   classLevel: number;
   spells: readonly string[];
+}
+
+/** What a computed sheet card (e.g. the WoW Shaman's Totems) is built from. */
+export interface FeatureCardInput {
+  /** Base-class level. */
+  level: number;
+  subclass?: string | null;
+  stats?: HeroStats;
+  /** Proficiency bonus; derived from the level when absent. */
+  prof?: number | null;
+}
+
+/** One line of a computed sheet card: an option, a rider, or a feature gained at a later level. */
+export interface FeatureCardRow {
+  name: string;
+  /** Short tag after the name ('2d8 Cold', 'Reaction · Barbarian 6'). */
+  kind?: string;
+  text: string;
+  /** Spells the row lets you cast, looked up by name in the spell data. */
+  spells?: readonly string[];
+}
+
+/** A computed sheet card (Totems, Raging Elements, …) — text only, never persisted. */
+export interface FeatureCard {
+  name: string;
+  /** Where it comes from, e.g. 'Barbarian 3'. */
+  source: string;
+  summary?: string;
+  /** Computed numbers shown as a stat row (save DC, attack bonus). */
+  stats?: readonly { label: string; value: string }[];
+  rows: readonly FeatureCardRow[];
 }
 
 /** One spell level of a specialization's suggested (not always-prepared) spells. */
@@ -161,6 +194,8 @@ export interface HeroClassOption {
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
+  /** Computed sheet cards for this character (e.g. the WoW Shaman's Totems and path cards). */
+  featureCards?: (input: FeatureCardInput) => readonly FeatureCard[];
 }
 
 // ── Death Knight (Paladin) — Oath of the Ebon Blade ──────────────────────────
@@ -301,10 +336,11 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
 /**
  * The hero class a character is; undefined for everyone else.
  * - Subclass-based hero classes: base class + the hero subclass.
- * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin): base class +
- *   one of the variant's specializations + no hero subclass, or base class + one
- *   of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler). A
- *   druid, paladin or rogue with neither is a plain base-game character.
+ * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin, Shaman): base
+ *   class + one of the variant's specializations + no hero subclass, or base class
+ *   + one of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler,
+ *   Path of the Elements). A druid, paladin, rogue or barbarian with neither is a
+ *   plain base-game character.
  */
 export function heroClassFor(
   pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
@@ -376,6 +412,14 @@ export function recommendedFightingStylesFor(
   hero: HeroClassOption | undefined, specialization: string | null | undefined,
 ): readonly string[] {
   return (specialization && hero?.guidance?.[specialization]?.fightingStyles) || NO_SPELLS;
+}
+
+const COUNT_WORDS: Readonly<Record<number, string>> = { 2: 'two', 3: 'three', 4: 'four' };
+
+/** 'At least one of' / 'Any two of' — how the Weapon Mastery recommendation reads. */
+export function weaponMasteryLead(guidance: SpecializationGuidance): string {
+  const n = guidance.weaponMasteryCount;
+  return n && n > 1 ? `Any ${COUNT_WORDS[n] ?? n} of` : 'At least one of';
 }
 
 /** "A", "A or B", "A, B, or C" — a choice list in running text. */
