@@ -80,7 +80,10 @@ export interface SpecializationGuidance {
   weaponMastery?: readonly string[];
   /** How many of `weaponMastery` to take ('Any two of …'); absent reads 'At least one of …'. */
   weaponMasteryCount?: number;
-  /** The level-2 Fighting Style(s) to take — any one of them. */
+  /**
+   * The Fighting Style(s) to take — any one of them. Chosen at the class's
+   * {@link HeroClassOption.fightingStyleLevel} (level 2; level 1 for a Fighter).
+   */
   fightingStyles?: readonly string[];
   /** The cantrips to learn with that style when it teaches some (e.g. Blessed Warrior). */
   fightingStyleCantrips?: readonly string[];
@@ -93,6 +96,33 @@ export interface SpecializationGuidance {
   levelTip?: { level: number; text: string };
   /** A short aside shown under the class-step box (e.g. another class that fits the role). */
   note?: string;
+  /**
+   * Eldritch Invocations to take (Warlock). Invocations are not modelled in this
+   * app, so these are recommendation text only — nothing is granted or tracked.
+   */
+  invocations?: InvocationGuidance;
+  /**
+   * Battle Master maneuvers worth considering (WoW Warrior). Maneuvers and
+   * Superiority Dice are not modelled in this app, so these are recommendation
+   * text only — nothing is granted or tracked.
+   */
+  maneuvers?: readonly string[];
+}
+
+/** Recommended Eldritch Invocations by when they are taken. */
+export interface InvocationGuidance {
+  /** The level-1 invocation. */
+  level1?: readonly string[];
+  /** The invocations gained at level 2. */
+  level2?: readonly string[];
+  /** Invocations worth considering from level 5. */
+  fromLevel5?: readonly string[];
+}
+
+/** One labelled row of recommended invocations, as shown in the class step and on the sheet. */
+export interface InvocationRow {
+  label: string;
+  names: readonly string[];
 }
 
 /** One base-class-level row of a WoW-only subclass's always-prepared spells (e.g. Oath of the Holy). */
@@ -129,7 +159,11 @@ export interface FeatureCard {
   summary?: string;
   /** Computed numbers shown as a stat row (save DC, attack bonus). */
   stats?: readonly { label: string; value: string }[];
+  /** A small heading above the rows (e.g. 'World of Warcraft maneuvers'). */
+  rowsTitle?: string;
   rows: readonly FeatureCardRow[];
+  /** A closing note under the rows (e.g. that maneuvers aren't tracked). */
+  note?: string;
 }
 
 /** One spell level of a specialization's suggested (not always-prepared) spells. */
@@ -161,6 +195,11 @@ export interface HeroClassOption {
   subclassNote?: string;
   /** What the base class calls its subclass, lower-case ('circle', 'oath'); absent reads 'subclass'. */
   subclassTerm?: string;
+  /**
+   * The base-class level the subclass is chosen at; absent reads 3. A Warlock
+   * picks its patron at level 1, in the creation wizard's subclass picker.
+   */
+  subclassLevel?: number;
   source: ContentSource;
   /** One- or two-sentence description shown in the class step. */
   blurb: string;
@@ -183,6 +222,17 @@ export interface HeroClassOption {
   guidance?: Readonly<Record<string, SpecializationGuidance>>;
   /** Suggested spells per specialization, by spell level (sheet panel). */
   suggestedSpells?: Readonly<Record<string, readonly SuggestedSpellLevel[]>>;
+  /** A one-line flavour note under the suggested spells (every specialization). */
+  suggestedSpellsNote?: string;
+  /** Recommended invocations that are World of Warcraft additions (marked ✦; full text not yet published). */
+  wowInvocations?: readonly string[];
+  /** Recommended Battle Master maneuvers that are World of Warcraft additions (marked ✦). */
+  wowManeuvers?: readonly string[];
+  /**
+   * The base-class level the recommended Fighting Style is chosen at; absent
+   * reads 2 (Paladin, Ranger). A Fighter picks it at level 1.
+   */
+  fightingStyleLevel?: number;
   /**
    * WoW-only subclasses a variant can take (offered by the server), with their
    * always-prepared spells by base-class level — e.g. Oath of the Holy.
@@ -336,10 +386,10 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
 /**
  * The hero class a character is; undefined for everyone else.
  * - Subclass-based hero classes: base class + the hero subclass.
- * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin, Shaman): base
+ * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin, Shaman, Warrior): base
  *   class + one of the variant's specializations + no hero subclass, or base class
  *   + one of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler,
- *   Path of the Elements). A druid, paladin, rogue or barbarian with neither is a
+ *   Path of the Elements). A druid, paladin, rogue, barbarian or fighter with neither is a
  *   plain base-game character.
  */
 export function heroClassFor(
@@ -386,6 +436,68 @@ export function recommendedSubclassFor(
   return specialization ? hero?.guidance?.[specialization]?.subclass.name : undefined;
 }
 
+/** The base-class level a variant's subclass is chosen at (3 unless the class says otherwise). */
+export function subclassLevelOf(hero: HeroClassOption | undefined): number {
+  return hero?.subclassLevel ?? 3;
+}
+
+/**
+ * The class-step guidance label for the recommended subclass: 'Level 3 subclass',
+ * or just the class's own term ('Patron') when it is picked at level 1 in the wizard.
+ */
+export function subclassGuidanceLabel(hero: HeroClassOption): string {
+  if (subclassLevelOf(hero) === 1) {
+    const term = hero.subclassTerm ?? 'subclass';
+    return term.charAt(0).toUpperCase() + term.slice(1);
+  }
+  return `Level ${subclassLevelOf(hero)} subclass`;
+}
+
+/** Hover text for a ✦ World of Warcraft invocation. */
+export const WOW_INVOCATION_NOTE = 'Full text TBD — World of Warcraft invocations update.';
+
+/** True when a recommended invocation is a World of Warcraft addition (case-insensitive). */
+export function isWowInvocation(hero: HeroClassOption | undefined, name: string): boolean {
+  const n = name.toLowerCase();
+  return !!hero?.wowInvocations?.some(i => i.toLowerCase() === n);
+}
+
+/** Hover text for a ✦ World of Warcraft maneuver. */
+export const WOW_MANEUVER_NOTE = "Its text is on your sheet's Battle Master card once you take that subclass.";
+
+/** True when a recommended maneuver is a World of Warcraft addition (case-insensitive). */
+export function isWowManeuver(hero: HeroClassOption | undefined, name: string): boolean {
+  const n = name.toLowerCase();
+  return !!hero?.wowManeuvers?.some(m => m.toLowerCase() === n);
+}
+
+/** The base-class level a variant's recommended Fighting Style is chosen at (2 unless the class says otherwise). */
+export function fightingStyleLevelOf(hero: HeroClassOption | undefined): number {
+  return hero?.fightingStyleLevel ?? 2;
+}
+
+const INVOCATION_ROWS_CACHE =new WeakMap<InvocationGuidance, readonly InvocationRow[]>();
+
+/**
+ * A guidance's recommended invocations as labelled rows (level 1, level 2,
+ * from level 5), skipping empty ones; empty when there are none. Cached per
+ * guidance so template bindings see a stable array.
+ */
+export function invocationRows(guidance: SpecializationGuidance | null | undefined): readonly InvocationRow[] {
+  const inv = guidance?.invocations;
+  if (!inv) return [];
+  let rows = INVOCATION_ROWS_CACHE.get(inv);
+  if (!rows) {
+    rows = [
+      { label: 'Level 1 invocation', names: inv.level1 ?? [] },
+      { label: 'Level 2 invocations', names: inv.level2 ?? [] },
+      { label: 'From level 5, consider', names: inv.fromLevel5 ?? [] },
+    ].filter(r => r.names.length > 0);
+    INVOCATION_ROWS_CACHE.set(inv, rows);
+  }
+  return rows;
+}
+
 const NO_SPELLS: readonly string[] = [];
 const RECOMMENDED_SPELLS_CACHE = new Map<string, readonly string[]>();
 
@@ -407,7 +519,7 @@ export function recommendedStartingSpells(
   return list;
 }
 
-/** The level-2 Fighting Style(s) a specialization's guidance recommends (e.g. Protection → Interception, Protection). */
+/** The Fighting Style(s) a specialization's guidance recommends (e.g. Protection → Interception, Protection). */
 export function recommendedFightingStylesFor(
   hero: HeroClassOption | undefined, specialization: string | null | undefined,
 ): readonly string[] {
@@ -416,8 +528,9 @@ export function recommendedFightingStylesFor(
 
 const COUNT_WORDS: Readonly<Record<number, string>> = { 2: 'two', 3: 'three', 4: 'four' };
 
-/** 'At least one of' / 'Any two of' — how the Weapon Mastery recommendation reads. */
+/** 'At least one of' / 'Any two of' / 'Include' (one weapon) — how the Weapon Mastery recommendation reads. */
 export function weaponMasteryLead(guidance: SpecializationGuidance): string {
+  if (guidance.weaponMastery?.length === 1) return 'Include';
   const n = guidance.weaponMasteryCount;
   return n && n > 1 ? `Any ${COUNT_WORDS[n] ?? n} of` : 'At least one of';
 }

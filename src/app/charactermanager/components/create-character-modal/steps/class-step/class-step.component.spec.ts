@@ -239,3 +239,244 @@ describe('ClassStepComponent — World of Warcraft Shaman (Barbarian)', () => {
       .toContain('At least one of Daggers, Rapiers');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Warlock', () => {
+  const WOW_WARLOCK_KEY = 'Warlock (World of Warcraft)';
+  const detail = { hit_die: 8, saving_throws: [{ name: 'WIS' }, { name: 'CHA' }] } as unknown as DndClass;
+  const patrons = [
+    { name: 'Fiend Patron', desc: 'Fiend.' },
+    { name: 'Great Old One Patron', desc: 'Old One.' },
+    { name: 'Archfey Patron', desc: 'Fey.' },
+    { name: 'Celestial Patron', desc: 'Celestial.' },
+  ];
+
+  function render(specialization = '', recommendedSubclass = '', selectedSubclass = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(WOW_WARLOCK_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Sorcerer', 'Warlock']));
+    fixture.componentRef.setInput('selectedKey', WOW_WARLOCK_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Warlock');
+    fixture.componentRef.setInput('clazz', 'Warlock');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('spellsStep', true);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.componentRef.setInput('requiresLevel1Subclass', true);
+    fixture.componentRef.setInput('availableSubclasses', patrons);
+    fixture.componentRef.setInput('recommendedSubclass', recommendedSubclass);
+    fixture.componentRef.setInput('selectedSubclass', selectedSubclass);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  /** The level-1 patron cards (the picker after the specialization cards). */
+  function patronCards(el: HTMLElement): HTMLElement[] {
+    return (Array.from(el.querySelectorAll('.subclass-card')) as HTMLElement[])
+      .filter(c => c.textContent!.includes('Patron'));
+  }
+
+  it('shows a "Warlock" row tagged World of Warcraft beside the base Warlock', () => {
+    const el = render();
+    const rows = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[])
+      .filter(h => h.textContent!.trim().startsWith('Warlock'));
+    expect(rows.length).toBe(2);
+    expect(rows[0].querySelector('.source-tag')).toBeNull();
+    expect(rows[1].querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(rows[1].classList).toContain('active');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('Burning Legion');
+    expect(el.textContent).toContain('Chosen as normal at Warlock level 1');
+  });
+
+  it('shows the specialization picker and the patron picker with no badge before a spec is chosen', () => {
+    const el = render();
+    const specs = (Array.from(el.querySelectorAll('.subclass-card .subclass-name')) as HTMLElement[])
+      .map(n => n.textContent!.trim()).slice(0, 3);
+    expect(specs).toEqual(['Affliction', 'Demonology', 'Destruction']);
+    expect(patronCards(el).length).toBe(4);
+    expect(el.querySelector('.subclass-recommended-badge')).toBeNull();
+    expect(el.querySelector('.spec-guidance')).toBeNull();
+  });
+
+  it('labels the patron recommendation "Patron" (no level) and drops the empty Feats row', () => {
+    const box = render('Demonology', 'Fiend Patron').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(t => t.textContent!.trim());
+    expect(terms).toEqual([
+      'Cantrips', 'Level 1 spells', 'Patron', 'Level 1 invocation', 'Level 2 invocations', 'From level 5, consider',
+    ]);
+    expect(box.textContent).not.toContain('Level 3');
+    expect(box.textContent).toContain('Recommended for Demonology');
+    expect(box.textContent).toContain('Eldritch Blast, Toll the Dead');
+    expect(box.textContent).toContain('Arms of Hadar, Hex');
+    expect(box.textContent).toContain('Fiend Patron');
+    expect(box.textContent).toContain('marked “Recommended” on the Spells step');
+    expect(box.textContent).toContain('The patron is marked “Recommended” in the picker below.');
+  });
+
+  it('lists the invocations per spec and marks only the World of Warcraft ones with ✦ and a TBD title', () => {
+    const box = render('Demonology', 'Fiend Patron').querySelector('.spec-guidance') as HTMLElement;
+    const invocations = Array.from(box.querySelectorAll('.invocation')) as HTMLElement[];
+    const marked = invocations.filter(i => i.querySelector('.wow-mark')).map(i => i.textContent!.replace('✦', '').trim());
+    expect(marked).toEqual(['Pact of the Legion', 'Health Funnel', 'Call of the Void', 'Expendable Minions',
+      'Legion Summoning', 'Master Demonologist']);
+    const plain = invocations.filter(i => !i.querySelector('.wow-mark')).map(i => i.textContent!.trim());
+    expect(plain).toEqual(['Repelling Blast', 'Gift of the Depths', 'Visions of Distant Realms']);
+    expect(box.querySelector('.wow-mark')!.getAttribute('title'))
+      .toBe('Full text TBD — World of Warcraft invocations update.');
+    expect(box.querySelector('.invocation-footnote')?.textContent)
+      .toContain('Full text TBD — World of Warcraft invocations update.');
+
+    const aff = render('Affliction', 'Great Old One Patron').querySelector('.spec-guidance') as HTMLElement;
+    expect(aff.textContent).toContain('Agonizing Blast');
+    expect(aff.textContent).toContain('Curse of Corruption');
+    expect(aff.textContent).toContain('Eldritch Mind');
+    expect(aff.textContent).not.toContain('Master Demonologist');
+    const dest = render('Destruction', 'Fiend Patron').querySelector('.spec-guidance') as HTMLElement;
+    expect(dest.textContent).toContain('Eldritch Blast, Thunderclap');
+    expect(dest.textContent).toContain('Hellish Rebuke, Hex');
+    expect(dest.textContent).not.toContain('Health Funnel');
+  });
+
+  it('badges the recommended patron for the spec without selecting it', () => {
+    const el = render('Affliction', 'Great Old One Patron');
+    const cards = patronCards(el);
+    const recommended = cards.filter(c => c.classList.contains('recommended'));
+    expect(recommended.length).toBe(1);
+    expect(recommended[0].querySelector('.subclass-name')!.textContent).toContain('Great Old One Patron');
+    expect(recommended[0].querySelector('.subclass-recommended-badge')!.textContent!.trim())
+      .toBe('Recommended for Affliction');
+    expect(cards.some(c => c.classList.contains('active'))).toBeFalse();
+    expect(el.querySelectorAll('.subclass-recommended-badge').length).toBe(1);
+
+    const demo = patronCards(render('Demonology', 'Fiend Patron', 'Archfey Patron'));
+    expect(demo.find(c => c.classList.contains('recommended'))!.textContent).toContain('Fiend Patron');
+    expect(demo.find(c => c.classList.contains('active'))!.textContent).toContain('Archfey Patron');
+  });
+
+  it('emits the patron only when the player clicks one', () => {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Warlock']));
+    fixture.componentRef.setInput('selectedKey', WOW_WARLOCK_KEY);
+    fixture.componentRef.setInput('clazz', 'Warlock');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('requiresLevel1Subclass', true);
+    fixture.componentRef.setInput('availableSubclasses', patrons);
+    fixture.componentRef.setInput('specialization', 'Destruction');
+    fixture.componentRef.setInput('recommendedSubclass', 'Fiend Patron');
+    const emitted: string[] = [];
+    fixture.componentInstance.selectedSubclassChange.subscribe(s => emitted.push(s));
+    fixture.detectChanges();
+    expect(emitted).toEqual([]);
+    patronCards(fixture.nativeElement)[1].click();
+    expect(emitted).toEqual(['Great Old One Patron']);
+  });
+
+  it('shows no patron badge for a base Warlock', () => {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Warlock']));
+    fixture.componentRef.setInput('selectedKey', 'Warlock');
+    fixture.componentRef.setInput('clazz', 'Warlock');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('requiresLevel1Subclass', true);
+    fixture.componentRef.setInput('availableSubclasses', patrons);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(patronCards(el).length).toBe(4);
+    expect(el.querySelector('.subclass-recommended-badge')).toBeNull();
+    expect(el.querySelector('.recommended')).toBeNull();
+  });
+});
+
+describe('ClassStepComponent — World of Warcraft Warrior (Fighter)', () => {
+  const WOW_WARRIOR_KEY = 'Fighter (World of Warcraft)';
+  const detail = { hit_die: 10, saving_throws: [{ name: 'STR' }, { name: 'CON' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(WOW_WARRIOR_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Fighter', 'Rogue']));
+    fixture.componentRef.setInput('selectedKey', WOW_WARRIOR_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Warrior (Fighter)');
+    fixture.componentRef.setInput('clazz', 'Fighter');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Fighter" and a tagged "Warrior (Fighter)" row, with the blurb and subclass note', () => {
+    const el = render();
+    const heads = Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[];
+    expect(heads[0].textContent!.trim()).toBe('Fighter');
+    expect(heads[0].querySelector('.source-tag')).toBeNull();
+    const warriorRow = heads.find(h => h.textContent!.includes('Warrior (Fighter)'))!;
+    expect(warriorRow).toBeTruthy();
+    expect(warriorRow.querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(warriorRow.classList).toContain('active');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('arms and armor');
+    expect(el.querySelector('.hero-renown')).toBeNull();
+    expect(el.textContent).toContain('Chosen as normal at Fighter level 3');
+    expect(el.textContent).toContain("Your Warrior's specialization");
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Arms', 'Fury', 'Protection']);
+    expect(el.querySelector('.spec-guidance')).toBeNull();
+  });
+
+  it('shows the Arms box: mastery, level-1 fighting style, Battle Master, maneuvers and feats', () => {
+    const box = render('Arms').querySelector('.spec-guidance') as HTMLElement;
+    expect(Array.from(box.querySelectorAll('dt')).map(n => n.textContent!.trim())).toEqual([
+      'Weapon Mastery', 'Level 1 fighting style', 'Level 3 subclass', 'Maneuvers to consider', 'Feats',
+    ]);
+    expect(box.textContent).toContain('Recommended for Arms');
+    expect(box.textContent).toContain('At least one of Greataxes, Greatswords, Mauls');
+    expect(box.textContent).toContain('Great Weapon Fighting');
+    expect(box.textContent).toContain('Battle Master');
+    expect(box.textContent).toContain('Great Weapon Master');
+    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+    expect(box.textContent).not.toContain('Level 2 fighting style');
+  });
+
+  it('marks only the World of Warcraft maneuvers with ✦ and explains they are not tracked', () => {
+    const box = render('Protection').querySelector('.spec-guidance') as HTMLElement;
+    const maneuvers = Array.from(box.querySelectorAll('.maneuver')) as HTMLElement[];
+    const marked = maneuvers.filter(m => m.querySelector('.wow-mark')).map(m => m.textContent!.replace('✦', '').trim());
+    expect(marked).toEqual(['Battle Shout', 'Demoralizing Shout', 'Warding Maneuver']);
+    const plain = maneuvers.filter(m => !m.querySelector('.wow-mark')).map(m => m.textContent!.trim());
+    expect(plain).toEqual(['Bait and Switch', 'Goading Attack', 'Maneuvering Attack', 'Parry']);
+    expect(box.querySelector('.wow-mark')!.getAttribute('title')).toContain('Battle Master card');
+    expect(box.querySelector('.maneuver-footnote')?.textContent).toContain("Maneuvers aren't tracked here");
+    expect(box.textContent).toContain('Interception or Protection');
+    expect(box.textContent).toContain('At least one of Battleaxes, Longswords, Morningstars');
+    expect(box.textContent).toContain('Heavy Armor Master');
+
+    const arms = render('Arms').querySelector('.spec-guidance') as HTMLElement;
+    const armsMarked = (Array.from(arms.querySelectorAll('.maneuver')) as HTMLElement[])
+      .filter(m => m.querySelector('.wow-mark')).map(m => m.textContent!.replace('✦', '').trim());
+    expect(armsMarked).toEqual(['Battle Shout', 'Mortal Strike']);
+    expect(arms.textContent).toContain('Trip Attack');
+  });
+
+  it('shows the Fury box: Scimitars, Two-Weapon Fighting, Champion, no maneuvers, and the Berserker aside', () => {
+    const box = render('Fury').querySelector('.spec-guidance') as HTMLElement;
+    expect(box.textContent).toContain('Include Scimitars');
+    expect(box.textContent).toContain('Two-Weapon Fighting');
+    expect(box.textContent).toContain('Champion');
+    expect(box.textContent).toContain('Dual Wielder');
+    expect(box.textContent).toContain('Barbarian on the Path of the Berserker');
+    expect(box.textContent).not.toContain('Maneuvers to consider');
+    expect(box.querySelector('.maneuver-footnote')).toBeNull();
+  });
+
+  it('keeps "Level 2 fighting style" for the WoW Paladin', () => {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey('Paladin (World of Warcraft)')!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Paladin']));
+    fixture.componentRef.setInput('selectedKey', hero.key);
+    fixture.componentRef.setInput('specialization', 'Protection');
+    fixture.componentRef.setInput('guidance', hero.guidance!['Protection']);
+    fixture.detectChanges();
+    const box = (fixture.nativeElement as HTMLElement).querySelector('.spec-guidance')!;
+    expect(box.textContent).toContain('Level 2 fighting style');
+    expect(box.querySelector('.maneuver')).toBeNull();
+  });
+});

@@ -2,6 +2,7 @@ import type {
   HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
+import { BATTLE_MASTER, warriorFeatureCards } from './wow-warrior';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -332,5 +333,211 @@ export const WOW_SHAMAN: HeroClassOption = {
   featureCards: shamanFeatureCards,
 };
 
+// ── Warlock ──────────────────────────────────────────────────────────────────
+
+export const WOW_WARLOCK_SPECIALIZATIONS = ['Affliction', 'Demonology', 'Destruction'] as const;
+
+export const FIEND_PATRON = 'Fiend Patron';
+export const GREAT_OLD_ONE_PATRON = 'Great Old One Patron';
+
+/**
+ * The World of Warcraft Eldritch Invocations the guidance names. Their full text
+ * is not published yet, and invocations aren't modelled in this app — they are
+ * recommendation text only, marked ✦.
+ */
+export const WOW_WARLOCK_INVOCATIONS = [
+  'Pact of the Legion', 'Curse of Corruption', 'Health Funnel', 'Call of the Void',
+  'Legion Summoning', 'Expendable Minions', 'Master Demonologist',
+] as const;
+
+const FIEND_NOTE = "draws on the Burning Legion's fel power.";
+const GREAT_OLD_ONE_NOTE = 'draws on the Void and the Old Gods.';
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * The warlock picks its patron at level 1 in the wizard, where the recommended one
+ * is badged (never auto-selected).
+ */
+export const WOW_WARLOCK_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Affliction: {
+    cantrips: ['Eldritch Blast', 'Poison Spray'],
+    level1Spells: ['Hex', 'Witch Bolt'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Agonizing Blast', 'Curse of Corruption'],
+      fromLevel5: ['Call of the Void', 'Eldritch Mind', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+    },
+    subclass: { name: GREAT_OLD_ONE_PATRON, note: GREAT_OLD_ONE_NOTE },
+    feats: [],
+  },
+  Demonology: {
+    cantrips: ['Eldritch Blast', 'Toll the Dead'],
+    level1Spells: ['Arms of Hadar', 'Hex'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Health Funnel', 'Repelling Blast'],
+      fromLevel5: [
+        'Call of the Void', 'Expendable Minions', 'Gift of the Depths', 'Legion Summoning',
+        'Master Demonologist', 'Visions of Distant Realms',
+      ],
+    },
+    subclass: { name: FIEND_PATRON, note: FIEND_NOTE },
+    feats: [],
+  },
+  Destruction: {
+    cantrips: ['Eldritch Blast', 'Thunderclap'],
+    level1Spells: ['Hellish Rebuke', 'Hex'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Agonizing Blast', 'Repelling Blast'],
+      fromLevel5: ['Call of the Void', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+    },
+    subclass: { name: FIEND_PATRON, note: FIEND_NOTE },
+    feats: [],
+  },
+};
+
+/** Suggested spells per specialization, by spell level (✦ WoW spells are flagged from the spell data). */
+export const WOW_WARLOCK_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Affliction: [
+    { level: 1, spells: ['Bane'] },
+    { level: 2, spells: ['Ray of Enfeeblement'] },
+    { level: 3, spells: ['Fear'] },
+    { level: 4, spells: ['Blight'] },
+    { level: 5, spells: ['Synaptic Static'] },
+    { level: 6, spells: ['Eyebite'] },
+    { level: 7, spells: ['Finger of Death'] },
+    { level: 8, spells: ['Befuddlement'] },
+    { level: 9, spells: ['Weird'] },
+  ],
+  Demonology: [
+    { level: 1, spells: ['Hellish Rebuke'] },
+    { level: 2, spells: ['Suggestion'] },
+    { level: 3, spells: ["Hand of Gul'dan"] },
+    { level: 4, spells: ['Summon Aberration'] },
+    { level: 5, spells: ['Planar Binding'] },
+    { level: 6, spells: ['Summon Fiend'] },
+    { level: 7, spells: ['Plane Shift'] },
+    { level: 8, spells: ['Dominate Monster'] },
+    { level: 9, spells: ['Gate'] },
+  ],
+  Destruction: [
+    { level: 1, spells: ['Arms of Hadar'] },
+    { level: 2, spells: ['Cloud of Daggers'] },
+    { level: 3, spells: ['Rain of Fire'] },
+    { level: 4, spells: ['Blight'] },
+    { level: 5, spells: ["Jallarzi's Storm of Radiance"] },
+    { level: 6, spells: ['Circle of Death'] },
+    { level: 7, spells: ['Finger of Death'] },
+    { level: 8, spells: ['Power Word Stun'] },
+    { level: 9, spells: ['Power Word Kill'] },
+  ],
+};
+
+export const WOW_WARLOCK: HeroClassOption = {
+  key: 'Warlock (World of Warcraft)',
+  label: variantLabel('Warlock', 'Warlock'),
+  name: 'Warlock',
+  baseClass: 'Warlock',
+  source: 'World of Warcraft',
+  blurb: "A warlock strikes a bargain with the Burning Legion's demons or the entities of the Void, "
+    + 'then turns that stolen power against the Legion itself — calling up demon minions such as imps, '
+    + 'voidwalkers, sayaad and felhunters, and scouring foes with fel fire, corruption and curses. '
+    + "The Fiend Patron draws on the Legion's fel powers; the Great Old One Patron on the Void and the Old Gods.",
+  subclassNote: 'Chosen as normal at Warlock level 1 (below)',
+  subclassTerm: 'patron',
+  subclassLevel: 1,
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Affliction',  desc: 'Wields the shadow magic of the Void to inflict lingering torment.' },
+    { name: 'Demonology',  desc: 'Harvests soul energy to summon demons and bend them to their will.' },
+    { name: 'Destruction', desc: 'Burns foes away with chaotic shadow, fire and fel magic.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_WARLOCK_GUIDANCE,
+  suggestedSpells: WOW_WARLOCK_SUGGESTED_SPELLS,
+  suggestedSpellsNote: 'When you cast Summon Fiend, the fiend takes the look of a Burning Legion demon: '
+    + 'an infernal for the Devil option, a demonic tyrant for Yugoloth, or a vilefiend for Demon.',
+  wowInvocations: WOW_WARLOCK_INVOCATIONS,
+};
+
+// ── Warrior (Fighter) ────────────────────────────────────────────────────────
+
+export const WOW_WARRIOR_SPECIALIZATIONS = ['Arms', 'Fury', 'Protection'] as const;
+
+export const CHAMPION = 'Champion';
+
+/**
+ * The World of Warcraft Battle Master maneuvers. Maneuvers aren't modelled in
+ * this app — they are recommendation text (marked ✦) and the sheet's Battle
+ * Master card describes them.
+ */
+export const WOW_WARRIOR_MANEUVERS = [
+  'Battle Shout', 'Demoralizing Shout', 'Heroic Leap', 'Mortal Strike', 'Warding Maneuver',
+] as const;
+
+/**
+ * Per-specialization picks (class step box + sheet panel). Fighters have no spells,
+ * so there are none to suggest. The Fighting Style is a level-1 choice the wizard
+ * has no picker for, so it stays text.
+ */
+export const WOW_WARRIOR_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Arms: {
+    fightingStyles: ['Great Weapon Fighting'],
+    weaponMastery: ['Greataxes', 'Greatswords', 'Mauls'],
+    subclass: { name: BATTLE_MASTER },
+    maneuvers: [
+      'Battle Shout', 'Disarming Attack', 'Distracting Strike', 'Mortal Strike', 'Pushing Attack',
+      'Sweeping Attack', 'Trip Attack',
+    ],
+    feats: ['Charger', 'Crusher', 'Great Weapon Master', 'Piercer', 'Speedy', 'Slasher'],
+  },
+  Fury: {
+    fightingStyles: ['Two-Weapon Fighting'],
+    weaponMastery: ['Scimitars'],
+    subclass: { name: CHAMPION },
+    feats: ['Charger', 'Crusher', 'Dual Wielder', 'Piercer', 'Slasher'],
+    note: 'A warrior can also be played as a Barbarian on the Path of the Berserker, following this same Fury guidance.',
+  },
+  Protection: {
+    fightingStyles: ['Interception', 'Protection'],
+    weaponMastery: ['Battleaxes', 'Longswords', 'Morningstars'],
+    subclass: { name: BATTLE_MASTER },
+    maneuvers: [
+      'Bait and Switch', 'Battle Shout', 'Demoralizing Shout', 'Goading Attack', 'Maneuvering Attack', 'Parry',
+      'Warding Maneuver',
+    ],
+    feats: ['Crusher', 'Durable', 'Heavy Armor Master', 'Piercer', 'Sentinel', 'Shield Master', 'Slasher'],
+  },
+};
+
+export const WOW_WARRIOR: HeroClassOption = {
+  key: 'Fighter (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Warrior (Fighter)".
+  label: variantLabel('Warrior', 'Fighter'),
+  name: 'Warrior',
+  baseClass: 'Fighter',
+  source: 'World of Warcraft',
+  blurb: 'A master of arms and armor who leads through sheer strength. Some warriors anchor the front '
+    + 'line behind a shield; others cast the shield aside and pour their rage into deadly weapons.',
+  subclassNote: 'Chosen as normal at Fighter level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Arms',       desc: 'A two-handed weapon master whose every blow is precise and devastating.' },
+    { name: 'Fury',       desc: 'A dual-wielding berserker who whirls into the thick of the fray.' },
+    { name: 'Protection', desc: 'A shield-bearing wall who guards allies and turns attacks back on foes.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_WARRIOR_GUIDANCE,
+  fightingStyleLevel: 1,
+  wowManeuvers: WOW_WARRIOR_MANEUVERS,
+  featureCards: warriorFeatureCards,
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
+  WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+];

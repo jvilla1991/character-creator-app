@@ -98,6 +98,24 @@ describe('CharacterSheetComponent', () => {
     component.pc = makePC({ clazz: 'Barbarian', subclass: 'Path of the Berserker', specialization: null });
     expect(component.heroClass).toBeFalse();
     expect(component.subtitleSuffix).toBe('Path of the Berserker');
+    // WoW Warlock: the patron is chosen at level 1, so it joins the spec from the start.
+    component.pc = makePC({ clazz: 'Warlock', subclass: 'Fiend Patron', specialization: 'Demonology' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Fiend Patron · Demonology');
+    component.pc = makePC({ clazz: 'Warlock', subclass: undefined, specialization: 'Affliction' });
+    expect(component.subtitleSuffix).toBe('Affliction');
+    component.pc = makePC({ clazz: 'Warlock', subclass: 'Great Old One Patron', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Great Old One Patron');
+    // WoW Warrior: "Warrior (Fighter) (Arms)", then the subclass joins it from level 3.
+    component.pc = makePC({ clazz: 'Fighter', subclass: undefined, specialization: 'Arms' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Arms');
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Battle Master', specialization: 'Protection' });
+    expect(component.subtitleSuffix).toBe('Battle Master · Protection');
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Champion', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Champion');
   });
 
   // --- Level Up gating ---

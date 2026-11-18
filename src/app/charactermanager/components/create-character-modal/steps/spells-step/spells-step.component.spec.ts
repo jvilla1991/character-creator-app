@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { SpellsStepComponent } from './spells-step.component';
 import { DndSpell } from '../../../../models/dnd-api.types';
+import { heroClassByKey, recommendedStartingSpells } from '../../../../models/hero-class';
 
 describe('spell creation level groups', () => {
   it('collapses levels independently and preserves selection through filtering', () => {
@@ -84,6 +85,28 @@ describe('spell creation level groups', () => {
     expect(badges[0].getAttribute('title')).toBe('Recommended for Balance');
     expect(fixture.nativeElement.querySelectorAll('.spell-selected-badge').length).toBe(0);
     expect(fixture.nativeElement.textContent).toContain('suit the Balance specialization');
+  });
+
+  it('badges the WoW Warlock spec picks (cantrips and level-1 spells) without selecting them', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const spell = (name: string, level: number): DndSpell => ({ name, level, school: 'evocation',
+      classes: ['warlock'], actionType: 'action', concentration: false, ritual: false,
+      range: '120 feet', components: ['v', 's'], duration: 'Instantaneous', description: `${name}.` });
+    const list = [
+      spell('Eldritch Blast', 0), spell('Toll the Dead', 0), spell('Poison Spray', 0), spell('Mage Hand', 0),
+      spell('Arms of Hadar', 1), spell('Hex', 1), spell('Witch Bolt', 1), spell('Hellish Rebuke', 1),
+    ];
+    fixture.componentRef.setInput('filteredSpellList', list);
+    fixture.componentRef.setInput('recommendedSpells', recommendedStartingSpells(heroClassByKey('Warlock (World of Warcraft)'), 'Demonology'));
+    fixture.componentRef.setInput('recommendedFor', 'Demonology');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const badged = (Array.from(el.querySelectorAll('.spell-row.recommended .spell-pick-name')) as HTMLElement[])
+      .map(n => n.textContent!.replace('Recommended', '').trim());
+    expect(badged).toEqual(['Eldritch Blast', 'Toll the Dead', 'Arms of Hadar', 'Hex']);
+    expect(el.querySelector('.spell-recommended-badge')!.getAttribute('title')).toBe('Recommended for Demonology');
+    expect(el.querySelectorAll('.spell-selected-badge').length).toBe(0);
+    expect(el.textContent).toContain('suit the Demonology specialization');
   });
 
   it('shows no recommendation badges by default', () => {
