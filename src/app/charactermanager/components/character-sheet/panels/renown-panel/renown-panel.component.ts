@@ -27,6 +27,9 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
   readonly progress = renownProgress;
   readonly fillsFromRight = renownFillsFromRight;
   readonly span = renownSpan;
+  /** Unsaved score changes, by faction id — the DM clicks +/− freely and one
+   *  Save sends them all, so the activity log gets one entry, not one per click. */
+  readonly pending = signal<Record<number, number>>({});
   collapsed = new Set<number>();
   formOpen = false;
   name = '';
@@ -47,6 +50,7 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
     this.requests.unsubscribe();
     this.requests = new Subscription();
     this.factions.set([]);
+    this.pending.set({});
     this.saving.set(false);
     this.collapsed.clear();
     this.formOpen = false;
@@ -81,13 +85,31 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
       error: () => { this.error.set('Could not add faction. Please try again.'); this.saving.set(false); },
     }));
   }
+  /** The score to show: the saved one plus any unsaved change. */
+  scoreOf(row: RenownFaction): number { return row.score + (this.pending()[row.id] ?? 0); }
+  /** The unsaved change on this row (0 when untouched). */
+  changeOf(row: RenownFaction): number { return this.pending()[row.id] ?? 0; }
+  get dirty(): boolean { return Object.keys(this.pending()).length > 0; }
+  /** Local only — nothing is sent until {@link save}. */
   adjust(row: RenownFaction, delta: number): void {
-    if (!this.canManage || this.saving() || row.score + delta < -100 || row.score + delta > 100) return;
+    const next = this.scoreOf(row) + delta;
+    if (!this.canManage || this.saving() || next < -100 || next > 100) return;
+    this.pending.update(changes => {
+      const { [row.id]: current = 0, ...rest } = changes;
+      const change = current + delta;
+      // Stepping back to the saved score leaves nothing to save for this row.
+      return change === 0 ? rest : { ...rest, [row.id]: change };
+    });
+  }
+  discard(): void { if (!this.saving()) this.pending.set({}); }
+  save(): void {
+    if (!this.canManage || this.saving() || !this.dirty) return;
+    const changes = Object.entries(this.pending()).map(([id, delta]) => ({ factionId: Number(id), delta }));
     this.saving.set(true);
     this.error.set('');
-    this.requests.add(this.service.adjust(this.pc.id, this.campaignId, row.id, delta).subscribe({
-      next: updated => { this.factions.update(rows => rows.map(f => f.id === updated.id ? updated : f)); this.saving.set(false); },
-      error: () => { this.error.set('Could not adjust renown. Please retry.'); this.saving.set(false); },
+    this.requests.add(this.service.saveAll(this.pc.id, this.campaignId, changes).subscribe({
+      next: rows => { this.factions.set(rows); this.pending.set({}); this.saving.set(false); },
+      error: () => { this.error.set('Could not save renown. Your changes are still here — try again.'); this.saving.set(false); },
     }));
   }
 }

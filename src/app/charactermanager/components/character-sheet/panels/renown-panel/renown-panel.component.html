@@ -31,13 +31,21 @@
       </form>
     }
     @if (error()) { <div class="error" role="alert">{{ error() }} <button type="button" class="btn sm" (click)="load()" [disabled]="loading() || saving()">Reload</button></div> }
+    @if (canManage && dirty) {
+      <div class="unsaved-bar" role="status">
+        <span>Unsaved renown changes</span>
+        <button type="button" class="btn primary sm" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        <button type="button" class="btn sm" (click)="discard()" [disabled]="saving()">Discard</button>
+      </div>
+    }
     @if (loading()) { <p class="renown-empty" role="status">Loading reputations…</p> }
     @else if (!factions().length && !error()) {
       <p class="renown-empty">No factions yet.{{ canManage ? '' : ' Your DM can add factions for this campaign.' }}</p>
     } @else {
       <div class="faction-list">
         @for (row of visibleRows; track row.id) {
-          <div class="faction-row" [class.subfaction]="row.parentId != null">
+          @let score = scoreOf(row);
+          <div class="faction-row" [class.subfaction]="row.parentId != null" [class.unsaved]="changeOf(row) !== 0">
             <div class="faction-name">
               @if (row.parentId == null && children(row.id).length) {
                 <button type="button" class="expand" (click)="toggle(row.id)" [attr.aria-expanded]="!collapsed.has(row.id)" [attr.aria-label]="'Toggle sub-factions of ' + row.name">{{ collapsed.has(row.id) ? '▸' : '▾' }}</button>
@@ -46,18 +54,18 @@
             </div>
             <div class="standing">
               <div class="bar-label" aria-hidden="true">
-                <span class="tier-name" [style.color]="standing(row.score).color">{{ standing(row.score).name }}</span>
-                <strong class="numeric">{{ row.score > 0 ? '+' : '' }}{{ row.score }}</strong>
+                <span class="tier-name" [style.color]="standing(score).color">{{ standing(score).name }}</span>
+                <strong class="numeric">{{ score > 0 ? '+' : '' }}{{ score }}</strong>
               </div>
-              <div class="bar" role="meter" [attr.aria-label]="row.name + ': ' + standing(row.score).name" aria-valuemin="-100" aria-valuemax="100" [attr.aria-valuenow]="row.score" [attr.aria-valuetext]="standing(row.score).name + ', ' + row.score + ' renown'">
-                <span class="fill" [class.from-right]="fillsFromRight(row.score)" [style.width.%]="progress(row.score)" [style.background]="standing(row.score).color"></span>
+              <div class="bar" role="meter" [attr.aria-label]="row.name + ': ' + standing(score).name" aria-valuemin="-100" aria-valuemax="100" [attr.aria-valuenow]="score" [attr.aria-valuetext]="standing(score).name + ', ' + score + ' renown'">
+                <span class="fill" [class.from-right]="fillsFromRight(score)" [style.width.%]="progress(score)" [style.background]="standing(score).color"></span>
               </div>
-              <small>{{ standing(row.score).label }} · {{ row.score === 100 ? 'Maximum renown' : 'Progress within standing' }}</small>
+              <small>{{ standing(score).label }} · {{ score === 100 ? 'Maximum renown' : 'Progress within standing' }}</small>
             </div>
             @if (canManage) {
               <div class="adjustments">
-                <button type="button" class="btn icon" [attr.aria-label]="'Subtract 1 renown from ' + row.name" [disabled]="saving() || row.score <= -100" (click)="adjust(row, -1)">−</button>
-                <button type="button" class="btn icon" [attr.aria-label]="'Add 1 renown to ' + row.name" [disabled]="saving() || row.score >= 100" (click)="adjust(row, 1)">+</button>
+                <button type="button" class="btn icon" [attr.aria-label]="'Subtract 1 renown from ' + row.name" [disabled]="saving() || score <= -100" (click)="adjust(row, -1)">−</button>
+                <button type="button" class="btn icon" [attr.aria-label]="'Add 1 renown to ' + row.name" [disabled]="saving() || score >= 100" (click)="adjust(row, 1)">+</button>
               </div>
             }
           </div>
