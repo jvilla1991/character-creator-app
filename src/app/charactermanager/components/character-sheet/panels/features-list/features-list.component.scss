@@ -106,21 +106,6 @@
   letter-spacing: 0;
 }
 
-.locked-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 18px 0 2px;
-
-  // Hairline running out from the label to the panel edge.
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border-soft);
-  }
-}
-
 // "Faded" is the dim ink step, not opacity: --text-dim still clears 4.5:1 on
 // every surface in all three themes, where a translucent row would not. The
 // padlock on each row carries the state without relying on colour.

@@ -94,6 +94,13 @@ export interface PurchaseResult {
   totalCostCp: number;
 }
 
+/** What the inventory panel asks its host to sell: `qty` units of the line at
+ *  position `index` in `pc.inventory` (the index the backend addresses). */
+export interface SellRequest {
+  index: number;
+  qty: number;
+}
+
 export interface SellResult {
   coins: Coins;
   inventory: PcItem[];

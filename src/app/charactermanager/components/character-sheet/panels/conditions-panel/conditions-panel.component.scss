@@ -141,7 +141,15 @@
   cursor: pointer;
   transition: all .15s;
 
-  &:hover { color: var(--gold); border-color: var(--gold); }
+  &:not(.readonly):hover { color: var(--gold); border-color: var(--gold); }
+
+  // Player view in a campaign: same pips, not a control (the DM sets the level).
+  &.readonly {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+  }
 
   &.filled {
     background: color-mix(in oklch, var(--violet) 18%, var(--bg-2));

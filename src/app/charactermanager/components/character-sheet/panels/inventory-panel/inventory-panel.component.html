@@ -82,7 +82,24 @@
             <span class="inv-item-notes">{{ item.notes }}</span>
           }
         </div>
-        @if (editable) {
+        @if (editable && sellPrompt?.item === item) {
+          <!-- Confirm before selling: how many from a stack, and/or a warning
+             that a line with no listed price may sell for nothing. -->
+          <form class="inv-controls sell-confirm" (submit)="$event.preventDefault(); confirmSell()">
+            @if (hasNoListedPrice(item)) {
+              <span class="sell-note">No listed price — the shop pays half its catalog value if it knows the
+                item, otherwise nothing.</span>
+            }
+            @if (item.qty > 1) {
+              <label [attr.for]="'sell-qty-' + i">Sell how many?</label>
+              <input type="number" class="sell-qty numeric" [id]="'sell-qty-' + i" min="1" [max]="item.qty" step="1"
+                [value]="sellPrompt!.qty" (input)="setSellQty($any($event.target).value)">
+              <span class="sell-of numeric">of {{ item.qty }}</span>
+            }
+            <button type="submit" class="inv-btn sell" [disabled]="!sellQtyValid">Sell</button>
+            <button type="button" class="inv-btn" (click)="cancelSell()">Cancel</button>
+          </form>
+        } @else if (editable) {
           <div class="inv-controls">
             @if (giveAllowed) {
               <button type="button" class="inv-btn" (click)="openGive(item)"
@@ -91,7 +108,8 @@
             }
             @if (canSell(item)) {
               <button type="button" class="inv-btn sell" (click)="sell(i)"
-              [attr.aria-label]="'Sell ' + item.name" title="Sell to the shop">Sell</button>
+              [attr.aria-label]="'Sell ' + item.name"
+              [title]="item.qty > 1 ? 'Sell to the shop — you choose how many' : 'Sell to the shop'">Sell</button>
             }
             <button type="button" class="inv-btn" [class.on]="item.equipped" (click)="toggleEquipped(i)"
               [attr.aria-label]="(item.equipped ? 'Unequip ' : 'Equip ') + item.name">

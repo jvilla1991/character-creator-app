@@ -60,6 +60,21 @@
   margin-bottom: 14px;
 }
 
+// ── Unsaved changes bar (DM): edits stay local until Save ──────────────────
+
+.unsaved-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-panel);
+  font-size: var(--text-sm);
+
+  span { flex: 1; }
+}
+
 // ── Faction list ───────────────────────────────────────────────────────────
 
 .faction-list {

@@ -75,10 +75,10 @@ export class ShopService {
       { pcId, itemKey, qty });
   }
 
-  /** Sell the entire stack at inventory position `index` back to the shop. */
-  sell(sessionId: number | string, pcId: number, index: number): Observable<SellResult> {
+  /** Sell `qty` units of the stack at inventory position `index` back to the shop. */
+  sell(sessionId: number | string, pcId: number, index: number, qty: number): Observable<SellResult> {
     if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<SellResult>(`${this.base}/${sessionId}/shop/sell`, { pcId, index });
+    return this.http.post<SellResult>(`${this.base}/${sessionId}/shop/sell`, { pcId, index, qty });
   }
 
   private demoUnsupported<T>(): Observable<T> {

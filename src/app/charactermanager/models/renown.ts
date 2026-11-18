@@ -1,3 +1,6 @@
+/** One line of a DM's batched renown save: move a faction's score by `delta`. */
+export interface RenownChange { factionId: number; delta: number; }
+
 export interface RenownFaction {
   id: number;
   parentId: number | null;
