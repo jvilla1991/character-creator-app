@@ -23,7 +23,7 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
   <div class="modal-backdrop" (click)="closePicker()">
     <app-modal title="Join the Session" tone="celestial" (dismiss)="closePicker()">
       <div class="modal-sub">
-        Choose which hero takes the field in
+        Choose which character takes the field in
         <em style="color: var(--text);">{{ live()?.campaignName }}</em>.
       </div>
       @if (eligiblePcs.length) {
@@ -54,7 +54,7 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
           (click)="join()"
           [disabled]="selectedPcId == null || joining()"
           >
-          {{ joining() ? 'Joining…' : 'Take the Field' }}
+          {{ joining() ? 'Joining…' : 'Join Session' }}
         </button>
       </div>
     </app-modal>
