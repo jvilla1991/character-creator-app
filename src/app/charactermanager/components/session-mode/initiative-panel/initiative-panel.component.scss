@@ -256,7 +256,6 @@
     align-items: center;
     gap: 6px;
     font-family: 'Newsreader', serif;
-    font-style: italic;
     font-size: 13px;
     color: var(--text-dim);
     cursor: pointer;
@@ -265,7 +264,6 @@
 
     select {
       font: inherit;
-      font-style: normal;
       color: var(--text);
       background: color-mix(in oklch, var(--text) 4%, transparent);
       border: 1px solid var(--border);
@@ -304,7 +302,6 @@
     align-items: center;
     gap: 6px;
     font-family: 'Newsreader', serif;
-    font-style: italic;
     font-size: 13px;
     color: var(--text-dim);
     cursor: pointer;
@@ -317,7 +314,6 @@
     }
 
     .numeric {
-      font-style: normal;
       font-size: 12px;
       min-width: 34px;          // reserve room so the row stops jittering
       text-align: right;
@@ -338,7 +334,6 @@
 
   .cue-error {
     font-family: 'Newsreader', serif;
-    font-style: italic;
     font-size: 13px;
     color: var(--crimson, #c0392b);
   }
@@ -355,7 +350,6 @@
 
   .xp-all-label {
     font-family: 'Newsreader', serif;
-    font-style: italic;
     font-size: 13px;
     color: var(--text-dim);
   }

@@ -93,12 +93,10 @@
   font-family: 'Newsreader', serif;
   font-size: 11px;
   color: var(--text-dim);
-  font-style: italic;
 }
 
 .spell-pick-badge {
   display: inline-block;
-  font-style: normal;
   font-family: 'Cinzel', serif;
   font-size: var(--text-2xs);
   font-weight: 700;
@@ -189,7 +187,6 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-dim);
-  font-style: italic;
 }
 
 .spell-desc-props strong,
@@ -199,7 +196,6 @@
   font-weight: 700;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  font-style: normal;
   color: var(--celestial);
   margin-right: 4px;
 }
@@ -231,6 +227,7 @@
   margin: -4px 0 10px;
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
+
+  em { color: var(--text); }
 }

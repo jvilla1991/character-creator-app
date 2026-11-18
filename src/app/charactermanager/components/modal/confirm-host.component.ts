@@ -33,7 +33,7 @@ import { ConfirmService } from './confirm.service';
   `,
   styles: [`
     .confirm-message { margin-top: 0; overflow-wrap: anywhere; }
-    .confirm-subject { color: var(--text); font-style: normal; }
+    .confirm-subject { color: var(--text); }
   `],
 })
 export class ConfirmHostComponent {

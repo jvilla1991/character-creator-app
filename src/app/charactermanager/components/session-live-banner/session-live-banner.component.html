@@ -24,7 +24,7 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
     <app-modal title="Join the Session" tone="celestial" (dismiss)="closePicker()">
       <div class="modal-sub">
         Choose which hero takes the field in
-        <em style="color: var(--text); font-style: normal;">{{ live()?.campaignName }}</em>.
+        <em style="color: var(--text);">{{ live()?.campaignName }}</em>.
       </div>
       @if (eligiblePcs.length) {
         <div class="field">
@@ -38,7 +38,7 @@ announced. The 5s poll re-sets the same text, which stays silent. -->
           </select>
         </div>
       } @else {
-        <div class="modal-sub" style="color: var(--text-dim); font-style: italic;">
+        <div class="modal-sub" style="color: var(--text-dim);">
           None of your heroes are seated at this campaign yet. Join the campaign first.
         </div>
       }
