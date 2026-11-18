@@ -87,7 +87,7 @@
             @if (giveAllowed) {
               <button type="button" class="inv-btn" (click)="openGive(item)"
                 [disabled]="item.status === 'dropped'" [attr.aria-label]="'Give ' + item.name"
-                title="Give this whole stack">Give</button>
+                title="Give this whole stack">{{ item.qty > 1 ? 'Give all' : 'Give' }}</button>
             }
             @if (canSell(item)) {
               <button type="button" class="inv-btn sell" (click)="sell(i)"
