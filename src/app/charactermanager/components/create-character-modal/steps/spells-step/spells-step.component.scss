@@ -205,3 +205,32 @@
 }
 
 .spell-group > summary { cursor: pointer; padding: 12px 4px; color: var(--gold); font-weight: 600; }
+
+// ── Recommended highlights (WoW Druid specialization picks) ───────────────
+
+.spell-recommended-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid color-mix(in oklch, var(--celestial) 60%, transparent);
+  color: var(--celestial);
+  vertical-align: middle;
+}
+
+.spell-row.recommended .spell-pick {
+  border-left: 3px solid color-mix(in oklch, var(--celestial) 70%, transparent);
+}
+
+.spell-recommend-note {
+  margin: -4px 0 10px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-dim);
+}

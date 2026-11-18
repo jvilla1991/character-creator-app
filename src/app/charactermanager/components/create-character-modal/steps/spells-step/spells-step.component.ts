@@ -34,6 +34,16 @@ export class SpellsStepComponent {
   readonly spellSearch = input('');
   readonly selectedSpells = input<DndSpell[]>([]);
   readonly expandedSpellName = input<string | null>(null);
+  /**
+   * Spell names to badge "Recommended" (e.g. a WoW Druid specialization's
+   * starting picks). Highlight only — nothing is auto-selected.
+   */
+  readonly recommendedSpells = input<readonly string[]>([]);
+  /** What the recommendation is for (the specialization), shown in the badge tooltip. */
+  readonly recommendedFor = input('');
+  private readonly recommendedSet = computed(
+    () => new Set(this.recommendedSpells().map(n => n.toLowerCase())),
+  );
 
   /** Filter tab clicked (two-way [(spellLevelFilter)] on the parent). */
   readonly spellLevelFilterChange = output<number | 'all'>();
@@ -59,6 +69,10 @@ export class SpellsStepComponent {
 
   isSpellSelected(spell: DndSpell): boolean {
     return this.selectedSpells().some(s => s.name === spell.name);
+  }
+
+  isRecommended(spell: DndSpell): boolean {
+    return this.recommendedSet().has(spell.name.toLowerCase());
   }
 
   isSpellDescOpen(spell: DndSpell): boolean {
