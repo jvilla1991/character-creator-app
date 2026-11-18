@@ -1,21 +1,28 @@
 import { PC } from './pc';
+import { PRODUCTION_PROFESSIONS } from './production-professions';
 
-export type ProfessionKey = 'archaeology' | 'fishing' | 'herbalism' | 'mining' | 'skinning';
+export type ProfessionKey = 'archaeology' | 'fishing' | 'herbalism' | 'mining' | 'skinning'
+  | 'alchemy' | 'blacksmithing' | 'cooking' | 'enchanting' | 'engineering'
+  | 'inscription' | 'jewelcrafting' | 'leatherworking' | 'tailoring';
+export type ProfessionCategory = 'gathering' | 'production';
 export interface ProfessionGrant { profession: ProfessionKey; }
-export interface GatheringProfession {
+export interface RecipeTier { bonus: number; name: string; items: string[]; }
+export interface ProfessionDefinition {
   key: ProfessionKey;
   name: string;
   initials: string;
   requirement: string;
-  tool?: string;
-  check: string;
+  category: ProfessionCategory;
+  tools?: string[];
+  check?: string;
   summary: string;
   rules: string[];
+  recipeTiers?: RecipeTier[];
 }
 
-export const GATHERING_PROFESSIONS: GatheringProfession[] = [
+export const GATHERING_PROFESSIONS: ProfessionDefinition[] = [
   {
-    key: 'archaeology', name: 'Archaeology', initials: 'Ar', requirement: 'History proficiency',
+    key: 'archaeology', category: 'gathering', name: 'Archaeology', initials: 'Ar', requirement: 'History proficiency',
     check: 'Intelligence (History)', summary: 'Uncover fragments and reconstruct relics of ancient Azeroth.',
     rules: [
       'Explore a DM-designated dig site for 1 hour, which can overlap a Short Rest. Make an Intelligence (History) check against the region DC. Success yields 1d6 fragments. Beating the DC by 5 yields a complete relic worth a rare regional resource instead. A natural 20 yields one magic fragment instead.',
@@ -24,7 +31,7 @@ export const GATHERING_PROFESSIONS: GatheringProfession[] = [
     ]
   },
   {
-    key: 'fishing', name: 'Fishing', initials: 'Fi', requirement: 'No proficiency required',
+    key: 'fishing', category: 'gathering', name: 'Fishing', initials: 'Fi', requirement: 'No proficiency required',
     check: 'Wisdom (Survival)', summary: 'Forage for food, seek recipe fish, and discover unexpected treasure.',
     rules: [
       'Use the normal foraging rules to catch food. On a natural 20, the DM may award a chest, crate, or lockbox of other resources worth a rare resource for the region.',
@@ -32,12 +39,12 @@ export const GATHERING_PROFESSIONS: GatheringProfession[] = [
     ]
   },
   {
-    key: 'herbalism', name: 'Herbalism', initials: 'He', requirement: 'Herbalism Kit proficiency', tool: 'Herbalism Kit',
+    key: 'herbalism', category: 'gathering', name: 'Herbalism', initials: 'He', requirement: 'Herbalism Kit proficiency', tools: ['Herbalism Kit'],
     check: 'Wisdom (Survival)', summary: 'Gather herbs, flowers, and mushrooms for alchemy and inscription.',
     rules: ['Use the general journey gathering rules below. In unusual circumstances, the DM may allow rare resources to be harvested from Plant creatures using the skinning rules as a guideline.']
   },
   {
-    key: 'mining', name: 'Mining', initials: 'Mi', requirement: "Mason’s Tools proficiency", tool: "Mason's Tools",
+    key: 'mining', category: 'gathering', name: 'Mining', initials: 'Mi', requirement: "Mason’s Tools proficiency", tools: ["Mason's Tools"],
     check: 'Wisdom (Survival)', summary: 'Gather ores, stones, and gems for blacksmithing, engineering, and jewelcrafting.',
     rules: [
       'Use the general journey gathering rules below.',
@@ -45,7 +52,7 @@ export const GATHERING_PROFESSIONS: GatheringProfession[] = [
     ]
   },
   {
-    key: 'skinning', name: 'Skinning', initials: 'Sk', requirement: 'Leatherworker’s Tools proficiency', tool: "Leatherworker's Tools",
+    key: 'skinning', category: 'gathering', name: 'Skinning', initials: 'Sk', requirement: 'Leatherworker’s Tools proficiency', tools: ["Leatherworker's Tools"],
     check: 'Wisdom (Survival)', summary: 'Harvest leather and hide from fallen creatures for leatherworking.',
     rules: [
       'Spend 10 minutes in the space of a dead Beast or animal-like Monstrosity, then make a Wisdom (Survival) check using Leatherworker’s Tools. Use the creature’s CR in place of region level; CR above 20 uses Endgame.',
@@ -55,8 +62,18 @@ export const GATHERING_PROFESSIONS: GatheringProfession[] = [
   }
 ];
 
-export function meetsProfessionRequirement(pc: PC, profession: GatheringProfession): boolean {
+export const PROFESSIONS: ProfessionDefinition[] = [...GATHERING_PROFESSIONS, ...PRODUCTION_PROFESSIONS];
+export const PROFESSION_LEVELS = [
+  { bonus: 2, name: 'Apprentice', rarity: 'Common' },
+  { bonus: 3, name: 'Journeyman', rarity: 'Uncommon' },
+  { bonus: 4, name: 'Expert', rarity: 'Rare' },
+  { bonus: 5, name: 'Artisan', rarity: 'Very Rare' },
+  { bonus: 6, name: 'Master', rarity: 'Legendary' },
+];
+
+export function meetsProfessionRequirement(pc: PC, profession: ProfessionDefinition): boolean {
   if (profession.key === 'archaeology') return ['prof', 'expert'].includes(pc.skills?.['History'] ?? '');
   const normalize = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'");
-  return !profession.tool || (pc.toolProfs ?? []).some(tool => normalize(tool) === normalize(profession.tool!));
+  return !profession.tools?.length || (pc.toolProfs ?? []).some(tool =>
+    profession.tools!.some(required => normalize(tool) === normalize(required)));
 }
