@@ -103,3 +103,53 @@
   font-style: italic;
   color: var(--text-dim);
 }
+
+.hero-renown {
+  margin: 0 0 6px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+// ── "Recommended for <spec>" box (WoW Druid) ───────────────────────────────
+
+.spec-guidance {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border);
+  border-left: 3px solid var(--celestial);
+  border-radius: 3px;
+  background: var(--bg-2);
+}
+
+.spec-guidance-title {
+  margin: 0 0 6px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.spec-guidance-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 12px;
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  line-height: 1.4;
+
+  dt { color: var(--text-dim); font-style: italic; }
+  dd { margin: 0; color: var(--text); }
+}
+
+.spec-guidance-note {
+  margin: 6px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-dim);
+}

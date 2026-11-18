@@ -149,10 +149,17 @@
         <div class="subclass-pick">
           <div class="subclass-label">Choose your subclass</div>
           @for (option of p.subclassOptions; track option) {
+            @let recommended = option === recommendedSubclass;
             <label class="subclass-option"
-              [class.is-selected]="selectedSubclass === option">
+              [class.is-selected]="selectedSubclass === option"
+              [class.is-recommended]="recommended">
               <input type="radio" name="subclass" [value]="option" [(ngModel)]="selectedSubclass">
               <span>{{ option }}</span>
+              @if (recommended) {
+                <span class="recommended-badge">
+                  Recommended{{ recommendationSpecialization ? ' for ' + recommendationSpecialization : '' }}
+                </span>
+              }
             </label>
           }
         </div>

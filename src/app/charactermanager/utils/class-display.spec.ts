@@ -26,6 +26,13 @@ describe('classDisplayName', () => {
     expect(classDisplayName('Fighter', 'Oath of the Ebon Blade')).toBe('Fighter');
   });
 
+  it('shows a WoW druid (druid + specialization) as plain Druid', () => {
+    expect(classDisplayName('Druid', null, 'Balance')).toBe('Druid');
+    expect(classDisplayName('druid', 'Circle of the Moon', 'Guardian')).toBe('Druid');
+    expect(classDisplayName('Druid', 'Circle of the Land', null)).toBe('Druid');
+    expect(classDisplayName('Druid')).toBe('Druid');
+  });
+
   it('copes with a missing class', () => {
     expect(classDisplayName(undefined, undefined)).toBe('');
   });
@@ -34,6 +41,7 @@ describe('classDisplayName', () => {
     const pipe = new ClassDisplayPipe();
     expect(pipe.transform({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade' })).toBe('Death Knight (Paladin)');
     expect(pipe.transform({ clazz: 'Rogue' })).toBe('Rogue');
+    expect(pipe.transform({ clazz: 'Druid', subclass: null, specialization: 'Feral' })).toBe('Druid');
     expect(pipe.transform(null)).toBe('');
   });
 });

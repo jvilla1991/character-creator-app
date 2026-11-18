@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -971,6 +971,121 @@ describe('CreateCharacterModalComponent — logic', () => {
       restored.ngOnInit();
       expect(restored.specialization).toBe('Blood');
       localStorage.removeItem(key);
+    });
+  });
+
+  describe('World of Warcraft Druid', () => {
+    const WOW_DRUID_KEY = 'Druid (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Bard', 'Druid', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Druid" row tagged World of Warcraft alongside the base Druid', () => {
+      const rows = component.visibleClassOptions.filter(o => o.label === 'Druid');
+      expect(rows.map(o => o.source)).toEqual(['Base Game', 'World of Warcraft']);
+      expect(rows.map(o => o.key)).toEqual(['Druid', WOW_DRUID_KEY]);
+    });
+
+    it('shows the WoW Druid row only under the World of Warcraft filter', () => {
+      component.toggleContentSource('World of Warcraft');
+      expect(component.visibleClassOptions.filter(o => o.label === 'Druid').map(o => o.key)).toEqual(['Druid']);
+      component.toggleContentSource('World of Warcraft');
+      component.toggleContentSource('Base Game');
+      expect(component.visibleClassOptions.filter(o => o.label === 'Druid').map(o => o.key)).toEqual([WOW_DRUID_KEY]);
+    });
+
+    it('stores clazz Druid with no subclass and requires a specialization', () => {
+      component.toggleClass(WOW_DRUID_KEY);
+      expect(component.clazz).toBe('Druid');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassKey).toBe(WOW_DRUID_KEY);
+      expect(component.selectedClassLabel).toBe('Druid');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Druid');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Balance', 'Feral', 'Guardian', 'Restoration']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Balance');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('selecting the base Druid row leaves the specialization null', (done) => {
+      component.toggleClass('Druid');
+      expect(component.heroClass).toBeUndefined();
+      expect(component.specializationRequired).toBeFalse();
+      component.name = 'Fern';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Druid');
+        expect(draft.specialization).toBeNull();
+        expect(draft.subclass).toBeUndefined();
+        done();
+      });
+      component.submit();
+    });
+
+    it('switches between the base and WoW Druid rows without leaking state', () => {
+      component.toggleClass(WOW_DRUID_KEY);
+      component.selectSpecialization('Feral');
+      component.toggleClass('Druid');
+      expect(component.selectedClassKey).toBe('Druid');
+      expect(component.specialization).toBe('');
+    });
+
+    it('emits clazz Druid + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_DRUID_KEY);
+      component.selectSpecialization('Guardian');
+      component.name = 'Hrogar';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Druid');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Guardian');
+        done();
+      });
+      component.submit();
+    });
+
+    it('offers spec guidance and the recommended starting spells (never auto-selected)', () => {
+      component.toggleClass(WOW_DRUID_KEY);
+      expect(component.specializationGuidance).toBeNull();
+      expect(component.recommendedSpells).toEqual([]);
+      component.selectSpecialization('Balance');
+      expect(component.specializationGuidance?.subclass.name).toBe('Circle of the Stars');
+      expect(component.specializationGuidance?.featureChoice).toEqual({ feature: 'Primal Order', option: 'Magician' });
+      expect(component.recommendedSpells)
+        .toEqual(['Druidcraft', 'Starry Wisp', 'Wrath', 'Cure Wounds', 'Entangle', 'Moonfire', 'Thunderwave']);
+      expect(component.recommendedSpells).toBe(component.recommendedSpells);   // stable reference
+      expect(component.selectedSpells).toEqual([]);
+      component.selectSpecialization('Restoration');
+      expect(component.recommendedSpells).toContain('Goodberry');
+      expect(component.recommendedSpells).not.toContain('Wrath');
+    });
+
+    it('hides the druid WoW spell stubs when World of Warcraft is off', () => {
+      component.spellList = [
+        { name: 'Druidcraft', level: 0, classes: ['druid'] } as any,
+        { name: 'Wrath', level: 0, classes: ['druid'], source: 'World of Warcraft' } as any,
+        { name: 'Moonfire', level: 1, classes: ['druid'], source: 'World of Warcraft' } as any,
+      ];
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Druidcraft', 'Wrath', 'Moonfire']);
+      component.toggleContentSource('World of Warcraft');
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Druidcraft']);
+    });
+
+    it('restores the WoW Druid and its specialization from a saved draft', () => {
+      component.toggleClass(WOW_DRUID_KEY);
+      component.selectSpecialization('Feral');
+      component.name = 'Hrogar';
+      component.ngOnDestroy();
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.selectedClassKey).toBe(WOW_DRUID_KEY);
+      expect(restored.clazz).toBe('Druid');
+      expect(restored.specialization).toBe('Feral');
+      localStorage.removeItem((component as any).draftKey);
     });
   });
 

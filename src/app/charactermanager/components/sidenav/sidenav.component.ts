@@ -94,7 +94,7 @@ export class SidenavComponent implements OnInit {
     return this.allPcs.filter(pc =>
       pc.name.toLowerCase().includes(q) ||
       (pc.player ?? pc.playerName ?? '').toLowerCase().includes(q) ||
-      classDisplayName(pc.clazz, pc.subclass).toLowerCase().includes(q)
+      classDisplayName(pc.clazz, pc.subclass, pc.specialization).toLowerCase().includes(q)
     );
   }
 

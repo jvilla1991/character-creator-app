@@ -3,6 +3,9 @@
   Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
   {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
 </div>
+@if (recommendedSpells().length && recommendedFor()) {
+  <p class="spell-recommend-note">Spells marked <em>Recommended</em> suit the {{ recommendedFor() }} specialization — pick whatever you like.</p>
+}
 
 <!-- Filter bar -->
 <div class="spell-filter-bar">
@@ -34,7 +37,8 @@
         <summary>{{ group.level === 0 ? 'Cantrips' : 'Level ' + group.level + ' Spells' }}</summary>
       @for (s of group.spells; track trackBySpellName($index, s)) {
         @let selected = isSpellSelected(s);
-        <div class="spell-row">
+        @let recommended = isRecommended(s);
+        <div class="spell-row" [class.recommended]="recommended">
           <!-- Click the spell to expand/collapse its description -->
           <button type="button"
             class="spell-pick"
@@ -43,6 +47,10 @@
             (click)="toggleDesc.emit(s)">
             <span class="spell-pick-name">
               {{ s.name }}
+              @if (recommended) {
+                <span class="spell-recommended-badge"
+                  [attr.title]="recommendedFor() ? 'Recommended for ' + recommendedFor() : null">Recommended</span>
+              }
               @if (selected) {
                 <span class="spell-selected-badge">Selected</span>
               }
