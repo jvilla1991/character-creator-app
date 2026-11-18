@@ -95,20 +95,26 @@
             <div class="spell-slots">
               @if (!editable()) {
                 <!-- Display-only for players: slots are spent by casting (in session),
-                never toggled by hand. The DM edits them via the numbers below. -->
+                never toggled by hand. The DM edits them via the numbers below.
+                A filled pip is a SPENT slot, which reads backwards on its own, so
+                the count beside the pips says what is left in words; the pips are
+                hidden from assistive tech, which reads the count instead. -->
+                <span class="spell-slots-left">{{ level.slots!.max - level.slots!.used }} of {{ level.slots!.max }} left</span>
                 @for (i of level.slotIndices; track i) {
                   <span
                     class="spell-slot"
+                    aria-hidden="true"
                     [class.used]="i < level.slots!.used"
-                    [title]="i < level.slots!.used ? 'Slot expended' : 'Slot available'"
+                    [title]="i < level.slots!.used ? 'Spent' : 'Available'"
                   ></span>
                 }
               }
               @if (editable()) {
                 <span class="slot-edit">
+                  <span class="slot-edit-label">Spent</span>
                   <app-editable-number
                     [value]="level.slots!.used" [editable]="true" [min]="0" [max]="level.slots!.max"
-                    label="slots used" (committed)="setSlot(level.lvl, 'used', $event)"
+                    label="slots spent" (committed)="setSlot(level.lvl, 'used', $event)"
                   >{{ level.slots!.used }}</app-editable-number>
                   <span class="slot-edit-sep">/</span>
                   <app-editable-number

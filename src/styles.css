@@ -960,6 +960,7 @@ em, i, cite, dfn, address, var { font-style: normal; }
 }
 .spell-slots {
   display: flex;
+  align-items: center;
   gap: 4px;
   margin-left: auto;
 }
@@ -973,6 +974,15 @@ em, i, cite, dfn, address, var { font-style: normal; }
   transition: background .15s;
 }
 .spell-slot.used { background: var(--gold); }
+/* The words that say what the pips mean ("3 of 4 left"), and the DM's
+   "Spent" before the editable used / max pair. */
+.spell-slots-left,
+.slot-edit-label {
+  margin-right: 4px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: var(--text-2);
+}
 
 /* === SUPPLIES (travel rations/water tracked as charges) === */
 .supply-row {
