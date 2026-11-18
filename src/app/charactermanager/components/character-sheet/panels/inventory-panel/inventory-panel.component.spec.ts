@@ -111,6 +111,229 @@ describe('InventoryPanelComponent', () => {
     expect(emitted.ac).toBe(11);
   });
 
+  // --- Legacy starting equipment (pc.weapons / pc.gear) folded into the list ---
+
+  describe('legacy starting equipment', () => {
+    const potion: PcItem = { name: 'Potion', category: 'gear', qty: 2 };
+    const rations: PcItem = { catalogKey: 'rations', name: 'Rations (1 day)', category: 'gear', qty: 5 };
+
+    const legacyPc = (inventory: PcItem[] = [potion]): PC => ({
+      ...basePc(inventory),
+      weapons: [{ name: 'Mace', dmg: '1d6+2', magic: true }],
+      gear: [{ name: 'Chain Mail', equipped: true }, { name: 'Rope' }],
+    });
+
+    it('lists the legacy lines after the inventory lines, leaving inventory positions unchanged', () => {
+      component.pc = legacyPc();
+
+      expect(component.items.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope']);
+      expect(component.items[0]).toBe(potion); // real lines keep their identity and index
+      expect(component.items[1]).toEqual({ name: 'Mace', category: 'weapon', qty: 1, damage: '1d6+2', notes: 'magic' });
+      expect(component.items[2]).toEqual({ name: 'Chain Mail', category: 'gear', qty: 1, equipped: true });
+    });
+
+    it('still hides supply lines, with the legacy lines after the remaining inventory', () => {
+      component.pc = legacyPc([rations, potion]);
+      expect(component.items.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope']);
+    });
+
+    it('returns the same list and line objects on every read for the same pc', () => {
+      component.pc = legacyPc();
+
+      const first = component.items;
+      const second = component.items;
+
+      expect(second).toBe(first);
+      expect(second[1]).toBe(first[1]); // the built legacy line is not rebuilt
+    });
+
+    it('keeps the legacy line objects when the host passes a new PC around the same arrays', () => {
+      const pc = legacyPc();
+      component.pc = pc;
+      const mace = component.items[1];
+
+      component.pc = { ...pc, hp: { cur: 3, max: 10, temp: 0 } }; // unrelated change, same arrays
+
+      expect(component.items[1]).toBe(mace);
+    });
+
+    it('rebuilds the list when the pc carries different arrays', () => {
+      component.pc = legacyPc();
+      const first = component.items;
+
+      component.pc = { ...legacyPc(), weapons: [] };
+
+      expect(component.items).not.toBe(first);
+      expect(component.items.map(i => i.name)).toEqual(['Potion', 'Chain Mail', 'Rope']);
+    });
+
+    it('never offers a legacy line for sale — it has no catalog key or price', () => {
+      component.pc = legacyPc();
+      component.shopOpenForMe = true;
+      component.shopCategory = null;
+
+      expect(component.canSell(component.items[1])).toBe(false);
+      expect(component.canSell(component.items[2])).toBe(false);
+    });
+
+    it('dropping a legacy line persists it as a dropped inventory line and empties the legacy arrays', () => {
+      component.pc = legacyPc();
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.dropItem(1); // the Mace
+
+      const emitted = spy.calls.mostRecent().args[0] as PC;
+      expect(emitted.weapons).toEqual([]);
+      expect(emitted.gear).toEqual([]);
+      expect(emitted.inventory!.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope']);
+      expect(emitted.inventory![1].status).toBe('dropped');
+      expect(emitted.inventory![2].status).toBeUndefined(); // the other legacy lines ride along untouched
+      // the input PC is untouched
+      expect(component.pc.weapons!.length).toBe(1);
+      expect(component.pc.gear!.length).toBe(2);
+      expect(component.pc.inventory!.length).toBe(1);
+    });
+
+    it('discarding a dropped legacy line removes it for good, without duplicating the rest', () => {
+      component.pc = legacyPc();
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.dropItem(3); // the Rope
+      // The host saves and hands the consolidated PC back.
+      component.pc = spy.calls.mostRecent().args[0] as PC;
+      expect(component.items.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope']);
+
+      component.discardItem(3);
+
+      const emitted = spy.calls.mostRecent().args[0] as PC;
+      expect(emitted.inventory!.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail']);
+      expect(emitted.weapons).toEqual([]);
+      expect(emitted.gear).toEqual([]);
+    });
+
+    it('toggling equipped on a legacy line persists the flag on the folded line', () => {
+      component.pc = legacyPc();
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.toggleEquipped(1); // equip the Mace
+      let emitted = spy.calls.mostRecent().args[0] as PC;
+      expect(emitted.inventory![1]).toEqual(
+        { name: 'Mace', category: 'weapon', qty: 1, damage: '1d6+2', notes: 'magic', equipped: true });
+      expect(emitted.weapons).toEqual([]);
+      expect(emitted.gear).toEqual([]);
+
+      component.toggleEquipped(2); // unequip the Chain Mail (legacy gear flagged equipped)
+      emitted = spy.calls.mostRecent().args[0] as PC;
+      expect(emitted.inventory![2].equipped).toBe(false);
+    });
+
+    it('editing a real inventory line folds the legacy lines in too', () => {
+      component.pc = legacyPc();
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.dropItem(0); // the Potion
+
+      const emitted = spy.calls.mostRecent().args[0] as PC;
+      expect(emitted.inventory!.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope']);
+      expect(emitted.inventory![0].status).toBe('dropped');
+      expect(emitted.weapons).toEqual([]);
+      expect(emitted.gear).toEqual([]);
+    });
+
+    it('keeps the supply lines when a legacy line is edited', () => {
+      component.pc = legacyPc([rations, potion]);
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.toggleEquipped(1); // the Mace
+
+      const emitted = spy.calls.mostRecent().args[0] as PC;
+      // managed lines first, the Supplies pane's lines re-appended after them
+      expect(emitted.inventory!.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope', 'Rations (1 day)']);
+      expect(emitted.inventory![4]).toEqual(rations);
+    });
+
+    it('does not touch AC when the fold-in happens — legacy lines carry no armor formula', () => {
+      component.pc = { ...legacyPc(), ac: 18 }; // hand-set AC for the legacy Chain Mail
+      const spy = spyOn(component.pcChange, 'emit');
+
+      component.toggleEquipped(2); // unequip the legacy Chain Mail
+      expect((spy.calls.mostRecent().args[0] as PC).ac).toBe(18);
+
+      component.dropItem(1);
+      expect((spy.calls.mostRecent().args[0] as PC).ac).toBe(18);
+    });
+
+    it('counts no weight for legacy lines', () => {
+      component.pc = legacyPc([{ name: 'Sword', category: 'weapon', qty: 1, weight: 3 }]);
+      expect(component.totalWeight).toBe(3);
+    });
+
+    describe('giving a legacy line', () => {
+      let spy: jasmine.Spy;
+
+      beforeEach(() => {
+        component.giveAllowed = true;
+        spy = spyOn(component.pcChange, 'emit');
+      });
+
+      it('folds the starting gear in first, then opens Give once the saved character comes back', () => {
+        component.pc = legacyPc([rations, potion]);
+
+        component.openGive(component.items[1]); // Mace — not in pc.inventory yet
+
+        // No dialog yet: the transfer endpoint needs the line saved first.
+        expect(component.giveSelection).toBeNull();
+        const saved = spy.calls.mostRecent().args[0] as PC;
+        expect(saved.inventory!.map(i => i.name)).toEqual(['Potion', 'Mace', 'Chain Mail', 'Rope', 'Rations (1 day)']);
+        expect(saved.weapons).toEqual([]);
+        expect(saved.gear).toEqual([]);
+
+        component.pc = saved; // the host hands back the persisted character
+
+        expect(component.giveSelection!.index).toBe(1);
+        expect(component.giveSelection!.pc.inventory![1].name).toBe('Mace');
+        expect(spy).toHaveBeenCalledTimes(1); // resuming does not save again
+      });
+
+      it('keeps waiting through an unrelated update that arrives before the save', () => {
+        const pc = legacyPc();
+        component.pc = pc;
+        component.openGive(component.items[1]);
+        const saved = spy.calls.mostRecent().args[0] as PC;
+
+        component.pc = { ...pc, hp: { cur: 3, max: 10, temp: 0 } }; // a poll: still unfolded
+        expect(component.giveSelection).toBeNull();
+
+        component.pc = saved;
+        expect(component.giveSelection!.index).toBe(1);
+      });
+
+      it('gives up when the save never lands, so the dialog cannot open much later', () => {
+        jasmine.clock().install();
+        try {
+          jasmine.clock().mockDate(new Date(2026, 0, 1));
+          component.pc = legacyPc();
+          component.openGive(component.items[1]);
+          const saved = spy.calls.mostRecent().args[0] as PC;
+
+          jasmine.clock().tick(11_000);
+          component.pc = saved;
+
+          expect(component.giveSelection).toBeNull();
+        } finally {
+          jasmine.clock().uninstall();
+        }
+      });
+
+      it('opens Give directly for a line that is already in the inventory', () => {
+        component.pc = legacyPc();
+        component.openGive(component.items[0]); // Potion — a real inventory line
+        expect(component.giveSelection!.index).toBe(0);
+        expect(spy).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('slot-based inventory (Darker Dungeons variant)', () => {
     const withStats = (inventory: PcItem[]): PC =>
       ({ ...basePc(inventory), race: 'Human', stats: { STR: 14, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } } as PC);

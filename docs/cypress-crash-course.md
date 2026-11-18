@@ -241,12 +241,12 @@ feature for learning: real user flows, no deep-link shortcuts.
 | Modal root | `div.modal.wizard[role="dialog"][aria-label="Create a character"]` |
 | Steps | 8 for non-casters, **9 for casters** (spells step appears conditionally) |
 | Step indicator | `.wizard-steps .step-dot`, `.active` = current, `.done` = completed |
-| Nav buttons | `button` "Next →" / "Back" / "Cancel"; final step: "Inscribe". Next/Inscribe `[disabled]` until the step's `canAdvance` rule passes |
+| Nav buttons | `button` "Next →" / "Back" / "Cancel"; final step: "Create". Next/Create `[disabled]` until the step's `canAdvance` rule passes |
 | Step 1 | name input, `placeholder="e.g. Seraphina Goldveil"`; requires non-blank name |
 | Steps 2–4 | click-to-select tiles (species, class, background) — loaded async |
 | Step 5 | skill chips — must pick *exactly* the class's `choose` count; background-granted skills render as **locked/disabled** chips that don't count toward the quota |
 | Step 6 | ability scores: standard array `[15,14,13,12,10,8]` assigned via one `select.ability-select` per row (options shrink as values are claimed), or point-buy; then +2/+1 background bonuses via two `.bonus-selectors` selects on two *different* abilities |
-| Draft persistence | wizard state auto-saves to `localStorage['tm_pc_draft:<username>']` (`tm_pc_draft:anon` in demo mode — no username is stored); restored on reopen **including the step you were on**; cleared by Cancel or Inscribe |
+| Draft persistence | wizard state auto-saves to `localStorage['tm_pc_draft:<username>']` (`tm_pc_draft:anon` in demo mode — no username is stored); restored on reopen **including the step you were on**; cleared by Cancel or Create |
 | Save | `POST http://localhost:8080/api/v1/pc/add` with a flattened PC payload |
 
 ### Exercise
@@ -291,7 +291,7 @@ describe('character creation wizard', () => {
 
     // Step 7 — equipment choice A or B
     // Step 8 — review, then:
-    cy.contains('button', 'Inscribe').click();
+    cy.contains('button', /^Create$/).click();
     cy.get('.modal.wizard').should('not.exist');
     cy.contains('Borin Ironfoot').should('be.visible');       // in the sidenav roster
   });

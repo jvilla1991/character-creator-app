@@ -24,7 +24,7 @@ describe('UI cleanup', () => {
     });
     cy.get('app-create-campaign-modal input[type=checkbox]').should('not.be.checked');
     cy.get('#campaign-name').should('have.attr', 'aria-required', 'true');
-    cy.contains('button', 'Inscribe').should('be.disabled');
+    cy.contains('button', /^Create$/).should('be.disabled');
     cy.get('app-create-campaign-modal').should('not.contain.text', '(optional)');
     cy.get('app-create-campaign-modal input[placeholder*="e.g."]').should('not.exist');
     cy.screenshot('campaign-help-mobile', { capture: 'viewport' });

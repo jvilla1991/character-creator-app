@@ -157,11 +157,6 @@
                   @if (recommendedSubclass()) {
                     <p class="spec-guidance-note">The {{ hero.subclassTerm ?? 'subclass' }} is marked “Recommended” in the picker below.</p>
                   }
-                  @if (spellsStep()) {
-                    <p class="spec-guidance-note">Suggestions only — the spells are marked “Recommended” on the Spells step.</p>
-                  } @else {
-                    <p class="spec-guidance-note">Suggestions only — nothing is picked for you.</p>
-                  }
                 </section>
               }
             }

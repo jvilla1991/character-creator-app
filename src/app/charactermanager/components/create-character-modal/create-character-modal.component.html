@@ -75,7 +75,6 @@
         [selectedKey]="selectedClassKey"
         [selectedLabel]="selectedClassLabel"
         [guidance]="specializationGuidance"
-        [spellsStep]="isSpellcastingClass"
         [selectedHidden]="selectedClassHidden"
         [specialization]="specialization"
         (specializationChange)="selectSpecialization($event)"
@@ -244,7 +243,7 @@
         class="btn primary"
         type="button"
         [disabled]="!canAdvance"
-      (click)="submit()">Inscribe</button>
+      (click)="submit()">Create</button>
     }
   </div>
 

@@ -1,5 +1,6 @@
 import { PC, PcItem } from '../models/pc';
 import { modFromScore } from './character-math';
+import { consolidateLegacyEquipment } from './legacy-equipment';
 import { isSupplyItem, suppliesSlots } from './survival';
 
 // ── Darker Dungeons "Active Inventory" (ch. 10) ─────────────────────────────
@@ -70,35 +71,12 @@ export const ENCUMBERED_PENALTY =
 // existing bulk untouched on a second run.
 
 export function convertPcToSlotInventory(pc: PC): PC {
-  const inventory: PcItem[] = (pc.inventory ?? []).map(i => ({ ...i }));
-
-  for (const weapon of pc.weapons ?? []) {
-    inventory.push({
-      name: weapon.name,
-      category: 'weapon',
-      qty: 1,
-      ...(weapon.dmg ? { damage: weapon.dmg } : {}),
-      ...legacyNotes(weapon),
-    });
-  }
-  for (const gear of pc.gear ?? []) {
-    inventory.push({
-      name: gear.name,
-      category: 'gear',
-      qty: 1,
-      ...(gear.equipped ? { equipped: true } : {}),
-      ...legacyNotes(gear),
-    });
-  }
-  for (const line of inventory) {
+  // The legacy → inventory mapping is shared with the non-slot Inventory panel
+  // (see legacy-equipment.ts); the bulk stamp is the slot-only step. The
+  // consolidated lines are fresh copies, so stamping them in place is safe.
+  const converted = consolidateLegacyEquipment(pc);
+  for (const line of converted.inventory ?? []) {
     if (typeof line.bulk !== 'number') line.bulk = itemBulk(line);
   }
-
-  return { ...pc, inventory, weapons: [], gear: [] };
-}
-
-function legacyNotes(legacy: { magic?: boolean; notes?: string }): { notes?: string } {
-  const base = (legacy.notes ?? '').trim();
-  const notes = legacy.magic ? (base ? `magic · ${base}` : 'magic') : base;
-  return notes ? { notes } : {};
+  return converted;
 }
