@@ -63,9 +63,17 @@ export class ConditionsPanelComponent {
       + 5 * lvl + ' ft Speed. ' + rule;
   }
 
+  /** In a campaign only the DM (the cross-link view) sets the level — the
+   *  player just sees it. A character in no campaign has no DM, so its owner
+   *  still tracks it themselves. The server enforces the same rule. */
+  get canSetExhaustion(): boolean {
+    return this.editable || this.pc.campaignId == null;
+  }
+
   /** Clicking pip N sets level N; re-clicking the current top pip steps back
    *  to N−1, so the tracker can always be walked back down to 0. */
   setExhaustion(level: number): void {
+    if (!this.canSetExhaustion) return;
     const next = level === this.exhaustion ? level - 1 : level;
     this.exhaustionChanged.emit(Math.max(0, Math.min(6, next)));
   }

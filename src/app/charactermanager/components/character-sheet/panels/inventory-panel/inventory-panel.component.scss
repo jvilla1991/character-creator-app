@@ -74,6 +74,29 @@
   gap: 6px;
 }
 
+// "Sell how many?" — takes the place of the row's buttons while it is open.
+.sell-confirm {
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  .sell-qty {
+    width: 64px;
+    padding: 4px 6px;
+  }
+
+  // The "may sell for nothing" warning takes its own line above the buttons.
+  .sell-note {
+    flex-basis: 100%;
+    max-width: 280px;
+    margin-left: auto;
+    text-align: right;
+  }
+}
+
 .inv-btn {
   font-family: inherit;
   font-size: 12px;

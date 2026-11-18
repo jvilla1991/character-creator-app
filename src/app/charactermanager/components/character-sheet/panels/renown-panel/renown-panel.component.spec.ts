@@ -15,7 +15,7 @@ describe('RenownPanelComponent', () => {
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
 
   beforeEach(async () => {
-    service = jasmine.createSpyObj<RenownService>('RenownService', ['list', 'create', 'adjust']);
+    service = jasmine.createSpyObj<RenownService>('RenownService', ['list', 'create', 'saveAll']);
     service.list.and.returnValue(of([root, child]));
     await TestBed.configureTestingModule({
       imports: [RenownPanelComponent], providers: [{ provide: RenownService, useValue: service }],
@@ -38,7 +38,8 @@ describe('RenownPanelComponent', () => {
     expect(element().querySelector('.subfaction')).toBeNull();
     component.name = 'Forbidden'; component.add(); component.adjust(root, 1);
     expect(service.create).not.toHaveBeenCalled();
-    expect(service.adjust).not.toHaveBeenCalled();
+    expect(component.dirty).toBeFalse();
+    expect(element().querySelector('.unsaved-bar')).toBeNull();
   });
 
   it('does not show a standing blurb under the title', () => {
@@ -97,22 +98,54 @@ describe('RenownPanelComponent', () => {
 
   it('disables only the outward adjustment at each absolute limit', () => {
     fixture.componentRef.setInput('canManage', true);
-    component.factions.set([{ ...root, score: -100 }, { ...child, score: 100 }]);
+    const low = { ...root, score: -100 }, high = { ...child, score: 100 };
+    component.factions.set([low, high]);
     fixture.detectChanges();
     const buttons = Array.from(element().querySelectorAll<HTMLButtonElement>('.adjustments button'));
     expect(buttons.map(button => button.disabled)).toEqual([true, false, false, true]);
-    component.adjust({ ...root, score: -100 }, -1);
-    component.adjust({ ...child, score: 100 }, 1);
-    expect(service.adjust).not.toHaveBeenCalled();
+    component.adjust(low, -1);
+    component.adjust(high, 1);
+    expect(component.dirty).toBeFalse();
   });
 
-  it('adjusts the selected subfaction without changing its parent', () => {
+  it('keeps +/- clicks local and sends them all in one save', () => {
     fixture.componentRef.setInput('canManage', true); fixture.detectChanges();
-    service.adjust.and.returnValue(of({ ...child, score: 4 }));
-    element().querySelector<HTMLButtonElement>('[aria-label="Add 1 renown to Wardens"]')!.click();
+    expect(element().querySelector('.unsaved-bar')).toBeNull();
+    const plus = element().querySelector<HTMLButtonElement>('[aria-label="Add 1 renown to Wardens"]')!;
+    plus.click(); plus.click();
+    component.adjust(root, -1);
     fixture.detectChanges();
-    expect(service.adjust).toHaveBeenCalledWith(10, '7', 2, 1);
-    expect(component.factions().map(row => row.score)).toEqual([0, 4]);
+    expect(service.saveAll).not.toHaveBeenCalled();
+    // The unsaved scores show straight away; the saved ones are untouched.
+    expect([component.scoreOf(root), component.scoreOf(child)]).toEqual([-1, 5]);
+    expect(component.factions().map(row => row.score)).toEqual([0, 3]);
+    expect(element().querySelectorAll('.faction-row.unsaved').length).toBe(2);
+
+    service.saveAll.and.returnValue(of([{ ...root, score: -1 }, { ...child, score: 5 }]));
+    Array.from(element().querySelectorAll<HTMLButtonElement>('.unsaved-bar button'))
+      .find(button => button.textContent!.trim() === 'Save')!.click();
+    fixture.detectChanges();
+    expect(service.saveAll).toHaveBeenCalledOnceWith(10, '7', jasmine.arrayWithExactContents([
+      { factionId: 1, delta: -1 }, { factionId: 2, delta: 2 }]));
+    expect(component.factions().map(row => row.score)).toEqual([-1, 5]);
+    expect(component.dirty).toBeFalse();
+    expect(element().querySelector('.unsaved-bar')).toBeNull();
+  });
+
+  it('has nothing to save once a row is stepped back to its saved score', () => {
+    fixture.componentRef.setInput('canManage', true); fixture.detectChanges();
+    component.adjust(root, 1); component.adjust(root, -1);
+    expect(component.dirty).toBeFalse();
+    component.save();
+    expect(service.saveAll).not.toHaveBeenCalled();
+  });
+
+  it('discard throws the unsaved changes away', () => {
+    fixture.componentRef.setInput('canManage', true); fixture.detectChanges();
+    component.adjust(child, 1);
+    component.discard();
+    expect(component.scoreOf(child)).toBe(3);
+    expect(component.dirty).toBeFalse();
   });
 
   it('creates a zero-score child under the selected faction and expands its parent', () => {
@@ -126,25 +159,29 @@ describe('RenownPanelComponent', () => {
     expect(component.formOpen).toBeFalse();
   });
 
-  it('keeps the score and allows retry when an adjustment fails', () => {
+  it('keeps the unsaved changes and allows retry when a save fails', () => {
     fixture.componentRef.setInput('canManage', true); fixture.detectChanges();
-    service.adjust.and.returnValue(throwError(() => new Error('offline')));
+    service.saveAll.and.returnValue(throwError(() => new Error('offline')));
     component.adjust(root, 1);
+    component.save();
     expect(component.factions()[0].score).toBe(0);
-    expect(component.error()).toContain('Could not adjust');
+    expect(component.scoreOf(root)).toBe(1);
+    expect(component.error()).toContain('Could not save');
     expect(component.saving()).toBeFalse();
   });
 
   it('cancels old reads and writes when a different character is selected', () => {
     const oldRead = new Subject<RenownFaction[]>();
-    const oldWrite = new Subject<RenownFaction>();
+    const oldWrite = new Subject<RenownFaction[]>();
     fixture.componentRef.setInput('canManage', true); fixture.detectChanges();
     service.list.and.returnValue(oldRead); component.load();
-    service.adjust.and.returnValue(oldWrite); component.adjust(root, 1);
+    component.adjust(root, 1);
+    service.saveAll.and.returnValue(oldWrite); component.save();
     service.list.and.returnValue(of([{ ...root, score: 25 }]));
     fixture.componentRef.setInput('pc', pc(11)); fixture.detectChanges();
-    oldRead.next([{ ...root, score: -100 }]); oldWrite.next({ ...root, score: 1 });
+    oldRead.next([{ ...root, score: -100 }]); oldWrite.next([{ ...root, score: 1 }]);
     expect(component.factions()[0].score).toBe(25);
+    expect(component.dirty).toBeFalse();
     expect(component.saving()).toBeFalse();
     expect(oldRead.observed).toBeFalse(); expect(oldWrite.observed).toBeFalse();
   });

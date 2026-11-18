@@ -7,7 +7,6 @@ import { SessionService } from '../../services/session.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
-import { DiceRollerService } from '../../services/dice-roller.service';
 import { ConfirmService } from '../modal/confirm.service';
 import { PC } from '../../models/pc';
 import { LEVEL_UP_ANSWERED_KEY, LevelUpPromptService } from '../../services/level-up-prompt.service';
@@ -19,7 +18,7 @@ describe('SessionModeComponent.showInitiative', () => {
   let component: SessionModeComponent;
   beforeEach(() => {
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never, null as never));
+      sessionServiceStub, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
   const state = (dm: boolean, status: SessionState['status']): SessionState =>
@@ -52,7 +51,7 @@ describe('SessionModeComponent.openPcSheet', () => {
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
     const sessionServiceStub = { state$: of(null) } as never;
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never, null as never));
+      sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never));
   });
 
   it('owned PC: opens from the local store with no HTTP fetch', () => {
@@ -125,7 +124,7 @@ describe('SessionModeComponent ending and leaving', () => {
     uiState = jasmine.createSpyObj<UiStateService>('UiStateService', ['closeSession']);
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionService, uiState, null as never, notifications, null as never, null as never, null as never, null as never));
+      sessionService, uiState, null as never, notifications, null as never, null as never, null as never));
     confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
   });
 
@@ -168,27 +167,6 @@ describe('SessionModeComponent ending and leaving', () => {
   });
 });
 
-describe('SessionModeComponent.openRoll', () => {
-  const sessionServiceStub = { state$: of(null) } as never;
-  let component: SessionModeComponent;
-  let dice: jasmine.SpyObj<DiceRollerService>;
-
-  beforeEach(() => {
-    dice = jasmine.createSpyObj<DiceRollerService>('DiceRollerService', ['open', 'close']);
-    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionServiceStub, null as never, null as never, null as never, null as never, null as never,
-      dice, null as never));
-  });
-
-  // The roller itself is mounted once in the app shell (and reachable from
-  // every screen via the floating launcher); the in-session Roll button is now
-  // just another trigger, and owns no modal state of its own.
-  it('delegates to the shell-level dice roller', () => {
-    component.openRoll();
-
-    expect(dice.open).toHaveBeenCalledTimes(1);
-  });
-});
 
 describe('SessionModeComponent rest vote', () => {
   let component: SessionModeComponent;
@@ -222,7 +200,7 @@ describe('SessionModeComponent rest vote', () => {
     (sessionService as { state$: unknown }).state$ = stateOfNull;
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionService, null as never, null as never, notifications, null as never, null as never, null as never, null as never));
+      sessionService, null as never, null as never, notifications, null as never, null as never, null as never));
   });
 
   it('initiateRestVote calls the service for this session', () => {
@@ -309,7 +287,7 @@ describe('SessionModeComponent level-up prompt (rides the session poll)', () => 
     const notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
       sessionServiceStub as never, null as never, pcService as never, notifications, campaignStub as never,
-      null as never, null as never, TestBed.inject(DestroyRef)));
+      null as never, TestBed.inject(DestroyRef)));
     // The required signal input has no template to bind it here; supply it directly.
     (component as unknown as { sessionId: () => string }).sessionId = () => '1';
     component.ngOnInit();
@@ -376,7 +354,7 @@ describe('SessionModeComponent help copy', () => {
   beforeEach(() => {
     const sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['clear'], { state$: of(null) });
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
-      sessionService, null as never, null as never, null as never, null as never, null as never, null as never, null as never));
+      sessionService, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
   it('says what Short Rest does when it is available', () => {

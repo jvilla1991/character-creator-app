@@ -167,13 +167,32 @@ describe('InventoryPanelComponent', () => {
       expect(component.items.map(i => i.name)).toEqual(['Potion', 'Chain Mail', 'Rope']);
     });
 
-    it('never offers a legacy line for sale — it has no catalog key or price', () => {
+    it('offers starting gear for sale, flagged as having no listed price', () => {
       component.pc = legacyPc();
       component.shopOpenForMe = true;
-      component.shopCategory = null;
 
-      expect(component.canSell(component.items[1])).toBe(false);
-      expect(component.canSell(component.items[2])).toBe(false);
+      expect(component.canSell(component.items[1])).toBe(true);
+      expect(component.hasNoListedPrice(component.items[1])).toBe(true);
+    });
+
+    it('folds starting gear into the inventory, then asks before selling it', () => {
+      component.pc = legacyPc();
+      component.shopOpenForMe = true;
+      const saved: PC[] = [];
+      component.pcChange.subscribe(pc => saved.push(pc));
+      const sold = spyOn(component.sellRequested, 'emit');
+      const name = component.items[1].name;
+
+      component.sell(1); // a starting-gear line — not in pc.inventory yet
+      expect(saved.length).toBe(1);
+      expect(saved[0].weapons).toEqual([]);
+      expect(saved[0].gear).toEqual([]);
+      expect(sold).not.toHaveBeenCalled();
+
+      component.pc = saved[0]; // the saved character comes back
+      expect(component.sellPrompt?.item.name).toBe(name);
+      component.confirmSell();
+      expect(sold).toHaveBeenCalledWith({ index: 1, qty: 1 });
     });
 
     it('dropping a legacy line persists it as a dropped inventory line and empties the legacy arrays', () => {
@@ -383,47 +402,90 @@ describe('InventoryPanelComponent', () => {
       expect(component.canSell(catalogItem)).toBe(false);
     });
 
-    it('is true for a catalog item when the shop is open with no category filter (curated)', () => {
+    it('is true for every held line while a shop is open, priced or not', () => {
       component.shopOpenForMe = true;
-      component.shopCategory = null;
-      expect(component.canSell(catalogItem)).toBe(true);
-    });
-
-    it('is false when the standard shop category does not match the item', () => {
-      component.shopOpenForMe = true;
-      component.shopCategory = 'ARMOR';
-      expect(component.canSell(catalogItem)).toBe(false);
-    });
-
-    it('is true when the standard shop category matches the item', () => {
-      component.shopOpenForMe = true;
-      component.shopCategory = 'WEAPON';
-      expect(component.canSell(catalogItem)).toBe(true);
-    });
-
-    it('falls back to unitCostCp for an item with no catalogKey', () => {
-      component.shopOpenForMe = true;
-      component.shopCategory = null;
-      expect(component.canSell(adHocItem)).toBe(true);
-    });
-
-    it('is false for an item with no catalogKey and no unitCostCp', () => {
-      component.shopOpenForMe = true;
-      component.shopCategory = null;
-      expect(component.canSell(priceless)).toBe(false);
+      for (const item of [catalogItem, adHocItem, priceless]) {
+        expect(component.canSell(item)).withContext(item.name).toBe(true);
+      }
     });
 
     it('is false for a dropped item', () => {
       component.shopOpenForMe = true;
-      component.shopCategory = null;
       expect(component.canSell({ ...catalogItem, status: 'dropped' })).toBe(false);
+    });
+
+    it('flags only a line with neither a catalog key nor a price paid', () => {
+      expect(component.hasNoListedPrice(catalogItem)).toBe(false);
+      expect(component.hasNoListedPrice(adHocItem)).toBe(false);
+      expect(component.hasNoListedPrice(priceless)).toBe(true);
     });
   });
 
-  it('sell() emits the requested index via sellRequested', () => {
-    const spy = spyOn(component.sellRequested, 'emit');
-    component.sell(2);
-    expect(spy).toHaveBeenCalledWith(2);
+  describe('sell', () => {
+    const supply: PcItem = { name: 'Rations', category: 'gear', qty: 4, catalogKey: 'rations' };
+    const sword: PcItem = { name: 'Longsword', category: 'weapon', qty: 1, catalogKey: 'longsword' };
+    const arrows: PcItem = { name: 'Arrows', category: 'weapon', qty: 20, catalogKey: 'arrows' };
+    let spy: jasmine.Spy;
+
+    beforeEach(() => {
+      component.pc = { ...component.pc, inventory: [supply, sword, arrows], weapons: [], gear: [] };
+      component.shopOpenForMe = true;
+      spy = spyOn(component.sellRequested, 'emit');
+    });
+
+    it('sells a single item straight away, by its position in pc.inventory', () => {
+      // The hidden supply line sits first, so the sword is row 0 here but
+      // index 1 in pc.inventory — the server needs the latter.
+      expect(component.items[0]).toBe(sword);
+      component.sell(0);
+      expect(spy).toHaveBeenCalledWith({ index: 1, qty: 1 });
+      expect(component.sellPrompt).toBeNull();
+    });
+
+    it('asks how many before selling from a stack, defaulting to all of it', () => {
+      component.sell(1);
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.sellPrompt).toEqual({ item: arrows, qty: 20 });
+
+      component.setSellQty('5');
+      component.confirmSell();
+      expect(spy).toHaveBeenCalledWith({ index: 2, qty: 5 });
+      expect(component.sellPrompt).toBeNull();
+    });
+
+    it('refuses a quantity outside the stack', () => {
+      component.sell(1);
+      for (const bad of ['0', '21', '2.5', '']) {
+        component.setSellQty(bad);
+        expect(component.sellQtyValid).withContext(bad).toBeFalse();
+        component.confirmSell();
+      }
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('asks for a yes before selling a single item with no listed price', () => {
+      const note: PcItem = { name: 'Note', category: 'gear', qty: 1 };
+      component.pc = { ...component.pc, inventory: [note] };
+      component.sell(0);
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.sellPrompt).toEqual({ item: note, qty: 1 });
+
+      component.confirmSell();
+      expect(spy).toHaveBeenCalledWith({ index: 0, qty: 1 });
+    });
+
+    it('cancel closes the prompt without selling', () => {
+      component.sell(1);
+      component.cancelSell();
+      expect(component.sellPrompt).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the shop will not buy the line', () => {
+      component.shopOpenForMe = false;
+      component.sell(0);
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 
   // --- DM grants (the shared composer authors; this panel maps → PcItem) ---
