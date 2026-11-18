@@ -1,16 +1,18 @@
 import { DndSpell } from './dnd-api.types';
-import { HERO_CLASSES, HeroClassOption } from './hero-class';
+import { HERO_CLASSES, HeroClassOption, spellNames } from './hero-class';
 import { SPELL_NAME_ALIASES, spellKey } from './spell-names';
 
 /** Every spell name a hero class's tables, guidance and sheet cards name. */
 function namedSpells(hero: HeroClassOption): string[] {
   const names: string[] = [];
   for (const b of hero.bonusSpells ?? []) names.push(b.name);
-  for (const row of hero.spellTable) names.push(row.all, ...Object.values(row.bySpecialization));
+  for (const row of hero.spellTable) {
+    names.push(...spellNames(row.all), ...Object.values(row.bySpecialization).flatMap(cell => spellNames(cell)));
+  }
   for (const rows of Object.values(hero.subclassSpells ?? {})) names.push(...rows.flatMap(r => r.spells));
   for (const rows of Object.values(hero.suggestedSpells ?? {})) names.push(...rows.flatMap(r => r.spells));
   for (const g of Object.values(hero.guidance ?? {})) {
-    names.push(...(g.cantrips ?? []), ...(g.level1Spells ?? []), ...(g.fightingStyleCantrips ?? []));
+    names.push(...(g.cantrips ?? []), ...(g.level1Spells ?? []), ...(g.fightingStyleCantrips ?? []), ...(g.extraPrepared ?? []));
   }
   names.push(...(hero.extraSpellList ?? []));
   if (hero.featureCards) {
@@ -30,6 +32,7 @@ describe('spell-names', () => {
     expect(spellKey("Evard's Black Tentacles")).toBe('black tentacles');
     expect(spellKey("EVARD'S BLACK TENTACLES")).toBe('black tentacles');
     expect(spellKey('Black Tentacles')).toBe('black tentacles');
+    expect(spellKey("Otiluke's Freezing Sphere")).toBe('freezing sphere');
     for (const [alias, target] of Object.entries(SPELL_NAME_ALIASES)) {
       expect(alias).toBe(alias.toLowerCase());
       expect(target).toBe(target.toLowerCase());
@@ -56,7 +59,7 @@ describe('spell-names', () => {
       const dk = HERO_CLASSES.find(h => h.name === 'Death Knight')!;
       const row = dk.spellTable.find(r => r.classLevel === 13)!;
       expect(row.bySpecialization['Blood']).toBe("Evard's Black Tentacles");
-      expect(index.get(spellKey(row.bySpecialization['Blood']))?.name).toBe('Black Tentacles');
+      expect(index.get(spellKey(row.bySpecialization['Blood'] as string))?.name).toBe('Black Tentacles');
     });
 
     it("finds the Shadow Domain's Evard's Black Tentacles (Cleric 7) the same way", () => {

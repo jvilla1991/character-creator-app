@@ -1080,4 +1080,37 @@ describe('LevelUpModalComponent', () => {
       expect(dndResources.getSpellsForClass).not.toHaveBeenCalledWith('Cleric', jasmine.anything());
     });
   });
+
+  describe('World of Warcraft Evoker (locked Draconic Sorcery, respec)', () => {
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({
+        clazz: 'Sorcerer', subclass: 'Draconic Sorcery', specialization: 'Devastation', level: 4, ...pc,
+      });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({ currentLevel: 4, newLevel: 5, ...preview })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 5 })));
+      component.ngOnInit();
+    }
+
+    it('offers the Evoker respec and no subclass (it is already locked)', () => {
+      open({});
+      expect(component.heroClass?.label).toBe('Evoker (Sorcerer)');
+      expect(component.canRespec).toBeTrue();
+      expect(component.heroClass?.specializations.map(s => s.name)).toEqual(['Augmentation', 'Devastation', 'Preservation']);
+      expect(component.recommendedSubclass).toBeNull();
+      component.selectedSpecialization = 'Preservation';
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { specialization: 'Preservation' });
+    });
+
+    it('treats a Draconic Sorcery sorcerer without a specialization as a plain sorcerer', () => {
+      open({ specialization: null });
+      expect(component.heroClass).toBeUndefined();
+      expect(component.canRespec).toBeFalse();
+    });
+
+    it('keeps Draconic Sorcery untagged (it is a base-game subclass)', () => {
+      open({});
+      expect(component.subclassSourceTag('Draconic Sorcery')).toBeUndefined();
+    });
+  });
 });

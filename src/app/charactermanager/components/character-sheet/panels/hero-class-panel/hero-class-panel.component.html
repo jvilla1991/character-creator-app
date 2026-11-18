@@ -18,6 +18,10 @@
       <p class="hero-note">{{ h.renownNote }}</p>
     }
 
+    @if (h.heroNote) {
+      <p class="hero-note">{{ h.heroNote }}</p>
+    }
+
     @if (h.level1Feature; as f) {
       <div class="feature">
         <div class="feature-head">
@@ -44,7 +48,7 @@
           <li>
             <details class="hero-spell">
               <summary>
-                <span class="hero-spell-name">{{ entry.name }}</span>
+                <span class="hero-spell-name">{{ entry.name }}</span>@if (spell?.source === 'World of Warcraft') {<span class="wow-mark" title="World of Warcraft spell" aria-label="World of Warcraft spell">✦</span>}
                 <span class="hero-spell-meta">
                   {{ h.baseClass }} {{ entry.classLevel }}@if (entry.grantedBy) { · {{ entry.grantedBy }} }
                   @if (spell) {
@@ -74,8 +78,8 @@
       </div>
     }
 
-    <!-- WoW variant: recommended subclass (informational) -->
-    @if (guidance; as g) {
+    <!-- WoW variant: recommended subclass (informational; none when the hero class locks it) -->
+    @if (!subclassLocked && guidance; as g) {
       <div class="feature">
         <div class="feature-head">
           <span class="feature-name">Recommended {{ subclassTerm }}</span>
@@ -91,6 +95,46 @@
             @default { You choose your {{ subclassTerm }} at {{ h.baseClass }} level {{ subclassLevel }}. }
           }
         </div>
+      </div>
+    }
+
+    <!-- WoW Evoker: Metamagic, spells to prepare and Elemental Affinity (recommendations only) -->
+    @if (metamagicText) {
+      <div class="feature hero-metamagic">
+        <div class="feature-head">
+          <span class="feature-name">Recommended Metamagic</span>
+          <span class="feature-source">{{ h.baseClass }} 2</span>
+        </div>
+        <div class="feature-desc">{{ metamagicText }}</div>
+      </div>
+    }
+    @if (extraPrepared.length) {
+      <div class="feature hero-extra-prepared">
+        <div class="feature-head">
+          <span class="feature-name">Spells to prepare</span>
+          <span class="feature-source">{{ pc.specialization }}</span>
+        </div>
+        <div class="feature-desc">
+          @for (s of extraPrepared; track s.name; let last = $last) {
+            <span class="suggested-spell" [class.known]="s.known">
+              {{ s.name }}@if (isWowSpell(s.name)) {<span class="wow-mark" [attr.title]="wowSpellTitle(s.name)">✦</span>}
+              @if (s.prepared) {
+                <span class="spell-tag">prepared</span>
+              } @else if (s.known) {
+                <span class="spell-tag">known</span>
+              }
+            </span>@if (!last) {<span class="sep">, </span>}
+          }
+        </div>
+      </div>
+    }
+    @if (guidance?.elementalAffinity; as affinity) {
+      <div class="feature hero-elemental-affinity">
+        <div class="feature-head">
+          <span class="feature-name">Elemental Affinity</span>
+          <span class="feature-source">{{ h.baseClass }} 6</span>
+        </div>
+        <div class="feature-desc">Choose {{ affinity }} for {{ pc.subclass }}'s Elemental Affinity.</div>
       </div>
     }
 

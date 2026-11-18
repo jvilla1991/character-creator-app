@@ -168,9 +168,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // switchMap subject — cancels in-flight requests when class changes
   private classTrigger$ = new Subject<string>();
 
-  /** True if the chosen class receives its subclass at level 1 (2024 PHB). */
+  /**
+   * True if the player must pick the chosen class's subclass at level 1 (2024 PHB:
+   * Sorcerer and Warlock). False for a hero class that locks it in — the Evoker's
+   * Draconic Sorcery is set by onClassChange and shown "(fixed)" instead of a picker.
+   */
   get requiresLevel1Subclass(): boolean {
-    return ['sorcerer', 'warlock'].includes(this.clazz.toLowerCase());
+    return ['sorcerer', 'warlock'].includes(this.clazz.toLowerCase()) && !this.heroClass?.subclass;
   }
 
   get availableSubclasses(): { name: string; desc: string }[] {

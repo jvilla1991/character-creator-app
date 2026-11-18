@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1471,6 +1471,98 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.specialization).toBe('');
       expect(component.selectedSubclass).toBe('');
       expect(component.specializationGuidance).toBeNull();
+    });
+  });
+
+  describe('World of Warcraft Evoker (Sorcerer)', () => {
+    const EVOKER_KEY = 'Sorcerer (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Sorcerer', 'Warlock', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+      dndResources.getSubclassesForClass.and.callFake((c: string) => LEVEL1_SUBCLASSES[c.toLowerCase()] ?? []);
+    });
+
+    it('lists an "Evoker (Sorcerer)" row tagged World of Warcraft beside the base Sorcerer, only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.baseClass === 'Sorcerer');
+      expect(rows().map(o => [o.key, o.label, o.source])).toEqual([
+        ['Sorcerer', 'Sorcerer', 'Base Game'], [EVOKER_KEY, 'Evoker (Sorcerer)', 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.label)).toEqual(['Sorcerer']);
+    });
+
+    it('locks the level-1 subclass to Draconic Sorcery and requires a specialization', () => {
+      component.toggleClass(EVOKER_KEY);
+      expect(component.clazz).toBe('Sorcerer');
+      expect(component.selectedClassLabel).toBe('Evoker (Sorcerer)');
+      expect(component.selectedSubclass).toBe('Draconic Sorcery');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Sorcerer');
+      // Locked, so there is no level-1 subclass picker to fill in.
+      expect(component.requiresLevel1Subclass).toBeFalse();
+      expect(component.recommendedLevel1Subclass).toBe('');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Augmentation', 'Devastation', 'Preservation']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Devastation');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('unlocks the subclass picker again when switching to the base Sorcerer', () => {
+      component.toggleClass(EVOKER_KEY);
+      component.selectSpecialization('Preservation');
+      component.toggleClass('Sorcerer');
+      expect(component.selectedClassKey).toBe('Sorcerer');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.specialization).toBe('');
+      expect(component.requiresLevel1Subclass).toBeTrue();
+      component.step = 3;
+      expect(component.canAdvance).toBeFalse();
+      component.selectedSubclass = 'Wild Magic Sorcery';
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('recommends the spec cantrips and spells to prepare without selecting them', () => {
+      component.toggleClass(EVOKER_KEY);
+      component.selectSpecialization('Devastation');
+      expect(component.recommendedSpells).toEqual([
+        'Elementalism', 'Light', 'Ray of Frost', 'Sorcerous Burst',
+        'Arcane Vigor', 'Burning Hands', 'Cloud of Daggers', 'Flame Blade', 'Ice Knife', 'Living Flame',
+      ]);
+      expect(component.selectedSpells).toEqual([]);
+      component.selectSpecialization('Augmentation');
+      expect(component.recommendedSpells).toContain('Thunderclap');
+      expect(component.recommendedSpells).toContain('Enhance Ability');
+    });
+
+    it('emits clazz Sorcerer + Draconic Sorcery + specialization in the create payload', (done) => {
+      component.toggleClass(EVOKER_KEY);
+      component.selectSpecialization('Augmentation');
+      component.name = 'Kazrethos';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Sorcerer');
+        expect(draft.subclass).toBe('Draconic Sorcery');
+        expect(draft.specialization).toBe('Augmentation');
+        done();
+      });
+      component.submit();
+    });
+
+    it('restores the Evoker, its spec and the locked subclass from a saved draft', () => {
+      component.toggleClass(EVOKER_KEY);
+      component.selectSpecialization('Preservation');
+      component.name = 'Kazrethos';
+      component.ngOnDestroy();   // saves the draft
+
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.clazz).toBe('Sorcerer');
+      expect(restored.selectedClassLabel).toBe('Evoker (Sorcerer)');
+      expect(restored.specialization).toBe('Preservation');
+      expect(restored.selectedSubclass).toBe('Draconic Sorcery');
+      expect(restored.requiresLevel1Subclass).toBeFalse();
     });
   });
 
