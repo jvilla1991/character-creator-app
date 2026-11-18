@@ -51,7 +51,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * for Circle of the Moon, classic beasts otherwise); for a WoW Warlock, the
  * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
  * computed Totems and path cards (Raging Elements, Spiritual Guardian); for a WoW Warrior,
- * the level-1 fighting style, subclass and maneuvers to consider (text only). Derived from the PC's
+ * the level-1 fighting style, subclass and maneuvers to consider (text only); for a WoW Priest, the
+ * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards. Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -82,7 +83,7 @@ export class HeroClassPanelComponent {
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
   classicForms: ClassicBeastForm[] = [];
-  /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian). */
+  /** Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Priest: domain cards). */
   featureCards: FeatureCard[] = [];
 
   @Input() set pc(value: PC) {

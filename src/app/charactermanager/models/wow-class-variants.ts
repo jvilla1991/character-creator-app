@@ -2,6 +2,7 @@ import type {
   HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
+import { DISCIPLINE_DOMAIN, SHADOW_DOMAIN, priestFeatureCards } from './wow-priest';
 import { BATTLE_MASTER, warriorFeatureCards } from './wow-warrior';
 
 /**
@@ -234,9 +235,8 @@ export const WOW_PALADIN: HeroClassOption = {
 
 export const WOW_PRIEST_SPECIALIZATIONS = ['Discipline', 'Holy', 'Shadow'] as const;
 
-/** The WoW-only cleric domains — the server offers them to WoW clerics only. Feature text comes from the server. */
-export const DISCIPLINE_DOMAIN = 'Discipline Domain';
-export const SHADOW_DOMAIN = 'Shadow Domain';
+/** The WoW-only cleric domains (defined with their sheet cards); feature text comes from the server. */
+export { DISCIPLINE_DOMAIN, SHADOW_DOMAIN };
 
 /** Discipline Domain spells, always prepared, by Cleric level (✦ WoW spells are flagged from the spell data). */
 export const DISCIPLINE_DOMAIN_SPELLS: readonly SubclassSpellRow[] = [
@@ -348,6 +348,7 @@ export const WOW_PRIEST: HeroClassOption = {
   suggestedSpells: WOW_PRIEST_SUGGESTED_SPELLS,
   subclassSpells: { [DISCIPLINE_DOMAIN]: DISCIPLINE_DOMAIN_SPELLS, [SHADOW_DOMAIN]: SHADOW_DOMAIN_SPELLS },
   extraSpellList: WOW_PRIEST_EXTRA_SPELLS,
+  featureCards: priestFeatureCards,
 };
 
 // ── Rogue ────────────────────────────────────────────────────────────────────

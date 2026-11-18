@@ -921,6 +921,29 @@ describe('HeroClassPanelComponent', () => {
       expect(component.spellSections).toEqual([]);
     });
 
+    it('shows the Shadow Domain card from Cleric 3, and no card before it or for the Life Domain', () => {
+      component.pc = makePriest({ level: 2 });
+      expect(component.featureCards).toEqual([]);
+      component.pc = makePriest({ specialization: 'Holy', subclass: 'Life Domain', level: 6 });
+      expect(component.featureCards).toEqual([]);
+      const el = render(makePriest({ subclass: 'Shadow Domain', level: 6 }));   // WIS 17 → +3
+      expect(el.textContent).toContain('Priest Features');
+      const card = el.querySelector('.feature-card') as HTMLElement;
+      expect(card.getAttribute('aria-label')).toBe('Shadow Domain');
+      expect(Array.from(card.querySelectorAll('.feature-card-row strong')).map(n => n.textContent))
+        .toEqual(['Shadowform', 'Devouring Plague', 'Dispersion']);
+      expect(card.textContent).toContain('3 / Long Rest');
+      expect(card.textContent).toContain('up to 3 Hit Dice');
+    });
+
+    it('shows the Discipline Domain card with the computed spell attack and Luminous Barrier', () => {
+      component.pc = makePriest({ specialization: 'Discipline', subclass: 'Discipline Domain', level: 6, prof: 3 });
+      expect(component.featureCards.map(c => c.name)).toEqual(['Discipline Domain']);
+      expect(component.featureCards[0].stats).toEqual([
+        { label: 'Spell attack', value: '+6' }, { label: 'Barrier', value: '9 Temp HP' },
+      ]);
+    });
+
     it("describes Evard's Black Tentacles from its SRD entry at Cleric 7 (Shadow Domain)", () => {
       dndResources.getSpells.and.returnValue(of([
         { ...deathGrip, name: 'Black Tentacles', level: 4, school: 'conjuration', description: 'Tentacle text.' } as DndSpell,
