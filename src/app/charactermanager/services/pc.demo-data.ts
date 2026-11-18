@@ -20,7 +20,7 @@ import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantri
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter and Druid.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid and Paladin.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -361,6 +361,64 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Trusts beasts more readily than people.',
     },
     bio: 'A plains wanderer who heard Ursoc in the thunder and took up the Guardian path, standing between his friends and whatever comes charging.',
+    notes: '',
+  },
+  // World of Warcraft Paladin — an ordinary Paladin with the Holy specialization and the
+  // WoW-only Oath of the Holy (chosen at level 3), so the always-prepared oath spells render.
+  {
+    id: 9,
+    name: 'Aelira Dawnmantle',
+    playerName: 'Ivy',
+    player: 'Ivy',
+    campaignId: null,
+    race: 'Dwarf',
+    clazz: 'Paladin',
+    subclass: OATH_OF_THE_HOLY,
+    specialization: 'Holy',
+    level: 7,
+    background: 'Acolyte',
+    alignment: 'Lawful Good',
+    portraitInitials: 'AD',
+    portraitTint: 'gold',
+    hp: { cur: 60, max: 60, temp: 0 },
+    ac: 18, init: 0, speed: 30, prof: 3,
+    stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 16 },
+    saves: ['WIS', 'CHA'],
+    skills: { Insight: 'prof', Medicine: 'prof', Persuasion: 'prof', Religion: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 22, ep: 0, gp: 64, pp: 0 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Sacred Flame', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Spare the Dying', school: 'Necromancy', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Bless', school: 'Enchantment', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Heroism', school: 'Enchantment', time: '1 action', prepared: false },
+      { lvl: 1, name: 'Shield of Faith', school: 'Abjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Aid', school: 'Abjuration', time: '1 action', prepared: true },
+      { lvl: 2, name: 'Warding Bond', school: 'Abjuration', time: '1 action', prepared: false },
+    ],
+    weapons: [
+      { name: 'Warhammer', dmg: '1d8+3 bludgeoning', notes: 'Versatile (1d10); mastery: Push' },
+    ],
+    gear: [
+      { name: 'Chain Mail', equipped: true },
+      { name: 'Shield', equipped: true },
+      { name: 'Holy Symbol (Silver Hand)' },
+    ],
+    features: [
+      { name: 'Weapon Mastery', source: 'Paladin 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Lay On Hands', source: 'Paladin 1', desc: 'A pool of healing you restore on a Long Rest.' },
+      { name: 'Fighting Style', source: 'Paladin 2', desc: 'Blessed Warrior: two Cleric cantrips cast with Charisma.' },
+      { name: 'Extra Attack', source: 'Paladin 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Aura of Protection', source: 'Paladin 6', desc: 'You and nearby allies add your CHA modifier to saving throws.' },
+    ],
+    traits: {
+      Personality: 'Hums hymns under her breath, louder the worse things get.',
+      Ideals: 'Mercy. The Light is for everyone who will take it.',
+      Bonds: 'The chapel in Ironforge that took her in.',
+      Flaws: 'Will heal a foe who begs, even when she should not.',
+    },
+    bio: 'A dwarf of the Silver Hand who would rather mend a wound than open one, though her warhammer says otherwise when it has to.',
     notes: '',
   },
 ];
