@@ -12,6 +12,8 @@ import {
 } from '../../../../utils/slot-inventory';
 import { isSupplyItem } from '../../../../utils/survival';
 import { ItemComposerComponent } from '../../../item-composer/item-composer.component';
+import { GiveItemModalComponent } from './give-item-modal.component';
+import { InventoryTransferResult } from '../../../../services/inventory-transfer.service';
 
 /**
  * Displays and manages a character's structured inventory (`pc.inventory`).
@@ -30,12 +32,30 @@ import { ItemComposerComponent } from '../../../item-composer/item-composer.comp
     templateUrl: './inventory-panel.component.html',
     styleUrls: ['./inventory-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ItemComposerComponent]
+    imports: [ItemComposerComponent, GiveItemModalComponent]
 })
 export class InventoryPanelComponent {
   @Input() pc!: PC;
   /** When true, shows the manage controls (equip / reduce qty / drop) and emits pcChange. */
   @Input() editable = false;
+  @Input() giveAllowed = false;
+  readonly inventoryTransferred = output<InventoryTransferResult>();
+  giveSelection: { pc: PC; index: number } | null = null;
+  transferMessage = '';
+
+  openGive(item: PcItem): void {
+    if (!this.editable || !this.giveAllowed || item.status === 'dropped') return;
+    const index = (this.pc.inventory ?? []).indexOf(item);
+    if (index < 0) return;
+    this.transferMessage = '';
+    this.giveSelection = { pc: structuredClone(this.pc), index };
+  }
+
+  onTransferred(result: InventoryTransferResult): void {
+    this.giveSelection = null;
+    this.transferMessage = 'Item transferred.';
+    this.inventoryTransferred.emit(result);
+  }
   /** True while a shop is open and this PC is targeted — reveals the Sell button. */
   @Input() shopOpenForMe = false;
   /** The open shop's category (backend format, e.g. 'WEAPON'), or null for a

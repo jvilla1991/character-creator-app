@@ -14,6 +14,38 @@ describe('InventoryPanelComponent', () => {
     component.editable = true;
   });
 
+  it('gives the full-inventory index and freezes the inventory seen when opening', () => {
+    const supplies: PcItem = { name: 'Rations', category: 'gear', qty: 3, catalogKey: 'rations' };
+    const sword: PcItem = { name: 'Sword', category: 'weapon', qty: 2 };
+    component.pc = basePc([supplies, sword]);
+    component.giveAllowed = true;
+    component.openGive(component.items[0]);
+    expect(component.giveSelection!.index).toBe(1);
+    sword.qty = 5;
+    expect(component.giveSelection!.pc.inventory![1].qty).toBe(2);
+  });
+
+  it('does not open Give for dropped items or read-only inventories', () => {
+    const item: PcItem = { name: 'Sword', category: 'weapon', qty: 1, status: 'dropped' };
+    component.pc = basePc([item]);
+    component.giveAllowed = true;
+    component.openGive(item);
+    expect(component.giveSelection).toBeNull();
+    item.status = undefined;
+    component.editable = false;
+    component.openGive(item);
+    expect(component.giveSelection).toBeNull();
+  });
+
+  it('reports a completed transfer without emitting a second PC save', () => {
+    const save = spyOn(component.pcChange, 'emit');
+    const transferred = spyOn(component.inventoryTransferred, 'emit');
+    component.onTransferred({ inventory: [], ac: 12 });
+    expect(save).not.toHaveBeenCalled();
+    expect(transferred).toHaveBeenCalledWith({ inventory: [], ac: 12 });
+    expect(component.transferMessage).toBe('Item transferred.');
+  });
+
   it('flags a line as dropped without removing it, and without mutating the input', () => {
     component.pc = basePc([{ name: 'Torch', category: 'gear', qty: 2 }]);
     const spy = spyOn(component.pcChange, 'emit');
