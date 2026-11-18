@@ -850,4 +850,65 @@ describe('LevelUpModalComponent', () => {
       expect(component.recommendedSubclass).toBe('Oath of Vengeance');
     });
   });
+
+  describe('World of Warcraft Rogue (Swashbuckler, recommended subclass, respec)', () => {
+    const subclasses = ['Arcane Trickster', 'Assassin', 'Soulknife', 'Swashbuckler', 'Thief'];
+
+    function renderModal(): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Rogue', level: 2, specialization: 'Outlaw', ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: subclasses,
+        recommendedFightingStyles: [], ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('highlights the recommended subclass per specialization and allows a respec', () => {
+      open({});
+      expect(component.canRespec).toBeTrue();
+      expect(component.recommendedSubclass).toBe('Swashbuckler');
+      open({ specialization: 'Assassination' });
+      expect(component.recommendedSubclass).toBe('Assassin');
+      open({ specialization: 'Subtlety' });
+      expect(component.recommendedSubclass).toBe('Soulknife');
+      component.selectedSpecialization = 'Outlaw';
+      expect(component.recommendedSubclass).toBe('Swashbuckler');
+      expect(component.recommendedFightingStyles).toEqual([]);
+    });
+
+    it('prefers the server\'s recommendedSubclass while the specialization is unchanged', () => {
+      open({}, { recommendedSubclass: 'Swashbuckler' });
+      expect(component.recommendedSubclass).toBe('Swashbuckler');
+      expect(component.selectedSubclass).toBeFalsy();   // never pre-selected
+    });
+
+    it('tags only Swashbuckler as World of Warcraft and badges it for Outlaw', () => {
+      open({});
+      expect(component.subclassSourceTag('Swashbuckler')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Thief')).toBeUndefined();
+      const el = renderModal();
+      const tagged = Array.from(el.querySelectorAll('.subclass-option')).filter(n => n.querySelector('.source-tag'));
+      expect(tagged.length).toBe(1);
+      expect(tagged[0].textContent).toContain('Swashbuckler');
+      expect(tagged[0].querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+      expect(el.querySelector('.subclass-option.is-recommended')?.textContent).toContain('Swashbuckler');
+      expect(el.querySelector('.subclass-option.is-recommended .recommended-badge')?.textContent)
+        .toContain('Recommended for Outlaw');
+    });
+  });
 });

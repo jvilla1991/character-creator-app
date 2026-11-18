@@ -114,3 +114,60 @@ describe('ClassStepComponent — World of Warcraft Paladin', () => {
     expect(ret).toContain('Great Weapon Master');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Rogue', () => {
+  const WOW_ROGUE_KEY = 'Rogue (World of Warcraft)';
+  const detail = { hit_die: 8, saving_throws: [{ name: 'DEX' }, { name: 'INT' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(WOW_ROGUE_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Rogue']));
+    fixture.componentRef.setInput('selectedKey', WOW_ROGUE_KEY);
+    fixture.componentRef.setInput('clazz', 'Rogue');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows two "Rogue" rows, the WoW one tagged, with the SI:7 blurb and the subclass note', () => {
+    const el = render();
+    const rows = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[])
+      .filter(h => h.textContent!.trim().startsWith('Rogue'));
+    expect(rows.length).toBe(2);
+    expect(rows[0].querySelector('.source-tag')).toBeNull();
+    expect(rows[1].querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('SI:7');
+    expect(el.textContent).toContain('Chosen as normal at Rogue level 3');
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Assassination', 'Outlaw', 'Subtlety']);
+    expect(el.querySelector('.spec-guidance')).toBeNull();
+  });
+
+  it('shows the Assassination box with mastery, subclass, the level-5 tip and feats — no spell or style rows', () => {
+    const box = render('Assassination').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(n => n.textContent!.trim());
+    expect(terms).toEqual(['Weapon Mastery', 'Level 3 subclass', 'Level 5', 'Feats']);
+    expect(box.textContent).toContain('Recommended for Assassination');
+    expect(box.textContent).toContain('At least one of Daggers, Shortbows');
+    expect(box.textContent).toContain('Assassin');
+    expect(box.textContent).toContain('Poison');
+    expect(box.textContent).toContain('Poisoner');
+    expect(box.textContent).toContain('Suggestions only — nothing is picked for you.');
+  });
+
+  it('shows Swashbuckler for Outlaw and Soulknife for Subtlety, with no level tip', () => {
+    const outlaw = render('Outlaw').querySelector('.spec-guidance') as HTMLElement;
+    expect(outlaw.textContent).toContain('Daggers, Rapiers');
+    expect(outlaw.textContent).toContain('Swashbuckler');
+    expect(outlaw.textContent).toContain('Martial Weapon Training');
+    expect(Array.from(outlaw.querySelectorAll('dt')).map(n => n.textContent!.trim()))
+      .toEqual(['Weapon Mastery', 'Level 3 subclass', 'Feats']);
+    const sub = render('Subtlety').querySelector('.spec-guidance') as HTMLElement;
+    expect(sub.textContent).toContain('Daggers, Maces');
+    expect(sub.textContent).toContain('Soulknife');
+    expect(sub.textContent).toContain('Shadow Touched');
+  });
+});
