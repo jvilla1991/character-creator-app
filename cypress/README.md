@@ -177,10 +177,10 @@ Save it — if the Cypress app is open, it appears in the spec list immediately.
 The *why* behind all three is section 0 of the crash course. It's the single highest-value thing
 to read before writing your third spec.
 
-**Selectors:** prefer what the user sees — `cy.contains('button', 'Inscribe')` — then stable IDs
+**Selectors:** prefer what the user sees — `cy.contains('button', 'Create')` — then stable IDs
 (`#username`), then framework attributes (`input[formControlName="password"]`). Avoid styling
 classes; they change when CSS changes. Best practice is a dedicated `data-cy` attribute on
-anything you test, selected as `cy.get('[data-cy=inscribe]')`. This app doesn't have them yet —
+anything you test, selected as `cy.get('[data-cy=create]')`. This app doesn't have them yet —
 adding them as you go is a legitimate part of the work.
 
 ---

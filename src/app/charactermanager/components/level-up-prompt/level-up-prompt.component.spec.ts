@@ -75,16 +75,18 @@ describe('LevelUpPromptComponent (shell host)', () => {
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(q(`#${dialog.getAttribute('aria-labelledby')}`)!.textContent!.trim()).toBe('Level up');
     expect(q(`#${dialog.getAttribute('aria-describedby')}`)!.textContent).toContain('Aria can advance to level 4.');
-    expect(dialog.textContent).toContain('Your DM granted a level-up.');
+    expect(dialog.textContent).not.toContain('Your DM granted a level-up.');
     expect(buttons().map(b => b.textContent!.trim())).toEqual(['Later', 'Level Up Now']);
     expect(document.activeElement).toBe(button('Level Up Now'));
   }));
 
-  it('names the XP route when there is no grant', fakeAsync(() => {
+  it('shows the same single line on the XP route, with no reason sentence', fakeAsync(() => {
     service.evaluate({ ...ready, pendingLevelGrant: false, xp: 2_700 } as PC);
     settle();
 
-    expect(q('app-modal')!.textContent).toContain('You have enough experience.');
+    const text = q('app-modal')!.textContent!;
+    expect(text).toContain('Aria can advance to level 4.');
+    expect(text).not.toContain('You have enough experience.');
   }));
 
   it('Escape answers "Later"', fakeAsync(() => {

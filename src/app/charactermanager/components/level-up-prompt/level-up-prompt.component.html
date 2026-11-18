@@ -11,9 +11,6 @@ the DOM so opening blooms it in and answering fades it out. Ambient only. -->
       [attr.aria-describedby]="'levelup-prompt-body'" (dismiss)="levelUp.later()">
       <div id="levelup-prompt-body">
         <p class="levelup-body">{{ p.name }} can advance to level {{ p.targetLevel }}.</p>
-        <p class="modal-sub levelup-reason">
-          {{ p.reason === 'grant' ? 'Your DM granted a level-up.' : 'You have enough experience.' }}
-        </p>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn" (click)="levelUp.later()">Later</button>

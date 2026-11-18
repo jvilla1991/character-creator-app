@@ -318,7 +318,7 @@ describe('HeroClassPanelComponent', () => {
       expect(text).toContain('Recommended oath');
       expect(text).toContain('You choose your oath at Paladin level 3.');
       expect(text).toContain('Suggested Holy Spells');
-      expect(text).toContain('like any other paladin spell');
+      expect(text).not.toContain('Suggestions only');
       expect(text).not.toContain('Beast Forms');
       expect(text).not.toContain('druid');
       const marked = Array.from(el.querySelectorAll('.suggested-spell'))
@@ -751,7 +751,8 @@ describe('HeroClassPanelComponent', () => {
       expect(maneuvers.filter(m => m.querySelector('.wow-mark')).map(m => m.textContent!.replace('✦', '').trim()))
         .toEqual(['Battle Shout', 'Demoralizing Shout', 'Warding Maneuver']);
       expect(maneuvers.length).toBe(7);
-      expect(box.textContent).toContain("maneuvers aren't tracked here");
+      expect(box.textContent).toContain("Maneuvers aren't tracked here");
+      expect(box.textContent).not.toContain('Suggestions only');
       expect(text).not.toContain('Suggested');
       expect(text).not.toContain('Beast Forms');
     });

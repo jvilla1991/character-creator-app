@@ -34,8 +34,6 @@ export class ClassStepComponent {
   readonly selectedLabel = input('');
   /** Recommended picks for the chosen specialization; null when there are none. */
   readonly guidance = input<SpecializationGuidance | null>(null);
-  /** True when the chosen class has a Spells step (the guidance box points there). */
-  readonly spellsStep = input(false);
   /** True when the chosen class is hidden by the source filter (it stays chosen). */
   readonly selectedHidden = input(false);
   /** The chosen hero-class specialization; '' when none is picked. */

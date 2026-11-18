@@ -529,7 +529,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // ── Navigation ───────────────────────────────────────────────────────────
 
   get canAdvance(): boolean {
-    // Review step: Inscribe is always available once you reach it
+    // Review step: Create is always available once you reach it
     if (this.step === this.reviewStep) return true;
     // Equipment step gate
     if (this.step === this.equipmentStep) return !!this.equipmentChoice;
@@ -908,7 +908,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // and on unload/destroy, and restored when the wizard next opens. Inscribing
   // or explicitly cancelling discards the draft.
 
-  /** Set once the wizard concludes (inscribe/cancel) — stops the unload/destroy saves. */
+  /** Set once the wizard concludes (create/cancel) — stops the unload/destroy saves. */
   private draftFinished = false;
   /** Draft source-book toggles, applied over the defaults when the groups load. */
   private restoredEnabledSources: Record<string, boolean> | null = null;
