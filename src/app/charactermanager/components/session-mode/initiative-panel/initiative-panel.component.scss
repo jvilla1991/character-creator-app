@@ -27,7 +27,7 @@
     radial-gradient(ellipse at center,
       color-mix(in oklch, var(--emerald) 20%, transparent),
       color-mix(in oklch, var(--emerald) 8%, transparent));
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   border-bottom-color: transparent;
   box-shadow:
     inset 0 0 0 2px color-mix(in oklch, var(--emerald) 85%, transparent),
@@ -51,7 +51,7 @@
     radial-gradient(ellipse at center,
       color-mix(in oklch, var(--gold) 16%, transparent),
       color-mix(in oklch, var(--gold) 6%, transparent));
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   border-bottom-color: transparent;
   box-shadow:
     inset 0 0 0 2px color-mix(in oklch, var(--gold) 75%, transparent),
@@ -79,7 +79,7 @@
   color: var(--text);
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
 }
 
 // No up/down spinner — DMs just type a number (mobile still gets a numeric keypad).
@@ -167,7 +167,7 @@
     color: var(--text);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
   }
 
   .btn-mini {
@@ -180,7 +180,7 @@
     font-size: 16px;
     line-height: 1;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
     border: 1px solid var(--border);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
@@ -223,7 +223,7 @@
     color: var(--text);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
 
     &.name {
       flex: 1 1 140px;
@@ -240,7 +240,7 @@
     padding: 0 12px;
     font-size: 13px;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
     border: 1px solid var(--border);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);
@@ -267,7 +267,7 @@
       color: var(--text);
       background: color-mix(in oklch, var(--text) 4%, transparent);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sharp);
       padding: 3px 6px;
       min-height: 28px;
     }
@@ -290,7 +290,7 @@
     padding: 0 10px;
     font-size: 12px;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
     border: 1px solid var(--border);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text-dim);
@@ -366,7 +366,7 @@
     color: var(--text);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
   }
 
   .btn-mini.xp {
@@ -376,7 +376,7 @@
     padding: 0 12px;
     font-size: 13px;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
     border: 1px solid var(--border);
     background: color-mix(in oklch, var(--text) 4%, transparent);
     color: var(--text);

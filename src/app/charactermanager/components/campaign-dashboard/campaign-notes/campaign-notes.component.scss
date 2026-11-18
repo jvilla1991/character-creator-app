@@ -14,7 +14,7 @@
     resize: vertical;
     min-height: 44px;
     padding: 8px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-sharp);
     border: 1px solid var(--border);
     background: var(--bg-2, rgba(0, 0, 0, 0.2));
     color: var(--text);
@@ -40,7 +40,7 @@
 
 .note {
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-panel);
   border: 1px solid var(--border);
   background: var(--bg-2, rgba(0, 0, 0, 0.15));
 

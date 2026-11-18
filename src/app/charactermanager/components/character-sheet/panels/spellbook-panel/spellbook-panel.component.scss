@@ -34,7 +34,7 @@
   color: var(--text-dim);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
   padding: 2px 9px;
   cursor: pointer;
   white-space: nowrap;

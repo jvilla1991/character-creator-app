@@ -20,7 +20,7 @@
   padding: 12px 16px;
   background: color-mix(in oklch, var(--text) 4%, transparent);
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   transition: opacity 0.15s;
 
   &.updating {

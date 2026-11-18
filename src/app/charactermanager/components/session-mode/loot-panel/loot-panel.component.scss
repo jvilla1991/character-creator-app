@@ -5,7 +5,7 @@
 .loot-card {
   border: 1px solid var(--border);
   background: color-mix(in oklch, var(--text) 4%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   padding: 18px 20px;
 }
 
@@ -35,7 +35,7 @@
   display: inline-flex;
   margin-bottom: 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sharp);
   overflow: hidden;
 }
 
@@ -76,7 +76,7 @@
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sharp);
 }
 
 .num-input {
@@ -86,7 +86,7 @@
   color: var(--text);
   background: var(--bg, rgba(0, 0, 0, 0.2));
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sharp);
 }
 
 .coin-line {
@@ -153,7 +153,7 @@
 .btn-x {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-dim);

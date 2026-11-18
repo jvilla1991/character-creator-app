@@ -27,7 +27,7 @@
   gap: 16px;
   padding: 10px 14px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 
   &.is-bump {
@@ -72,7 +72,7 @@
   min-width: 34px;
   padding: 3px 6px;
   border: 1px solid var(--surface-3);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   background: var(--surface-2);
   line-height: 1.2;
 
@@ -120,7 +120,7 @@
   gap: 10px;
   padding: 10px 14px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
   cursor: pointer;
   color: var(--text, #fff);
@@ -179,7 +179,7 @@
   gap: 10px;
   padding: 6px 12px;
   border: 1px solid var(--surface-3);
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 
   &.is-raised {
@@ -213,7 +213,7 @@
   width: 26px;
   height: 26px;
   border: 1px solid var(--surface-3);
-  border-radius: 6px;
+  border-radius: var(--radius-sharp);
   background: transparent;
   color: var(--text, #fff);
   font-size: 1rem;
@@ -250,7 +250,7 @@
   flex: 1;
   padding: 7px 10px;
   border: 1px solid var(--surface-3);
-  border-radius: 7px;
+  border-radius: var(--radius-sharp);
   background: transparent;
   color: var(--text-dim);
   font-size: 0.8rem;
@@ -312,7 +312,7 @@
   padding: 8px 12px;
   border: 1px solid var(--surface-3);
   border-left: 2px solid var(--celestial);
-  border-radius: 6px;
+  border-radius: var(--radius-panel);
   background: var(--surface-2);
 }
 
@@ -357,7 +357,7 @@
 .specialization-select {
   width: 100%;
   padding: 8px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sharp);
   font-size: 0.9rem;
 }
 
