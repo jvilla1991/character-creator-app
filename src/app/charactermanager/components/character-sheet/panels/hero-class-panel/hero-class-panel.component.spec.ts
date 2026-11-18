@@ -690,4 +690,126 @@ describe('HeroClassPanelComponent', () => {
       expect(druid.querySelector('.hero-spells-flavor')).toBeNull();
     });
   });
+
+  describe('World of Warcraft Warrior (Fighter)', () => {
+    function makeWarrior(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 13, name: 'Garrosh', clazz: 'Fighter', subclass: undefined, specialization: 'Arms',
+        level: 2, prof: 2, playerName: 'Lee', stats: { STR: 17, DEX: 12, CON: 15, INT: 8, WIS: 12, CHA: 10 },
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('renders for a WoW fighter but not for a base fighter', () => {
+      expect(isHeroClass(makeWarrior())).toBeTrue();
+      expect(isHeroClass(makeWarrior({ specialization: null, subclass: 'Battle Master' }))).toBeFalse();
+    });
+
+    it('titles the panel and shows the spec, with no spells to load', () => {
+      component.pc = makeWarrior();
+      expect(component.panelTitle).toBe('World of Warcraft Warrior');
+      expect(component.specializationTitle).toBe('Arms');
+      expect(component.specializationDesc).toContain('two-handed');
+      expect(component.subclassTerm).toBe('subclass');
+      expect(component.spells).toEqual([]);
+      expect(component.suggestedSpells).toEqual([]);
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+    });
+
+    it('recommends a level-1 fighting style and a subclass per specialization (informational)', () => {
+      component.pc = makeWarrior();
+      expect(component.recommendedFightingStyleText).toBe('Great Weapon Fighting');
+      expect(component.fightingStyleLevel).toBe(1);
+      expect(component.guidance?.subclass.name).toBe('Battle Master');
+      expect(component.subclassMatch).toBe('pending');
+      component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Champion', level: 3 });
+      expect(component.recommendedFightingStyleText).toBe('Two-Weapon Fighting');
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Eldritch Knight', level: 3 });
+      expect(component.recommendedFightingStyleText).toBe('Interception or Protection');
+      expect(component.subclassMatch).toBe('different');
+    });
+
+    it('renders the fighting style as Fighter 1 and the maneuvers with ✦ on the WoW ones', () => {
+      const el = render(makeWarrior({ specialization: 'Protection' }));
+      const text = el.textContent ?? '';
+      expect(text).toContain('Recommended fighting style');
+      expect(text).toContain('Fighter 1');
+      expect(text).not.toContain('Fighter 2');
+      expect(text).toContain('You choose your subclass at Fighter level 3.');
+      const box = el.querySelector('.hero-maneuvers') as HTMLElement;
+      expect(box.textContent).toContain('Maneuvers to consider');
+      expect(box.textContent).toContain('Battle Master 3');
+      const maneuvers = Array.from(box.querySelectorAll('.maneuver')) as HTMLElement[];
+      expect(maneuvers.filter(m => m.querySelector('.wow-mark')).map(m => m.textContent!.replace('✦', '').trim()))
+        .toEqual(['Battle Shout', 'Demoralizing Shout', 'Warding Maneuver']);
+      expect(maneuvers.length).toBe(7);
+      expect(box.textContent).toContain("maneuvers aren't tracked here");
+      expect(text).not.toContain('Suggested');
+      expect(text).not.toContain('Beast Forms');
+    });
+
+    it('shows no maneuvers for Fury, and keeps the paladin fighting style at Paladin 2', () => {
+      const fury = render(makeWarrior({ specialization: 'Fury' }));
+      expect(fury.querySelector('.hero-maneuvers')).toBeNull();
+      expect(fury.textContent).toContain('Two-Weapon Fighting');
+      const paladin = render({
+        id: 9, name: 'Aelira', clazz: 'Paladin', subclass: undefined, specialization: 'Protection', level: 2,
+        playerName: 'Ivy',
+      } as PC);
+      expect(paladin.textContent).toContain('Paladin 2');
+      expect(paladin.querySelector('.hero-maneuvers')).toBeNull();
+    });
+
+    describe('Battle Master card', () => {
+      it('shows only for a WoW warrior Battle Master from Fighter level 3', () => {
+        component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 3 });
+        expect(component.featureCards.map(c => c.name)).toEqual(['Battle Master']);
+        component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 2 });
+        expect(component.featureCards).toEqual([]);
+        component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Champion', level: 7 });
+        expect(component.featureCards).toEqual([]);
+        // A Fury warrior who picks Battle Master anyway still gets the card.
+        component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Battle Master', level: 7 });
+        expect(component.featureCards.map(c => c.name)).toEqual(['Battle Master']);
+        // A base-game Battle Master (no specialization) is not a WoW warrior: no card.
+        component.pc = makeWarrior({ specialization: null, subclass: 'Battle Master', level: 10 });
+        expect(component.hero).toBeUndefined();
+        expect(component.featureCards).toEqual([]);
+        expect(dndResources.getSpells).not.toHaveBeenCalled();
+      });
+
+      it('renders the dice, DC and the WoW maneuvers with the die size, plus the untracked note', () => {
+        const el = render(makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 7, prof: 3 }));
+        expect(el.textContent).toContain('Warrior Features');
+        const card = el.querySelector('.feature-card') as HTMLElement;
+        expect(card.querySelector('.form-card-name')?.textContent?.trim()).toBe('Battle Master');
+        expect(card.querySelector('.form-card-size')?.textContent?.trim()).toBe('Battle Master 3');
+        expect(card.textContent).toContain('Superiority Dice5');
+        expect(card.textContent).toContain('Died8');
+        expect(card.textContent).toContain('Maneuver DC14');
+        expect(card.textContent).toContain('Short or Long Rest');
+        expect(card.querySelector('.feature-card-rows-title')?.textContent).toBe('World of Warcraft maneuvers');
+        const rows = Array.from(card.querySelectorAll('.feature-card-row')).map(r => r.textContent!.trim());
+        expect(rows.map(r => r.split(' ')[0])).toEqual(['Battle', 'Demoralizing', 'Heroic', 'Mortal', 'Warding']);
+        expect(rows.every(r => r.includes('(d8)'))).toBeTrue();
+        expect(card.querySelector('.feature-card-note')?.textContent).toContain("Maneuvers aren't tracked by the app");
+      });
+
+      it('grows the die at level 10 and 18', () => {
+        const at10 = render(makeWarrior({ specialization: 'Arms', subclass: 'Battle Master', level: 10 }));
+        expect(at10.querySelector('.feature-card')!.textContent).toContain('(d10)');
+        const at18 = render(makeWarrior({ specialization: 'Arms', subclass: 'Battle Master', level: 18 }));
+        expect(at18.querySelector('.feature-card')!.textContent).toContain('Superiority Dice6');
+        expect(at18.querySelector('.feature-card')!.textContent).toContain('(d12)');
+      });
+    });
+  });
 });

@@ -4,8 +4,8 @@ import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
   FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, InvocationRow, SpecializationGuidance,
-  WOW_INVOCATION_NOTE, heroClassFor, heroClassSpells, invocationRows, isWowInvocation, orList, specializationTitle,
-  subclassLevelOf, subclassSpellsFor,
+  WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, heroClassFor, heroClassSpells, invocationRows,
+  isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -49,7 +49,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * specialization's suggested spells and the beast forms (Cat/Bear stat cards
  * for Circle of the Moon, classic beasts otherwise); for a WoW Warlock, the
  * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
- * computed Totems and path cards (Raging Elements, Spiritual Guardian). Derived from the PC's
+ * computed Totems and path cards (Raging Elements, Spiritual Guardian); for a WoW Warrior,
+ * the level-1 fighting style, subclass and maneuvers to consider (text only). Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -66,6 +67,7 @@ export class HeroClassPanelComponent {
 
   readonly beastFormUnchanged = BEAST_FORM_UNCHANGED;
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
+  readonly wowManeuverNote = WOW_MANEUVER_NOTE;
 
   private _pc!: PC;
   /** Spell data keyed by lower-cased name; null until loaded (loaded once, on demand). */
@@ -152,6 +154,16 @@ export class HeroClassPanelComponent {
   /** True for a ✦ World of Warcraft invocation. */
   isWowInvocation(name: string): boolean {
     return isWowInvocation(this.hero, name);
+  }
+
+  /** True for a ✦ World of Warcraft maneuver (WoW Warrior). */
+  isWowManeuver(name: string): boolean {
+    return isWowManeuver(this.hero, name);
+  }
+
+  /** The base-class level the recommended Fighting Style is chosen at (2; 1 for a Fighter). */
+  get fightingStyleLevel(): number {
+    return fightingStyleLevelOf(this.hero);
   }
 
   /** The base-class level the subclass is chosen at (3; 1 for a Warlock's patron). */

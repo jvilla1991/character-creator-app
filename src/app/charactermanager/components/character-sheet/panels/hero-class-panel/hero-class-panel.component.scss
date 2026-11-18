@@ -264,3 +264,18 @@
 .feature-card .form-stats {
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
 }
+
+// Battle Master card (WoW Warrior): a heading over the WoW maneuvers, and the untracked note.
+.feature-card-rows-title {
+  margin: 8px 0 2px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.feature-card-note {
+  margin: 6px 0 0;
+}

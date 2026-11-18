@@ -976,4 +976,40 @@ describe('LevelUpModalComponent', () => {
         .toContain('Recommended for Elemental');
     });
   });
+
+  describe('World of Warcraft Warrior (recommended subclass, no fighting-style step, respec)', () => {
+    const archetypes = ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'];
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Fighter', level: 2, specialization: 'Arms', ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: archetypes,
+        fightingStyleDue: false, fightingStyleOptions: [], ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('highlights the recommended subclass per specialization and allows a respec', () => {
+      open({});
+      expect(component.canRespec).toBeTrue();
+      expect(component.recommendedSubclass).toBe('Battle Master');
+      open({ specialization: 'Fury' });
+      expect(component.recommendedSubclass).toBe('Champion');
+      open({ specialization: 'Protection' });
+      expect(component.recommendedSubclass).toBe('Battle Master');
+      component.selectedSpecialization = 'Fury';
+      expect(component.recommendedSubclass).toBe('Champion');
+      expect(component.selectedSubclass).toBeFalsy();   // never pre-selected
+    });
+
+    it('never asks for a Fighting Style on level-up (it is a level-1 choice) and tags no WoW subclass', () => {
+      open({ specialization: 'Protection' });
+      expect(component.needsFightingStyle).toBeFalse();
+      expect(component.recommendedFightingStyles).toEqual([]);
+      for (const name of archetypes) {
+        expect(component.subclassSourceTag(name)).toBeUndefined();
+      }
+    });
+  });
 });

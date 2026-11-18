@@ -95,4 +95,25 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoSubclassOptions('Warlock', 'Demonology')).toEqual([]);
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
   });
+
+  it('seeds a level-7 Protection orc warrior Battle Master whose sheet shows the Battle Master card', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Fighter' && p.specialization === 'Protection')!;
+    expect(pc).toBeDefined();
+    expect(pc.race).toBe('Orc');
+    expect(pc.level).toBe(7);
+    expect(pc.subclass).toBe('Battle Master');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Fighter (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Warrior (Fighter)');
+    const cards = hero!.featureCards!({ level: pc.level!, subclass: pc.subclass, stats: pc.stats, prof: pc.prof });
+    expect(cards.map(c => c.name)).toEqual(['Battle Master']);
+    const stat = (label: string) => cards[0].stats!.find(s => s.label === label)?.value;
+    expect([stat('Superiority Dice'), stat('Die'), stat('Maneuver DC')]).toEqual(['5', 'd8', '14']);
+    expect(pc.spells).toEqual([]);
+    // The fighter's only WoW guidance is text: no WoW-only subclass joins the demo list.
+    expect(demoSubclassOptions('Fighter', 'Protection')).toEqual(['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior']);
+    // A fighter's Fighting Style is a level-1 choice — never due on level-up.
+    expect(demoFightingStyleOptions('Fighter', undefined, 2)).toEqual([]);
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
 });

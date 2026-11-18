@@ -2,7 +2,8 @@ import { HERO_CLASSES } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
   WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, WOW_WARLOCK,
-  WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, variantLabel,
+  WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, WOW_WARRIOR, WOW_WARRIOR_GUIDANCE,
+  WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel,
 } from './wow-class-variants';
 
 describe('wow-class-variants', () => {
@@ -323,8 +324,99 @@ describe('wow-class-variants', () => {
     });
   });
 
+  describe('Warrior (Fighter)', () => {
+    it('is a "Warrior (Fighter)" variant with no fixed subclass, no spells and a level-1 fighting style', () => {
+      expect(WOW_WARRIOR.name).toBe('Warrior');
+      expect(WOW_WARRIOR.baseClass).toBe('Fighter');
+      expect(WOW_WARRIOR.label).toBe('Warrior (Fighter)');
+      expect(WOW_WARRIOR.key).toBe('Fighter (World of Warcraft)');
+      expect(WOW_WARRIOR.subclass).toBeUndefined();
+      expect(WOW_WARRIOR.subclassNote).toBe('Chosen as normal at Fighter level 3');
+      expect(WOW_WARRIOR.subclassLevel).toBeUndefined();
+      expect(WOW_WARRIOR.fightingStyleLevel).toBe(1);
+      expect(WOW_WARRIOR.respecOnLevelUp).toBeTrue();
+      expect(WOW_WARRIOR.spellTable).toEqual([]);
+      expect(WOW_WARRIOR.suggestedSpells).toBeUndefined();
+      expect(WOW_WARRIOR.subclassSpells).toBeUndefined();
+      expect(WOW_WARRIOR.wowSubclasses).toBeUndefined();
+      expect(WOW_WARRIOR.wowInvocations).toBeUndefined();
+      const specs = WOW_WARRIOR.specializations.map(s => s.name);
+      expect(specs).toEqual([...WOW_WARRIOR_SPECIALIZATIONS]);
+      expect(specs).toEqual(['Arms', 'Fury', 'Protection']);
+      expect(Object.keys(WOW_WARRIOR_GUIDANCE)).toEqual(specs);
+    });
+
+    it('describes strength, leadership, arms and armor, shields and rage', () => {
+      for (const word of ['arms and armor', 'leads', 'strength', 'shield', 'rage', 'deadly weapons']) {
+        expect(WOW_WARRIOR.blurb).withContext(word).toContain(word);
+      }
+      const desc = (name: string) => WOW_WARRIOR.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Arms')).toContain('two-handed');
+      expect(desc('Fury')).toContain('dual-wielding berserker');
+      expect(desc('Protection')).toContain('shield-bearing');
+    });
+
+    it('recommends a fighting style, weapon mastery, subclass, maneuvers and feats per specialization', () => {
+      expect(WOW_WARRIOR_GUIDANCE['Arms']).toEqual({
+        fightingStyles: ['Great Weapon Fighting'],
+        weaponMastery: ['Greataxes', 'Greatswords', 'Mauls'],
+        subclass: { name: 'Battle Master' },
+        maneuvers: [
+          'Battle Shout', 'Disarming Attack', 'Distracting Strike', 'Mortal Strike', 'Pushing Attack',
+          'Sweeping Attack', 'Trip Attack',
+        ],
+        feats: ['Charger', 'Crusher', 'Great Weapon Master', 'Piercer', 'Speedy', 'Slasher'],
+      });
+      expect(WOW_WARRIOR_GUIDANCE['Fury']).toEqual(jasmine.objectContaining({
+        fightingStyles: ['Two-Weapon Fighting'],
+        weaponMastery: ['Scimitars'],
+        subclass: { name: 'Champion' },
+        feats: ['Charger', 'Crusher', 'Dual Wielder', 'Piercer', 'Slasher'],
+      }));
+      expect(WOW_WARRIOR_GUIDANCE['Fury'].maneuvers).toBeUndefined();
+      expect(WOW_WARRIOR_GUIDANCE['Fury'].note).toContain('Barbarian on the Path of the Berserker');
+      expect(WOW_WARRIOR_GUIDANCE['Fury'].note).toContain('Fury guidance');
+      expect(WOW_WARRIOR_GUIDANCE['Protection']).toEqual({
+        fightingStyles: ['Interception', 'Protection'],
+        weaponMastery: ['Battleaxes', 'Longswords', 'Morningstars'],
+        subclass: { name: 'Battle Master' },
+        maneuvers: [
+          'Bait and Switch', 'Battle Shout', 'Demoralizing Shout', 'Goading Attack', 'Maneuvering Attack', 'Parry',
+          'Warding Maneuver',
+        ],
+        feats: ['Crusher', 'Durable', 'Heavy Armor Master', 'Piercer', 'Sentinel', 'Shield Master', 'Slasher'],
+      });
+      for (const g of Object.values(WOW_WARRIOR_GUIDANCE)) {
+        expect(g.cantrips).toBeUndefined();
+        expect(g.level1Spells).toBeUndefined();
+        expect(g.invocations).toBeUndefined();
+        expect(g.weaponMasteryCount).toBeUndefined();
+      }
+    });
+
+    it('marks exactly the five World of Warcraft maneuvers', () => {
+      expect([...WOW_WARRIOR.wowManeuvers!]).toEqual([
+        'Battle Shout', 'Demoralizing Shout', 'Heroic Leap', 'Mortal Strike', 'Warding Maneuver',
+      ]);
+      expect(WOW_WARRIOR.wowManeuvers).toBe(WOW_WARRIOR_MANEUVERS);
+      for (const base of ['Bait and Switch', 'Disarming Attack', 'Parry', 'Trip Attack', 'Goading Attack']) {
+        expect(WOW_WARRIOR.wowManeuvers!.includes(base)).withContext(base).toBeFalse();
+      }
+    });
+  });
+
+  it('leaves the other variants without maneuvers and on the level-2 fighting style default', () => {
+    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK]) {
+      expect(v.wowManeuvers).withContext(v.key).toBeUndefined();
+      expect(v.fightingStyleLevel).withContext(v.key).toBeUndefined();
+      for (const g of Object.values(v.guidance ?? {})) {
+        expect(g.maneuvers).withContext(v.key).toBeUndefined();
+      }
+    }
+  });
+
   it('leaves the other variants on the level-3 subclass default, with no invocations', () => {
-    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN]) {
+    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARRIOR]) {
       expect(v.subclassLevel).withContext(v.key).toBeUndefined();
       expect(v.wowInvocations).withContext(v.key).toBeUndefined();
       expect(v.suggestedSpellsNote).withContext(v.key).toBeUndefined();
