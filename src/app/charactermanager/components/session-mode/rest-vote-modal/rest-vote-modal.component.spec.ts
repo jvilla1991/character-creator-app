@@ -10,6 +10,7 @@ describe('RestVoteModalComponent', () => {
   const vote = (overrides: Partial<RestVoteView> = {}): RestVoteView => ({
     voteId: 10,
     status: 'ACTIVE',
+    restType: 'SHORT',
     initiatorParticipantId: 5,
     initiatorName: 'Gorath',
     expiresAt: new Date(Date.now() + 30_000).toISOString(),
@@ -110,6 +111,34 @@ describe('RestVoteModalComponent', () => {
     expect(overrides).toEqual([true, false]);
   });
 
+  it('names the short rest on both faces', () => {
+    fixture.componentRef.setInput('restVote', vote());
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.modal-title')).nativeElement.textContent).toContain('Short Rest?');
+    expect(fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent)
+      .toContain('Gorath calls for a short rest: 1 hour. All must agree.');
+
+    fixture.componentRef.setInput('dm', true);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.panel-title')).nativeElement.textContent).toContain('Short Rest Vote');
+  });
+
+  it('names the long rest on both faces when the vote is for one', () => {
+    fixture.componentRef.setInput('restVote', vote({ restType: 'LONG' }));
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.modal-title')).nativeElement.textContent).toContain('Long Rest?');
+    expect(fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent)
+      .toContain('Gorath calls for a long rest: 8 hours. All must agree.');
+
+    fixture.componentRef.setInput('dm', true);
+    fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('.panel-title')).nativeElement.textContent).toContain('Long Rest Vote');
+    expect(fixture.debugElement.query(By.css('.vote-sub')).nativeElement.textContent)
+      .toContain('Gorath calls for a long rest');
+    expect(fixture.debugElement.query(By.css('.vote-actions .btn.primary')).nativeElement.title)
+      .toContain('the long rest begins');
+  });
+
   it('counts down from the server deadline, clamped at zero', () => {
     fixture.componentRef.setInput('restVote', vote({ expiresAt: new Date(frozenNow + 30_000).toISOString() }));
     fixture.detectChanges();
@@ -154,6 +183,20 @@ describe('RestVoteModalComponent', () => {
 
         advanceTo(60_000);
         expect(component.countdownAnnouncement()).toBe('Time is up for the short rest vote.');
+      });
+
+      it(`speaks of the long rest when the vote is for one (${dm ? 'DM' : 'player'} face)`, () => {
+        fixture.componentRef.setInput('restVote',
+          vote({ restType: 'LONG', expiresAt: new Date(frozenNow + 60_000).toISOString() }));
+        fixture.componentRef.setInput('dm', dm);
+        fixture.detectChanges();
+
+        advanceTo(500);
+        expect(component.countdownAnnouncement()).toBe('Gorath calls for a long rest. Every hero must agree.');
+        advanceTo(50_000);
+        expect(component.countdownAnnouncement()).toBe('Ten seconds left in the long rest vote.');
+        advanceTo(60_000);
+        expect(component.countdownAnnouncement()).toBe('Time is up for the long rest vote.');
       });
 
       it(`keeps the ticking number out of every live region (${dm ? 'DM' : 'player'} face)`, () => {

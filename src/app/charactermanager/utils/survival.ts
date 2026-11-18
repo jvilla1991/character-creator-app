@@ -248,18 +248,28 @@ export function applyConsumeToPc(pc: PC, action: SurvivalAction): PC {
 }
 
 /**
- * DM long rest (demo/local mirror): restore every spell slot and, in a survival
- * campaign, shed fatigue — 3 for an undisturbed rest, 1 for a disturbed one.
+ * A finished long rest (demo/local mirror of the server, 2024 PHB): Hit Points
+ * to maximum, temporary Hit Points gone, every Hit Die and spell slot back,
+ * Exhaustion down one and, in a survival campaign, fatigue down 3 for an
+ * undisturbed rest or 1 for a disturbed one. A hero at 0 Hit Points cannot
+ * benefit and comes back unchanged.
  */
 export function applyLongRestToPc(pc: PC, undisturbed: boolean, survivalOn: boolean): PC {
+  if (pc.hp && pc.hp.cur <= 0) return pc;
   const spellSlots = pc.spellSlots
     ? Object.fromEntries(Object.entries(pc.spellSlots).map(([lvl, slot]) => [lvl, { ...slot, used: 0 }]))
     : pc.spellSlots;
-  if (!survivalOn) return { ...pc, spellSlots };
-  const s = survivalOf(pc);
-  return {
+  const rested: PC = {
     ...pc,
     spellSlots,
+    hp: pc.hp ? { ...pc.hp, cur: Math.max(pc.hp.cur, pc.hp.max), temp: 0 } : pc.hp,
+    hitDiceUsed: pc.hitDiceUsed != null ? 0 : pc.hitDiceUsed,
+    exhaustion: pc.exhaustion ? pc.exhaustion - 1 : pc.exhaustion,
+  };
+  if (!survivalOn) return rested;
+  const s = survivalOf(pc);
+  return {
+    ...rested,
     survival: { ...s, fatigue: clampStage(s.fatigue - (undisturbed ? 3 : 1)), seeded: pc.survival?.seeded },
   };
 }

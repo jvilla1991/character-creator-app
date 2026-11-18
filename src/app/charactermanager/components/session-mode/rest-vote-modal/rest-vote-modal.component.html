@@ -3,10 +3,10 @@
   <div class="panel rest-vote-banner">
     <div class="visually-hidden" role="status">{{ countdownAnnouncement() }}</div>
     <div class="panel-header" style="margin-bottom: 0;">
-      <span class="panel-title">Short Rest Vote</span>
+      <span class="panel-title">{{ restTitle() }} Vote</span>
       <span class="vote-countdown">{{ secondsLeft() }}s</span>
     </div>
-    <div class="vote-sub">{{ restVote().initiatorName }} calls for a short rest — unanimous yes passes. Allow the rest and Deny both end the vote now, without waiting for the remaining votes.</div>
+    <div class="vote-sub">{{ restVote().initiatorName }} calls for a {{ restName() }} — unanimous yes passes. Allow the rest and Deny both end the vote now, without waiting for the remaining votes.</div>
     <div class="vote-grid">
       @for (b of restVote().votes; track b.participantId) {
         <div class="vote-row">
@@ -17,7 +17,9 @@
     </div>
     <div class="vote-actions">
       <button class="btn primary" (click)="overrideCast.emit(true)"
-        title="End the vote now as passed — the rest window opens regardless of missing votes">
+        [title]="long()
+          ? 'End the vote now as passed — the long rest begins regardless of missing votes'
+          : 'End the vote now as passed — the rest window opens regardless of missing votes'">
         Allow the rest
       </button>
       <button class="btn danger" (click)="overrideCast.emit(false)"
@@ -30,9 +32,9 @@
   <!-- Player face: BLOCKING on purpose — no backdrop-click close, no
   escape-close. The table is being asked; the exits are a vote or the timer. -->
   <div class="modal-backdrop">
-    <app-modal class="rest-vote-modal" title="Short Rest?" [closable]="false" [dialogDismissible]="false">
+    <app-modal class="rest-vote-modal" [title]="restTitle() + '?'" [closable]="false" [dialogDismissible]="false">
       <div class="modal-sub">
-        {{ restVote().initiatorName }} calls for a short rest. All must agree.
+        {{ restVote().initiatorName }} calls for a {{ restName() }}: {{ restLength() }}. All must agree.
       </div>
       <div class="visually-hidden" role="status">{{ countdownAnnouncement() }}</div>
       <div class="vote-countdown big">{{ secondsLeft() }}s</div>

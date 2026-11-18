@@ -13,7 +13,8 @@ import { ModalComponent } from '../../modal/modal.component';
 import { RestVoteBallot, RestVoteView } from '../../../models/session';
 
 /**
- * The short-rest vote, in both of its faces (shared countdown + ballot grid):
+ * The rest vote — short or long, per `restVote.restType` — in both of its
+ * faces (shared countdown + ballot grid):
  *
  * - Player (`dm` false): a deliberately BLOCKING modal — no backdrop-click
  *   close and no escape-close, because the whole table is being asked and the
@@ -46,6 +47,14 @@ export class RestVoteModalComponent {
 
   private readonly now = signal(Date.now());
 
+  /** True when the party is voting on a long rest. */
+  readonly long = computed(() => this.restVote().restType === 'LONG');
+  /** "Long Rest" / "Short Rest" — titles. */
+  readonly restTitle = computed(() => (this.long() ? 'Long Rest' : 'Short Rest'));
+  /** "long rest" / "short rest" — inside a sentence. */
+  readonly restName = computed(() => (this.long() ? 'long rest' : 'short rest'));
+  readonly restLength = computed(() => (this.long() ? '8 hours' : '1 hour'));
+
   readonly secondsLeft = computed(() => {
     const deadline = Date.parse(this.restVote().expiresAt);
     return Math.max(0, Math.ceil((deadline - this.now()) / 1000));
@@ -72,9 +81,9 @@ export class RestVoteModalComponent {
   readonly countdownAnnouncement = computed(() => {
     if (this.now() - this.openedAt < 400) return '';
     const s = this.secondsLeft();
-    if (s === 0) return 'Time is up for the short rest vote.';
-    if (s <= 10) return 'Ten seconds left in the short rest vote.';
-    return `${this.restVote().initiatorName} calls for a short rest. Every hero must agree.`;
+    if (s === 0) return `Time is up for the ${this.restName()} vote.`;
+    if (s <= 10) return `Ten seconds left in the ${this.restName()} vote.`;
+    return `${this.restVote().initiatorName} calls for a ${this.restName()}. Every hero must agree.`;
   });
 
   constructor(destroyRef: DestroyRef) {

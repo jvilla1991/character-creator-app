@@ -247,6 +247,24 @@ describe('survival util', () => {
       expect(after.spellSlots![1].used).toBe(0);
       expect(after.survival!.fatigue).toBe(5); // untouched
     });
+
+    it('restores Hit Points to maximum, drops temporary Hit Points and returns every Hit Die', () => {
+      const after = applyLongRestToPc(
+        casterPc({ level: 5, hp: { cur: 12, max: 30, temp: 5 }, hitDiceUsed: 4 }), true, false);
+      expect(after.hp).toEqual({ cur: 30, max: 30, temp: 0 });
+      expect(after.hitDiceUsed).toBe(0); // all of them, not half the level
+    });
+
+    it('lowers Exhaustion by one, never below zero', () => {
+      expect(applyLongRestToPc(casterPc({ exhaustion: 2 }), true, false).exhaustion).toBe(1);
+      expect(applyLongRestToPc(casterPc({ exhaustion: 0 }), true, false).exhaustion).toBe(0);
+      expect(applyLongRestToPc(casterPc(), true, false).exhaustion).toBeUndefined();
+    });
+
+    it('gives nothing to a hero at 0 Hit Points', () => {
+      const down = casterPc({ hp: { cur: 0, max: 30, temp: 0 }, hitDiceUsed: 3, exhaustion: 2 });
+      expect(applyLongRestToPc(down, true, true)).toBe(down);
+    });
   });
 
   describe('survivalExhaustion', () => {

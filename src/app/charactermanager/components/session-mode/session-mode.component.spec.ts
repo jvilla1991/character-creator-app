@@ -2,7 +2,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { SessionModeComponent } from './session-mode.component';
-import { ParticipantView, RestVoteView, SessionState } from '../../models/session';
+import { LongRestResultView, LongRestView, ParticipantView, RestVoteView, SessionState } from '../../models/session';
 import { SessionService } from '../../services/session.service';
 import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
@@ -185,9 +185,11 @@ describe('SessionModeComponent rest vote', () => {
       ...overrides,
     } as SessionState);
 
-  const restVote = (status: RestVoteView['status'], voteId = 10): RestVoteView => ({
+  const restVote = (status: RestVoteView['status'], voteId = 10,
+                    restType: RestVoteView['restType'] = 'SHORT'): RestVoteView => ({
     voteId,
     status,
+    restType,
     initiatorParticipantId: 5,
     initiatorName: 'Gorath',
     expiresAt: new Date(Date.now() + 60_000).toISOString(),
@@ -208,8 +210,55 @@ describe('SessionModeComponent rest vote', () => {
 
     component.initiateRestVote(state());
 
-    expect(sessionService.initiateRestVote).toHaveBeenCalledWith(1);
+    expect(sessionService.initiateRestVote).toHaveBeenCalledWith(1, 'SHORT');
     expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('the Rest dialog opens on the button and closes as it calls the chosen vote', () => {
+    sessionService.initiateRestVote.and.returnValue(of(state()));
+
+    component.openRestChooser();
+    expect(component.restChooserOpen).toBeTrue();
+
+    component.callRest('LONG', state());
+
+    expect(component.restChooserOpen).toBeFalse();
+    expect(sessionService.initiateRestVote).toHaveBeenCalledWith(1, 'LONG');
+  });
+
+  it('a failed long rest call falls back to its own message', () => {
+    sessionService.initiateRestVote.and.returnValue(throwError(() => ({})));
+
+    component.initiateRestVote(state(), 'LONG');
+
+    expect(notifications.notify).toHaveBeenCalledWith('Could not call a long rest.');
+  });
+
+  it('Rest is blocked by an open long rest, an open short rest, a live vote or an encounter', () => {
+    expect(component.restBlockedReason(state())).toBeNull();
+    expect(component.restBlockedReason(state({ longRest: {} as LongRestView })))
+      .toBe('A long rest is already underway.');
+    expect(component.restBlockedReason(state({ shortRestOpen: true })))
+      .toBe('A short rest is already underway.');
+    expect(component.restBlockedReason(state({ restVote: restVote('ACTIVE') })))
+      .toBe('A rest vote is already being tallied.');
+    expect(component.restBlockedReason(state({ status: 'ACTIVE' })))
+      .toBe('No resting mid-encounter. Wait until the encounter ends.');
+    // A finished vote does not block the next one.
+    expect(component.restBlockedReason(state({ restVote: restVote('FAILED') }))).toBeNull();
+  });
+
+  it('toasts a long vote in its own words', () => {
+    const track = (s: SessionState) =>
+      (component as unknown as { trackRestVote(s: SessionState): void }).trackRestVote(s);
+
+    track(state({ restVote: restVote('ACTIVE', 10, 'LONG') }));
+    track(state({ restVote: restVote('PASSED', 10, 'LONG') }));
+    expect(notifications.notify).toHaveBeenCalledWith('The vote passed — the long rest begins.');
+
+    track(state({ restVote: restVote('ACTIVE', 11, 'LONG') }));
+    track(state({ restVote: restVote('FAILED', 11, 'LONG') }));
+    expect(notifications.notify).toHaveBeenCalledWith('No long rest — the vote failed.');
   });
 
   it('initiate failure surfaces the server message (e.g. a vote already runs)', () => {
@@ -357,15 +406,15 @@ describe('SessionModeComponent help copy', () => {
       sessionService, null as never, null as never, null as never, null as never, null as never, null as never));
   });
 
-  it('says what Short Rest does when it is available', () => {
-    expect(component.shortRestHint(state({}))).toContain('The party votes');
+  it('says what Rest does when it is available', () => {
+    expect(component.restHint(state({}))).toContain('The party votes');
   });
 
-  it('says why Short Rest is unavailable', () => {
-    expect(component.shortRestHint(state({ shortRestOpen: true }))).toBe('A short rest is already underway.');
-    expect(component.shortRestHint(state({ restVote: { status: 'ACTIVE' } as never })))
+  it('says why Rest is unavailable', () => {
+    expect(component.restHint(state({ shortRestOpen: true }))).toBe('A short rest is already underway.');
+    expect(component.restHint(state({ restVote: { status: 'ACTIVE' } as never })))
       .toBe('A rest vote is already being tallied.');
-    expect(component.shortRestHint(state({ status: 'ACTIVE' as never })))
+    expect(component.restHint(state({ status: 'ACTIVE' as never })))
       .toBe('No resting mid-encounter. Wait until the encounter ends.');
   });
 
@@ -375,5 +424,151 @@ describe('SessionModeComponent help copy', () => {
     component.survivalConditions = true;
     expect(component.clockHelp).toContain('the party eats its supplies');
     expect(component.clockHelp).toContain('and sheds fatigue');
+  });
+});
+
+describe('SessionModeComponent long rest phase', () => {
+  let component: SessionModeComponent;
+  let sessionService: jasmine.SpyObj<SessionService>;
+  let pcService: jasmine.SpyObj<PCService>;
+  let notifications: jasmine.SpyObj<NotificationService>;
+
+  const mySeat = { participantId: 5, pcId: 7, ownedByMe: true, name: 'Bex' } as ParticipantView;
+
+  const state = (overrides: Partial<SessionState> = {}): SessionState =>
+    ({
+      sessionId: 1,
+      dm: false,
+      status: 'LOBBY',
+      participants: [mySeat],
+      rolls: [],
+      restVote: null,
+      longRest: null,
+      longRestResult: null,
+      ...overrides,
+    } as SessionState);
+
+  const result = (id: number, outcome: LongRestResultView['outcome'], skipped: string[] = []): LongRestResultView =>
+    ({ id, outcome, skipped, clockAdvanced: false, createdAt: null });
+
+  const track = (s: SessionState) =>
+    (component as unknown as { trackLongRest(s: SessionState): void }).trackLongRest(s);
+
+  beforeEach(() => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService',
+      ['openLongRest', 'setLongRestReady', 'setLongRestOptions', 'finishLongRest', 'interruptLongRest'],
+      { state$: of(null) });
+    pcService = jasmine.createSpyObj<PCService>('PCService', ['getPCById', 'refreshPC']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, pcService, notifications, null as never, null as never, null as never));
+  });
+
+  it('the DM Long Rest button opens the phase for this session', () => {
+    sessionService.openLongRest.and.returnValue(of(state()));
+
+    component.openLongRest(state({ dm: true }));
+
+    expect(sessionService.openLongRest).toHaveBeenCalledWith(1);
+    expect(notifications.notify).not.toHaveBeenCalled();
+  });
+
+  it('a refused open surfaces the server message', () => {
+    sessionService.openLongRest.and.returnValue(
+      throwError(() => ({ error: { message: 'Cannot start a long rest during an encounter' } })));
+
+    component.openLongRest(state({ dm: true }));
+
+    expect(notifications.notify).toHaveBeenCalledWith('Cannot start a long rest during an encounter');
+  });
+
+  it('the DM cannot start one while a phase is open, a vote runs, or an encounter is on', () => {
+    expect(component.dmLongRestBlockedReason(state({ dm: true }))).toBeNull();
+    expect(component.dmLongRestBlockedReason(state({ dm: true, longRest: {} as LongRestView })))
+      .toBe('A long rest is already underway');
+    expect(component.dmLongRestBlockedReason(state({ dm: true, restVote: { status: 'ACTIVE' } as RestVoteView })))
+      .toBe('A rest vote is being tallied — allow or deny it');
+    expect(component.dmLongRestBlockedReason(state({ dm: true, status: 'ACTIVE' })))
+      .toBe('No resting mid-encounter');
+  });
+
+  it('Ready is sent for the player\'s own seated hero', () => {
+    sessionService.setLongRestReady.and.returnValue(of(state()));
+
+    component.setLongRestReady(true, state());
+    component.setLongRestReady(false, state());
+
+    expect(sessionService.setLongRestReady.calls.allArgs()).toEqual([[1, 7, true], [1, 7, false]]);
+  });
+
+  it('Ready does nothing for a viewer with no seated hero', () => {
+    component.setLongRestReady(true, state({ participants: [] }));
+    expect(sessionService.setLongRestReady).not.toHaveBeenCalled();
+  });
+
+  it('options, finish and interrupt go to the service for this session', () => {
+    sessionService.setLongRestOptions.and.returnValue(of(state()));
+    sessionService.finishLongRest.and.returnValue(of(state()));
+    sessionService.interruptLongRest.and.returnValue(of(state()));
+
+    component.setLongRestOptions({ advanceClock: false }, state({ dm: true }));
+    component.finishLongRest(state({ dm: true }));
+    component.interruptLongRest(state({ dm: true }));
+
+    expect(sessionService.setLongRestOptions).toHaveBeenCalledWith(1, { advanceClock: false });
+    expect(sessionService.finishLongRest).toHaveBeenCalledWith(1);
+    expect(sessionService.interruptLongRest).toHaveBeenCalledWith(1);
+  });
+
+  it('the player long rest screen has a hero for a seated player and none for the DM', () => {
+    pcService.getPCById.and.returnValue({ id: 7, name: 'Bex' } as PC);
+
+    expect(component.longRestPc(state())?.name).toBe('Bex');
+    expect(component.longRestPc(state({ dm: true }))).toBeUndefined();
+  });
+
+  it('announces a finished rest once and refreshes the player\'s hero', () => {
+    track(state());                                             // first look: nothing yet
+    track(state({ longRestResult: result(77, 'FINISHED') }));
+
+    expect(notifications.notify).toHaveBeenCalledOnceWith('The long rest is over. Bex is restored.');
+    expect(pcService.refreshPC).toHaveBeenCalledOnceWith(7);
+
+    track(state({ longRestResult: result(77, 'FINISHED') }));   // still on the snapshot
+    expect(notifications.notify).toHaveBeenCalledTimes(1);
+    expect(pcService.refreshPC).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells a player whose hero was at 0 Hit Points that they did not recover', () => {
+    track(state());
+    track(state({ longRestResult: result(77, 'FINISHED', ['Bex']) }));
+
+    expect(notifications.notify).toHaveBeenCalledOnceWith(
+      'The long rest is over. Bex was at 0 Hit Points and did not recover.');
+  });
+
+  it('tells the DM who was skipped, and refreshes no hero', () => {
+    track(state({ dm: true }));
+    track(state({ dm: true, longRestResult: result(77, 'FINISHED', ['Mira', 'Oswin']) }));
+
+    expect(notifications.notify).toHaveBeenCalledOnceWith(
+      'The long rest is over. At 0 Hit Points, not recovered: Mira, Oswin.');
+    expect(pcService.refreshPC).not.toHaveBeenCalled();
+  });
+
+  it('announces an interrupted rest, with no refresh', () => {
+    track(state());
+    track(state({ longRestResult: result(78, 'INTERRUPTED') }));
+
+    expect(notifications.notify).toHaveBeenCalledOnceWith('The long rest was interrupted. Nobody recovered.');
+    expect(pcService.refreshPC).not.toHaveBeenCalled();
+  });
+
+  it('an outcome already on the first snapshot (rejoin) is not announced, but the next one is', () => {
+    track(state({ longRestResult: result(77, 'FINISHED') }));
+    expect(notifications.notify).not.toHaveBeenCalled();
+
+    track(state({ longRestResult: result(78, 'INTERRUPTED') }));
+    expect(notifications.notify).toHaveBeenCalledTimes(1);
   });
 });
