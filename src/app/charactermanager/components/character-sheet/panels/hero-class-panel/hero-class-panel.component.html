@@ -131,6 +131,58 @@
       }
     }
 
+    <!-- Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian) -->
+    @if (featureCards.length) {
+      <h3 class="hero-spells-title">{{ h.name }} Features</h3>
+      <div class="form-cards feature-cards">
+        @for (card of featureCards; track card.name) {
+          <section class="form-card feature-card" [attr.aria-label]="card.name">
+            <header class="form-card-head">
+              <span class="form-card-name">{{ card.name }}</span>
+              <span class="form-card-size">{{ card.source }}</span>
+            </header>
+            @if (card.stats?.length) {
+              <div class="form-stats">
+                @for (st of card.stats; track st.label) {
+                  <div><span class="k">{{ st.label }}</span><span class="v">{{ st.value }}</span></div>
+                }
+              </div>
+            }
+            @if (card.summary) {
+              <p class="form-line">{{ card.summary }}</p>
+            }
+            @for (row of card.rows; track row.name) {
+              <p class="form-line feature-card-row">
+                <strong>{{ row.name }}</strong>@if (row.kind) { <em>({{ row.kind }})</em>}. {{ row.text }}
+              </p>
+              @if (row.spells?.length) {
+                <ul class="hero-spells">
+                  @for (name of row.spells; track name) {
+                    @let spell = spellFor(name);
+                    <li>
+                      <details class="hero-spell">
+                        <summary>
+                          <span class="hero-spell-name">{{ name }}</span>
+                          @if (spell) {
+                            <span class="hero-spell-meta">
+                              {{ spell.level === 0 ? 'Cantrip' : 'Level ' + spell.level }} {{ spell.school }}
+                            </span>
+                          }
+                        </summary>
+                        <p class="hero-spell-desc">
+                          {{ spell?.description || (spellIndex() ? 'No description available.' : 'Loading spell text…') }}
+                        </p>
+                      </details>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          </section>
+        }
+      </div>
+    }
+
     <!-- WoW Druid: beast forms -->
     @if (h.beastForms) {
       <h3 class="hero-spells-title">Beast Forms</h3>

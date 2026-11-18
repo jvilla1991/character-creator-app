@@ -1,7 +1,7 @@
 import type {
   HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
-import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN } from './wow-shaman';
+import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -329,6 +329,7 @@ export const WOW_SHAMAN: HeroClassOption = {
   guidance: WOW_SHAMAN_GUIDANCE,
   wowSubclasses: [PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN],
   renownNote: 'Adopting the Shaman raises your Renown with the Earthen Ring by 3 — ask your DM to record it.',
+  featureCards: shamanFeatureCards,
 };
 
 /** Every WoW class variant, in class-list order. */

@@ -101,6 +101,37 @@ export interface SubclassSpellRow {
   spells: readonly string[];
 }
 
+/** What a computed sheet card (e.g. the WoW Shaman's Totems) is built from. */
+export interface FeatureCardInput {
+  /** Base-class level. */
+  level: number;
+  subclass?: string | null;
+  stats?: HeroStats;
+  /** Proficiency bonus; derived from the level when absent. */
+  prof?: number | null;
+}
+
+/** One line of a computed sheet card: an option, a rider, or a feature gained at a later level. */
+export interface FeatureCardRow {
+  name: string;
+  /** Short tag after the name ('2d8 Cold', 'Reaction · Barbarian 6'). */
+  kind?: string;
+  text: string;
+  /** Spells the row lets you cast, looked up by name in the spell data. */
+  spells?: readonly string[];
+}
+
+/** A computed sheet card (Totems, Raging Elements, …) — text only, never persisted. */
+export interface FeatureCard {
+  name: string;
+  /** Where it comes from, e.g. 'Barbarian 3'. */
+  source: string;
+  summary?: string;
+  /** Computed numbers shown as a stat row (save DC, attack bonus). */
+  stats?: readonly { label: string; value: string }[];
+  rows: readonly FeatureCardRow[];
+}
+
 /** One spell level of a specialization's suggested (not always-prepared) spells. */
 export interface SuggestedSpellLevel {
   level: number;
@@ -163,6 +194,8 @@ export interface HeroClassOption {
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
+  /** Computed sheet cards for this character (e.g. the WoW Shaman's Totems and path cards). */
+  featureCards?: (input: FeatureCardInput) => readonly FeatureCard[];
 }
 
 // ── Death Knight (Paladin) — Oath of the Ebon Blade ──────────────────────────

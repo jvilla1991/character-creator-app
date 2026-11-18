@@ -172,6 +172,7 @@ describe('wow-class-variants', () => {
       expect(WOW_SHAMAN.wowSubclasses).toEqual(['Path of the Elements', 'Path of the Spiritual Guardian']);
       expect(WOW_SHAMAN.blurb).toContain('totems');
       expect(WOW_SHAMAN.blurb).toContain('air, earth, fire and water');
+      expect(WOW_SHAMAN.featureCards).toBeDefined();
     });
 
     it('reminds the player about Earthen Ring renown', () => {

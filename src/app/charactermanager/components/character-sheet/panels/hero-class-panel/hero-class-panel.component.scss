@@ -260,3 +260,13 @@
   font-size: 12px;
   color: var(--text-dim);
 }
+
+// ── Computed feature cards (WoW Shaman) ────────────────────────────────────
+
+.feature-cards {
+  grid-template-columns: 1fr;
+}
+
+.feature-card .form-stats {
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+}
