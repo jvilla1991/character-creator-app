@@ -198,3 +198,28 @@ describe('SpellPickerComponent', () => {
     });
   });
 });
+
+describe('SpellPickerComponent (ELI5 summaries)', () => {
+  const candidates = (): DndSpell[] => [
+    { ...dndSpell(1, 'Bless'), eli5: 'Up to three creatures add 1d4 to attack rolls and saves.' },
+    dndSpell(1, 'Homebrew Zap'), // no summary written
+  ];
+
+  function render(showEli5: boolean): HTMLElement {
+    const fixture = TestBed.createComponent(SpellPickerComponent);
+    fixture.componentRef.setInput('spells', candidates());
+    fixture.componentRef.setInput('showEli5', showEli5);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it('shows no summaries by default', () => {
+    expect(render(false).querySelectorAll('.spell-eli5').length).toBe(0);
+  });
+
+  it('shows the one-sentence summary under spells that have one when showEli5 is set', () => {
+    const summaries = Array.from(render(true).querySelectorAll('.spell-eli5')).map(el => el.textContent!.trim());
+
+    expect(summaries).toEqual(['Up to three creatures add 1d4 to attack rolls and saves.']);
+  });
+});

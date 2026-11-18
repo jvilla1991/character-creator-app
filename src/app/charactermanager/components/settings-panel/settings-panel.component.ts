@@ -3,6 +3,7 @@ import { UiStateService } from '../../services/ui-state.service';
 import { PreferencesService, Theme } from '../../services/preferences.service';
 import { CurrentUserService } from '../../services/current-user.service';
 import { AuthService } from '../../services/auth.service';
+import { SpellEli5Service } from '../../services/spell-eli5.service';
 import { DicePrefs } from '../../models/campaign';
 import { tintFor } from '../../utils/character-math';
 import { environment } from '../../../../environments/environment';
@@ -20,8 +21,8 @@ interface ThemeSwatch {
 }
 
 /**
- * Left slide-over with the role toggle (View As), account fields, theme
- * swatches and dice preferences. Opened from the sidebar account-row gear.
+ * Left slide-over with the role toggle (View As) and its Player-only ELI5
+ * spells switch, account fields, theme swatches and dice preferences. Opened from the sidebar account-row gear.
  */
 @Component({
     selector: 'app-settings-panel',
@@ -63,6 +64,7 @@ export class SettingsPanelComponent {
     private prefs: PreferencesService,
     private currentUser: CurrentUserService,
     private auth: AuthService,
+    readonly eli5: SpellEli5Service,
   ) {}
 
   /** Background tint for the header portrait, reusing the shared util. */

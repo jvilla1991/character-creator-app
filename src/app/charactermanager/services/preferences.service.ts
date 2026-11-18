@@ -7,15 +7,16 @@ export type Theme = 'midnight' | 'candlelit' | 'vellum';
 const THEME_KEY = 'tm_theme';
 const DICE_KEY = 'tm_dice';
 const LOCKED_FEATURES_KEY = 'tm_locked_features';
+const ELI5_KEY = 'tm_eli5';
 
 const DEFAULT_DICE: DicePrefs = { style: 'digital', showMods: true, advPrompt: true, critFx: true };
 const THEMES: Theme[] = ['midnight', 'candlelit', 'vellum'];
 
 /**
  * User preferences that survive reloads: the active theme (written to
- * `data-theme` on <html>), dice-rolling options, and whether character sheets
- * show the class features a character has yet to unlock. Persisted to
- * localStorage.
+ * `data-theme` on <html>), dice-rolling options, whether character sheets
+ * show the class features a character has yet to unlock, and the ELI5
+ * spell-summary switch. Persisted to localStorage.
  */
 @Injectable({ providedIn: 'root' })
 export class PreferencesService {
@@ -24,6 +25,12 @@ export class PreferencesService {
 
   private diceSubject = new BehaviorSubject<DicePrefs>(this.loadDice());
   dice$ = this.diceSubject.asObservable();
+
+  // ELI5: show each known spell as one plain sentence instead of its full rules
+  // text. This is only the raw on/off choice; whether it applies to the current
+  // view (it is a Player-view feature) is decided by SpellEli5Service.
+  private readonly _eli5 = signal(this.loadEli5());
+  readonly eli5 = this._eli5.asReadonly();
 
   constructor() {
     // Apply the persisted theme immediately so the first paint is correct.
@@ -60,6 +67,11 @@ export class PreferencesService {
     }
   }
 
+  setEli5(on: boolean): void {
+    try { localStorage.setItem(ELI5_KEY, String(on)); } catch { /* persistence is best-effort */ }
+    this._eli5.set(on);
+  }
+
   private applyTheme(theme: Theme): void {
     document.documentElement.setAttribute('data-theme', theme);
   }
@@ -75,6 +87,10 @@ export class PreferencesService {
     } catch {
       return true;
     }
+  }
+
+  private loadEli5(): boolean {
+    try { return localStorage.getItem(ELI5_KEY) === 'true'; } catch { return false; }
   }
 
   private loadDice(): DicePrefs {

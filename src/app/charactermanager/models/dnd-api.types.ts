@@ -80,6 +80,8 @@ export interface DndSpell {
   components: SpellComponent[];
   duration: string;
   description: string;
+  /** One-sentence plain-language summary, shown when the player's ELI5 switch is on. */
+  eli5?: string;
   material?: string;          // text of material component
   castingTime?: string;       // for multi-action casts (e.g. "1 hour")
   castingTrigger?: string;    // reaction trigger condition

@@ -365,6 +365,13 @@
   color: var(--celestial);
 }
 
+// Right-hand end of a spell label row: the pick counts, then the ELI5 switch.
+.spell-label-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 // Search input + list styles now live in app-spell-picker's own stylesheet
 // (components/spell-picker/spell-picker.component.scss) since the markup moved there.
 
