@@ -60,7 +60,13 @@
 .spell-row {
   display: flex;
   flex-direction: column;
+  // Explicit, because the spellbook's global .spell-row (styles.css) centres
+  // its items on phones and that leaked in here, centring each spell's name
+  // over its left-aligned details.
+  align-items: flex-start;
+  flex-wrap: nowrap;
   gap: 1px;
+  padding: 0;
 }
 
 .spell-name {
