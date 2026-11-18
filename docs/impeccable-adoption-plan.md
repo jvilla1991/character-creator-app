@@ -684,6 +684,7 @@ comment, which is why the comment in `styles.css` avoids spelling the declaratio
 | 19 | `chore/type-floor` | Done — all 61 sub-11px declarations lifted to `var(--text-2xs)` with the tracking ladder, 0 sub-11px nodes on every reachable screen at 320 / 375 / 414 / 1280, seven tight spots re-laid out instead of shrunk, two faded wizard labels brought up to AA. See "Type-floor results" below. |
 | 16–17 | `fix/harden-feedback` | Done — the 56 save / grant / curated-editor / session failures that only reached `console.error` now toast what did not happen (server 4xx message when there is one), failed list loads say so with a retry, and fields put back to the saved value; End Session and Leave stay put when refused. Curated deletes, note deletes, End Session — plus End Encounter and removing a player, which used `window.confirm` — go through one shared crimson confirm. See "Harden results" below. |
 | 22, 24 | `chore/ui-density-polish` (slice 6) | Done — every glow at rest removed except the primary button's (dialogs, login, brand marks, portraits, titles, role switch, dots and pips, selected options, the dice launcher), 65 off-scale corners moved onto `--radius-*` by role, and the level-up dialog brought into the app's dialect (Cinzel labels and tabs, `.btn.primary` commit, a frame that stays put). Rank 21 stays out by owner decision. See "Slice 6 results" below. |
+| 26–27 | `chore/ui-copy-clarify` (slice 4, absorbing slice 5) | Done — one password minimum (8) stated on every form, reset links attributed to an admin instead of the DM, spell slots counted in words ("3 of 4 left"), the DM edit field explained as a new total with a live "That is 7 damage.", rules that lived in hover tooltips given a tap-reachable "?" or plain text, the last generic error messages rewritten, and empty states that tell a failed load, an empty list and a failed search apart. See "Slice 4 results" below. |
 
 #### Slice 1 results (2026-11-14)
 
@@ -1006,3 +1007,127 @@ changed files; its two findings on added lines are the dialogs' black ambient sh
 banner were not opened in a browser for this slice (their changes are a removed `box-shadow` or a
 radius token); the phone-width look was checked at 375px only, since no layout rule changed outside
 the level-up dialog.
+
+#### Slice 4 results (2026-11-18)
+
+Branch `chore/ui-copy-clarify`, cut from `develop` at `64bf24a` and merged with `develop` three
+times before reporting: at `571fcd7` (World of Warcraft Warlock and Warrior, the Give item modal,
+locked class features), at `5bfff8f` (ELI5 spell summaries) and at `02d80ba` (the owner's own
+filler-copy removal, the phone login fit and starting gear in the inventory). The first two were
+clean; the third had one conflict, the character sheet's `imports` list, resolved as `develop`'s
+list plus the help component. The owner's copy commit (`a4a5f77`: placeholders removed from the
+sign-in fields, "Inscribe" → "Create") touched none of the strings below, and the sign-in card
+still fits a 375×667 screen without scrolling with the longer reset line. `/impeccable clarify` drove it; `doctor` ran first and reported no `auto` fixes,
+only the two usual `mention`s (the stale `.impeccable/design.json` sidecar, which
+`/impeccable document` refreshes, and an unset `buildPath`, which needs no answer without image
+generation). Every item was re-read on current `develop` before it was changed. Checked in demo
+mode at 375px (touch emulation) and 1280px.
+
+**What the recheck found.** The password rule in `authentication-service` (read, not changed) is 8
+characters on reset and change-password and **nothing at all on register**; the register form
+asked for 6. Reset links are behind `hasAuthority('ADMIN')`. Several items had moved since Phase 2:
+
+| Phase 2 finding | State on `develop` | Action |
+|---|---|---|
+| "Inscribe Your Name", "Forge a Hero", "No hero selected" | Already plainer after #236: "Create Account", "Create Character", "No Character Selected" | Followed; no in-world label was changed back or added |
+| "No heroes match that name." with no query | Reworded to "No characters match that name." but still shown for an empty roster | Fixed |
+| "Choose a name from the chronicle" on a phone | The sentence was gone, leaving the empty state with no instruction at all | A sentence per screen size |
+| Register fields unlabelled | Name, email and username bound; the two password labels were not | Bound |
+| Encumbered penalty in a tooltip | Already printed under the inventory header | None |
+| Enter submits login twice (rank 7) | Fixed | None |
+
+**Before / after.**
+
+| Where | Before | After |
+|---|---|---|
+| Register, password | placeholder "Min. 6 characters"; form accepted 6 | visible hint "At least 8 characters."; form asks for 8 |
+| Register, second field | label "Confirm" | "Confirm password" |
+| Reset and change password | placeholder "At least 8 characters" | the same rule as a hint under the field |
+| Login footer | "Forgot your password? Ask your DM for a reset link." | "Forgot your password? Ask a Table Mimic admin for a reset link." |
+| Reset link errors | "… ask your DM for a new one." | "… Ask a Table Mimic admin for a new one." |
+| Login failure | "Invalid username or password" (also shown when offline) / "Login failed. Please try again." | "Could not sign you in. Check your username and password, then try again." |
+| Register failure | "Registration failed. …" | "Could not create your account. …" |
+| Admin reset form, any failure | "No user named “x” was found." | "Could not make a reset link for “x”. Check the username and try again." |
+| Spell slots (player) | pips only, filled = spent, tooltip "Slot expended" | "3 of 4 left" beside the pips; pips hidden from assistive tech |
+| Spell slots (DM) | "1 / 4" | "Spent 1 / 4" |
+| Spellbook at the prepared cap | every Prepare disabled, reason in each button's tooltip | "All 5 prepared spells are in use. Unprepare one to prepare another; cantrips are always ready." |
+| DM edit, value field | label "Current Hp"; no hint | "New current HP"; "Now 42 of 52. Enter the HP they end up with, not the amount: for 5 damage, enter 37." and a live "That is 7 damage." |
+| DM edit, log field | "Log entry (leave blank for the automatic one)" over a field already holding it | "Log entry" + "Written for you. Change it to say why, or keep it as it is." |
+| Conditions panel | exhaustion and inspiration rules in two hover tooltips | one "?" in the panel header with both rules (the DM also reads how to set the meter) |
+| Level Up, disabled | reason in a tooltip a disabled button never shows | "?" beside it: "Not enough XP yet. Reach 34000 XP, or ask your DM to grant a level." |
+| Spend Hit Die, none left | disabled "Spend Hit Die (1d8+CON)" | "No Hit Dice left" |
+| Survival panel | stage rule in a tooltip on the exhaustion badge | "?" in the header |
+| Supplies panel | "each container holds 5" in a tooltip | "Each container holds 5 servings. To carry more, buy another container." |
+| Inventory, a stack | "Drop" (drops all of it) / "Give" | "Drop all" / "Give all" |
+| Dashboard chips | "Invite" and "Clock" with hover tooltips | "Invite code" and "Clock", each with a "?" |
+| Party board, nobody joined | "No heroes assigned to this campaign yet." | adds the invite code, where players enter it, and how arrivals show up |
+| Session, player's Short Rest | what it does and why it is disabled in a tooltip | "?" beside it with the same text |
+| Session, DM clock | three button tooltips | one "?" (names the survival cost of advancing time only in a survival campaign) and a hint under the date fields |
+| Rest vote, DM | "… unanimous yes passes." | adds "Allow the rest and Deny both end the vote now, without waiting for the remaining votes." |
+| Loot split, DM | "Force it through" / "Cancel loot" explained by tooltips | the same explanation as a line under the buttons |
+| Hidden enemy health | "—" with a tooltip | "Hidden" |
+| Dice roller | "Drag dice into the field, …" | "Tap or drag dice into the field, …" |
+| Roster, no characters | "No characters match that name." | "You have no characters yet. Create your first one below." (a failed search: "No characters match that search.") |
+| Roster or campaign list failed to load | looked empty | "Could not load your characters / campaigns." with Try again |
+| DM campaign list, none | blank rail | "No campaigns yet. Start one with New Campaign below." |
+| Campaign row, nobody in it | "0 heroes · no heroes" | "No heroes yet" (and "1 hero", not "1 heroes") |
+| No Character Selected | title and a button only | desktop "Pick a character from the list on the left, or create a new one." · phone "Open the menu at the top left to pick a character, or create a new one." |
+| No Campaign Chosen | "Select a campaign from the chronicle …" (nothing on screen is called the chronicle any more) | the list on the left on desktop, the menu on a phone |
+| Session banner picker, no eligible character | "None of your heroes are seated at this campaign yet. Join the campaign first." | says where Join Campaign is and to come back |
+| Joining a session | "Join Session" → "Join the Session" → "Take the Field" | the confirm button is "Join Session"; "takes the field" stays in the sentence above it |
+| Join dialogs | field "Character", option "Choose a hero…" | "Choose a character…" |
+| Fallback toasts for the clock, date, location, shop, loot, encounter loader, eat / drink, purchase, professions, renown, give item | "Could not advance the clock.", "Could not do that right now.", "Purchase failed.", "Please retry." | each names the action and ends with the recovery ("… Try again.") |
+
+**The one change that is not copy.** Stating a single password minimum meant choosing one: the
+register form's validator went from 6 to 8, the number the auth service already enforces on reset
+and change-password. It is its own commit, so it can be dropped if the owner prefers 6 on register.
+The two list services also gained a `loadFailed` signal, which the harden slice had deferred to
+this one, so that "empty" and "failed to load" can read differently.
+
+**How tooltips were handled.** A rule a player needs moved behind the existing `app-context-help`
+button (5 uses → 12) or into plain text; tooltips that only repeat a visible label (Remove,
+Quantity, Close, AC) were left alone. The help button is now a 28px circle with a 44px tap halo
+on touch, so it fits beside pips, chips and buttons; at 44px it pushed the exhaustion pips onto a
+second line, which is why that help sits in the panel header. Its dialog no longer inherits the
+uppercase label styling of the row it sits in.
+
+**Gates.** All re-run after each `develop` merge; these are the final numbers, on `02d80ba`.
+`check:tokens` OK (1575 `var()` uses, no italics), `check:contrast` 135/135, `ng test` 1549/1549
+(the first run after the first merge had one failure: a spec still asserting an old toast string,
+updated), Cypress 7/7 specs (17 tests, including `develop`'s new `give-items` spec), production
+build **450.30 kB** initial (budget 497 kB). New specs cover the DM
+edit hints, the conditions and session help text, the register minimum and the roster's
+load-failed state.
+
+**Left on purpose.**
+- In-world labels the owner has not changed: "Answer the Call", "Ascend a Level", "Strike From The
+  Record", "Review Your Hero", "Enter in Demo Mode".
+- Hero / character: the DM dashboard says "heroes" throughout and the player side says
+  "characters". New copy follows the screen it is on. Whether to unify is the owner's call.
+- "Connect" on the sheet does the same thing as the banner's "Join Session". Renaming it widens a
+  button in the phone header row, so it is a layout question too.
+- Two rules as shipped, where the 2024 Player's Handbook reads differently: Heroic Inspiration is
+  described as "reroll any d20 Test" (2024: any die), and a tooltip says a Long Rest restores half
+  the Hit Dice (2024: all). Neither was reworded or made more visible; the owner should confirm
+  which the table plays.
+- The session banner's wider findings (skip the picker with one character, "already seated") are
+  behaviour, not copy.
+
+**Follow-ups noticed, not fixed here.**
+- `authentication-service` accepts any password length on register; the form is the only guard.
+- The auth service folds a network failure into the same result as a wrong password, so sign-in
+  cannot say which it was.
+- `/reset-password` without a token still shows the whole form with a disabled button.
+- The DM's Set date form overflows at 375px (the clock panel grows to 928px wide).
+- The DM's survival and slot chips on the initiative board ("H3 T2 F1", "L1 3/4") are explained
+  only by tooltips.
+- The sheet name is renamed by double-click, which a touch screen cannot do.
+- Error and success toasts still look identical (the critique's severity finding).
+
+**Not covered.** Real devices (Chromium emulation only). Demo mode does not reach the player's
+session screen, the survival or supplies panels, the rest-vote dialog, the loot split or a spell
+list at its prepared cap; those strings were checked in the template and by spec. The session
+banner's picker was forced open through its component. Only midnight was looked at as a whole
+page; the three themes were checked by computed contrast for the new text with transitions off
+(spell-slot count 8.5:1 or better, field hints 6.1:1 or better, empty-state sentences 5.8:1 or
+better), since every new style uses existing tokens.

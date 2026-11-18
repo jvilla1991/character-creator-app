@@ -893,7 +893,7 @@ describe('HeroClassPanelComponent', () => {
       expect(text).toContain('Recommended domain');
       expect(text).toContain('You choose your domain at Cleric level 3.');
       expect(text).toContain('Suggested Discipline Spells');
-      expect(text).toContain('like any other cleric spell');
+      expect(text).not.toContain('Suggestions only');
       expect(text).not.toContain('Beast Forms');
       const marks = Array.from(el.querySelectorAll('.suggested-spell'))
         .filter(n => n.querySelector('.wow-mark'))

@@ -1,8 +1,9 @@
 <app-modal [title]="'Edit ' + request.label" tone="celestial" (dismiss)="cancel()">
 
   <div class="field">
-    <label for="dm-edit-value">{{ request.label | titlecase }}</label>
+    <label for="dm-edit-value">New {{ request.label }}</label>
     <input id="dm-edit-value"
+      aria-describedby="dm-edit-value-hint"
       type="number"
       [(ngModel)]="valueDraft"
       [min]="request.min"
@@ -11,16 +12,27 @@
       (keydown.enter)="save()"
       autofocus
     >
+    <!-- The field takes the new total, not an amount to add or take away. The
+    hint says so, and for hit points turns the typed total back into the
+    damage or healing the DM had in mind. -->
+    <div class="field-hint" id="dm-edit-value-hint">
+      {{ valueHint }}
+      @if (deltaHint; as delta) {
+        <strong class="dm-edit-delta">{{ delta }}</strong>
+      }
+    </div>
   </div>
 
   <div class="field">
-    <label for="dm-edit-log">Log entry (leave blank for the automatic one)</label>
+    <label for="dm-edit-log">Log entry</label>
     <textarea id="dm-edit-log"
+      aria-describedby="dm-edit-log-hint"
       rows="2"
       [(ngModel)]="descDraft"
       [maxLength]="descMaxLength"
       (ngModelChange)="onDescInput()"
     ></textarea>
+    <div class="field-hint" id="dm-edit-log-hint">Written for you. Change it to say why, or keep it as it is.</div>
   </div>
 
   <div class="modal-actions">

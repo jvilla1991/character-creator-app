@@ -6,7 +6,7 @@
       <span class="panel-title">Short Rest Vote</span>
       <span class="vote-countdown">{{ secondsLeft() }}s</span>
     </div>
-    <div class="vote-sub">{{ restVote().initiatorName }} calls for a short rest — unanimous yes passes.</div>
+    <div class="vote-sub">{{ restVote().initiatorName }} calls for a short rest — unanimous yes passes. Allow the rest and Deny both end the vote now, without waiting for the remaining votes.</div>
     <div class="vote-grid">
       @for (b of restVote().votes; track b.participantId) {
         <div class="vote-row">

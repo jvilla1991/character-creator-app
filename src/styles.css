@@ -960,6 +960,7 @@ em, i, cite, dfn, address, var { font-style: normal; }
 }
 .spell-slots {
   display: flex;
+  align-items: center;
   gap: 4px;
   margin-left: auto;
 }
@@ -973,6 +974,15 @@ em, i, cite, dfn, address, var { font-style: normal; }
   transition: background .15s;
 }
 .spell-slot.used { background: var(--gold); }
+/* The words that say what the pips mean ("3 of 4 left"), and the DM's
+   "Spent" before the editable used / max pair. */
+.spell-slots-left,
+.slot-edit-label {
+  margin-right: 4px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  color: var(--text-2);
+}
 
 /* === SUPPLIES (travel rations/water tracked as charges) === */
 .supply-row {
@@ -1396,6 +1406,14 @@ body:has(.drawer-scrim.show) .dice-fab {
   border-radius: 2px;
   outline: none;
 }
+/* A rule the field enforces, shown under the control so it stays readable while
+   typing (a placeholder vanishes on the first keystroke). */
+.field-hint {
+  margin-top: 6px;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-dim);
+}
 .field input:focus, .field select:focus {
   border-color: var(--gold);
   box-shadow: var(--glow-gold);
@@ -1530,6 +1548,13 @@ select:focus {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text);
+}
+/* Copy that differs by layout: the sidebar is a visible list at desktop widths
+   and a drawer behind the menu button at 820px and below. */
+.narrow-only { display: none; }
+@media (max-width: 820px) {
+  .wide-only { display: none; }
+  .narrow-only { display: inline; }
 }
 .empty-sub {
   font-family: 'Newsreader', serif;
@@ -2201,6 +2226,16 @@ select:focus {
   border-radius: 100px;
 }
 .invite-chip .eyebrow { margin: 0; }
+/* Chips flow in one wrapping row, each with its "?" help button beside it. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+.chip-with-help { display: inline-flex; align-items: center; }
+.chip-row .invite-chip { margin-top: 0; }
 .invite-code {
   font-size: 15px;
   letter-spacing: 0.22em;

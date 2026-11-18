@@ -54,15 +54,12 @@
             class="btn"
             (click)="initiateRestVote(state)"
             [disabled]="state.shortRestOpen || state.restVote?.status === 'ACTIVE' || state.status !== 'LOBBY'"
-            [title]="state.shortRestOpen
-              ? 'A short rest is already underway'
-              : state.restVote?.status === 'ACTIVE'
-                ? 'A rest vote is already being tallied'
-                : state.status !== 'LOBBY'
-                  ? 'No resting mid-encounter'
-                  : 'Call a short rest — the party votes, and a unanimous yes opens the rest'">
+            [title]="shortRestHint(state)">
             Short Rest
           </button>
+          <!-- What the button does, or why it is disabled: a phone has no hover
+          and a disabled button shows no tooltip at all. -->
+          <app-context-help label="Short Rest" [text]="shortRestHint(state)"></app-context-help>
         }
         @if (!state.dm && myParticipantId(state) != null) {
           <button
@@ -124,6 +121,7 @@
                 : 'Announce a short rest — players may then spend hit dice to heal'">
               {{ state.shortRestOpen ? 'End Short Rest' : 'Short Rest' }}
             </button>
+            <app-context-help label="Campaign Clock" [text]="clockHelp"></app-context-help>
           </div>
         }
         @if (state.dm && editingTime) {
@@ -161,6 +159,13 @@
               }
             </select>
             <button class="btn primary" (click)="commitTime(state)">Set</button>
+          </div>
+          <div class="field-hint">
+            @if (hasWeekDays) {
+              The weekday and the week count move on their own when the clock advances past night.
+            } @else {
+              Weekday is free text. Entering one you have used before marks a completed week.
+            }
           </div>
         }
       </div>

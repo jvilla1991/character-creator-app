@@ -56,6 +56,8 @@ export class SidenavComponent implements OnInit {
   });
 
   private allPcs: PC[] = [];
+  /** The roster fetch failed: say so, with a retry, instead of "no characters". */
+  readonly pcsLoadFailed = this.pcService.loadFailed;
   private readonly doc = inject(DOCUMENT);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -84,6 +86,10 @@ export class SidenavComponent implements OnInit {
       .subscribe(pcs => {
         this.allPcs = pcs;
       });
+  }
+
+  retryPcs(): void {
+    this.pcService.refreshPCs();
   }
 
   /** The full roster, filtered by the current search query. */

@@ -62,7 +62,7 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
     this.loading.set(true);
     this.requests.add(this.service.list(this.pc.id, this.campaignId).subscribe({
       next: rows => { this.factions.set(rows); this.loading.set(false); },
-      error: () => { this.error.set('Could not load renown. Please retry.'); this.loading.set(false); },
+      error: () => { this.error.set('Could not load renown. Try again.'); this.loading.set(false); },
     }));
   }
   toggle(id: number): void {
@@ -78,7 +78,7 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
         if (row.parentId != null) this.collapsed.delete(row.parentId);
         this.name = ''; this.formOpen = false; this.saving.set(false);
       },
-      error: () => { this.error.set('Could not add faction. Please try again.'); this.saving.set(false); },
+      error: () => { this.error.set('Could not add the faction. Try again.'); this.saving.set(false); },
     }));
   }
   adjust(row: RenownFaction, delta: number): void {
@@ -87,7 +87,7 @@ export class RenownPanelComponent implements OnChanges, OnDestroy {
     this.error.set('');
     this.requests.add(this.service.adjust(this.pc.id, this.campaignId, row.id, delta).subscribe({
       next: updated => { this.factions.update(rows => rows.map(f => f.id === updated.id ? updated : f)); this.saving.set(false); },
-      error: () => { this.error.set('Could not adjust renown. Please retry.'); this.saving.set(false); },
+      error: () => { this.error.set('Could not adjust renown. Try again.'); this.saving.set(false); },
     }));
   }
 }

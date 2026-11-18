@@ -16,7 +16,9 @@ export class RegisterComponent {
    * Typed reactive form. The rules mirror the old hand-rolled `formValid`
    * getter exactly:
    *  - names / email / username must be non-blank after trimming
-   *  - password needs at least 6 characters
+   *  - password needs at least 8 characters, the same minimum the auth
+   *    service enforces on reset and change-password (it checks nothing on
+   *    register, so this form is the only guard)
    *  - confirm may stay empty, but once typed it must match the password
    *    (enforced by the group-level `passwordsMatch` validator)
    */
@@ -26,7 +28,7 @@ export class RegisterComponent {
       lastName:        ['', requiredTrimmed],
       email:           ['', requiredTrimmed],
       userName:        ['', requiredTrimmed],
-      password:        ['', [Validators.required, Validators.minLength(6)]],
+      password:        ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: [''],
     },
     { validators: passwordsMatch('password', 'confirmPassword') },
@@ -68,12 +70,12 @@ export class RegisterComponent {
         if (response?.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage.set('Registration failed. The username or email may already be in use.');
+          this.errorMessage.set('Could not create your account. That username or email may already be in use.');
         }
       },
       error: () => {
         this.loading.set(false);
-        this.errorMessage.set('Registration failed. Please try again.');
+        this.errorMessage.set('Could not create your account. Check your connection and try again.');
       }
     });
   }

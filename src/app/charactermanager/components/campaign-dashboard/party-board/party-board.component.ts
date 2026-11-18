@@ -17,6 +17,9 @@ import { ClassDisplayPipe } from '../../../pipes/class-display.pipe';
 })
 export class PartyBoardComponent {
   readonly members = input<PC[]>([]);
+  /** The campaign's invite code, quoted in the empty state so "nobody has
+   *  joined" comes with the step that fixes it. */
+  readonly inviteCode = input<string | null>(null);
   readonly openHero = output<PC>();
 
   tintFor(pc: PC): string { return tintFor(pc); }

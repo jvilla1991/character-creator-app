@@ -7,6 +7,17 @@
   </div>
 
   <div style="padding-top: 4px;">
+    @if (loadFailed()) {
+      <p role="status"
+        style="padding: 20px; color: var(--text-dim); text-align: center; font-size: 13px; margin: 0;">
+        Could not load your campaigns.
+        <button type="button" class="btn link" (click)="retry()">Try again</button>
+      </p>
+    } @else if ((count$ | async) === 0) {
+      <p style="padding: 20px; color: var(--text-dim); text-align: center; font-size: 13px; margin: 0;">
+        No campaigns yet. Start one with New Campaign below.
+      </p>
+    }
     @for (row of rows$ | async; track row) {
       <div
         class="campaign-item"
@@ -26,7 +37,13 @@
         </div>
         <div style="min-width: 0;">
           <div class="campaign-name">{{ row.campaign.name }}</div>
-          <div class="campaign-meta">{{ row.heroes }} heroes · {{ row.range }}</div>
+          <div class="campaign-meta">
+            @if (row.heroes) {
+              {{ row.heroes }} {{ row.heroes === 1 ? 'hero' : 'heroes' }} · {{ row.range }}
+            } @else {
+              No heroes yet
+            }
+          </div>
         </div>
       </div>
     }

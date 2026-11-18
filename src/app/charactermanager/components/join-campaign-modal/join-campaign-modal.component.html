@@ -11,7 +11,7 @@
       <div class="field">
         <label for="join-character">Character</label>
         <select id="join-character" [(ngModel)]="pcId">
-          <option [ngValue]="null" disabled>Choose a hero…</option>
+          <option [ngValue]="null" disabled>Choose a character…</option>
           @for (pc of pcs$ | async; track pc) {
             <option [ngValue]="pc.id">{{ pc.name }} — {{ pc.race }} {{ pc | classDisplay }}</option>
           }

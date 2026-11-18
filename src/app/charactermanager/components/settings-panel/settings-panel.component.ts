@@ -108,7 +108,7 @@ export class SettingsPanelComponent {
         this.currentPassword = this.newPassword = this.confirmPassword = '';
       } else {
         // The backend rejects a wrong current password with a 400 + message.
-        this.passwordError = 'Could not change password — check your current password.';
+        this.passwordError = 'Could not change your password. Check your current password and try again.';
       }
     });
   }
@@ -129,7 +129,7 @@ export class SettingsPanelComponent {
       },
       error: () => {
         this.generatingReset = false;
-        this.resetError = `No user named “${userName}” was found.`;
+        this.resetError = `Could not make a reset link for “${userName}”. Check the username and try again.`;
       },
     });
   }

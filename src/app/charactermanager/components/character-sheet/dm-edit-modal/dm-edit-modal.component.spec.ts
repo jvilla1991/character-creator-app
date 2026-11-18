@@ -39,6 +39,36 @@ describe('DmEditModalComponent', () => {
     expect(component.autoText).toBe('DM changed gp — → 10');
   });
 
+  // --- hints: the field takes a new total, not an amount ---
+
+  it('tells the DM the field takes the new total', () => {
+    setRequest(request());
+    expect(component.valueHint).toBe('Now 15. Enter the new total.');
+    expect(component.deltaHint).toBeNull();
+  });
+
+  it('gives hit points a worked example from the saved value', () => {
+    setRequest(request({ label: 'current HP', value: 42, max: 78 }));
+    expect(component.valueHint)
+      .toBe('Now 42 of 78. Enter the HP they end up with, not the amount: for 5 damage, enter 37.');
+  });
+
+  it('never suggests a negative total in the example', () => {
+    setRequest(request({ label: 'current HP', value: 3, max: 20 }));
+    expect(component.valueHint).toContain('for 5 damage, enter 0.');
+  });
+
+  it('turns a typed hit point total back into damage or healing', () => {
+    setRequest(request({ label: 'current HP', value: 42, max: 78 }));
+    expect(component.deltaHint).toBeNull();
+    component.valueDraft = 35;
+    expect(component.deltaHint).toBe('That is 7 damage.');
+    component.valueDraft = 50;
+    expect(component.deltaHint).toBe('That is 8 healing.');
+    component.valueDraft = 200; // clamped to max
+    expect(component.deltaHint).toBe('That is 36 healing.');
+  });
+
   // --- live-update / pin / re-arm ---
 
   it('live-updates the description as the value changes while untouched', () => {

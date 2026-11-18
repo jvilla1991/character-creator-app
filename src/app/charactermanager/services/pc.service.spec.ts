@@ -59,6 +59,23 @@ describe('PCService', () => {
     expect(service).toBeTruthy();
   });
 
+  // ── roster load failure is remembered, so "empty" and "failed" differ ─────
+
+  describe('refreshPCs', () => {
+    it('remembers a failed load and forgets it on the next success', () => {
+      spyOn(console, 'error');
+      expect(service.loadFailed()).toBeFalse();
+
+      service.refreshPCs();
+      httpMock.expectOne(service.pcUrl + 'all').flush('down', { status: 503, statusText: 'Unavailable' });
+      expect(service.loadFailed()).toBeTrue();
+
+      service.refreshPCs();
+      httpMock.expectOne(service.pcUrl + 'all').flush([]);
+      expect(service.loadFailed()).toBeFalse();
+    });
+  });
+
   // ── addPC serialization ─────────────────────────────────────────────────────
 
   describe('addPC', () => {

@@ -50,7 +50,7 @@ export class ProfessionsPanelComponent implements OnChanges, OnDestroy {
     this.grantFormOpen = false; this.confirming = null;
     this.requests.add(this.service.list(this.pc.id).subscribe({
       next: grants => { this.grants.set(grants); this.loading.set(false); this.loaded.set(true); },
-      error: () => { this.loading.set(false); this.error.set('Could not load professions. Please try again.'); }
+      error: () => { this.loading.set(false); this.error.set('Could not load the professions. Try again.'); }
     }));
   }
   openGrant(): void { this.selected = this.available[0].key; this.grantFormOpen = true; this.error.set(null); }
@@ -60,7 +60,7 @@ export class ProfessionsPanelComponent implements OnChanges, OnDestroy {
     this.saving.set(true); this.error.set(null);
     this.requests.add(this.service.grant(this.pc.id, this.selected).subscribe({
       next: grant => { this.grants.update(rows => [...rows, grant]); this.saving.set(false); this.grantFormOpen = false; },
-      error: () => { this.saving.set(false); this.error.set('Could not grant profession. Check the prerequisite and your DM access, then try again.'); }
+      error: () => { this.saving.set(false); this.error.set('Could not grant the profession. Check its prerequisite and your DM access, then try again.'); }
     }));
   }
   revoke(profession: ProfessionKey): void {
@@ -68,7 +68,7 @@ export class ProfessionsPanelComponent implements OnChanges, OnDestroy {
     this.saving.set(true); this.error.set(null);
     this.requests.add(this.service.revoke(this.pc.id, profession).subscribe({
       next: () => { this.grants.update(rows => rows.filter(g => g.profession !== profession)); this.saving.set(false); this.confirming = null; },
-      error: () => { this.saving.set(false); this.error.set('Could not revoke profession. Please try again.'); }
+      error: () => { this.saving.set(false); this.error.set('Could not revoke the profession. Try again.'); }
     }));
   }
 }
