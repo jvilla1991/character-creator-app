@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
-  HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells,
+  HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells, orList,
   specializationTitle,
 } from '../../../../models/hero-class';
 import {
@@ -113,6 +113,15 @@ export class HeroClassPanelComponent {
   get guidance(): SpecializationGuidance | null {
     const spec = this._pc?.specialization;
     return (spec && this.hero?.guidance?.[spec]) || null;
+  }
+
+  /** "Interception or Protection" / "Blessed Warrior — with Sacred Flame and Spare the Dying"; '' when none. */
+  get recommendedFightingStyleText(): string {
+    const g = this.guidance;
+    if (!g?.fightingStyles?.length) return '';
+    const styles = orList(g.fightingStyles);
+    const cantrips = g.fightingStyleCantrips ?? [];
+    return cantrips.length ? `${styles} — with ${cantrips.join(' and ')}` : styles;
   }
 
   /** What the base class calls its subclass ('circle', 'oath'), for the recommendation copy. */

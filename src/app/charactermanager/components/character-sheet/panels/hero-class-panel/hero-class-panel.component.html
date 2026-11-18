@@ -61,6 +61,19 @@
       </ul>
     }
 
+    <!-- WoW variant: recommended level-2 fighting style (informational) -->
+    @if (guidance?.fightingStyles?.length) {
+      <div class="feature">
+        <div class="feature-head">
+          <span class="feature-name">Recommended fighting style</span>
+          <span class="feature-source">{{ h.baseClass }} 2</span>
+        </div>
+        <div class="feature-desc">
+          {{ recommendedFightingStyleText }}
+        </div>
+      </div>
+    }
+
     <!-- WoW variant: recommended subclass (informational) -->
     @if (guidance; as g) {
       <div class="feature">

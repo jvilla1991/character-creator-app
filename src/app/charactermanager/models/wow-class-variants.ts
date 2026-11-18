@@ -128,5 +128,84 @@ export const WOW_DRUID: HeroClassOption = {
   beastForms: true,
 };
 
+// ── Paladin ──────────────────────────────────────────────────────────────────
+
+export const WOW_PALADIN_SPECIALIZATIONS = ['Holy', 'Protection', 'Retribution'] as const;
+
+/** Per-specialization picks (class step box + sheet panel). Paladins have no level-1 spells step, so spells are text. */
+export const WOW_PALADIN_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Holy: {
+    level1Spells: ['Cure Wounds', 'Shield of Faith'],
+    weaponMastery: ['Flails', 'Longswords', 'Morningstars', 'Warhammers'],
+    fightingStyles: ['Blessed Warrior'],
+    fightingStyleCantrips: ['Sacred Flame', 'Spare the Dying'],
+    subclass: { name: 'Oath of the Holy' },
+    feats: ['Durable', 'Healer', 'Inspiring Leader', 'Shield Master', 'War Caster'],
+    note: 'Want to heal above all else? A Cleric of the War Domain can follow this same Holy guidance.',
+  },
+  Protection: {
+    level1Spells: ['Compelled Duel', 'Searing Smite'],
+    weaponMastery: ['Battleaxes', 'Flails', 'Longswords', 'Morningstars', 'Warhammers'],
+    fightingStyles: ['Interception', 'Protection'],
+    subclass: { name: 'Oath of Devotion' },
+    feats: ['Durable', 'Heavy Armor Master', 'Sentinel', 'Shield Master', 'Tough'],
+  },
+  Retribution: {
+    level1Spells: ['Heroism', 'Wrathful Smite'],
+    weaponMastery: ['Greataxes', 'Greatswords', 'Mauls'],
+    fightingStyles: ['Great Weapon Fighting'],
+    subclass: { name: 'Oath of Vengeance' },
+    feats: ['Crusher', 'Great Weapon Master', 'Slasher'],
+  },
+};
+
+/** Suggested (not always-prepared) spells per specialization, by spell level. */
+export const WOW_PALADIN_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Holy: [
+    { level: 1, spells: ['Bless', 'Heroism', 'Searing Smite'] },
+    { level: 2, spells: ['Aid', 'Warding Bond'] },
+    { level: 3, spells: ["Crusader's Mantle", 'Revivify'] },
+    { level: 4, spells: ['Aura of Purity', 'Divine Shield'] },
+    { level: 5, spells: ['Circle of Power', 'Raise Dead'] },
+  ],
+  Protection: [
+    { level: 1, spells: ['Heroism', 'Shield of Faith'] },
+    { level: 2, spells: ['Shining Smite', 'Warding Bond'] },
+    { level: 3, spells: ["Crusader's Mantle", 'Guided Prayer'] },
+    { level: 4, spells: ['Banishment', 'Divine Shield'] },
+    { level: 5, spells: ['Banishing Smite', 'Circle of Power'] },
+  ],
+  Retribution: [
+    { level: 1, spells: ['Divine Favor', 'Thunderous Smite'] },
+    { level: 2, spells: ['Consecration', 'Shining Smite'] },
+    { level: 3, spells: ["Crusader's Mantle", 'Elemental Weapon'] },
+    { level: 4, spells: ['Staggering Smite'] },
+    { level: 5, spells: ['Destructive Wave'] },
+  ],
+};
+
+export const WOW_PALADIN: HeroClassOption = {
+  key: 'Paladin (World of Warcraft)',
+  // Same rule as the Druid: the WoW name equals the base name, so no parenthetical.
+  label: 'Paladin',
+  name: 'Paladin',
+  baseClass: 'Paladin',
+  source: 'World of Warcraft',
+  blurb: 'A holy knight who calls on the Light to mend the wounded, stand between allies '
+    + 'and harm, and bring righteous fury down on the wicked.',
+  subclassNote: 'Chosen as normal at Paladin level 3',
+  subclassTerm: 'oath',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Holy',        desc: 'A healer who wraps allies in the Light and shields them from harm.' },
+    { name: 'Protection',  desc: 'A sword-and-shield defender who heals themselves and others while holding the line.' },
+    { name: 'Retribution', desc: 'A zealous crusader with a two-handed weapon who smites the wicked.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_PALADIN_GUIDANCE,
+  suggestedSpells: WOW_PALADIN_SUGGESTED_SPELLS,
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN];

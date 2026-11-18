@@ -1,7 +1,7 @@
 import {
   DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByKey, heroClassFor,
-  heroClassForSubclass, heroClassSpells, recommendedStartingSpells, recommendedSubclassFor, soulFragments,
-  specializationHeading, specializationTitle,
+  heroClassForSubclass, heroClassSpells, orList, recommendedFightingStylesFor, recommendedStartingSpells,
+  recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle,
 } from './hero-class';
 
 describe('hero-class', () => {
@@ -11,9 +11,11 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
-      expect(options.map(o => o.source))
-        .toEqual(['Base Game', 'Base Game', 'Base Game', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
+      expect(options.map(o => o.source)).toEqual([
+        'Base Game', 'Base Game', 'Base Game',
+        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+      ]);
     });
 
     it('maps Death Knight (Paladin) onto the Paladin base class with the Ebon Blade subclass', () => {
@@ -184,5 +186,65 @@ describe('hero-class', () => {
       expect(recommendedStartingSpells(wowDruid, '')).toEqual([]);
       expect(recommendedStartingSpells(deathKnight, 'Frost')).toEqual([]);
     });
+  });
+
+  describe('World of Warcraft Paladin', () => {
+    const wowPaladin = heroClassByKey('Paladin (World of Warcraft)') as HeroClassOption;
+
+    it('is a Paladin variant with no fixed subclass, labelled just "Paladin", beside the base Paladin', () => {
+      const rows = buildClassOptions(['Paladin']).filter(o => o.label === 'Paladin');
+      expect(rows.map(o => [o.key, o.source])).toEqual([
+        ['Paladin', 'Base Game'], ['Paladin (World of Warcraft)', 'World of Warcraft'],
+      ]);
+      expect(wowPaladin.baseClass).toBe('Paladin');
+      expect(wowPaladin.subclass).toBeUndefined();
+      expect(wowPaladin.subclassNote).toBe('Chosen as normal at Paladin level 3');
+      expect(wowPaladin.subclassTerm).toBe('oath');
+      expect(wowPaladin.respecOnLevelUp).toBeTrue();
+      expect(wowPaladin.specializations.map(s => s.name)).toEqual(['Holy', 'Protection', 'Retribution']);
+      expect(wowPaladin.specializations.every(s => s.desc.length > 20)).toBeTrue();
+      // The Death Knight stays its own row on the same base class.
+      expect(buildClassOptions(['Paladin']).filter(o => o.baseClass === 'Paladin').map(o => o.key))
+        .toEqual(['Paladin', 'Death Knight (Paladin)', 'Paladin (World of Warcraft)']);
+    });
+
+    it('identifies a WoW paladin by clazz paladin + a paladin specialization + no hero subclass', () => {
+      expect(heroClassFor({ clazz: 'Paladin', subclass: null, specialization: 'Holy' })).toBe(wowPaladin);
+      expect(heroClassFor({ clazz: 'paladin', subclass: 'Oath of Devotion', specialization: 'Protection' })).toBe(wowPaladin);
+      expect(heroClassFor({ clazz: 'Paladin', subclass: 'Oath of Vengeance', specialization: null })).toBeUndefined();
+      // A Death Knight keeps its runes and stays a Death Knight.
+      expect(heroClassFor({ clazz: 'Paladin', subclass: EBON_BLADE_SUBCLASS, specialization: 'Blood' })).toBe(deathKnight);
+      expect(heroClassFor({ clazz: 'Paladin', subclass: EBON_BLADE_SUBCLASS, specialization: 'Holy' })).toBe(deathKnight);
+      // A druid spec on a paladin (or vice versa) is not a variant.
+      expect(heroClassFor({ clazz: 'Paladin', specialization: 'Balance' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Druid', specialization: 'Holy' })).toBeUndefined();
+    });
+
+    it('recommends an oath and fighting styles per specialization', () => {
+      expect(recommendedSubclassFor(wowPaladin, 'Holy')).toBe('Oath of the Holy');
+      expect(recommendedSubclassFor(wowPaladin, 'Protection')).toBe('Oath of Devotion');
+      expect(recommendedSubclassFor(wowPaladin, 'Retribution')).toBe('Oath of Vengeance');
+      expect(recommendedFightingStylesFor(wowPaladin, 'Holy')).toEqual(['Blessed Warrior']);
+      expect(recommendedFightingStylesFor(wowPaladin, 'Protection')).toEqual(['Interception', 'Protection']);
+      expect(recommendedFightingStylesFor(wowPaladin, 'Retribution')).toEqual(['Great Weapon Fighting']);
+      expect(recommendedFightingStylesFor(wowPaladin, null)).toEqual([]);
+      expect(recommendedFightingStylesFor(deathKnight, 'Blood')).toEqual([]);
+    });
+
+    it('has no level-1 cantrips, so the starting recommendations are its level-1 spells', () => {
+      expect(wowPaladin.guidance!['Holy'].cantrips).toBeUndefined();
+      expect(recommendedStartingSpells(wowPaladin, 'Holy')).toEqual(['Cure Wounds', 'Shield of Faith']);
+      expect(recommendedStartingSpells(wowPaladin, 'Retribution')).toEqual(['Heroism', 'Wrathful Smite']);
+    });
+
+    it('shows the spec without a suffix', () => {
+      expect(specializationTitle(wowPaladin, 'Retribution')).toBe('Retribution');
+    });
+  });
+
+  it('joins choice lists in running text', () => {
+    expect(orList(['Archery'])).toBe('Archery');
+    expect(orList(['Interception', 'Protection'])).toBe('Interception or Protection');
+    expect(orList(['A', 'B', 'C'])).toBe('A, B, or C');
   });
 });

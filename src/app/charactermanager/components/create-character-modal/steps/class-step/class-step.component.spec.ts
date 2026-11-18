@@ -64,9 +64,53 @@ describe('ClassStepComponent — World of Warcraft Druid', () => {
     fixture.detectChanges();
     const emitted: string[] = [];
     fixture.componentInstance.toggle.subscribe(k => emitted.push(k));
-    const heads = fixture.nativeElement.querySelectorAll('.accordion-head') as NodeListOf<HTMLButtonElement>;
+    const heads = Array.from(fixture.nativeElement.querySelectorAll('.accordion-head') as NodeListOf<HTMLButtonElement>)
+      .filter(h => h.textContent!.trim().startsWith('Druid'));
     heads[0].click();
-    heads[heads.length - 1].click();
+    heads[1].click();
     expect(emitted).toEqual(['Druid', WOW_DRUID_KEY]);
+  });
+});
+
+describe('ClassStepComponent — World of Warcraft Paladin', () => {
+  const WOW_PALADIN_KEY = 'Paladin (World of Warcraft)';
+  const detail = { hit_die: 10, saving_throws: [{ name: 'WIS' }, { name: 'CHA' }] } as unknown as DndClass;
+
+  function render(specialization: string) {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(WOW_PALADIN_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Paladin']));
+    fixture.componentRef.setInput('selectedKey', WOW_PALADIN_KEY);
+    fixture.componentRef.setInput('clazz', 'Paladin');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', hero.guidance![specialization]);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows the Holy box: spells as text, mastery, Blessed Warrior cantrips, oath, feats and the cleric aside', () => {
+    const el = render('Holy');
+    const box = el.querySelector('.spec-guidance') as HTMLElement;
+    expect(box.textContent).toContain('Recommended for Holy');
+    expect(box.textContent).not.toContain('Cantrips');
+    expect(box.textContent).toContain('Cure Wounds, Shield of Faith');
+    expect(box.textContent).toContain('At least one of Flails, Longswords, Morningstars, Warhammers');
+    expect(box.textContent).toContain('Blessed Warrior');
+    expect(box.textContent).toContain('Sacred Flame, Spare the Dying');
+    expect(box.textContent).toContain('Oath of the Holy');
+    expect(box.textContent).toContain('Inspiring Leader');
+    expect(box.textContent).toContain('War Domain');
+    expect(box.textContent).not.toContain('Spells step');
+    expect(el.textContent).toContain('Chosen as normal at Paladin level 3');
+  });
+
+  it('shows "or" between Protection\'s fighting styles and the Retribution picks', () => {
+    expect(render('Protection').querySelector('.spec-guidance')!.textContent).toContain('Interception or Protection');
+    const ret = render('Retribution').querySelector('.spec-guidance')!.textContent!;
+    expect(ret).toContain('Great Weapon Fighting');
+    expect(ret).toContain('Greataxes, Greatswords, Mauls');
+    expect(ret).toContain('Oath of Vengeance');
+    expect(ret).toContain('Great Weapon Master');
   });
 });

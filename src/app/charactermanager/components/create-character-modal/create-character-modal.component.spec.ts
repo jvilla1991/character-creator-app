@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1086,6 +1086,67 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(restored.clazz).toBe('Druid');
       expect(restored.specialization).toBe('Feral');
       localStorage.removeItem((component as any).draftKey);
+    });
+  });
+
+  describe('World of Warcraft Paladin', () => {
+    const WOW_PALADIN_KEY = 'Paladin (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Druid', 'Paladin', 'Ranger'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Paladin" row tagged World of Warcraft beside the base Paladin, and only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.label === 'Paladin');
+      expect(rows().map(o => [o.key, o.source])).toEqual([
+        ['Paladin', 'Base Game'], [WOW_PALADIN_KEY, 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.key)).toEqual([WOW_PALADIN_KEY]);
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.key)).toEqual(['Paladin']);
+    });
+
+    it('stores clazz Paladin with no subclass and requires a specialization', () => {
+      component.toggleClass(WOW_PALADIN_KEY);
+      expect(component.clazz).toBe('Paladin');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Paladin');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Paladin');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Holy', 'Protection', 'Retribution']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Holy');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.specializationGuidance?.subclass.name).toBe('Oath of the Holy');
+      // No level-1 spells step for paladins: guidance stays text.
+      expect(component.isSpellcastingClass).toBeFalse();
+    });
+
+    it('emits clazz Paladin + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_PALADIN_KEY);
+      component.selectSpecialization('Retribution');
+      component.name = 'Tirion';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Paladin');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Retribution');
+        done();
+      });
+      component.submit();
+    });
+
+    it('keeps the Death Knight a separate row with its fixed Ebon Blade subclass', () => {
+      component.toggleClass('Death Knight (Paladin)');
+      expect(component.clazz).toBe('Paladin');
+      expect(component.selectedSubclass).toBe('Oath of the Ebon Blade');
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Blood', 'Frost', 'Unholy']);
+      component.toggleClass(WOW_PALADIN_KEY);
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassKey).toBe(WOW_PALADIN_KEY);
     });
   });
 

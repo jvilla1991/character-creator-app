@@ -72,13 +72,22 @@ export interface HeroBonusSpell {
 export interface SpecializationGuidance {
   /** A base-class feature choice to suggest, e.g. Primal Order → Magician. */
   featureChoice?: { feature: string; option: string };
-  cantrips: readonly string[];
+  /** Starting cantrips (classes with cantrips at level 1). */
+  cantrips?: readonly string[];
   level1Spells: readonly string[];
+  /** Weapon Mastery: take at least one of these weapons. */
+  weaponMastery?: readonly string[];
+  /** The level-2 Fighting Style(s) to take — any one of them. */
+  fightingStyles?: readonly string[];
+  /** The cantrips to learn with that style when it teaches some (e.g. Blessed Warrior). */
+  fightingStyleCantrips?: readonly string[];
   /** The subclass to take when it comes due, with an optional flavour note. */
   subclass: { name: string; note?: string };
   feats: readonly string[];
   /** An extra play tip shown on the sheet panel. */
   tip?: string;
+  /** A short aside shown under the class-step box (e.g. another class that fits the role). */
+  note?: string;
 }
 
 /** One spell level of a specialization's suggested (not always-prepared) spells. */
@@ -276,9 +285,9 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
 /**
  * The hero class a character is; undefined for everyone else.
  * - Subclass-based hero classes: base class + the hero subclass.
- * - WoW variants without a fixed subclass (the WoW Druid): base class + a
- *   non-null specialization + no hero subclass. A druid with no specialization
- *   is a plain base-game druid.
+ * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin): base class +
+ *   one of the variant's specializations + no hero subclass. A druid or paladin
+ *   with no specialization is a plain base-game character.
  */
 export function heroClassFor(
   pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
@@ -286,8 +295,12 @@ export function heroClassFor(
   const clazz = (pc?.clazz ?? '').toLowerCase();
   const bySubclass = heroClassForSubclass(pc?.subclass);
   if (bySubclass) return clazz === bySubclass.baseClass.toLowerCase() ? bySubclass : undefined;
-  if (!pc?.specialization) return undefined;
-  return HERO_CLASSES.find(h => !h.subclass && h.baseClass.toLowerCase() === clazz);
+  const spec = (pc?.specialization ?? '').toLowerCase();
+  if (!spec) return undefined;
+  // The specialization must be one of the variant's own (a paladin with 'Frost' and no
+  // Ebon Blade is not a WoW Paladin).
+  return HERO_CLASSES.find(h => !h.subclass && h.baseClass.toLowerCase() === clazz
+    && h.specializations.some(s => s.name.toLowerCase() === spec));
 }
 
 /** The subclass a specialization's guidance recommends (e.g. Guardian → Circle of the Moon). */
@@ -312,10 +325,23 @@ export function recommendedStartingSpells(
   const cacheKey = `${hero.key}|${specialization}`;
   let list = RECOMMENDED_SPELLS_CACHE.get(cacheKey);
   if (!list) {
-    list = [...guidance.cantrips, ...guidance.level1Spells];
+    list = [...(guidance.cantrips ?? []), ...guidance.level1Spells];
     RECOMMENDED_SPELLS_CACHE.set(cacheKey, list);
   }
   return list;
+}
+
+/** The level-2 Fighting Style(s) a specialization's guidance recommends (e.g. Protection → Interception, Protection). */
+export function recommendedFightingStylesFor(
+  hero: HeroClassOption | undefined, specialization: string | null | undefined,
+): readonly string[] {
+  return (specialization && hero?.guidance?.[specialization]?.fightingStyles) || NO_SPELLS;
+}
+
+/** "A", "A or B", "A, B, or C" — a choice list in running text. */
+export function orList(items: readonly string[]): string {
+  if (items.length <= 2) return items.join(' or ');
+  return `${items.slice(0, -1).join(', ')}, or ${items[items.length - 1]}`;
 }
 
 /** "Frost Rune" / "Havoc" — a specialization as shown to people. */

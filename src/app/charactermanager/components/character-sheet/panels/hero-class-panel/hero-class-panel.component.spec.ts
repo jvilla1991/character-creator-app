@@ -243,4 +243,87 @@ describe('HeroClassPanelComponent', () => {
       expect(fixture.nativeElement.querySelector('.form-card.emphasized')?.textContent).toContain('Bear Form');
     });
   });
+  describe('World of Warcraft Paladin', () => {
+    function makePaladin(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 9, name: 'Aelira', clazz: 'Paladin', subclass: undefined, specialization: 'Protection',
+        level: 2, prof: 2, playerName: 'Ivy', stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 15 },
+        spells: [
+          { lvl: 1, name: 'Shield of Faith', prepared: true } as any,
+          { lvl: 1, name: 'Heroism', prepared: false } as any,
+        ],
+        ...overrides,
+      };
+    }
+
+    it('renders for a WoW paladin but not for a base paladin or a Death Knight', () => {
+      expect(isHeroClass(makePaladin())).toBeTrue();
+      expect(isHeroClass(makePaladin({ specialization: null, subclass: 'Oath of Devotion' }))).toBeFalse();
+      component.pc = makeDeathKnight({ specialization: 'Blood' });
+      expect(component.hero?.name).toBe('Death Knight');
+      expect(component.guidance).toBeNull();
+    });
+
+    it('titles the panel and shows the spec description', () => {
+      component.pc = makePaladin();
+      expect(component.panelTitle).toBe('World of Warcraft Paladin');
+      expect(component.specializationTitle).toBe('Protection');
+      expect(component.specializationDesc).toContain('sword-and-shield');
+      expect(component.subclassTerm).toBe('oath');
+      expect(component.spells).toEqual([]);
+    });
+
+    it('recommends a fighting style and an oath per specialization (informational)', () => {
+      component.pc = makePaladin();
+      expect(component.recommendedFightingStyleText).toBe('Interception or Protection');
+      expect(component.guidance?.subclass.name).toBe('Oath of Devotion');
+      expect(component.subclassMatch).toBe('pending');
+      component.pc = makePaladin({ specialization: 'Holy' });
+      expect(component.recommendedFightingStyleText).toBe('Blessed Warrior — with Sacred Flame and Spare the Dying');
+      component.pc = makePaladin({ specialization: 'Retribution', subclass: 'Oath of Vengeance', level: 3 });
+      expect(component.recommendedFightingStyleText).toBe('Great Weapon Fighting');
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makePaladin({ specialization: 'Retribution', subclass: 'Oath of Glory', level: 3 });
+      expect(component.subclassMatch).toBe('different');
+    });
+
+    it('lists the suggested spells per specialization and marks known / prepared ones', () => {
+      component.pc = makePaladin();
+      expect(component.suggestedSpells.map(r => r.level)).toEqual([1, 2, 3, 4, 5]);
+      expect(component.suggestedSpells[0].spells).toEqual([
+        { name: 'Heroism', known: true, prepared: false },
+        { name: 'Shield of Faith', known: true, prepared: true },
+      ]);
+      expect(component.suggestedSpells[2].spells.map(s => s.name)).toEqual(["Crusader's Mantle", 'Guided Prayer']);
+      component.pc = makePaladin({ specialization: 'Holy' });
+      expect(component.suggestedSpells[3].spells.map(s => s.name)).toEqual(['Aura of Purity', 'Divine Shield']);
+      component.pc = makePaladin({ specialization: 'Retribution' });
+      expect(component.suggestedSpells.map(r => r.spells.map(s => s.name))).toEqual([
+        ['Divine Favor', 'Thunderous Smite'], ['Consecration', 'Shining Smite'],
+        ["Crusader's Mantle", 'Elemental Weapon'], ['Staggering Smite'], ['Destructive Wave'],
+      ]);
+    });
+
+    it('renders the paladin recommendations without druid wording or beast forms', () => {
+      dndResources.getSpells.and.returnValue(of([
+        { ...deathGrip, name: 'Divine Shield', classes: ['paladin'] } as DndSpell,
+      ]));
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', makePaladin({ specialization: 'Holy' }));
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const text = el.textContent ?? '';
+      expect(text).toContain('World of Warcraft Paladin');
+      expect(text).toContain('Recommended fighting style');
+      expect(text).toContain('Recommended oath');
+      expect(text).toContain('You choose your oath at Paladin level 3.');
+      expect(text).toContain('Suggested Holy Spells');
+      expect(text).toContain('like any other paladin spell');
+      expect(text).not.toContain('Beast Forms');
+      expect(text).not.toContain('druid');
+      const marked = Array.from(el.querySelectorAll('.suggested-spell'))
+        .filter(n => n.querySelector('.wow-mark')).map(n => n.textContent!.replace('✦', '').trim());
+      expect(marked).toEqual(['Divine Shield']);
+    });
+  });
 });
