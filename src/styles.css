@@ -1291,6 +1291,18 @@ em, i, cite, dfn, address, var { font-style: normal; }
   z-index: 100;
   animation: fadein .15s ease-out;
 }
+/* The dice launcher (.dice-fab, z 95) lives outside div.app, while most
+   modals render inside it. On phones div.app is position: fixed, which makes
+   it a stacking context of its own, so a backdrop's z-index 100 only counts
+   inside div.app and the launcher still draws over every modal, covering
+   their bottom-right buttons. While any backdrop is open, step the launcher
+   out of the way. opacity + pointer-events (not visibility/display) keeps it
+   focusable, so the dialog directive can still hand focus back to it when the
+   dice roller it opened closes. */
+body:has(.modal-backdrop) .dice-fab {
+  opacity: 0;
+  pointer-events: none;
+}
 @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
 .modal {
   background: var(--surface);
