@@ -40,11 +40,13 @@ export class LoginComponent {
         if (response && response.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage.set('Invalid username or password');
+          // The auth service folds a network failure into the same `success: false`
+          // as a wrong password, so the message cannot claim either cause.
+          this.errorMessage.set('Could not sign you in. Check your username and password, then try again.');
         }
       },
       error: (err) => {
-        this.errorMessage.set('Login failed. Please try again.');
+        this.errorMessage.set('Could not sign you in. Try again.');
       }
     });
   }

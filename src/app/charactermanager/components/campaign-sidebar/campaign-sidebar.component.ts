@@ -56,6 +56,8 @@ export class CampaignSidebarComponent implements OnInit, OnDestroy {
   );
 
   count$ = this.campaignService.campaigns$.pipe(map(c => c.length));
+  /** The list fetch failed: an empty rail would read as "no campaigns". */
+  readonly loadFailed = this.campaignService.loadFailed;
 
   private readonly onVisible = () => {
     if (document.visibilityState === 'visible') this.refresh$.next();
@@ -73,6 +75,10 @@ export class CampaignSidebarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     document.removeEventListener('visibilitychange', this.onVisible);
+  }
+
+  retry(): void {
+    this.campaignService.refreshCampaigns();
   }
 
   select(id: string): void {

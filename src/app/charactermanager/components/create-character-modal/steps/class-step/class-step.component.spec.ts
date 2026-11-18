@@ -494,7 +494,6 @@ describe('ClassStepComponent — World of Warcraft Priest (Cleric)', () => {
     fixture.componentRef.setInput('classDetail', detail);
     fixture.componentRef.setInput('specialization', specialization);
     fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
-    fixture.componentRef.setInput('spellsStep', true);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
@@ -526,7 +525,7 @@ describe('ClassStepComponent — World of Warcraft Priest (Cleric)', () => {
     expect(box.textContent).toContain('Bane, Command, Healing Word, Shadow Word: Pain');
     expect(box.textContent).toContain('Shadow Domain');
     expect(box.textContent).toContain('Actor, Mage Slayer, Shadow Touched, Skulker, Telepathic');
-    expect(box.textContent).toContain('the spells are marked “Recommended” on the Spells step');
+    expect(box.textContent).not.toContain('Suggestions only');
   });
 
   it('recommends the Life Domain for Holy and the Discipline Domain for Discipline', () => {

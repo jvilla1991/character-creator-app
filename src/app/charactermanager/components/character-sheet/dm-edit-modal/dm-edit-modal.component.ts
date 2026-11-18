@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ou
 import { DmEditRequest } from './dm-edit-request';
 import { ModalComponent } from '../../modal/modal.component';
 import { FormsModule } from '@angular/forms';
-import { TitleCasePipe } from '@angular/common';
 
 /** What the modal hands back on Save: the clamped value and, if the DM typed
  *  one, their own log description (null lets the backend fall back to its
@@ -25,7 +24,7 @@ export interface DmEditConfirm {
     templateUrl: './dm-edit-modal.component.html',
     styleUrls: ['./dm-edit-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FormsModule, TitleCasePipe]
+    imports: [ModalComponent, FormsModule]
 })
 export class DmEditModalComponent implements OnChanges {
   @Input() request!: DmEditRequest;
@@ -68,6 +67,31 @@ export class DmEditModalComponent implements OnChanges {
     if (this.request.min !== null) v = Math.max(this.request.min, v);
     if (this.request.max !== null) v = Math.min(this.request.max, v);
     return v;
+  }
+
+  /** Under the value field: the saved value, and that the field wants the new
+   *  total. Hit points get a worked example, because a DM at the table thinks
+   *  "7 damage", not "35". */
+  get valueHint(): string {
+    const now = this.request.value;
+    if (this.request.label !== 'current HP' || now == null) {
+      return `Now ${this.render(now)}. Enter the new total.`;
+    }
+    const of = this.request.max != null ? ` of ${this.request.max}` : '';
+    const example = Math.max(0, now - 5);
+    return `Now ${now}${of}. Enter the HP they end up with, not the amount: for 5 damage, enter ${example}.`;
+  }
+
+  /** Hit points only: what the typed total amounts to ("That is 7 damage."). */
+  get deltaHint(): string | null {
+    const before = this.request.value;
+    const after = this.clamped;
+    if (this.request.label !== 'current HP' || before == null || after == null || after === before) {
+      return null;
+    }
+    return after < before
+      ? `That is ${before - after} damage.`
+      : `That is ${after - before} healing.`;
   }
 
   get canSave(): boolean {

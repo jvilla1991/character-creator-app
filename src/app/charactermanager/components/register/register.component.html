@@ -48,11 +48,12 @@
 
                 <!-- Password, then Confirm directly beneath it -->
                   <div class="field">
-                    <label>Password</label>
+                    <label for="reg-password">Password</label>
                     <div class="input-reveal">
                       <input [type]="showPassword ? 'text' : 'password'"
-                        formControlName="password"
-                        placeholder="Min. 6 characters" autocomplete="new-password">
+                        id="reg-password" formControlName="password"
+                        placeholder="Choose a password" autocomplete="new-password"
+                        aria-describedby="reg-password-hint">
                         <button type="button" class="reveal-toggle" (click)="showPassword = !showPassword"
                           [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
                           @if (!showPassword) {
@@ -70,12 +71,13 @@
                           }
                         </button>
                       </div>
+                      <div class="field-hint" id="reg-password-hint">At least 8 characters.</div>
                     </div>
                     <div class="field">
-                      <label>Confirm</label>
+                      <label for="reg-confirm">Confirm password</label>
                       <div class="input-reveal">
                         <input [type]="showPassword ? 'text' : 'password'"
-                          formControlName="confirmPassword"
+                          id="reg-confirm" formControlName="confirmPassword"
                           placeholder="Repeat password" autocomplete="new-password"
                           [class.input-error]="passwordMismatch">
                           <!-- no separate toggle — showPassword controls both fields together -->

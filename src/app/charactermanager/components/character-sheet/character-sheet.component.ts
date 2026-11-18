@@ -18,6 +18,7 @@ import { SpellbookPanelComponent } from './panels/spellbook-panel/spellbook-pane
 import { SkillProfChange, SkillsListComponent } from './panels/skills-list/skills-list.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
+import { ContextHelpComponent } from '../context-help/context-help.component';
 import { DmEditConfirm, DmEditModalComponent } from './dm-edit-modal/dm-edit-modal.component';
 import { FormsModule } from '@angular/forms';
 import { EditableNumberComponent } from './editable-number/editable-number.component';
@@ -45,7 +46,7 @@ import { NotificationService } from '../../services/notification.service';
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -155,13 +156,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return this.editable || this.readyToLevel || this.dmGrantedLevel;
   }
 
-  /** Tooltip for the Level Up button, explaining a disabled state. */
+  /** Why Level Up is (un)available: the button's tooltip, and when it is
+   *  disabled the text behind the "?" beside it. */
   get levelUpHint(): string {
     if (this.editable) return 'Level up this character (no XP threshold required)';
     if (this.canLevelUp) return 'Advance a level';
     return this.xpForNextLevel == null
-      ? 'Maximum level reached'
-      : 'Not enough XP yet — reach ' + this.xpForNextLevel + ' XP or ask your DM to grant a level';
+      ? 'This character is at the maximum level.'
+      : 'Not enough XP yet. Reach ' + this.xpForNextLevel + ' XP, or ask your DM to grant a level.';
   }
 
   /** DM cross-link: toggle the pending level-up grant for this character. */

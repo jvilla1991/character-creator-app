@@ -177,6 +177,11 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           </svg>
           Level Up
         </button>
+        <!-- A disabled button cannot explain itself on a phone (no hover), so
+        the reason gets a tap target of its own. -->
+        @if (!canLevelUp) {
+          <app-context-help label="Level Up" [text]="levelUpHint"></app-context-help>
+        }
         <!-- DM cross-link: grant (or revoke) a level-up the player may spend
         without meeting the XP threshold. -->
         @if (editable) {

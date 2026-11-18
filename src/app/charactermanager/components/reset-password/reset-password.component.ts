@@ -44,7 +44,7 @@ export class ResetPasswordComponent implements OnInit {
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
     if (!this.token) {
-      this.errorMessage.set('This reset link is incomplete — ask your DM for a new one.');
+      this.errorMessage.set('This reset link is incomplete. Ask a Table Mimic admin for a new one.');
     }
   }
 
@@ -65,7 +65,7 @@ export class ResetPasswordComponent implements OnInit {
       if (response.success) {
         this.done.set(true);
       } else {
-        this.errorMessage.set('This reset link is invalid or has expired — ask your DM for a new one.');
+        this.errorMessage.set('This reset link is invalid or has expired. Ask a Table Mimic admin for a new one.');
       }
     });
   }

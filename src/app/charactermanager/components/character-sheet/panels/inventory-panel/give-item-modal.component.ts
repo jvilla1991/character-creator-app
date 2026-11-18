@@ -74,7 +74,7 @@ export class GiveItemModalComponent implements OnInit {
       error: () => {
         this.loading.set(false);
         this.loadFailed.set(true);
-        this.error.set('Could not load recipients. Please try again.');
+        this.error.set('Could not load who you can give this to. Try again.');
       },
     });
   }

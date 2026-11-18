@@ -18,17 +18,26 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     </dialog>
   `,
   styles: [`
-    :host { display: inline-block; margin-inline-start: 6px; }
+    :host { display: inline-block; margin-inline-start: 6px; align-self: center; }
     .help-trigger { width: 28px; height: 28px; border: 1px solid var(--border);
       border-radius: 50%; background: var(--surface); color: var(--text); cursor: help; }
     .help-trigger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     dialog { box-sizing: border-box; width: min(420px, calc(100vw - 32px));
       max-height: 80dvh; overflow: auto; padding: 24px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text); border-radius: var(--radius-sm); }
+      background: var(--surface); color: var(--text); border-radius: var(--radius-sm);
+      /* The dialog is drawn in the top layer but still inherits from where the
+         trigger sits (an uppercase Cinzel label row, a centred header). */
+      font: 400 var(--text-base)/1.6 'Newsreader', Georgia, serif;
+      letter-spacing: normal; text-transform: none; text-align: start; }
+    .help-trigger { font: 500 var(--text-sm)/1 'Newsreader', Georgia, serif; letter-spacing: normal; padding: 0; }
     dialog::backdrop { background: rgb(0 0 0 / 65%); }
     h2 { margin: 0 0 12px; font-size: 1.1rem; }
-    p { white-space: normal; line-height: 1.6; }
-    @media (pointer: coarse) { .help-trigger { width: 44px; height: 44px; } }
+    /* pre-line: a help text may hold two short paragraphs. */
+    p { white-space: pre-line; line-height: 1.6; }
+    /* Touch: the circle stays 28px so it can sit in a dense row (beside pips,
+       a chip, a button); an invisible 44px halo keeps the tap target. */
+    .help-trigger { position: relative; }
+    @media (pointer: coarse) { .help-trigger::after { content: ''; position: absolute; inset: -8px; } }
   `],
 })
 export class ContextHelpComponent {

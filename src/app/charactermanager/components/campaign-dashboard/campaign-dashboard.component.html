@@ -9,18 +9,30 @@
         <div class="sheet-subtitle">
           {{ vm.campaign.setting }}<span class="dot">✦</span><em>{{ vm.campaign.arc }}</em>
         </div>
-        @if (vm.campaign.inviteCode) {
-          <div class="invite-chip" title="Share this code so players can seat their characters">
-            <span class="eyebrow">Invite</span>
-            <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
-          </div>
-        }
-        @if (vm.campaign.gameTime) {
-          <div class="invite-chip" title="The in-world clock — advance it from Session Mode">
-            <span class="eyebrow">Clock</span>
-            <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
-          </div>
-        }
+        <!-- Each chip's explanation sits behind a "?" (hover on desktop, a tap
+        on a phone) instead of a title tooltip a phone never shows. -->
+        <div class="chip-row">
+          @if (vm.campaign.inviteCode) {
+            <span class="chip-with-help">
+              <div class="invite-chip">
+                <span class="eyebrow">Invite code</span>
+                <span class="invite-code numeric">{{ vm.campaign.inviteCode }}</span>
+              </div>
+              <app-context-help label="Invite code"
+                text="Share this code with your players. Each player enters it under Join Campaign to seat their hero at this table."></app-context-help>
+            </span>
+          }
+          @if (vm.campaign.gameTime) {
+            <span class="chip-with-help">
+              <div class="invite-chip">
+                <span class="eyebrow">Clock</span>
+                <span class="invite-code">{{ describeGameTime(vm.campaign.gameTime) }}</span>
+              </div>
+              <app-context-help label="Campaign clock"
+                text="The in-world date and time of day. Advance it from Session Mode while a session is running."></app-context-help>
+            </span>
+          }
+        </div>
       </div>
       <div class="sheet-actions">
         @if (!vm.liveSession) {
@@ -94,7 +106,8 @@
         ↻ Refresh party
       </button>
     </div>
-    <app-party-board [members]="vm.members" (openHero)="openHero($event)"></app-party-board>
+    <app-party-board [members]="vm.members" [inviteCode]="vm.campaign.inviteCode ?? null"
+      (openHero)="openHero($event)"></app-party-board>
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
     <!-- Curated shops/encounters/loot are DM authoring tools that sit well below
     the fold on first paint — deferred until scrolled into view so the dashboard's
@@ -199,7 +212,10 @@
     </div>
     <div>
       <div class="empty-title">No Campaign Chosen</div>
-      <div class="empty-sub">Select a campaign from the chronicle to survey your table.</div>
+      <div class="empty-sub" style="margin-top: 8px;">
+        <span class="wide-only">Choose a campaign from the list on the left to survey your table, or start one with New Campaign.</span>
+        <span class="narrow-only">Open the menu at the top left to choose a campaign, or to start a new one.</span>
+      </div>
     </div>
   </div>
 }

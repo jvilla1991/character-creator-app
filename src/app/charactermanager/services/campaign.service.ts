@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, combineLatest, of, throwError } from 'rxjs';
 import { delay, map, shareReplay, take, tap } from 'rxjs/operators';
@@ -102,6 +102,10 @@ export class CampaignService {
     if (!environment.demoMode) this.refreshCampaigns();
   }
 
+  /** True while the last campaign-list fetch has failed, so the sidebar can say
+   *  so instead of showing a list that merely looks empty. */
+  readonly loadFailed = signal(false);
+
   /** Fetch the DM's campaigns from the backend into campaigns$. */
   refreshCampaigns(): void {
     if (environment.demoMode) {
@@ -109,8 +113,14 @@ export class CampaignService {
       return;
     }
     this.http.get<unknown[]>(`${this.campaignUrl}/mine`).subscribe({
-      next: raw => this.campaignsSubject.next(raw.map(r => this.deserialize(r))),
-      error: err => console.error('Failed to load campaigns', err),
+      next: raw => {
+        this.campaignsSubject.next(raw.map(r => this.deserialize(r)));
+        this.loadFailed.set(false);
+      },
+      error: err => {
+        console.error('Failed to load campaigns', err);
+        this.loadFailed.set(true);
+      },
     });
   }
 

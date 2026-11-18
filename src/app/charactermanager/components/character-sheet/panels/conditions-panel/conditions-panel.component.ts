@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
 import { CONDITIONS_LIST } from '../../../../utils/character-math';
+import { ContextHelpComponent } from '../../../context-help/context-help.component';
 
 @Component({
     selector: 'app-conditions-panel',
     templateUrl: './conditions-panel.component.html',
     styleUrls: ['./conditions-panel.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ContextHelpComponent]
 })
 export class ConditionsPanelComponent {
   @Input() pc!: PC;
@@ -90,6 +92,22 @@ export class ConditionsPanelComponent {
     return this.pc.heroicInspiration
       ? 'Has Heroic Inspiration. ' + rule
       : this.inspirationPips + ' / 5 pips. ' + rule;
+  }
+
+  /** The tap-reachable rules behind the "?" in the panel header (two
+   *  paragraphs): what an exhaustion level costs and how the tracker is set,
+   *  then where inspiration pips come from. Only the DM reads how to set the
+   *  meter; a player cannot. */
+  get trackerHelp(): string {
+    const exhaustion = 'Exhaustion: each level gives −2 to all d20 Tests and −5 ft Speed, '
+      + 'and at level 6 the character dies. Tap a number to set the level; tap the '
+      + 'current level again to step back down.';
+    const inspiration = 'Inspiration: the DM awards pips. Filling all 5 grants Heroic '
+      + 'Inspiration (reroll any d20 Test) and empties the meter.'
+      + (this.canAwardInspiration
+        ? ' Tap a pip to set the meter; tap the last filled pip again to lower it.'
+        : '');
+    return exhaustion + '\n\n' + inspiration;
   }
 
   /** Same gesture as the exhaustion tracker: clicking pip N sets the meter to N,

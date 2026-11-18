@@ -144,14 +144,14 @@ export class LootPanelComponent implements OnChanges {
     const lootId = this.source === 'list' ? this.lootListId : null;
     this.lootService.open(this.state.sessionId, lootId, this.nameDraft.trim() || null).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not prepare the loot.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not prepare the loot. Try again.')),
     });
   }
 
   drop(): void {
     this.lootService.drop(this.state.sessionId).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not drop the loot.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not drop the loot. Try again.')),
     });
   }
 
@@ -161,7 +161,7 @@ export class LootPanelComponent implements OnChanges {
         this.loot = null;
         this.fetchedKey = null;
       },
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not close the loot.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not close the loot. Try again.')),
     });
   }
 
@@ -170,7 +170,7 @@ export class LootPanelComponent implements OnChanges {
     if (!this.loot) return;
     this.lootService.addItem(this.state.sessionId, item).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not add the item.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not add the item. Try again.')),
     });
   }
 
@@ -178,14 +178,14 @@ export class LootPanelComponent implements OnChanges {
     if (!qty || qty < 1) return;
     this.lootService.updateItem(this.state.sessionId, item.id, Math.floor(qty), null, null).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not update the item.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not update the item. Try again.')),
     });
   }
 
   removeItem(item: LootItem): void {
     this.lootService.removeItem(this.state.sessionId, item.id).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not remove the item.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not remove the item. Try again.')),
     });
   }
 
@@ -193,7 +193,7 @@ export class LootPanelComponent implements OnChanges {
     if (this.coinGpDraft == null || this.coinGpDraft < 0) return;
     this.lootService.setCoins(this.state.sessionId, this.coinGpDraft).subscribe({
       next: view => this.setLoot(view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not set the coins.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not set the coins. Try again.')),
     });
   }
 

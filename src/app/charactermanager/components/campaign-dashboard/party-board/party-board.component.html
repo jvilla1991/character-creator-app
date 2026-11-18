@@ -17,7 +17,11 @@
     @if (members().length === 0) {
       <div
         style="padding: 18px 8px; color: var(--text-dim);">
-        No heroes assigned to this campaign yet.
+        No heroes have joined this campaign yet.
+        @if (inviteCode(); as code) {
+          Share invite code <strong class="numeric">{{ code }}</strong> with your players; each one enters it under Join Campaign.
+        }
+        New arrivals show up here when you come back to this tab, or when you tap Refresh party.
       </div>
     }
 

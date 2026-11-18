@@ -52,10 +52,22 @@
         </div>
         <!-- Roster (scrollable) -->
         <div style="overflow-y: auto; flex: 1;">
-          @if (filteredPcs.length === 0) {
+          <!-- Three different empties: the load failed, the search found
+          nothing, or there are simply no characters yet. Each says which. -->
+          @if (pcsLoadFailed()) {
+            <p role="status"
+              style="padding: 20px; color: var(--text-dim); text-align: center; font-size: 13px; margin: 0;">
+              Could not load your characters.
+              <button type="button" class="btn link" (click)="retryPcs()">Try again</button>
+            </p>
+          } @else if (filteredPcs.length === 0) {
             <p
               style="padding: 20px; color: var(--text-dim); text-align: center; font-size: 13px; margin: 0;">
-              No characters match that name.
+              @if (query.trim()) {
+                No characters match that search.
+              } @else {
+                You have no characters yet. Create your first one below.
+              }
             </p>
           }
           <div class="roster-items">

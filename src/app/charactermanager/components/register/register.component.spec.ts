@@ -21,8 +21,8 @@ describe('RegisterComponent', () => {
       lastName: 'Goldveil',
       email: 'sera@example.com',
       userName: 'seraphina',
-      password: 'secret6',
-      confirmPassword: 'secret6',
+      password: 'secret88',
+      confirmPassword: 'secret88',
     });
   }
 
@@ -56,10 +56,10 @@ describe('RegisterComponent', () => {
     }
   });
 
-  it('requires a password of at least 6 characters', () => {
+  it('requires a password of at least 8 characters', () => {
     fillValid();
-    component.form.controls.password.setValue('five5');
-    component.form.controls.confirmPassword.setValue('five5');
+    component.form.controls.password.setValue('seven77');
+    component.form.controls.confirmPassword.setValue('seven77');
     expect(component.form.controls.password.hasError('minlength')).toBeTrue();
     expect(component.form.invalid).toBeTrue();
   });
@@ -82,7 +82,7 @@ describe('RegisterComponent', () => {
   it('clears the mismatch when the passwords agree again', () => {
     fillValid();
     component.form.controls.confirmPassword.setValue('different');
-    component.form.controls.confirmPassword.setValue('secret6');
+    component.form.controls.confirmPassword.setValue('secret88');
     expect(component.passwordMismatch).toBeFalse();
   });
 
@@ -99,7 +99,7 @@ describe('RegisterComponent', () => {
     component.register();
 
     expect(authService.register).toHaveBeenCalledWith(
-      'Sera', 'Goldveil', 'sera@example.com', 'seraphina', 'secret6');
+      'Sera', 'Goldveil', 'sera@example.com', 'seraphina', 'secret88');
     expect(router.navigate).toHaveBeenCalledWith(['/charactermanager']);
   });
 

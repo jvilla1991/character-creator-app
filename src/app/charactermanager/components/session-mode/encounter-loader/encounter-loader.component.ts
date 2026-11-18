@@ -66,7 +66,7 @@ export class EncounterLoaderComponent implements OnChanges {
       },
       error: err => {
         this.busy.set(false);
-        this.notifications.notify(err?.error?.message || 'Could not load the encounter.');
+        this.notifications.notify(err?.error?.message || 'Could not load the encounter. Try again.');
       },
     });
   }

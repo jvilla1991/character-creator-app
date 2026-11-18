@@ -367,6 +367,19 @@ than a hairline to read, the tones on either side of it are wrong.
 - **Placeholder:** the dedicated `placeholder` token at `opacity: 1` — never the browser default,
   which fails contrast
 - **Focus:** gold border plus the gold glow
+- **Hint:** a rule the field enforces ("At least 8 characters.") is a `.field-hint` line under the
+  control, 12px `text-dim`, bound with `aria-describedby`. A placeholder is an example, never the
+  rule: it disappears on the first keystroke.
+
+### Help
+
+- **Where rules live:** nothing a player needs may live only in a `title` tooltip. A phone never
+  shows one, and a disabled button shows none on any device. Put the rule in plain text, or behind
+  the `app-context-help` button ("?"): a tooltip on hover and focus, a small dialog on tap.
+- **Placement:** one "?" per panel, in the panel header, or directly beside the disabled button it
+  explains. The circle is 28px with a 44px tap halo on touch, so it sits in a dense row.
+- **Counts over conventions:** when a mark's meaning is a convention (a filled spell-slot pip is a
+  spent slot), print the count in words beside it ("3 of 4 left") instead of relying on the mark.
 
 ### Navigation
 
@@ -392,6 +405,10 @@ strip carrying state through colour alone.
 - **Do** use tone and hairlines for structure; let `surface` → `surface-2` → `surface-3` carry depth.
 - **Do** keep the accent scarce — gold marks active, valuable, or focused.
 - **Do** verify at 375px before calling a session surface done.
+- **Do** write a failure as what did not happen and what to do next ("Could not save the note.
+  Your text is still here — try again."), and an empty state as what is true plus the next step
+  that exists at that width: the sidebar is a list on desktop and a drawer behind the menu button
+  on a phone (`.wide-only` / `.narrow-only`).
 - **Do** put any state an animation shows on the element itself too. Under reduced motion the
   animation stops at rest, so a cue that lives only in keyframes disappears. The my-turn vignette
   holds its green frame statically for this reason.
