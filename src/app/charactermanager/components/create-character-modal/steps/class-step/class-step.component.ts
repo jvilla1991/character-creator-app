@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndClass } from '../../../../models/dnd-api.types';
-import { ClassOption, SpecializationGuidance, specializationHeading } from '../../../../models/hero-class';
+import { ClassOption, SpecializationGuidance, orList, specializationHeading } from '../../../../models/hero-class';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
  * subclass. Hero classes (e.g. Death Knight (Paladin)) show their blurb, their
  * locked subclass and the required specialization picker (a Death Knight's rune,
  * a Demon Hunter's specialization), all read from the hero-class table. A WoW
- * variant without a fixed subclass (the WoW Druid) shows a "Recommended for
- * <spec>" box once its specialization is picked — guidance only.
+ * variant without a fixed subclass (WoW Druid, WoW Paladin) shows a
+ * "Recommended for <spec>" box once its specialization is picked — guidance only.
  * Presentational — the parent owns selection logic, the source filter and the
  * detail fetch, and passes the already-filtered rows and derived strings in.
  */
@@ -27,6 +27,8 @@ export class ClassStepComponent {
   readonly selectedLabel = input('');
   /** Recommended picks for the chosen specialization; null when there are none. */
   readonly guidance = input<SpecializationGuidance | null>(null);
+  /** True when the chosen class has a Spells step (the guidance box points there). */
+  readonly spellsStep = input(false);
   /** True when the chosen class is hidden by the source filter (it stays chosen). */
   readonly selectedHidden = input(false);
   /** The chosen hero-class specialization; '' when none is picked. */
@@ -52,4 +54,5 @@ export class ClassStepComponent {
   readonly specializationChange = output<string>();
 
   readonly specializationHeading = specializationHeading;
+  readonly orList = orList;
 }

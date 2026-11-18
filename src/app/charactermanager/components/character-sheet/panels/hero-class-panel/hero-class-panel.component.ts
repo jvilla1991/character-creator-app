@@ -3,13 +3,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
-  HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells,
-  specializationTitle,
+  HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells, orList,
+  specializationTitle, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
   isMoonCircle,
-} from '../../../../models/wow-druid';
+} from '../../../../models/wow-beast-forms';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { modFromScore, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
@@ -28,6 +28,12 @@ export interface SuggestedSpellView {
 export interface SuggestedSpellLevelView {
   level: number;
   spells: SuggestedSpellView[];
+}
+
+/** One always-prepared spell list on the panel (the hero subclass's table, or a WoW-only oath's). */
+export interface HeroSpellSection {
+  title: string;
+  entries: HeroSpellEntry[];
 }
 
 /** How the character's actual subclass compares to the one recommended for its specialization. */
@@ -62,16 +68,18 @@ export class HeroClassPanelComponent {
   readonly spellIndex = signal<Map<string, DndSpell> | null>(null);
   private spellsRequested = false;
 
-  /** WoW Druid derived state — recomputed whenever the character changes. */
+  /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];
+  /** Always-prepared spell lists — the hero table, then a WoW-only subclass's (Oath of the Holy). */
+  spellSections: HeroSpellSection[] = [];
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
   classicForms: ClassicBeastForm[] = [];
 
   @Input() set pc(value: PC) {
     this._pc = value;
-    this.deriveDruid();
-    if (this.spells.length || this.suggestedSpells.length) this.loadSpells();
+    this.deriveVariant();
+    if (this.spellSections.length || this.suggestedSpells.length) this.loadSpells();
   }
   get pc(): PC { return this._pc; }
 
@@ -103,16 +111,40 @@ export class HeroClassPanelComponent {
     return hero?.resource ? hero.resource(this._pc.level ?? 1, this._pc.stats) : null;
   }
 
+  /** Always-prepared spells of a WoW-only subclass (Oath of the Holy) at this level. */
+  get subclassSpells(): HeroSpellEntry[] {
+    return subclassSpellsFor(this.hero, this._pc?.subclass, this._pc?.level ?? 1);
+  }
+
   /** Always-prepared spells at this level for this specialization. */
   get spells(): HeroSpellEntry[] {
     const hero = this.hero;
     return hero ? heroClassSpells(hero, this._pc.level ?? 1, this._pc.specialization) : [];
   }
 
-  /** The specialization's recommended picks (WoW Druid); null for everyone else. */
+  /** The specialization's recommended picks (WoW variants); null for everyone else. */
   get guidance(): SpecializationGuidance | null {
     const spec = this._pc?.specialization;
     return (spec && this.hero?.guidance?.[spec]) || null;
+  }
+
+  /** "Interception or Protection" / "Blessed Warrior — with Sacred Flame and Spare the Dying"; '' when none. */
+  get recommendedFightingStyleText(): string {
+    const g = this.guidance;
+    if (!g?.fightingStyles?.length) return '';
+    const styles = orList(g.fightingStyles);
+    const cantrips = g.fightingStyleCantrips ?? [];
+    return cantrips.length ? `${styles} — with ${cantrips.join(' and ')}` : styles;
+  }
+
+  /** What the base class calls its subclass ('circle', 'oath'), for the recommendation copy. */
+  get subclassTerm(): string {
+    return this.hero?.subclassTerm ?? 'subclass';
+  }
+
+  /** 'druid' / 'paladin' — the base class in running text. */
+  get baseClassLower(): string {
+    return (this.hero?.baseClass ?? '').toLowerCase();
   }
 
   /** Whether the character's subclass is the recommended one — informational only. */
@@ -143,9 +175,13 @@ export class HeroClassPanelComponent {
     return n >= 0 ? `+${n}` : `−${Math.abs(n)}`;
   }
 
-  private deriveDruid(): void {
+  private deriveVariant(): void {
     const hero = this.hero;
     const pc = this._pc;
+    this.spellSections = [
+      { title: `${hero?.subclass ?? ''} Spells`, entries: this.spells },
+      { title: `${pc?.subclass ?? ''} Spells`, entries: this.subclassSpells },
+    ].filter(section => section.entries.length > 0);
     const spec = pc?.specialization;
     const levels = (spec && hero?.suggestedSpells?.[spec]) || [];
     const owned = new Map((pc?.spells ?? []).map(s => [s.name.toLowerCase(), s]));

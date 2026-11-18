@@ -77,6 +77,12 @@ describe('CharacterSheetComponent', () => {
     component.pc = makePC({ clazz: 'Druid', subclass: 'Circle of the Land', specialization: null });
     expect(component.heroClass).toBeFalse();
     expect(component.subtitleSuffix).toBe('Circle of the Land');
+    // WoW Paladin: "Paladin (Holy)", then the oath joins it from level 3.
+    component.pc = makePC({ clazz: 'Paladin', subclass: undefined, specialization: 'Holy' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Holy');
+    component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of Vengeance', specialization: 'Retribution' });
+    expect(component.subtitleSuffix).toBe('Oath of Vengeance · Retribution');
   });
 
   // --- Level Up gating ---

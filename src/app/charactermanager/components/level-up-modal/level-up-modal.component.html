@@ -155,6 +155,9 @@
               [class.is-recommended]="recommended">
               <input type="radio" name="subclass" [value]="option" [(ngModel)]="selectedSubclass">
               <span>{{ option }}</span>
+              @if (subclassSourceTag(option); as source) {
+                <span class="source-tag">{{ source }}</span>
+              }
               @if (recommended) {
                 <span class="recommended-badge">
                   Recommended{{ recommendationSpecialization ? ' for ' + recommendationSpecialization : '' }}
@@ -164,13 +167,15 @@
           }
         </div>
       }
-      <!-- Level-2 Fighting Style (optional); Void Warrior also needs two Warlock cantrips -->
+      <!-- Level-2 Fighting Style (optional); Blessed / Druidic / Void Warrior also teach two cantrips -->
       @if (needsFightingStyle) {
         <div class="subclass-pick">
           <div class="subclass-label">Choose a Fighting Style <span class="optional-note">(optional)</span></div>
           @for (option of fightingStyleOptions; track option) {
+            @let recommended = isRecommendedFightingStyle(option);
             <label class="subclass-option"
-              [class.is-selected]="selectedFightingStyle === option">
+              [class.is-selected]="selectedFightingStyle === option"
+              [class.is-recommended]="recommended">
               <input type="radio" name="fighting-style" [value]="option"
                 [checked]="selectedFightingStyle === option"
                 (click)="selectFightingStyle(option)">
@@ -178,23 +183,30 @@
                 <span class="feat-name">{{ option }}</span>
                 <span class="feat-desc">{{ featDescription(option) }}</span>
               </span>
+              @if (recommended) {
+                <span class="recommended-badge">
+                  Recommended{{ recommendationSpecialization ? ' for ' + recommendationSpecialization : '' }}
+                </span>
+              }
             </label>
           }
         </div>
-        @if (isVoidWarrior) {
+        @if (cantripStyle; as rule) {
           <div class="spell-pick">
             <div class="spell-label">
-              Void Warrior Cantrips
-              <span class="spell-counts">Warlock cantrips {{ voidWarriorCantrips.length }}/2</span>
+              {{ rule.style }} Cantrips
+              <span class="spell-counts">{{ rule.className }} cantrips {{ styleCantrips.length }}/{{ rule.count }}</span>
             </div>
-            <div class="void-warrior-hint">Pick two Warlock cantrips — Chill Touch and Mind Sliver are a strong pair.</div>
+            @if (rule.hint) {
+              <div class="style-cantrip-hint">{{ rule.hint }}</div>
+            }
             <app-spell-picker
-              [spells]="warlockCantrips"
-              [selected]="voidWarriorCantrips"
-              [cantripLimit]="2"
+              [spells]="styleCantripOptions"
+              [selected]="styleCantrips"
+              [cantripLimit]="rule.count"
               [spellLimit]="0"
-              [loading]="loadingWarlockCantrips"
-              (selectedChange)="voidWarriorCantrips = $event">
+              [loading]="loadingStyleCantrips"
+              (selectedChange)="styleCantrips = $event">
             </app-spell-picker>
           </div>
         }

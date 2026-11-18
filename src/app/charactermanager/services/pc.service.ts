@@ -437,7 +437,7 @@ export class PCService {
       newSpellSlots: demoSlotsFor(pc.clazz, newLevel),
       subclassDue: newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass,
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
-        ? demoSubclassOptions(pc.clazz) : [],
+        ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
       featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.

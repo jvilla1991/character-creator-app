@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, signal
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { PC } from '../../../../models/pc';
-import { GATHERING_PROFESSIONS, GatheringProfession, ProfessionGrant, ProfessionKey, meetsProfessionRequirement } from '../../../../models/profession';
+import { PROFESSIONS, PROFESSION_LEVELS, ProfessionCategory, ProfessionDefinition, ProfessionGrant, ProfessionKey, meetsProfessionRequirement } from '../../../../models/profession';
 import { ProfessionService } from '../../../../services/profession.service';
 
 @Component({
@@ -15,7 +15,11 @@ import { ProfessionService } from '../../../../services/profession.service';
 export class ProfessionsPanelComponent implements OnChanges, OnDestroy {
   @Input() pc!: PC;
   @Input() canGrant = false;
-  readonly catalog = GATHERING_PROFESSIONS;
+  readonly catalog = PROFESSIONS;
+  readonly levels = PROFESSION_LEVELS;
+  readonly categories: { key: ProfessionCategory; label: string }[] = [
+    { key: 'gathering', label: 'Gathering' }, { key: 'production', label: 'Production' }
+  ];
   readonly grants = signal<ProfessionGrant[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -33,10 +37,13 @@ export class ProfessionsPanelComponent implements OnChanges, OnDestroy {
   }
   ngOnDestroy(): void { this.requests.unsubscribe(); }
   get bonus(): number { return this.pc.prof ?? Math.floor((this.pc.level - 1) / 4) + 2; }
-  get assigned(): GatheringProfession[] { return this.catalog.filter(p => this.grants().some(g => g.profession === p.key)); }
-  get available(): GatheringProfession[] { return this.catalog.filter(p => !this.grants().some(g => g.profession === p.key)); }
-  get chosen(): GatheringProfession { return this.catalog.find(p => p.key === this.selected)!; }
-  eligible(profession: GatheringProfession): boolean { return meetsProfessionRequirement(this.pc, profession); }
+  get rank(): string { return [...this.levels].reverse().find(level => this.bonus >= level.bonus)?.name ?? 'Untrained'; }
+  get assigned(): ProfessionDefinition[] { return this.catalog.filter(p => this.grants().some(g => g.profession === p.key)); }
+  get available(): ProfessionDefinition[] { return this.catalog.filter(p => !this.grants().some(g => g.profession === p.key)); }
+  get chosen(): ProfessionDefinition { return this.catalog.find(p => p.key === this.selected)!; }
+  assignedFor(category: ProfessionCategory): ProfessionDefinition[] { return this.assigned.filter(p => p.category === category); }
+  availableFor(category: ProfessionCategory): ProfessionDefinition[] { return this.available.filter(p => p.category === category); }
+  eligible(profession: ProfessionDefinition): boolean { return meetsProfessionRequirement(this.pc, profession); }
   load(): void {
     this.requests.unsubscribe(); this.requests = new Subscription();
     this.grants.set([]); this.error.set(null); this.loaded.set(false); this.loading.set(true); this.saving.set(false);
