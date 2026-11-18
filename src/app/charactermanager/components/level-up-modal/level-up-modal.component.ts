@@ -112,7 +112,12 @@ export class LevelUpModalComponent implements OnInit {
     this.loadingSpells = true;
     const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
     const maxLevel = this.maxLearnableSpellLevel;
-    this.dndResources.getSpellsForClass(this.pc.clazz).subscribe({
+    // A WoW variant may add spells to its class list (the Priest's Blur and Levitate).
+    const extras = this.heroClass?.extraSpellList;
+    const spells$ = extras?.length
+      ? this.dndResources.getSpellsForClass(this.pc.clazz, extras)
+      : this.dndResources.getSpellsForClass(this.pc.clazz);
+    spells$.subscribe({
       next: spells => {
         this.spellList = spells.filter(s =>
           !known.has(s.name.toLowerCase()) && (s.level === 0 || s.level <= maxLevel));

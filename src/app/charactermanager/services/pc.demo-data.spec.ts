@@ -116,4 +116,40 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoFightingStyleOptions('Fighter', undefined, 2)).toEqual([]);
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
   });
+
+  it('offers the Discipline and Shadow domains only to WoW clerics', () => {
+    for (const spec of ['Discipline', 'Holy', 'Shadow']) {
+      expect(demoSubclassOptions('Cleric', spec)).withContext(spec).toEqual(jasmine.arrayContaining(['Discipline Domain', 'Shadow Domain', 'Life Domain']));
+    }
+    expect(demoSubclassOptions('Cleric', 'Shadow')).toEqual([...demoSubclassOptions('Cleric', 'Shadow')].sort((a, b) => a.localeCompare(b)));
+    expect(demoSubclassOptions('Cleric', null)).not.toContain('Discipline Domain');
+    expect(demoSubclassOptions('Cleric', null)).not.toContain('Shadow Domain');
+    expect(demoSubclassOptions('Cleric', 'Frost')).not.toContain('Shadow Domain');
+    expect(demoSubclassOptions('Paladin', 'Holy')).not.toContain('Discipline Domain');
+  });
+
+  it('seeds a level-6 Shadow night elf priest on the Shadow Domain whose sheet shows the domain card and spells', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Cleric' && p.specialization === 'Shadow')!;
+    expect(pc).toBeDefined();
+    expect(pc.race).toBe('Elf');
+    expect(pc.bio).toContain('night elf');
+    expect(pc.level).toBe(6);
+    expect(pc.subclass).toBe('Shadow Domain');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Cleric (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Priest (Cleric)');
+    const cards = hero!.featureCards!({ level: pc.level!, subclass: pc.subclass, stats: pc.stats, prof: pc.prof });
+    expect(cards.map(c => c.name)).toEqual(['Shadow Domain']);
+    expect(cards[0].rows.map(r => r.name)).toEqual(['Shadowform', 'Devouring Plague', 'Dispersion']);
+    expect(cards[0].stats).toEqual([{ label: 'Devouring Plague', value: '3 / Long Rest' }]);
+    expect(subclassSpellsFor(hero, pc.subclass, pc.level!).map(s => s.name)).toEqual([
+      'Crown of Madness', 'Dissonant Whispers', 'Mind Spike', 'Shadow Word: Pain', 'Summon Undead', 'Vampiric Touch',
+    ]);
+    // The four recommended Shadow cantrips, plus Blur from the priest's added spell list.
+    expect((pc.spells ?? []).filter(s => s.lvl === 0).map(s => s.name))
+      .toEqual(['Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead']);
+    expect((pc.spells ?? []).map(s => s.name)).toContain('Blur');
+    expect(Object.keys(pc.spellSlots ?? {})).toEqual(['1', '2', '3']);
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
 });

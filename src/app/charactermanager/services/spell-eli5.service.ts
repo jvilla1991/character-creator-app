@@ -1,4 +1,5 @@
 import { computed, effect, Injectable, Injector, signal, untracked } from '@angular/core';
+import { spellKey } from '../models/spell-names';
 import { DndResourcesService } from './dnd-resources.service';
 import { PreferencesService } from './preferences.service';
 import { UiStateService } from './ui-state.service';
@@ -54,7 +55,7 @@ export class SpellEli5Service {
    */
   summaryFor(spellName: string): string | null {
     if (!this.active()) return null;
-    return this.summaries().get(spellName.toLowerCase()) ?? null;
+    return this.summaries().get(spellKey(spellName)) ?? null;
   }
 
   private load(): void {
