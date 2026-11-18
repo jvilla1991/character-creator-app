@@ -8,6 +8,7 @@ import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
+import { ConfirmService } from '../modal/confirm.service';
 import { PC } from '../../models/pc';
 import { LEVEL_UP_ANSWERED_KEY, LevelUpPromptService } from '../../services/level-up-prompt.service';
 
@@ -115,6 +116,7 @@ describe('SessionModeComponent ending and leaving', () => {
   let sessionService: jasmine.SpyObj<SessionService>;
   let uiState: jasmine.SpyObj<UiStateService>;
   let notifications: jasmine.SpyObj<NotificationService>;
+  let confirm: jasmine.Spy;
 
   const state = { sessionId: 3, dm: true, participants: [] } as unknown as SessionState;
 
@@ -124,6 +126,15 @@ describe('SessionModeComponent ending and leaving', () => {
     notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
       sessionService, uiState, null as never, notifications, null as never, null as never, null as never, null as never));
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
+  });
+
+  it('End Session asks first, and Keep Playing ends nothing', () => {
+    confirm.and.returnValue(of());
+    component.endSession(state);
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: 'End Session', cancelLabel: 'Keep Playing' }));
+    expect(sessionService.end).not.toHaveBeenCalled();
+    expect(uiState.closeSession).not.toHaveBeenCalled();
   });
 
   it('End Session exits once the server has ended it', () => {

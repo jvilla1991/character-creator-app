@@ -1,5 +1,6 @@
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { ConfirmService } from '../../modal/confirm.service';
 import { CuratedLootComponent } from './curated-loot.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootSummary } from '../../../models/curated-loot';
@@ -8,6 +9,7 @@ import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedLootComponent', () => {
+  let confirm: jasmine.Spy;
   let component: CuratedLootComponent;
   let service: any;
 
@@ -30,6 +32,7 @@ describe('CuratedLootComponent', () => {
     service.list.and.returnValue(of([] as CuratedLootSummary[]));
     component = TestBed.runInInjectionContext(() => new CuratedLootComponent(service));
     component.campaign = campaign;
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
   });
 
   it('loads loot lists when the campaign changes', () => {
@@ -143,5 +146,13 @@ describe('CuratedLootComponent', () => {
     expect(service.delete).toHaveBeenCalledWith(5);
     expect(component.selected).toBeNull();
     expect(service.list).toHaveBeenCalled(); // back() reloads
+  });
+
+  it('deleteList() asks first and does nothing when the DM cancels', () => {
+    confirm.and.returnValue(of());
+    component.selected = loot;
+    component.deleteList();
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: jasmine.any(String) }));
+    expect(service.delete).not.toHaveBeenCalled();
   });
 });

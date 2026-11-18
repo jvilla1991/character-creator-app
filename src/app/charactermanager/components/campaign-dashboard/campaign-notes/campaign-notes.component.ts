@@ -3,6 +3,7 @@ import { Campaign } from '../../../models/campaign';
 import { SessionNote } from '../../../models/session-note';
 import { CampaignService } from '../../../services/campaign.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 
@@ -33,6 +34,7 @@ export class CampaignNotesComponent implements OnChanges {
   editDraft = '';
 
   private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private campaignService: CampaignService) {}
 
@@ -97,7 +99,17 @@ export class CampaignNotesComponent implements OnChanges {
     });
   }
 
+  /** Asks first — the ✕ sits right beside Edit, and a note is the table's memory. */
   remove(note: SessionNote): void {
+    this.confirmations.confirm({
+      title: 'Delete Note',
+      subject: excerpt(note.body),
+      message: 'will be erased from the session notes. This cannot be undone.',
+      confirmLabel: 'Delete Note',
+    }).subscribe(() => this.reallyRemove(note));
+  }
+
+  private reallyRemove(note: SessionNote): void {
     this.campaignService.deleteNote(this.campaign.id, note.id).subscribe({
       next: () => this.notes.update(notes => notes.filter(n => n !== note)),
       error: err => this.notifications.error('Could not delete the note. Try again.', err),
@@ -107,4 +119,10 @@ export class CampaignNotesComponent implements OnChanges {
   trackById(_index: number, note: SessionNote): number | string {
     return note.id;
   }
+}
+
+/** The note's opening words, quoted, so the DM can tell which one they hit. */
+function excerpt(body: string): string {
+  const flat = body.replace(/\s+/g, ' ').trim();
+  return `“${flat.length > 60 ? flat.slice(0, 60).trimEnd() + '…' : flat}”`;
 }

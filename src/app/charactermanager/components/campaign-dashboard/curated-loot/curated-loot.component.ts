@@ -6,6 +6,7 @@ import { formatCp } from '../../../models/shop';
 import { AuthoredItem } from '../../item-composer/authored-item';
 import { CuratedLootService } from '../../../services/curated-loot.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { ItemComposerComponent } from '../../item-composer/item-composer.component';
 
@@ -54,6 +55,7 @@ export class CuratedLootComponent implements OnChanges {
   readonly formatCp = formatCp;
 
   private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private curatedLoot: CuratedLootService) {}
 
@@ -114,9 +116,20 @@ export class CuratedLootComponent implements OnChanges {
     });
   }
 
+  /** Asks first — a stocked list is prep work that is slow to rebuild. */
   deleteList(): void {
-    if (!this.selected) return;
-    this.curatedLoot.delete(this.selected.id).subscribe({
+    const loot = this.selected;
+    if (!loot) return;
+    this.confirmations.confirm({
+      title: 'Delete Loot List',
+      subject: loot.name,
+      message: 'will be erased along with its items and coins. This cannot be undone.',
+      confirmLabel: 'Delete Loot List',
+    }).subscribe(() => this.reallyDelete(loot));
+  }
+
+  private reallyDelete(loot: CuratedLoot): void {
+    this.curatedLoot.delete(loot.id).subscribe({
       next: () => this.back(),
       error: err => this.notifications.error('Could not delete the loot list. Try again.', err),
     });

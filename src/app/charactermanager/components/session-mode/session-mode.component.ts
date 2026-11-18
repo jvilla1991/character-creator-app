@@ -6,6 +6,7 @@ import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { PCService } from '../../services/pc.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmService } from '../modal/confirm.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
@@ -80,6 +81,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   private variantsResolvedFor: string | null = null;
 
   private readonly levelUpPrompt = inject(LevelUpPromptService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(
     private sessionService: SessionService,
@@ -605,6 +607,17 @@ export class SessionModeComponent implements OnInit, OnDestroy {
    * nothing left to end, so that still exits.
    */
   endSession(state: SessionState): void {
+    // Asked first: it is one tap beside Next Turn, and it ends play for everyone.
+    this.confirmations.confirm({
+      title: 'End the Session',
+      message: 'The session closes for everyone at the table and players return to their sheets. '
+        + 'You can start a new one from the campaign dashboard.',
+      confirmLabel: 'End Session',
+      cancelLabel: 'Keep Playing',
+    }).subscribe(() => this.reallyEndSession(state));
+  }
+
+  private reallyEndSession(state: SessionState): void {
     this.sessionService.end(state.sessionId).subscribe({
       next: () => this.close(),
       error: err => {

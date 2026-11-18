@@ -4,6 +4,7 @@ import { CuratedShop, ShopSummary, parseImportPayload, toImportPayload } from '.
 import { formatCp } from '../../../models/shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { LowerCasePipe } from '@angular/common';
 
@@ -51,6 +52,7 @@ export class CuratedShopsComponent implements OnChanges {
   readonly formatCp = formatCp;
 
   private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private curatedShops: CuratedShopService) {}
 
@@ -192,9 +194,19 @@ export class CuratedShopsComponent implements OnChanges {
     });
   }
 
+  /** Asks first — a stocked, priced shop is prep work that is slow to rebuild. */
   deleteShop(): void {
-    if (!this.selected) return;
-    const id = this.selected.id;
+    const shop = this.selected;
+    if (!shop) return;
+    this.confirmations.confirm({
+      title: 'Delete Shop',
+      subject: shop.name,
+      message: 'will be erased along with its stock and prices. This cannot be undone.',
+      confirmLabel: 'Delete Shop',
+    }).subscribe(() => this.reallyDelete(shop.id));
+  }
+
+  private reallyDelete(id: number): void {
     this.curatedShops.delete(id).subscribe({
       next: () => this.back(),
       error: err => this.notifications.error('Could not delete the shop. Try again.', err),

@@ -1,5 +1,6 @@
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { ConfirmService } from '../../modal/confirm.service';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
@@ -8,6 +9,7 @@ import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
 describe('CuratedShopsComponent', () => {
+  let confirm: jasmine.Spy;
   let component: CuratedShopsComponent;
   let service: any;
 
@@ -27,6 +29,7 @@ describe('CuratedShopsComponent', () => {
     service.list.and.returnValue(of([] as ShopSummary[]));
     component = TestBed.runInInjectionContext(() => new CuratedShopsComponent(service));
     component.campaign = campaign;
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
   });
 
   it('loads shops when the campaign changes', () => {
@@ -138,5 +141,13 @@ describe('CuratedShopsComponent', () => {
     open.click();
     expect(service.get).toHaveBeenCalledTimes(1); // the row's own click did not fire again
     expect(fixture.componentInstance.selected).toBe(shop);
+  });
+
+  it('deleteShop() asks first and does nothing when the DM cancels', () => {
+    confirm.and.returnValue(of());
+    component.selected = shop;
+    component.deleteShop();
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: jasmine.any(String) }));
+    expect(service.delete).not.toHaveBeenCalled();
   });
 });

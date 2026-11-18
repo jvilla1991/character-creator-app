@@ -3,6 +3,7 @@ import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterCreature, EncounterSummary } from '../../../models/encounter';
 import { CuratedEncounterService } from '../../../services/curated-encounter.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -37,6 +38,7 @@ export class CuratedEncountersComponent implements OnChanges {
   cQty = 1;
 
   private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private curatedEncounters: CuratedEncounterService) {}
 
@@ -127,9 +129,23 @@ export class CuratedEncountersComponent implements OnChanges {
     });
   }
 
+  /** Asks first — an encounter is prep work that is slow to rebuild. */
   deleteEncounter(): void {
-    if (!this.selected) return;
-    this.curatedEncounters.delete(this.selected.id).subscribe({
+    const encounter = this.selected;
+    if (!encounter) return;
+    const n = this.totalCombatants(encounter);
+    this.confirmations.confirm({
+      title: 'Delete Encounter',
+      subject: encounter.name,
+      message: n
+        ? `will be erased along with its ${n} combatant${n === 1 ? '' : 's'}. This cannot be undone.`
+        : 'will be erased. This cannot be undone.',
+      confirmLabel: 'Delete Encounter',
+    }).subscribe(() => this.reallyDelete(encounter));
+  }
+
+  private reallyDelete(encounter: Encounter): void {
+    this.curatedEncounters.delete(encounter.id).subscribe({
       next: () => this.back(),
       error: err => this.notifications.error('Could not delete the encounter. Try again.', err),
     });
