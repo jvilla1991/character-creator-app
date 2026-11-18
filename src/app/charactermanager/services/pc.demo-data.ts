@@ -19,11 +19,12 @@ import {
   CIRCLE_OF_THE_MOON, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
 } from '../models/wow-class-variants';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
+import { BATTLE_MASTER } from '../models/wow-warrior';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue, Shaman and Warlock.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue, Shaman, Warlock and Warrior.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -587,6 +588,66 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Certain she can always renegotiate the terms.',
     },
     bio: 'A gnome tinkerer who found a demonic contract in the rubble of Gnomeregan, signed it, and has been bending its fine print against the Burning Legion ever since.',
+    notes: '',
+  },
+  // World of Warcraft Warrior (Fighter) — an ordinary Fighter with the Protection
+  // specialization and the Battle Master subclass, so the "Warrior (Fighter)" header,
+  // the maneuver recommendations and the Battle Master card (5 × d8 at level 7) render.
+  {
+    id: 13,
+    name: 'Karsha Stonehelm',
+    playerName: 'Owen',
+    player: 'Owen',
+    campaignId: null,
+    race: 'Orc',
+    clazz: 'Fighter',
+    subclass: BATTLE_MASTER,
+    specialization: 'Protection',
+    level: 7,
+    background: 'Soldier',
+    alignment: 'Lawful Neutral',
+    portraitInitials: 'KS',
+    portraitTint: 'crimson',
+    hp: { cur: 67, max: 67, temp: 0 },
+    ac: 18, init: 1, speed: 30, prof: 3,
+    stats: { STR: 17, DEX: 12, CON: 16, INT: 8, WIS: 12, CHA: 10 },
+    saves: ['STR', 'CON'],
+    skills: { Athletics: 'prof', Intimidation: 'prof', Perception: 'prof', Survival: 'prof' },
+    conditions: [],
+    coins: { cp: 8, sp: 15, ep: 0, gp: 52, pp: 0 },
+    spellSlots: {},
+    spells: [],
+    weapons: [
+      { name: 'Longsword', dmg: '1d8+3 slashing', notes: 'Versatile (1d10); mastery: Sap' },
+      { name: 'Battleaxe', dmg: '1d8+3 slashing', notes: 'Versatile (1d10); mastery: Topple' },
+      { name: 'Javelin', dmg: '1d6+3 piercing', notes: 'Thrown (30/120); mastery: Slow' },
+    ],
+    gear: [
+      { name: 'Chain Mail', equipped: true },
+      { name: 'Shield (Horde crest)', equipped: true },
+      { name: 'War horn' },
+    ],
+    features: [
+      { name: 'Fighting Style', source: 'Fighter 1', desc: 'Protection: impose disadvantage on an attack against an ally within 5 feet while holding a Shield.' },
+      { name: 'Second Wind', source: 'Fighter 1', desc: 'Bonus action to regain 1d10 + fighter level HP; 3 uses, one back on a Short Rest.' },
+      { name: 'Weapon Mastery', source: 'Fighter 1', desc: 'Use the mastery properties of four kinds of weapons.' },
+      { name: 'Action Surge', source: 'Fighter 2', desc: 'Take one additional action once per Short or Long Rest.' },
+      { name: 'Tactical Mind', source: 'Fighter 2', desc: 'Spend a Second Wind use to add 1d10 to a failed ability check.' },
+      { name: 'Combat Superiority', source: 'Battle Master 3', desc: 'Maneuvers: Battle Shout, Demoralizing Shout, Goading Attack, Parry, Warding Maneuver.' },
+      { name: 'Student of War', source: 'Battle Master 3', desc: "Proficiency with Smith's Tools and one more fighter skill." },
+      { name: 'Heavy Armor Master', source: 'Fighter 4', desc: 'Reduce bludgeoning, piercing, and slashing damage you take by your Proficiency Bonus while in heavy armor.' },
+      { name: 'Extra Attack', source: 'Fighter 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Tactical Shift', source: 'Fighter 5', desc: 'Move half your speed without provoking when you use Second Wind.' },
+      { name: 'Sentinel', source: 'Fighter 6', desc: 'Opportunity attacks stop movement; punish foes that strike your allies.' },
+      { name: 'Know Your Enemy', source: 'Battle Master 7', desc: "Bonus action to learn a creature's immunities, resistances, and vulnerabilities." },
+    ],
+    traits: {
+      Personality: 'Says little, and always stands where the blow will land.',
+      Ideals: 'Duty. The line holds because I hold it.',
+      Bonds: 'The Horde garrison she trained, and every recruit who came home.',
+      Flaws: 'Treats every retreat as a personal failure.',
+    },
+    bio: 'An orc shieldbearer who held the gate of a Durotar outpost through a three-day siege, and has carried the dented shield from that wall ever since.',
     notes: '',
   },
 ];

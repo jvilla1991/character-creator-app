@@ -107,6 +107,15 @@ describe('CharacterSheetComponent', () => {
     component.pc = makePC({ clazz: 'Warlock', subclass: 'Great Old One Patron', specialization: null });
     expect(component.heroClass).toBeFalse();
     expect(component.subtitleSuffix).toBe('Great Old One Patron');
+    // WoW Warrior: "Warrior (Fighter) (Arms)", then the subclass joins it from level 3.
+    component.pc = makePC({ clazz: 'Fighter', subclass: undefined, specialization: 'Arms' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Arms');
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Battle Master', specialization: 'Protection' });
+    expect(component.subtitleSuffix).toBe('Battle Master · Protection');
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Champion', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Champion');
   });
 
   // --- Level Up gating ---

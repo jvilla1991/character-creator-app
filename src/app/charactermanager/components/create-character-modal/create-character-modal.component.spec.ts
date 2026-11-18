@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1204,6 +1204,69 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.selectSpecialization('Assassination');
       component.toggleClass('Rogue');
       expect(component.selectedClassKey).toBe('Rogue');
+      expect(component.specializationGuidance).toBeNull();
+    });
+  });
+
+  describe('World of Warcraft Warrior (Fighter)', () => {
+    const WOW_WARRIOR_KEY = 'Fighter (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Fighter', 'Rogue', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Warrior (Fighter)" row tagged World of Warcraft beside the base Fighter, only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.baseClass === 'Fighter');
+      expect(rows().map(o => [o.key, o.label, o.source])).toEqual([
+        ['Fighter', 'Fighter', 'Base Game'], [WOW_WARRIOR_KEY, 'Warrior (Fighter)', 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.key)).toEqual([WOW_WARRIOR_KEY]);
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.key)).toEqual(['Fighter']);
+    });
+
+    it('stores clazz Fighter with no subclass and requires a specialization', () => {
+      component.toggleClass(WOW_WARRIOR_KEY);
+      expect(component.clazz).toBe('Fighter');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Warrior (Fighter)');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Fighter');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Arms', 'Fury', 'Protection']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Protection');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.specializationGuidance?.subclass.name).toBe('Battle Master');
+      expect(component.specializationGuidance?.fightingStyles).toEqual(['Interception', 'Protection']);
+      // No level-1 subclass picker for a fighter, so nothing to badge (the style stays text).
+      expect(component.requiresLevel1Subclass).toBeFalse();
+      expect(component.recommendedLevel1Subclass).toBe('');
+      expect(component.recommendedSpells).toEqual([]);
+      expect(component.isSpellcastingClass).toBeFalse();
+    });
+
+    it('emits clazz Fighter + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_WARRIOR_KEY);
+      component.selectSpecialization('Arms');
+      component.name = 'Varian';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Fighter');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Arms');
+        done();
+      });
+      component.submit();
+    });
+
+    it('selecting the base Fighter row clears the specialization', () => {
+      component.toggleClass(WOW_WARRIOR_KEY);
+      component.selectSpecialization('Fury');
+      component.toggleClass('Fighter');
+      expect(component.selectedClassKey).toBe('Fighter');
       expect(component.specializationGuidance).toBeNull();
     });
   });
