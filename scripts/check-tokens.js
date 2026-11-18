@@ -2,7 +2,7 @@
 /**
  * Theme-token leak check.
  *
- * Fails on the two ways a component style can bypass the theme tokens:
+ * Fails on the ways a component style can bypass the design system:
  *
  *   1. `var(--x)` where `--x` is never declared anywhere in src/. The
  *      browser then silently uses the fallback (or nothing), which is
@@ -11,6 +11,12 @@
  *   2. A white-alpha literal `rgba(255, 255, 255, …)` in any stylesheet
  *      under src/ (component styles and the global styles.css). White ink or a white wash reads on the two dark themes and
  *      vanishes on vellum's parchment.
+ *   3. Italic text: `font-style: italic` / `oblique`, the `font:` shorthand
+ *      with either keyword, `fontStyle` set from code, or an italic face in
+ *      the Google Fonts URL (the `ital` axis), anywhere under src/:
+ *      stylesheets, templates and inline `styles:` alike. The system sets
+ *      nothing in italic (owner decision 2026-11-18; DESIGN.md, Typography).
+ *      There is no allow-comment for this one.
  *
  * Why this exists: check-contrast.js only compares token *pairs*, so it
  * stayed green (0/135 failures) while vellum was broken on five screens
@@ -44,6 +50,15 @@ const files = walk(SRC);
 const declared = new Set();
 const uses = [];
 const whites = [];
+const italics = [];
+
+// Declarations only, so the word "italic" in a comment or in copy is fine.
+const ITALIC_RES = [
+  /font-style\s*:\s*(italic|oblique)/i,
+  /\bfont\s*:[^;{}]*\b(italic|oblique)\b/i,
+  /fontStyle['"]?\s*[:=]\s*['"`](italic|oblique)/i,
+  /fonts\.googleapis\.com[^"'\s]*:ital\b/i,
+];
 
 for (const file of files) {
   const text = fs.readFileSync(file, 'utf8');
@@ -68,6 +83,9 @@ for (const file of files) {
     ) {
       whites.push({ file, line: i + 1, text: line.trim() });
     }
+    if (ITALIC_RES.some((re) => re.test(line))) {
+      italics.push({ file, line: i + 1, text: line.trim().slice(0, 120) });
+    }
   });
 }
 
@@ -84,8 +102,15 @@ if (whites.length) {
   console.log(`  Use a theme token, or add "/* ${ALLOW_WHITE}: <reason> */" to the line.`);
 }
 
-if (undeclared.length || whites.length) {
-  console.log('\nFAIL: styles bypass the theme tokens.');
+if (italics.length) {
+  console.log(`Italic text (${italics.length}):`);
+  for (const t of italics) console.log(`  ${rel(t.file)}:${t.line}  ${t.text}`);
+  console.log('  The system uses no italics. Tell secondary text apart with the text ramp,');
+  console.log('  size, weight or an accent token instead (DESIGN.md, Typography).');
+}
+
+if (undeclared.length || whites.length || italics.length) {
+  console.log('\nFAIL: styles bypass the design system.');
   process.exit(1);
 }
-console.log(`OK: ${uses.length} var() uses all declared; no white-alpha literals in stylesheets.`);
+console.log(`OK: ${uses.length} var() uses all declared; no white-alpha literals in stylesheets; no italics.`);

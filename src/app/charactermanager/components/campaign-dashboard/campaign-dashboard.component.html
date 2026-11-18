@@ -102,21 +102,21 @@
     @defer (on viewport) {
       <app-curated-shops [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-shops>
     } @placeholder {
-      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+      <div style="color: var(--text-dim); font-size: 13px; padding: 20px 0; margin-top: 20px;">
         Loading curated shops…
       </div>
     }
     @defer (on viewport) {
       <app-curated-encounters [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-encounters>
     } @placeholder {
-      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+      <div style="color: var(--text-dim); font-size: 13px; padding: 20px 0; margin-top: 20px;">
         Loading curated encounters…
       </div>
     }
     @defer (on viewport) {
       <app-curated-loot [campaign]="vm.campaign" style="display: block; margin-top: 20px;"></app-curated-loot>
     } @placeholder {
-      <div style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px 0; margin-top: 20px;">
+      <div style="color: var(--text-dim); font-size: 13px; padding: 20px 0; margin-top: 20px;">
         Loading curated loot…
       </div>
     }
@@ -129,7 +129,7 @@
     <div class="modal-backdrop" (click)="closeManageParty()">
       <app-modal title="Manage Party" tone="celestial" (dismiss)="closeManageParty()">
         <div class="modal-sub">
-          Bind your heroes to <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em>.
+          Bind your heroes to <em style="color: var(--text);">{{ campaignName }}</em>.
           Toggle a hero on to seat them at this table.
         </div>
         <div class="manage-list">
@@ -154,7 +154,7 @@
           }
           @if (allPcs?.length === 0) {
             <div
-              style="color: var(--text-dim); font-style: italic; font-size: 13px; padding: 8px 0;">
+              style="color: var(--text-dim); font-size: 13px; padding: 8px 0;">
               You have no characters to assign yet.
             </div>
           }
@@ -170,7 +170,7 @@
     <div class="modal-backdrop" (click)="closeDeleteCampaign()">
       <app-modal title="Delete Campaign" tone="crimson" dialogRole="alertdialog" (dismiss)="closeDeleteCampaign()">
         <div class="modal-sub">
-          <em style="color: var(--text); font-style: normal;">{{ campaignName }}</em> will be erased —
+          <em style="color: var(--text);">{{ campaignName }}</em> will be erased —
           its sessions, encounters, shops and notes go with it. Its characters are
           <strong>released, not deleted</strong>: they return to their players, unbound.
           This cannot be undone.

@@ -200,7 +200,8 @@ numbers must align: hit points, ability scores, dice results, currency.
 - **Display** (Cinzel 600, 48px, 1.1, 0.04em): the drop capital and the largest dice result. Rare.
 - **Headline** (Cinzel 600, 24–36px, 1.2, 0.04em): page and empty-state titles ("No Hero Selected").
 - **Title** (Cinzel 500, 16–18px, 1.3, 0.05em): modal titles, section headings.
-- **Body** (Newsreader 400, 13–15px, 1.45): all prose. Italic is used for flavour text.
+- **Body** (Newsreader 400, 13–15px, 1.45): all prose, always upright. Flavour text, hints and
+  sub-lines are the same face one step down the text ramp, not a slanted one.
 - **Label** (Cinzel 500, 11px, 0.18em, uppercase): buttons, panel titles, field labels, tabs.
 - **Numeric** (JetBrains Mono 500, 13px, tabular): any figure that is compared or totalled.
 
@@ -212,6 +213,24 @@ functional text and are not exempt; being on the scale does not launder a legibi
 **The Tracking Ladder Rule.** Tracking rises as size falls: 0.04em on display, 0.05em on titles,
 0.18em on buttons, 0.22em on the smallest eyebrow labels. Uppercase Cinzel below 12px without
 tracking is illegible.
+
+**The No Italics Rule.** Nothing is set in italic or oblique, in any theme (owner decision,
+2026-11-18). No stylesheet or template declares `font-style: italic`, no italic font face is
+loaded, and the elements a browser slants by default (`em`, `i`, `cite`, `dfn`, `address`, `var`)
+are reset to upright once, globally, in `src/styles.css`. Secondary text (hints, sub-lines, empty
+states, notes, flavour) is told apart from the line above it by, in order of preference:
+
+1. one step down the text ramp (`text` → `text-2` → `text-dim`);
+2. one step down the `--text-*` scale, never below the 11px floor;
+3. weight (Newsreader 400 against 500 or 600);
+4. an accent token, only where the text carries that meaning (crimson for an error, celestial
+   for a magic item, gold for a title).
+
+Two lines that share family, size, weight and colour are one line to the eye; when a note sits
+under a meta line, the note (someone wrote it) takes `text-2` and the meta (generated) keeps
+`text-dim`. Emphasis inside a sentence stays an `<em>` and steps *up* the ramp to `text`; a
+run-in label ("At higher levels.") also takes weight 600. `npm run check:tokens` fails on any
+italic declaration under `src/`.
 
 ## Layout
 
@@ -369,6 +388,7 @@ strip carrying state through colour alone.
 - **Do** write every colour as a token. The three themes are the product.
 - **Do** run `npm run check:contrast` after touching any colour token.
 - **Do** keep functional text at 11px or above, and raise tracking as size falls.
+- **Do** tell secondary text apart with the text ramp, a size step, weight or an accent token.
 - **Do** use tone and hairlines for structure; let `surface` → `surface-2` → `surface-3` carry depth.
 - **Do** keep the accent scarce — gold marks active, valuable, or focused.
 - **Do** verify at 375px before calling a session surface done.
@@ -382,6 +402,8 @@ strip carrying state through colour alone.
 - **Don't** leave a glow on an element at rest.
 - **Don't** soften the corner language; 2–3px is the house voice, pills are for status only.
 - **Don't** reach for a literal hex, `#757575`-style browser defaults included.
+- **Don't** set anything in italic: not a hint, not flavour text, not a placeholder, not an
+  `<em>`. `check:tokens` fails the build on it.
 - **Don't** add `@angular/animations`. Motion here is CSS-only and deliberately so — the package
   was removed for 433 kB and should stay out.
 - **Don't** let a fix for one theme regress another; all three ship together.

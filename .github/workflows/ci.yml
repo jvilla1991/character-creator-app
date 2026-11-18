@@ -47,7 +47,8 @@ jobs:
 
       # The contrast check only compares token pairs, so it cannot see a
       # component that bypasses the tokens. This one fails on var(--x) for an
-      # undeclared --x and on white-alpha literals in any stylesheet.
+      # undeclared --x, on white-alpha literals in any stylesheet, and on any
+      # italic declaration (the system sets no text in italic).
       - name: Check theme token leaks
         run: npm run check:tokens
 

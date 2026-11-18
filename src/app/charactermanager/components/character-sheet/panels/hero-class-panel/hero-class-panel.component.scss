@@ -14,7 +14,6 @@
   margin: 0 0 6px;
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 }
 
@@ -56,7 +55,6 @@
 
 .hero-spell-meta {
   font-family: 'Newsreader', serif;
-  font-style: italic;
   font-size: 11px;
   color: var(--text-dim);
 }
@@ -100,7 +98,6 @@
   margin: 8px 0;
   font-family: 'Newsreader', serif;
   font-size: 12.5px;
-  font-style: italic;
   line-height: 1.4;
   color: var(--text-dim);
 }
@@ -109,7 +106,6 @@
   margin-top: 4px;
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 
   &[data-match='match'] { color: var(--celestial); }
@@ -150,7 +146,6 @@
   border: 1px solid var(--border);
   font-size: 10px;
   font-weight: 400;
-  font-style: italic;
   color: var(--text-dim);
 }
 
@@ -191,7 +186,6 @@
 .form-card-size {
   font-family: 'Newsreader', serif;
   font-size: 12px;
-  font-style: italic;
   color: var(--text-dim);
 }
 
@@ -228,6 +222,7 @@
   color: var(--text-2);
 
   strong { color: var(--text); font-weight: 600; }
+  em { color: var(--text-dim); }
 }
 
 .classic-forms {
@@ -256,7 +251,6 @@
 }
 
 .classic-level {
-  font-style: italic;
   font-size: 12px;
   color: var(--text-dim);
 }

@@ -608,6 +608,69 @@ All four took the recommended option. These are settled; later slices should not
 | 3 | DM notes | **Superseded the same day — `PC.notes` is the player's field, not DM notes.** First answered "fix now, in both repos", but that rested on this audit's reading of the sheet's "DM Notes" label. The backend files `notes` under Narrative beside `bio`, and `CampaignMemberView` already hides it from the DM as "a player's private narrative"; only the frontend label and model comment (one commit, 2026-05-30) said DM-only. **Decision: relabel to "Notes", frontend only, no backend change.** Stripping it from the owner would have hidden players' own notes from them. | fix (rank 8) |
 | 4 | Wizard accent | **Gold + celestial.** Gold for the active step and selection, celestial for completed steps. Thistle Violet stays reserved for categorical chips and tags, as DESIGN.md defines it. | slice 1 |
 
+### Owner decision (2026-11-18): no italics anywhere
+
+Owner request, verbatim: "As a User, I want to remove Italics from all text within the
+application". This overrides DESIGN.md's old "Italic is used for flavour text" and is settled;
+later slices should not bring italics back. Branch `chore/remove-italics`.
+
+**What changed.** All 100 `font-style: italic` declarations are gone (74 in stylesheets, 26 inline
+in templates, 49 files), along with the 15 `font-style: normal` overrides that only existed to
+cancel them. One global rule in `src/styles.css` resets the elements a browser slants by default
+(`em, i, cite, dfn, address, var`), so the `<em>`s that carry emphasis stay in the markup. The
+Google Fonts link no longer asks for Newsreader's italic faces.
+
+**Where italic was doing a job.** Almost every italic line already differed from its neighbour by
+colour or size, so it only lost the slant. Italic was the *only* difference in these places, and
+each got a replacement from the existing tokens:
+
+| Place | Before | Now |
+|---|---|---|
+| Item notes under an item's meta line (inventory, session loot, curated loot) | both `text-dim`, same size; note italic | note `text-2`, meta `text-dim` |
+| Selected encounter's notes (session loader) | `text-dim` italic | `text-2` |
+| Run-in labels "At higher levels:" / "Materials:" (spellbook) and "At Higher Levels." / "Cantrip Upgrade." (session spell cards) | italic inside `text-2` prose | `text`, weight 600 |
+| "Recommended" inside the wizard's spell hint | italic | `text` on a `text-dim` line |
+| "(Bonus Action)"-style kind tags in druid form cards | italic | `text-dim` inside a `text-2` line |
+
+**Layout.** Upright Newsreader is wider than its italic. 57 formerly italic elements were
+re-measured at 375px (dashboard, sheet, session): one grew. The dashboard subtitle went from one
+line to two (22px → 44px) and stranded a single word, so `.sheet-subtitle` now uses
+`text-wrap: balance`. The sheet subtitle was already two lines; `.sheet-tabs` is still 52px
+(`--sheet-tabbar-h` unchanged) and the initiative cards did not move.
+
+**Results.**
+
+| Measure | Before | After |
+|---|---|---|
+| Italic declarations under `src/` | 100 | 0 |
+| Text elements computing italic, 1280px: dashboard / sheet / spells tab / session / settings open | 16 / 32 / 24 / 18 / 37 | 0 everywhere |
+| Same scan across every screen demo mode reaches (auth pages, all 9 demo heroes × 8 tabs, wizard on both the PHB-caster and Warcraft paths, level-up, dice, settings, dashboard dialogs, session with an encounter), at 375px and 1280px, in all three themes | — | 0 of about 230 scan points; no horizontal page scroll, nothing clipped |
+| Newsreader italic font file on first visit | 64.5 kB | not requested |
+| Google Fonts stylesheet | 17.6 kB, 41 faces | 14.9 kB, 35 faces |
+
+**CI guard.** `scripts/check-tokens.js` now also fails on an italic declaration anywhere under
+`src/`: `font-style: italic|oblique`, the `font:` shorthand, `fontStyle` set from code, or the
+`ital` axis in the Google Fonts URL. Proven by planting one in a stylesheet and one in a template
+(exit 1 each), then removing them (exit 0). It also caught this change's own first draft of a CSS
+comment, which is why the comment in `styles.css` avoids spelling the declaration out.
+
+**Gates.** `check:tokens` OK (1417 `var()` uses, no italics), `check:contrast` 135/135, `ng test`
+1321/1321, Cypress 6/6 specs (13 tests), production build **448.73 kB** initial (budget 497 kB).
+
+**Not covered, and things noticed on the way** (none fixed here):
+
+- Loot rows with a note, and spellbook spells with an "At higher levels" line, were not reachable
+  with demo data; those two replacements were checked from the stylesheet, and the run-in label
+  was seen live on a session spell card.
+- `.auth-or` (the "or" divider on the login page) asks for 'EB Garamond', which is never loaded,
+  so it renders in the browser's default serif.
+- Spellbook header at 375px in the DM view: the "Grant spells" button runs past the panel edge.
+  Same with the italics injected back, so it predates this change.
+- The sheet subtitle shows empty brackets, "Wizard ()", for a character with no subclass.
+- `.spell-tag` in the hero-class panel is 10px, under the 11px floor.
+- The professions panel's `.empty` paragraph also picks up the global `.empty` block (the "No
+  Hero Selected" layout), which makes it a tall centred block.
+
 ### Phase 3 progress
 
 | Rank | Branch | State |

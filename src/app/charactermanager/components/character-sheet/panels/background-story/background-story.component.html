@@ -1,7 +1,7 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Background &amp; Story</span>
-    <span style="font-family: 'Newsreader', serif; font-style: italic; font-size: 13px; color: var(--text-dim);">
+    <span style="font-family: 'Newsreader', serif; font-size: 13px; color: var(--text-dim);">
       {{ pc().background }} · {{ pc().alignment }}
     </span>
     @if (addAllowed() && !grantFormOpen) {
@@ -76,7 +76,7 @@
   @if (pc().notes) {
     <div
     style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-soft);
-           font-family: 'Newsreader', serif; font-style: italic; color: var(--text-dim); font-size: 13.5px;"
+           font-family: 'Newsreader', serif; color: var(--text-dim); font-size: 13.5px;"
       >
       <span class="eyebrow" style="margin-right: 10px;">Notes</span>{{ pc().notes }}
     </div>
