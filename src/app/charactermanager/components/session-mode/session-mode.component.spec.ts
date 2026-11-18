@@ -97,7 +97,7 @@ describe('SessionModeComponent.openPcSheet', () => {
 
     component.openPcSheet(participant());
 
-    expect(notifications.notify).toHaveBeenCalledWith('Could not open that character sheet.');
+    expect(notifications.notify).toHaveBeenCalledWith('Could not open that character sheet. Try again.');
     expect(pcService.setActivePC).not.toHaveBeenCalled();
     expect(uiState.viewHeroAsDm).not.toHaveBeenCalled();
   });
