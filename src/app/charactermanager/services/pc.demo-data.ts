@@ -15,7 +15,8 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
-import { CIRCLE_OF_THE_MOON } from '../models/wow-class-variants';
+import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, WOW_PALADIN_SPECIALIZATIONS } from '../models/wow-class-variants';
+import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
@@ -480,8 +481,14 @@ const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
 };
 
-export function demoSubclassOptions(clazz: string): string[] {
-  return DEMO_SUBCLASSES[(clazz ?? '').trim().toLowerCase()] ?? [];
+// Plus the WoW-only Oath of the Holy, offered to World of Warcraft paladins only
+// (a paladin with a Holy / Protection / Retribution specialization).
+export function demoSubclassOptions(clazz: string, specialization?: string | null): string[] {
+  const key = (clazz ?? '').trim().toLowerCase();
+  const options = DEMO_SUBCLASSES[key] ?? [];
+  const wowPaladin = key === 'paladin'
+    && (WOW_PALADIN_SPECIALIZATIONS as readonly string[]).includes(specialization ?? '');
+  return wowPaladin ? [...options, OATH_OF_THE_HOLY].sort((a, b) => a.localeCompare(b)) : options;
 }
 
 // DEMO-ONLY mirror of the server ASI levels (default 4/8/12/16/19; Fighter +6/14; Rogue +10).
@@ -515,7 +522,8 @@ export const DEMO_FIGHTING_STYLE_FEATS = [
 ];
 
 // DEMO-ONLY mirror of the server level-2 Fighting Style choice: due at Paladin 2 and
-// Ranger 2; the 10 PHB styles, plus Void Warrior for a Demon Hunter ranger.
+// Ranger 2; the 10 PHB styles, plus Blessed Warrior for every paladin, Druidic Warrior
+// for every ranger, and Void Warrior for a Demon Hunter ranger.
 export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
   const key = (clazz ?? '').trim().toLowerCase();
   return newLevel === 2 && (key === 'paladin' || key === 'ranger');
@@ -523,9 +531,12 @@ export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
 
 export function demoFightingStyleOptions(clazz: string, subclass: string | undefined, newLevel: number): string[] {
   if (!demoFightingStyleDue(clazz, newLevel)) return [];
+  const key = (clazz ?? '').trim().toLowerCase();
   const options = [...DEMO_FIGHTING_STYLE_FEATS];
-  if ((clazz ?? '').trim().toLowerCase() === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
-    options.push('Void Warrior');
+  if (key === 'paladin') options.push(BLESSED_WARRIOR);
+  if (key === 'ranger') options.push(DRUIDIC_WARRIOR);
+  if (key === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {
+    options.push(VOID_WARRIOR);
   }
   return options.sort((a, b) => a.localeCompare(b));
 }

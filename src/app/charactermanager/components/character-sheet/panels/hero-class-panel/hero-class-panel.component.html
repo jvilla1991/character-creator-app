@@ -35,18 +35,18 @@
       </div>
     }
 
-    @if (spells.length) {
-      <h3 class="hero-spells-title">{{ h.subclass }} Spells</h3>
+    @for (section of spellSections; track section.title) {
+      <h3 class="hero-spells-title">{{ section.title }}</h3>
       <p class="hero-spells-note">Always prepared; they don't count against your prepared spells.</p>
       <ul class="hero-spells">
-        @for (entry of spells; track entry.name) {
+        @for (entry of section.entries; track entry.name) {
           @let spell = spellFor(entry.name);
           <li>
             <details class="hero-spell">
               <summary>
                 <span class="hero-spell-name">{{ entry.name }}</span>
                 <span class="hero-spell-meta">
-                  {{ h.baseClass }} {{ entry.classLevel }} · {{ entry.grantedBy }}
+                  {{ h.baseClass }} {{ entry.classLevel }}@if (entry.grantedBy) { · {{ entry.grantedBy }} }
                   @if (spell) {
                     · {{ spell.level === 0 ? 'Cantrip' : 'Level ' + spell.level }} {{ spell.school }}
                   }

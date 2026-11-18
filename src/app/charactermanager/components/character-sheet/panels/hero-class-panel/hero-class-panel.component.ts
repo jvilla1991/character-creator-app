@@ -4,7 +4,7 @@ import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
   HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells, orList,
-  specializationTitle,
+  specializationTitle, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -28,6 +28,12 @@ export interface SuggestedSpellView {
 export interface SuggestedSpellLevelView {
   level: number;
   spells: SuggestedSpellView[];
+}
+
+/** One always-prepared spell list on the panel (the hero subclass's table, or a WoW-only oath's). */
+export interface HeroSpellSection {
+  title: string;
+  entries: HeroSpellEntry[];
 }
 
 /** How the character's actual subclass compares to the one recommended for its specialization. */
@@ -64,6 +70,8 @@ export class HeroClassPanelComponent {
 
   /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];
+  /** Always-prepared spell lists — the hero table, then a WoW-only subclass's (Oath of the Holy). */
+  spellSections: HeroSpellSection[] = [];
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
   classicForms: ClassicBeastForm[] = [];
@@ -71,7 +79,7 @@ export class HeroClassPanelComponent {
   @Input() set pc(value: PC) {
     this._pc = value;
     this.deriveVariant();
-    if (this.spells.length || this.suggestedSpells.length) this.loadSpells();
+    if (this.spellSections.length || this.suggestedSpells.length) this.loadSpells();
   }
   get pc(): PC { return this._pc; }
 
@@ -101,6 +109,11 @@ export class HeroClassPanelComponent {
   get resource(): HeroResource | null {
     const hero = this.hero;
     return hero?.resource ? hero.resource(this._pc.level ?? 1, this._pc.stats) : null;
+  }
+
+  /** Always-prepared spells of a WoW-only subclass (Oath of the Holy) at this level. */
+  get subclassSpells(): HeroSpellEntry[] {
+    return subclassSpellsFor(this.hero, this._pc?.subclass, this._pc?.level ?? 1);
   }
 
   /** Always-prepared spells at this level for this specialization. */
@@ -165,6 +178,10 @@ export class HeroClassPanelComponent {
   private deriveVariant(): void {
     const hero = this.hero;
     const pc = this._pc;
+    this.spellSections = [
+      { title: `${hero?.subclass ?? ''} Spells`, entries: this.spells },
+      { title: `${pc?.subclass ?? ''} Spells`, entries: this.subclassSpells },
+    ].filter(section => section.entries.length > 0);
     const spec = pc?.specialization;
     const levels = (spec && hero?.suggestedSpells?.[spec]) || [];
     const owned = new Map((pc?.spells ?? []).map(s => [s.name.toLowerCase(), s]));

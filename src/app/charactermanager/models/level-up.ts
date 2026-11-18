@@ -35,7 +35,8 @@ export interface LevelUpPreview {
   // Empty when the class/level has no seeded features. Read-only — no choice involved.
   featuresGained: { name: string; desc: string }[];
   // Level-2 Fighting Style feature (Paladin 2, Ranger 2): whether the choice is due and the
-  // selectable style names (sorted). A Demon Hunter ranger also gets 'Void Warrior'. Optional —
+  // selectable style names (sorted). Every paladin also gets 'Blessed Warrior', every ranger
+  // 'Druidic Warrior', and a Demon Hunter ranger 'Void Warrior'. Optional —
   // the player may skip it. Descriptions are looked up locally (FEAT_DESCRIPTIONS).
   fightingStyleDue: boolean;
   fightingStyleOptions: string[];
@@ -50,6 +51,10 @@ export interface LevelUpPreview {
   // 'Circle of the Moon'), when the server sends it. Optional — the SPA derives the same
   // value from the hero-class table when it is absent. A highlight only, never enforced.
   recommendedSubclass?: string | null;
+  // WoW variants: the level-2 Fighting Style(s) the specialization recommends (Holy →
+  // Blessed Warrior; Protection → Interception, Protection; Retribution → Great Weapon
+  // Fighting). Optional — the SPA derives the same list from the variant table when absent.
+  recommendedFightingStyles?: string[];
 }
 
 /**
@@ -69,8 +74,9 @@ export interface LevelUpChoices {
   newSpells?: PcSpell[];
   hpMode?: HpMode;
   /**
-   * The level-2 Fighting Style, only when `fightingStyleDue`. 'Void Warrior' must come with
-   * exactly two Warlock cantrips in `newSpells` (on top of any class cantrip allowance).
+   * The level-2 Fighting Style, only when `fightingStyleDue`. 'Blessed Warrior', 'Druidic
+   * Warrior' and 'Void Warrior' must come with exactly two Cleric / Druid / Warlock cantrips
+   * in `newSpells` (on top of any class cantrip allowance).
    */
   fightingStyle?: string;
   /** Hero classes that respec on level-up only: the new specialization, sent only when it changes. */

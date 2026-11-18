@@ -361,7 +361,7 @@
   font-size: 0.9rem;
 }
 
-// Level-2 Fighting Style: "(optional)" tag and the Void Warrior cantrip hint.
+// Level-2 Fighting Style: "(optional)" tag and the cantrip-style hint.
 .optional-note {
   font-size: 0.72rem;
   font-style: italic;
@@ -370,8 +370,19 @@
   color: var(--text-dim);
 }
 
-.void-warrior-hint {
+.style-cantrip-hint {
   margin: 2px 0 6px;
   font-size: 0.74rem;
   color: var(--text-dim);
+}
+
+// Subclass option from the World of Warcraft module (e.g. Oath of the Holy).
+.source-tag {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  white-space: nowrap;
 }

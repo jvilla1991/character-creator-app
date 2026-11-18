@@ -325,5 +325,63 @@ describe('HeroClassPanelComponent', () => {
         .filter(n => n.querySelector('.wow-mark')).map(n => n.textContent!.replace('✦', '').trim());
       expect(marked).toEqual(['Divine Shield']);
     });
+    describe('Oath of the Holy', () => {
+      const holy = (level: number, overrides: Partial<PC> = {}) =>
+        makePaladin({ specialization: 'Holy', subclass: 'Oath of the Holy', level, ...overrides });
+      const names = (level: number) => {
+        component.pc = holy(level);
+        return component.subclassSpells.map(s => s.name);
+      };
+
+      it('lists the always-prepared oath spells by Paladin level', () => {
+        expect(names(2)).toEqual([]);
+        expect(names(3)).toEqual(['Cure Wounds', 'Healing Word']);
+        expect(names(5)).toEqual(['Cure Wounds', 'Healing Word', 'Lesser Restoration', 'Prayer of Healing']);
+        expect(names(9)).toEqual([
+          'Cure Wounds', 'Healing Word', 'Lesser Restoration', 'Prayer of Healing', 'Dispel Magic', 'Mass Healing Word',
+        ]);
+        expect(names(13).slice(-2)).toEqual(['Aura of Life', 'Death Ward']);
+        expect(names(13).length).toBe(8);
+        expect(names(17).slice(-2)).toEqual(['Greater Restoration', 'Mass Cure Wounds']);
+        expect(names(20).length).toBe(10);
+      });
+
+      it('shows the oath list in its own section, with no hero table for a variant', () => {
+        component.pc = holy(5);
+        expect(component.spells).toEqual([]);
+        expect(component.spellSections.map(sec => sec.title)).toEqual(['Oath of the Holy Spells']);
+        expect(component.spellSections[0].entries.map(e => e.classLevel)).toEqual([3, 3, 5, 5]);
+        component.pc = holy(2, { subclass: undefined });
+        expect(component.spellSections).toEqual([]);
+        // Another oath has no list here.
+        component.pc = holy(9, { subclass: 'Oath of Devotion' });
+        expect(component.spellSections).toEqual([]);
+      });
+
+      it('recognizes any paladin with the oath, even without a specialization', () => {
+        expect(isHeroClass(holy(3, { specialization: null }))).toBeTrue();
+        component.pc = holy(3, { specialization: null });
+        expect(component.subclassSpells.map(s => s.name)).toEqual(['Cure Wounds', 'Healing Word']);
+        expect(component.guidance).toBeNull();
+      });
+
+      it('renders the list with descriptions looked up by name', () => {
+        dndResources.getSpells.and.returnValue(of([
+          { ...deathGrip, name: 'Healing Word', level: 1, school: 'abjuration', description: 'A word of healing.', source: undefined } as DndSpell,
+        ]));
+        const fixture = TestBed.createComponent(HeroClassPanelComponent);
+        fixture.componentRef.setInput('pc', holy(3));
+        fixture.detectChanges();
+        const el = fixture.nativeElement as HTMLElement;
+        expect(el.querySelector('.hero-spells-title')?.textContent).toContain('Oath of the Holy Spells');
+        expect(el.textContent).toContain('Always prepared');
+        const items = Array.from(el.querySelectorAll('.hero-spell'));
+        expect(items.map(i => i.querySelector('.hero-spell-name')?.textContent)).toEqual(['Cure Wounds', 'Healing Word']);
+        expect(items[1].querySelector('.hero-spell-meta')?.textContent).toContain('Paladin 3');
+        expect(items[1].querySelector('.hero-spell-meta')?.textContent).toContain('Level 1 abjuration');
+        expect(items[1].querySelector('.hero-spell-desc')?.textContent).toContain('A word of healing.');
+        expect(items[0].querySelector('.hero-spell-desc')?.textContent).toContain('No description available.');
+      });
+    });
   });
 });

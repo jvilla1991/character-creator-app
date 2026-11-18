@@ -9,11 +9,10 @@ import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
-import { HeroClassOption, heroClassFor, recommendedSubclassFor } from '../../models/hero-class';
-
-/** The Demon Hunter's fighting style (World of Warcraft): two Warlock cantrips cast with Wisdom. */
-export const VOID_WARRIOR = 'Void Warrior';
-const VOID_WARRIOR_CANTRIPS = 2;
+import {
+  HeroClassOption, heroClassFor, recommendedFightingStylesFor, recommendedSubclassFor, subclassSource,
+} from '../../models/hero-class';
+import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -67,11 +66,15 @@ export class LevelUpModalComponent implements OnInit {
 
   /** Level-2 Fighting Style pick ('' = none chosen; the choice is optional). */
   selectedFightingStyle = '';
-  /** Warlock cantrips offered / picked for the Void Warrior fighting style. */
-  warlockCantrips: DndSpell[] = [];
-  voidWarriorCantrips: DndSpell[] = [];
-  loadingWarlockCantrips = false;
-  private warlockCantripsRequested = false;
+  /**
+   * Cantrips offered / picked for a cantrip-teaching fighting style (Blessed
+   * Warrior → Cleric, Druidic Warrior → Druid, Void Warrior → Warlock).
+   */
+  styleCantripOptions: DndSpell[] = [];
+  styleCantrips: DndSpell[] = [];
+  loadingStyleCantrips = false;
+  /** Unknown cantrips per class spell list, fetched once each (keyed 'cleric', 'warlock', …). */
+  private readonly styleCantripCache = new Map<string, DndSpell[]>();
 
   /** Spell selection (casters who gain cantrips/spells this level). */
   spellList: DndSpell[] = [];
@@ -218,7 +221,7 @@ export class LevelUpModalComponent implements OnInit {
       && this.selectedSpecialization !== (this.pc.specialization ?? null);
   }
 
-  // ── Fighting Style (level 2) and the Void Warrior cantrips ─────────────────
+  // ── Fighting Style (level 2) and the cantrip-teaching styles ──────────────
 
   /** Whether to show the Fighting Style picker: due this level AND the server offered options. */
   get needsFightingStyle(): boolean {
@@ -229,40 +232,68 @@ export class LevelUpModalComponent implements OnInit {
     return this.preview?.fightingStyleOptions ?? [];
   }
 
-  /** True when the player picked Void Warrior (needs two Warlock cantrips). */
-  get isVoidWarrior(): boolean {
-    return this.needsFightingStyle && this.selectedFightingStyle === VOID_WARRIOR;
+  /**
+   * The picked style's cantrip rule (Blessed / Druidic / Void Warrior) — exactly
+   * `count` cantrips from that class's list; null for an ordinary style or none.
+   */
+  get cantripStyle(): CantripFightingStyle | null {
+    return this.needsFightingStyle ? cantripFightingStyle(this.selectedFightingStyle) ?? null : null;
   }
 
-  /** Pick (or clear) a fighting style; leaving Void Warrior drops its cantrip picks. */
+  /** Pick (or clear) a fighting style; switching to another style drops the cantrip picks. */
   selectFightingStyle(name: string): void {
     this.selectedFightingStyle = this.selectedFightingStyle === name ? '' : name;
-    if (this.isVoidWarrior) {
-      this.loadWarlockCantrips();
-    } else {
-      this.voidWarriorCantrips = [];
+    this.styleCantrips = [];
+    this.styleCantripOptions = [];
+    const rule = this.cantripStyle;
+    if (rule) this.loadStyleCantrips(rule);
+  }
+
+  /** A cantrip style is satisfied once exactly `count` of its cantrips are picked. */
+  get styleCantripsSatisfied(): boolean {
+    const rule = this.cantripStyle;
+    return !rule || this.styleCantrips.length === rule.count;
+  }
+
+  /**
+   * Fighting styles to badge "Recommended for <spec>". The server's
+   * `recommendedFightingStyles` wins while the specialization is unchanged; a
+   * respec this level (or an absent field) derives them from the variant table.
+   * Only styles actually on offer are returned.
+   */
+  get recommendedFightingStyles(): readonly string[] {
+    const fromServer = !this.specializationChanged ? this.preview?.recommendedFightingStyles : undefined;
+    const names = fromServer ?? recommendedFightingStylesFor(this.heroClass, this.recommendationSpecialization);
+    const offered = this.fightingStyleOptions;
+    return names.filter(n => offered.includes(n));
+  }
+
+  isRecommendedFightingStyle(name: string): boolean {
+    return this.recommendedFightingStyles.includes(name);
+  }
+
+  /** 'World of Warcraft' for a WoW-only subclass on offer (Oath of the Holy); undefined otherwise. */
+  subclassSourceTag(name: string): string | undefined {
+    return subclassSource(name);
+  }
+
+  private loadStyleCantrips(rule: CantripFightingStyle): void {
+    const cached = this.styleCantripCache.get(rule.spellList);
+    if (cached) {
+      this.styleCantripOptions = cached;
+      return;
     }
-  }
-
-  /** Void Warrior is satisfied once exactly two Warlock cantrips are picked. */
-  get voidWarriorSatisfied(): boolean {
-    return !this.isVoidWarrior || this.voidWarriorCantrips.length === VOID_WARRIOR_CANTRIPS;
-  }
-
-  private loadWarlockCantrips(): void {
-    if (this.warlockCantripsRequested) return;
-    this.warlockCantripsRequested = true;
-    this.loadingWarlockCantrips = true;
+    this.loadingStyleCantrips = true;
     const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
-    this.dndResources.getSpellsForClass('warlock').subscribe({
+    this.dndResources.getSpellsForClass(rule.spellList).subscribe({
       next: spells => {
-        this.warlockCantrips = spells.filter(s => s.level === 0 && !known.has(s.name.toLowerCase()));
-        this.loadingWarlockCantrips = false;
+        const options = spells.filter(s => s.level === 0 && !known.has(s.name.toLowerCase()));
+        this.styleCantripCache.set(rule.spellList, options);
+        // The player may have switched styles while this list was loading.
+        if (this.cantripStyle?.spellList === rule.spellList) this.styleCantripOptions = options;
+        this.loadingStyleCantrips = false;
       },
-      error: () => {
-        this.loadingWarlockCantrips = false;
-        this.warlockCantripsRequested = false;
-      },
+      error: () => { this.loadingStyleCantrips = false; },
     });
   }
 
@@ -344,11 +375,11 @@ export class LevelUpModalComponent implements OnInit {
 
   /**
    * Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made,
-   * and — when Void Warrior is picked — its two Warlock cantrips.
+   * and — when a cantrip-teaching style is picked — exactly its cantrips.
    */
   get canConfirm(): boolean {
     return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied
-      && this.voidWarriorSatisfied;
+      && this.styleCantripsSatisfied;
   }
 
   confirm(): void {
@@ -373,8 +404,8 @@ export class LevelUpModalComponent implements OnInit {
     if (this.needsFightingStyle && this.selectedFightingStyle) {
       choices.fightingStyle = this.selectedFightingStyle;
     }
-    // Void Warrior's Warlock cantrips ride along with any spells learned this level.
-    const learned = [...this.selectedSpells, ...(this.isVoidWarrior ? this.voidWarriorCantrips : [])];
+    // A cantrip style's cantrips (Blessed / Druidic / Void Warrior) ride along with any spells learned this level.
+    const learned = [...this.selectedSpells, ...(this.cantripStyle ? this.styleCantrips : [])];
     if (learned.length) {
       choices.newSpells = learned.map(toPcSpell);
     }

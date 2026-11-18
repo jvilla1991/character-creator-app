@@ -1,4 +1,6 @@
-import type { HeroClassOption, SpecializationGuidance, SuggestedSpellLevel } from './hero-class';
+import type {
+  HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
+} from './hero-class';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -132,6 +134,18 @@ export const WOW_DRUID: HeroClassOption = {
 
 export const WOW_PALADIN_SPECIALIZATIONS = ['Holy', 'Protection', 'Retribution'] as const;
 
+/** The WoW-only paladin oath — the server offers it to WoW paladins only. */
+export const OATH_OF_THE_HOLY = 'Oath of the Holy';
+
+/** Oath of the Holy spells, always prepared, by Paladin level. Features text comes from the server. */
+export const OATH_OF_THE_HOLY_SPELLS: readonly SubclassSpellRow[] = [
+  { classLevel: 3,  spells: ['Cure Wounds', 'Healing Word'] },
+  { classLevel: 5,  spells: ['Lesser Restoration', 'Prayer of Healing'] },
+  { classLevel: 9,  spells: ['Dispel Magic', 'Mass Healing Word'] },
+  { classLevel: 13, spells: ['Aura of Life', 'Death Ward'] },
+  { classLevel: 17, spells: ['Greater Restoration', 'Mass Cure Wounds'] },
+];
+
 /** Per-specialization picks (class step box + sheet panel). Paladins have no level-1 spells step, so spells are text. */
 export const WOW_PALADIN_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
   Holy: {
@@ -139,7 +153,7 @@ export const WOW_PALADIN_GUIDANCE: Readonly<Record<string, SpecializationGuidanc
     weaponMastery: ['Flails', 'Longswords', 'Morningstars', 'Warhammers'],
     fightingStyles: ['Blessed Warrior'],
     fightingStyleCantrips: ['Sacred Flame', 'Spare the Dying'],
-    subclass: { name: 'Oath of the Holy' },
+    subclass: { name: OATH_OF_THE_HOLY },
     feats: ['Durable', 'Healer', 'Inspiring Leader', 'Shield Master', 'War Caster'],
     note: 'Want to heal above all else? A Cleric of the War Domain can follow this same Holy guidance.',
   },
@@ -205,6 +219,7 @@ export const WOW_PALADIN: HeroClassOption = {
   spellTable: [],
   guidance: WOW_PALADIN_GUIDANCE,
   suggestedSpells: WOW_PALADIN_SUGGESTED_SPELLS,
+  subclassSpells: { [OATH_OF_THE_HOLY]: OATH_OF_THE_HOLY_SPELLS },
 };
 
 /** Every WoW class variant, in class-list order. */

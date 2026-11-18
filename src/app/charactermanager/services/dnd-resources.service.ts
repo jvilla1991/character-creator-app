@@ -272,6 +272,11 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'When you make the extra attack of the Light weapon property, you can add your ability modifier to the damage of that attack.',
   'Unarmed Fighting':
     'Your Unarmed Strikes deal 1d6 + Strength bludgeoning damage, or 1d8 if you aren\'t holding weapons or a Shield. At the start of each of your turns, you can deal 1d4 bludgeoning damage to one creature you are grappling.',
+  // ── Cantrip fighting styles: Blessed Warrior (paladins), Druidic Warrior (rangers). ──
+  'Blessed Warrior':
+    'You learn two Cleric cantrips of your choice. They count as Paladin spells for you, and Charisma is your spellcasting ability for them. Whenever you gain a Paladin level, you can swap one of them for another Cleric cantrip.',
+  'Druidic Warrior':
+    'You learn two Druid cantrips of your choice. They count as Ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a Ranger level, you can swap one of them for another Druid cantrip.',
   // ── World of Warcraft fighting style (Demon Hunter rangers only, at Ranger 2). ──
   'Void Warrior':
     'You learn two Warlock cantrips of your choice. They count as Ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a Ranger level, you can replace one of them with another Warlock cantrip.',

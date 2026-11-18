@@ -1,7 +1,7 @@
 import {
   DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByKey, heroClassFor,
   heroClassForSubclass, heroClassSpells, orList, recommendedFightingStylesFor, recommendedStartingSpells,
-  recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle,
+  recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle, subclassSource, subclassSpellsFor,
 } from './hero-class';
 
 describe('hero-class', () => {
@@ -239,6 +239,26 @@ describe('hero-class', () => {
 
     it('shows the spec without a suffix', () => {
       expect(specializationTitle(wowPaladin, 'Retribution')).toBe('Retribution');
+    });
+
+    it('owns the WoW-only Oath of the Holy and its always-prepared spells', () => {
+      const at = (level: number) => subclassSpellsFor(wowPaladin, 'Oath of the Holy', level).map(e => e.name);
+      expect(at(2)).toEqual([]);
+      expect(at(3)).toEqual(['Cure Wounds', 'Healing Word']);
+      expect(at(17).length).toBe(10);
+      expect(subclassSpellsFor(wowPaladin, 'oath of the holy', 3).map(e => e.classLevel)).toEqual([3, 3]);
+      expect(subclassSpellsFor(wowPaladin, 'Oath of Devotion', 20)).toEqual([]);
+      expect(subclassSpellsFor(deathKnight, 'Oath of the Holy', 20)).toEqual([]);
+      // Any paladin with the oath is a WoW paladin, even before a specialization is recorded.
+      expect(heroClassFor({ clazz: 'Paladin', subclass: 'Oath of the Holy', specialization: null })).toBe(wowPaladin);
+      expect(heroClassFor({ clazz: 'Cleric', subclass: 'Oath of the Holy' })).toBeUndefined();
+    });
+
+    it('tags WoW subclasses with their source', () => {
+      expect(subclassSource('Oath of the Holy')).toBe('World of Warcraft');
+      expect(subclassSource(EBON_BLADE_SUBCLASS)).toBe('World of Warcraft');
+      expect(subclassSource('Oath of Devotion')).toBeUndefined();
+      expect(subclassSource(null)).toBeUndefined();
     });
   });
 
