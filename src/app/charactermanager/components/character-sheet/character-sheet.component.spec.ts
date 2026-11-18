@@ -83,6 +83,12 @@ describe('CharacterSheetComponent', () => {
     expect(component.subtitleSuffix).toBe('Holy');
     component.pc = makePC({ clazz: 'Paladin', subclass: 'Oath of Vengeance', specialization: 'Retribution' });
     expect(component.subtitleSuffix).toBe('Oath of Vengeance · Retribution');
+    // WoW Rogue: "Rogue (Outlaw)", then the subclass joins it from level 3.
+    component.pc = makePC({ clazz: 'Rogue', subclass: undefined, specialization: 'Outlaw' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Outlaw');
+    component.pc = makePC({ clazz: 'Rogue', subclass: 'Swashbuckler', specialization: 'Outlaw' });
+    expect(component.subtitleSuffix).toBe('Swashbuckler · Outlaw');
   });
 
   // --- Level Up gating ---

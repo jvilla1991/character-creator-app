@@ -97,8 +97,10 @@
                       <dt>Cantrips</dt>
                       <dd>{{ g.cantrips!.join(', ') }}</dd>
                     }
-                    <dt>Level 1 spells</dt>
-                    <dd>{{ g.level1Spells.join(', ') }}</dd>
+                    @if (g.level1Spells?.length) {
+                      <dt>Level 1 spells</dt>
+                      <dd>{{ g.level1Spells!.join(', ') }}</dd>
+                    }
                     @if (g.weaponMastery?.length) {
                       <dt>Weapon Mastery</dt>
                       <dd>At least one of {{ g.weaponMastery!.join(', ') }}</dd>
@@ -114,6 +116,10 @@
                     }
                     <dt>Level 3 subclass</dt>
                     <dd>{{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
+                    @if (g.levelTip; as lt) {
+                      <dt>Level {{ lt.level }}</dt>
+                      <dd>{{ lt.text }}</dd>
+                    }
                     <dt>Feats</dt>
                     <dd>{{ g.feats.join(', ') }}</dd>
                   </dl>

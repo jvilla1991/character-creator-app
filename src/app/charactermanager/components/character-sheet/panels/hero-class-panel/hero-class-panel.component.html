@@ -94,6 +94,17 @@
       </div>
     }
 
+    <!-- WoW variant: a tip tied to a class level (e.g. Rogue 5: Cunning Strike's Poison) -->
+    @if (guidance?.levelTip; as lt) {
+      <div class="feature hero-level-tip">
+        <div class="feature-head">
+          <span class="feature-name">Tip</span>
+          <span class="feature-source">{{ h.baseClass }} {{ lt.level }}</span>
+        </div>
+        <div class="feature-desc">{{ lt.text }}</div>
+      </div>
+    }
+
     <!-- WoW variant: suggested spells (NOT always prepared) -->
     @if (suggestedSpells.length) {
       <h3 class="hero-spells-title">Suggested {{ pc.specialization }} Spells</h3>

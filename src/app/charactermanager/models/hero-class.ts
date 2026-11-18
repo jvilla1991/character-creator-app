@@ -74,7 +74,8 @@ export interface SpecializationGuidance {
   featureChoice?: { feature: string; option: string };
   /** Starting cantrips (classes with cantrips at level 1). */
   cantrips?: readonly string[];
-  level1Spells: readonly string[];
+  /** Level-1 spells (absent for classes without spells, e.g. the Rogue). */
+  level1Spells?: readonly string[];
   /** Weapon Mastery: take at least one of these weapons. */
   weaponMastery?: readonly string[];
   /** The level-2 Fighting Style(s) to take — any one of them. */
@@ -86,6 +87,8 @@ export interface SpecializationGuidance {
   feats: readonly string[];
   /** An extra play tip shown on the sheet panel. */
   tip?: string;
+  /** A tip tied to a base-class level (e.g. Rogue 5: Cunning Strike's Poison), shown in the class-step box and on the panel. */
+  levelTip?: { level: number; text: string };
   /** A short aside shown under the class-step box (e.g. another class that fits the role). */
   note?: string;
 }
@@ -152,6 +155,8 @@ export interface HeroClassOption {
    * always-prepared spells by base-class level — e.g. Oath of the Holy.
    */
   subclassSpells?: Readonly<Record<string, readonly SubclassSpellRow[]>>;
+  /** WoW-only subclasses a variant can take that have no always-prepared spells (e.g. Swashbuckler). */
+  wowSubclasses?: readonly string[];
   /** A one-line reminder shown in the class step and on the sheet panel. */
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
@@ -298,8 +303,8 @@ export function heroClassForSubclass(subclass: string | null | undefined): HeroC
  * - Subclass-based hero classes: base class + the hero subclass.
  * - WoW variants without a fixed subclass (WoW Druid, WoW Paladin): base class +
  *   one of the variant's specializations + no hero subclass, or base class + one
- *   of the variant's WoW-only subclasses (Oath of the Holy). A druid or paladin
- *   with neither is a plain base-game character.
+ *   of the variant's WoW-only subclasses (Oath of the Holy, Swashbuckler). A
+ *   druid, paladin or rogue with neither is a plain base-game character.
  */
 export function heroClassFor(
   pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
@@ -308,7 +313,7 @@ export function heroClassFor(
   const bySubclass = heroClassForSubclass(pc?.subclass);
   if (bySubclass) return clazz === bySubclass.baseClass.toLowerCase() ? bySubclass : undefined;
   const spec = (pc?.specialization ?? '').toLowerCase();
-  // A WoW-only subclass (Oath of the Holy) marks its variant even without a specialization.
+  // A WoW-only subclass (Oath of the Holy, Swashbuckler) marks its variant even without a specialization.
   const byVariantSubclass = variantForSubclass(pc?.subclass);
   if (byVariantSubclass && byVariantSubclass.baseClass.toLowerCase() === clazz) return byVariantSubclass;
   if (!spec) return undefined;
@@ -318,11 +323,16 @@ export function heroClassFor(
     && h.specializations.some(s => s.name.toLowerCase() === spec));
 }
 
-/** The variant that owns a WoW-only subclass (Oath of the Holy → WoW Paladin), case-insensitive. */
+/** A variant's WoW-only subclasses: those with always-prepared spells, then the rest. */
+export function wowOnlySubclasses(hero: HeroClassOption): readonly string[] {
+  return [...Object.keys(hero.subclassSpells ?? {}), ...(hero.wowSubclasses ?? [])];
+}
+
+/** The variant that owns a WoW-only subclass (Oath of the Holy → WoW Paladin, Swashbuckler → WoW Rogue), case-insensitive. */
 function variantForSubclass(subclass: string | null | undefined): HeroClassOption | undefined {
   const name = (subclass ?? '').toLowerCase();
   if (!name) return undefined;
-  return HERO_CLASSES.find(h => Object.keys(h.subclassSpells ?? {}).some(k => k.toLowerCase() === name));
+  return HERO_CLASSES.find(h => wowOnlySubclasses(h).some(k => k.toLowerCase() === name));
 }
 
 /**
@@ -355,7 +365,7 @@ export function recommendedStartingSpells(
   const cacheKey = `${hero.key}|${specialization}`;
   let list = RECOMMENDED_SPELLS_CACHE.get(cacheKey);
   if (!list) {
-    list = [...(guidance.cantrips ?? []), ...guidance.level1Spells];
+    list = [...(guidance.cantrips ?? []), ...(guidance.level1Spells ?? [])];
     RECOMMENDED_SPELLS_CACHE.set(cacheKey, list);
   }
   return list;

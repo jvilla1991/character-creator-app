@@ -20,6 +20,24 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoSubclassOptions('Druid', 'Balance')).not.toContain('Oath of the Holy');
   });
 
+  it('offers the Swashbuckler only to WoW rogues', () => {
+    expect(demoSubclassOptions('Rogue', 'Outlaw')).toEqual(['Arcane Trickster', 'Assassin', 'Soulknife', 'Swashbuckler', 'Thief']);
+    expect(demoSubclassOptions('Rogue', 'Assassination')).toContain('Swashbuckler');
+    expect(demoSubclassOptions('Rogue', null)).not.toContain('Swashbuckler');
+    expect(demoSubclassOptions('Rogue', 'Holy')).not.toContain('Swashbuckler');
+    expect(demoSubclassOptions('Paladin', 'Holy')).not.toContain('Swashbuckler');
+    expect(demoSubclassOptions('Fighter', 'Outlaw')).not.toContain('Swashbuckler');
+  });
+
+  it('seeds a level-9 Outlaw WoW rogue with the Swashbuckler', () => {
+    const pc = DEMO_PCS.find(p => p.subclass === 'Swashbuckler')!;
+    expect(pc.clazz).toBe('Rogue');
+    expect(pc.specialization).toBe('Outlaw');
+    expect(pc.level).toBe(9);
+    expect(heroClassFor(pc)?.key).toBe('Rogue (World of Warcraft)');
+    expect((pc.features ?? []).map(f => f.name)).toEqual(jasmine.arrayContaining(['Fancy Footwork', 'Panache']));
+  });
+
   it('seeds a level-7 Holy WoW paladin with the Oath of the Holy and some suggested spells', () => {
     const pc = DEMO_PCS.find(p => p.subclass === 'Oath of the Holy')!;
     expect(pc.clazz).toBe('Paladin');
