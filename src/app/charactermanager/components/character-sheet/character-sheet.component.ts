@@ -49,6 +49,10 @@ import { NotificationService } from '../../services/notification.service';
     imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, EquipmentPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
+  onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
+    // The transfer endpoint already saved both inventories. Never PUT a stale sheet here.
+    this.pc = { ...this.pc, ...result };
+  }
   @Input() pc!: PC;
   /**
    * When true, the sheet's numbers become click-to-edit and changes persist via

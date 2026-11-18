@@ -336,6 +336,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
         [addAllowed]="editable"
+        [giveAllowed]="!editable && !followerMode"
+        (inventoryTransferred)="onInventoryTransferred($event)"
         [shopOpenForMe]="shopOpenForMe"
         [shopCategory]="shopCategory"
         [slotInventory]="slotInventory"
