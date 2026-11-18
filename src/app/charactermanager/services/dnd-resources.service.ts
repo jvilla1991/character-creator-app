@@ -518,9 +518,11 @@ export class DndResourcesService {
   /**
    * The full spell list: 339 SRD 5.2 spells, the 52 remaining 2024 PHB spells
    * from the supplement file, then the World of Warcraft module's spells (in that
-   * order). WoW entries carry `source: 'World of Warcraft'` and `classes: []`, so
-   * class-filtered pickers never offer them. Fetched once on first call; cached
-   * via shareReplay.
+   * order). WoW entries carry `source: 'World of Warcraft'`. Hero-class spells
+   * have `classes: []` (they ride on a subclass), so class-filtered pickers never
+   * offer them; the WoW Druid's general spells (Wrath, Moonfire, …) have
+   * `classes: ['druid']` and appear in druid pickers under the WoW source filter.
+   * Fetched once on first call; cached via shareReplay.
    */
   getSpells(): Observable<DndSpell[]> {
     if (!this.spells$) {
