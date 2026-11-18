@@ -19,6 +19,7 @@ import { SettingsPanelComponent } from './components/settings-panel/settings-pan
 import { DiceFabComponent } from './components/dice-fab/dice-fab.component';
 import { DiceRollerModalComponent } from './components/dice-roller-modal/dice-roller-modal.component';
 import { ToastComponent } from './components/toast/toast.component';
+import { ConfirmHostComponent } from './components/modal/confirm-host.component';
 import { LevelUpPromptComponent } from './components/level-up-prompt/level-up-prompt.component';
 
 @Component({
@@ -97,11 +98,14 @@ import { LevelUpPromptComponent } from './components/level-up-prompt/level-up-pr
          LevelUpPromptService decides when it opens. -->
     <app-level-up-prompt></app-level-up-prompt>
 
+    <!-- The one confirmation dialog for destructive actions (ConfirmService) -->
+    <app-confirm-host></app-confirm-host>
+
     <!-- App-wide transient notifications (e.g. the DM ended the session) -->
     <app-toast></app-toast>
     `,
     styles: [],
-    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent, DiceFabComponent, DiceRollerModalComponent, LevelUpPromptComponent]
+    imports: [SidenavComponent, CreateCharacterModalComponent, CreateCampaignModalComponent, JoinCampaignModalComponent, SettingsPanelComponent, ToastComponent, ConfirmHostComponent, DiceFabComponent, DiceRollerModalComponent, LevelUpPromptComponent]
 })
 export class CharactermanagerAppComponent implements OnInit {
   pcs: PC[] = [];

@@ -197,7 +197,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
         this.pcService.clearActivePC();
         this.pcService.refreshPCs();
       },
-      error: err => console.error('Error deleting character:', err)
+      // The confirmation stays open, so Reconsider or a retry are both one tap away.
+      error: err => this.notifications.error(`Could not erase ${this.pc?.name ?? 'the character'}. Try again.`, err),
     });
   }
 }

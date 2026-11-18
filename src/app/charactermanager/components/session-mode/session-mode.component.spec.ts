@@ -8,6 +8,7 @@ import { PCService } from '../../services/pc.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { DiceRollerService } from '../../services/dice-roller.service';
+import { ConfirmService } from '../modal/confirm.service';
 import { PC } from '../../models/pc';
 import { LEVEL_UP_ANSWERED_KEY, LevelUpPromptService } from '../../services/level-up-prompt.service';
 
@@ -48,7 +49,7 @@ describe('SessionModeComponent.openPcSheet', () => {
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService', ['getPCById', 'getPCByIdAsDm', 'setActivePC']);
     uiState = jasmine.createSpyObj<UiStateService>('UiStateService', ['viewHeroAsDm']);
-    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
     const sessionServiceStub = { state$: of(null) } as never;
     component = TestBed.runInInjectionContext(() => new SessionModeComponent(
       sessionServiceStub, uiState, pcService, notifications, null as never, null as never, null as never, null as never));
@@ -84,7 +85,8 @@ describe('SessionModeComponent.openPcSheet', () => {
 
     component.openPcSheet(participant());
 
-    expect(notifications.notify).toHaveBeenCalledWith('Could not open that character sheet.');
+    expect(notifications.error).toHaveBeenCalledWith(
+      'Could not open that character sheet. Try again.', jasmine.any(Error));
     expect(pcService.setActivePC).not.toHaveBeenCalled();
     expect(uiState.viewHeroAsDm).not.toHaveBeenCalled();
   });
@@ -106,6 +108,63 @@ describe('SessionModeComponent.openPcSheet', () => {
     expect(pcService.getPCById).not.toHaveBeenCalled();
     expect(pcService.getPCByIdAsDm).not.toHaveBeenCalled();
     expect(uiState.viewHeroAsDm).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionModeComponent ending and leaving', () => {
+  let component: SessionModeComponent;
+  let sessionService: jasmine.SpyObj<SessionService>;
+  let uiState: jasmine.SpyObj<UiStateService>;
+  let notifications: jasmine.SpyObj<NotificationService>;
+  let confirm: jasmine.Spy;
+
+  const state = { sessionId: 3, dm: true, participants: [] } as unknown as SessionState;
+
+  beforeEach(() => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['end', 'leave', 'clear'], { state$: of(null) });
+    uiState = jasmine.createSpyObj<UiStateService>('UiStateService', ['closeSession']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify', 'error']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, uiState, null as never, notifications, null as never, null as never, null as never, null as never));
+    confirm = spyOn(TestBed.inject(ConfirmService), 'confirm').and.returnValue(of(undefined));
+  });
+
+  it('End Session asks first, and Keep Playing ends nothing', () => {
+    confirm.and.returnValue(of());
+    component.endSession(state);
+    expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ confirmLabel: 'End Session', cancelLabel: 'Keep Playing' }));
+    expect(sessionService.end).not.toHaveBeenCalled();
+    expect(uiState.closeSession).not.toHaveBeenCalled();
+  });
+
+  it('End Session exits once the server has ended it', () => {
+    sessionService.end.and.returnValue(of(state));
+    component.endSession(state);
+    expect(uiState.closeSession).toHaveBeenCalled();
+  });
+
+  it('a failed End Session keeps the DM on the screen and says the session is still running', () => {
+    sessionService.end.and.returnValue(throwError(() => ({ status: 500 })));
+    component.endSession(state);
+    expect(uiState.closeSession).not.toHaveBeenCalled();
+    expect(notifications.error).toHaveBeenCalledWith(
+      'Could not end the session. It is still running — try again.', jasmine.anything());
+  });
+
+  it('End Session on a session that is already gone just exits', () => {
+    sessionService.end.and.returnValue(throwError(() => ({ status: 404 })));
+    component.endSession(state);
+    expect(uiState.closeSession).toHaveBeenCalled();
+    expect(notifications.error).not.toHaveBeenCalled();
+  });
+
+  it('a failed Leave keeps the player in the session and says so', () => {
+    spyOn(component, 'myParticipantId').and.returnValue(11);
+    sessionService.leave.and.returnValue(throwError(() => ({ status: 0 })));
+    component.leave({ ...state, dm: false } as SessionState);
+    expect(uiState.closeSession).not.toHaveBeenCalled();
+    expect(notifications.error).toHaveBeenCalledWith(
+      'Could not leave the session. You are still in it — try again.', jasmine.anything());
   });
 });
 

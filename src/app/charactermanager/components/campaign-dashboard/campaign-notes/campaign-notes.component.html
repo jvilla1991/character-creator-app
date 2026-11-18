@@ -46,6 +46,11 @@
         </div>
       }
     </div>
+  } @else if (loadFailed()) {
+    <div class="note-empty">
+      Could not load the session notes.
+      <button type="button" class="btn link" (click)="load()">Try again</button>
+    </div>
   } @else {
     <div class="note-empty">No notes yet. Capture the first ruling or revelation.</div>
   }

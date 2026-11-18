@@ -1,5 +1,5 @@
 import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, inject, output, signal } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { Follower, followerToPc, pcToStatBlock } from '../../models/follower';
@@ -39,6 +39,7 @@ import { FollowersPanelComponent } from './panels/followers-panel/followers-pane
 import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
     selector: 'app-character-sheet',
@@ -163,7 +164,9 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** DM cross-link: toggle the pending level-up grant for this character. */
   toggleLevelGrant(): void {
     this.pcService.grantLevelUp(this.pc.id, !this.dmGrantedLevel).subscribe({
-      error: err => console.error('Failed to change the level-up grant', err),
+      error: err => this.notifications.error(this.dmGrantedLevel
+        ? 'Could not withdraw the level-up. Try again.'
+        : 'Could not grant the level-up. Try again.', err),
     });
   }
 
@@ -185,6 +188,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   nameDraft = '';
   editingLevel = false;
   levelDraft: number | null = null;
+
+  private readonly notifications = inject(NotificationService);
 
   constructor(
     private pcService: PCService,
@@ -276,7 +281,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     this.openedFollower.set(optimistic);
     this.followerService.update(before.pcId, before.id, optimistic.name, optimistic.statBlock).subscribe({
       error: err => {
-        console.error('Failed to save follower', err);
+        this.notifications.error(`Could not save ${before.name}. The change was undone — try again.`, err);
         // Revert only if no newer edit has landed on top of this one.
         if (this.openedFollower() === optimistic) this.openedFollower.set(before);
       },
@@ -302,7 +307,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     const save$ = this.editable
       ? this.pcService.updatePCAsDm(updated, description)
       : this.pcService.updatePC(updated);
-    save$.subscribe({ error: err => console.error('Failed to save character', err) });
+    // The sheet renders from the server-confirmed pc (activePC$ only moves on
+    // success), so a failed save leaves nothing optimistic behind — just say so.
+    save$.subscribe({
+      error: err => this.notifications.error('Could not save that change. Try again.', err),
+    });
   }
 
   /** A child panel emitted a fully-updated PC (e.g. an ability score changed). */
@@ -464,7 +473,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
         this.inspirationBusy.set(false);
-        console.error('Failed to set the inspiration meter', err);
+        this.notifications.error('Could not change the inspiration meter. Try again.', err);
       },
     });
   }
@@ -481,7 +490,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       next: () => { this.inspirationBusy.set(false); this.refreshSessionIfLive(); },
       error: err => {
         this.inspirationBusy.set(false);
-        console.error('Failed to use Heroic Inspiration', err);
+        this.notifications.error('Could not spend Heroic Inspiration. Try again.', err);
       },
     });
   }
@@ -549,7 +558,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       return;
     }
     this.grantService.grantToPc(this.pc.id, mutate)
-      .subscribe({ error: err => console.error('Failed to grant ' + what, err) });
+      .subscribe({ error: err => this.notifications.error(`Could not grant the ${what}. Try again.`, err) });
   }
 
   onFeatureGrant(f: { name: string; source: string; desc: string }): void {

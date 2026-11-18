@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, inject, signal } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CampaignService } from '../../../services/campaign.service';
+import { NotificationService } from '../../../services/notification.service';
 import { WeekDaysEditorComponent } from '../../week-days-editor/week-days-editor.component';
 
 /**
@@ -22,6 +23,8 @@ export class CampaignWeekComponent implements OnChanges {
   readonly editing = signal(false);
   draft: string[] | null = null;
   readonly saving = signal(false);
+
+  private readonly notifications = inject(NotificationService);
 
   constructor(private campaignService: CampaignService) {}
 
@@ -54,7 +57,7 @@ export class CampaignWeekComponent implements OnChanges {
         this.editing.set(false);
       },
       error: err => {
-        console.error('Failed to save the week definition', err);
+        this.notifications.error('Could not save the week. Your days are still here — try again.', err);
         this.saving.set(false); // keep the editor open so the DM can retry
       },
     });

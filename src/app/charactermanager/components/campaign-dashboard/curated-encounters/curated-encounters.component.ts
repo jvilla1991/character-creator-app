@@ -1,7 +1,9 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { Encounter, EncounterCreature, EncounterSummary } from '../../../models/encounter';
 import { CuratedEncounterService } from '../../../services/curated-encounter.service';
+import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -26,12 +28,17 @@ export class CuratedEncountersComponent implements OnChanges {
   newName = '';
   notesDraft = '';
   busy = false;
+  /** The list request failed — the empty state must not claim there are none. */
+  loadFailed = false;
 
   // The "add creature" form.
   cName = '';
   cAc: number | null = null;
   cHp: number | null = null;
   cQty = 1;
+
+  private readonly notifications = inject(NotificationService);
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(private curatedEncounters: CuratedEncounterService) {}
 
@@ -42,11 +49,14 @@ export class CuratedEncountersComponent implements OnChanges {
     }
   }
 
-  private loadEncounters(): void {
+  loadEncounters(): void {
     if (!this.campaign) { this.encounters = []; return; }
     this.curatedEncounters.list(this.campaign.id).subscribe({
-      next: encounters => (this.encounters = encounters),
-      error: err => console.error('Failed to load curated encounters', err),
+      next: encounters => { this.encounters = encounters; this.loadFailed = false; },
+      error: err => {
+        this.loadFailed = true;
+        this.notifications.error('Could not load the encounters. Try again.', err);
+      },
     });
   }
 
@@ -61,14 +71,17 @@ export class CuratedEncountersComponent implements OnChanges {
         this.select(encounter);
         this.loadEncounters();
       },
-      error: err => { this.busy = false; console.error('Failed to create encounter', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not create the encounter. Try again.', err);
+      },
     });
   }
 
   open(summary: EncounterSummary): void {
     this.curatedEncounters.get(summary.id).subscribe({
       next: encounter => this.select(encounter),
-      error: err => console.error('Failed to open encounter', err),
+      error: err => this.notifications.error('Could not open that encounter. Try again.', err),
     });
   }
 
@@ -82,7 +95,7 @@ export class CuratedEncountersComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedEncounters.update(this.selected.id, this.selected.name, this.notesDraft).subscribe({
       next: encounter => this.select(encounter),
-      error: err => console.error('Failed to save notes', err),
+      error: err => this.notifications.error('Could not save the notes. Your text is still here — try again.', err),
     });
   }
 
@@ -101,7 +114,10 @@ export class CuratedEncountersComponent implements OnChanges {
         this.cQty = 1;
         this.busy = false;
       },
-      error: err => { this.busy = false; console.error('Failed to add creature', err); },
+      error: err => {
+        this.busy = false;
+        this.notifications.error('Could not add the creature. Try again.', err);
+      },
     });
   }
 
@@ -109,15 +125,29 @@ export class CuratedEncountersComponent implements OnChanges {
     if (!this.selected) return;
     this.curatedEncounters.removeCreature(this.selected.id, creature.id).subscribe({
       next: encounter => this.select(encounter),
-      error: err => console.error('Failed to remove creature', err),
+      error: err => this.notifications.error(`Could not remove ${creature.name}. Try again.`, err),
     });
   }
 
+  /** Asks first — an encounter is prep work that is slow to rebuild. */
   deleteEncounter(): void {
-    if (!this.selected) return;
-    this.curatedEncounters.delete(this.selected.id).subscribe({
+    const encounter = this.selected;
+    if (!encounter) return;
+    const n = this.totalCombatants(encounter);
+    this.confirmations.confirm({
+      title: 'Delete Encounter',
+      subject: encounter.name,
+      message: n
+        ? `will be erased along with its ${n} combatant${n === 1 ? '' : 's'}. This cannot be undone.`
+        : 'will be erased. This cannot be undone.',
+      confirmLabel: 'Delete Encounter',
+    }).subscribe(() => this.reallyDelete(encounter));
+  }
+
+  private reallyDelete(encounter: Encounter): void {
+    this.curatedEncounters.delete(encounter.id).subscribe({
       next: () => this.back(),
-      error: err => console.error('Failed to delete encounter', err),
+      error: err => this.notifications.error('Could not delete the encounter. Try again.', err),
     });
   }
 
