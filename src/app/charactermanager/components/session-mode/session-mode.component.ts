@@ -569,7 +569,16 @@ export class SessionModeComponent implements OnInit, OnDestroy {
    * mis-click mid-combat would be painful to reconstruct.
    */
   endEncounter(state: SessionState): void {
-    if (!window.confirm('Are you sure you want to end this encounter?')) return;
+    this.confirmations.confirm({
+      title: 'End the Encounter',
+      message: 'The turn order and everyone’s initiative are cleared and the table returns to the lobby. '
+        + 'The session stays open.',
+      confirmLabel: 'End Encounter',
+      cancelLabel: 'Keep Fighting',
+    }).subscribe(() => this.reallyEndEncounter(state));
+  }
+
+  private reallyEndEncounter(state: SessionState): void {
     this.sessionService.endEncounter(state.sessionId).subscribe({
       error: err => this.notifications.error('Could not end the encounter. Try again.', err),
     });

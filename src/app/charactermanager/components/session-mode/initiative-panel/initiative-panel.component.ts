@@ -1,7 +1,8 @@
-import { Component, Input, output } from '@angular/core';
+import { Component, Input, inject, output } from '@angular/core';
 import { ParticipantView, SessionStatus } from '../../../models/session';
 import { MAX_CUE_BYTES, SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ConfirmService } from '../../modal/confirm.service';
 import { tintFor } from '../../../utils/character-math';
 import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
 import { FormsModule } from '@angular/forms';
@@ -82,6 +83,8 @@ export class InitiativePanelComponent {
 
   /** Why the last upload was refused, shown beside the control. */
   cueError: string | null = null;
+
+  private readonly confirmations = inject(ConfirmService);
 
   constructor(
     private sessionService: SessionService,
@@ -389,7 +392,16 @@ export class InitiativePanelComponent {
    * confirm (kicking a player is disruptive); enemy rows remove immediately.
    */
   removeParticipant(p: ParticipantView): void {
-    if (!p.npc && !window.confirm(`Remove ${p.name} from the session?`)) return;
+    if (p.npc) { this.reallyRemove(p); return; }
+    this.confirmations.confirm({
+      title: 'Remove from Session',
+      subject: p.name,
+      message: 'leaves the session. They can join again while it is live.',
+      confirmLabel: 'Remove',
+    }).subscribe(() => this.reallyRemove(p));
+  }
+
+  private reallyRemove(p: ParticipantView): void {
     this.sessionService.leave(this.sessionId, p.participantId).subscribe({
       error: err => this.notifications.error(`Could not remove ${p.name} from the session. Try again.`, err),
     });
