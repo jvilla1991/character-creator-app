@@ -188,7 +188,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   advanceTime(state: SessionState): void {
     this.sessionService.advanceTime(state.sessionId).subscribe({
-      error: () => this.notifications.notify('Could not advance the clock.'),
+      error: () => this.notifications.notify('Could not advance the clock. Try again.'),
     });
   }
 
@@ -245,7 +245,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       ...(state.weekDays?.length ? { week: this.timeWeek } : {}),
     }).subscribe({
       next: () => { this.editingTime = false; },
-      error: () => this.notifications.notify('Could not set the date.'),
+      error: () => this.notifications.notify('Could not set the date. Try again.'),
     });
   }
 
@@ -276,7 +276,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       type: this.locationType,
     }).subscribe({
       next: () => { this.editingLocation = false; },
-      error: () => this.notifications.notify('Could not set the location.'),
+      error: () => this.notifications.notify('Could not set the location. Try again.'),
     });
   }
 
@@ -402,7 +402,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
     if (mine?.pcId == null) return;
     this.sessionService.consumeSurvival(state.sessionId, mine.pcId, action).subscribe({
-      error: () => this.notifications.notify('Could not do that right now. Try again.'),
+      error: () => this.notifications.notify(action === 'EAT'
+        ? 'Could not eat a ration. Try again.'
+        : action === 'DRINK'
+          ? 'Could not drink. Try again.'
+          : 'Could not record the rest. Try again.'),
     });
   }
 
@@ -463,7 +467,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     this.pcService.getPCByIdAsDm(p.pcId).subscribe({
       next: full => {
         if (!full?.id) {
-          this.notifications.notify('Could not open that character sheet.');
+          this.notifications.notify('Could not open that character sheet. Try again.');
           return;
         }
         this.pcService.setActivePC(full);

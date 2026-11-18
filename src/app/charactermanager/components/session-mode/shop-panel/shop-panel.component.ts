@@ -166,7 +166,7 @@ export class ShopPanelComponent implements OnChanges {
         // Force a re-fetch on the next poll regardless of category (curated = null).
         this.fetchedKey = null;
       },
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not open the shop.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not open the shop. Try again.')),
     });
   }
 
@@ -181,7 +181,7 @@ export class ShopPanelComponent implements OnChanges {
         this.shop = null;
         this.fetchedKey = null;
       },
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not close the shop.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not close the shop. Try again.')),
     });
   }
 
@@ -194,7 +194,7 @@ export class ShopPanelComponent implements OnChanges {
     next.has(pcId) ? next.delete(pcId) : next.add(pcId);
     this.shopService.setAttendees(this.state.sessionId, Array.from(next)).subscribe({
       next: view => (this.shop = view),
-      error: err => this.notifications.notify(this.errMsg(err, 'Could not update who is at the shop.')),
+      error: err => this.notifications.notify(this.errMsg(err, 'Could not update who is at the shop. Try again.')),
     });
   }
 
@@ -212,7 +212,7 @@ export class ShopPanelComponent implements OnChanges {
       },
       error: err => {
         this.busyItem = null;
-        this.notifications.notify(this.errMsg(err, 'Purchase failed.'));
+        this.notifications.notify(this.errMsg(err, `Could not buy ${item.name}. Try again.`));
       },
     });
   }

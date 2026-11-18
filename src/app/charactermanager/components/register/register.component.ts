@@ -70,12 +70,12 @@ export class RegisterComponent {
         if (response?.success) {
           this.router.navigate(['/charactermanager']);
         } else {
-          this.errorMessage.set('Registration failed. The username or email may already be in use.');
+          this.errorMessage.set('Could not create your account. That username or email may already be in use.');
         }
       },
       error: () => {
         this.loading.set(false);
-        this.errorMessage.set('Registration failed. Please try again.');
+        this.errorMessage.set('Could not create your account. Check your connection and try again.');
       }
     });
   }
