@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, output } from '@angular/core';
+import { Component, Input, OnInit, inject, output } from '@angular/core';
 import { PC } from '../../models/pc';
 import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
@@ -8,6 +8,8 @@ import { toPcSpell } from '../../utils/spell-mapping';
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
+import { Eli5ToggleComponent } from '../eli5-toggle/eli5-toggle.component';
+import { SpellEli5Service } from '../../services/spell-eli5.service';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
 import {
   HeroClassOption, heroClassFor, recommendedFightingStylesFor, recommendedSubclassFor, subclassSource,
@@ -28,7 +30,7 @@ import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip
     selector: 'app-level-up-modal',
     templateUrl: './level-up-modal.component.html',
     styleUrls: ['./level-up-modal.component.scss'],
-    imports: [ModalComponent, FormsModule, SpellPickerComponent, ModifierPipe]
+    imports: [ModalComponent, FormsModule, SpellPickerComponent, ModifierPipe, Eli5ToggleComponent]
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
@@ -80,6 +82,9 @@ export class LevelUpModalComponent implements OnInit {
   spellList: DndSpell[] = [];
   selectedSpells: DndSpell[] = [];
   loadingSpells = false;
+
+  /** Player's ELI5 switch: when active, the spell pickers show one-sentence summaries. */
+  readonly eli5 = inject(SpellEli5Service);
 
   constructor(private pcService: PCService, private dndResources: DndResourcesService) {}
 

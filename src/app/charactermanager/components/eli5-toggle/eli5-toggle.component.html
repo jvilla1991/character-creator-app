@@ -1,0 +1,10 @@
+@if (eli5.available()) {
+  <span class="eli5-toggle" title="Show each spell as one plain sentence">
+    <span class="eli5-toggle-label" aria-hidden="true">ELI5</span>
+    <button type="button" class="toggle" role="switch"
+      [class.on]="eli5.enabled()"
+      [attr.aria-checked]="eli5.enabled()"
+      aria-label="ELI5: show each spell as one plain sentence"
+      (click)="$event.stopPropagation(); eli5.toggle()"></button>
+  </span>
+}

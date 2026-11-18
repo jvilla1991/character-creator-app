@@ -78,3 +78,12 @@
   font-size: 0.72rem;
   color: var(--text-dim);
 }
+
+// One-sentence ELI5 summary (only rendered when the caller passes showEli5).
+.spell-eli5 {
+  margin-top: 3px;
+  font-family: 'Newsreader', serif;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-2);
+}

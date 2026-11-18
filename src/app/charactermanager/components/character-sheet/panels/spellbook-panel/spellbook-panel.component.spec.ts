@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SpellbookPanelComponent } from './spellbook-panel.component';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { UI_ROLE_KEY, UiStateService } from '../../../../services/ui-state.service';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { PC, PcSpell } from '../../../../models/pc';
 
@@ -339,5 +340,74 @@ describe('SpellbookPanelComponent (description disclosure)', () => {
     toggle.click();
     fixture.detectChanges();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('SpellbookPanelComponent (ELI5 summaries)', () => {
+  const ELI5_KEY = 'tm_eli5';
+  const FULL = 'A creature you touch regains a number of Hit Points equal to 2d8 plus your spellcasting ability modifier.';
+  const SHORT = 'Touch a creature to heal it for 2d8 plus your spellcasting modifier.';
+
+  // The role is persisted too (UiStateService rehydrates it), so a DM-view spec
+  // elsewhere must not leak into these Player-view ones.
+  const clearStorage = (): void => {
+    localStorage.removeItem(ELI5_KEY);
+    localStorage.removeItem(UI_ROLE_KEY);
+  };
+  beforeEach(clearStorage);
+  afterEach(clearStorage);
+
+  function render(): ComponentFixture<SpellbookPanelComponent> {
+    dndResources.getSpells.and.returnValue(of([makeSpell({ name: 'Cure Wounds', eli5: SHORT })]));
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
+      spellSlots: { 1: { max: 4, used: 0 } },
+      spells: [
+        spell({ description: FULL, higherLevelSlot: 'The healing increases by 2d8.' }),
+        spell({ name: 'Homebrew Zap', description: 'A spell nobody summarized.' }),
+      ],
+    } as PC);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const descriptions = (fixture: ComponentFixture<SpellbookPanelComponent>): string[] =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.spell-desc'))
+      .map(el => el.textContent!.trim());
+
+  it('shows the full descriptions while ELI5 is off, without fetching the catalog', () => {
+    const fixture = render();
+
+    expect(descriptions(fixture)).toEqual([FULL, 'A spell nobody summarized.']);
+    expect(dndResources.getSpells).not.toHaveBeenCalled();
+  });
+
+  it('swaps in the one-sentence summary when the header switch is turned on', () => {
+    const fixture = render();
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('app-eli5-toggle button[role="switch"]');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    // Summarized spell → one sentence; un-summarized spell keeps its full text.
+    expect(descriptions(fixture)).toEqual([SHORT, 'A spell nobody summarized.']);
+    // Only the description is condensed: the upcast note stays.
+    expect(fixture.nativeElement.querySelector('.spell-higher')).not.toBeNull();
+
+    toggle.click();
+    fixture.detectChanges();
+    expect(descriptions(fixture)).toEqual([FULL, 'A spell nobody summarized.']);
+  });
+
+  it('hides the switch and keeps full text in the DM view', () => {
+    localStorage.setItem(ELI5_KEY, 'true');
+    TestBed.inject(UiStateService).setRole('dm');
+    const fixture = render();
+
+    expect(fixture.nativeElement.querySelector('app-eli5-toggle button')).toBeNull();
+    expect(descriptions(fixture)).toEqual([FULL, 'A spell nobody summarized.']);
   });
 });

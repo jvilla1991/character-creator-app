@@ -12,6 +12,9 @@
           <span class="spell-row">
             <span class="spell-name">{{ s.name }}</span>
             <span class="spell-meta">{{ s.level === 0 ? 'Cantrip' : 'Level ' + s.level }} · {{ s.school }}</span>
+            @if (showEli5 && s.eli5) {
+              <span class="spell-eli5">{{ s.eli5 }}</span>
+            }
           </span>
         </label>
       }

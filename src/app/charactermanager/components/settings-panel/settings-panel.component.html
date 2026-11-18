@@ -22,6 +22,18 @@
     <div class="slideover-section">
       <span class="panel-title">View As</span>
       <app-role-switch></app-role-switch>
+      <!-- ELI5 is a Player-view reading aid, so the row only exists in that view. -->
+      @if (eli5.available()) {
+        <div class="pref-row">
+          <div>
+            <div class="pref-label" id="pref-eli5-label">ELI5 spells</div>
+            <div class="pref-sub" id="pref-eli5-sub">show each of your spells as one plain sentence</div>
+          </div>
+          <button class="toggle" role="switch" [class.on]="eli5.enabled()" (click)="eli5.toggle()"
+            [attr.aria-checked]="eli5.enabled()" aria-labelledby="pref-eli5-label"
+            aria-describedby="pref-eli5-sub"></button>
+        </div>
+      }
     </div>
 
     <!-- Account -->

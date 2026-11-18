@@ -1,0 +1,35 @@
+// Inline ELI5 switch. The track/knob look comes from the global .toggle
+// (styles.css, shared with the settings panel); this only shrinks it so it sits
+// comfortably in a panel header or a form label row.
+
+:host {
+  display: inline-flex;
+  flex: none;
+}
+
+.eli5-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.eli5-toggle-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.toggle {
+  width: 34px;
+  height: 20px;
+
+  &::after {
+    width: 14px;
+    height: 14px;
+  }
+
+  &.on::after {
+    transform: translateX(14px);
+  }
+}
