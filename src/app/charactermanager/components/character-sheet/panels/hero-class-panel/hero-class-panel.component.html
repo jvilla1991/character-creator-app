@@ -326,5 +326,78 @@
         </ul>
       }
     }
+
+    <!-- WoW Hunter (Beast Master): the pet family, its stat block and Pet Specialization -->
+    @if (showPet) {
+      <h3 class="hero-spells-title">Pet</h3>
+      <section class="form-card pet-card" aria-label="Pet">
+        <div class="pet-family-field">
+          <label for="pet-family-select" class="form-card-name">Pet family</label>
+          @if (canEdit) {
+            <select id="pet-family-select" class="pet-family-select"
+              (change)="selectPetFamily($any($event.target).value)">
+              <option value="" [selected]="!petFamily">Choose a family…</option>
+              @for (f of petFamilies; track f.name) {
+                <option [value]="f.name" [selected]="petFamily?.name === f.name">{{ petFamilyLabel(f) }}</option>
+              }
+            </select>
+          } @else {
+            <span class="pet-family-value">{{ petFamily ? petFamilyLabel(petFamily) : 'Not chosen yet' }}</span>
+          }
+        </div>
+        @if (petFamily; as fam) {
+          <div class="form-stats pet-stats">
+            <div><span class="k">Stat block</span><span class="v">{{ fam.statBlock }}</span></div>
+            <div><span class="k">Specialization</span><span class="v">{{ fam.specialization }}</span></div>
+            <div><span class="k">Mastery</span><span class="v">{{ fam.mastery }}</span></div>
+          </div>
+          @if (fam.unusual) {
+            <p class="hero-spells-note pet-unusual">{{ petUnusualNote }}</p>
+          }
+        } @else {
+          <p class="hero-note pet-prompt">Pick your pet's family to see its stat block, specialization and mastery.</p>
+        }
+      </section>
+      @if (petCards.length) {
+        @if (petCards.length > 1) {
+          <p class="hero-spells-note">A {{ petFamily!.name }} can use either stat block — choose when you cast Primal Companion.</p>
+        }
+        <div class="form-cards pet-stat-cards">
+          @for (card of petCards; track card.name) {
+            <section class="form-card pet-stat-card" [attr.aria-label]="card.name">
+              <header class="form-card-head">
+                <span class="form-card-name">{{ card.name }}</span>
+                <span class="form-card-size">{{ card.size }}</span>
+              </header>
+              <div class="form-stats">
+                <div><span class="k">AC</span><span class="v">{{ card.ac }}</span></div>
+                <div><span class="k">HP</span><span class="v">{{ card.hp }}</span></div>
+                <div class="pet-speed"><span class="k">Speed</span><span class="v">{{ card.speed }}</span></div>
+              </div>
+              <p class="form-line">{{ card.abilities }}</p>
+              <p class="form-line"><strong>Beast's Strike.</strong> {{ card.strike }}</p>
+              <p class="form-line"><strong>{{ card.trait.name }}.</strong> {{ card.trait.text }}</p>
+            </section>
+          }
+        </div>
+        <p class="hero-spells-note">{{ petMasteryNote }}</p>
+      }
+      @if (petSpec; as ps) {
+        <div class="feature pet-specialization">
+          <div class="feature-head">
+            <span class="feature-name">Pet Specialization: {{ ps.specialization }}</span>
+            <span class="feature-source">{{ h.baseClass }} {{ petSpecializationLevel }}</span>
+          </div>
+          <div class="feature-desc">{{ ps.text }}</div>
+          @if (ps.hpBonus; as hp) {
+            <div class="form-stats pet-hp-bonus">
+              <div><span class="k">Your HP max</span><span class="v">+{{ hp.you }}</span></div>
+              <div><span class="k">Beast HP max</span><span class="v">+{{ hp.beast }}</span></div>
+            </div>
+            <p class="hero-spells-note">{{ petHpNote }}</p>
+          }
+        </div>
+      }
+    }
   </div>
 }

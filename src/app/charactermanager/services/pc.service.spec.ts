@@ -415,6 +415,44 @@ describe('PCService', () => {
     });
   });
 
+  // ── WoW Hunter pet family ────────────────────────────────────────────────────
+
+  describe('petFamily round-trip', () => {
+    it('sends the pet family on update for a WoW hunter Beast Master', () => {
+      service.updatePC(makePC({
+        clazz: 'Ranger', subclass: 'Beast Master', specialization: 'Beast Mastery', petFamily: 'Mechanized Animal',
+      })).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + '1');
+      const body = req.request.body as Record<string, unknown>;
+      expect(body['petFamily']).toBe('Mechanized Animal');
+      expect(body['specialization']).toBe('Beast Mastery');
+      req.flush(makePC());
+    });
+
+    it('sends an explicit null pet family for everyone else', () => {
+      service.updatePC(makePC()).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + '1');
+      expect((req.request.body as Record<string, unknown>)['petFamily']).toBeNull();
+      req.flush(makePC());
+    });
+
+    it('reads petFamily from the server, defaulting a missing one to null', (done) => {
+      const HttpParams = require('@angular/common/http').HttpParams;
+      service.PCById(new HttpParams().set('id', '16')).subscribe((hunter: PC) => {
+        expect(hunter.petFamily).toBe('Wolf');
+        service.PCById(new HttpParams().set('id', '7')).subscribe((other: PC) => {
+          expect(other.petFamily).toBeNull();
+          done();
+        });
+        httpMock.expectOne(service.pcUrl + 'find/7').flush({ id: 7, name: 'Plain', clazz: 'Fighter', level: 1 });
+      });
+      httpMock.expectOne(service.pcUrl + 'find/16').flush({
+        id: 16, name: 'Rhonna', clazz: 'Ranger', level: 6,
+        subclass: 'Beast Master', specialization: 'Beast Mastery', petFamily: 'Wolf',
+      });
+    });
+  });
+
   // ── Hero-class specialization (Death Knight rune, Demon Hunter spec) ──────────
 
   describe('specialization round-trip', () => {

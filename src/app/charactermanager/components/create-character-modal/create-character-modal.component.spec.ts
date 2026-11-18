@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1563,6 +1563,64 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(restored.specialization).toBe('Preservation');
       expect(restored.selectedSubclass).toBe('Draconic Sorcery');
       expect(restored.requiresLevel1Subclass).toBeFalse();
+    });
+  });
+
+  describe('World of Warcraft Hunter (Ranger)', () => {
+    const HUNTER_KEY = 'Ranger (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Ranger', 'Rogue', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Hunter (Ranger)" row beside the base Ranger and the Demon Hunter, only under the WoW filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.baseClass === 'Ranger');
+      expect(rows().map(o => [o.key, o.label, o.source])).toEqual([
+        ['Ranger', 'Ranger', 'Base Game'],
+        ['Demon Hunter (Ranger)', 'Demon Hunter (Ranger)', 'World of Warcraft'],
+        [HUNTER_KEY, 'Hunter (Ranger)', 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.label)).toEqual(['Ranger']);
+    });
+
+    it('stores clazz Ranger with no subclass and requires a specialization', () => {
+      component.toggleClass(HUNTER_KEY);
+      expect(component.clazz).toBe('Ranger');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Hunter (Ranger)');
+      expect(component.requiresLevel1Subclass).toBeFalse();
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Beast Mastery', 'Marksmanship', 'Survival']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Marksmanship');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.specializationGuidance?.subclass.name).toBe('Hunter');
+      expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+    });
+
+    it('keeps the Demon Hunter separate: its subclass stays locked and its specs differ', () => {
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Survival');
+      component.toggleClass('Demon Hunter (Ranger)');
+      expect(component.selectedSubclass).toBe('Demon Hunter');
+      expect(component.specialization).toBe('');
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Devourer', 'Havoc', 'Vengeance']);
+    });
+
+    it('emits clazz Ranger + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Beast Mastery');
+      component.name = 'Rhonna';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Ranger');
+        expect(draft.subclass).toBeFalsy();
+        expect(draft.specialization).toBe('Beast Mastery');
+        done();
+      });
+      component.submit();
     });
   });
 

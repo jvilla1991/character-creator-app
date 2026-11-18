@@ -603,3 +603,57 @@ describe('ClassStepComponent — World of Warcraft Evoker (Sorcerer)', () => {
     expect(pres).toContain('Lightning or Poison');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Hunter (Ranger)', () => {
+  const HUNTER_KEY = 'Ranger (World of Warcraft)';
+  const detail = { hit_die: 10, saving_throws: [{ name: 'STR' }, { name: 'DEX' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(HUNTER_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Ranger']));
+    fixture.componentRef.setInput('selectedKey', HUNTER_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Hunter (Ranger)');
+    fixture.componentRef.setInput('clazz', 'Ranger');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Ranger", "Demon Hunter (Ranger)" and a tagged "Hunter (Ranger)" row', () => {
+    const el = render();
+    const heads = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[]).map(h => h.textContent!.trim());
+    expect(heads[0]).toBe('Ranger');
+    expect(heads.filter(h => h.includes('Hunter (Ranger)')).length).toBe(2);   // Demon Hunter + Hunter
+    const active = el.querySelector('.accordion-head.active') as HTMLElement;
+    expect(active.textContent).toContain('Hunter (Ranger)');
+    expect(active.textContent).not.toContain('Demon');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('call of the wild');
+    expect(el.textContent).toContain('Chosen as normal at Ranger level 3');
+  });
+
+  it('shows the Beast Mastery box: spells, two masteries, Archery, Beast Master, the level-6 tip and feats', () => {
+    const box = render('Beast Mastery').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim());
+    expect(terms).toEqual(['Level 1 spells', 'Weapon Mastery', 'Level 2 fighting style', 'Level 3 subclass', 'Level 6', 'Feats']);
+    expect(box.textContent).toContain('Ensnaring Strike, Speak with Animals');
+    expect(box.textContent).toContain('Any two of Heavy Crossbows, Longbows, Muskets');
+    expect(box.textContent).toContain('Archery');
+    expect(box.textContent).toContain('Beast Master');
+    expect(box.textContent).toContain('Pet Specialization instead of Roving');
+    expect(box.textContent).toContain('Weapon Master');
+  });
+
+  it('shows the Marksmanship and Survival picks', () => {
+    const mm = render('Marksmanship').querySelector('.spec-guidance')!.textContent!;
+    expect(mm).toContain('Cure Wounds');
+    expect(mm).toContain('Hunter');
+    expect(mm).toContain('Sharpshooter');
+    const sv = render('Survival').querySelector('.spec-guidance')!.textContent!;
+    expect(sv).toContain('Any two of Glaives, Halberds, Pikes');
+    expect(sv).toContain('Great Weapon Fighting');
+    expect(sv).toContain('Polearm Master');
+  });
+});

@@ -13,11 +13,11 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
         'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
-        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
       ]);
     });
 

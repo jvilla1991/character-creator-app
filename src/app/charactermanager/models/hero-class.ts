@@ -272,6 +272,11 @@ export interface HeroClassOption {
   renownNote?: string;
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
+  /**
+   * True when a Beast Master of this variant keeps a WoW pet (the WoW Hunter):
+   * the sheet panel shows the Pet card with its family selector.
+   */
+  hunterPets?: boolean;
   /** Computed sheet cards for this character (e.g. the WoW Shaman's Totems and path cards). */
   featureCards?: (input: FeatureCardInput) => readonly FeatureCard[];
 }

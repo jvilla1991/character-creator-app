@@ -279,3 +279,35 @@
 .feature-card-note {
   margin: 6px 0 0;
 }
+
+// ── WoW Hunter pet card ──────────────────────────────────────────────────────
+
+.pet-family-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pet-family-select {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.pet-family-value {
+  font-family: 'Newsreader', serif;
+  font-size: 13px;
+  color: var(--text);
+}
+
+// Three stat cells (stat block / specialization / mastery; AC / HP / speed).
+.pet-stats,
+.pet-stat-card .form-stats {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pet-hp-bonus {
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 6px;
+}

@@ -1,5 +1,6 @@
 import {
-  HERO_CLASSES, heroClassFor, heroClassForSubclass, heroClassSpells, recommendedStartingSpells, subclassSource,
+  HERO_CLASSES, heroClassFor, heroClassForSubclass, heroClassSpells, recommendedFightingStylesFor,
+  recommendedStartingSpells, recommendedSubclassFor, subclassSource,
 } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
@@ -8,6 +9,7 @@ import {
   WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, WOW_WARRIOR, WOW_WARRIOR_GUIDANCE,
   WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel, WOW_EVOKER, WOW_EVOKER_GUIDANCE,
   WOW_EVOKER_SPECIALIZATIONS, WOW_EVOKER_SPELL_TABLE, WOW_EVOKER_SUGGESTED_SPELLS, DRACONIC_SORCERY,
+  WOW_HUNTER, WOW_HUNTER_GUIDANCE, WOW_HUNTER_SPECIALIZATIONS, WOW_HUNTER_SUGGESTED_SPELLS,
 } from './wow-class-variants';
 import { classDisplayName } from '../utils/class-display';
 
@@ -646,6 +648,87 @@ describe('wow-class-variants', () => {
           expect(g.elementalAffinity).withContext(v.key).toBeUndefined();
         }
       }
+    });
+  });
+
+  describe('Hunter (Ranger)', () => {
+    const hunter = (overrides: { subclass?: string | null; specialization?: string | null; clazz?: string } = {}) =>
+      ({ clazz: 'Ranger', subclass: null, specialization: 'Beast Mastery', ...overrides });
+
+    it('reads "Hunter (Ranger)" on the Ranger base class with no fixed subclass', () => {
+      expect(WOW_HUNTER.label).toBe('Hunter (Ranger)');
+      expect(WOW_HUNTER.key).toBe('Ranger (World of Warcraft)');
+      expect(WOW_HUNTER.baseClass).toBe('Ranger');
+      expect(WOW_HUNTER.subclass).toBeUndefined();
+      expect(WOW_HUNTER.subclassNote).toBe('Chosen as normal at Ranger level 3');
+      expect(WOW_HUNTER.specializations.map(s => s.name)).toEqual([...WOW_HUNTER_SPECIALIZATIONS]);
+      expect(WOW_HUNTER.respecOnLevelUp).toBeTrue();
+      expect(WOW_HUNTER.hunterPets).toBeTrue();
+      expect(WOW_HUNTER.spellTable).toEqual([]);
+      expect(WOW_HUNTER.blurb).toContain('call of the wild');
+      expect(WOW_HUNTER.blurb).toContain('traps');
+      expect(WOW_HUNTER.blurb).toContain('pet');
+      const desc = (name: string) => WOW_HUNTER.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Beast Mastery')).toContain('animal companion');
+      expect(desc('Marksmanship')).toContain('sharpshooter');
+      expect(desc('Survival')).toContain('polearm');
+    });
+
+    it('is a WoW hunter with any of its specializations, and the Demon Hunter stays its own hero class', () => {
+      expect(heroClassFor(hunter())).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ subclass: 'Beast Master' }))).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ specialization: 'Marksmanship', subclass: 'Hunter' }))).toBe(WOW_HUNTER);
+      expect(heroClassFor(hunter({ specialization: null, subclass: 'Beast Master' }))).toBeUndefined();
+      expect(heroClassFor(hunter({ specialization: 'Havoc' }))).toBeUndefined();
+      // The Demon Hunter hero subclass is matched first, whatever the specialization says.
+      expect(heroClassFor(hunter({ subclass: 'Demon Hunter', specialization: 'Havoc' }))?.label).toBe('Demon Hunter (Ranger)');
+      expect(heroClassFor(hunter({ subclass: 'Demon Hunter', specialization: 'Beast Mastery' }))?.label).toBe('Demon Hunter (Ranger)');
+      expect(classDisplayName('Ranger', 'Beast Master', 'Survival')).toBe('Hunter (Ranger)');
+      expect(classDisplayName('Ranger', 'Beast Master', null)).toBe('Ranger');
+      expect(classDisplayName('Ranger', 'Demon Hunter', 'Vengeance')).toBe('Demon Hunter (Ranger)');
+    });
+
+    it('recommends Beast Master / Hunter / Beast Master and Archery / Archery / Great Weapon Fighting', () => {
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Beast Mastery')).toBe('Beast Master');
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Marksmanship')).toBe('Hunter');
+      expect(recommendedSubclassFor(WOW_HUNTER, 'Survival')).toBe('Beast Master');
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Beast Mastery')).toEqual(['Archery']);
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Marksmanship')).toEqual(['Archery']);
+      expect(recommendedFightingStylesFor(WOW_HUNTER, 'Survival')).toEqual(['Great Weapon Fighting']);
+    });
+
+    it('recommends level-1 spells, two Weapon Masteries and feats per specialization', () => {
+      const bm = WOW_HUNTER_GUIDANCE['Beast Mastery'];
+      expect(bm.level1Spells).toEqual(['Ensnaring Strike', 'Speak with Animals']);
+      expect(bm.weaponMastery).toEqual(['Heavy Crossbows', 'Longbows', 'Muskets']);
+      expect(bm.weaponMasteryCount).toBe(2);
+      expect(bm.levelTip).toEqual({ level: 6, text: 'You gain Pet Specialization instead of Roving.' });
+      expect(bm.feats).toEqual(['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter', 'Weapon Master']);
+      const mm = WOW_HUNTER_GUIDANCE['Marksmanship'];
+      expect(mm.level1Spells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+      expect(mm.weaponMastery).toEqual(['Heavy Crossbows', 'Longbows', 'Muskets']);
+      expect(mm.feats).toEqual(['Crossbow Expert', 'Medium Armor Master', 'Piercer', 'Sharpshooter']);
+      expect(mm.levelTip).toBeUndefined();
+      const sv = WOW_HUNTER_GUIDANCE['Survival'];
+      expect(sv.level1Spells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+      expect(sv.weaponMastery).toEqual(['Glaives', 'Halberds', 'Pikes']);
+      expect(sv.feats).toEqual(['Great Weapon Master', 'Poisoner', 'Polearm Master', 'Sentinel']);
+      for (const g of Object.values(WOW_HUNTER_GUIDANCE)) expect(g.cantrips).toBeUndefined();
+      expect(recommendedStartingSpells(WOW_HUNTER, 'Survival')).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+    });
+
+    it('suggests spells for levels 1 to 5, with the WoW traps and Serpent Sting', () => {
+      for (const spec of WOW_HUNTER_SPECIALIZATIONS) {
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec].map(r => r.level)).withContext(spec).toEqual([1, 2, 3, 4, 5]);
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec][0].spells).withContext(spec).toEqual(['Freezing Trap']);
+        expect(WOW_HUNTER_SUGGESTED_SPELLS[spec][2].spells).withContext(spec).toContain('Serpent Sting');
+      }
+      expect(WOW_HUNTER_SUGGESTED_SPELLS['Survival'][4].spells).toEqual(['Explosive Trap', 'Steel Wind Strike']);
+      expect(WOW_HUNTER_SUGGESTED_SPELLS['Marksmanship'][4].spells).toEqual(['Conjure Volley', 'Swift Quiver']);
+    });
+
+    it('is the only variant that keeps hunter pets', () => {
+      expect(HERO_CLASSES.filter(h => h.hunterPets)).toEqual([WOW_HUNTER]);
     });
   });
 });
