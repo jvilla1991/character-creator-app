@@ -23,7 +23,7 @@ const USER = 'e2eTester';
 
 /**
  * Stateful mini-backend for the character API: POST /pc/add writes into `db`,
- * GET /pc/all reads from it. This matters because after "Inscribe" the app
+ * GET /pc/all reads from it. This matters because after "Create" the app
  * refetches the roster (CharacterModalService.onCreated → refreshPCs) — a
  * static [] stub would make the new hero vanish. Route handlers with shared
  * state are the standard way to fake read-your-writes behaviour.
@@ -140,9 +140,9 @@ describe(`character creation wizard (${mobile ? 'phone' : 'desktop'})`, () => {
     cy.contains('button.equip-card', 'Option A').click();
     next();
 
-    // ── Step 8: review → Inscribe ────────────────────────────────────────
+    // ── Step 8: review → Create ────────────────────────────────────────
     cy.contains('.review-value', 'Borin Ironfoot');
-    cy.contains('button', 'Inscribe').click();
+    cy.contains('button', /^Create$/).click();
 
     // THE PAYLOAD ASSERTION — the core of the network-boundary pattern.
     // We verify the app's outbound contract: PCService.serializePC flattened

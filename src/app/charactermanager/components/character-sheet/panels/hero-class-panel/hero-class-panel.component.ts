@@ -176,11 +176,6 @@ export class HeroClassPanelComponent {
     return this.hero?.subclassTerm ?? 'subclass';
   }
 
-  /** 'druid' / 'paladin' — the base class in running text. */
-  get baseClassLower(): string {
-    return (this.hero?.baseClass ?? '').toLowerCase();
-  }
-
   /** Whether the character's subclass is the recommended one — informational only. */
   get subclassMatch(): SubclassMatch {
     const recommended = this.guidance?.subclass.name;

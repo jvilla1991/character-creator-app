@@ -7,7 +7,7 @@
 
   <div class="field">
     <label for="campaign-setting">Setting</label>
-    <input id="campaign-setting" [(ngModel)]="setting" autocomplete="off" placeholder="where the tale unfolds">
+    <input id="campaign-setting" [(ngModel)]="setting" autocomplete="off">
   </div>
 
   <div class="field">
@@ -79,6 +79,6 @@
 
   <div class="modal-actions">
     <button class="btn" (click)="cancel()">Cancel</button>
-    <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Inscribe</button>
+    <button class="btn primary" style="flex: none;" (click)="submit()" [disabled]="!name.trim()">Create</button>
   </div>
 </app-modal>
