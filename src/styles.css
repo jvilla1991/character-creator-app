@@ -2180,6 +2180,16 @@ select:focus {
   border-radius: 100px;
 }
 .invite-chip .eyebrow { margin: 0; }
+/* Chips flow in one wrapping row, each with its "?" help button beside it. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+.chip-with-help { display: inline-flex; align-items: center; }
+.chip-row .invite-chip { margin-top: 0; }
 .invite-code {
   font-size: 15px;
   letter-spacing: 0.22em;

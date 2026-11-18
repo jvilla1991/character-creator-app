@@ -9,6 +9,7 @@ import {
   survivalExhaustion,
   survivalOf,
 } from '../../../../utils/survival';
+import { ContextHelpComponent } from '../../../context-help/context-help.component';
 
 /**
  * Darker Dungeons survival tracker — shown only in campaigns with the
@@ -29,7 +30,8 @@ import {
 @Component({
     selector: 'app-survival-panel',
     templateUrl: './survival-panel.component.html',
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ContextHelpComponent]
 })
 export class SurvivalPanelComponent {
   @Input() pc!: PC;
@@ -47,6 +49,17 @@ export class SurvivalPanelComponent {
 
   get exhaustion(): number {
     return survivalExhaustion(this.survival);
+  }
+
+  /** The tap-reachable rule behind the "?" in the header: how the stages turn
+   *  into exhaustion. Only the DM's view has Eat and Drink, so only the DM
+   *  reads about them. */
+  get survivalHelp(): string {
+    const rule = 'Hunger, thirst and fatigue each run from stage 0 to 6. Each one at '
+      + 'stage 5 or 6 adds a level of exhaustion; each one at stage 0 takes a level away.';
+    return this.editable
+      ? rule + ' Eat uses a ration for −1 hunger; Drink uses water for −1 thirst.'
+      : rule;
   }
 
   stage(key: SurvivalKey): number {

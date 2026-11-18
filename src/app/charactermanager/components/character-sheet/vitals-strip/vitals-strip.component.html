@@ -84,7 +84,7 @@ session while the DM's short-rest window is open; a long rest restores half. -->
       [title]="hitDiceRemaining === 0
         ? 'No hit dice left — a long rest restores half'
         : 'Roll 1d' + hitDie + ' + CON and heal (short rest)'">
-      Spend Hit Die (1d{{ hitDie }}+CON)
+      {{ hitDiceRemaining === 0 ? 'No Hit Dice left' : 'Spend Hit Die (1d' + hitDie + '+CON)' }}
     </button>
   }
 </div>

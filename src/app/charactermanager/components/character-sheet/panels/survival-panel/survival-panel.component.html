@@ -1,6 +1,9 @@
 <div class="panel">
   <div class="panel-header">
-    <span class="panel-title">Survival</span>
+    <span style="display: inline-flex; align-items: center;">
+      <span class="panel-title">Survival</span>
+      <app-context-help label="Survival" [text]="survivalHelp"></app-context-help>
+    </span>
     @if (exhaustion !== 0) {
       <span
         [style.color]="exhaustion > 0 ? 'var(--crimson)' : 'var(--gold, var(--celestial-2))'"

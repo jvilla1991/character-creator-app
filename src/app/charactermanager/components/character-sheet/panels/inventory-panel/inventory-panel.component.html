@@ -94,7 +94,7 @@
             @if (item.status !== 'dropped') {
               <button type="button" class="inv-btn danger" (click)="dropItem(i)"
               [attr.aria-label]="'Drop ' + item.name"
-              [title]="item.qty > 1 ? 'Drop the whole stack' : 'Drop this item'">Drop</button>
+              [title]="item.qty > 1 ? 'Drop the whole stack' : 'Drop this item'">{{ item.qty > 1 ? 'Drop all' : 'Drop' }}</button>
             }
             @if (item.status === 'dropped') {
               <button type="button" class="inv-btn danger" (click)="discardItem(i)"

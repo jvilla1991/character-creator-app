@@ -28,6 +28,7 @@ import { CharacterSheetComponent } from '../character-sheet/character-sheet.comp
 import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.component';
 import { ModalComponent } from '../modal/modal.component';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
+import { ContextHelpComponent } from '../context-help/context-help.component';
 
 /**
  * Session Mode screen — a full-width overlay (chosen in the sidenav over the
@@ -41,7 +42,7 @@ import { AsyncPipe, TitleCasePipe } from '@angular/common';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, ModalComponent, AsyncPipe, TitleCasePipe]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, ModalComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
@@ -157,6 +158,27 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   }
 
   /** Label for the DM's advance button: the segment it advances INTO. */
+  /** Player's Short Rest button: what it does, or why it is unavailable. The
+   *  button's tooltip and the tap-reachable "?" beside it share this text. */
+  shortRestHint(state: SessionState): string {
+    if (state.shortRestOpen) return 'A short rest is already underway.';
+    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is already being tallied.';
+    if (state.status !== 'LOBBY') return 'No resting mid-encounter. Wait until the encounter ends.';
+    return 'Calls for a short rest. The party votes, and a unanimous yes opens the rest.';
+  }
+
+  /** DM only: what the clock buttons do, including what Advance costs the
+   *  party in a survival campaign. */
+  get clockHelp(): string {
+    return 'The first button starts the in-world clock, then moves it on to the next time of day.'
+      + (this.survivalConditions
+        ? ' Time passes: the party eats its supplies, and hunger, thirst and fatigue shift.'
+        : '')
+      + ' Long Rest restores spell slots'
+      + (this.survivalConditions ? ' and sheds fatigue' : '')
+      + '. Short Rest lets players spend Hit Dice to heal until you end it.';
+  }
+
   advanceTimeLabel(state: SessionState): string {
     if (!state.gameTime) return 'Start the clock';
     const next = advanceGameTime(state.gameTime);

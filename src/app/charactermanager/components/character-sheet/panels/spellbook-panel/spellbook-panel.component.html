@@ -21,6 +21,14 @@
     }
   </div>
 
+  <!-- At the cap every Prepare button is disabled; say why where a phone can
+  read it (the reason was only in each button's hover tooltip). -->
+  @if (preparable() && hasLeveledSpells() && preparedCap() != null && preparedCount() >= preparedCap()!) {
+    <div class="field-hint prepared-cap-hint">
+      All {{ preparedCap() }} prepared spells are in use. Unprepare one to prepare another; cantrips are always ready.
+    </div>
+  }
+
   <!-- DM grant form -->
   @if (grantFormOpen) {
     <div class="grant-form">
