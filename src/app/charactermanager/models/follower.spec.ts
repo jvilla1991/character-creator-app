@@ -22,7 +22,7 @@ describe('follower model', () => {
         spellSlots: {},
         inventory: [],
         features: [],
-        coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+        coins: { cp: 0, sp: 0, gp: 0 },
       }));
     });
 
@@ -32,6 +32,12 @@ describe('follower model', () => {
       expect(statBlock?.ac).toBe(13);   // 10 + DEX mod
       expect(statBlock?.init).toBe(3);  // DEX mod
       expect(statBlock?.prof).toBe(4);  // level 9
+    });
+
+    it('keeps coins to copper, silver and gold, converting pasted electrum and platinum', () => {
+      const { statBlock } = parseStatBlock('{ "coins": { "gp": 3, "sp": 1, "ep": 2, "pp": 4 } }');
+
+      expect(statBlock?.coins).toEqual({ cp: 0, sp: 11, gp: 43 }); // 2 ep = 10 sp, 4 pp = 40 gp
     });
 
     it('accepts the common aliases a DM is likely to type', () => {

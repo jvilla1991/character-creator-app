@@ -25,7 +25,7 @@ function makePC(overrides: Partial<PC> = {}): PC {
     saves: ['INT', 'WIS'],
     skills: { Arcana: 'prof', History: 'prof' },
     conditions: [],
-    coins: { cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 },
+    coins: { cp: 0, sp: 0, gp: 15 },
     spells: [],
     spellSlots: { 1: { max: 2, used: 0 } },
     weapons: [],
@@ -144,7 +144,7 @@ describe('PCService', () => {
 
       expect(body['saves']).toBe(JSON.stringify(['INT', 'WIS']));
       expect(body['skills']).toBe(JSON.stringify({ Arcana: 'prof', History: 'prof' }));
-      expect(body['coins']).toBe(JSON.stringify({ cp: 0, sp: 0, ep: 0, gp: 15, pp: 0 }));
+      expect(body['coins']).toBe(JSON.stringify({ cp: 0, sp: 0, gp: 15 }));
       expect(body['languages']).toBe(JSON.stringify(['Common', 'Elvish']));
       req.flush(pc);
     });
@@ -164,7 +164,7 @@ describe('PCService', () => {
         spells: '[]',
         spellSlots: '{}',
         conditions: '[]',
-        coins: '{"cp":0,"sp":0,"ep":0,"gp":15,"pp":0}',
+        coins: '{"cp":0,"sp":0,"gp":15}',
         weapons: '[]', gear: '[]', features: '[]',
         languages: '["Common","Elvish"]', toolProfs: '[]',
       };

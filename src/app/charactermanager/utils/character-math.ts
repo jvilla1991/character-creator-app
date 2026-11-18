@@ -118,6 +118,6 @@ export function passiveScore(pc: PC, skill: string, ability: Ability): number {
 
 export function goldValue(coins: PC['coins']): number {
   if (!coins) return 0;
-  const { cp = 0, sp = 0, ep = 0, gp = 0, pp = 0 } = coins;
-  return cp / 100 + sp / 10 + ep / 2 + gp + pp * 10;
+  const { cp = 0, sp = 0, gp = 0 } = coins;
+  return cp / 100 + sp / 10 + gp;
 }

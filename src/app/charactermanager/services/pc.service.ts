@@ -653,7 +653,7 @@ export class PCService {
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),
       survival: this.parseJsonField(pc['survival'], undefined),
-      coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
+      coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, gp: 0 }),
       weapons: this.parseJsonField(pc['weapons'], []),
       gear: this.parseJsonField(pc['gear'], []),
       inventory: this.parseJsonField(pc['inventory'], []),
