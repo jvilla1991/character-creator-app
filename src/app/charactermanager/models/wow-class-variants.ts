@@ -11,7 +11,7 @@ import type {
  *
  * Each variant is one {@link HeroClassOption} entry: its specializations, the
  * per-specialization guidance (recommended picks), suggested spells, and any
- * WoW-only subclass's always-prepared spells. Components read these fields and
+ * WoW-only subclasses (with their always-prepared spells, if they have any). Components read these fields and
  * never special-case a variant. Everything here is guidance — never something
  * the app grants or forces. Text is paraphrased.
  */
@@ -222,5 +222,55 @@ export const WOW_PALADIN: HeroClassOption = {
   subclassSpells: { [OATH_OF_THE_HOLY]: OATH_OF_THE_HOLY_SPELLS },
 };
 
+// ── Rogue ────────────────────────────────────────────────────────────────────
+
+export const WOW_ROGUE_SPECIALIZATIONS = ['Assassination', 'Outlaw', 'Subtlety'] as const;
+
+/** The WoW-only rogue subclass — the server offers it to WoW rogues only. Features text comes from the server. */
+export const SWASHBUCKLER = 'Swashbuckler';
+
+/** Per-specialization picks (class step box + sheet panel). Rogues have no spells, so there are none to suggest. */
+export const WOW_ROGUE_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Assassination: {
+    weaponMastery: ['Daggers', 'Shortbows'],
+    subclass: { name: 'Assassin' },
+    levelTip: { level: 5, text: "Lean on Cunning Strike's Poison option — it's this specialization's signature move." },
+    feats: ['Actor', 'Alert', 'Defensive Duelist', 'Piercer', 'Poisoner', 'Skulker', 'Speedy'],
+  },
+  Outlaw: {
+    weaponMastery: ['Daggers', 'Rapiers'],
+    subclass: { name: SWASHBUCKLER },
+    feats: ['Athlete', 'Defensive Duelist', 'Martial Weapon Training', 'Piercer', 'Speedy', 'Tough'],
+  },
+  Subtlety: {
+    weaponMastery: ['Daggers', 'Maces'],
+    subclass: { name: 'Soulknife' },
+    feats: ['Dual Wielder', 'Mage Slayer', 'Shadow Touched', 'Skulker'],
+  },
+};
+
+export const WOW_ROGUE: HeroClassOption = {
+  key: 'Rogue (World of Warcraft)',
+  // Same rule as the Druid: the WoW name equals the base name, so no parenthetical.
+  label: 'Rogue',
+  name: 'Rogue',
+  baseClass: 'Rogue',
+  source: 'World of Warcraft',
+  blurb: 'A blade in the dark who wins with poison, nerve, or shadow rather than brute force. '
+    + 'Rogues in this world often answer to groups like SI:7, the Defias Brotherhood, or the Deathstalkers.',
+  subclassNote: 'Chosen as normal at Rogue level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Assassination', desc: 'A poisoner who strikes with a pair of toxin-coated daggers.' },
+    { name: 'Outlaw',        desc: 'A swaggering swashbuckler who duels toe-to-toe with agility and guile.' },
+    { name: 'Subtlety',      desc: 'A shadow-wielder who strikes from darkness and vanishes again.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_ROGUE_GUIDANCE,
+  wowSubclasses: [SWASHBUCKLER],
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE];

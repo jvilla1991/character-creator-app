@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1147,6 +1147,64 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.toggleClass(WOW_PALADIN_KEY);
       expect(component.selectedSubclass).toBe('');
       expect(component.selectedClassKey).toBe(WOW_PALADIN_KEY);
+    });
+  });
+
+  describe('World of Warcraft Rogue', () => {
+    const WOW_ROGUE_KEY = 'Rogue (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Paladin', 'Rogue', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Rogue" row tagged World of Warcraft beside the base Rogue, and only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.label === 'Rogue');
+      expect(rows().map(o => [o.key, o.source])).toEqual([
+        ['Rogue', 'Base Game'], [WOW_ROGUE_KEY, 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.key)).toEqual([WOW_ROGUE_KEY]);
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.key)).toEqual(['Rogue']);
+    });
+
+    it('stores clazz Rogue with no subclass and requires a specialization', () => {
+      component.toggleClass(WOW_ROGUE_KEY);
+      expect(component.clazz).toBe('Rogue');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Rogue');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Rogue');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Assassination', 'Outlaw', 'Subtlety']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Outlaw');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.specializationGuidance?.subclass.name).toBe('Swashbuckler');
+      expect(component.isSpellcastingClass).toBeFalse();
+    });
+
+    it('emits clazz Rogue + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(WOW_ROGUE_KEY);
+      component.selectSpecialization('Subtlety');
+      component.name = 'Valeera';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Rogue');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Subtlety');
+        done();
+      });
+      component.submit();
+    });
+
+    it('selecting the base Rogue row clears the specialization', () => {
+      component.toggleClass(WOW_ROGUE_KEY);
+      component.selectSpecialization('Assassination');
+      component.toggleClass('Rogue');
+      expect(component.selectedClassKey).toBe('Rogue');
+      expect(component.specializationGuidance).toBeNull();
     });
   });
 
