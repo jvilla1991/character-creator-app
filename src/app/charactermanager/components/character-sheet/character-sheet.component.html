@@ -329,9 +329,6 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           (pcChange)="onPcChange($event)">
         </app-supplies-panel>
       }
-      @if (!slotInventory && !followerMode) {
-        <app-equipment-panel [pc]="pc"></app-equipment-panel>
-      }
       <app-inventory-panel
         [pc]="pc"
         [editable]="showActions || inventoryEditable"
