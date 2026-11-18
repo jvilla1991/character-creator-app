@@ -396,7 +396,6 @@ app-root { display: block; height: 100vh; height: 100dvh; width: 100%; }
   left: -8px; top: 4px; bottom: 4px;
   width: 2px;
   background: var(--gold);
-  box-shadow: var(--glow-gold);
 }
 
 .portrait {
@@ -1461,7 +1460,6 @@ select:focus {
   color: var(--gold);
   border-color: var(--gold);
   background: color-mix(in oklch, var(--gold) 14%, var(--bg-2));
-  box-shadow: var(--glow-gold);
 }
 .modal-actions {
   display: flex;
@@ -1763,7 +1761,6 @@ select:focus {
   left: -8px; top: 6px; bottom: 6px;
   width: 2px;
   background: var(--celestial);
-  box-shadow: var(--glow);
 }
 .campaign-crest {
   width: 40px; height: 40px;
@@ -2018,7 +2015,7 @@ select:focus {
   transition: border-color .15s, box-shadow .15s, transform .1s;
 }
 .theme-swatch:hover { transform: translateY(-1px); }
-.theme-swatch.active { border-color: var(--gold); box-shadow: var(--glow-gold); }
+.theme-swatch.active { border-color: var(--gold); }
 .theme-swatch-preview { height: 46px; position: relative; }
 .theme-swatch-preview .bar { position: absolute; height: 3px; border-radius: 2px; }
 .theme-swatch-label {
