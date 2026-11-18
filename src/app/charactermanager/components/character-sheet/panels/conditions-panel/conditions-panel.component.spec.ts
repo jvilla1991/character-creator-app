@@ -77,6 +77,31 @@ describe('ConditionsPanelComponent', () => {
     expect(component.exhaustionTooltip).toContain('−15 ft Speed');
   });
 
+  it('lets only the DM set exhaustion on a character in a campaign', () => {
+    component.pc = { ...component.pc, campaignId: '7', exhaustion: 2 };
+    const emitted = jasmine.createSpy('exhaustionChanged');
+    component.exhaustionChanged.subscribe(emitted);
+
+    expect(component.canSetExhaustion).toBeFalse();
+    component.setExhaustion(4);
+    expect(emitted).not.toHaveBeenCalled();
+
+    component.editable = true; // the DM's cross-link view
+    expect(component.canSetExhaustion).toBeTrue();
+    component.setExhaustion(4);
+    expect(emitted).toHaveBeenCalledWith(4);
+  });
+
+  it('shows a campaign player plain pips instead of buttons', () => {
+    const fixture = TestBed.createComponent(ConditionsPanelComponent);
+    fixture.componentInstance.pc = { ...component.pc, campaignId: '7', exhaustion: 2 };
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelectorAll('button.exhaustion-pip').length).toBe(0);
+    expect(el.querySelectorAll('span.exhaustion-pip.filled').length).toBe(2);
+  });
+
   // --- Heroic Inspiration meter (same gesture as the exhaustion tracker) ---
 
   it('reads 0 pips for a pc saved before the field existed', () => {
