@@ -1,9 +1,8 @@
 import {
-  WOW_DRUID_SUGGESTED_SPELLS, bearForm, catForm, classicBeastForms, diceWithMod, isMoonCircle, pounceBonusDice,
-  tierDice,
-} from './wow-druid';
+  bearForm, catForm, classicBeastForms, diceWithMod, isMoonCircle, pounceBonusDice, tierDice,
+} from './wow-beast-forms';
 
-describe('wow-druid', () => {
+describe('wow-beast-forms', () => {
   // WIS 16 (+3), spell attack +5, DC 13 — a level 2–4 druid.
   const base = { level: 2, wis: 16, spellAttack: 5, spellDc: 13 };
 
@@ -113,26 +112,5 @@ describe('wow-druid', () => {
     expect(isMoonCircle('circle of the moon')).toBeTrue();
     expect(isMoonCircle('Circle of the Land')).toBeFalse();
     expect(isMoonCircle(null)).toBeFalse();
-  });
-
-  describe('suggested spells', () => {
-    const flat = (spec: string) => WOW_DRUID_SUGGESTED_SPELLS[spec].flatMap(r => r.spells);
-
-    it('covers spell levels 2–9 for every specialization', () => {
-      for (const spec of ['Balance', 'Feral', 'Guardian', 'Restoration']) {
-        expect(WOW_DRUID_SUGGESTED_SPELLS[spec].map(r => r.level)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
-      }
-    });
-
-    it('lists the per-specialization picks (incl. the WoW stubs)', () => {
-      expect(flat('Balance')).toContain('Starfall');
-      expect(flat('Balance')).toContain('Storm of Vengeance');
-      expect(flat('Feral')).toContain('Feral Prowl');
-      expect(flat('Feral')).toContain('Innervate');
-      expect(flat('Guardian')).toContain('Roar of Ursoc');
-      expect(flat('Guardian')[0]).toBe('Aid');
-      expect(flat('Restoration')).toEqual(jasmine.arrayContaining(['Regrowth', 'Tranquility', 'Tree of Life', 'Foresight']));
-      expect(flat('Restoration')).not.toContain('Starfall');
-    });
   });
 });

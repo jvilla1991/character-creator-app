@@ -1,6 +1,6 @@
 import { ContentSource } from './content-source';
 import { modFromScore } from '../utils/character-math';
-import { WOW_DRUID } from './wow-druid';
+import { WOW_CLASS_VARIANTS } from './wow-class-variants';
 
 /**
  * Hero classes from the World of Warcraft tabletop module. Most are a themed
@@ -10,9 +10,10 @@ import { WOW_DRUID } from './wow-druid';
  * `subclass: 'Oath of the Ebon Blade'` — so every rules lookup (hit die, saves,
  * skills, equipment, slots) keeps using the base class.
  *
- * A WoW *variant* (the WoW Druid) has no fixed subclass: it is the base class
- * plus a specialization, and the subclass is chosen normally. Such a character
- * is recognized by base class + a non-null specialization + no hero subclass.
+ * A WoW *variant* (the WoW Druid, see {@link WOW_CLASS_VARIANTS}) has no fixed
+ * subclass: it is the base class plus a specialization, and the subclass is
+ * chosen normally. Such a character is recognized by base class + a non-null
+ * specialization + no hero subclass.
  *
  * Everything class-specific — the specialization picker, the level-1 feature,
  * the resource line and the always-prepared spell table — lives in
@@ -107,6 +108,8 @@ export interface HeroClassOption {
   subclass?: string;
   /** Class-step note for a variant without a fixed subclass ('Chosen as normal at Druid level 3'). */
   subclassNote?: string;
+  /** What the base class calls its subclass, lower-case ('circle', 'oath'); absent reads 'subclass'. */
+  subclassTerm?: string;
   source: ContentSource;
   /** One- or two-sentence description shown in the class step. */
   blurb: string;
@@ -232,7 +235,7 @@ const DEMON_HUNTER: HeroClassOption = {
   ],
 };
 
-export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT, DEMON_HUNTER, WOW_DRUID];
+export const HERO_CLASSES: readonly HeroClassOption[] = [DEATH_KNIGHT, DEMON_HUNTER, ...WOW_CLASS_VARIANTS];
 
 /** One row of the class step: a base class or a hero class layered on one. */
 export interface ClassOption {

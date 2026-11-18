@@ -15,7 +15,7 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
-import { CIRCLE_OF_THE_MOON } from '../models/wow-druid';
+import { CIRCLE_OF_THE_MOON } from '../models/wow-class-variants';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an

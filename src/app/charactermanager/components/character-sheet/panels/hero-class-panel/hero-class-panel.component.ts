@@ -9,7 +9,7 @@ import {
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
   isMoonCircle,
-} from '../../../../models/wow-druid';
+} from '../../../../models/wow-beast-forms';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { modFromScore, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 
@@ -62,7 +62,7 @@ export class HeroClassPanelComponent {
   readonly spellIndex = signal<Map<string, DndSpell> | null>(null);
   private spellsRequested = false;
 
-  /** WoW Druid derived state — recomputed whenever the character changes. */
+  /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
   formCards: BeastFormCard[] = [];
@@ -70,7 +70,7 @@ export class HeroClassPanelComponent {
 
   @Input() set pc(value: PC) {
     this._pc = value;
-    this.deriveDruid();
+    this.deriveVariant();
     if (this.spells.length || this.suggestedSpells.length) this.loadSpells();
   }
   get pc(): PC { return this._pc; }
@@ -109,10 +109,20 @@ export class HeroClassPanelComponent {
     return hero ? heroClassSpells(hero, this._pc.level ?? 1, this._pc.specialization) : [];
   }
 
-  /** The specialization's recommended picks (WoW Druid); null for everyone else. */
+  /** The specialization's recommended picks (WoW variants); null for everyone else. */
   get guidance(): SpecializationGuidance | null {
     const spec = this._pc?.specialization;
     return (spec && this.hero?.guidance?.[spec]) || null;
+  }
+
+  /** What the base class calls its subclass ('circle', 'oath'), for the recommendation copy. */
+  get subclassTerm(): string {
+    return this.hero?.subclassTerm ?? 'subclass';
+  }
+
+  /** 'druid' / 'paladin' — the base class in running text. */
+  get baseClassLower(): string {
+    return (this.hero?.baseClass ?? '').toLowerCase();
   }
 
   /** Whether the character's subclass is the recommended one — informational only. */
@@ -143,7 +153,7 @@ export class HeroClassPanelComponent {
     return n >= 0 ? `+${n}` : `−${Math.abs(n)}`;
   }
 
-  private deriveDruid(): void {
+  private deriveVariant(): void {
     const hero = this.hero;
     const pc = this._pc;
     const spec = pc?.specialization;

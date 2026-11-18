@@ -61,11 +61,11 @@
       </ul>
     }
 
-    <!-- WoW Druid: recommended circle (informational) -->
+    <!-- WoW variant: recommended subclass (informational) -->
     @if (guidance; as g) {
       <div class="feature">
         <div class="feature-head">
-          <span class="feature-name">Recommended circle</span>
+          <span class="feature-name">Recommended {{ subclassTerm }}</span>
           <span class="feature-source">{{ h.baseClass }} 3</span>
         </div>
         <div class="feature-desc">
@@ -73,18 +73,18 @@
         </div>
         <div class="hero-subclass-match" [attr.data-match]="subclassMatch">
           @switch (subclassMatch) {
-            @case ('match') { Your circle matches the {{ pc.specialization }} recommendation. }
+            @case ('match') { Your {{ subclassTerm }} matches the {{ pc.specialization }} recommendation. }
             @case ('different') { You chose {{ pc.subclass }} — that's fine; this is only a suggestion. }
-            @default { You choose your circle at {{ h.baseClass }} level 3. }
+            @default { You choose your {{ subclassTerm }} at {{ h.baseClass }} level 3. }
           }
         </div>
       </div>
     }
 
-    <!-- WoW Druid: suggested spells (NOT always prepared) -->
+    <!-- WoW variant: suggested spells (NOT always prepared) -->
     @if (suggestedSpells.length) {
       <h3 class="hero-spells-title">Suggested {{ pc.specialization }} Spells</h3>
-      <p class="hero-spells-note">Suggestions only — prepare them like any other druid spell. ✦ marks a World of Warcraft spell.</p>
+      <p class="hero-spells-note">Suggestions only — prepare them like any other {{ baseClassLower }} spell. ✦ marks a World of Warcraft spell.</p>
       <dl class="suggested-spells">
         @for (row of suggestedSpells; track row.level) {
           <dt>Level {{ row.level }}</dt>
