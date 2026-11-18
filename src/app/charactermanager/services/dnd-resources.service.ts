@@ -525,8 +525,9 @@ export class DndResourcesService {
    * from the supplement file, then the World of Warcraft module's spells (in that
    * order). WoW entries carry `source: 'World of Warcraft'`. Hero-class spells
    * have `classes: []` (they ride on a subclass), so class-filtered pickers never
-   * offer them; the WoW Druid's general spells (Wrath, Moonfire, …) have
-   * `classes: ['druid']` and appear in druid pickers under the WoW source filter.
+   * offer them; the WoW Druid's and WoW Paladin's general spells (Wrath, Moonfire,
+   * Consecration, Divine Shield, …) have `classes: ['druid']` / `['paladin']` and
+   * appear in those class pickers under the WoW source filter.
    * Fetched once on first call; cached via shareReplay.
    */
   getSpells(): Observable<DndSpell[]> {
