@@ -204,4 +204,22 @@ describe('ConditionsPanelComponent (rendered)', () => {
     expect(blocks[0].nativeElement.classList).toContain('exhaustion-tracker');
     expect(blocks[1].nativeElement.classList).toContain('inspiration-tracker');
   });
+
+  // --- Tap-reachable rules (the "?" in the panel header) ---
+
+  it('explains exhaustion and inspiration behind the panel help button', () => {
+    fixture.detectChanges();
+    const help = fixture.debugElement.query(By.css('.panel-header app-context-help'));
+    expect(help).not.toBeNull();
+    expect(component.trackerHelp).toContain('−2 to all d20 Tests and −5 ft Speed');
+    expect(component.trackerHelp).toContain('at level 6 the character dies');
+    expect(component.trackerHelp).toContain('Filling all 5 grants Heroic Inspiration');
+  });
+
+  it('tells only the DM how to set the inspiration meter', () => {
+    component.editable = false;
+    expect(component.trackerHelp).not.toContain('Tap a pip');
+    component.editable = true;
+    expect(component.trackerHelp).toContain('Tap a pip to set the meter');
+  });
 });

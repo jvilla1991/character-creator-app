@@ -366,3 +366,36 @@ describe('SessionModeComponent level-up prompt (rides the session poll)', () => 
     expect(pcService.patchLocalPC).not.toHaveBeenCalled();
   });
 });
+
+describe('SessionModeComponent help copy', () => {
+  let component: SessionModeComponent;
+
+  const state = (over: Partial<SessionState>): SessionState =>
+    ({ sessionId: 3, dm: false, status: 'LOBBY', shortRestOpen: false, participants: [], ...over } as unknown as SessionState);
+
+  beforeEach(() => {
+    const sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['clear'], { state$: of(null) });
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, null as never, null as never, null as never, null as never, null as never, null as never));
+  });
+
+  it('says what Short Rest does when it is available', () => {
+    expect(component.shortRestHint(state({}))).toContain('The party votes');
+  });
+
+  it('says why Short Rest is unavailable', () => {
+    expect(component.shortRestHint(state({ shortRestOpen: true }))).toBe('A short rest is already underway.');
+    expect(component.shortRestHint(state({ restVote: { status: 'ACTIVE' } as never })))
+      .toBe('A rest vote is already being tallied.');
+    expect(component.shortRestHint(state({ status: 'ACTIVE' as never })))
+      .toBe('No resting mid-encounter. Wait until the encounter ends.');
+  });
+
+  it('adds what advancing time costs only in a survival campaign', () => {
+    component.survivalConditions = false;
+    expect(component.clockHelp).not.toContain('eats its supplies');
+    component.survivalConditions = true;
+    expect(component.clockHelp).toContain('the party eats its supplies');
+    expect(component.clockHelp).toContain('and sheds fatigue');
+  });
+});
