@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { LootResultView } from '../models/loot';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
@@ -1162,6 +1163,7 @@ export class SessionService {
       participants,
       rolls: [],
       restVote: null,
+      lootResult: null,
     };
   }
 
@@ -1173,7 +1175,7 @@ export class SessionService {
       lootStatus: null, lootName: null, myXp: null, myLevelGrant: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
-      restVote: null,
+      restVote: null, lootResult: null,
     };
   }
 
@@ -1237,6 +1239,9 @@ export class SessionService {
       participants: (dto.participants ?? []).map(p => this.deserializeParticipant(p)),
       rolls: (dto.rolls ?? []).map(r => this.deserializeRoll(r)),
       restVote: dto.restVote ? this.deserializeRestVote(dto.restVote) : null,
+      lootResult: dto.lootResult
+        ? { ...dto.lootResult, pvpCallers: dto.lootResult.pvpCallers ?? [] }
+        : null,
     };
   }
 
@@ -1365,6 +1370,7 @@ interface SessionStateDto {
   participants?: ParticipantDto[];
   rolls?: SessionRollDto[];
   restVote?: RestVoteDto | null;
+  lootResult?: LootResultView | null;
 }
 
 interface RestVoteDto {

@@ -1,0 +1,518 @@
+// The party loot split. Wide screens: pile beside a 2-up party grid. Phones
+// (< 720px): one column, and picking an item raises the bottom "Give to…" tray
+// instead of the in-card give buttons — thumbs never chase a card off-screen.
+
+:host { display: contents; }
+
+.loot-split-modal {
+  width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+.dim { color: var(--text-dim); }
+.gold { color: var(--gold); }
+.small { font-size: 12px; }
+
+h3 {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text);
+}
+
+p { margin: 0; }
+
+// --- progress -----------------------------------------------------------------
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 13px;
+
+    &.done { color: var(--text); border-color: var(--border); }
+    &.active {
+      color: var(--gold);
+      border-color: var(--gold-deep);
+      background: color-mix(in oklch, var(--gold) 14%, transparent);
+    }
+  }
+}
+
+.step-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+// --- splitting -------------------------------------------------------------------
+
+.split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.pile {
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-2);
+}
+
+.pile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.coin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--gold);
+
+  .dim { font-size: 14px; }
+  .even { margin-left: auto; min-height: 44px; }
+}
+
+.pile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pile-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover { border-color: var(--border); }
+  &.selected {
+    border-color: var(--gold);
+    background: color-mix(in oklch, var(--gold) 12%, var(--surface));
+  }
+}
+
+.pile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pile-name { font-family: 'Newsreader', serif; font-size: 16px; }
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+
+  &.notable { background: var(--emerald); }
+  &.treasure { background: var(--gold); }
+}
+
+.split-empty {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  color: var(--text-dim);
+  padding: 8px 2px;
+}
+
+.hint {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  font-family: 'Newsreader', serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.party {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-2);
+
+  &.mine { border-color: var(--celestial-deep); }
+  &.target { border-style: dashed; border-color: var(--gold-deep); }
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.you {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--celestial);
+  border: 1px solid var(--celestial-deep);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.give {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px dashed var(--gold);
+  background: color-mix(in oklch, var(--gold) 8%, transparent);
+  color: var(--gold);
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 40px;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-left: 10px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.line-name {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+
+  &:hover { color: var(--gold); }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.gold-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.amount {
+  min-width: 72px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.give-tray { display: none; }
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+
+  p { font-family: 'Newsreader', serif; font-size: 14px; flex: 1 1 260px; }
+}
+
+// --- voting ---------------------------------------------------------------------
+
+.vote-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  p { font-family: 'Newsreader', serif; font-size: 16px; color: var(--text); }
+}
+
+.tally {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+
+  span { padding: 5px 10px; border-radius: 6px; }
+  .tally-yes { color: var(--emerald); background: color-mix(in oklch, var(--emerald) 14%, transparent); }
+  .tally-no { color: var(--crimson); background: color-mix(in oklch, var(--crimson) 14%, transparent); }
+  .tally-wait { color: var(--text-dim); background: var(--border-soft); }
+}
+
+.vote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.badge {
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  white-space: nowrap;
+
+  &.yes { color: var(--emerald); background: color-mix(in oklch, var(--emerald) 16%, transparent); }
+  &.no { color: var(--crimson); background: color-mix(in oklch, var(--crimson) 16%, transparent); }
+  &.pending { color: var(--text-dim); background: var(--border-soft); }
+}
+
+.pvp-tag {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--crimson);
+}
+
+.share {
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.ballot, .pvp, .waiting {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+
+  p { font-family: 'Newsreader', serif; font-size: 15px; line-height: 1.45; }
+}
+
+.ballot-actions, .pvp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vote-btn {
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+
+  &.yes { border: 1px solid var(--emerald); background: var(--emerald); color: var(--bg); }
+  &.no {
+    border: 1px solid var(--crimson);
+    background: color-mix(in oklch, var(--crimson) 10%, transparent);
+    color: var(--crimson);
+  }
+  &.pvp-yes { border: 1px solid var(--crimson); background: var(--crimson); color: var(--bg); }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.pvp {
+  border-color: var(--crimson);
+  background: color-mix(in oklch, var(--crimson) 7%, var(--bg-2));
+
+  h3 { color: var(--crimson); font-size: 19px; margin-bottom: 4px; }
+  > div:first-child { flex: 1 1 320px; }
+}
+
+.yes-text { color: var(--emerald); }
+.no-text { color: var(--crimson); }
+
+.link {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--celestial);
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+// --- phones -----------------------------------------------------------------------
+
+@media (max-width: 719px) {
+  // The app's floating dice button (bottom-right, outside the app's stacking
+  // layer) sits above every modal; the pinned bottom bars leave it room.
+  $fab-clearance: 84px;
+
+  .loot-split-modal {
+    width: 100vw;
+    max-height: 100vh;
+    height: 100vh;
+    padding: 18px 16px 0;
+    border-radius: 0;
+  }
+
+  .split-grid { grid-template-columns: minmax(0, 1fr); }
+  .party { grid-template-columns: minmax(0, 1fr); }
+  .give { display: none; }
+
+  .give-tray {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    bottom: 0;
+    margin: 0 -16px;
+    padding: 14px 16px $fab-clearance;
+    background: var(--bg-2);
+    border-top: 1px solid var(--gold-deep);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .tray-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+  }
+
+  .tray-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tray-btn {
+    min-height: 52px;
+    border-radius: 10px;
+    border: 1px solid var(--gold);
+    background: color-mix(in oklch, var(--gold) 10%, transparent);
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .footer {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -16px;
+    padding: 12px 16px $fab-clearance;
+    background: var(--surface);
+
+    flex-direction: column;
+    align-items: stretch;
+
+    p { flex: none; }
+    .btn { width: 100%; min-height: 52px; }
+
+    // The give tray takes the footer's place while an item is picked.
+    &.tray-open { display: none; }
+  }
+
+  .ballot, .pvp, .waiting {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -16px;
+    padding-bottom: $fab-clearance;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .ballot-actions, .pvp-actions { width: 100%; }
+  .ballot-actions .vote-btn { flex: 1; }
+  .pvp-actions { flex-direction: column-reverse; }
+  .pvp-actions > * { width: 100%; min-height: 52px; }
+}

@@ -1,4 +1,4 @@
-@if (state && (state.dm || state.lootStatus === 'DROPPED')) {
+@if (state && (state.dm || state.lootStatus === 'DROPPED' || outcome)) {
   @let itemsCount = loot?.items?.length ?? 0;
   <section class="loot-panel">
     <!-- ===================== DM view ===================== -->
@@ -11,9 +11,9 @@
           <div class="field-label">Loot source</div>
           <div class="seg" role="radiogroup">
             <button type="button" class="seg-btn" [class.active]="source === 'list'"
-            (click)="source = 'list'">From loot list</button>
+              (click)="source = 'list'">From loot list</button>
             <button type="button" class="seg-btn" [class.active]="source === 'scratch'"
-            (click)="source = 'scratch'">From scratch</button>
+              (click)="source = 'scratch'">From scratch</button>
           </div>
           @if (source === 'list') {
             <div class="field-label" id="loot-list-label">Which loot list?</div>
@@ -32,125 +32,161 @@
             <span class="field-label">Label (optional)</span>
             <input class="text-input" type="text" [(ngModel)]="nameDraft"
               placeholder="e.g. Goblin Ambush spoils" />
-            </label>
-            <button class="btn primary" [disabled]="!canPrepare" (click)="prepare()">Prepare Loot</button>
+          </label>
+          <button class="btn primary" [disabled]="!canPrepare" (click)="prepare()">Prepare Loot</button>
+        </div>
+      }
+      <!-- Pool exists: draft (invisible) or dropped (the party is splitting it) -->
+      @if (loot) {
+        <div class="loot-card">
+          <div class="loot-head">
+            <div>
+              <div class="eyebrow">{{ lootTitle(loot) }} · {{
+                loot.phase === 'DRAFT' ? 'Draft — invisible to players'
+                : loot.phase === 'VOTING' ? 'The party is voting on the split'
+                : 'Dropped — the party is splitting it' }}</div>
+              <h2 class="loot-title">Loot</h2>
+            </div>
+            <div class="head-actions">
+              @if (!loot.dropped) {
+                <button class="btn primary" (click)="drop()">Drop Loot</button>
+              }
+              <button class="btn danger" (click)="close()">{{ loot.dropped ? 'Close' : 'Discard' }}</button>
+            </div>
           </div>
-        }
-        <!-- Pool exists: draft (invisible) or dropped (players claiming) -->
-        @if (loot) {
-          <div class="loot-card">
-            <div class="loot-head">
-              <div>
-                <div class="eyebrow">{{ lootTitle(loot) }} · {{ loot.dropped ? 'Dropped — players can claim' : 'Draft — invisible to players' }}</div>
-                <h2 class="loot-title">Loot</h2>
-              </div>
-              <div class="head-actions">
-                @if (!loot.dropped) {
-                  <button class="btn primary" (click)="drop()">Drop Loot</button>
+
+          @if (loot.dropped) {
+            <!-- Live split + vote, with the DM's override -->
+            <div class="split-status" aria-live="polite">
+              <ul class="share-list">
+                @for (s of dmShares; track s.participantId) {
+                  <li>
+                    <span class="share-name">{{ s.name }}</span>
+                    <span class="share-what">{{ s.share }}</span>
+                    @if (loot.phase === 'VOTING') {
+                      <span class="share-vote">{{ ballotGlyph(s.participantId) }}</span>
+                    }
+                  </li>
                 }
-                <button class="btn danger" (click)="close()">{{ loot.dropped ? 'Close' : 'Discard' }}</button>
+              </ul>
+              <div class="item-meta">
+                @if (dmPileEmpty) {
+                  Pile empty — everything has an owner.
+                } @else {
+                  Still in the pile: {{ formatCp(loot.coinCpRemaining) || 'no coins' }} and
+                  {{ loot.items.length ? 'some items' : 'no items' }}.
+                }
+                @if (loot.phase === 'VOTING') {
+                  Passes with {{ loot.majorityNeeded }} of {{ loot.ballots.length }} ✓.
+                }
+              </div>
+              <div class="override">
+                <button class="btn primary" [disabled]="busy || !dmPileEmpty" (click)="overrideSplit('APPROVE')"
+                  title="Hand the split out now, without waiting for the vote">Force it through</button>
+                <button class="btn danger" [disabled]="busy" (click)="overrideSplit('CANCEL')"
+                  title="Take the loot back as a hidden draft — nobody gets anything yet">Cancel loot</button>
               </div>
             </div>
-            <div class="coin-line">
-              <span class="item-meta">Coin pile · {{ formatCp(loot.coinCpRemaining) }}@if (loot.coinCpRemaining !== loot.coinCpTotal) {
-                of {{ formatCp(loot.coinCpTotal) }}
-              }</span>
-              <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
-                placeholder="gp" title="Total gold in the pile" />
-                <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveCoins()">Set coins</button>
-              </div>
-              <div class="add-form">
-                <app-item-composer [cancellable]="false"
-                (itemAuthored)="onItemAuthored($event)"></app-item-composer>
-              </div>
-                  @if (itemsCount) {
-                    <ul class="catalog">
-                      @for (item of loot.items; track trackById($index, item)) {
-                        <li class="catalog-row">
-                          <div class="item-main">
-                            <span class="item-name">{{ item.name }}</span>
-                            <span class="item-meta">
-                              @if (item.custom) {
-                                Custom item ·
-                              }
-                              {{ item.qtyRemaining }} of {{ item.qty }} left
-                            </span>
-                            @if (item.customNotes) {
-                              <span class="item-notes">{{ item.customNotes }}</span>
-                            }
-                          </div>
-                          <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
-                            (ngModelChange)="changeQty(item, $event)" title="Quantity"
-                            [attr.aria-label]="'Quantity of ' + item.name" />
-                            <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + item.name" (click)="removeItem(item)">✕</button>
-                          </li>
-                        }
-                      </ul>
-                    } @else {
-                      <div class="muted">Nothing in the pool yet. Add items above.</div>
+          }
+
+          <div class="coin-line">
+            <span class="item-meta">Coin pile · {{ formatCp(loot.coinCpTotal) || '0 gp' }}</span>
+            <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="coinGpDraft"
+              placeholder="gp" title="Total gold in the pile" />
+            <button class="btn" [disabled]="coinGpDraft == null || coinGpDraft < 0" (click)="saveCoins()">Set coins</button>
+          </div>
+          <div class="add-form">
+            <app-item-composer [cancellable]="false"
+              (itemAuthored)="onItemAuthored($event)"></app-item-composer>
+          </div>
+          @if (itemsCount) {
+            <ul class="catalog">
+              @for (item of loot.items; track trackById($index, item)) {
+                <li class="catalog-row">
+                  <div class="item-main">
+                    <span class="item-name">{{ item.name }}</span>
+                    <span class="item-meta">
+                      @if (item.custom) {
+                        Custom item ·
+                      }
+                      @if (loot.dropped) {
+                        {{ item.qtyRemaining }} of {{ item.qty }} in the pile
+                      } @else {
+                        ×{{ item.qty }}
+                      }
+                    </span>
+                    @if (item.customNotes) {
+                      <span class="item-notes">{{ item.customNotes }}</span>
                     }
                   </div>
-                }
-              } @else {
-                @if (loot) {
-                  <div class="loot-card">
-                    <div class="loot-head">
-                      <div>
-                        <div class="eyebrow">{{ lootTitle(loot) }}</div>
-                        <h2 class="loot-title">Loot — first come, first served</h2>
-                      </div>
-                    </div>
-                    @if (loot.coinCpTotal > 0) {
-                      <div class="coin-line">
-                        <span class="item-meta">Coin pile · {{ formatCp(loot.coinCpRemaining) }} left</span>
-                        @if (myParticipant && loot.coinCpRemaining > 0) {
-                          <input class="num-input" type="number" min="0" step="0.1" [(ngModel)]="takeGp"
-                            placeholder="gp" title="Gold to take" />
-                            <button class="btn buy" [disabled]="busyCoins || !takeGp || takeGp <= 0" (click)="takeCoins()">
-                              {{ busyCoins ? '…' : 'Take' }}
-                            </button>
-                          }
-                        </div>
-                      }
-                      @if (itemsCount) {
-                        <ul class="catalog">
-                          @for (item of loot.items; track trackById($index, item)) {
-                            <li class="catalog-row">
-                              <div class="item-main">
-                                <span class="item-name">{{ item.name }}</span>
-                                <span class="item-meta">
-                                  {{ item.qtyRemaining > 0 ? item.qtyRemaining + ' left' : 'All claimed' }}
-                                </span>
-                                @if (item.customNotes) {
-                                  <span class="item-notes">{{ item.customNotes }}</span>
-                                }
-                              </div>
-                              @if (myParticipant && item.qtyRemaining > 0) {
-                                @if (item.qtyRemaining > 1) {
-                                  <input class="num-input qty-input" type="number" min="1" [max]="item.qtyRemaining"
-                                    [(ngModel)]="claimQty[item.id]" placeholder="1" title="How many" />
-                                }
-                                <button class="btn buy" [disabled]="busyItemId != null" (click)="claim(item)">
-                                  {{ busyItemId === item.id ? '…' : 'Claim' }}
-                                </button>
-                              } @else {
-                                <span class="claimed">—</span>
-                              }
-                            </li>
-                          }
-                        </ul>
-                      }
-                      @if (!itemsCount && loot.coinCpTotal === 0) {
-                        <div class="muted">
-                          The pool is empty.
-                        </div>
-                      }
-                    </div>
-                  }
-                  @if (!loot && loading) {
-                    <div class="loot-card muted">Sizing up the spoils…</div>
-                  }
-                }
-                <!-- ===================== Player view ===================== -->
-              </section>
+                  <input class="num-input qty-input" type="number" min="1" [ngModel]="item.qty"
+                    (ngModelChange)="changeQty(item, $event)" title="Quantity"
+                    [attr.aria-label]="'Quantity of ' + item.name" />
+                  <button class="btn-x" title="Remove" [attr.aria-label]="'Remove ' + item.name" (click)="removeItem(item)">✕</button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="muted">Nothing in the pool yet. Add items above.</div>
+          }
+          @if (loot.dropped) {
+            <div class="muted small-note">Changing the pool while the party votes re-opens the split.</div>
+          }
+        </div>
+      }
+    } @else {
+      <!-- ===================== Player view ===================== -->
+      @if (loot?.dropped && myParticipant) {
+        <div class="loot-card">
+          <div class="loot-head">
+            <div>
+              <div class="eyebrow">{{ lootTitle(loot!) }}</div>
+              <h2 class="loot-title">{{ loot!.phase === 'VOTING' ? 'The party is voting on the loot' : 'The party is splitting the loot' }}</h2>
+            </div>
+            @if (minimized) {
+              <button class="btn primary" (click)="reopen()">Open the split</button>
             }
+          </div>
+        </div>
+      }
+      @if (!loot && loading && state.lootStatus === 'DROPPED') {
+        <div class="loot-card muted">Sizing up the spoils…</div>
+      }
+    }
+  </section>
+
+  @if (showSplitModal) {
+    <app-loot-split-modal [loot]="loot!" [busy]="busy"
+      (move)="onMove($event)"
+      (coinChange)="onCoinChange($event)"
+      (splitEvenly)="onSplitEvenly()"
+      (propose)="onPropose()"
+      (ballotCast)="onBallot($event)"
+      (minimize)="minimize()">
+    </app-loot-split-modal>
+  }
+
+  @if (outcome; as o) {
+    <div class="modal-backdrop" (click)="closeOutcome()">
+      <app-modal [title]="outcomeTitle(o.result.outcome)"
+        [tone]="o.result.outcome === 'PVP' ? 'crimson' : 'gold'" (dismiss)="closeOutcome()">
+        <div class="outcome" [class.pvp]="o.result.outcome === 'PVP'" role="status">
+          <p class="outcome-msg">{{ outcomeMessage(o.result) }}</p>
+          @if (o.shares.length) {
+            <ul class="share-list" [class.struck]="o.result.outcome === 'PVP'">
+              @for (s of o.shares; track s.participantId) {
+                <li>
+                  <span class="share-name">{{ s.name }}</span>
+                  <span class="share-what">{{ s.share }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        <div class="modal-actions">
+          <button class="btn primary" (click)="closeOutcome()">Close</button>
+        </div>
+      </app-modal>
+    </div>
+  }
+}

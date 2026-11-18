@@ -1,6 +1,6 @@
 /**
  * Post-combat loot types — client mirror of the backend LootView / LootItemView /
- * ClaimResult DTOs, plus the paste-JSON import payload for curated loot lists.
+ * LootResultView DTOs, plus the paste-JSON import payload for curated loot lists.
  * Coin amounts are in copper; reuse formatCp from shop.ts to render.
  */
 
@@ -25,24 +25,79 @@ export interface LootItem {
   damage?: string | null;
   armorClass?: string | null;
   qty: number;
-  qtyRemaining: number;          // what's left to claim (first-come-first-served)
+  qtyRemaining: number;          // still in the pile — not yet given to a character
+  valueCp?: number | null;       // per-unit value (catalog price or custom value); null = unknown
+}
+
+/**
+ * Party split phase: DRAFT = the DM's hidden pool; SPLITTING = the party is
+ * dividing it; VOTING = the split is locked while every seated character votes.
+ */
+export type LootPhase = 'DRAFT' | 'SPLITTING' | 'VOTING';
+
+/** A seated character loot can go to. `mine` = the caller's own character. */
+export interface LootRecipient {
+  participantId: number;
+  pcId: number;
+  name: string;
+  mine: boolean;
+}
+
+/** qty of one pool line given to one character. */
+export interface LootAllocation {
+  participantId: number;
+  lootItemId: number;
+  qty: number;
+}
+
+export interface LootCoinShare {
+  participantId: number;
+  coinCp: number;
+}
+
+/**
+ * One character's ballot. vote: null = not voted, true = ✓, false = ✗.
+ * pvp only matters on a ✗: null = still deciding, true = PvP, false = just object.
+ */
+export interface LootBallot {
+  participantId: number;
+  name: string;
+  vote: boolean | null;
+  pvp: boolean | null;
+  mine: boolean;
 }
 
 export interface LootView {
   id: number;
   sessionId: number;
   name: string | null;           // drop label, e.g. the seeding loot list's name
-  dropped: boolean;              // false = DM draft, true = players may claim
+  dropped: boolean;              // false = DM draft, true = the party may split it
   coinCpTotal: number;
-  coinCpRemaining: number;
+  coinCpRemaining: number;       // coins still in the pile
   items: LootItem[];
+  phase: LootPhase;
+  recipients: LootRecipient[];
+  allocations: LootAllocation[];
+  coinShares: LootCoinShare[];
+  ballots: LootBallot[];         // empty unless VOTING
+  majorityNeeded: number;        // ✓ votes needed, once every ballot is settled
 }
 
-/** Outcome of a claim: the character's new purse + inventory, and the refreshed pool. */
-export interface ClaimResult {
-  coins: { cp: number; sp: number; ep: number; gp: number; pp: number };
-  inventory: PcItem[];
-  loot: LootView;
+/** How a split vote ended. DM_* = the DM's override. */
+export type LootOutcome = 'APPROVED' | 'PVP' | 'NO_MAJORITY' | 'DM_APPROVED' | 'DM_CANCELLED';
+
+/**
+ * The latest split outcome, riding the session snapshot. A new id = a new
+ * outcome to announce; createdAt (ISO) lets a late joiner skip stale ones.
+ */
+export interface LootResultView {
+  id: number;
+  outcome: LootOutcome;
+  lootName: string | null;
+  pvpCallers: string[];
+  agreeCount: number;
+  objectCount: number;
+  createdAt: string | null;
 }
 
 /**
