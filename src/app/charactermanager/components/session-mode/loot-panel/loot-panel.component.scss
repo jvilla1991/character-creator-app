@@ -169,3 +169,76 @@
 .muted {
   color: var(--text-dim);
 }
+
+// --- party split (DM status + player outcome) --------------------------------
+
+.split-status {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-2);
+}
+
+.share-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+  }
+
+  &.struck .share-what {
+    color: var(--text-dim);
+    text-decoration: line-through;
+  }
+}
+
+.share-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 90px;
+}
+
+.share-what {
+  flex: 1 1 200px;
+  font-family: 'Newsreader', serif;
+  color: var(--text);
+}
+
+.share-vote {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--gold);
+}
+
+.override {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.small-note {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.outcome {
+  margin: 10px 0 16px;
+
+  .outcome-msg {
+    margin: 0 0 12px;
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--text);
+  }
+}

@@ -1,3 +1,4 @@
+import { LootResultView } from './loot';
 /**
  * Live "Session Mode" types — the client mirror of the backend SessionStateView /
  * ParticipantView DTOs. State is server-authoritative: the client renders what
@@ -157,9 +158,10 @@ export interface SessionState {
   shopForMe: boolean;
   shopCategory: string | null;
   // Loot signal (post-combat loot): null = no pool visible to this caller,
-  // 'DRAFT' = the DM's unpublished pool (DM only), 'DROPPED' = claimable. The
-  // pool itself is fetched from the loot endpoint, re-keyed on every version
-  // change — claims mutate the pool under a stable status.
+  // 'DRAFT' = the DM's unpublished pool (DM only), 'DROPPED' = the party is
+  // splitting it. The pool itself is fetched from the loot endpoint, re-keyed
+  // on every version change — split edits and votes mutate it under a stable
+  // status.
   lootStatus: 'DRAFT' | 'DROPPED' | null;
   lootName: string | null;
   // Caller-scoped: the requester's own seated PC's current XP total, or null if
@@ -188,4 +190,7 @@ export interface SessionState {
   // The latest player-initiated short-rest vote (terminal included), or null
   // when this session has never held one.
   restVote: RestVoteView | null;
+  // The latest party loot-split outcome (broadcast), or null. It outlives the
+  // pool it describes, so every client can announce it once (keyed on id).
+  lootResult: LootResultView | null;
 }
