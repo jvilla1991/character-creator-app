@@ -550,4 +550,144 @@ describe('HeroClassPanelComponent', () => {
       expect(card.textContent).not.toContain("Spirits' Fury");
     });
   });
+
+  describe('World of Warcraft Warlock', () => {
+    const wowStub = (name: string, level: number) => ({
+      ...deathGrip, name, level, classes: ['warlock'], concentration: true,
+    } as DndSpell);
+    const baseSpell = (name: string, level: number) => ({
+      ...deathGrip, name, level, classes: ['warlock'], source: undefined, description: `${name} text.`,
+    } as DndSpell);
+
+    function makeWarlock(overrides: Partial<PC> = {}): PC {
+      return {
+        id: 12, name: 'Nixa', clazz: 'Warlock', subclass: 'Fiend Patron', specialization: 'Demonology',
+        level: 5, playerName: 'Mira', stats: { STR: 8, DEX: 14, CON: 14, INT: 12, WIS: 10, CHA: 18 },
+        spells: [
+          { lvl: 0, name: 'Eldritch Blast', school: 'Evocation', time: '1 action', prepared: true },
+          { lvl: 1, name: 'Hellish Rebuke', school: 'Evocation', time: '1 reaction', prepared: true },
+          { lvl: 2, name: 'Suggestion', school: 'Enchantment', time: '1 action', prepared: false },
+        ],
+        ...overrides,
+      };
+    }
+
+    function render(pc: PC): HTMLElement {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', pc);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    beforeEach(() => dndResources.getSpells.and.returnValue(of([
+      wowStub("Hand of Gul'dan", 3), wowStub('Rain of Fire', 3), baseSpell('Suggestion', 2), baseSpell('Fear', 3),
+    ])));
+
+    it('renders for a WoW warlock but not for a base warlock', () => {
+      expect(isHeroClass(makeWarlock())).toBeTrue();
+      expect(isHeroClass(makeWarlock({ subclass: 'Archfey Patron' }))).toBeTrue();
+      expect(isHeroClass(makeWarlock({ specialization: null }))).toBeFalse();
+    });
+
+    it('titles the panel and shows the spec, with no level-1 feature, resource or always-prepared list', () => {
+      component.pc = makeWarlock();
+      expect(component.panelTitle).toBe('World of Warcraft Warlock');
+      expect(component.specializationTitle).toBe('Demonology');
+      expect(component.specializationDesc).toContain('demons');
+      expect(component.hero?.level1Feature).toBeUndefined();
+      expect(component.resource).toBeNull();
+      expect(component.spellSections).toEqual([]);
+    });
+
+    it('recommends a patron per specialization, chosen at Warlock level 1 (informational)', () => {
+      component.pc = makeWarlock();
+      expect(component.subclassLevel).toBe(1);
+      expect(component.subclassTerm).toBe('patron');
+      expect(component.guidance?.subclass.name).toBe('Fiend Patron');
+      expect(component.subclassMatch).toBe('match');
+      component.pc = makeWarlock({ specialization: 'Affliction' });
+      expect(component.guidance?.subclass.name).toBe('Great Old One Patron');
+      expect(component.subclassMatch).toBe('different');
+      component.pc = makeWarlock({ specialization: 'Destruction', subclass: undefined });
+      expect(component.subclassMatch).toBe('pending');
+
+      const el = render(makeWarlock({ subclass: undefined }));
+      const patron = (Array.from(el.querySelectorAll('.feature')) as HTMLElement[])
+        .find(f => f.textContent!.includes('Recommended patron'))!;
+      expect(patron.querySelector('.feature-source')!.textContent!.trim()).toBe('Warlock 1');
+      expect(patron.textContent).toContain('Fiend Patron');
+      expect(patron.textContent).toContain('You choose your patron at Warlock level 1.');
+      expect(el.textContent).not.toContain('Warlock 3');
+    });
+
+    it('lists the recommended invocations per spec and marks the WoW ones with a TBD title', () => {
+      component.pc = makeWarlock();
+      expect(component.invocationRows.map(r => r.names.length)).toEqual([1, 2, 6]);
+      expect(component.isWowInvocation('Health Funnel')).toBeTrue();
+      expect(component.isWowInvocation('Repelling Blast')).toBeFalse();
+
+      const el = render(makeWarlock());
+      const block = el.querySelector('.hero-invocations') as HTMLElement;
+      expect(block.textContent).toContain('Recommended invocations');
+      const marked = (Array.from(block.querySelectorAll('.invocation')) as HTMLElement[])
+        .filter(i => i.querySelector('.wow-mark')).map(i => i.textContent!.replace('✦', '').trim());
+      expect(marked).toEqual(['Pact of the Legion', 'Health Funnel', 'Call of the Void', 'Expendable Minions',
+        'Legion Summoning', 'Master Demonologist']);
+      expect(block.querySelector('.wow-mark')!.getAttribute('title'))
+        .toBe('Full text TBD — World of Warcraft invocations update.');
+      expect(block.textContent).toContain("aren't tracked here");
+
+      const aff = render(makeWarlock({ specialization: 'Affliction' })).querySelector('.hero-invocations')!;
+      expect(aff.textContent).toContain('Curse of Corruption');
+      expect(aff.textContent).toContain('Eldritch Mind');
+      expect(aff.textContent).not.toContain('Health Funnel');
+    });
+
+    it('lists the suggested spells per spec and marks known / prepared ones', () => {
+      component.pc = makeWarlock();
+      expect(component.suggestedSpells.map(r => r.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(component.suggestedSpells.map(r => r.spells[0].name)).toEqual([
+        'Hellish Rebuke', 'Suggestion', "Hand of Gul'dan", 'Summon Aberration', 'Planar Binding', 'Summon Fiend',
+        'Plane Shift', 'Dominate Monster', 'Gate',
+      ]);
+      expect(component.suggestedSpells[0].spells[0]).toEqual({ name: 'Hellish Rebuke', known: true, prepared: true });
+      expect(component.suggestedSpells[1].spells[0]).toEqual({ name: 'Suggestion', known: true, prepared: false });
+      component.pc = makeWarlock({ specialization: 'Affliction' });
+      expect(component.suggestedSpells.map(r => r.spells[0].name)).toEqual([
+        'Bane', 'Ray of Enfeeblement', 'Fear', 'Blight', 'Synaptic Static', 'Eyebite', 'Finger of Death',
+        'Befuddlement', 'Weird',
+      ]);
+      component.pc = makeWarlock({ specialization: 'Destruction' });
+      expect(component.suggestedSpells.map(r => r.spells[0].name)).toEqual([
+        'Arms of Hadar', 'Cloud of Daggers', 'Rain of Fire', 'Blight', "Jallarzi's Storm of Radiance",
+        'Circle of Death', 'Finger of Death', 'Power Word Stun', 'Power Word Kill',
+      ]);
+    });
+
+    it('marks Hand of Gul\'dan and Rain of Fire as WoW spells and shows the Summon Fiend note', () => {
+      const el = render(makeWarlock());
+      expect(el.textContent).toContain('Suggested Demonology Spells');
+      const marked = (Array.from(el.querySelectorAll('.suggested-spell')) as HTMLElement[])
+        .filter(s => s.querySelector('.wow-mark')).map(s => s.textContent!.replace('✦', '').trim());
+      expect(marked).toEqual(["Hand of Gul'dan"]);
+      expect(el.querySelector('.hero-spells-flavor')?.textContent).toContain('Summon Fiend');
+      expect(el.querySelector('.hero-spells-flavor')?.textContent).toContain('vilefiend');
+
+      const dest = render(makeWarlock({ specialization: 'Destruction' }));
+      expect((Array.from(dest.querySelectorAll('.suggested-spell')) as HTMLElement[])
+        .filter(s => s.querySelector('.wow-mark')).map(s => s.textContent!.replace('✦', '').trim()))
+        .toEqual(['Rain of Fire']);
+      expect(dest.querySelector('.hero-spells-flavor')?.textContent).toContain('demonic tyrant');
+    });
+
+    it('keeps the other variants on their level-3 wording, with no invocations or flavour note', () => {
+      const druid = render({
+        id: 8, name: 'Hrogar', clazz: 'Druid', subclass: undefined, specialization: 'Guardian', level: 2, playerName: 'Hank',
+      } as PC);
+      expect(druid.textContent).toContain('Druid 3');
+      expect(druid.textContent).toContain('You choose your circle at Druid level 3.');
+      expect(druid.querySelector('.hero-invocations')).toBeNull();
+      expect(druid.querySelector('.hero-spells-flavor')).toBeNull();
+    });
+  });
 });

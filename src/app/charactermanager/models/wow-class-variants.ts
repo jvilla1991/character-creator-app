@@ -332,5 +332,134 @@ export const WOW_SHAMAN: HeroClassOption = {
   featureCards: shamanFeatureCards,
 };
 
+// ── Warlock ──────────────────────────────────────────────────────────────────
+
+export const WOW_WARLOCK_SPECIALIZATIONS = ['Affliction', 'Demonology', 'Destruction'] as const;
+
+export const FIEND_PATRON = 'Fiend Patron';
+export const GREAT_OLD_ONE_PATRON = 'Great Old One Patron';
+
+/**
+ * The World of Warcraft Eldritch Invocations the guidance names. Their full text
+ * is not published yet, and invocations aren't modelled in this app — they are
+ * recommendation text only, marked ✦.
+ */
+export const WOW_WARLOCK_INVOCATIONS = [
+  'Pact of the Legion', 'Curse of Corruption', 'Health Funnel', 'Call of the Void',
+  'Legion Summoning', 'Expendable Minions', 'Master Demonologist',
+] as const;
+
+const FIEND_NOTE = "draws on the Burning Legion's fel power.";
+const GREAT_OLD_ONE_NOTE = 'draws on the Void and the Old Gods.';
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * The warlock picks its patron at level 1 in the wizard, where the recommended one
+ * is badged (never auto-selected).
+ */
+export const WOW_WARLOCK_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Affliction: {
+    cantrips: ['Eldritch Blast', 'Poison Spray'],
+    level1Spells: ['Hex', 'Witch Bolt'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Agonizing Blast', 'Curse of Corruption'],
+      fromLevel5: ['Call of the Void', 'Eldritch Mind', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+    },
+    subclass: { name: GREAT_OLD_ONE_PATRON, note: GREAT_OLD_ONE_NOTE },
+    feats: [],
+  },
+  Demonology: {
+    cantrips: ['Eldritch Blast', 'Toll the Dead'],
+    level1Spells: ['Arms of Hadar', 'Hex'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Health Funnel', 'Repelling Blast'],
+      fromLevel5: [
+        'Call of the Void', 'Expendable Minions', 'Gift of the Depths', 'Legion Summoning',
+        'Master Demonologist', 'Visions of Distant Realms',
+      ],
+    },
+    subclass: { name: FIEND_PATRON, note: FIEND_NOTE },
+    feats: [],
+  },
+  Destruction: {
+    cantrips: ['Eldritch Blast', 'Thunderclap'],
+    level1Spells: ['Hellish Rebuke', 'Hex'],
+    invocations: {
+      level1: ['Pact of the Legion'],
+      level2: ['Agonizing Blast', 'Repelling Blast'],
+      fromLevel5: ['Call of the Void', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+    },
+    subclass: { name: FIEND_PATRON, note: FIEND_NOTE },
+    feats: [],
+  },
+};
+
+/** Suggested spells per specialization, by spell level (✦ WoW spells are flagged from the spell data). */
+export const WOW_WARLOCK_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Affliction: [
+    { level: 1, spells: ['Bane'] },
+    { level: 2, spells: ['Ray of Enfeeblement'] },
+    { level: 3, spells: ['Fear'] },
+    { level: 4, spells: ['Blight'] },
+    { level: 5, spells: ['Synaptic Static'] },
+    { level: 6, spells: ['Eyebite'] },
+    { level: 7, spells: ['Finger of Death'] },
+    { level: 8, spells: ['Befuddlement'] },
+    { level: 9, spells: ['Weird'] },
+  ],
+  Demonology: [
+    { level: 1, spells: ['Hellish Rebuke'] },
+    { level: 2, spells: ['Suggestion'] },
+    { level: 3, spells: ["Hand of Gul'dan"] },
+    { level: 4, spells: ['Summon Aberration'] },
+    { level: 5, spells: ['Planar Binding'] },
+    { level: 6, spells: ['Summon Fiend'] },
+    { level: 7, spells: ['Plane Shift'] },
+    { level: 8, spells: ['Dominate Monster'] },
+    { level: 9, spells: ['Gate'] },
+  ],
+  Destruction: [
+    { level: 1, spells: ['Arms of Hadar'] },
+    { level: 2, spells: ['Cloud of Daggers'] },
+    { level: 3, spells: ['Rain of Fire'] },
+    { level: 4, spells: ['Blight'] },
+    { level: 5, spells: ["Jallarzi's Storm of Radiance"] },
+    { level: 6, spells: ['Circle of Death'] },
+    { level: 7, spells: ['Finger of Death'] },
+    { level: 8, spells: ['Power Word Stun'] },
+    { level: 9, spells: ['Power Word Kill'] },
+  ],
+};
+
+export const WOW_WARLOCK: HeroClassOption = {
+  key: 'Warlock (World of Warcraft)',
+  label: variantLabel('Warlock', 'Warlock'),
+  name: 'Warlock',
+  baseClass: 'Warlock',
+  source: 'World of Warcraft',
+  blurb: "A warlock strikes a bargain with the Burning Legion's demons or the entities of the Void, "
+    + 'then turns that stolen power against the Legion itself — calling up demon minions such as imps, '
+    + 'voidwalkers, sayaad and felhunters, and scouring foes with fel fire, corruption and curses. '
+    + "The Fiend Patron draws on the Legion's fel powers; the Great Old One Patron on the Void and the Old Gods.",
+  subclassNote: 'Chosen as normal at Warlock level 1 (below)',
+  subclassTerm: 'patron',
+  subclassLevel: 1,
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Affliction',  desc: 'Wields the shadow magic of the Void to inflict lingering torment.' },
+    { name: 'Demonology',  desc: 'Harvests soul energy to summon demons and bend them to their will.' },
+    { name: 'Destruction', desc: 'Burns foes away with chaotic shadow, fire and fel magic.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_WARLOCK_GUIDANCE,
+  suggestedSpells: WOW_WARLOCK_SUGGESTED_SPELLS,
+  suggestedSpellsNote: 'When you cast Summon Fiend, the fiend takes the look of a Burning Legion demon: '
+    + 'an infernal for the Devil option, a demonic tyrant for Yugoloth, or a vilefiend for Demon.',
+  wowInvocations: WOW_WARLOCK_INVOCATIONS,
+};
+
 /** Every WoW class variant, in class-list order. */
-export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN];
+export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK];

@@ -2,7 +2,7 @@ import {
   DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, HeroClassOption, buildClassOptions, heroClassByKey, heroClassFor,
   heroClassForSubclass, heroClassSpells, orList, recommendedFightingStylesFor, recommendedStartingSpells,
   recommendedSubclassFor, soulFragments, specializationHeading, specializationTitle, subclassSource, subclassSpellsFor,
-  weaponMasteryLead,
+  weaponMasteryLead, invocationRows, isWowInvocation, subclassGuidanceLabel, subclassLevelOf, WOW_INVOCATION_NOTE,
 } from './hero-class';
 
 describe('hero-class', () => {
@@ -12,10 +12,11 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)', 'Warlock']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
         'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft',
       ]);
     });
 
@@ -357,6 +358,75 @@ describe('hero-class', () => {
     it('reads the Weapon Mastery count in running text', () => {
       expect(weaponMasteryLead(shaman.guidance!['Elemental'])).toBe('Any two of');
       expect(weaponMasteryLead({ subclass: { name: 'Assassin' }, feats: [], weaponMastery: ['Daggers'] })).toBe('At least one of');
+    });
+  });
+
+  describe('World of Warcraft Warlock', () => {
+    const warlock = heroClassByKey('Warlock (World of Warcraft)') as HeroClassOption;
+
+    it('is a "Warlock" row beside the base Warlock, with no fixed subclass', () => {
+      const rows = buildClassOptions(['Sorcerer', 'Warlock']).filter(o => o.baseClass === 'Warlock');
+      expect(rows.map(o => [o.key, o.label, o.source])).toEqual([
+        ['Warlock', 'Warlock', 'Base Game'],
+        ['Warlock (World of Warcraft)', 'Warlock', 'World of Warcraft'],
+      ]);
+      expect(warlock.subclass).toBeUndefined();
+      expect(specializationTitle(warlock, 'Demonology')).toBe('Demonology');
+      expect(specializationHeading(warlock)).toBe('Specialization');
+    });
+
+    it('identifies a WoW warlock by clazz warlock + a warlock specialization only', () => {
+      expect(heroClassFor({ clazz: 'Warlock', subclass: 'Fiend Patron', specialization: 'Demonology' })).toBe(warlock);
+      expect(heroClassFor({ clazz: 'warlock', subclass: null, specialization: 'Affliction' })).toBe(warlock);
+      expect(heroClassFor({ clazz: 'Warlock', subclass: 'Archfey Patron', specialization: 'Destruction' })).toBe(warlock);
+      expect(heroClassFor({ clazz: 'Warlock', subclass: 'Fiend Patron', specialization: null })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Warlock', specialization: 'Balance' })).toBeUndefined();
+      expect(heroClassFor({ clazz: 'Sorcerer', specialization: 'Destruction' })).toBeUndefined();
+      // Patrons are base-game subclasses, never tagged World of Warcraft.
+      expect(subclassSource('Fiend Patron')).toBeUndefined();
+      expect(subclassSource('Great Old One Patron')).toBeUndefined();
+    });
+
+    it('recommends a patron per specialization and the starting cantrips + level-1 spells', () => {
+      expect(recommendedSubclassFor(warlock, 'Affliction')).toBe('Great Old One Patron');
+      expect(recommendedSubclassFor(warlock, 'Demonology')).toBe('Fiend Patron');
+      expect(recommendedSubclassFor(warlock, 'Destruction')).toBe('Fiend Patron');
+      expect(recommendedStartingSpells(warlock, 'Affliction')).toEqual(['Eldritch Blast', 'Poison Spray', 'Hex', 'Witch Bolt']);
+      expect(recommendedStartingSpells(warlock, 'Demonology')).toEqual(['Eldritch Blast', 'Toll the Dead', 'Arms of Hadar', 'Hex']);
+      expect(recommendedStartingSpells(warlock, 'Destruction'))
+        .toEqual(['Eldritch Blast', 'Thunderclap', 'Hellish Rebuke', 'Hex']);
+      expect(recommendedFightingStylesFor(warlock, 'Demonology')).toEqual([]);
+    });
+
+    it('labels the patron recommendation without a level, and keeps "Level 3 subclass" for everyone else', () => {
+      expect(subclassLevelOf(warlock)).toBe(1);
+      expect(subclassGuidanceLabel(warlock)).toBe('Patron');
+      const druid = heroClassByKey('Druid (World of Warcraft)')!;
+      expect(subclassLevelOf(druid)).toBe(3);
+      expect(subclassLevelOf(undefined)).toBe(3);
+      expect(subclassGuidanceLabel(druid)).toBe('Level 3 subclass');
+      expect(subclassGuidanceLabel(heroClassByKey('Barbarian (World of Warcraft)')!)).toBe('Level 3 subclass');
+    });
+
+    it('lays out the recommended invocations as labelled rows (stable per guidance)', () => {
+      const g = warlock.guidance!['Demonology'];
+      const rows = invocationRows(g);
+      expect(rows.map(r => r.label)).toEqual(['Level 1 invocation', 'Level 2 invocations', 'From level 5, consider']);
+      expect(rows[0].names).toEqual(['Pact of the Legion']);
+      expect(rows[1].names).toEqual(['Health Funnel', 'Repelling Blast']);
+      expect(rows[2].names).toContain('Master Demonologist');
+      expect(invocationRows(g)).toBe(rows);
+      expect(invocationRows(heroClassByKey('Druid (World of Warcraft)')!.guidance!['Balance'])).toEqual([]);
+      expect(invocationRows(null)).toEqual([]);
+    });
+
+    it('flags the World of Warcraft invocations (case-insensitive) and no base ones', () => {
+      expect(isWowInvocation(warlock, 'Pact of the Legion')).toBeTrue();
+      expect(isWowInvocation(warlock, 'master demonologist')).toBeTrue();
+      expect(isWowInvocation(warlock, 'Agonizing Blast')).toBeFalse();
+      expect(isWowInvocation(heroClassByKey('Druid (World of Warcraft)'), 'Pact of the Legion')).toBeFalse();
+      expect(isWowInvocation(undefined, 'Pact of the Legion')).toBeFalse();
+      expect(WOW_INVOCATION_NOTE).toBe('Full text TBD — World of Warcraft invocations update.');
     });
   });
 

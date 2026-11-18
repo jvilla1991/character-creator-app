@@ -3,8 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
-  FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, SpecializationGuidance, heroClassFor, heroClassSpells,
-  orList, specializationTitle, subclassSpellsFor,
+  FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, InvocationRow, SpecializationGuidance,
+  WOW_INVOCATION_NOTE, heroClassFor, heroClassSpells, invocationRows, isWowInvocation, orList, specializationTitle,
+  subclassLevelOf, subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -46,7 +47,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * Fragments) and the always-prepared spells for the character's level and
  * specialization. For a WoW Druid it adds the recommended circle, the
  * specialization's suggested spells and the beast forms (Cat/Bear stat cards
- * for Circle of the Moon, classic beasts otherwise); for a WoW Shaman, the
+ * for Circle of the Moon, classic beasts otherwise); for a WoW Warlock, the
+ * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
  * computed Totems and path cards (Raging Elements, Spiritual Guardian). Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
@@ -63,6 +65,7 @@ export class HeroClassPanelComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly beastFormUnchanged = BEAST_FORM_UNCHANGED;
+  readonly wowInvocationNote = WOW_INVOCATION_NOTE;
 
   private _pc!: PC;
   /** Spell data keyed by lower-cased name; null until loaded (loaded once, on demand). */
@@ -139,6 +142,21 @@ export class HeroClassPanelComponent {
     const styles = orList(g.fightingStyles);
     const cantrips = g.fightingStyleCantrips ?? [];
     return cantrips.length ? `${styles} — with ${cantrips.join(' and ')}` : styles;
+  }
+
+  /** The specialization's recommended invocations as labelled rows (WoW Warlock); empty otherwise. */
+  get invocationRows(): readonly InvocationRow[] {
+    return invocationRows(this.guidance);
+  }
+
+  /** True for a ✦ World of Warcraft invocation. */
+  isWowInvocation(name: string): boolean {
+    return isWowInvocation(this.hero, name);
+  }
+
+  /** The base-class level the subclass is chosen at (3; 1 for a Warlock's patron). */
+  get subclassLevel(): number {
+    return subclassLevelOf(this.hero);
   }
 
   /** What the base class calls its subclass ('circle', 'oath'), for the recommendation copy. */

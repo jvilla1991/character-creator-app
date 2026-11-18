@@ -114,17 +114,35 @@
                         }
                       </dd>
                     }
-                    <dt>Level 3 subclass</dt>
+                    <dt>{{ subclassGuidanceLabel(hero) }}</dt>
                     <dd>{{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
+                    <!-- Eldritch Invocations: recommendation text only (not modelled in this app) -->
+                    @for (row of invocationRows(g); track row.label) {
+                      <dt>{{ row.label }}</dt>
+                      <dd class="invocation-list">
+                        @for (name of row.names; track name; let last = $last) {
+                          <span class="invocation">{{ name }}@if (isWowInvocation(hero, name)) {<span class="wow-mark" [attr.title]="wowInvocationNote" [attr.aria-label]="'World of Warcraft invocation. ' + wowInvocationNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+                        }
+                      </dd>
+                    }
                     @if (g.levelTip; as lt) {
                       <dt>Level {{ lt.level }}</dt>
                       <dd>{{ lt.text }}</dd>
                     }
-                    <dt>Feats</dt>
-                    <dd>{{ g.feats.join(', ') }}</dd>
+                    @if (g.feats.length) {
+                      <dt>Feats</dt>
+                      <dd>{{ g.feats.join(', ') }}</dd>
+                    }
                   </dl>
                   @if (g.note) {
                     <p class="spec-guidance-note">{{ g.note }}</p>
+                  }
+                  @if (invocationRows(g).length && hero.wowInvocations?.length) {
+                    <p class="spec-guidance-note invocation-footnote">✦ World of Warcraft invocation — {{ wowInvocationNote }}
+                      Invocations aren't tracked here; note them on your sheet.</p>
+                  }
+                  @if (recommendedSubclass()) {
+                    <p class="spec-guidance-note">The {{ hero.subclassTerm ?? 'subclass' }} is marked “Recommended” in the picker below.</p>
                   }
                   @if (spellsStep()) {
                     <p class="spec-guidance-note">Suggestions only — the spells are marked “Recommended” on the Spells step.</p>
@@ -143,12 +161,19 @@
             </div>
             <div class="subclass-list">
               @for (sub of availableSubclasses(); track sub) {
+                @let recommended = recommendedSubclass() === sub.name;
                 <button
                   type="button"
                   class="subclass-card"
                   [class.active]="selectedSubclass() === sub.name"
+                  [class.recommended]="recommended"
                   (click)="selectedSubclassChange.emit(sub.name)">
-                  <span class="subclass-name">{{ sub.name }}</span>
+                  <span class="subclass-name">
+                    {{ sub.name }}
+                    @if (recommended) {
+                      <span class="subclass-recommended-badge">Recommended for {{ specialization() }}</span>
+                    }
+                  </span>
                   <span class="subclass-desc">{{ sub.desc }}</span>
                 </button>
               }

@@ -145,3 +145,31 @@
   font-size: 12px;
   color: var(--text-dim);
 }
+
+// ── WoW Warlock: recommended invocations + level-1 patron badge ─────────────
+
+.wow-mark {
+  margin-left: 2px;
+  font-size: 10px;
+  color: var(--gold-2);
+  cursor: help;
+}
+
+.subclass-recommended-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid color-mix(in oklch, var(--celestial) 60%, transparent);
+  color: var(--celestial);
+  vertical-align: middle;
+}
+
+.subclass-card.recommended {
+  border-left: 3px solid color-mix(in oklch, var(--celestial) 70%, transparent);
+}

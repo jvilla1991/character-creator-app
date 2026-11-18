@@ -1,7 +1,8 @@
 import { HERO_CLASSES } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
-  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, variantLabel,
+  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, WOW_WARLOCK,
+  WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, variantLabel,
 } from './wow-class-variants';
 
 describe('wow-class-variants', () => {
@@ -154,6 +155,7 @@ describe('wow-class-variants', () => {
       expect(WOW_PALADIN.label).toBe('Paladin');
       expect(WOW_ROGUE.label).toBe('Rogue');
       expect(WOW_SHAMAN.label).toBe('Shaman (Barbarian)');
+      expect(WOW_WARLOCK.label).toBe('Warlock');
     });
   });
 
@@ -207,5 +209,128 @@ describe('wow-class-variants', () => {
         expect(g.levelTip).toBeUndefined();
       }
     });
+  });
+
+  describe('Warlock', () => {
+    const flat = (spec: string) => WOW_WARLOCK_SUGGESTED_SPELLS[spec].flatMap(r => r.spells);
+
+    it('is a Warlock variant that picks its patron at level 1, with no fixed subclass or WoW-only patron', () => {
+      expect(WOW_WARLOCK.name).toBe('Warlock');
+      expect(WOW_WARLOCK.baseClass).toBe('Warlock');
+      expect(WOW_WARLOCK.key).toBe('Warlock (World of Warcraft)');
+      expect(WOW_WARLOCK.subclass).toBeUndefined();
+      expect(WOW_WARLOCK.subclassTerm).toBe('patron');
+      expect(WOW_WARLOCK.subclassLevel).toBe(1);
+      expect(WOW_WARLOCK.subclassNote).not.toContain('level 3');
+      expect(WOW_WARLOCK.respecOnLevelUp).toBeTrue();
+      expect(WOW_WARLOCK.subclassSpells).toBeUndefined();
+      expect(WOW_WARLOCK.wowSubclasses).toBeUndefined();
+      expect(WOW_WARLOCK.spellTable).toEqual([]);
+      const specs = WOW_WARLOCK.specializations.map(s => s.name);
+      expect(specs).toEqual(['Affliction', 'Demonology', 'Destruction']);
+      expect(Object.keys(WOW_WARLOCK_GUIDANCE)).toEqual(specs);
+      expect(Object.keys(WOW_WARLOCK_SUGGESTED_SPELLS)).toEqual(specs);
+    });
+
+    it('describes the Legion bargain, the demon minions and the two patrons', () => {
+      for (const word of ['Burning Legion', 'Void', 'imps', 'voidwalkers', 'sayaad', 'felhunters', 'fel fire', 'curses']) {
+        expect(WOW_WARLOCK.blurb).withContext(word).toContain(word);
+      }
+      expect(WOW_WARLOCK.blurb).toContain('Fiend Patron');
+      expect(WOW_WARLOCK.blurb).toContain('Great Old One Patron');
+      expect(WOW_WARLOCK.blurb).toContain('Old Gods');
+      const desc = (name: string) => WOW_WARLOCK.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Affliction')).toContain('Void');
+      expect(desc('Demonology')).toContain('demons');
+      expect(desc('Destruction')).toContain('fel');
+    });
+
+    it('recommends cantrips, level-1 spells, invocations and a patron per specialization', () => {
+      expect(WOW_WARLOCK_GUIDANCE['Affliction']).toEqual(jasmine.objectContaining({
+        cantrips: ['Eldritch Blast', 'Poison Spray'],
+        level1Spells: ['Hex', 'Witch Bolt'],
+        invocations: {
+          level1: ['Pact of the Legion'],
+          level2: ['Agonizing Blast', 'Curse of Corruption'],
+          fromLevel5: ['Call of the Void', 'Eldritch Mind', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+        },
+      }));
+      expect(WOW_WARLOCK_GUIDANCE['Affliction'].subclass.name).toBe('Great Old One Patron');
+      expect(WOW_WARLOCK_GUIDANCE['Demonology']).toEqual(jasmine.objectContaining({
+        cantrips: ['Eldritch Blast', 'Toll the Dead'],
+        level1Spells: ['Arms of Hadar', 'Hex'],
+        invocations: {
+          level1: ['Pact of the Legion'],
+          level2: ['Health Funnel', 'Repelling Blast'],
+          fromLevel5: [
+            'Call of the Void', 'Expendable Minions', 'Gift of the Depths', 'Legion Summoning',
+            'Master Demonologist', 'Visions of Distant Realms',
+          ],
+        },
+      }));
+      expect(WOW_WARLOCK_GUIDANCE['Demonology'].subclass.name).toBe('Fiend Patron');
+      expect(WOW_WARLOCK_GUIDANCE['Destruction']).toEqual(jasmine.objectContaining({
+        cantrips: ['Eldritch Blast', 'Thunderclap'],
+        level1Spells: ['Hellish Rebuke', 'Hex'],
+        invocations: {
+          level1: ['Pact of the Legion'],
+          level2: ['Agonizing Blast', 'Repelling Blast'],
+          fromLevel5: ['Call of the Void', 'Gift of the Depths', 'Legion Summoning', 'Visions of Distant Realms'],
+        },
+      }));
+      expect(WOW_WARLOCK_GUIDANCE['Destruction'].subclass.name).toBe('Fiend Patron');
+      for (const g of Object.values(WOW_WARLOCK_GUIDANCE)) {
+        expect(g.weaponMastery).toBeUndefined();
+        expect(g.fightingStyles).toBeUndefined();
+      }
+    });
+
+    it('marks exactly the World of Warcraft invocations', () => {
+      expect([...WOW_WARLOCK.wowInvocations!]).toEqual([
+        'Pact of the Legion', 'Curse of Corruption', 'Health Funnel', 'Call of the Void',
+        'Legion Summoning', 'Expendable Minions', 'Master Demonologist',
+      ]);
+      expect(WOW_WARLOCK.wowInvocations).toBe(WOW_WARLOCK_INVOCATIONS);
+      for (const base of ['Agonizing Blast', 'Repelling Blast', 'Eldritch Mind', 'Gift of the Depths', 'Visions of Distant Realms']) {
+        expect(WOW_WARLOCK.wowInvocations!.includes(base)).withContext(base).toBeFalse();
+      }
+    });
+
+    it('suggests one spell per level 1–9 for every specialization, incl. the WoW spells', () => {
+      for (const spec of ['Affliction', 'Demonology', 'Destruction']) {
+        expect(WOW_WARLOCK_SUGGESTED_SPELLS[spec].map(r => r.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      }
+      expect(flat('Affliction')).toEqual([
+        'Bane', 'Ray of Enfeeblement', 'Fear', 'Blight', 'Synaptic Static', 'Eyebite', 'Finger of Death',
+        'Befuddlement', 'Weird',
+      ]);
+      expect(flat('Demonology')).toEqual([
+        'Hellish Rebuke', 'Suggestion', "Hand of Gul'dan", 'Summon Aberration', 'Planar Binding', 'Summon Fiend',
+        'Plane Shift', 'Dominate Monster', 'Gate',
+      ]);
+      expect(flat('Destruction')).toEqual([
+        'Arms of Hadar', 'Cloud of Daggers', 'Rain of Fire', 'Blight', "Jallarzi's Storm of Radiance",
+        'Circle of Death', 'Finger of Death', 'Power Word Stun', 'Power Word Kill',
+      ]);
+    });
+
+    it('carries the Summon Fiend flavour note for every specialization', () => {
+      const note = WOW_WARLOCK.suggestedSpellsNote!;
+      expect(note).toContain('Summon Fiend');
+      expect(note).toContain('infernal');
+      expect(note).toContain('demonic tyrant');
+      expect(note).toContain('vilefiend');
+    });
+  });
+
+  it('leaves the other variants on the level-3 subclass default, with no invocations', () => {
+    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN]) {
+      expect(v.subclassLevel).withContext(v.key).toBeUndefined();
+      expect(v.wowInvocations).withContext(v.key).toBeUndefined();
+      expect(v.suggestedSpellsNote).withContext(v.key).toBeUndefined();
+      for (const g of Object.values(v.guidance ?? {})) {
+        expect(g.invocations).withContext(v.key).toBeUndefined();
+      }
+    }
   });
 });
