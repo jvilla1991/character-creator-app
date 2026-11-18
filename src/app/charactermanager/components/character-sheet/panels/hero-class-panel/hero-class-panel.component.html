@@ -173,7 +173,7 @@
       }
     }
 
-    <!-- Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian) -->
+    <!-- Computed feature cards (WoW Shaman: Totems, Raging Elements, Spiritual Guardian; WoW Warrior: Battle Master) -->
     @if (featureCards.length) {
       <h3 class="hero-spells-title">{{ h.name }} Features</h3>
       <div class="form-cards feature-cards">
@@ -192,6 +192,9 @@
             }
             @if (card.summary) {
               <p class="form-line">{{ card.summary }}</p>
+            }
+            @if (card.rowsTitle) {
+              <h4 class="feature-card-rows-title">{{ card.rowsTitle }}</h4>
             }
             @for (row of card.rows; track row.name) {
               <p class="form-line feature-card-row">
@@ -219,6 +222,9 @@
                   }
                 </ul>
               }
+            }
+            @if (card.note) {
+              <p class="hero-spells-note feature-card-note">{{ card.note }}</p>
             }
           </section>
         }

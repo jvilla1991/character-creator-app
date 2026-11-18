@@ -767,5 +767,49 @@ describe('HeroClassPanelComponent', () => {
       expect(paladin.textContent).toContain('Paladin 2');
       expect(paladin.querySelector('.hero-maneuvers')).toBeNull();
     });
+
+    describe('Battle Master card', () => {
+      it('shows only for a WoW warrior Battle Master from Fighter level 3', () => {
+        component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 3 });
+        expect(component.featureCards.map(c => c.name)).toEqual(['Battle Master']);
+        component.pc = makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 2 });
+        expect(component.featureCards).toEqual([]);
+        component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Champion', level: 7 });
+        expect(component.featureCards).toEqual([]);
+        // A Fury warrior who picks Battle Master anyway still gets the card.
+        component.pc = makeWarrior({ specialization: 'Fury', subclass: 'Battle Master', level: 7 });
+        expect(component.featureCards.map(c => c.name)).toEqual(['Battle Master']);
+        // A base-game Battle Master (no specialization) is not a WoW warrior: no card.
+        component.pc = makeWarrior({ specialization: null, subclass: 'Battle Master', level: 10 });
+        expect(component.hero).toBeUndefined();
+        expect(component.featureCards).toEqual([]);
+        expect(dndResources.getSpells).not.toHaveBeenCalled();
+      });
+
+      it('renders the dice, DC and the WoW maneuvers with the die size, plus the untracked note', () => {
+        const el = render(makeWarrior({ specialization: 'Protection', subclass: 'Battle Master', level: 7, prof: 3 }));
+        expect(el.textContent).toContain('Warrior Features');
+        const card = el.querySelector('.feature-card') as HTMLElement;
+        expect(card.querySelector('.form-card-name')?.textContent?.trim()).toBe('Battle Master');
+        expect(card.querySelector('.form-card-size')?.textContent?.trim()).toBe('Battle Master 3');
+        expect(card.textContent).toContain('Superiority Dice5');
+        expect(card.textContent).toContain('Died8');
+        expect(card.textContent).toContain('Maneuver DC14');
+        expect(card.textContent).toContain('Short or Long Rest');
+        expect(card.querySelector('.feature-card-rows-title')?.textContent).toBe('World of Warcraft maneuvers');
+        const rows = Array.from(card.querySelectorAll('.feature-card-row')).map(r => r.textContent!.trim());
+        expect(rows.map(r => r.split(' ')[0])).toEqual(['Battle', 'Demoralizing', 'Heroic', 'Mortal', 'Warding']);
+        expect(rows.every(r => r.includes('(d8)'))).toBeTrue();
+        expect(card.querySelector('.feature-card-note')?.textContent).toContain("Maneuvers aren't tracked by the app");
+      });
+
+      it('grows the die at level 10 and 18', () => {
+        const at10 = render(makeWarrior({ specialization: 'Arms', subclass: 'Battle Master', level: 10 }));
+        expect(at10.querySelector('.feature-card')!.textContent).toContain('(d10)');
+        const at18 = render(makeWarrior({ specialization: 'Arms', subclass: 'Battle Master', level: 18 }));
+        expect(at18.querySelector('.feature-card')!.textContent).toContain('Superiority Dice6');
+        expect(at18.querySelector('.feature-card')!.textContent).toContain('(d12)');
+      });
+    });
   });
 });

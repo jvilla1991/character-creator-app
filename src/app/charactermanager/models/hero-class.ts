@@ -159,7 +159,11 @@ export interface FeatureCard {
   summary?: string;
   /** Computed numbers shown as a stat row (save DC, attack bonus). */
   stats?: readonly { label: string; value: string }[];
+  /** A small heading above the rows (e.g. 'World of Warcraft maneuvers'). */
+  rowsTitle?: string;
   rows: readonly FeatureCardRow[];
+  /** A closing note under the rows (e.g. that maneuvers aren't tracked). */
+  note?: string;
 }
 
 /** One spell level of a specialization's suggested (not always-prepared) spells. */

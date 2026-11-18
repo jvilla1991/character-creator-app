@@ -2,6 +2,7 @@ import type {
   HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
+import { BATTLE_MASTER, warriorFeatureCards } from './wow-warrior';
 
 /**
  * World of Warcraft class *variants*: an ordinary 2024 base class plus a WoW
@@ -465,7 +466,6 @@ export const WOW_WARLOCK: HeroClassOption = {
 
 export const WOW_WARRIOR_SPECIALIZATIONS = ['Arms', 'Fury', 'Protection'] as const;
 
-export const BATTLE_MASTER = 'Battle Master';
 export const CHAMPION = 'Champion';
 
 /**
@@ -534,6 +534,7 @@ export const WOW_WARRIOR: HeroClassOption = {
   guidance: WOW_WARRIOR_GUIDANCE,
   fightingStyleLevel: 1,
   wowManeuvers: WOW_WARRIOR_MANEUVERS,
+  featureCards: warriorFeatureCards,
 };
 
 /** Every WoW class variant, in class-list order. */
