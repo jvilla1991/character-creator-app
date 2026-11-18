@@ -1,9 +1,10 @@
 /* App-wide dice launcher. position: fixed is deliberate — this button belongs
    to the shell, not to whatever screen happens to be scrolled underneath it.
 
-   z-index 95 sits above page content (the sticky mobile topbar is 90) but
-   below .modal-backdrop (100), so any open modal — the roller it opens
-   included — covers the button instead of floating on top of it. */
+   z-index 95 sits above page content (the sticky mobile topbar is 90). It is
+   NOT enough on its own to stay under modals: most backdrops render inside
+   div.app, which is its own stacking context on phones, so styles.css also
+   hides this button while any .modal-backdrop is open. */
 /* --bottom-bar-height is published on <body> by any screen that pins a tab bar
    to the bottom edge (see styles.css). It is 0 everywhere else, so the button
    keeps its usual corner and only lifts where it would otherwise land on top
