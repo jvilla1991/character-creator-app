@@ -257,16 +257,6 @@
         (openPc)="openPcSheet($event)"
       ></app-initiative-panel>
     }
-    <!-- Player: opens the shell's dice roller, which wires itself to this live
-         session so rolls stream to the DM. (The shell's floating launcher does
-         the same from anywhere; this keeps the prominent in-session button.) -->
-    @if (!state.dm && myPc(state)) {
-      <div class="roll-launch">
-        <button class="btn primary" style="width: 100%;" (click)="openRoll()">
-          Roll
-        </button>
-      </div>
-    }
     <!-- Roll Log: server already filtered (DM sees all, player sees own) — shown to both. -->
     <app-roll-log-panel [rolls]="state.rolls" [dm]="state.dm"></app-roll-log-panel>
     <!-- DM-only (gated inside the component): load a curated encounter into the order. -->

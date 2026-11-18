@@ -9,7 +9,6 @@ import { NotificationService } from '../../services/notification.service';
 import { ConfirmService } from '../modal/confirm.service';
 import { CampaignService } from '../../services/campaign.service';
 import { ShopService } from '../../services/shop.service';
-import { DiceRollerService } from '../../services/dice-roller.service';
 import { LevelUpPromptService } from '../../services/level-up-prompt.service';
 import { formatCp } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
@@ -90,7 +89,6 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     private notifications: NotificationService,
     private campaignService: CampaignService,
     private shopService: ShopService,
-    private dice: DiceRollerService,
     private destroyRef: DestroyRef,
   ) {}
 
@@ -266,11 +264,6 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   openLongRest(): void { this.longRestModalOpen = true; }
   cancelLongRest(): void { this.longRestModalOpen = false; }
-
-  // ── Player Roll button (opens the dice modal wired to this live session) ───
-
-  /** The in-session Roll button — same shell-level roller as the FAB. */
-  openRoll(): void { this.dice.open(); }
 
   confirmLongRest(undisturbed: boolean, state: SessionState): void {
     this.longRestModalOpen = false;
