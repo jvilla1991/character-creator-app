@@ -29,6 +29,9 @@ export class SpellPickerComponent {
   @Input() cantripLimit: number | null = null;
   @Input() spellLimit: number | null = null;
   @Input() loading = false;
+  /** Show each candidate's one-sentence ELI5 summary under its name. Off by
+   *  default; the level-up modal turns it on when the player's ELI5 switch is on. */
+  @Input() showEli5 = false;
   readonly selectedChange = output<DndSpell[]>();
 
   search = '';

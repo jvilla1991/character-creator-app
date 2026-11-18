@@ -1,5 +1,13 @@
 /* Rules in global styles.css */
 
+// The header carries the title, the casting math, the prepared counter, the DM
+// grant button and the ELI5 switch. That does not fit one line on a phone, so
+// let it wrap instead of clipping the last item.
+.panel-header {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
 // ── Spell preparation ────────────────────────────────────────────────────────
 
 .prepared-counter {

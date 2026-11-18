@@ -10,7 +10,8 @@
     "range": "Self",
     "components": ["v", "s"],
     "duration": "up to 1 minute",
-    "description": "You ward yourself against blows. Until the spell ends, every creature that makes an attack roll against you subtracts 1d4 from that roll."
+    "description": "You ward yourself against blows. Until the spell ends, every creature that makes an attack roll against you subtracts 1d4 from that roll.",
+    "eli5": "Ward yourself so every creature that makes an attack roll against you subtracts 1d4 from that roll."
   },
   {
     "name": "Friends",
@@ -24,7 +25,8 @@
     "components": ["s", "m"],
     "material": "some makeup",
     "duration": "up to 1 minute",
-    "description": "One creature you can see within range must succeed on a Wisdom saving throw or have the Charmed condition for the duration; it automatically succeeds if it isn't a Humanoid, if you're fighting it, or if you've cast this spell on it within the past 24 hours. The spell ends early if the target takes damage or if you make an attack roll, deal damage, or force a saving throw — and when it ends, the target knows you Charmed it."
+    "description": "One creature you can see within range must succeed on a Wisdom saving throw or have the Charmed condition for the duration; it automatically succeeds if it isn't a Humanoid, if you're fighting it, or if you've cast this spell on it within the past 24 hours. The spell ends early if the target takes damage or if you make an attack roll, deal damage, or force a saving throw — and when it ends, the target knows you Charmed it.",
+    "eli5": "A Humanoid you are not fighting that fails a Wisdom save is Charmed, but the spell ends if it takes damage or you act hostile, and afterward it knows you Charmed it."
   },
   {
     "name": "Mind Sliver",
@@ -38,6 +40,7 @@
     "components": ["v"],
     "duration": "1 round",
     "description": "You lash out at the mind of one creature you can see within range. It must succeed on an Intelligence saving throw or take 1d6 Psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.",
+    "eli5": "A creature that fails an Intelligence save takes 1d6 psychic damage and subtracts 1d4 from the next saving throw it makes before the end of your next turn.",
     "cantripUpgrade": "The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6)."
   },
   {
@@ -53,6 +56,7 @@
     "material": "the stem of a thorny plant",
     "duration": "Instantaneous",
     "description": "A thorny vine lashes from your hand. Make a melee spell attack against a creature within range: on a hit it takes 1d6 Piercing damage, and if it is Large or smaller you can pull it up to 10 feet closer to you.",
+    "eli5": "Make a melee spell attack with a thorny vine that deals 1d6 piercing damage and can pull a Large or smaller creature up to 10 feet closer to you.",
     "cantripUpgrade": "The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6)."
   },
   {
@@ -67,6 +71,7 @@
     "components": ["s"],
     "duration": "Instantaneous",
     "description": "A crack of thunder, audible up to 100 feet away, bursts from you. Each creature in a 5-foot Emanation originating from you must succeed on a Constitution saving throw or take 1d6 Thunder damage.",
+    "eli5": "Each creature within 5 feet of you must pass a Constitution save or take 1d6 thunder damage from a thunderclap that can be heard 100 feet away.",
     "cantripUpgrade": "The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6)."
   },
   {
@@ -81,6 +86,7 @@
     "components": ["v", "s"],
     "duration": "Instantaneous",
     "description": "A doleful bell tolls around one creature you can see within range. It must succeed on a Wisdom saving throw or take 1d8 Necrotic damage — or 1d12 Necrotic damage instead if it is missing any of its Hit Points.",
+    "eli5": "A creature that fails a Wisdom save takes 1d8 necrotic damage, or 1d12 instead if it is already missing any hit points.",
     "cantripUpgrade": "The damage increases by one die when you reach levels 5 (2d8 or 2d12), 11 (3d8 or 3d12), and 17 (4d8 or 4d12)."
   },
   {
@@ -96,6 +102,7 @@
     "material": "a sunburst token",
     "duration": "Instantaneous",
     "description": "Searing radiance flares out from you. Each creature of your choice that you can see in a 5-foot Emanation originating from you must succeed on a Constitution saving throw or take 1d6 Radiant damage.",
+    "eli5": "Each creature you choose within 5 feet of you must pass a Constitution save or take 1d6 radiant damage.",
     "cantripUpgrade": "The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6)."
   },
   {
@@ -111,6 +118,7 @@
     "material": "a shard of blue glass",
     "duration": "1 hour",
     "description": "Magical frost armors you: you gain 5 Temporary Hit Points, and any creature that hits you with a melee attack roll takes 5 Cold damage. The spell ends early once you have none of these Temporary Hit Points left.",
+    "eli5": "Gain 5 temporary hit points, and while you still have them any creature that hits you with a melee attack takes 5 cold damage.",
     "higherLevelSlot": "Both the Temporary Hit Points and the Cold damage increase by 5 for each spell slot level above 1."
   },
   {
@@ -125,6 +133,7 @@
     "components": ["v", "s"],
     "duration": "Instantaneous",
     "description": "Dark tendrils erupt from your body. Each creature in a 10-foot Emanation originating from you makes a Strength saving throw: on a failure it takes 2d6 Necrotic damage and can't take Reactions until the start of its next turn; on a success it takes half as much damage only.",
+    "eli5": "Each creature within 10 feet of you takes 2d6 necrotic damage and loses its Reactions until its next turn, or takes just half damage if it passes a Strength save.",
     "higherLevelSlot": "The damage increases by 1d6 for each spell slot level above 1."
   },
   {
@@ -138,7 +147,8 @@
     "range": "30 feet",
     "components": ["v"],
     "duration": "up to 1 minute",
-    "description": "You goad one creature you can see within range into single combat. On a failed Wisdom saving throw, the target has Disadvantage on attack rolls against anyone other than you and can't willingly move to a space more than 30 feet away from you. The spell ends if you attack or cast a spell at a different enemy, if an ally of yours damages the target, or if you end your turn more than 30 feet from it."
+    "description": "You goad one creature you can see within range into single combat. On a failed Wisdom saving throw, the target has Disadvantage on attack rolls against anyone other than you and can't willingly move to a space more than 30 feet away from you. The spell ends if you attack or cast a spell at a different enemy, if an ally of yours damages the target, or if you end your turn more than 30 feet from it.",
+    "eli5": "A creature that fails a Wisdom save has Disadvantage on attacks against anyone but you and cannot willingly move more than 30 feet away from you."
   },
   {
     "name": "Hail of Thorns",
@@ -153,6 +163,7 @@
     "components": ["v"],
     "duration": "Instantaneous",
     "description": "Thorns burst from your ranged weapon attack. The creature you hit and each creature within 5 feet of it make a Dexterity saving throw, taking 1d10 Piercing damage on a failed save or half as much damage on a successful one.",
+    "eli5": "Right after you hit with a ranged weapon, the target and each creature within 5 feet of it take 1d10 piercing damage, or half on a successful Dexterity save.",
     "higherLevelSlot": "The damage increases by 1d10 for each spell slot level above 1."
   },
   {
@@ -168,6 +179,7 @@
     "components": ["v"],
     "duration": "Instantaneous",
     "description": "Your strike booms with thunder audible within 300 feet, and the target takes an extra 2d6 Thunder damage from the attack. If the target is a creature, it must also succeed on a Strength saving throw or be pushed 10 feet away from you and have the Prone condition.",
+    "eli5": "Right after you hit with a melee attack, deal an extra 2d6 thunder damage, and the target must pass a Strength save or be pushed 10 feet away and knocked Prone.",
     "higherLevelSlot": "The damage increases by 1d6 for each spell slot level above 1."
   },
   {
@@ -183,6 +195,7 @@
     "material": "a twig struck by lightning",
     "duration": "up to 1 minute",
     "description": "A crackling arc of lightning leaps at a creature in range. Make a ranged spell attack: on a hit the target takes 2d12 Lightning damage. On each of your later turns you can take a Bonus Action to deal 1d12 Lightning damage to the target automatically — even if the initial attack missed. The spell ends if the target is ever outside the spell's range or has Total Cover from you.",
+    "eli5": "Make a ranged spell attack for 2d12 lightning damage, then use a bonus action on each later turn to deal 1d12 more automatically, even if the first attack missed.",
     "higherLevelSlot": "The initial damage increases by 1d12 for each spell slot level above 1."
   },
   {
@@ -198,6 +211,7 @@
     "components": ["v"],
     "duration": "1 minute",
     "description": "The target takes an extra 1d6 Necrotic damage from the attack and must succeed on a Wisdom saving throw or have the Frightened condition until the spell ends. The Frightened target repeats the save at the end of each of its turns, ending the spell on itself on a success.",
+    "eli5": "Right after you hit with a melee attack, deal an extra 1d6 necrotic damage, and the target must pass a Wisdom save or be Frightened, retrying at the end of each of its turns.",
     "higherLevelSlot": "The damage increases by 1d6 for each spell slot level above 1."
   },
   {
@@ -212,6 +226,7 @@
     "components": ["v", "s"],
     "duration": "Instantaneous",
     "description": "You channel your life force to mend yourself. Roll one or two of your unexpended Hit Point Dice, and regain Hit Points equal to the total rolled plus your spellcasting ability modifier; the rolled dice are then expended.",
+    "eli5": "Roll one or two of your unspent Hit Point Dice and heal yourself for the total plus your spellcasting modifier, using up those dice.",
     "higherLevelSlot": "The number of unexpended Hit Point Dice you can roll increases by one for each spell slot level above 2."
   },
   {
@@ -225,7 +240,8 @@
     "range": "Touch",
     "components": ["s"],
     "duration": "up to 1 hour",
-    "description": "You touch a willing Beast. For the duration you can perceive through its senses in addition to your own, gaining the benefit of any special senses it has while doing so."
+    "description": "You touch a willing Beast. For the duration you can perceive through its senses in addition to your own, gaining the benefit of any special senses it has while doing so.",
+    "eli5": "Touch a willing Beast to perceive through its senses as well as your own, including any special senses it has."
   },
   {
     "name": "Cloud of Daggers",
@@ -240,6 +256,7 @@
     "material": "a sliver of glass",
     "duration": "up to 1 minute",
     "description": "Spinning daggers fill a 5-foot Cube centered on a point within range. Each creature in the Cube takes 4d4 Slashing damage, and a creature also takes that damage when it enters the Cube, ends its turn there, or has the Cube moved into its space — no more than once per turn. On your later turns you can take a Magic action to teleport the Cube up to 30 feet.",
+    "eli5": "Fill a 5-foot cube with spinning daggers that deal 4d4 slashing damage to a creature in it, entering it, or ending its turn there, and teleport it up to 30 feet with a Magic action.",
     "higherLevelSlot": "The damage increases by 2d4 for each spell slot level above 2."
   },
   {
@@ -255,6 +272,7 @@
     "material": "an ornamental braid",
     "duration": "8 hours",
     "description": "You plant up to four nonmagical Arrows or Bolts in the ground in your space. When a creature other than you (or a creature you designated at casting) enters a space within 30 feet of the planted ammunition for the first time on a turn or ends its turn there, one piece flies up to strike it: the creature must succeed on a Dexterity saving throw or take 2d4 Piercing damage. Each piece is destroyed after striking, and the spell ends when no planted ammunition remains.",
+    "eli5": "Plant up to four arrows or bolts that each fly at a creature coming within 30 feet, dealing 2d4 piercing damage unless it passes a Dexterity save.",
     "higherLevelSlot": "The amount of ammunition you can plant increases by two for each spell slot level above 2."
   },
   {
@@ -268,7 +286,8 @@
     "range": "120 feet",
     "components": ["v", "s"],
     "duration": "up to 1 minute",
-    "description": "One creature you can see within range makes a Wisdom saving throw (it automatically succeeds if it isn't a Humanoid). On a failure it has the Charmed condition for the duration: a spectral crown appears on its head, and before it moves on each of its turns it must use its action to make a melee attack against a creature you mentally choose (acting normally if you choose none or none is in reach). The target repeats the save at the end of each of its turns, ending the spell on a success, and the spell also ends unless you take the Magic action on each of your later turns to maintain control."
+    "description": "One creature you can see within range makes a Wisdom saving throw (it automatically succeeds if it isn't a Humanoid). On a failure it has the Charmed condition for the duration: a spectral crown appears on its head, and before it moves on each of its turns it must use its action to make a melee attack against a creature you mentally choose (acting normally if you choose none or none is in reach). The target repeats the save at the end of each of its turns, ending the spell on a success, and the spell also ends unless you take the Magic action on each of your later turns to maintain control.",
+    "eli5": "A Humanoid that fails a Wisdom save is Charmed and must attack a creature you choose in melee each turn, as long as you spend a Magic action each turn to keep control."
   },
   {
     "name": "Summon Beast",
@@ -283,6 +302,7 @@
     "material": "a feather, tuft of fur, and fish tail inside a gilded acorn worth 200+ GP",
     "duration": "up to 1 hour",
     "description": "You summon a bestial spirit, choosing an Air, Land, or Water form; it appears in an unoccupied space you can see within range and uses the Bestial Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon a bestial spirit in an Air, Land, or Water form that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -296,7 +316,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "up to 1 minute",
-    "description": "A healing aura radiates from you in a 30-foot Emanation. When you create the aura and at the start of each of your turns while it lasts, you can restore 2d6 Hit Points to one creature in it."
+    "description": "A healing aura radiates from you in a 30-foot Emanation. When you create the aura and at the start of each of your turns while it lasts, you can restore 2d6 Hit Points to one creature in it.",
+    "eli5": "Create a 30-foot healing aura, and when you cast it and at the start of each of your turns you can heal one creature in it for 2d6."
   },
   {
     "name": "Blinding Smite",
@@ -311,6 +332,7 @@
     "components": ["v"],
     "duration": "1 minute",
     "description": "Your strike flares with brilliance: the target takes an extra 3d8 Radiant damage from the attack and has the Blinded condition until the spell ends. At the end of each of its turns, the Blinded target makes a Constitution saving throw, ending the spell on itself on a success.",
+    "eli5": "Right after you hit with a melee attack, deal an extra 3d8 radiant damage and Blind the target until it passes a Constitution save at the end of one of its turns.",
     "higherLevelSlot": "The extra damage increases by 1d8 for each spell slot level above 3."
   },
   {
@@ -326,6 +348,7 @@
     "material": "a melee or ranged weapon worth 1+ CP",
     "duration": "Instantaneous",
     "description": "You brandish the weapon used in the casting and unleash a cone of vanishing spectral duplicates of it. Each creature of your choice that you can see in a 60-foot Cone makes a Dexterity saving throw, taking 5d8 Force damage on a failed save or half as much damage on a successful one.",
+    "eli5": "Spray ghostly copies of your weapon in a 60-foot cone, dealing 5d8 force damage to each creature you choose, or half if it passes a Dexterity save.",
     "higherLevelSlot": "The damage increases by 1d8 for each spell slot level above 3."
   },
   {
@@ -339,7 +362,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "up to 1 minute",
-    "description": "A martial aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies each deal an extra 1d4 Radiant damage when hitting with a weapon or an Unarmed Strike."
+    "description": "A martial aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies each deal an extra 1d4 Radiant damage when hitting with a weapon or an Unarmed Strike.",
+    "eli5": "You and allies within 30 feet of you each deal an extra 1d4 radiant damage when hitting with a weapon or an Unarmed Strike."
   },
   {
     "name": "Elemental Weapon",
@@ -353,6 +377,7 @@
     "components": ["v", "s"],
     "duration": "up to 1 hour",
     "description": "A nonmagical weapon you touch becomes a magic weapon. Choose Acid, Cold, Fire, Lightning, or Thunder: for the duration the weapon has a +1 bonus to attack rolls and deals an extra 1d4 damage of the chosen type on a hit.",
+    "eli5": "Touch a nonmagical weapon to give it +1 to attack rolls and an extra 1d4 acid, cold, fire, lightning, or thunder damage on each hit, with the type being your choice.",
     "higherLevelSlot": "With a level 5-6 spell slot, the attack bonus becomes +2 and the extra damage 2d4. With a level 7+ spell slot, they become +3 and 3d4."
   },
   {
@@ -367,7 +392,8 @@
     "components": ["v", "s", "m"],
     "material": "a pinch of graveyard dirt",
     "duration": "1 hour",
-    "description": "You place a willing creature you touch into a deathlike trance. For the duration it appears dead to inspection and to spells that assess its status; it has the Blinded and Incapacitated conditions and a Speed of 0, but it also has Resistance to all damage except Psychic and Immunity to the Poisoned condition."
+    "description": "You place a willing creature you touch into a deathlike trance. For the duration it appears dead to inspection and to spells that assess its status; it has the Blinded and Incapacitated conditions and a Speed of 0, but it also has Resistance to all damage except Psychic and Immunity to the Poisoned condition.",
+    "eli5": "Touch a willing creature to make it appear dead, leaving it Blinded and Incapacitated with Speed 0 but resistant to all damage except psychic and immune to being Poisoned."
   },
   {
     "name": "Hunger of Hadar",
@@ -382,6 +408,7 @@
     "material": "a pickled tentacle",
     "duration": "up to 1 minute",
     "description": "You open a rift to the Far Realm: a 20-foot-radius Sphere of Darkness that no light can pierce appears at a point within range. The Sphere is Difficult Terrain, creatures fully inside it have the Blinded condition, and its whispers can be heard up to 30 feet away. A creature that starts its turn in the area takes 2d6 Cold damage, and one that ends its turn there must succeed on a Dexterity saving throw or take 2d6 Acid damage.",
+    "eli5": "Open a 20-foot-radius sphere of darkness that Blinds creatures inside, deals 2d6 cold damage at the start of their turns, and 2d6 acid damage at the end unless they pass a Dexterity save.",
     "higherLevelSlot": "The Cold or Acid damage (your choice) increases by 1d6 for each spell slot level above 3."
   },
   {
@@ -397,6 +424,7 @@
     "components": ["v", "s"],
     "duration": "Instantaneous",
     "description": "Your weapon or ammunition turns into a bolt of lightning. In place of the attack's normal effects, the target takes 4d8 Lightning damage on a hit or half as much on a miss. Each creature within 10 feet of the target then makes a Dexterity saving throw, taking 2d8 Lightning damage on a failed save or half as much on a successful one, after which the weapon or ammunition returns to normal.",
+    "eli5": "Right after a ranged weapon attack, replace its effect with 4d8 lightning damage on a hit or half on a miss, plus 2d8 to each creature within 10 feet, or half on a Dexterity save.",
     "higherLevelSlot": "Both damage amounts increase by 1d8 for each spell slot level above 3."
   },
   {
@@ -412,6 +440,7 @@
     "material": "a gilded flower worth 300+ GP",
     "duration": "up to 1 hour",
     "description": "You summon a Fey spirit, choosing a Fuming, Mirthful, or Tricksy mood; it appears in an unoccupied space you can see within range and uses the Fey Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon a Fey spirit in a Fuming, Mirthful, or Tricksy mood that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -427,6 +456,7 @@
     "material": "a gilded skull worth 300+ GP",
     "duration": "up to 1 hour",
     "description": "You summon an Undead spirit, choosing a Ghostly, Putrid, or Skeletal form; it appears in an unoccupied space you can see within range and uses the Undead Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon an Undead spirit in a Ghostly, Putrid, or Skeletal form that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -440,7 +470,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "up to 10 minutes",
-    "description": "A cleansing aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies have Resistance to Poison damage and Advantage on saving throws to avoid or end effects that include the Blinded, Charmed, Deafened, Frightened, Paralyzed, Poisoned, or Stunned condition."
+    "description": "A cleansing aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies have Resistance to Poison damage and Advantage on saving throws to avoid or end effects that include the Blinded, Charmed, Deafened, Frightened, Paralyzed, Poisoned, or Stunned condition.",
+    "eli5": "You and allies within 30 feet of you resist poison damage and have Advantage on saves against being Blinded, Charmed, Deafened, Frightened, Paralyzed, Poisoned, or Stunned."
   },
   {
     "name": "Fount of Moonlight",
@@ -453,7 +484,8 @@
     "range": "Self",
     "components": ["v", "s"],
     "duration": "up to 10 minutes",
-    "description": "Cool moonlight wreathes you, shedding Bright Light in a 20-foot radius and Dim Light for another 20 feet. For the duration you have Resistance to Radiant damage and your melee attacks deal an extra 2d6 Radiant damage on a hit. Also, when a creature you can see within 60 feet damages you, you can take a Reaction to force it to make a Constitution saving throw or have the Blinded condition until the end of your next turn."
+    "description": "Cool moonlight wreathes you, shedding Bright Light in a 20-foot radius and Dim Light for another 20 feet. For the duration you have Resistance to Radiant damage and your melee attacks deal an extra 2d6 Radiant damage on a hit. Also, when a creature you can see within 60 feet damages you, you can take a Reaction to force it to make a Constitution saving throw or have the Blinded condition until the end of your next turn.",
+    "eli5": "Glow with moonlight to resist radiant damage, add 2d6 radiant damage to your melee hits, and use your reaction to Blind a creature that damages you if it fails a Constitution save."
   },
   {
     "name": "Grasping Vine",
@@ -467,6 +499,7 @@
     "components": ["v", "s"],
     "duration": "up to 1 minute",
     "description": "A vine sprouts from a surface in an unoccupied space you can see within range. Make a melee spell attack against a creature within 30 feet of the vine: on a hit the target takes 4d8 Bludgeoning damage and is pulled up to 30 feet toward the vine, and if it is Huge or smaller it has the Grappled condition (escape DC equal to your spell save DC). The vine can grapple only one creature at a time, you can release a grappled creature freely, and on later turns you can repeat the attack as a Bonus Action.",
+    "eli5": "Grow a vine that makes a melee spell attack for 4d8 bludgeoning damage, pulls the target up to 30 feet toward it, and Grapples it if it is Huge or smaller.",
     "higherLevelSlot": "The number of creatures the vine can grapple increases by one for each spell slot level above 4."
   },
   {
@@ -482,6 +515,7 @@
     "components": ["v"],
     "duration": "Instantaneous",
     "description": "Your strike rattles the target's mind: it takes an extra 4d6 Psychic damage from the attack and must succeed on a Wisdom saving throw or have the Stunned condition until the end of your next turn.",
+    "eli5": "Right after you hit with a melee attack, deal an extra 4d6 psychic damage, and the target must pass a Wisdom save or be Stunned until the end of your next turn.",
     "higherLevelSlot": "The extra damage increases by 1d6 for each spell slot level above 4."
   },
   {
@@ -497,6 +531,7 @@
     "material": "a pickled tentacle and an eyeball in a platinum-inlaid vial worth 400+ GP",
     "duration": "up to 1 hour",
     "description": "You summon an aberrant spirit, choosing Beholderkin, Mind Flayer, or Slaad; it appears in an unoccupied space you can see within range and uses the Aberrant Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon a Beholderkin, Mind Flayer, or Slaad aberrant spirit that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -512,6 +547,7 @@
     "material": "a lockbox worth 400+ GP",
     "duration": "up to 1 hour",
     "description": "You summon the spirit of a Construct, choosing Clay, Metal, or Stone; it appears as an animate statue in an unoccupied space you can see within range and uses the Construct Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon a Clay, Metal, or Stone construct spirit that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -527,6 +563,7 @@
     "material": "air, a pebble, ash, and water inside a gold-inlaid vial worth 400+ GP",
     "duration": "up to 1 hour",
     "description": "You summon an Elemental spirit, choosing Air, Earth, Fire, or Water; it appears as a bipedal form wreathed in that element in an unoccupied space you can see within range and uses the Elemental Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon an Air, Earth, Fire, or Water elemental spirit that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -541,7 +578,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "up to 1 minute",
-    "description": "The target takes an extra 5d10 Force damage from the attack. If that damage leaves it with 50 Hit Points or fewer, it must succeed on a Charisma saving throw or be banished to a harmless demiplane for the duration, where it has the Incapacitated condition; when the spell ends, it reappears in the space it left or the nearest unoccupied space."
+    "description": "The target takes an extra 5d10 Force damage from the attack. If that damage leaves it with 50 Hit Points or fewer, it must succeed on a Charisma saving throw or be banished to a harmless demiplane for the duration, where it has the Incapacitated condition; when the spell ends, it reappears in the space it left or the nearest unoccupied space.",
+    "eli5": "Right after you hit with a melee attack, deal an extra 5d10 force damage, and a target left with 50 hit points or fewer must pass a Charisma save or be banished to a harmless demiplane."
   },
   {
     "name": "Circle of Power",
@@ -554,7 +592,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "up to 10 minutes",
-    "description": "A protective aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies have Advantage on saving throws against spells and other magical effects; and when such an effect would deal half damage on a successful save, an affected creature that succeeds takes no damage instead."
+    "description": "A protective aura radiates from you in a 30-foot Emanation. While in the aura, you and your allies have Advantage on saving throws against spells and other magical effects; and when such an effect would deal half damage on a successful save, an affected creature that succeeds takes no damage instead.",
+    "eli5": "You and allies within 30 feet of you have Advantage on saves against spells and magic, and take no damage instead of half when you succeed on such a save."
   },
   {
     "name": "Conjure Volley",
@@ -568,7 +607,8 @@
     "components": ["v", "s", "m"],
     "material": "a melee or ranged weapon worth 1+ CP",
     "duration": "Instantaneous",
-    "description": "You brandish the weapon used in the casting, and hundreds of spectral duplicates of it rain down on a point within range before vanishing. Each creature of your choice that you can see in a 40-foot-radius, 20-foot-high Cylinder centered on that point makes a Dexterity saving throw, taking 8d8 Force damage on a failed save or half as much damage on a successful one."
+    "description": "You brandish the weapon used in the casting, and hundreds of spectral duplicates of it rain down on a point within range before vanishing. Each creature of your choice that you can see in a 40-foot-radius, 20-foot-high Cylinder centered on that point makes a Dexterity saving throw, taking 8d8 Force damage on a failed save or half as much damage on a successful one.",
+    "eli5": "Rain ghostly copies of your weapon on a 40-foot-radius, 20-foot-high cylinder, dealing 8d8 force damage to each creature you choose, or half on a Dexterity save."
   },
   {
     "name": "Destructive Wave",
@@ -581,7 +621,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "Instantaneous",
-    "description": "Destructive energy ripples out from you in a 30-foot Emanation. Each creature you choose in it makes a Constitution saving throw: on a failure it takes 5d6 Thunder damage plus 5d6 Radiant or Necrotic damage (your choice) and has the Prone condition; on a success it takes half as much damage only."
+    "description": "Destructive energy ripples out from you in a 30-foot Emanation. Each creature you choose in it makes a Constitution saving throw: on a failure it takes 5d6 Thunder damage plus 5d6 Radiant or Necrotic damage (your choice) and has the Prone condition; on a success it takes half as much damage only.",
+    "eli5": "Each creature you choose within 30 feet takes 5d6 thunder damage plus 5d6 radiant or necrotic damage and falls Prone, or takes half damage only on a Constitution save."
   },
   {
     "name": "Jallarzi's Storm of Radiance",
@@ -596,6 +637,7 @@
     "material": "a pinch of phosphorus",
     "duration": "up to 1 minute",
     "description": "A storm of flashing light and roaring thunder fills a 10-foot-radius, 40-foot-high Cylinder centered on a point you can see within range. Creatures in the area have the Blinded and Deafened conditions and can't cast spells with a Verbal component. When the storm appears — and when a creature enters the area for the first time on a turn or ends its turn there — that creature makes a Constitution saving throw, taking 2d10 Radiant damage and 2d10 Thunder damage on a failure or half as much on a success, no more than once per turn.",
+    "eli5": "Fill a 10-foot-radius, 40-foot-high cylinder with a storm that Blinds and Deafens creatures inside and deals 2d10 radiant and 2d10 thunder damage, or half on a Constitution save.",
     "higherLevelSlot": "The Radiant and Thunder damage each increase by 1d10 for each spell slot level above 5."
   },
   {
@@ -610,7 +652,8 @@
     "components": ["s", "m"],
     "material": "a melee weapon worth 1+ SP",
     "duration": "Instantaneous",
-    "description": "You flourish your weapon and flash across the battlefield like wind. Choose up to five creatures you can see within range and make a melee spell attack against each; on a hit, a target takes 6d10 Force damage. You can then teleport to an unoccupied space you can see within 5 feet of one of the targets."
+    "description": "You flourish your weapon and flash across the battlefield like wind. Choose up to five creatures you can see within range and make a melee spell attack against each; on a hit, a target takes 6d10 Force damage. You can then teleport to an unoccupied space you can see within 5 feet of one of the targets.",
+    "eli5": "Make a melee spell attack against up to five creatures you can see for 6d10 force damage each, then teleport to within 5 feet of one of them."
   },
   {
     "name": "Summon Celestial",
@@ -625,6 +668,7 @@
     "material": "a reliquary worth 500+ GP",
     "duration": "up to 1 hour",
     "description": "You summon a Celestial spirit in angelic form, choosing Avenger or Defender; it appears in an unoccupied space you can see within range and uses the Celestial Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon an angelic Celestial spirit as an Avenger or Defender that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -639,7 +683,8 @@
     "components": ["v", "s", "m"],
     "material": "a quiver worth 1+ GP",
     "duration": "up to 1 minute",
-    "description": "Your quiver magically replenishes itself. When you cast the spell and as a Bonus Action on your turns until it ends, you can make two attacks with a weapon that fires Arrows or Bolts; the spell conjures nonmagical ammunition for each attack, which disintegrates right after it hits or misses."
+    "description": "Your quiver magically replenishes itself. When you cast the spell and as a Bonus Action on your turns until it ends, you can make two attacks with a weapon that fires Arrows or Bolts; the spell conjures nonmagical ammunition for each attack, which disintegrates right after it hits or misses.",
+    "eli5": "When you cast this and as a bonus action on each later turn, make two attacks with a weapon that fires arrows or bolts, using ammunition the spell conjures for you."
   },
   {
     "name": "Synaptic Static",
@@ -652,7 +697,8 @@
     "range": "120 feet",
     "components": ["v", "s"],
     "duration": "Instantaneous",
-    "description": "Psychic energy detonates at a point within range. Each creature in a 20-foot-radius Sphere centered there makes an Intelligence saving throw, taking 8d6 Psychic damage on a failed save or half as much on a successful one. A creature that fails also has muddled thoughts for 1 minute, subtracting 1d6 from its attack rolls, ability checks, and Constitution saving throws to maintain Concentration; it repeats the Intelligence save at the end of each of its turns, ending the effect on itself on a success."
+    "description": "Psychic energy detonates at a point within range. Each creature in a 20-foot-radius Sphere centered there makes an Intelligence saving throw, taking 8d6 Psychic damage on a failed save or half as much on a successful one. A creature that fails also has muddled thoughts for 1 minute, subtracting 1d6 from its attack rolls, ability checks, and Constitution saving throws to maintain Concentration; it repeats the Intelligence save at the end of each of its turns, ending the effect on itself on a success.",
+    "eli5": "Creatures in a 20-foot-radius sphere take 8d6 psychic damage, or half on an Intelligence save, and those who fail subtract 1d6 from attack rolls and ability checks for 1 minute."
   },
   {
     "name": "Yolande's Regal Presence",
@@ -666,7 +712,8 @@
     "components": ["v", "s", "m"],
     "material": "a miniature tiara",
     "duration": "up to 1 minute",
-    "description": "Unearthly majesty surrounds you in a 10-foot Emanation. Whenever the Emanation enters the space of a creature you can see, or such a creature enters the Emanation or ends its turn there, you can force it to make a Wisdom saving throw (no more than once per turn): on a failure it takes 4d6 Psychic damage, has the Prone condition, and can be pushed up to 10 feet away from you; on a success it takes half as much damage only."
+    "description": "Unearthly majesty surrounds you in a 10-foot Emanation. Whenever the Emanation enters the space of a creature you can see, or such a creature enters the Emanation or ends its turn there, you can force it to make a Wisdom saving throw (no more than once per turn): on a failure it takes 4d6 Psychic damage, has the Prone condition, and can be pushed up to 10 feet away from you; on a success it takes half as much damage only.",
+    "eli5": "Creatures that enter or end their turn in your 10-foot aura take 4d6 psychic damage, fall Prone, and can be pushed 10 feet away, or take half damage only on a Wisdom save."
   },
   {
     "name": "Arcane Gate",
@@ -679,7 +726,8 @@
     "range": "500 feet",
     "components": ["v", "s"],
     "duration": "up to 10 minutes",
-    "description": "You open a pair of linked teleportation portals in two Large, unoccupied ground spaces you can see — one within range and one within 10 feet of you. Each portal is a mist-filled glowing ring open on one side you choose; anything entering the open side exits from the other portal's open side as if the two were adjacent. As a Bonus Action, you can change which way the open sides face."
+    "description": "You open a pair of linked teleportation portals in two Large, unoccupied ground spaces you can see — one within range and one within 10 feet of you. Each portal is a mist-filled glowing ring open on one side you choose; anything entering the open side exits from the other portal's open side as if the two were adjacent. As a Bonus Action, you can change which way the open sides face.",
+    "eli5": "Open two linked portals on the ground, one within 10 feet of you and one at a distant spot you can see, so anything entering one instantly exits the other."
   },
   {
     "name": "Summon Fiend",
@@ -694,6 +742,7 @@
     "material": "a bloody vial worth 600+ GP",
     "duration": "up to 1 hour",
     "description": "You summon a fiendish spirit, choosing Demon, Devil, or Yugoloth; it appears in an unoccupied space you can see within range and uses the Fiendish Spirit stat block. The creature is an ally that shares your Initiative count (taking its turn right after yours) and obeys your verbal commands without requiring your action; if you give none, it Dodges and avoids danger. It vanishes when it drops to 0 Hit Points or the spell ends.",
+    "eli5": "Summon a Demon, Devil, or Yugoloth fiendish spirit that fights as your ally, acts right after your turn, and obeys your spoken commands without using your action.",
     "higherLevelSlot": "Use the spell slot's level for the spell's level in the stat block."
   },
   {
@@ -708,7 +757,8 @@
     "components": ["v", "s", "m"],
     "material": "a gilded ladle worth 500+ GP",
     "duration": "10 minutes",
-    "description": "You conjure an immovable, claw-footed cauldron in an unoccupied space on the ground within 5 feet of you. Its bubbling liquid duplicates a Common or Uncommon potion of your choice, and as a Bonus Action you or an ally can withdraw one such potion in a vial. The cauldron yields a number of potions equal to your spellcasting ability modifier (minimum 1) and disappears when the last is withdrawn or the spell ends; unconsumed potions from it vanish when you cast this spell again."
+    "description": "You conjure an immovable, claw-footed cauldron in an unoccupied space on the ground within 5 feet of you. Its bubbling liquid duplicates a Common or Uncommon potion of your choice, and as a Bonus Action you or an ally can withdraw one such potion in a vial. The cauldron yields a number of potions equal to your spellcasting ability modifier (minimum 1) and disappears when the last is withdrawn or the spell ends; unconsumed potions from it vanish when you cast this spell again.",
+    "eli5": "Conjure a cauldron of a Common or Uncommon potion you choose, from which you or an ally can take a vial as a bonus action, up to your spellcasting modifier in total."
   },
   {
     "name": "Power Word Fortify",
@@ -721,7 +771,8 @@
     "range": "60 feet",
     "components": ["v"],
     "duration": "Instantaneous",
-    "description": "You utter a word of bolstering power, bestowing 120 Temporary Hit Points that you divide as you choose among up to six creatures you can see within range."
+    "description": "You utter a word of bolstering power, bestowing 120 Temporary Hit Points that you divide as you choose among up to six creatures you can see within range.",
+    "eli5": "Give out 120 temporary hit points, split however you choose among up to six creatures you can see."
   },
   {
     "name": "Telepathy",
@@ -735,6 +786,7 @@
     "components": ["v", "s", "m"],
     "material": "a pair of linked silver rings",
     "duration": "24 hours",
-    "description": "You forge a telepathic link with a willing creature you are familiar with, anywhere on your current plane of existence. Until the spell ends, the two of you can instantly exchange words, images, sounds, and other sensory messages regardless of language, and the target recognizes you as the sender; the spell ends if either of you leaves the plane."
+    "description": "You forge a telepathic link with a willing creature you are familiar with, anywhere on your current plane of existence. Until the spell ends, the two of you can instantly exchange words, images, sounds, and other sensory messages regardless of language, and the target recognizes you as the sender; the spell ends if either of you leaves the plane.",
+    "eli5": "Link minds with a willing creature you know anywhere on your plane, so the two of you can instantly share words, images, and sounds in any language for 24 hours."
   }
 ]

@@ -483,7 +483,8 @@
     "range": "Self (15-foot Emanation)",
     "components": ["v"],
     "duration": "up to 1 minute",
-    "description": "Holy light hallows the ground in a 15-foot Emanation around you for the duration. When you cast the spell, pick any number of creatures; each of them that starts its turn inside the Emanation takes 1d8 Radiant damage. Fiends and Undead treat the area as Difficult Terrain."
+    "description": "Holy light hallows the ground in a 15-foot Emanation around you for the duration. When you cast the spell, pick any number of creatures; each of them that starts its turn inside the Emanation takes 1d8 Radiant damage. Fiends and Undead treat the area as Difficult Terrain.",
+    "eli5": "Hallow the ground within 15 feet of you so creatures you pick take 1d8 radiant damage when they start their turn there, and Fiends and Undead treat it as Difficult Terrain."
   },
   {
     "name": "Guided Prayer",
@@ -498,7 +499,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "Instantaneous",
-    "description": "You call on the Light in your moment of need. You regain Hit Points equal to 8d4 plus your spellcasting ability modifier, and you have Advantage on the next attack roll you make before the end of your next turn."
+    "description": "You call on the Light in your moment of need. You regain Hit Points equal to 8d4 plus your spellcasting ability modifier, and you have Advantage on the next attack roll you make before the end of your next turn.",
+    "eli5": "As a reaction when you become Bloodied or are hurt while Bloodied, heal yourself for 8d4 plus your spellcasting modifier and gain Advantage on your next attack roll."
   },
   {
     "name": "Divine Shield",
@@ -513,7 +515,8 @@
     "range": "Self",
     "components": ["v"],
     "duration": "1 round",
-    "description": "A shell of radiant light closes around you until the start of your next turn. Until then you have Immunity to all damage, including the damage that triggered this spell. Your Speed can't be reduced, any reductions already affecting you are suspended, and nothing can move you against your will."
+    "description": "A shell of radiant light closes around you until the start of your next turn. Until then you have Immunity to all damage, including the damage that triggered this spell. Your Speed can't be reduced, any reductions already affecting you are suspended, and nothing can move you against your will.",
+    "eli5": "As a reaction when you take damage, become immune to all damage, including the triggering hit, and you cannot be slowed or moved against your will until your next turn."
   },
   {
     "name": "Curse of Agony",
@@ -527,7 +530,8 @@
     "range": "30 feet",
     "components": ["v", "s"],
     "duration": "1 minute",
-    "description": "You lay a festering curse on one creature you can see within range. The curse's damage starts at 1d4 Psychic. The target makes a Constitution saving throw at once and again at the end of each of its turns while the spell lasts. On a failed save, it takes the damage and the die grows one size, from d4 to d6, d8, d10 and at most d12. On a successful save, it takes the damage at its current size and the spell ends."
+    "description": "You lay a festering curse on one creature you can see within range. The curse's damage starts at 1d4 Psychic. The target makes a Constitution saving throw at once and again at the end of each of its turns while the spell lasts. On a failed save, it takes the damage and the die grows one size, from d4 to d6, d8, d10 and at most d12. On a successful save, it takes the damage at its current size and the spell ends.",
+    "eli5": "Curse a creature to take 1d4 psychic damage now and at the end of each of its turns, growing one die size up to d12 on each failed Constitution save and ending on a success."
   },
   {
     "name": "Hand of Gul'dan",
