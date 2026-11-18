@@ -327,6 +327,24 @@ describe('DndResourcesService', () => {
       flushSpellFiles([]);
     });
 
+    it('adds a variant\'s extra spells by name (case-insensitive), in data order, without duplicates', (done) => {
+      service.getSpellsForClass('cleric', ['fireball', 'Healing Word', 'No Such Spell']).subscribe(spells => {
+        expect(spells.map(s => s.name)).toEqual(['Fireball', 'Healing Word']);
+        done();
+      });
+
+      flushSpellFiles();
+    });
+
+    it('leaves the class list unchanged with no extras', (done) => {
+      service.getSpellsForClass('cleric', []).subscribe(spells => {
+        expect(spells.map(s => s.name)).toEqual(['Healing Word']);
+        done();
+      });
+
+      flushSpellFiles();
+    });
+
     it('returns empty array for non-spellcasting class', (done) => {
       service.getSpellsForClass('fighter').subscribe(spells => {
         expect(spells).toEqual([]);

@@ -109,6 +109,30 @@ describe('spell creation level groups', () => {
     expect(el.textContent).toContain('suit the Demonology specialization');
   });
 
+  it('badges the WoW Priest Shadow picks, incl. the WoW Shadow Word: Pain, without selecting them', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const spell = (name: string, level: number, source?: 'World of Warcraft'): DndSpell => ({ name, level,
+      school: 'necromancy', classes: ['cleric'], actionType: 'action', concentration: false, ritual: false,
+      range: '60 feet', components: ['v', 's'], duration: 'Instantaneous', description: `${name}.`, source });
+    const list = [
+      spell('Mending', 0), spell('Resistance', 0), spell('Thaumaturgy', 0), spell('Toll the Dead', 0), spell('Light', 0),
+      spell('Bane', 1), spell('Command', 1), spell('Healing Word', 1), spell('Shadow Word: Pain', 1, 'World of Warcraft'),
+      spell('Bless', 1),
+    ];
+    fixture.componentRef.setInput('filteredSpellList', list);
+    fixture.componentRef.setInput('recommendedSpells', recommendedStartingSpells(heroClassByKey('Cleric (World of Warcraft)'), 'Shadow'));
+    fixture.componentRef.setInput('recommendedFor', 'Shadow');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const badged = (Array.from(el.querySelectorAll('.spell-row.recommended .spell-pick-name')) as HTMLElement[])
+      .map(n => n.textContent!.replace('Recommended', '').trim());
+    expect(badged.map(n => n.replace(/\s*World of Warcraft$/, ''))).toEqual([
+      'Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead', 'Bane', 'Command', 'Healing Word', 'Shadow Word: Pain',
+    ]);
+    expect(el.querySelector('.spell-recommended-badge')!.getAttribute('title')).toBe('Recommended for Shadow');
+    expect(el.querySelectorAll('.spell-selected-badge').length).toBe(0);
+  });
+
   it('shows no recommendation badges by default', () => {
     const fixture = TestBed.createComponent(SpellsStepComponent);
     const light: DndSpell = { name: 'Light', level: 0, school: 'evocation',

@@ -479,3 +479,58 @@ describe('ClassStepComponent — World of Warcraft Warrior (Fighter)', () => {
     expect(box.querySelector('.maneuver')).toBeNull();
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Priest (Cleric)', () => {
+  const WOW_PRIEST_KEY = 'Cleric (World of Warcraft)';
+  const detail = { hit_die: 8, saving_throws: [{ name: 'WIS' }, { name: 'CHA' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(WOW_PRIEST_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Cleric', 'Wizard']));
+    fixture.componentRef.setInput('selectedKey', WOW_PRIEST_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Priest (Cleric)');
+    fixture.componentRef.setInput('clazz', 'Cleric');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.componentRef.setInput('spellsStep', true);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Cleric" and a tagged "Priest (Cleric)" row, with the blurb and domain note', () => {
+    const el = render();
+    const heads = Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[];
+    expect(heads[0].textContent!.trim()).toBe('Cleric');
+    expect(heads[0].querySelector('.source-tag')).toBeNull();
+    const priestRow = heads.find(h => h.textContent!.includes('Priest (Cleric)'))!;
+    expect(priestRow.querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(priestRow.classList).toContain('active');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('two opposing forces');
+    expect(el.textContent).toContain('Chosen as normal at Cleric level 3');
+    expect(el.textContent).toContain("Your Priest's specialization");
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Discipline', 'Holy', 'Shadow']);
+    expect(el.querySelector('.spec-guidance')).toBeNull();
+  });
+
+  it('shows the Shadow box: Divine Order, cantrips, level-1 spells, Shadow Domain and feats', () => {
+    const box = render('Shadow').querySelector('.spec-guidance') as HTMLElement;
+    expect(Array.from(box.querySelectorAll('dt')).map(n => n.textContent!.trim())).toEqual([
+      'Divine Order', 'Cantrips', 'Level 1 spells', 'Level 3 subclass', 'Feats',
+    ]);
+    expect(box.textContent).toContain('Recommended for Shadow');
+    expect(box.textContent).toContain('Thaumaturge');
+    expect(box.textContent).toContain('Mending, Resistance, Thaumaturgy, Toll the Dead');
+    expect(box.textContent).toContain('Bane, Command, Healing Word, Shadow Word: Pain');
+    expect(box.textContent).toContain('Shadow Domain');
+    expect(box.textContent).toContain('Actor, Mage Slayer, Shadow Touched, Skulker, Telepathic');
+    expect(box.textContent).toContain('the spells are marked “Recommended” on the Spells step');
+  });
+
+  it('recommends the Life Domain for Holy and the Discipline Domain for Discipline', () => {
+    expect(render('Holy').querySelector('.spec-guidance')!.textContent).toContain('Life Domain');
+    expect(render('Discipline').querySelector('.spec-guidance')!.textContent).toContain('Discipline Domain');
+  });
+});

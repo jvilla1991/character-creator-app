@@ -1,7 +1,8 @@
 import { HERO_CLASSES } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
-  WOW_PALADIN_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, WOW_WARLOCK,
+  WOW_PALADIN_SUGGESTED_SPELLS, WOW_PRIEST, WOW_PRIEST_EXTRA_SPELLS, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SPECIALIZATIONS,
+  WOW_PRIEST_SUGGESTED_SPELLS, WOW_ROGUE, WOW_ROGUE_GUIDANCE, WOW_SHAMAN, WOW_SHAMAN_GUIDANCE, WOW_WARLOCK,
   WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_INVOCATIONS, WOW_WARLOCK_SUGGESTED_SPELLS, WOW_WARRIOR, WOW_WARRIOR_GUIDANCE,
   WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel,
 } from './wow-class-variants';
@@ -157,6 +158,95 @@ describe('wow-class-variants', () => {
       expect(WOW_ROGUE.label).toBe('Rogue');
       expect(WOW_SHAMAN.label).toBe('Shaman (Barbarian)');
       expect(WOW_WARLOCK.label).toBe('Warlock');
+      expect(WOW_PRIEST.label).toBe('Priest (Cleric)');
+    });
+  });
+
+  describe('Priest (Cleric)', () => {
+    const flat = (spec: string) => WOW_PRIEST_SUGGESTED_SPELLS[spec].flatMap(r => r.spells);
+
+    it('is a "Priest (Cleric)" variant with no fixed subclass that may respec', () => {
+      expect(WOW_PRIEST.name).toBe('Priest');
+      expect(WOW_PRIEST.baseClass).toBe('Cleric');
+      expect(WOW_PRIEST.label).toBe('Priest (Cleric)');
+      expect(WOW_PRIEST.key).toBe('Cleric (World of Warcraft)');
+      expect(WOW_PRIEST.subclass).toBeUndefined();
+      expect(WOW_PRIEST.subclassTerm).toBe('domain');
+      expect(WOW_PRIEST.subclassNote).toBe('Chosen as normal at Cleric level 3');
+      expect(WOW_PRIEST.subclassLevel).toBeUndefined();
+      expect(WOW_PRIEST.respecOnLevelUp).toBeTrue();
+      expect(WOW_PRIEST.spellTable).toEqual([]);
+      expect(WOW_PRIEST.renownNote).toBeUndefined();
+      const specs = WOW_PRIEST.specializations.map(s => s.name);
+      expect(specs).toEqual([...WOW_PRIEST_SPECIALIZATIONS]);
+      expect(specs).toEqual(['Discipline', 'Holy', 'Shadow']);
+      expect(Object.keys(WOW_PRIEST_GUIDANCE)).toEqual(specs);
+      expect(Object.keys(WOW_PRIEST_SUGGESTED_SPELLS)).toEqual(specs);
+    });
+
+    it('describes the Light and Shadow, and each specialization', () => {
+      for (const word of ['Light', 'Holy Light', 'Elune', 'Shadow', 'heals and protects', 'drains the life']) {
+        expect(WOW_PRIEST.blurb).withContext(word).toContain(word);
+      }
+      const desc = (name: string) => WOW_PRIEST.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Discipline')).toContain('balances Light and Shadow');
+      expect(desc('Holy')).toContain('healer');
+      expect(desc('Shadow')).toContain('Void');
+    });
+
+    it('recommends Thaumaturge, starting spells, a domain and feats per specialization', () => {
+      expect(WOW_PRIEST_GUIDANCE['Discipline']).toEqual({
+        featureChoice: { feature: 'Divine Order', option: 'Thaumaturge' },
+        cantrips: ['Guidance', 'Resistance', 'Thaumaturgy', 'Word of Radiance'],
+        level1Spells: ['Cure Wounds', 'Guiding Bolt', 'Sanctuary', 'Shield of Faith'],
+        subclass: { name: 'Discipline Domain' },
+        feats: ['Durable', 'Inspiring Leader', 'Mage Slayer', 'War Caster'],
+      });
+      expect(WOW_PRIEST_GUIDANCE['Holy']).toEqual({
+        featureChoice: { feature: 'Divine Order', option: 'Thaumaturge' },
+        cantrips: ['Guidance', 'Light', 'Sacred Flame', 'Spare the Dying'],
+        level1Spells: ['Bless', 'Cure Wounds', 'Healing Word', 'Purify Food and Drink'],
+        subclass: { name: 'Life Domain' },
+        feats: ['Chef', 'Healer', 'Inspiring Leader', 'War Caster'],
+      });
+      expect(WOW_PRIEST_GUIDANCE['Shadow']).toEqual({
+        featureChoice: { feature: 'Divine Order', option: 'Thaumaturge' },
+        cantrips: ['Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead'],
+        level1Spells: ['Bane', 'Command', 'Healing Word', 'Shadow Word: Pain'],
+        subclass: { name: 'Shadow Domain' },
+        feats: ['Actor', 'Mage Slayer', 'Shadow Touched', 'Skulker', 'Telepathic'],
+      });
+    });
+
+    it('suggests spells for spell levels 1–9 per specialization', () => {
+      for (const spec of ['Discipline', 'Holy', 'Shadow']) {
+        expect(WOW_PRIEST_SUGGESTED_SPELLS[spec].map(r => r.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      }
+      expect(WOW_PRIEST_SUGGESTED_SPELLS['Discipline'][1].spells).toEqual(['Aid', 'Blur', 'Levitate', 'Spiritual Weapon']);
+      expect(flat('Discipline')).toEqual(jasmine.arrayContaining(['Shadow Word: Pain', 'Holy Nova', 'Power Word Fortify', 'Gate']));
+      expect(WOW_PRIEST_SUGGESTED_SPELLS['Holy'][8].spells).toEqual(['Apotheosis', 'Mass Heal']);
+      expect(flat('Holy')).toEqual(jasmine.arrayContaining(['Prayer of Mending', 'Holy Nova', 'Holy Aura', 'Blur']));
+      expect(WOW_PRIEST_SUGGESTED_SPELLS['Shadow'][0].spells).toEqual(['Detect Poison and Disease']);
+      expect(flat('Shadow')).toEqual(jasmine.arrayContaining(['Blindness/Deafness', 'Blur', 'Harm', 'Astral Projection']));
+      expect(flat('Shadow')).not.toContain('Levitate');
+      expect(flat('Shadow')).not.toContain('Shadow Word: Pain');
+    });
+
+    it('adds Blur and Levitate to its Cleric spell list — the only variant with an added list', () => {
+      expect(WOW_PRIEST.extraSpellList).toBe(WOW_PRIEST_EXTRA_SPELLS);
+      expect([...WOW_PRIEST.extraSpellList!]).toEqual(['Blur', 'Levitate']);
+      for (const v of WOW_CLASS_VARIANTS.filter(v => v !== WOW_PRIEST)) {
+        expect(v.extraSpellList).withContext(v.key).toBeUndefined();
+      }
+    });
+
+    it('keeps the always-prepared tables to the two WoW-only domains', () => {
+      expect(Object.keys(WOW_PRIEST.subclassSpells!)).toEqual(['Discipline Domain', 'Shadow Domain']);
+      for (const rows of Object.values(WOW_PRIEST.subclassSpells!)) {
+        expect(rows.map(r => r.classLevel)).toEqual([3, 5, 7, 9]);
+        expect(rows.map(r => r.spells.length)).toEqual([4, 2, 2, 2]);
+      }
+      expect(WOW_PRIEST.wowSubclasses).toBeUndefined();
     });
   });
 
@@ -406,7 +496,7 @@ describe('wow-class-variants', () => {
   });
 
   it('leaves the other variants without maneuvers and on the level-2 fighting style default', () => {
-    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK]) {
+    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK]) {
       expect(v.wowManeuvers).withContext(v.key).toBeUndefined();
       expect(v.fightingStyleLevel).withContext(v.key).toBeUndefined();
       for (const g of Object.values(v.guidance ?? {})) {
@@ -416,7 +506,7 @@ describe('wow-class-variants', () => {
   });
 
   it('leaves the other variants on the level-3 subclass default, with no invocations', () => {
-    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_ROGUE, WOW_SHAMAN, WOW_WARRIOR]) {
+    for (const v of [WOW_DRUID, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARRIOR]) {
       expect(v.subclassLevel).withContext(v.key).toBeUndefined();
       expect(v.wowInvocations).withContext(v.key).toBeUndefined();
       expect(v.suggestedSpellsNote).withContext(v.key).toBeUndefined();

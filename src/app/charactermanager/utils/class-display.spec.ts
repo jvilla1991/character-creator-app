@@ -54,6 +54,16 @@ describe('classDisplayName', () => {
     expect(pipe.transform({ clazz: 'Fighter', subclass: null, specialization: 'Fury' })).toBe('Warrior (Fighter)');
   });
 
+  it('shows a WoW cleric as Priest (Cleric), and a base cleric unchanged', () => {
+    expect(classDisplayName('Cleric', null, 'Shadow')).toBe('Priest (Cleric)');
+    expect(classDisplayName('cleric', 'Life Domain', 'Holy')).toBe('Priest (Cleric)');
+    expect(classDisplayName('Cleric', 'Discipline Domain', null)).toBe('Priest (Cleric)');
+    expect(classDisplayName('Cleric', 'Life Domain', null)).toBe('Cleric');
+    expect(classDisplayName('Cleric')).toBe('Cleric');
+    const pipe = new ClassDisplayPipe();
+    expect(pipe.transform({ clazz: 'Cleric', subclass: 'Shadow Domain', specialization: 'Shadow' })).toBe('Priest (Cleric)');
+  });
+
   it('copes with a missing class', () => {
     expect(classDisplayName(undefined, undefined)).toBe('');
   });

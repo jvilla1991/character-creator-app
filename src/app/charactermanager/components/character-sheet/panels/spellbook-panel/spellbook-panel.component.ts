@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, input, output, signal } from '@angular/core';
 import { PC, PcSpell } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
+import { heroClassFor } from '../../../../models/hero-class';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
@@ -336,7 +337,11 @@ export class SpellbookPanelComponent implements OnChanges {
     this.loadingGrantSpells = true;
     this.grantSelection = [];
     const known = new Set((this.pc().spells ?? []).map(s => s.name.toLowerCase()));
-    const spells$ = this.allClasses ? this.dndResources.getSpells() : this.dndResources.getSpellsForClass(this.pc().clazz);
+    // A WoW variant may add spells to its class list (the Priest's Blur and Levitate).
+    const extras = heroClassFor(this.pc())?.extraSpellList;
+    const spells$ = this.allClasses ? this.dndResources.getSpells()
+      : extras?.length ? this.dndResources.getSpellsForClass(this.pc().clazz, extras)
+      : this.dndResources.getSpellsForClass(this.pc().clazz);
     spells$.subscribe({
       next: spells => {
         this.grantCandidates = spells.filter(s => !known.has(s.name.toLowerCase()));

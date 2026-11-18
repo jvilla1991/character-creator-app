@@ -116,6 +116,15 @@ describe('CharacterSheetComponent', () => {
     component.pc = makePC({ clazz: 'Fighter', subclass: 'Champion', specialization: null });
     expect(component.heroClass).toBeFalse();
     expect(component.subtitleSuffix).toBe('Champion');
+    // WoW Priest: "Priest (Cleric) (Shadow)", then the domain joins it from level 3.
+    component.pc = makePC({ clazz: 'Cleric', subclass: undefined, specialization: 'Shadow' });
+    expect(component.heroClass).toBeTrue();
+    expect(component.subtitleSuffix).toBe('Shadow');
+    component.pc = makePC({ clazz: 'Cleric', subclass: 'Discipline Domain', specialization: 'Discipline' });
+    expect(component.subtitleSuffix).toBe('Discipline Domain · Discipline');
+    component.pc = makePC({ clazz: 'Cleric', subclass: 'Life Domain', specialization: null });
+    expect(component.heroClass).toBeFalse();
+    expect(component.subtitleSuffix).toBe('Life Domain');
   });
 
   // --- Level Up gating ---
