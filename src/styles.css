@@ -1530,6 +1530,13 @@ select:focus {
   text-transform: uppercase;
   color: var(--text);
 }
+/* Copy that differs by layout: the sidebar is a visible list at desktop widths
+   and a drawer behind the menu button at 820px and below. */
+.narrow-only { display: none; }
+@media (max-width: 820px) {
+  .wide-only { display: none; }
+  .narrow-only { display: inline; }
+}
 .empty-sub {
   font-family: 'Newsreader', serif;
   font-size: 16px;

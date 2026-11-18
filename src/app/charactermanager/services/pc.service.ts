@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { PC } from '../models/pc';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
@@ -38,6 +38,10 @@ export class PCService {
   private activePCSubject = new BehaviorSubject<PC | null>(null);
   activePC$ = this.activePCSubject.asObservable();
 
+  /** True while the last roster fetch has failed. An empty roster and a failed
+   *  load both arrive as `[]`, so the roster needs this to tell them apart. */
+  readonly loadFailed = signal(false);
+
   constructor(private http: HttpClient) {}
 
   readonly pcUrl = `${environment.characterApiUrl}/api/v1/pc/`;
@@ -59,8 +63,12 @@ export class PCService {
         const parsed = pcs.map(raw => this.deserializePC(raw));
         this.pcs = parsed;
         this.pcsSubject.next(parsed);
+        this.loadFailed.set(false);
       },
-      error: (err) => console.error('Failed to load PCs', err)
+      error: (err) => {
+        console.error('Failed to load PCs', err);
+        this.loadFailed.set(true);
+      }
     });
   }
 

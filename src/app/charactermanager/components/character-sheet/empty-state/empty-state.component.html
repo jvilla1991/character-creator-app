@@ -14,9 +14,24 @@
   <!-- Copy -->
   <div>
     <div class="empty-title">No Character Selected</div>
+    <!-- What is true, and the next step that exists at this width: the roster
+    is a visible list on desktop and sits behind the menu button on a phone. -->
+    <div class="empty-sub" style="margin-top: 8px;">
+      @if (loadFailed()) {
+        Could not load your characters.
+      } @else if (hasCharacters()) {
+        <span class="wide-only">Pick a character from the list on the left, or create a new one.</span>
+        <span class="narrow-only">Open the menu at the top left to pick a character, or create a new one.</span>
+      } @else {
+        You have no characters yet. Create your first one to begin.
+      }
+    </div>
   </div>
 
   <!-- CTA -->
+  @if (loadFailed()) {
+    <button class="btn" style="flex: none" (click)="retry()">Try again</button>
+  }
   <button class="btn primary" style="flex: none" (click)="forgeHero.emit()">
     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
          style="margin-right: 8px; vertical-align: -2px;">
