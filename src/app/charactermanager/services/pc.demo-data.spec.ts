@@ -1,5 +1,5 @@
 import { DEMO_PCS, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
-import { heroClassFor, subclassSpellsFor } from '../models/hero-class';
+import { heroClassFor, heroClassSpells, subclassSpellsFor } from '../models/hero-class';
 import { classDisplayName } from '../utils/class-display';
 
 describe('pc.demo-data (WoW mirrors)', () => {
@@ -150,6 +150,27 @@ describe('pc.demo-data (WoW mirrors)', () => {
       .toEqual(['Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead']);
     expect((pc.spells ?? []).map(s => s.name)).toContain('Blur');
     expect(Object.keys(pc.spellSlots ?? {})).toEqual(['1', '2', '3']);
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('seeds a level-5 Devastation evoker on Draconic Sorcery whose sheet shows the Evoker Spells', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Sorcerer' && p.specialization === 'Devastation')!;
+    expect(pc).toBeDefined();
+    expect(pc.race).toBe('Dragonborn');
+    expect(pc.bio).toContain('dracthyr');
+    expect(pc.level).toBe(5);
+    expect(pc.subclass).toBe('Draconic Sorcery');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Sorcerer (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Evoker (Sorcerer)');
+    expect(heroClassSpells(hero!, pc.level!, pc.specialization).map(s => s.name)).toEqual([
+      'Chromatic Orb', "Dragon's Breath", 'Azure Strike', 'Scorching Ray', 'Fly', 'Fireball',
+    ]);
+    // The four recommended Devastation cantrips (plus one more at Sorcerer 4).
+    expect((pc.spells ?? []).filter(s => s.lvl === 0).map(s => s.name))
+      .toEqual(jasmine.arrayContaining(['Elementalism', 'Light', 'Ray of Frost', 'Sorcerous Burst']));
+    expect(Object.keys(pc.spellSlots ?? {})).toEqual(['1', '2', '3']);
+    // A sorcerer's subclass is chosen at level 1, so the demo never offers one on level-up.
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
   });
 });

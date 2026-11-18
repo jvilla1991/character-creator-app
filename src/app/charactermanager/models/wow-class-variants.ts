@@ -1,5 +1,5 @@
 import type {
-  HeroClassOption, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
+  HeroClassOption, HeroSpellRow, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
 import { DISCIPLINE_DOMAIN, SHADOW_DOMAIN, priestFeatureCards } from './wow-priest';
@@ -138,6 +138,127 @@ export const WOW_DRUID: HeroClassOption = {
   suggestedSpells: WOW_DRUID_SUGGESTED_SPELLS,
   renownNote: 'Taking the World of Warcraft Druid raises your Renown with the Cenarion Circle by 3 — ask your DM to record it.',
   beastForms: true,
+};
+
+// ── Evoker (Sorcerer) ────────────────────────────────────────────────────────
+
+export const WOW_EVOKER_SPECIALIZATIONS = ['Augmentation', 'Devastation', 'Preservation'] as const;
+
+/**
+ * The Evoker's locked subclass. It is the ordinary base-game Draconic Sorcery, so
+ * a sorcerer is an Evoker only with one of the Evoker specializations too.
+ */
+export const DRACONIC_SORCERY = 'Draconic Sorcery';
+
+/**
+ * Evoker Spells, always prepared, by Sorcerer level: the spells every evoker gets
+ * plus the specialization's own (✦ WoW spells are flagged from the spell data).
+ * The server adds the "Evoker Spells" feature at Sorcerer 3.
+ */
+export const WOW_EVOKER_SPELL_TABLE: readonly HeroSpellRow[] = [
+  { classLevel: 3, all: ['Chromatic Orb', "Dragon's Breath"], bySpecialization: {
+    Augmentation: ['Ebon Might', 'Eruption'], Devastation: ['Azure Strike', 'Scorching Ray'],
+    Preservation: ['Dream Breath', 'Living Flame'] } },
+  { classLevel: 5, all: ['Fly'], bySpecialization: {
+    Augmentation: ['Blistering Scales'], Devastation: ['Fireball'], Preservation: ['Emerald Blossom'] } },
+  { classLevel: 7, all: ['Arcane Eye'], bySpecialization: {
+    Augmentation: ['Upheaval'], Devastation: ['Emberstorm'], Preservation: ['Time Dilation'] } },
+  { classLevel: 9, all: ['Summon Dragon'], bySpecialization: {
+    Augmentation: ['Breath of Eons'], Devastation: ['Shattering Star'], Preservation: ['Dream Flight'] } },
+];
+
+const DRACONIC = { name: DRACONIC_SORCERY } as const;
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * The subclass is locked at creation, so the box shows no subclass row.
+ */
+export const WOW_EVOKER_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Augmentation: {
+    cantrips: ['Elementalism', 'Light', 'Sorcerous Burst', 'Thunderclap'],
+    extraPrepared: ['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame'],
+    metamagic: ['Empowered Spell', 'Extended Spell'],
+    elementalAffinity: 'Fire',
+    subclass: DRACONIC,
+    feats: ['Elemental Adept (Fire)', 'Speedy', 'Spell Sniper', 'War Caster'],
+  },
+  Devastation: {
+    cantrips: ['Elementalism', 'Light', 'Ray of Frost', 'Sorcerous Burst'],
+    extraPrepared: ['Arcane Vigor', 'Burning Hands', 'Cloud of Daggers', 'Flame Blade', 'Ice Knife', 'Living Flame'],
+    metamagic: ['Empowered Spell', 'Transmuted Spell'],
+    elementalAffinity: 'Cold or Fire',
+    subclass: DRACONIC,
+    feats: ['Elemental Adept (Cold and Fire)', 'Spell Sniper', 'War Caster'],
+  },
+  Preservation: {
+    cantrips: ['Blade Ward', 'Elementalism', 'Light', 'Sorcerous Burst'],
+    extraPrepared: ['Alter Self', 'Arcane Vigor', 'False Life', 'Hold Person', 'Ray of Sickness', 'Witch Bolt'],
+    metamagic: ['Heightened Spell', 'Twinned Spell'],
+    elementalAffinity: 'Lightning or Poison',
+    subclass: DRACONIC,
+    feats: ['Elemental Adept (Lightning and Poison)', 'Spell Sniper', 'War Caster'],
+  },
+};
+
+/** Suggested (not always-prepared) spells per specialization, by spell level. */
+export const WOW_EVOKER_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Augmentation: [
+    { level: 3, spells: ['Fireball', 'Haste', 'Slow'] },
+    { level: 4, spells: ['Fire Shield', 'Stoneskin'] },
+    { level: 5, spells: ['Hold Monster', 'Wall of Stone'] },
+    { level: 6, spells: ['Sunbeam'] },
+    { level: 7, spells: ['Reverse Gravity'] },
+    { level: 8, spells: ['Earthquake'] },
+    { level: 9, spells: ['Time Stop'] },
+  ],
+  Devastation: [
+    { level: 3, spells: ['Counterspell', 'Fly', 'Sleet Storm'] },
+    { level: 4, spells: ['Ice Storm', 'Wall of Fire'] },
+    { level: 5, spells: ['Cone of Cold', 'Telekinesis'] },
+    { level: 6, spells: ['Azure Sweep', "Otiluke's Freezing Sphere"] },
+    { level: 7, spells: ['Fire Storm', 'Lay Waste'] },
+    { level: 8, spells: ['Incendiary Cloud'] },
+    { level: 9, spells: ['Meteor Swarm'] },
+  ],
+  Preservation: [
+    { level: 3, spells: ['Dispel Magic', 'Haste', 'Lightning Bolt'] },
+    { level: 4, spells: ['Polymorph', 'Vitriolic Sphere'] },
+    { level: 5, spells: ['Cloudkill', 'Hold Monster', 'Rescue'] },
+    { level: 6, spells: ['Globe of Invulnerability'] },
+    { level: 7, spells: ['Prismatic Spray'] },
+    { level: 8, spells: ['Dominate Monster'] },
+    { level: 9, spells: ['Time Stop'] },
+  ],
+};
+
+export const WOW_EVOKER: HeroClassOption = {
+  key: 'Sorcerer (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Evoker (Sorcerer)".
+  label: variantLabel('Evoker', 'Sorcerer'),
+  name: 'Evoker',
+  baseClass: 'Sorcerer',
+  subclass: DRACONIC_SORCERY,
+  sharedSubclass: true,
+  subclassLevel: 1,
+  subclassTerm: 'subclass',
+  source: 'World of Warcraft',
+  blurb: "An evoker wields the magic of all five dragonflights — the red flight's flame, the blue's "
+    + "arcane focus, the black's might, the green's life and the bronze's command of time — to ruin "
+    + 'foes and bolster allies, darting in and out of the fray. Evokers can empower, extend and transmute '
+    + 'their spells, and charge them up before letting them loose.',
+  heroNote: "Evoker is a hero class, usually started at level 3 or higher (level 1 with your DM's permission). "
+    + 'Every evoker in World of Warcraft lore is a dracthyr — check with your DM before playing another species.',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Augmentation', desc: "Channels the black dragonflight's might to amplify allies, and bends time with the bronze." },
+    { name: 'Devastation',  desc: "Rains the red flight's fire and the blue flight's arcane power down on the battlefield." },
+    { name: 'Preservation', desc: 'Draws on the Emerald Dream and bronze time magic to heal allies and undo harm.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: WOW_EVOKER_SPELL_TABLE,
+  spellTableTitle: 'Evoker Spells',
+  guidance: WOW_EVOKER_GUIDANCE,
+  suggestedSpells: WOW_EVOKER_SUGGESTED_SPELLS,
 };
 
 // ── Paladin ──────────────────────────────────────────────────────────────────
@@ -658,7 +779,10 @@ export const WOW_WARRIOR: HeroClassOption = {
   featureCards: warriorFeatureCards,
 };
 
-/** Every WoW class variant, in class-list order. */
+/**
+ * Every WoW class variant, in class-list order. The Evoker is listed here too,
+ * though it locks its (base-game) subclass like a hero class.
+ */
 export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
-  WOW_DRUID, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+  WOW_DRUID, WOW_EVOKER, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
 ];

@@ -52,7 +52,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * recommended patron, invocations (text only) and suggested spells; for a WoW Shaman, the
  * computed Totems and path cards (Raging Elements, Spiritual Guardian); for a WoW Warrior,
  * the level-1 fighting style, subclass and maneuvers to consider (text only); for a WoW Priest, the
- * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards. Derived from the PC's
+ * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards; for a WoW Evoker,
+ * the Evoker Spells table, Metamagic, spells to prepare, Elemental Affinity and suggested spells. Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
  * name in the shared spell data (WoW spells are stubs until their full text lands).
@@ -78,6 +79,8 @@ export class HeroClassPanelComponent {
 
   /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];
+  /** The specialization's recommended spells to prepare (WoW Evoker), with what the character has. */
+  extraPrepared: SuggestedSpellView[] = [];
   /** Always-prepared spell lists — the hero table, then a WoW-only subclass's (Oath of the Holy). */
   spellSections: HeroSpellSection[] = [];
   /** Cat and Bear Form stat cards — Circle of the Moon WoW Druids only. */
@@ -90,7 +93,9 @@ export class HeroClassPanelComponent {
     this._pc = value;
     this.deriveVariant();
     const cardSpells = this.featureCards.some(card => card.rows.some(row => row.spells?.length));
-    if (this.spellSections.length || this.suggestedSpells.length || cardSpells) this.loadSpells();
+    if (this.spellSections.length || this.suggestedSpells.length || this.extraPrepared.length || cardSpells) {
+      this.loadSpells();
+    }
   }
   get pc(): PC { return this._pc; }
 
@@ -98,11 +103,25 @@ export class HeroClassPanelComponent {
     return heroClassFor(this._pc);
   }
 
-  /** The panel heading: the hero subclass, or e.g. "World of Warcraft Druid" for a variant. */
+  /**
+   * The panel heading: the hero subclass, or e.g. "World of Warcraft Druid" for a
+   * variant — and for the Evoker, whose locked Draconic Sorcery is a base-game subclass.
+   */
   get panelTitle(): string {
     const hero = this.hero;
     if (!hero) return '';
-    return hero.subclass ?? `${hero.source} ${hero.name}`;
+    return hero.subclass && !hero.sharedSubclass ? hero.subclass : `${hero.source} ${hero.name}`;
+  }
+
+  /** True when the hero class locks its subclass at creation (Death Knight, Evoker) — no subclass to recommend. */
+  get subclassLocked(): boolean {
+    return !!this.hero?.subclass;
+  }
+
+  /** "Empowered Spell and Extended Spell" — the recommended Metamagic (WoW Evoker); '' when none. */
+  get metamagicText(): string {
+    const picks = this.guidance?.metamagic ?? [];
+    return picks.length ? picks.join(' and ') : '';
   }
 
   /** "Frost Rune" / "Havoc"; '' when no specialization is set. */
@@ -221,12 +240,16 @@ export class HeroClassPanelComponent {
     const hero = this.hero;
     const pc = this._pc;
     this.spellSections = [
-      { title: `${hero?.subclass ?? ''} Spells`, entries: this.spells },
+      { title: hero?.spellTableTitle ?? `${hero?.subclass ?? ''} Spells`, entries: this.spells },
       { title: `${pc?.subclass ?? ''} Spells`, entries: this.subclassSpells },
     ].filter(section => section.entries.length > 0);
     const spec = pc?.specialization;
     const levels = (spec && hero?.suggestedSpells?.[spec]) || [];
     const owned = new Map((pc?.spells ?? []).map(s => [s.name.toLowerCase(), s]));
+    this.extraPrepared = ((spec && hero?.guidance?.[spec]?.extraPrepared) || []).map(name => {
+      const have = owned.get(name.toLowerCase());
+      return { name, known: !!have, prepared: !!have?.prepared };
+    });
     this.suggestedSpells = levels.map(row => ({
       level: row.level,
       spells: row.spells.map(name => {

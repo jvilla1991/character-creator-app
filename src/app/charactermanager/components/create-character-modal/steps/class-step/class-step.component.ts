@@ -16,6 +16,9 @@ import {
  * (never auto-selected), and its recommended invocations are text only. A WoW
  * Warrior's recommended Battle Master maneuvers are text only too (✦ marks the
  * WoW ones), and its level-1 Fighting Style is a recommendation (no picker here).
+ * The Evoker (Sorcerer) locks its level-1 subclass to Draconic Sorcery — shown
+ * "(fixed)", with no subclass picker (the parent passes requiresLevel1Subclass
+ * false) — and its box adds the spells to prepare, Metamagic and Elemental Affinity.
  * Presentational — the parent owns selection logic, the source filter and the
  * detail fetch, and passes the already-filtered rows and derived strings in.
  */

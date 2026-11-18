@@ -957,3 +957,114 @@ describe('HeroClassPanelComponent', () => {
     });
   });
 });
+
+describe('HeroClassPanelComponent — World of Warcraft Evoker (Sorcerer)', () => {
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
+  let component: HeroClassPanelComponent;
+
+  const stub = (name: string, level: number, wow = true) => ({
+    name, level, school: 'evocation', classes: ['sorcerer'], actionType: 'action', concentration: false, ritual: false,
+    range: 'TBD', components: ['v', 's'], duration: 'TBD', description: `${name} text.`,
+    ...(wow ? { source: 'World of Warcraft' } : {}),
+  }) as DndSpell;
+
+  function makeEvoker(overrides: Partial<PC> = {}): PC {
+    return {
+      id: 15, name: 'Kazrethos', clazz: 'Sorcerer', subclass: 'Draconic Sorcery', specialization: 'Devastation',
+      level: 5, playerName: 'Omar', stats: { STR: 10, DEX: 14, CON: 14, INT: 12, WIS: 10, CHA: 18 },
+      spells: [{ lvl: 1, name: 'Ice Knife', school: 'Conjuration', time: '1 action', prepared: true }],
+      ...overrides,
+    };
+  }
+
+  function render(pc: PC): HTMLElement {
+    const fixture = TestBed.createComponent(HeroClassPanelComponent);
+    fixture.componentRef.setInput('pc', pc);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  beforeEach(() => {
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
+    dndResources.getSpells.and.returnValue(of([
+      stub('Azure Strike', 1), stub('Living Flame', 1), stub('Chromatic Orb', 1, false), stub('Fireball', 3, false),
+    ]));
+    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
+  });
+
+  it('renders only for a Draconic Sorcery sorcerer with an Evoker specialization', () => {
+    expect(isHeroClass(makeEvoker())).toBeTrue();
+    expect(isHeroClass(makeEvoker({ specialization: null }))).toBeFalse();
+    expect(isHeroClass(makeEvoker({ subclass: 'Wild Magic Sorcery' }))).toBeFalse();
+    expect(isHeroClass(makeEvoker({ specialization: 'Frost' }))).toBeFalse();
+  });
+
+  it('titles the panel "World of Warcraft Evoker", not the base-game subclass', () => {
+    component.pc = makeEvoker();
+    expect(component.panelTitle).toBe('World of Warcraft Evoker');
+    expect(component.subclassLocked).toBeTrue();
+  });
+
+  it('lists the Evoker Spells by Sorcerer level for the specialization, from Sorcerer 3', () => {
+    component.pc = makeEvoker({ level: 2 });
+    expect(component.spellSections).toEqual([]);
+    component.pc = makeEvoker({ level: 3 });
+    expect(component.spellSections.map(sec => sec.title)).toEqual(['Evoker Spells']);
+    expect(component.spellSections[0].entries).toEqual([
+      { name: 'Chromatic Orb', classLevel: 3, grantedBy: 'All' },
+      { name: "Dragon's Breath", classLevel: 3, grantedBy: 'All' },
+      { name: 'Azure Strike', classLevel: 3, grantedBy: 'Devastation' },
+      { name: 'Scorching Ray', classLevel: 3, grantedBy: 'Devastation' },
+    ]);
+    component.pc = makeEvoker({ level: 5 });
+    expect(component.spells.map(s => s.name)).toEqual([
+      'Chromatic Orb', "Dragon's Breath", 'Azure Strike', 'Scorching Ray', 'Fly', 'Fireball',
+    ]);
+    component.pc = makeEvoker({ specialization: 'Augmentation', level: 9 });
+    expect(component.spells.filter(s => s.grantedBy === 'Augmentation').map(s => s.name))
+      .toEqual(['Ebon Might', 'Eruption', 'Blistering Scales', 'Upheaval', 'Breath of Eons']);
+    component.pc = makeEvoker({ specialization: 'Preservation', level: 20 });
+    expect(component.spells.filter(s => s.grantedBy === 'Preservation').map(s => s.name))
+      .toEqual(['Dream Breath', 'Living Flame', 'Emerald Blossom', 'Time Dilation', 'Dream Flight']);
+    expect(component.spells.filter(s => s.grantedBy === 'All').map(s => s.name))
+      .toEqual(['Chromatic Orb', "Dragon's Breath", 'Fly', 'Arcane Eye', 'Summon Dragon']);
+  });
+
+  it('marks the World of Warcraft Evoker Spells with ✦ beside the name', () => {
+    const el = render(makeEvoker({ level: 3 }));
+    expect(el.querySelector('.hero-spells-title')?.textContent).toContain('Evoker Spells');
+    const rows = Array.from(el.querySelectorAll('.hero-spell summary')) as HTMLElement[];
+    const marked = rows.filter(r => r.querySelector('.wow-mark'))
+      .map(r => r.querySelector('.hero-spell-name')!.textContent);
+    expect(marked).toEqual(['Azure Strike']);
+    expect(rows[0].querySelector('.hero-spell-meta')!.textContent).toContain('Sorcerer 3');
+  });
+
+  it('shows Metamagic, spells to prepare (✦ on WoW ones) and Elemental Affinity, but no subclass recommendation', () => {
+    const el = render(makeEvoker());
+    const text = el.textContent ?? '';
+    expect(text).toContain('World of Warcraft Evoker');
+    expect(text).toContain('Recommended Metamagic');
+    expect(text).toContain('Empowered Spell and Transmuted Spell');
+    expect(text).toContain('Spells to prepare');
+    expect(text).toContain('Choose Cold or Fire for Draconic Sorcery');
+    expect(text).not.toContain('Recommended subclass');
+    expect(text).toContain('dracthyr');
+    const prepare = el.querySelector('.hero-extra-prepared') as HTMLElement;
+    const marked = Array.from(prepare.querySelectorAll('.suggested-spell'))
+      .filter(n => n.querySelector('.wow-mark')).map(n => n.textContent!.replace('✦', '').trim());
+    expect(marked).toEqual(['Living Flame']);
+    expect(prepare.textContent).toContain('prepared');   // Ice Knife is already prepared
+  });
+
+  it('lists the suggested spells per specialization, Otiluke\'s Freezing Sphere included', () => {
+    component.pc = makeEvoker();
+    expect(component.suggestedSpells.map(r => r.level)).toEqual([3, 4, 5, 6, 7, 8, 9]);
+    expect(component.suggestedSpells[3].spells.map(s => s.name)).toEqual(['Azure Sweep', "Otiluke's Freezing Sphere"]);
+    component.pc = makeEvoker({ specialization: 'Preservation' });
+    expect(component.suggestedSpells[2].spells.map(s => s.name)).toEqual(['Cloudkill', 'Hold Monster', 'Rescue']);
+    expect(component.extraPrepared.map(s => s.name))
+      .toEqual(['Alter Self', 'Arcane Vigor', 'False Life', 'Hold Person', 'Ray of Sickness', 'Witch Bolt']);
+  });
+});
