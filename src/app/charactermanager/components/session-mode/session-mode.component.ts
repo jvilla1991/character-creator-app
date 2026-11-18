@@ -543,7 +543,9 @@ export class SessionModeComponent implements OnInit, OnDestroy {
             });
           }
         }
-        this.notifications.notify(`Sold for ${formatCp(result.totalGainCp)}.`);
+        this.notifications.notify(result.totalGainCp > 0
+          ? `Sold for ${formatCp(result.totalGainCp)}.`
+          : 'Sold — the shop paid nothing for it.');
       },
       error: () => this.notifications.notify('Could not sell that item. Try again.'),
     });

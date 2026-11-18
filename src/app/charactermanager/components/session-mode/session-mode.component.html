@@ -287,7 +287,7 @@
     @if (!state.dm && myPc(state); as pc) {
       <div class="eyebrow" style="margin: 24px 0 8px;">Your Character</div>
       <app-character-sheet [pc]="pc" [showActions]="false" [inventoryEditable]="true"
-        [shopOpenForMe]="state.shopOpen && state.shopForMe" [shopCategory]="state.shopCategory"
+        [shopOpenForMe]="state.shopOpen && state.shopForMe"
         [slotInventory]="slotInventory"
         [survivalConditions]="survivalConditions" [strictComponents]="strictComponents"
         [location]="state.location"

@@ -70,8 +70,6 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** True while a shop is open and this PC is targeted — passed through to the
    *  inventory panel to reveal its Sell button. */
   @Input() shopOpenForMe = false;
-  /** The open shop's category (backend format), or null for curated/no shop. */
-  @Input() shopCategory: string | null = null;
   /** True when this PC's campaign runs the Darker Dungeons slot-based inventory
    *  variant — switches the inventory panel to slots/bulk (a converted PC's
    *  legacy weapons/gear were consolidated into its inventory on join). */

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC, PcItem } from '../../../../models/pc';
-import { categoryLabelFor, formatCp, SellRequest } from '../../../../models/shop';
+import { formatCp, SellRequest } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
 import { withRecomputedAc } from '../../../../utils/armor-math';
 import { legacyEquipmentLines } from '../../../../utils/legacy-equipment';
@@ -31,8 +31,8 @@ import { InventoryTransferResult } from '../../../../services/inventory-transfer
  * `editable`; read-only otherwise (e.g. the in-session embed). `equipped` is a
  * display flag only — it does not recompute AC or any derived stat.
  */
-/** How long a Give waits for the starting-gear fold-in save before giving up. */
-const PENDING_GIVE_MS = 10_000;
+/** How long a Give or Sell waits for the starting-gear fold-in save before giving up. */
+const PENDING_FOLD_MS = 10_000;
 
 @Component({
     selector: 'app-inventory-panel',
@@ -42,13 +42,13 @@ const PENDING_GIVE_MS = 10_000;
     imports: [ItemComposerComponent, GiveItemModalComponent]
 })
 export class InventoryPanelComponent {
-  /** A setter so a Give that had to wait for the starting-gear fold-in can
-   *  resume the moment the saved character comes back (see openGive). */
+  /** A setter so a Give or Sell that had to wait for the starting-gear fold-in
+   *  can resume the moment the saved character comes back (see foldThen). */
   @Input()
   get pc(): PC { return this._pc; }
   set pc(value: PC) {
     this._pc = value;
-    this.resumePendingGive();
+    this.resumePending();
   }
   private _pc!: PC;
   /** When true, shows the manage controls (equip / reduce qty / drop) and emits pcChange. */
@@ -63,35 +63,43 @@ export class InventoryPanelComponent {
     const index = (this.pc.inventory ?? []).indexOf(item);
     if (index < 0) {
       // A starting-gear line is not in pc.inventory yet, and the transfer
-      // endpoint addresses an item by its position there. Fold the legacy
-      // lines in first (an ordinary save through pcChange); the dialog opens
-      // when the saved character comes back — see resumePendingGive.
-      const at = this.items.indexOf(item);
-      if (at < 0) return;
+      // endpoint addresses an item by its position there — fold it in first.
       this.transferMessage = '';
-      this.pendingGive = { at, name: item.name, until: Date.now() + PENDING_GIVE_MS };
-      this.emit(this.items.map(i => ({ ...i })));
+      this.foldThen('give', item);
       return;
     }
     this.transferMessage = '';
     this.giveSelection = { pc: structuredClone(this.pc), index };
   }
 
-  /** A Give clicked on a starting-gear line, waiting for the fold-in save:
-   *  where the line sits in `items`, its name (a sanity check), and a deadline
-   *  so a save that failed cannot pop the dialog open much later. */
-  private pendingGive: { at: number; name: string; until: number } | null = null;
+  /** A Give or Sell clicked on a starting-gear line, waiting for the fold-in
+   *  save: what was asked, where the line sits in `items`, its name (a sanity
+   *  check), and a deadline so a save that failed cannot act much later. */
+  private pending: { action: 'give' | 'sell'; at: number; name: string; until: number } | null = null;
 
-  private resumePendingGive(): void {
-    const pending = this.pendingGive;
+  /** Starting gear lives in the legacy arrays until the first inventory edit,
+   *  but Give and Sell address an item by its position in pc.inventory. Fold
+   *  the legacy lines in (an ordinary save through pcChange) and carry on with
+   *  `action` when the saved character comes back — see resumePending. */
+  private foldThen(action: 'give' | 'sell', item: PcItem): void {
+    const at = this.items.indexOf(item);
+    if (at < 0) return;
+    this.pending = { action, at, name: item.name, until: Date.now() + PENDING_FOLD_MS };
+    this.emit(this.items.map(i => ({ ...i })));
+  }
+
+  private resumePending(): void {
+    const pending = this.pending;
     if (!pending) return;
-    if (Date.now() > pending.until) { this.pendingGive = null; return; }
+    if (Date.now() > pending.until) { this.pending = null; return; }
     // Still unfolded: this is some other update (a session poll, say) that
     // arrived before the save did. Keep waiting.
     if (this._pc?.weapons?.length || this._pc?.gear?.length) return;
-    this.pendingGive = null;
+    this.pending = null;
     const line = this.items[pending.at];
-    if (line && line.name === pending.name) this.openGive(line);
+    if (!line || line.name !== pending.name) return;
+    if (pending.action === 'give') this.openGive(line);
+    else this.sell(pending.at);
   }
 
   onTransferred(result: InventoryTransferResult): void {
@@ -101,9 +109,6 @@ export class InventoryPanelComponent {
   }
   /** True while a shop is open and this PC is targeted — reveals the Sell button. */
   @Input() shopOpenForMe = false;
-  /** The open shop's category (backend format, e.g. 'WEAPON'), or null for a
-   *  curated shop (buys any category) or when no shop is open. */
-  @Input() shopCategory: string | null = null;
   /** True when the PC's campaign runs Darker Dungeons slot-based inventory —
    *  the header shows slots used vs capacity and an Encumbered badge instead
    *  of raw weight, and each line shows its bulk. Display-only: the encumbered
@@ -228,27 +233,38 @@ export class InventoryPanelComponent {
   }
 
   /**
-   * Whether this line can be sold to the open shop right now — best-effort
-   * client-side gating (mirrors the server's rules) so a doomed sell request
-   * never gets sent. The server is still authoritative.
+   * Whether this line can be sold right now: any shop buys anything the
+   * character is holding, so the only line without a Sell button is a dropped
+   * one (no longer held — it gets Discard instead). Mirrors the server's rule.
    */
   canSell(item: PcItem): boolean {
-    if (!this.shopOpenForMe) return false;
-    if (item.status === 'dropped') return false;
-    if (this.shopCategory != null && categoryLabelFor(this.shopCategory) !== item.category) return false;
-    return !!item.catalogKey || (item.unitCostCp != null && item.unitCostCp > 0);
+    return this.shopOpenForMe && item.status !== 'dropped';
   }
 
-  /** The stack waiting on "sell how many?" — only stacks of 2+ ask. */
+  /** True when the line carries no catalog link and no price paid (starting
+   *  gear, a note the DM handed out). The shop still buys it: the server pays
+   *  half the catalog price if it knows an item by that name, else nothing —
+   *  which only the server can tell, so the player is warned before selling. */
+  hasNoListedPrice(item: PcItem): boolean {
+    return !item.catalogKey && !(item.unitCostCp != null && item.unitCostCp > 0);
+  }
+
+  /** The line waiting on a sell confirmation — a stack of 2+ asks how many,
+   *  and a line with no listed price warns that it may sell for nothing. */
   sellPrompt: { item: PcItem; qty: number } | null = null;
 
-  /** Sell clicked: a single item sells straight away; a stack first asks how
-   *  many (defaulting to all of it). */
+  /** Sell clicked: a single priced item sells straight away; a stack first
+   *  asks how many (defaulting to all of it), and an unpriced line asks for a
+   *  yes. Starting gear is folded into pc.inventory first. */
   sell(index: number): void {
     const item = this.items[index];
     if (!item || !this.canSell(item)) return;
-    if ((item.qty ?? 1) > 1) {
-      this.sellPrompt = { item, qty: item.qty };
+    if (!(this.pc.inventory ?? []).includes(item)) {
+      this.foldThen('sell', item);
+      return;
+    }
+    if ((item.qty ?? 1) > 1 || this.hasNoListedPrice(item)) {
+      this.sellPrompt = { item, qty: item.qty ?? 1 };
       return;
     }
     this.emitSell(item, 1);
@@ -276,9 +292,9 @@ export class InventoryPanelComponent {
   }
 
   private emitSell(item: PcItem, qty: number): void {
-    // The server sells by position in pc.inventory. A line that is not there
-    // (starting gear not folded in yet, or the inventory changed under the
-    // prompt) has no position to send, so nothing is sold.
+    // The server sells by position in pc.inventory. A line that is no longer
+    // there (the inventory changed under the prompt) has no position to send,
+    // so nothing is sold.
     const index = (this.pc.inventory ?? []).indexOf(item);
     if (index < 0) return;
     this.sellRequested.emit({ index, qty });
