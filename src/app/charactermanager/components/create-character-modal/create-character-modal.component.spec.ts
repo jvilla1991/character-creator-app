@@ -766,7 +766,7 @@ describe('CreateCharacterModalComponent — logic', () => {
 
     it('shows the base classes then the WoW hero classes with both sources on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
+        .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
     });
 
     it('hides the WoW hero classes with World of Warcraft off', () => {
@@ -777,7 +777,7 @@ describe('CreateCharacterModalComponent — logic', () => {
     it('shows only the WoW hero classes with Base Game off', () => {
       component.toggleContentSource('Base Game');
       expect(component.visibleClassOptions.map(o => o.label))
-        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue']);
+        .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Paladin', 'Rogue', 'Shaman (Barbarian)']);
     });
 
     it('shows no classes (without throwing) with both sources off', () => {
@@ -1204,6 +1204,65 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.selectSpecialization('Assassination');
       component.toggleClass('Rogue');
       expect(component.selectedClassKey).toBe('Rogue');
+      expect(component.specializationGuidance).toBeNull();
+    });
+  });
+
+  describe('World of Warcraft Shaman (Barbarian)', () => {
+    const SHAMAN_KEY = 'Barbarian (World of Warcraft)';
+
+    beforeEach(() => {
+      component.classList = ['Barbarian', 'Rogue', 'Wizard'];
+      dndResources.getClassDetail.calls.reset();
+    });
+
+    it('lists a "Shaman (Barbarian)" row tagged World of Warcraft beside the base Barbarian, and only under that filter', () => {
+      const rows = () => component.visibleClassOptions.filter(o => o.baseClass === 'Barbarian');
+      expect(rows().map(o => [o.key, o.label, o.source])).toEqual([
+        ['Barbarian', 'Barbarian', 'Base Game'], [SHAMAN_KEY, 'Shaman (Barbarian)', 'World of Warcraft'],
+      ]);
+      component.toggleContentSource('Base Game');
+      expect(rows().map(o => o.label)).toEqual(['Shaman (Barbarian)']);
+      component.toggleContentSource('Base Game');
+      component.toggleContentSource('World of Warcraft');
+      expect(rows().map(o => o.label)).toEqual(['Barbarian']);
+    });
+
+    it('stores clazz Barbarian with no subclass and requires a specialization', () => {
+      component.toggleClass(SHAMAN_KEY);
+      expect(component.clazz).toBe('Barbarian');
+      expect(component.selectedSubclass).toBe('');
+      expect(component.selectedClassLabel).toBe('Shaman (Barbarian)');
+      expect(dndResources.getClassDetail).toHaveBeenCalledWith('Barbarian');
+      component.step = 3;
+      expect(component.specializationOptions.map(o => o.name)).toEqual(['Elemental', 'Enhancement', 'Restoration']);
+      expect(component.canAdvance).toBeFalse();
+      component.selectSpecialization('Elemental');
+      expect(component.canAdvance).toBeTrue();
+      expect(component.specializationGuidance?.subclass.name).toBe('Path of the Elements');
+      expect(component.isSpellcastingClass).toBeFalse();
+    });
+
+    it('emits clazz Barbarian + null subclass + specialization in the create payload', (done) => {
+      component.toggleClass(SHAMAN_KEY);
+      component.selectSpecialization('Restoration');
+      component.name = 'Durak';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Barbarian');
+        expect(draft.subclass ?? null).toBeNull();
+        expect(draft.specialization).toBe('Restoration');
+        done();
+      });
+      component.submit();
+    });
+
+    it('selecting the base Barbarian row clears the specialization', () => {
+      component.toggleClass(SHAMAN_KEY);
+      component.selectSpecialization('Enhancement');
+      component.toggleClass('Barbarian');
+      expect(component.selectedClassKey).toBe('Barbarian');
+      expect(component.selectedClassLabel).toBe('Barbarian');
       expect(component.specializationGuidance).toBeNull();
     });
   });

@@ -103,7 +103,7 @@
                     }
                     @if (g.weaponMastery?.length) {
                       <dt>Weapon Mastery</dt>
-                      <dd>At least one of {{ g.weaponMastery!.join(', ') }}</dd>
+                      <dd>{{ weaponMasteryLead(g) }} {{ g.weaponMastery!.join(', ') }}</dd>
                     }
                     @if (g.fightingStyles?.length) {
                       <dt>Level 2 fighting style</dt>

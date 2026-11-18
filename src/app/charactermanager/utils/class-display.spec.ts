@@ -33,6 +33,17 @@ describe('classDisplayName', () => {
     expect(classDisplayName('Druid')).toBe('Druid');
   });
 
+  it('shows a WoW barbarian as Shaman (Barbarian), and a base barbarian unchanged', () => {
+    expect(classDisplayName('Barbarian', null, 'Elemental')).toBe('Shaman (Barbarian)');
+    expect(classDisplayName('barbarian', 'Path of the Elements', 'Elemental')).toBe('Shaman (Barbarian)');
+    expect(classDisplayName('Barbarian', 'Path of the Spiritual Guardian', null)).toBe('Shaman (Barbarian)');
+    expect(classDisplayName('Barbarian', 'Path of the World Tree', 'Restoration')).toBe('Shaman (Barbarian)');
+    expect(classDisplayName('Barbarian', 'Path of the World Tree', null)).toBe('Barbarian');
+    expect(classDisplayName('Barbarian')).toBe('Barbarian');
+    const pipe = new ClassDisplayPipe();
+    expect(pipe.transform({ clazz: 'Barbarian', subclass: null, specialization: 'Enhancement' })).toBe('Shaman (Barbarian)');
+  });
+
   it('copes with a missing class', () => {
     expect(classDisplayName(undefined, undefined)).toBe('');
   });
