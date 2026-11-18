@@ -16,11 +16,12 @@ import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
 import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS } from '../models/wow-class-variants';
+import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin and Rogue.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue and Shaman.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -474,6 +475,63 @@ export const DEMO_PCS: PC[] = [
     bio: 'A Booty Bay deckhand turned duelist, who talks as fast as she fights and has never once paid full price for anything.',
     notes: '',
   },
+  // World of Warcraft Shaman (Barbarian) — an ordinary Barbarian with the Elemental
+  // specialization and the WoW-only Path of the Elements, so the Totems and Raging
+  // Elements cards and the "Shaman (Barbarian)" header render.
+  {
+    id: 11,
+    name: 'Durak Stormcaller',
+    playerName: 'Kara',
+    player: 'Kara',
+    campaignId: null,
+    race: 'Orc',
+    clazz: 'Barbarian',
+    subclass: PATH_OF_THE_ELEMENTS,
+    specialization: 'Elemental',
+    level: 10,
+    background: 'Hermit',
+    alignment: 'Neutral Good',
+    portraitInitials: 'DS',
+    portraitTint: 'celestial',
+    hp: { cur: 105, max: 105, temp: 0 },
+    ac: 16, init: 2, speed: 40, prof: 4,
+    stats: { STR: 16, DEX: 14, CON: 16, INT: 8, WIS: 14, CHA: 10 },
+    saves: ['STR', 'CON'],
+    skills: { Athletics: 'prof', Nature: 'prof', Perception: 'prof', Survival: 'prof' },
+    conditions: [],
+    coins: { cp: 12, sp: 20, ep: 0, gp: 74, pp: 0 },
+    spellSlots: {},
+    spells: [],
+    weapons: [
+      { name: 'Battleaxe', dmg: '1d8+3 slashing', notes: 'Versatile (1d10); mastery: Topple' },
+      { name: 'Mace', dmg: '1d6+3 bludgeoning', notes: 'Mastery: Sap' },
+    ],
+    gear: [
+      { name: 'Scale Mail', equipped: true },
+      { name: 'Shield', equipped: true },
+      { name: 'Totem bundle (earth, fire, water, air)' },
+    ],
+    features: [
+      { name: 'Rage', source: 'Barbarian 1', desc: 'Bonus action; 4 uses per long rest. +3 dmg, advantage on STR.' },
+      { name: 'Weapon Mastery', source: 'Barbarian 1', desc: 'Use the mastery properties of two kinds of weapons.' },
+      { name: 'Reckless Attack', source: 'Barbarian 2', desc: 'Trade defense for advantage on STR attacks.' },
+      { name: 'Totems', source: 'Barbarian 3', desc: 'Replaces Primal Knowledge. Plant a totem that pulses in a 30-ft. emanation.' },
+      { name: 'Raging Elements', source: 'Path of the Elements 3', desc: 'Unleash Icefury, Lava Burst, or Lightning Bolt.' },
+      { name: 'Extra Attack', source: 'Barbarian 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Echo of the Elements', source: 'Path of the Elements 6', desc: 'Elementalism; spend a Rage for Daylight, Water Walk, or Wind Wall.' },
+      { name: 'Feral Instinct', source: 'Barbarian 7', desc: "Advantage on initiative. Surprise doesn't stop you from raging." },
+      { name: 'Brutal Strike', source: 'Barbarian 9', desc: 'Forgo Advantage from Reckless Attack for extra damage and an effect.' },
+      { name: 'Primordial Bond', source: 'Path of the Elements 10', desc: 'Resistance to Cold, Fire, and Lightning while raging.' },
+    ],
+    traits: {
+      Personality: 'Listens to the wind before answering anyone.',
+      Ideals: 'Balance. Every storm must end, and every fire must be fed.',
+      Bonds: 'The Earthen Ring, who taught him to hear the elements.',
+      Flaws: 'Trusts the spirits more than people.',
+    },
+    bio: 'An orc of the Earthen Ring who left Orgrimmar to calm the restless elements of the Barrens, and still carries the smell of rain wherever he goes.',
+    notes: '',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -592,7 +650,8 @@ const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
 };
 
-// Plus each WoW variant's WoW-only subclasses (Oath of the Holy, Swashbuckler), offered
+// Plus each WoW variant's WoW-only subclasses (Oath of the Holy, Swashbuckler, the two
+// WoW barbarian paths), offered
 // only to that variant's characters (base class + one of its specializations).
 export function demoSubclassOptions(clazz: string, specialization?: string | null): string[] {
   const key = (clazz ?? '').trim().toLowerCase();

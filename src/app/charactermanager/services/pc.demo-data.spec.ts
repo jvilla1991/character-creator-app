@@ -1,5 +1,6 @@
 import { DEMO_PCS, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
 import { heroClassFor, subclassSpellsFor } from '../models/hero-class';
+import { classDisplayName } from '../utils/class-display';
 
 describe('pc.demo-data (WoW mirrors)', () => {
   it('offers Blessed Warrior to every paladin and Druidic Warrior to every ranger at level 2', () => {
@@ -27,6 +28,34 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoSubclassOptions('Rogue', 'Holy')).not.toContain('Swashbuckler');
     expect(demoSubclassOptions('Paladin', 'Holy')).not.toContain('Swashbuckler');
     expect(demoSubclassOptions('Fighter', 'Outlaw')).not.toContain('Swashbuckler');
+  });
+
+  it('offers the two WoW paths only to WoW barbarians', () => {
+    expect(demoSubclassOptions('Barbarian', 'Elemental')).toEqual([
+      'Path of the Berserker', 'Path of the Elements', 'Path of the Spiritual Guardian',
+      'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot',
+    ]);
+    expect(demoSubclassOptions('Barbarian', 'Restoration')).toContain('Path of the Spiritual Guardian');
+    expect(demoSubclassOptions('Barbarian', null)).toEqual([
+      'Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot',
+    ]);
+    expect(demoSubclassOptions('Barbarian', 'Outlaw')).not.toContain('Path of the Elements');
+    expect(demoSubclassOptions('Druid', 'Restoration')).not.toContain('Path of the Elements');
+    expect(demoSubclassOptions('Druid', 'Restoration')).toContain('Circle of the Land');
+  });
+
+  it('seeds a level-10 Elemental orc shaman with the Path of the Elements', () => {
+    const pc = DEMO_PCS.find(p => p.subclass === 'Path of the Elements')!;
+    expect(pc.clazz).toBe('Barbarian');
+    expect(pc.race).toBe('Orc');
+    expect(pc.specialization).toBe('Elemental');
+    expect(pc.level).toBe(10);
+    expect(heroClassFor(pc)?.key).toBe('Barbarian (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Shaman (Barbarian)');
+    expect((pc.features ?? []).map(f => f.name)).toEqual(jasmine.arrayContaining(['Totems', 'Raging Elements']));
+    expect((pc.features ?? []).map(f => f.name)).not.toContain('Primal Knowledge');
+    const cards = heroClassFor(pc)!.featureCards!({ level: pc.level!, subclass: pc.subclass, stats: pc.stats, prof: pc.prof });
+    expect(cards.map(c => c.name)).toEqual(['Totems', 'Raging Elements']);
   });
 
   it('seeds a level-9 Outlaw WoW rogue with the Swashbuckler', () => {
