@@ -15,13 +15,15 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
-import { CIRCLE_OF_THE_MOON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS } from '../models/wow-class-variants';
+import {
+  CIRCLE_OF_THE_MOON, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
+} from '../models/wow-class-variants';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue and Shaman.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Paladin, Rogue, Shaman and Warlock.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -530,6 +532,61 @@ export const DEMO_PCS: PC[] = [
       Flaws: 'Trusts the spirits more than people.',
     },
     bio: 'An orc of the Earthen Ring who left Orgrimmar to calm the restless elements of the Barrens, and still carries the smell of rain wherever he goes.',
+    notes: '',
+  },
+  // World of Warcraft Warlock — an ordinary Warlock with the Demonology specialization
+  // and the Fiend Patron (picked at level 1), so the warlock panel, its invocation
+  // recommendations and the "Warlock (Fiend Patron · Demonology)" header render.
+  {
+    id: 12,
+    name: 'Nixa Cinderwhisk',
+    playerName: 'Mira',
+    player: 'Mira',
+    campaignId: null,
+    race: 'Gnome',
+    clazz: 'Warlock',
+    subclass: FIEND_PATRON,
+    specialization: 'Demonology',
+    level: 5,
+    background: 'Charlatan',
+    alignment: 'Chaotic Neutral',
+    portraitInitials: 'NC',
+    portraitTint: 'violet',
+    hp: { cur: 38, max: 38, temp: 0 },
+    ac: 13, init: 2, speed: 30, prof: 3,
+    stats: { STR: 8, DEX: 14, CON: 14, INT: 12, WIS: 10, CHA: 18 },
+    saves: ['WIS', 'CHA'],
+    skills: { Arcana: 'prof', Deception: 'prof', Intimidation: 'prof', Sleight: 'prof' },
+    conditions: [],
+    coins: { cp: 4, sp: 12, ep: 0, gp: 63, pp: 0 },
+    spellSlots: { 3: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Eldritch Blast', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Toll the Dead', school: 'Necromancy', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Hex', school: 'Enchantment', time: '1 bonus action', prepared: true },
+      { lvl: 1, name: 'Arms of Hadar', school: 'Conjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Dagger', dmg: '1d4+2 piercing', notes: 'Finesse, light, thrown (20/60)' },
+    ],
+    gear: [
+      { name: 'Leather Armor', equipped: true },
+      { name: 'Arcane Focus (fel-green crystal)' },
+      { name: 'Soul shards (3, in a lead box)' },
+    ],
+    features: [
+      { name: 'Eldritch Invocations', source: 'Warlock 1', desc: 'Pact of the Legion, Health Funnel, Repelling Blast, Legion Summoning, Master Demonologist.' },
+      { name: 'Pact Magic', source: 'Warlock 1', desc: 'Two level-3 spell slots that return on a Short or Long Rest.' },
+      { name: "Dark One's Blessing", source: 'Fiend 1', desc: 'Gain temporary HP when you reduce an enemy to 0 HP.' },
+      { name: 'Magical Cunning', source: 'Warlock 2', desc: 'Once per Long Rest, regain half your Pact Magic slots with a 1-minute rite.' },
+    ],
+    traits: {
+      Personality: 'Talks to her imp more kindly than to most people.',
+      Ideals: "Power. The Legion's own fire is the best weapon against it.",
+      Bonds: 'The gnomes who never made it out of Gnomeregan.',
+      Flaws: 'Certain she can always renegotiate the terms.',
+    },
+    bio: 'A gnome tinkerer who found a demonic contract in the rubble of Gnomeregan, signed it, and has been bending its fine print against the Burning Legion ever since.',
     notes: '',
   },
 ];
