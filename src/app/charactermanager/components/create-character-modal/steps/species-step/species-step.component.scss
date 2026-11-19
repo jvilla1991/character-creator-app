@@ -10,6 +10,14 @@
   scrollbar-color: var(--border) transparent;
 }
 
+// A catalog (World of Warcraft) species has full trait text and a lineage list:
+// far more than the capped card holds. Let it run its full height and scroll
+// with the step instead of inside a second, 220px scroll box.
+.species-detail--catalog {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .species-traits {
   margin-top: 10px;
 }
@@ -47,3 +55,58 @@
   line-height: 1.45;
   color: var(--text-dim);
 }
+
+// ── The species' own choices (lineage, size, ability, Origin feat) ────────
+
+.species-choices {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.species-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 5px 0;
+}
+
+// The feat picker is a full-width field with its description underneath.
+.species-choice--stacked {
+  display: block;
+
+  .field { margin-bottom: 6px; }
+}
+
+.choice-label {
+  flex: none;
+  min-width: 132px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  // The global chip is sized for a three-column grid; here it hugs its label.
+  .class-pick { padding: 7px 12px; }
+}
+
+.choice-note {
+  margin: 0 0 6px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.choice-note--warn { color: var(--crimson); }
+
+// The lineage picked above, marked in the list that describes them all.
+.trait-item.chosen .trait-name { color: var(--gold); }

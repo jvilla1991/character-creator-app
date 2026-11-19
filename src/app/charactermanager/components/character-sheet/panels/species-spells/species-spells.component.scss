@@ -1,0 +1,7 @@
+@use '../prepared-spell-list';
+
+/* .panel rules live in global styles.css; the spell list itself is shared with the hero-class panel. */
+
+.species-spells-upcoming {
+  margin-top: 8px;
+}

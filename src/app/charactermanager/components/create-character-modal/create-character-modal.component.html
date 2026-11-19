@@ -15,7 +15,7 @@
     <span class="ruleset-coming-soon">Coming Soon</span>
   </div>
 
-  <!-- Content sources — filters the class list and the spell list -->
+  <!-- Content sources — filters the species, class and spell lists -->
   <app-content-source-filter
     class="wizard-sources"
     [selection]="contentSources"
@@ -58,12 +58,18 @@
     <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
     @if (step === 2) {
       <app-species-step
-        [speciesList]="speciesList"
-        [species]="species"
+        [options]="visibleSpeciesOptions"
+        [selectedKey]="selectedSpeciesKey"
+        [selectedHidden]="selectedSpeciesHidden"
         [loadingSpecies]="loadingSpecies"
         [loadingSpeciesDetail]="loadingSpeciesDetail"
         [speciesDetail]="speciesDetail"
         [speciesSubspeciesNames]="speciesSubspeciesNames"
+        [selections]="speciesSelections"
+        [originFeats]="speciesOriginFeats"
+        [featDescription]="speciesFeatDescription"
+        [blockedFeat]="speciesFeatConflict ? backgroundFeatName : ''"
+        (selectionsChange)="patchSpeciesSelections($event)"
         (toggle)="toggleSpecies($event)">
       </app-species-step>
     }
@@ -104,6 +110,7 @@
         [backgroundProficiencyNames]="backgroundProficiencyNames"
         [backgroundFeatName]="backgroundFeatName"
         [backgroundFeatDescription]="backgroundFeatDescription"
+        [featConflict]="speciesFeatConflict"
         (toggleSource)="toggleSource($event)"
         (toggleBackground)="toggleBackground($event)">
       </app-background-step>
@@ -120,8 +127,24 @@
         [background]="background"
         [backgroundSkillProfs]="backgroundSkillProfs"
         [backgroundToolProfs]="backgroundToolProfs"
+        [lockedSkills]="lockedSkills"
+        [species]="species"
+        [speciesGrantedSkills]="speciesGrantedSkills"
+        [speciesSkillChoice]="speciesSkillChoice"
+        [speciesSkillPicks]="speciesSkillPicks"
+        [speciesToolCount]="speciesToolCount"
+        [speciesToolOptions]="speciesToolOptions"
+        [speciesTools]="speciesSelections.tools"
+        (toggleSpeciesSkill)="toggleSpeciesSkill($event)"
+        (speciesToolChange)="setSpeciesTool($event)"
         [(languageChoice)]="languageChoice"
         [(languageChoice2)]="languageChoice2"
+        [(languageChoice3)]="languageChoice3"
+        [languageCount]="languagePickCount"
+        [languageHint]="languageHint"
+        [allegiances]="usesWowLanguages ? allegiances : null"
+        [allegiance]="effectiveAllegiance"
+        (allegianceChange)="setAllegiance($event)"
         [standardLanguages]="standardLanguages"
         (toggleSkill)="toggleSkillProf($event)">
       </app-proficiencies-step>
@@ -191,8 +214,9 @@
         [reviewInitiative]="reviewInitiative"
         [name]="name"
         [player]="player"
-        [species]="species"
-        [speciesDetail]="speciesDetail"
+        [species]="selectedSpeciesKey"
+        [speciesDetail]="reviewSpeciesDetail"
+        [speciesChoices]="reviewSpeciesChoices"
         [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
         [clazz]="selectedClassLabel"
         [selectedSubclass]="selectedSubclass"
@@ -205,9 +229,10 @@
         [bonusPlus2]="bonusPlus2"
         [bonusPlus1]="bonusPlus1"
         [reviewAllSkills]="reviewAllSkills"
-        [backgroundToolProfs]="backgroundToolProfs"
+        [backgroundToolProfs]="reviewToolProfs"
         [languageChoice]="languageChoice"
         [languageChoice2]="languageChoice2"
+        [languages]="startingLanguages"
         [abilities]="abilities"
         [finalScore]="finalScore"
         [isSpellcastingClass]="isSpellcastingClass"

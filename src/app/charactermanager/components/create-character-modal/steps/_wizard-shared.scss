@@ -112,3 +112,27 @@
   .detail-card,
   .feat-card { margin-top: 6px; }
 }
+
+// ── Content-source tag and filter note (species and class pickers) ────────
+// The pill beside a World of Warcraft row, and the line shown when the chosen
+// row is hidden by the content-source filter.
+.source-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-2xs);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.filter-note {
+  margin: 0 0 10px;
+  font-family: 'Newsreader', serif;
+  font-size: 12px;
+  color: var(--text-dim);
+}

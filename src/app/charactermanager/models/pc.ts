@@ -84,6 +84,14 @@ export interface PC {
   // compared as a string against Campaign.id (see CampaignService.membersOf).
   campaignId?: number | string | null;
   race?: string;
+  // Where the species comes from ('World of Warcraft'), the lineage chosen for it
+  // ('Night Elf', 'Taunka') and its size ('Small' | 'Medium'). All three are set by
+  // the create wizard for a World of Warcraft species and null for everyone else
+  // (a base-game species reads its size from its name — see slotCapacity).
+  // Omitting them on an update keeps the stored values.
+  speciesSource?: string | null;
+  lineage?: string | null;
+  size?: string | null;
   subclass?: string;
   // Hero-class specialization (a Death Knight's rune, a Demon Hunter's spec — see
   // HERO_CLASSES); null for everyone else. Older payloads called this `rune`.

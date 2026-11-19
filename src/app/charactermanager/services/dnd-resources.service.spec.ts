@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS, ALL_LANGUAGE_NAMES, LANGUAGE_OPTIONS, languageNames } from './dnd-resources.service';
+import {
+  DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS, ALL_LANGUAGE_NAMES, LANGUAGE_OPTIONS,
+  ORIGIN_FEAT_OPTIONS, TOOL_NAMES, languageNames, originFeatsFor,
+} from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -136,7 +139,17 @@ describe('DndResourcesService', () => {
       expect(baseOnly).not.toContain('Nathrezim');
       expect(baseOnly).toContain('Elvish');
       expect(languageNames({ 'Base Game': false, 'World of Warcraft': true })).toEqual(['Eredun', 'Nathrezim']);
-      expect(ALL_LANGUAGE_NAMES).toEqual(all);
+      // The DM's grant list starts with the pickable languages, then adds the rest of the WoW module's.
+      expect(ALL_LANGUAGE_NAMES.slice(0, all.length)).toEqual(all);
+    });
+
+    it('lets a DM grant any World of Warcraft language, each listed once', () => {
+      for (const name of ['Darnassian', 'Thalassian', 'Orcish', 'Zandali', 'Titan', 'Shath\'Yar', 'Thieves\' Cant']) {
+        expect(ALL_LANGUAGE_NAMES).withContext(name).toContain(name);
+      }
+      expect(new Set(ALL_LANGUAGE_NAMES).size).toBe(ALL_LANGUAGE_NAMES.length);
+      // Shared names are not doubled: Draconic is both a PHB and a WoW language.
+      expect(ALL_LANGUAGE_NAMES.filter(n => n === 'Draconic').length).toBe(1);
     });
   });
 
@@ -161,6 +174,48 @@ describe('DndResourcesService', () => {
 
     it('length matches the number of known feats', () => {
       expect(service.getFeatNames().length).toBe(Object.keys(FEAT_DESCRIPTIONS).length);
+    });
+  });
+
+  // ── Origin feats and tools a character picks for itself ─────────────────────
+
+  describe('ORIGIN_FEAT_OPTIONS / originFeatsFor', () => {
+    it('every Origin feat on offer has a description', () => {
+      for (const feat of ORIGIN_FEAT_OPTIONS) {
+        expect(service.getFeatDescription(feat.name)).withContext(feat.name).not.toBe('');
+      }
+    });
+
+    it('lists each feat once', () => {
+      const names = ORIGIN_FEAT_OPTIONS.map(f => f.name);
+      expect(new Set(names).size).toBe(names.length);
+    });
+
+    it('offers a Human the twelve PHB feats plus the three World of Warcraft Human feats', () => {
+      const names = originFeatsFor('Human').map(f => f.name);
+      expect(names.length).toBe(15);
+      expect(names).toContain('Alert');
+      expect(names.slice(-3)).toEqual(['Arathi Heritage', 'Child of the Sea', 'Will to Survive']);
+    });
+
+    it('keeps the Human-only feats from any other species', () => {
+      const names = originFeatsFor('Orc').map(f => f.name);
+      expect(names.length).toBe(12);
+      expect(names).not.toContain('Arathi Heritage');
+    });
+
+    it('marks only Skilled as repeatable', () => {
+      expect(ORIGIN_FEAT_OPTIONS.filter(f => f.repeatable).map(f => f.name)).toEqual(['Skilled']);
+    });
+  });
+
+  describe('TOOL_NAMES', () => {
+    it('lists each tool once and includes the kinds a background grants by name', () => {
+      expect(new Set(TOOL_NAMES).size).toBe(TOOL_NAMES.length);
+      expect(TOOL_NAMES).toContain("Thieves' Tools");
+      expect(TOOL_NAMES).toContain("Calligrapher's Supplies");
+      expect(TOOL_NAMES).toContain('Lute');
+      expect(TOOL_NAMES).toContain('Dice');
     });
   });
 

@@ -4,6 +4,7 @@ import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 import { ContentSource, ContentSourceSelection, filterBySource, spellSource } from '../models/content-source';
+import { WOW_LANGUAGE_NAMES } from '../models/wow-languages';
 import { spellKey } from '../models/spell-names';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -166,6 +167,13 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
   'Tough':
     'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+  // ── World of Warcraft Origin feats (Human only). ────────────────────────────
+  'Arathi Heritage':
+    'Human only. You have Advantage on saving throws to avoid or end the Charmed condition. When you fail a saving throw to avoid or end the Unconscious condition, you can succeed instead; once you do, you can\'t do so again until you finish 1d4 Long Rests.',
+  'Child of the Sea':
+    'Human only. You can hold your breath for a number of minutes equal to 2 plus your Constitution modifier (at least 1 minute), and you have a Swim Speed equal to your Speed.',
+  'Will to Survive':
+    'Human only. While you have the Incapacitated condition but not the Unconscious condition, you can ignore Incapacitated on your turn. If you do, you gain 1 Exhaustion level.',
   // ── General feats (level 4+; the alternative to an ASI). Names are validated
   //    server-side; these descriptions are for display only. ───────────────────
   'Great Weapon Master':
@@ -325,6 +333,49 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Increase an ability score by 1 (max 30). You have Truesight with a range of 60 feet.',
 };
 
+/** An Origin feat a character may pick for itself (a Human's Versatile trait). */
+export interface OriginFeatOption {
+  name: string;
+  source?: ContentSource;
+  /** Named species only; absent means anyone. */
+  species?: string;
+  /** True when the feat may be taken more than once (2024 PHB: Skilled). */
+  repeatable?: boolean;
+}
+
+/**
+ * The Origin feats with a description in {@link FEAT_DESCRIPTIONS}: the 2024
+ * PHB's, then the World of Warcraft module's Human-only three.
+ */
+export const ORIGIN_FEAT_OPTIONS: readonly OriginFeatOption[] = [
+  { name: 'Alert' }, { name: 'Crafter' }, { name: 'Healer' }, { name: 'Lucky' },
+  { name: 'Magic Initiate (Cleric)' }, { name: 'Magic Initiate (Druid)' }, { name: 'Magic Initiate (Wizard)' },
+  { name: 'Musician' }, { name: 'Savage Attacker' }, { name: 'Skilled', repeatable: true },
+  { name: 'Tavern Brawler' }, { name: 'Tough' },
+  { name: 'Arathi Heritage', source: 'World of Warcraft', species: 'Human' },
+  { name: 'Child of the Sea', source: 'World of Warcraft', species: 'Human' },
+  { name: 'Will to Survive', source: 'World of Warcraft', species: 'Human' },
+];
+
+/** The Origin feats a character of `species` may pick, in list order. */
+export function originFeatsFor(species: string): OriginFeatOption[] {
+  return ORIGIN_FEAT_OPTIONS.filter(f => !f.species || f.species === species);
+}
+
+/**
+ * Every tool a character can be proficient with (2024 PHB): artisan's tools,
+ * the other kits, gaming sets, then musical instruments.
+ */
+export const TOOL_NAMES: readonly string[] = [
+  'Alchemist\'s Supplies', 'Brewer\'s Supplies', 'Calligrapher\'s Supplies', 'Carpenter\'s Tools',
+  'Cartographer\'s Tools', 'Cobbler\'s Tools', 'Cook\'s Utensils', 'Glassblower\'s Tools', 'Jeweler\'s Tools',
+  'Leatherworker\'s Tools', 'Mason\'s Tools', 'Painter\'s Supplies', 'Potter\'s Tools', 'Smith\'s Tools',
+  'Tinker\'s Tools', 'Weaver\'s Tools', 'Woodcarver\'s Tools',
+  'Disguise Kit', 'Forgery Kit', 'Herbalism Kit', 'Navigator\'s Tools', 'Poisoner\'s Kit', 'Thieves\' Tools',
+  'Dice', 'Dragonchess', 'Playing Cards', 'Three-Dragon Ante',
+  'Bagpipes', 'Drum', 'Dulcimer', 'Flute', 'Horn', 'Lute', 'Lyre', 'Pan Flute', 'Shawm', 'Viol',
+];
+
 /** Standard languages available for the background language bonus */
 export const STANDARD_LANGUAGES: string[] = [
   'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish',
@@ -337,7 +388,11 @@ export interface LanguageOption {
   source?: ContentSource;
 }
 
-/** Languages added by the World of Warcraft module (demonic tongues). */
+/**
+ * World of Warcraft languages a base-game species may pick while the World of
+ * Warcraft source is on (demonic tongues). A World of Warcraft species does not
+ * use this list — it picks from its allegiance's table (models/wow-languages.ts).
+ */
 export const WOW_LANGUAGES: readonly string[] = ['Eredun', 'Nathrezim'];
 
 /**
@@ -350,8 +405,14 @@ export const LANGUAGE_OPTIONS: readonly LanguageOption[] = [
   ...WOW_LANGUAGES.map((name): LanguageOption => ({ name, source: 'World of Warcraft' })),
 ];
 
-/** Every language name, all sources (the DM grant typeahead has no source filter). */
-export const ALL_LANGUAGE_NAMES: readonly string[] = LANGUAGE_OPTIONS.map(l => l.name);
+/**
+ * Every language name, all sources (the DM grant typeahead has no source filter):
+ * the pickable ones above, then the rest of the World of Warcraft module's
+ * languages — its faction tables and its rare tongues — each once.
+ */
+export const ALL_LANGUAGE_NAMES: readonly string[] = [...new Set([
+  ...LANGUAGE_OPTIONS.map(l => l.name), ...WOW_LANGUAGE_NAMES,
+])];
 
 /** Language names allowed by a content-source selection, in list order. */
 export function languageNames(selection: ContentSourceSelection): string[] {

@@ -48,11 +48,17 @@ export function usedSlots(items: PcItem[] | undefined): number {
  * Inventory capacity = size-based slots + STR modifier (DD p. 55):
  * Small species 14 + STR, Medium 18 + STR; goliaths count as Large-framed
  * via Powerful Build (22 + 2×STR). Unknown species default to Medium.
+ *
+ * A character that records its size (`pc.size`, set for World of Warcraft
+ * species — a Goblin is Small, a Forsaken may be either) uses that. Everyone
+ * else is sized by species name, as before.
  */
 export function slotCapacity(pc: PC): number {
   const str = modFromScore(pc.stats?.STR ?? 10);
   const species = (pc.race ?? '').toLowerCase();
   if (species.includes('goliath')) return 22 + 2 * str;
+  if (pc.size === 'Small') return 14 + str;
+  if (pc.size === 'Medium') return 18 + str;
   if (species.includes('halfling') || species.includes('gnome')) return 14 + str;
   return 18 + str;
 }

@@ -47,11 +47,81 @@
   </div>
 }
 
+<!-- Species proficiencies (World of Warcraft species): granted skills, skill picks, tool picks -->
+@if (hasSpeciesProficiencies) {
+  <div class="prof-section">
+    <div class="prof-section-header">
+      <span class="eyebrow">{{ species() }} Proficiencies
+        @if (speciesSkillChoice() || speciesToolCount()) { <span aria-label="required">*</span> }
+      </span>
+      @if (speciesSkillChoice(); as choice) {
+        <span class="prof-counter" [class.complete]="speciesSkillsFull">
+          {{ speciesSkillPicks().length }}/{{ choice.count }} chosen
+        </span>
+      }
+    </div>
+    @if (speciesGrantedSkills().length) {
+      <div class="skill-chips">
+        @for (skill of speciesGrantedSkills(); track skill) {
+          <span class="class-pick locked">{{ skill }}</span>
+        }
+      </div>
+    }
+    @if (speciesSkillChoice(); as choice) {
+      <div class="skill-chips species-skill-picks">
+        @for (skill of choice.from; track skill) {
+          @let held = isSpeciesSkillHeld(skill);
+          @let picked = speciesSkillPicks().includes(skill);
+          <button
+            type="button"
+            class="class-pick"
+            [class.active]="picked"
+            [class.disabled]="held || (!picked && speciesSkillsFull)"
+            [disabled]="held"
+            [attr.aria-pressed]="picked"
+          (click)="toggleSpeciesSkill.emit(skill)">{{ skill }}</button>
+        }
+      </div>
+    }
+    @if (speciesToolCount()) {
+      <div class="language-row species-tool-row">
+        @for (slot of speciesToolSlots; track slot) {
+          <div class="field lang-field">
+            <label [for]="'species-tool-' + slot">Tool {{ slot + 1 }}</label>
+            <select [id]="'species-tool-' + slot" [name]="'speciesTool' + slot"
+              [ngModel]="speciesTools()[slot] || ''"
+              (ngModelChange)="speciesToolChange.emit({ index: slot, tool: $event })">
+              <option value="">— choose a tool —</option>
+              @for (tool of toolOptionsFor(slot); track tool) {
+                <option [value]="tool">{{ tool }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
 <!-- Language selection -->
 <div class="prof-section">
   <div class="prof-section-header">
     <span class="eyebrow">Languages</span>
   </div>
+  @if (allegiances(); as sides) {
+    <!-- World of Warcraft species: languages follow the character's allegiance -->
+    <div class="allegiance-row">
+      <span class="allegiance-label" id="allegiance-label">Allegiance <span aria-label="required">*</span></span>
+      <div class="skill-chips" role="group" aria-labelledby="allegiance-label">
+        @for (side of sides; track side) {
+          <button type="button" class="class-pick"
+            [class.active]="allegiance() === side"
+            [attr.aria-pressed]="allegiance() === side"
+            (click)="allegianceChange.emit(side)">{{ side }}</button>
+        }
+      </div>
+    </div>
+  }
   <div class="language-row">
     <div class="field lang-field">
       <label for="extra-language-1">Additional Language 1</label>
@@ -71,5 +141,19 @@
         }
       </select>
     </div>
+    @if (languageCount() >= 3) {
+      <div class="field lang-field">
+        <label for="extra-language-3">Additional Language 3</label>
+        <select id="extra-language-3" [ngModel]="languageChoice3()" (ngModelChange)="languageChoice3Change.emit($event)" name="languageChoice3">
+          <option value="">— choose a language —</option>
+          @for (lang of thirdLanguageOptions; track lang) {
+            <option [value]="lang">{{ lang }}</option>
+          }
+        </select>
+      </div>
+    }
   </div>
+  @if (languageHint()) {
+    <p class="field-hint language-hint">{{ languageHint() }}</p>
+  }
 </div>

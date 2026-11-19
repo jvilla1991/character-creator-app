@@ -1,71 +1,7 @@
-/* .panel / .feature* rules live in global styles.css; the resource line and spell list are local. */
+@use '../prepared-spell-list';
 
-.hero-spells-title {
-  margin: 14px 0 2px;
-  font-family: 'Cinzel', serif;
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
-
-.hero-spells-note {
-  margin: 0 0 6px;
-  font-family: 'Newsreader', serif;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-.hero-spells {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.hero-spell {
-  border-bottom: 1px dotted var(--border-soft);
-
-  summary {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 2px 10px;
-    padding: 8px 0;
-    cursor: pointer;
-    list-style: none;
-
-    &::-webkit-details-marker { display: none; }
-
-    &:focus-visible {
-      outline: 2px solid var(--celestial);
-      outline-offset: 2px;
-    }
-  }
-}
-
-.hero-spell-name {
-  font-family: 'Cinzel', serif;
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-}
-
-.hero-spell-meta {
-  font-family: 'Newsreader', serif;
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.hero-spell-desc {
-  margin: 0 0 10px;
-  font-family: 'Newsreader', serif;
-  font-size: 13.5px;
-  line-height: 1.45;
-  color: var(--text-2);
-}
+/* .panel / .feature* rules live in global styles.css; the always-prepared spell list is shared
+   (../_prepared-spell-list.scss); the resource line and the rest are local. */
 
 .hero-resource {
   display: flex;
@@ -132,12 +68,6 @@
 }
 
 .suggested-spell.known { color: var(--text); font-weight: 600; }
-
-.wow-mark {
-  margin-left: 2px;
-  font-size: 10px;
-  color: var(--gold-2);
-}
 
 .spell-tag {
   margin-left: 4px;

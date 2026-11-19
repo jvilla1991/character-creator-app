@@ -4,67 +4,198 @@
   <div class="loading">Loading species…</div>
 }
 @if (!loadingSpecies()) {
+  @if (selectedHidden()) {
+    <p class="filter-note" role="status">
+      Your chosen species, {{ selectedKey() }}, is hidden by the content-source filter.
+      It stays selected — turn its source back on above to change it.
+    </p>
+  }
+  @if (options().length === 0) {
+    <div class="loading">No species to show. Turn on a content source above.</div>
+  }
   <div class="picker-accordion">
-    @for (s of speciesList(); track trackByName($index, s)) {
+    @for (o of options(); track o.key) {
       <button class="class-pick accordion-head"
-        [class.active]="species() === s"
+        [class.active]="selectedKey() === o.key"
         type="button"
-        (click)="toggle.emit(s)">
-        <span>{{ s }}</span>
-        <svg class="accordion-chev" [class.open]="species() === s" viewBox="0 0 10 10" aria-hidden="true">
+        (click)="toggle.emit(o.key)">
+        <span>
+          {{ o.name }}
+          @if (o.catalog) {
+            <span class="source-tag">{{ o.source }}</span>
+          }
+        </span>
+        <svg class="accordion-chev" [class.open]="selectedKey() === o.key" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M2 4l3 3 3-3"/>
         </svg>
       </button>
       <!-- Selected species: details expand directly beneath it -->
-      @if (species() === s) {
+      @if (selectedKey() === o.key) {
         <div class="accordion-body">
-          @if (loadingSpeciesDetail()) {
-            <div class="loading">Loading traits…</div>
-          }
-          @if (!loadingSpeciesDetail() && speciesDetail(); as detail) {
-            <div class="detail-card species-detail">
+          @if (o.catalog; as catalog) {
+            <!-- World of Warcraft species: rendered from the app's own catalog -->
+            <div class="detail-card species-detail species-detail--catalog">
+              @if (catalog.creatureType !== 'Humanoid') {
+                <div class="detail-row">
+                  <span class="detail-label">Creature Type</span>
+                  <span class="detail-value">{{ catalog.creatureType }}</span>
+                </div>
+              }
               <div class="detail-row">
                 <span class="detail-label">Size</span>
-                <span class="detail-value">{{ detail.size }}</span>
+                <span class="detail-value">{{ catalog.sizes.join(' or ') }} ({{ catalog.height }})</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Speed</span>
-                <span class="detail-value">{{ detail.speed }} ft.</span>
+                <span class="detail-value">{{ catalog.speed }} ft.</span>
               </div>
-              @if (detail.subspecies.length) {
-                <div class="detail-row">
-                  <span class="detail-label">Lineages</span>
-                  <span class="detail-value">{{ speciesSubspeciesNames() }}</span>
-                </div>
-              }
-              @if (detail.traits.length) {
-                <div class="species-traits">
-                  <div class="species-traits-header">Traits</div>
-                  @for (trait of detail.traits; track trait) {
-                    <div class="trait-item">
-                      <span class="trait-name">{{ trait.name }}</span>
-                      @if (getTraitDescription(trait.name)) {
-                        <span class="trait-desc">
-                          {{ getTraitDescription(trait.name) }}
+              @if (hasChoices(catalog)) {
+                <!-- The species' own choices; Next stays off until each is made -->
+                <div class="species-choices">
+                  <div class="species-traits-header">Your choices</div>
+                  @if (catalog.lineages; as lineages) {
+                    <div class="species-choice">
+                      <span class="choice-label" id="species-lineage-label">
+                        Lineage <span aria-label="required">*</span>
+                      </span>
+                      <div class="choice-chips" role="group" aria-labelledby="species-lineage-label">
+                        @for (lineage of lineages; track lineage.name) {
+                          <button type="button" class="class-pick"
+                            [class.active]="selections().lineage === lineage.name"
+                            [attr.aria-pressed]="selections().lineage === lineage.name"
+                            (click)="selectionsChange.emit({ lineage: lineage.name })">{{ lineage.name }}</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (catalog.sizes.length > 1) {
+                    <div class="species-choice">
+                      <span class="choice-label" id="species-size-label">
+                        Size <span aria-label="required">*</span>
+                      </span>
+                      <div class="choice-chips" role="group" aria-labelledby="species-size-label">
+                        @for (size of catalog.sizes; track size) {
+                          <button type="button" class="class-pick"
+                            [class.active]="selections().size === size"
+                            [attr.aria-pressed]="selections().size === size"
+                            (click)="selectionsChange.emit({ size: size })">{{ size }}</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (catalog.choices?.ability; as ability) {
+                    @if (showAbility(catalog)) {
+                      <div class="species-choice">
+                        <span class="choice-label" id="species-ability-label">
+                          {{ abilityLabel(catalog) }} <span aria-label="required">*</span>
                         </span>
+                        <div class="choice-chips" role="group" aria-labelledby="species-ability-label">
+                          @for (a of ability.from; track a) {
+                            <button type="button" class="class-pick"
+                              [class.active]="selections().ability === a"
+                              [attr.aria-pressed]="selections().ability === a"
+                              (click)="selectionsChange.emit({ ability: a })">{{ abilityName(a) }}</button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (catalog.choices?.originFeat) {
+                    <div class="species-choice species-choice--stacked">
+                      <div class="field">
+                        <label for="species-origin-feat">Origin feat (Versatile) <span aria-label="required">*</span></label>
+                        <select id="species-origin-feat" name="speciesOriginFeat"
+                          [ngModel]="selections().originFeat"
+                          (ngModelChange)="selectionsChange.emit({ originFeat: $event })">
+                          <option value="">— choose a feat —</option>
+                          @for (feat of originFeats(); track feat.name) {
+                            <option [value]="feat.name">{{ feat.name }}</option>
+                          }
+                        </select>
+                      </div>
+                      @if (featDescription()) {
+                        <p class="choice-note">{{ featDescription() }}</p>
+                      }
+                      @if (blockedFeat()) {
+                        <p class="choice-note choice-note--warn" role="status">
+                          Your background already gives you {{ blockedFeat() }}, and it can't be taken twice.
+                          Choose a different feat here, or a different background.
+                        </p>
                       }
                     </div>
                   }
                 </div>
               }
-            </div>
-          }
-          <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
-          @if (!loadingSpeciesDetail() && !speciesDetail()) {
-            <div class="detail-card">
-              <div class="detail-row">
-                <span class="detail-label">2024 PHB Note</span>
-                <span class="detail-value">
-                  This species is not distinct in the 2024 PHB.
-                  Choose Elf or Orc and discuss mixed heritage with your DM.
-                </span>
+              <div class="species-traits">
+                <div class="species-traits-header">Traits</div>
+                @for (trait of catalog.traits; track trait.name) {
+                  <div class="trait-item">
+                    <span class="trait-name">{{ trait.name }}</span>
+                    <span class="trait-desc">{{ trait.desc }}</span>
+                  </div>
+                }
               </div>
+              @if (catalog.lineages; as lineages) {
+                <div class="species-traits">
+                  <div class="species-traits-header">{{ catalog.lineageTrait }} options</div>
+                  @for (lineage of lineages; track lineage.name) {
+                    <div class="trait-item" [class.chosen]="selections().lineage === lineage.name">
+                      <span class="trait-name">{{ lineage.name }}</span>
+                      <span class="trait-desc">{{ lineage.desc }}</span>
+                    </div>
+                  }
+                </div>
+              }
             </div>
+          } @else {
+            @if (loadingSpeciesDetail()) {
+              <div class="loading">Loading traits…</div>
+            }
+            @if (!loadingSpeciesDetail() && speciesDetail(); as detail) {
+              <div class="detail-card species-detail">
+                <div class="detail-row">
+                  <span class="detail-label">Size</span>
+                  <span class="detail-value">{{ detail.size }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Speed</span>
+                  <span class="detail-value">{{ detail.speed }} ft.</span>
+                </div>
+                @if (detail.subspecies.length) {
+                  <div class="detail-row">
+                    <span class="detail-label">Lineages</span>
+                    <span class="detail-value">{{ speciesSubspeciesNames() }}</span>
+                  </div>
+                }
+                @if (detail.traits.length) {
+                  <div class="species-traits">
+                    <div class="species-traits-header">Traits</div>
+                    @for (trait of detail.traits; track trait) {
+                      <div class="trait-item">
+                        <span class="trait-name">{{ trait.name }}</span>
+                        @if (getTraitDescription(trait.name)) {
+                          <span class="trait-desc">
+                            {{ getTraitDescription(trait.name) }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            <!-- Fallback for species not in the 2024 API (e.g. legacy Half-Elf/Half-Orc) -->
+            @if (!loadingSpeciesDetail() && !speciesDetail()) {
+              <div class="detail-card">
+                <div class="detail-row">
+                  <span class="detail-label">2024 PHB Note</span>
+                  <span class="detail-value">
+                    This species is not distinct in the 2024 PHB.
+                    Choose Elf or Orc and discuss mixed heritage with your DM.
+                  </span>
+                </div>
+              </div>
+            }
           }
         </div>
       }
