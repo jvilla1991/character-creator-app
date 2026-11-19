@@ -1,5 +1,7 @@
 import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, timer } from 'rxjs';
+import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import { PC } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
 import { PCService } from '../../services/pc.service';
@@ -15,6 +17,15 @@ import { RouterOutlet } from '@angular/router';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { EmptyStateComponent } from '../character-sheet/empty-state/empty-state.component';
 import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/delete-confirmation-modal.component';
+
+/** How often the sheet checks the server for a level-up made from another client. */
+export const LEVEL_WATCH_MS = 3000;
+
+/** Which character the level watch checks, and through which endpoint. */
+interface LevelWatchTarget {
+  pcId: number;
+  asDm: boolean;
+}
 
 @Component({
     selector: 'app-main-content',
@@ -86,6 +97,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
         this.promptIfReady(pc);
       });
     document.addEventListener('visibilitychange', this.onVisible);
+    this.watchLevelChanges();
   }
 
   ngOnDestroy(): void {
@@ -116,9 +128,9 @@ export class MainContentComponent implements OnInit, OnDestroy {
   // reload). Refetch the PC when it lands on the sheet (also covers returning
   // from a session, where this component is recreated) and when the tab
   // regains visibility — the same refetch-on-refocus valve the campaign
-  // sidebar/dashboard use. No background polling. Skipped in DM cross-link
-  // view: that PC was just fetched via the DM path, and the owner-scoped
-  // find endpoint isn't authorized for it anyway.
+  // sidebar/dashboard use. (Level changes also get a light poll, below.)
+  // Skipped in DM cross-link view: that PC was just fetched via the DM path,
+  // and the owner-scoped find endpoint isn't authorized for it anyway.
 
   /** Guards the activation refetch: the refreshed push re-emits the same id. */
   private lastRefetchedPcId: number | null = null;
@@ -138,6 +150,48 @@ export class MainContentComponent implements OnInit, OnDestroy {
     if (!this.pc || this.editable()) return;
     this.pcService.refreshPC(this.pc.id);
   };
+
+  // ── Level-ups from the other side of the table ─────────────────────────────
+  // Outside a live session nothing carries a level-up from one client to
+  // another, so the refocus refetch above was the only way in — a player
+  // looking at their sheet had to reload to see a DM's grant. The sheet now
+  // checks every few seconds while the tab is visible. The service pushes the
+  // character only when its level, XP or grant moved, and that push re-runs
+  // the prompt. This is what lets a DM chain level-ups: grant, the player
+  // levels, grant again, with no reload on either side.
+  //
+  // - The player watches their own campaign character. Only a campaign's DM
+  //   can grant a level, so a character in no campaign is never checked.
+  // - The DM, viewing a member's sheet, watches only while a grant they gave
+  //   is unspent. When the player spends it, the DM's sheet shows the new
+  //   level and Grant Level-Up again, ready for the next one.
+  // - Paused while the level-up modal is open: the commit brings the new level.
+  //
+  // A live session needs none of this: its 2s poll carries the grant, and this
+  // component is off screen while the session is shown.
+
+  private watchLevelChanges(): void {
+    timer(LEVEL_WATCH_MS, LEVEL_WATCH_MS).pipe(
+      filter(() => !document.hidden),
+      map(() => this.levelWatchTarget()),
+      filter((target): target is LevelWatchTarget => target !== null),
+      switchMap(({ pcId, asDm }) => this.pcService.syncLevelState(pcId, asDm).pipe(
+        catchError(() => EMPTY), // offline or not authorized: try again next tick
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe();
+  }
+
+  /** The character to check on this tick, or null to skip it. */
+  private levelWatchTarget(): LevelWatchTarget | null {
+    const pc = this.pc;
+    if (!pc || this.levelUpPrompt.levelUp()) return null;
+    if (this.editable()) {
+      return pc.pendingLevelGrant === true ? { pcId: pc.id, asDm: true } : null;
+    }
+    if (pc.campaignId == null || !this.pcService.getPCById(pc.id)) return null;
+    return { pcId: pc.id, asDm: false };
+  }
 
   /** Look up the PC's campaign variant rules (all false when unknown). */
   private resolveVariants(pc: PC | null): void {
