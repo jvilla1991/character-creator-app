@@ -841,7 +841,8 @@ describe('LevelUpModalComponent', () => {
       expect(component.alwaysPreparedGrants).toEqual([{ name: 'Find Steed', grantedBy: 'Faithful Steed' }]);
       expect(component.grantedSpells.map(g => g.spell.name)).toEqual(['Find Steed']);
       // The granted spell is not offered as the level's pick.
-      expect(component.spellList.map(s => s.name)).toEqual(['Aid']);
+      expect(component.pickableSpells.map(s => s.name)).toEqual(['Aid']);
+      expect(component.pickableSpells).toBe(component.pickableSpells);   // stable for the picker
       const el = renderModal();
       expect(el.querySelector('.always-prepared-gained .feature-name')?.textContent).toContain('Find Steed');
       expect(el.querySelector('.always-prepared-gained .feature-desc')?.textContent).toContain('From Faithful Steed.');
@@ -852,6 +853,60 @@ describe('LevelUpModalComponent', () => {
         newSpells: [
           jasmine.objectContaining({ lvl: 2, name: 'Aid', prepared: true }),
           jasmine.objectContaining({ lvl: 2, name: 'Find Steed', alwaysPrepared: true, grantedBy: 'Faithful Steed' }),
+        ],
+      });
+    });
+
+    it('hands over the spells of the oath picked at level 3, and swaps them when the pick changes', () => {
+      const s = (name: string) => ({ ...cantrip(name), level: 1, classes: ['paladin'] });
+      const all = [s('Bless'), s('Shield of Faith'), s('Protection from Evil and Good'), s('Bane'), s("Hunter's Mark")];
+      dndResources.getSpells.and.returnValue(of(all));
+      open({ level: 2, spells: [] }, {
+        currentLevel: 2, newLevel: 3, fightingStyleDue: false, fightingStyleOptions: [],
+        subclassDue: true, subclassOptions: oaths,
+        currentSpellsKnown: 3, newSpellsKnown: 4, newSpellSlots: { 1: 3 },
+        alwaysPreparedSpells: [],
+        alwaysPreparedSpellsBySubclass: {
+          'Oath of Devotion': [
+            { name: 'Protection from Evil and Good', grantedBy: 'Oath of Devotion Spells' },
+            { name: 'Shield of Faith', grantedBy: 'Oath of Devotion Spells' },
+          ],
+          'Oath of Vengeance': [
+            { name: 'Bane', grantedBy: 'Oath of Vengeance Spells' },
+            { name: "Hunter's Mark", grantedBy: 'Oath of Vengeance Spells' },
+          ],
+        },
+      });
+      dndResources.getSpellsForClass.and.returnValue(of(all.slice(0, 3)));
+      component.ngOnInit();
+      expect(dndResources.getSpells).toHaveBeenCalled();
+
+      // No oath picked yet: nothing is handed over, and every class spell can be picked.
+      expect(component.alwaysPreparedGrants).toEqual([]);
+      expect(component.pickableSpells.map(x => x.name))
+        .toEqual(['Bless', 'Shield of Faith', 'Protection from Evil and Good']);
+      component.selectedSpells = [all[1]];   // the player picks Shield of Faith first
+
+      component.selectedSubclass = 'Oath of Vengeance';
+      expect(component.grantedSpells.map(g => g.spell.name)).toEqual(['Bane', "Hunter's Mark"]);
+
+      component.selectedSubclass = 'Oath of Devotion';
+      expect(component.grantedSpells.map(g => g.spell.name))
+        .toEqual(['Protection from Evil and Good', 'Shield of Faith']);
+      expect(component.pickableSpells.map(x => x.name)).toEqual(['Bless']);
+
+      // An oath whose spells stay on the app's own table (Oath of the Holy) has no entry.
+      component.selectedSubclass = 'Oath of the Holy';
+      expect(component.alwaysPreparedGrants).toEqual([]);
+
+      component.selectedSubclass = 'Oath of Devotion';
+      component.confirm();
+      // Shield of Faith was picked and is now granted: it is sent once, as the grant.
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        subclass: 'Oath of Devotion',
+        newSpells: [
+          jasmine.objectContaining({ name: 'Protection from Evil and Good', alwaysPrepared: true, grantedBy: 'Oath of Devotion Spells' }),
+          jasmine.objectContaining({ name: 'Shield of Faith', alwaysPrepared: true, grantedBy: 'Oath of Devotion Spells' }),
         ],
       });
     });

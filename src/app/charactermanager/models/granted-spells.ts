@@ -7,7 +7,11 @@
  * Level 1 is the create wizard's: it adds these on top of the player's picks.
  * From level 2 the server owns the list (its ClassSpellGrants table: a Paladin's
  * Divine Smite at 2 and Find Steed at 5, a Warlock's Contact Other Plane at 9, a
- * Bard's Power Words at 20) and names them in the level-up preview.
+ * Bard's Power Words at 20, and the spell list of every base-game subclass —
+ * Oath of Devotion Spells, Life Domain Spells, ...) and names the ones a
+ * character is owed in the level-up preview. It lists the two level-1 grants
+ * below as well, so a Ranger or Druid made before the wizard added them picks
+ * them up at the next level-up.
  *
  * Species spells and the World of Warcraft hero-class and oath tables are not
  * here: those are shown by their own sheet panels from the character's species,

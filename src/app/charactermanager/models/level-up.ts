@@ -59,9 +59,17 @@ export interface LevelUpPreview {
    * Spells a class feature always keeps prepared, gained at this level (a
    * Paladin's Find Steed at 5). The modal shows them and sends the full spell
    * along in `newSpells`; the server marks them `alwaysPrepared`, outside the
-   * pick count. Absent from a server that predates the field.
+   * pick count. A character that passed such a level before the grant existed
+   * is owed the ones it missed, so they are listed too. Absent from a server
+   * that predates the field.
    */
   alwaysPreparedSpells?: { name: string; grantedBy: string }[];
+  /**
+   * When a subclass choice is due: the same list for each option that changes it
+   * (an oath's 3rd-level spells), keyed by option name. The modal uses the entry
+   * for the subclass the player picks; an option without an entry adds nothing.
+   */
+  alwaysPreparedSpellsBySubclass?: { [subclass: string]: { name: string; grantedBy: string }[] };
 }
 
 /**
