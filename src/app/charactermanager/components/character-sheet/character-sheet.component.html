@@ -290,6 +290,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           or a Death Knight's rune weapon -->
           <app-hero-class-panel [pc]="pc" [canEdit]="ownSheet || editable" (pcChange)="onPcChange($event)"></app-hero-class-panel>
         }
+        <!-- Cantrips and always-prepared spells from a World of Warcraft species; renders nothing otherwise -->
+        <app-species-spells [pc]="pc"></app-species-spells>
         <app-other-features   [pc]="pc" [addAllowed]="editable" (featureGranted)="onOtherFeatureGrant($event)"></app-other-features>
         <app-coin-purse
           [pc]="pc"

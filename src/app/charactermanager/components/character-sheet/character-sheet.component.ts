@@ -40,6 +40,7 @@ import { FollowersPanelComponent } from './panels/followers-panel/followers-pane
 import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 import { SpeciesDisplayPipe } from '../../pipes/species-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
+import { SpeciesSpellsComponent } from './panels/species-spells/species-spells.component';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
 
@@ -48,7 +49,7 @@ import { NotificationService } from '../../services/notification.service';
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, SpeciesSpellsComponent, ContextHelpComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
