@@ -117,3 +117,6 @@
   text-align: left;
   cursor: pointer;
 }
+
+// The long-rest hint sits above the search field; give it room.
+.prepared-locked-hint { margin-bottom: 8px; }

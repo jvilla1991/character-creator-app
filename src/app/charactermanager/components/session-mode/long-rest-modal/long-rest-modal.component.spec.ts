@@ -172,10 +172,10 @@ describe('LongRestModalComponent', () => {
     expect(row('temp-hp')).toContain('from the Blood Rune');
   });
 
-  it('names the class the way the sheet does: an Ebon Blade paladin is a Death Knight', () => {
+  it('names the hero class by its short name: an Ebon Blade paladin is a Death Knight', () => {
     render(pc({ name: 'Thorne', clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Blood' }));
-    const sub = fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent;
-    expect(sub).toContain('Thorne · Death Knight (Paladin) 5');
+    const sub = fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent.trim();
+    expect(sub).toBe('Thorne · Death Knight 5');
 
     render(pc());
     expect(fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent).toContain('Bex · Fighter 5');

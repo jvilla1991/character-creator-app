@@ -1,5 +1,5 @@
 import { PC } from '../models/pc';
-import { longRestPreview, ordinal } from './long-rest';
+import { longRestClassName, longRestPreview, ordinal } from './long-rest';
 
 describe('long rest util', () => {
   const pc = (over: Partial<PC> = {}): PC => ({
@@ -58,6 +58,15 @@ describe('long rest util', () => {
       expect(p.hitDiceBack).toBe(3);
       expect(p.slots[0].back).toBe(2);
     });
+  });
+
+  it('names a hero class by its short name, and anyone else by their class', () => {
+    expect(longRestClassName('Paladin', 'Oath of the Ebon Blade', 'Blood')).toBe('Death Knight');
+    expect(longRestClassName('Ranger', 'Demon Hunter', 'Havoc')).toBe('Demon Hunter');
+    expect(longRestClassName('Druid', 'Circle of the Moon', 'Guardian')).toBe('Druid'); // a WoW variant
+    expect(longRestClassName('Paladin', 'Oath of Devotion', null)).toBe('Paladin');
+    expect(longRestClassName('Fighter')).toBe('Fighter');
+    expect(longRestClassName(null)).toBe('');
   });
 
   it('ordinal handles the teens', () => {

@@ -65,14 +65,14 @@ describe('LongRestPanelComponent', () => {
     expect(rows[2].detail).toBe('Paladin 5');         // at 0 Hit Points — gains nothing
   });
 
-  it('names the class from the readiness row the way the sheet does (Death Knight, not Paladin)', () => {
+  it('names the hero class from the readiness row by its short name (Death Knight, not Paladin)', () => {
     const view = phase();
     view.readiness[0] = {
       ...view.readiness[0], clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Frost', level: 6,
     };
     render(view);
 
-    expect(component.rows()[0].detail).toBe('Death Knight (Paladin) 6 · +26 HP');
+    expect(component.rows()[0].detail).toBe('Death Knight 6 · +26 HP');
     expect(component.rows()[1].detail).toBe('Cleric 5'); // no details sent: the seat's own class
   });
 

@@ -9,7 +9,7 @@
         Save DC {{ saveDc() }} · Spell Atk {{ spellAtk() }}
       </span>
     }
-    @if (preparable() && hasLeveledSpells() && preparedCap() != null) {
+    @if ((preparable() || preparedHint()) && hasLeveledSpells() && preparedCap() != null) {
       <span
         class="prepared-counter"
         [class.at-cap]="preparedCount() >= preparedCap()!"
