@@ -1,4 +1,4 @@
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { FollowersPanelComponent } from './followers-panel.component';
@@ -9,6 +9,7 @@ import { Follower } from '../../../../models/follower';
 describe('FollowersPanelComponent', () => {
   let followerService: jasmine.SpyObj<FollowerService>;
   let component: FollowersPanelComponent;
+  let changes: Subject<{ pcId: number }>;
 
   const pc = (id: number): PC =>
     ({ id, name: 'Throk', clazz: 'Barbarian', level: 4, playerName: 'Ben' } as PC);
@@ -17,7 +18,9 @@ describe('FollowersPanelComponent', () => {
     ({ id, pcId: 7, name, statBlock: { race: 'Human', clazz: 'Guard', level: 2 } });
 
   beforeEach(() => {
-    followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['list', 'grant', 'dismiss']);
+    changes = new Subject<{ pcId: number }>();
+    followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['list', 'grant', 'dismiss'],
+      { changes$: changes });
     followerService.list.and.returnValue(of([]));
     component = TestBed.runInInjectionContext(() => new FollowersPanelComponent(followerService));
   });
@@ -44,6 +47,51 @@ describe('FollowersPanelComponent', () => {
 
     bind(pc(8), pc(7));
     expect(followerService.list).toHaveBeenCalledTimes(2);
+  });
+
+  // A follower granted (or dismissed, or hurt) from somewhere else.
+  describe('when FollowerService reports a change', () => {
+    beforeEach(() => {
+      followerService.list.and.returnValue(of([follower(1, 'Brannoc')]));
+      bind(pc(7));
+    });
+
+    it("re-lists this character's followers and keeps the grant form's drafts", () => {
+      component.openGrantForm();
+      component.nameDraft = 'Half-typed';
+      followerService.list.and.returnValue(of([follower(1, 'Brannoc'), follower(2, 'Wren')]));
+
+      changes.next({ pcId: 7 });
+
+      expect(component.followers().map(f => f.name)).toEqual(['Brannoc', 'Wren']);
+      expect(component.grantFormOpen).toBeTrue();
+      expect(component.nameDraft).toBe('Half-typed');
+    });
+
+    it("ignores another character's change", () => {
+      followerService.list.calls.reset();
+
+      changes.next({ pcId: 8 });
+
+      expect(followerService.list).not.toHaveBeenCalled();
+    });
+
+    it('keeps the list when the re-list fails', () => {
+      followerService.list.and.returnValue(throwError(() => new Error('offline')));
+
+      changes.next({ pcId: 7 });
+
+      expect(component.followers().map(f => f.name)).toEqual(['Brannoc']);
+    });
+
+    it('disarms a pending dismissal of a follower who is already gone', () => {
+      component.askDismiss(follower(1, 'Brannoc'));
+      followerService.list.and.returnValue(of([]));
+
+      changes.next({ pcId: 7 });
+
+      expect(component.confirmingDismissId()).toBeNull();
+    });
   });
 
   it('leaves the list empty when it cannot be read', () => {

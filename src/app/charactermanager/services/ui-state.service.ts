@@ -72,6 +72,12 @@ export class UiStateService {
   private readonly _openFollowerId = signal<number | null>(null);
   readonly openFollowerId = this._openFollowerId.asReadonly();
 
+  // A follower asked for from outside its character's sheet (the DM clicked
+  // its row on the Party Vitals Board). Only the sheet can show a follower, so
+  // the request waits here until the sheet for `pcId` takes it.
+  private readonly _followerRequest = signal<{ pcId: number; followerId: number } | null>(null);
+  readonly followerRequest = this._followerRequest.asReadonly();
+
   /**
    * Session Mode owns the main content area — except while a DM has cross-linked
    * from the session into a member's sheet (dmReturn), when the sheet takes over
@@ -205,6 +211,7 @@ export class UiStateService {
     // A follower sheet opened from the member's sheet sits on top of the
     // cross-link in history — close it first so both entries unwind in order.
     this.closeFollower();
+    this._followerRequest.set(null);
     this._dmReturn.set(false);
     this._role.set('dm');
     this.unwind('dmHero');
@@ -216,6 +223,19 @@ export class UiStateService {
     const firstOpen = this._openFollowerId() === null;
     this._openFollowerId.set(followerId);
     if (firstOpen) this.pushOverlay('follower');         // guard against re-push
+  }
+
+  /** Ask the sheet of character `pcId` to open one of its followers. */
+  requestFollower(pcId: number, followerId: number): void {
+    this._followerRequest.set({ pcId, followerId });
+  }
+
+  /** The sheet for `pcId` claims a pending request: the follower id, once. */
+  takeFollowerRequest(pcId: number): number | null {
+    const request = this._followerRequest();
+    if (!request || request.pcId !== pcId) return null;
+    this._followerRequest.set(null);
+    return request.followerId;
   }
 
   /** In-app "Back to Character" (also called when the owning sheet goes away). */
@@ -236,6 +256,7 @@ export class UiStateService {
     this._diceOpen.set(false);
     this._activeSessionId.set(null);
     this._openFollowerId.set(null);
+    this._followerRequest.set(null);
   }
 
   // ── history plumbing ──────────────────────────────────────────────────────

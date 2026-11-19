@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, inject, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { PC } from '../../../../models/pc';
 import { Follower, STAT_BLOCK_EXAMPLE, parseStatBlock } from '../../../../models/follower';
@@ -43,7 +44,13 @@ export class FollowersPanelComponent implements OnChanges {
 
   private readonly notifications = inject(NotificationService);
 
-  constructor(private followerService: FollowerService) {}
+  constructor(private followerService: FollowerService) {
+    // Someone else changed this character's followers (the DM granted one
+    // mid-session; the session snapshot showed one hurt): re-list.
+    this.followerService.changes$.pipe(takeUntilDestroyed()).subscribe(change => {
+      if (change.pcId === this.pc?.id) this.refresh();
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     const previous = changes['pc']?.previousValue as PC | undefined;
@@ -75,6 +82,26 @@ export class FollowersPanelComponent implements OnChanges {
       next: followers => { this.followers.set(followers); this.loading.set(false); },
       // Not readable (stranger / offline) — leave the list empty.
       error: () => { this.loading.set(false); },
+    });
+  }
+
+  /**
+   * Re-list without the loading state, keeping what is on screen until the
+   * fresh list lands. Skipped while this panel's own grant or dismissal is in
+   * flight (it applies its result itself); the grant form's drafts are never
+   * touched; a failed re-list keeps the current list.
+   */
+  private refresh(): void {
+    if (this.saving() || this.loading()) return;
+    const pcId = this.pc.id;
+    this.followerService.list(pcId).subscribe({
+      next: followers => {
+        if (this.pc?.id !== pcId || this.saving()) return;
+        this.followers.set(followers);
+        const confirming = this.confirmingDismissId();
+        if (confirming !== null && !followers.some(f => f.id === confirming)) this.confirmingDismissId.set(null);
+      },
+      error: () => {},
     });
   }
 

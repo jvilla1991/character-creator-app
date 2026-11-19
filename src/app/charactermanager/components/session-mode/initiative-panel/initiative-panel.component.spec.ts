@@ -1,8 +1,9 @@
 import { InitiativePanelComponent } from './initiative-panel.component';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { SimpleChange } from '@angular/core';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
-import { ParticipantView, SessionState } from '../../../models/session';
+import { FollowerCombatant, ParticipantView, SessionState } from '../../../models/session';
 import { ConfirmService } from '../../modal/confirm.service';
 import { of, throwError } from 'rxjs';
 
@@ -16,7 +17,8 @@ describe('InitiativePanelComponent', () => {
 
   beforeEach(() => {
     sessionService = jasmine.createSpyObj<SessionService>('SessionService',
-      ['isMuted', 'cueVolume', 'customCue', 'setCueVolume', 'setCustomCue', 'playCue', 'leave', 'setInitiative']);
+      ['isMuted', 'cueVolume', 'customCue', 'setCueVolume', 'setCustomCue', 'playCue', 'leave', 'setInitiative',
+        'damageFollower']);
     sessionService.isMuted.and.returnValue(false);
     sessionService.cueVolume.and.returnValue(1);
     sessionService.customCue.and.returnValue(null);
@@ -50,6 +52,7 @@ describe('InitiativePanelComponent', () => {
     hitDiceUsed: null,
     inspirationPips: null,
     heroicInspiration: null,
+    followers: [],
     ...overrides,
   });
 
@@ -182,6 +185,155 @@ describe('InitiativePanelComponent', () => {
       component.removeParticipant(participant({ npc: true, pcId: null }));
       expect(confirm).not.toHaveBeenCalled();
       expect(sessionService.leave).toHaveBeenCalledWith(3, 1);
+    });
+  });
+
+  // --- followers: nested under their owner, sharing its turn ---
+
+  describe('followers', () => {
+    const follower = (overrides: Partial<FollowerCombatant> = {}): FollowerCombatant => ({
+      followerId: 12, pcId: 7, name: 'Brannoc', clazz: 'Guard', level: 2,
+      portraitTint: null, portraitInitials: null,
+      hpMax: 16, hpCurrent: 4, hpTemp: null, ac: 16, conditions: ['Prone'],
+      ...overrides,
+    });
+
+    let fixture: ComponentFixture<InitiativePanelComponent>;
+    const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const followerRows = (): HTMLElement[] =>
+      Array.from(element().querySelectorAll<HTMLElement>('.board-row.follower'));
+
+    /** Aria (with Brannoc), then a goblin; rendered for a DM or a player. */
+    async function render(dm: boolean): Promise<void> {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [InitiativePanelComponent],
+        providers: [
+          { provide: SessionService, useValue: sessionService },
+          { provide: NotificationService, useValue: notifications },
+        ],
+      });
+      fixture = TestBed.createComponent(InitiativePanelComponent);
+      const panel = fixture.componentInstance;
+      panel.sessionId = 3;
+      panel.dm = dm;
+      panel.status = 'ACTIVE';
+      panel.participants = [
+        participant({ participantId: 1, name: 'Aria', followers: [follower()] }),
+        participant({ participantId: 2, name: 'Goblin', npc: true, pcId: null }),
+      ];
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    it("renders a PC's followers directly under the owner, with no initiative of their own", async () => {
+      await render(false);
+
+      const rows = Array.from(element().querySelectorAll<HTMLElement>('.board-row.member'));
+      expect(rows.map(r => r.querySelector('.board-hero-name')!.textContent)).toEqual(['Aria', 'Brannoc', 'Goblin']);
+      const row = followerRows()[0];
+      expect(row.querySelector('.nest-crest')!.textContent).toBe('↳');
+      expect(row.querySelector('.init-cell')!.textContent).toContain("Acts on Aria's turn");
+      expect(row.querySelector('.init-input')).toBeNull();
+      expect(row.querySelector('.hp-text')!.textContent).toContain('4/16');
+      expect(row.querySelector('.ac-cell')!.textContent).toContain('16');
+      expect(row.querySelector('.board-cond')!.textContent).toBe('Prone');
+    });
+
+    it('players see follower rows read-only', async () => {
+      await render(false);
+
+      expect(followerRows()[0].querySelector('.dm-adjust')).toBeNull();
+      expect(followerRows()[0].querySelector('input')).toBeNull();
+    });
+
+    it('the DM gets a damage/heal box on a follower row and nothing else', async () => {
+      await render(true);
+
+      const adjust = followerRows()[0].querySelector('.dm-adjust')!;
+      expect(adjust.querySelectorAll('input').length).toBe(1);
+      expect(Array.from(adjust.querySelectorAll('button')).map(b => b.textContent)).toEqual(['−', '+']);
+      expect(adjust.querySelector('.insp-pips')).toBeNull();
+    });
+
+    it("the DM's damage button calls the follower endpoint and clears the box", async () => {
+      await render(true);
+      sessionService.damageFollower.and.returnValue(of({} as SessionState));
+      fixture.componentInstance.followerAmounts[12] = 5;
+
+      followerRows()[0].querySelector<HTMLButtonElement>('.btn-mini.dmg')!.click();
+
+      expect(sessionService.damageFollower).toHaveBeenCalledOnceWith(3, 12, 5);
+      expect(fixture.componentInstance.followerAmounts[12]).toBeNull();
+    });
+
+    it('healing sends a negative amount; an empty box sends nothing', () => {
+      component.sessionId = 3;
+      sessionService.damageFollower.and.returnValue(of({} as SessionState));
+
+      component.adjustFollowerHp(follower(), -1);
+      expect(sessionService.damageFollower).not.toHaveBeenCalled();
+
+      component.followerAmounts[12] = 4;
+      component.adjustFollowerHp(follower(), -1);
+      expect(sessionService.damageFollower).toHaveBeenCalledOnceWith(3, 12, -4);
+    });
+
+    it('a failed follower damage keeps the amount and says so', () => {
+      component.sessionId = 3;
+      sessionService.damageFollower.and.returnValue(throwError(() => ({ status: 500 })));
+      component.followerAmounts[12] = 5;
+
+      component.adjustFollowerHp(follower(), 1);
+
+      expect(component.followerAmounts[12]).toBe(5);
+      expect(notifications.error).toHaveBeenCalledWith('Could not damage Brannoc. Try again.', jasmine.anything());
+    });
+
+    it("the owner's toggle collapses and expands its followers", async () => {
+      await render(false);
+      const toggles = element().querySelectorAll<HTMLButtonElement>('.nest-toggle');
+      expect(toggles.length).toBe(1);   // the goblin has no followers, so no toggle
+      expect(toggles[0].getAttribute('aria-expanded')).toBe('true');
+
+      toggles[0].click();
+      fixture.detectChanges();
+      expect(followerRows().length).toBe(0);
+      expect(toggles[0].getAttribute('aria-expanded')).toBe('false');
+
+      toggles[0].click();
+      fixture.detectChanges();
+      expect(followerRows().length).toBe(1);
+    });
+
+    it('a follower granted mid-session unfolds its collapsed owner; an unchanged snapshot does not', () => {
+      const snapshot = (...followers: FollowerCombatant[]) => {
+        component.participants = [participant({ participantId: 1, followers })];
+        component.ngOnChanges({ participants: new SimpleChange(null, component.participants, false) });
+      };
+      snapshot(follower());
+      component.toggleFollowers(component.participants[0]);
+
+      snapshot(follower({ hpCurrent: 1 }));   // same follower, hurt
+      expect(component.collapsed.has(1)).toBeTrue();
+
+      snapshot(follower(), follower({ followerId: 13, name: 'Wren' }));
+      expect(component.collapsed.has(1)).toBeFalse();
+    });
+
+    it("follower rows carry a softer copy of the owner's turn glow", async () => {
+      await render(false);
+      fixture.componentInstance.activeParticipantId = 1;
+      fixture.detectChanges();
+      expect(followerRows()[0].classList).toContain('with-current-turn');
+      expect(followerRows()[0].classList).not.toContain('current-turn');
+
+      fixture.componentInstance.activeParticipantId = 2;
+      fixture.componentInstance.onDeckParticipantId = 1;
+      fixture.detectChanges();
+      expect(followerRows()[0].classList).toContain('with-on-deck');
+      expect(followerRows()[0].classList).not.toContain('with-current-turn');
     });
   });
 

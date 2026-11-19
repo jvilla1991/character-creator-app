@@ -60,6 +60,31 @@ describe('FollowerService', () => {
     req.flush(null);
   });
 
+  it('grant, update and dismiss each announce the character on changes$, once the server answered', () => {
+    const changed: number[] = [];
+    service.changes$.subscribe(c => changed.push(c.pcId));
+
+    service.grant(7, 'Brannoc', { ac: 16 }).subscribe();
+    expect(changed).toEqual([]);
+    httpMock.expectOne(url).flush({});
+    service.update(7, 3, 'Brannoc', { ac: 18 }).subscribe();
+    httpMock.expectOne(`${url}/3`).flush({});
+    service.dismiss(7, 3).subscribe();
+    httpMock.expectOne(`${url}/3`).flush(null);
+
+    expect(changed).toEqual([7, 7, 7]);
+  });
+
+  it('a refused write announces nothing', () => {
+    const changed: number[] = [];
+    service.changes$.subscribe(c => changed.push(c.pcId));
+
+    service.grant(7, 'Brannoc', { ac: 16 }).subscribe({ error: () => {} });
+    httpMock.expectOne(url).flush('no', { status: 403, statusText: 'Forbidden' });
+
+    expect(changed).toEqual([]);
+  });
+
   describe('demo mode', () => {
     beforeEach(() => localStorage.setItem(DEMO_MODE_KEY, 'true'));
 

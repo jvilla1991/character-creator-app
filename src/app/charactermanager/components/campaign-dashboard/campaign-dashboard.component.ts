@@ -12,7 +12,7 @@ import { NotificationService } from '../../services/notification.service';
 import { SessionState } from '../../models/session';
 import { passiveScore, tintFor } from '../../utils/character-math';
 import { describeGameTime } from '../../utils/survival';
-import { PartyBoardComponent } from './party-board/party-board.component';
+import { BoardFollowerRef, PartyBoardComponent } from './party-board/party-board.component';
 import { PartyTreasuryComponent } from './party-treasury/party-treasury.component';
 import { CuratedShopsComponent } from './curated-shops/curated-shops.component';
 import { CuratedEncountersComponent } from './curated-encounters/curated-encounters.component';
@@ -149,25 +149,35 @@ export class CampaignDashboardComponent implements OnInit, OnDestroy {
    * opening (the dashboard only ever lists members the DM is allowed to edit).
    */
   openHero(pc: PC): void {
+    const show = (sheet: PC): void => {
+      this.pcService.setActivePC(sheet);
+      this.uiState.viewHeroAsDm();
+    };
     const owned = this.pcService.getPCById(pc.id);
     if (owned) {
-      this.pcService.setActivePC(owned);
-      this.uiState.viewHeroAsDm();
+      show(owned);
       return;
     }
     this.pcService.getPCByIdAsDm(pc.id).subscribe({
-      next: full => {
-        this.pcService.setActivePC(full?.id ? full : pc);
-        this.uiState.viewHeroAsDm();
-      },
+      next: full => show(full?.id ? full : pc),
       error: err => {
         // Fall back to the projection so the sheet still opens — but say so,
         // since edits made on it will be refused.
         this.notifications.error(`Could not load all of ${pc.name}'s sheet. Edits may not save — reopen it to retry.`, err);
-        this.pcService.setActivePC(pc);
-        this.uiState.viewHeroAsDm();
+        show(pc);
       },
     });
+  }
+
+  /**
+   * Cross-link to a follower: open its owner's sheet exactly as openHero does,
+   * with a request left in UiState for the follower on top of it. The sheet
+   * picks the request up and opens that follower itself, so Back steps
+   * follower → member sheet → campaign, the same as from the Followers tab.
+   */
+  openFollower(ref: BoardFollowerRef): void {
+    this.uiState.requestFollower(ref.owner.id, ref.follower.id);
+    this.openHero(ref.owner);
   }
 
   // --- Delete campaign ------------------------------------------------------

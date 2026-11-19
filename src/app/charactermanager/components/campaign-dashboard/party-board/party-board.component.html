@@ -25,7 +25,8 @@
       </div>
     }
 
-    @for (pc of members(); track pc) {
+    @for (row of rows(); track row.pc) {
+      @let pc = row.pc;
       <div
         class="board-row member"
         role="button"
@@ -35,49 +36,95 @@
         (keydown.enter)="openHero.emit(pc)"
         (keydown.space)="$event.preventDefault(); openHero.emit(pc)"
         >
-        <div class="board-hero">
-          <div class="portrait" [style.background]="tintFor(pc)">{{ initialsFor(pc) }}</div>
-          <div style="min-width: 0;">
-            <div class="board-hero-name">{{ pc.name }}</div>
-            <div class="board-hero-sub">{{ pc | classDisplay }} {{ pc.level }}</div>
+        <div class="board-hero-cell">
+          <!-- The toggle is its own control inside the row button: its click and
+          its Enter/Space must not also open the sheet. -->
+          @if (row.followers.length) {
+            <button type="button" class="nest-toggle"
+              [attr.aria-expanded]="!isCollapsed(pc)"
+              [attr.aria-label]="'Toggle followers of ' + pc.name"
+              (click)="$event.stopPropagation(); toggleFollowers(pc)"
+              (keydown.enter)="$event.stopPropagation()"
+              (keydown.space)="$event.stopPropagation()"
+            >{{ isCollapsed(pc) ? '▸' : '▾' }}</button>
+          } @else if (anyFollowers()) {
+            <span class="nest-crest" aria-hidden="true"></span>
+          }
+          <div class="board-hero">
+            <div class="portrait" [style.background]="tintFor(pc)">{{ initialsFor(pc) }}</div>
+            <div style="min-width: 0;">
+              <div class="board-hero-name">{{ pc.name }}</div>
+              <div class="board-hero-sub">{{ pc | classDisplay }} {{ pc.level }}</div>
+            </div>
           </div>
         </div>
-        <div class="board-hp" [class.bloodied]="bloodied(pc)">
-          <div class="hp-text">
-            <span>{{ pc.hp?.cur }}/{{ pc.hp?.max }}@if (pc.hp?.temp) {
-              +{{ pc.hp?.temp }}
-            }</span>
-            <span>{{ hpPct(pc) | number:'1.0-0' }}%</span>
-          </div>
-          <div class="vital-bar"><span [style.width.%]="hpPct(pc)"></span></div>
-        </div>
-        <!-- display:contents on desktop, so these stay direct grid items of
-        .board-row; on mobile .num-strip becomes a real 3-up strip. -->
-        <div class="num-strip">
-          <div class="board-num lit"><span class="num-label">AC</span>{{ pc.ac }}</div>
-          <div class="board-num"><span class="num-label">Pass. Perc</span>{{ passivePerception(pc) }}</div>
-          <div class="board-num"><span class="num-label">Pass. Ins</span>{{ passiveInsight(pc) }}</div>
-        </div>
-        <div class="board-conditions">
-          @if (!pc.conditions?.length && !pc.exhaustion) {
-            <span class="board-cond calm">steady</span>
-          }
-          @for (c of pc.conditions; track c) {
-            <span class="board-cond">{{ c }}</span>
-          }
-          <!-- 2024 PHB exhaustion level (tracked on the sheet, not a chip condition) -->
-          @if (pc.exhaustion) {
-            <span class="board-cond"
-              title="−2 to all d20 Tests and −5 ft Speed per level; death at level 6"
-            >exhaustion {{ pc.exhaustion }}</span>
-          }
-        </div>
-        <!-- IconChevron rotated -->
-        <svg class="board-chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"
-          style="transform: rotate(-90deg);">
-          <path d="M2 4l3 3 3-3"/>
-        </svg>
+        <ng-container [ngTemplateOutlet]="vitals" [ngTemplateOutletContext]="{ $implicit: pc }" />
       </div>
+
+      @if (!isCollapsed(pc)) {
+        @for (f of row.followers; track f.follower.id) {
+          <div
+            class="board-row member follower"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="'Open the sheet for ' + f.pc.name + ', follower of ' + pc.name"
+            (click)="openFollower.emit({ owner: pc, follower: f.follower })"
+            (keydown.enter)="openFollower.emit({ owner: pc, follower: f.follower })"
+            (keydown.space)="$event.preventDefault(); openFollower.emit({ owner: pc, follower: f.follower })"
+            >
+            <div class="board-hero-cell">
+              <span class="nest-crest" aria-hidden="true">↳</span>
+              <div class="board-hero">
+                <div style="min-width: 0;">
+                  <div class="board-hero-name">{{ f.pc.name }}</div>
+                  <div class="board-hero-sub">{{ f.pc | classDisplay }} {{ f.pc.level }}</div>
+                </div>
+              </div>
+            </div>
+            <ng-container [ngTemplateOutlet]="vitals" [ngTemplateOutletContext]="{ $implicit: f.pc }" />
+          </div>
+        }
+      }
     }
   </div>
 </div>
+
+<!-- Everything right of the name, shared by member rows and follower rows (a
+follower is rendered through its sheet-shaped view, so the math is the same). -->
+<ng-template #vitals let-pc>
+  <div class="board-hp" [class.bloodied]="bloodied(pc)">
+    <div class="hp-text">
+      <span>{{ pc.hp?.cur ?? '—' }}/{{ pc.hp?.max ?? '—' }}@if (pc.hp?.temp) {
+        +{{ pc.hp?.temp }}
+      }</span>
+      <span>{{ hpPct(pc) | number:'1.0-0' }}%</span>
+    </div>
+    <div class="vital-bar"><span [style.width.%]="hpPct(pc)"></span></div>
+  </div>
+  <!-- display:contents on desktop, so these stay direct grid items of
+  .board-row; on mobile .num-strip becomes a real 3-up strip. -->
+  <div class="num-strip">
+    <div class="board-num lit"><span class="num-label">AC</span>{{ pc.ac ?? '—' }}</div>
+    <div class="board-num"><span class="num-label">Pass. Perc</span>{{ passivePerception(pc) }}</div>
+    <div class="board-num"><span class="num-label">Pass. Ins</span>{{ passiveInsight(pc) }}</div>
+  </div>
+  <div class="board-conditions">
+    @if (!pc.conditions?.length && !pc.exhaustion) {
+      <span class="board-cond calm">steady</span>
+    }
+    @for (c of pc.conditions; track c) {
+      <span class="board-cond">{{ c }}</span>
+    }
+    <!-- 2024 PHB exhaustion level (tracked on the sheet, not a chip condition) -->
+    @if (pc.exhaustion) {
+      <span class="board-cond"
+        title="−2 to all d20 Tests and −5 ft Speed per level; death at level 6"
+      >exhaustion {{ pc.exhaustion }}</span>
+    }
+  </div>
+  <!-- IconChevron rotated -->
+  <svg class="board-chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"
+    style="transform: rotate(-90deg);">
+    <path d="M2 4l3 3 3-3"/>
+  </svg>
+</ng-template>

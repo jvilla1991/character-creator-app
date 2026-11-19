@@ -20,7 +20,7 @@ describe('LootPanelComponent', () => {
       initiative: null, initRolled: false, orderIndex: 0, hpMax: null,
       hpCurrent: null, hpTemp: null, ac: null, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
-      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null,
+      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null, followers: [],
       ...over,
     };
   }

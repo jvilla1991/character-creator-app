@@ -1,5 +1,5 @@
 import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, effect, inject, output, signal, untracked } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { SellRequest } from '../../models/shop';
 import { CampaignLocation } from '../../models/campaign';
@@ -10,6 +10,8 @@ import { SessionService } from '../../services/session.service';
 import { FollowerService } from '../../services/follower.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { tintFor } from '../../utils/character-math';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 // NOTE: the type import is kept separate from the component import — sharing
 // one import statement counts as an eager reference to SpellbookPanelComponent
@@ -206,7 +208,69 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     private sessionService: SessionService,
     private followerService: FollowerService,
     private uiState: UiStateService,
-  ) {}
+  ) {
+    // A follower asked for from outside this sheet (see UiState.followerRequest).
+    // ngOnChanges asks again when the character arrives after the request did.
+    effect(() => {
+      if (this.uiState.followerRequest()) untracked(() => this.openRequestedFollower());
+    });
+    this.followerService.changes$.pipe(takeUntilDestroyed()).subscribe(change => {
+      if (!this.followerMode && change.pcId === this.pc?.id) this.refreshOpenFollower();
+    });
+  }
+
+  // Saves of the open follower still on their way to the server, and a count
+  // of every edit made to it, so a re-list can tell when it is out of date.
+  private followerSavesInFlight = 0;
+  private followerEdits = 0;
+
+  /**
+   * The open follower changed somewhere else (the DM damaged it from the
+   * initiative order, or dismissed it): show the server's copy. Never while
+   * one of this sheet's own saves is in flight, and a re-list that an edit
+   * overtook is dropped, so a change made here always wins over a re-list
+   * that started before it. A dismissed follower's sheet closes.
+   */
+  private refreshOpenFollower(): void {
+    const open = this.openedFollower();
+    if (!open || this.followerSavesInFlight > 0) return;
+    const edits = this.followerEdits;
+    this.followerService.list(open.pcId).subscribe({
+      next: followers => {
+        const current = this.openedFollower();
+        if (current?.id !== open.id || this.followerEdits !== edits || this.followerSavesInFlight > 0) return;
+        const fresh = followers.find(f => f.id === open.id);
+        if (!fresh) {
+          this.closeFollower();
+          this.notifications.notify(`${open.name} is no longer with ${this.pc.name}.`);
+        } else if (fresh.name !== current.name
+            || JSON.stringify(fresh.statBlock) !== JSON.stringify(current.statBlock)) {
+          this.openedFollower.set(fresh);
+        }
+      },
+      error: () => {},   // keep showing what we have
+    });
+  }
+
+  /** Claim a pending follower request for this character and open it, as if
+   *  the follower had been clicked on the Followers tab. */
+  private openRequestedFollower(): void {
+    if (this.followerMode || !this.pc) return;
+    const pcId = this.pc.id;
+    const followerId = this.uiState.takeFollowerRequest(pcId);
+    if (followerId === null) return;
+    const failed = (err?: unknown) =>
+      this.notifications.error('Could not open that follower. Try the Followers tab.', err);
+    this.followerService.list(pcId).subscribe({
+      next: followers => {
+        if (this.pc?.id !== pcId) return;   // the sheet moved on while loading
+        const follower = followers.find(f => f.id === followerId);
+        if (follower) this.onFollowerOpened(follower);
+        else failed();
+      },
+      error: err => failed(err),
+    });
+  }
 
   /**
    * Below 820px the section tabs are pinned to the bottom of the screen (see
@@ -242,6 +306,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       if (!this.followerMode && previous && previous.id !== this.pc?.id) {
         this.closeFollower();
       }
+      this.openRequestedFollower();
     }
   }
 
@@ -288,7 +353,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     if (!before) return;
     const optimistic: Follower = { ...before, name: updated.name, statBlock: pcToStatBlock(updated) };
     this.openedFollower.set(optimistic);
-    this.followerService.update(before.pcId, before.id, optimistic.name, optimistic.statBlock).subscribe({
+    this.followerEdits++;
+    this.followerSavesInFlight++;
+    this.followerService.update(before.pcId, before.id, optimistic.name, optimistic.statBlock).pipe(
+      finalize(() => this.followerSavesInFlight--),
+    ).subscribe({
       error: err => {
         this.notifications.error(`Could not save ${before.name}. The change was undone — try again.`, err);
         // Revert only if no newer edit has landed on top of this one.

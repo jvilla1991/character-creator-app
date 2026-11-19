@@ -48,8 +48,8 @@
           <div class="faction-row" [class.subfaction]="row.parentId != null" [class.unsaved]="changeOf(row) !== 0">
             <div class="faction-name">
               @if (row.parentId == null && children(row.id).length) {
-                <button type="button" class="expand" (click)="toggle(row.id)" [attr.aria-expanded]="!collapsed.has(row.id)" [attr.aria-label]="'Toggle sub-factions of ' + row.name">{{ collapsed.has(row.id) ? '▸' : '▾' }}</button>
-              } @else { <span class="crest" aria-hidden="true">{{ row.parentId == null ? '◆' : '↳' }}</span> }
+                <button type="button" class="expand nest-toggle" (click)="toggle(row.id)" [attr.aria-expanded]="!collapsed.has(row.id)" [attr.aria-label]="'Toggle sub-factions of ' + row.name">{{ collapsed.has(row.id) ? '▸' : '▾' }}</button>
+              } @else { <span class="crest nest-crest" aria-hidden="true">{{ row.parentId == null ? '◆' : '↳' }}</span> }
               <span>{{ row.name }}</span>
             </div>
             <div class="standing">
