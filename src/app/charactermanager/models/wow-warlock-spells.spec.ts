@@ -4,8 +4,8 @@ import { WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_SUGGESTED_SPELLS } from './wow-class-
 
 /**
  * Checks the shipped spell data (the real assets, served by the Karma builder)
- * for the WoW Warlock: its three new World of Warcraft spells, and that every
- * base spell its guidance and suggestions name exists.
+ * for the WoW Warlock: its three new World of Warcraft spells (full text), and
+ * that every base spell its guidance and suggestions name exists.
  */
 describe('World of Warcraft warlock spells (wow-spells.json)', () => {
   const NEW_SPELLS = ['Curse of Agony', "Hand of Gul'dan", 'Rain of Fire'];
@@ -29,6 +29,8 @@ describe('World of Warcraft warlock spells (wow-spells.json)', () => {
       expect(spell.classes).withContext(name).toEqual(['warlock']);
       expect(spell.subclasses).withContext(name).toBeUndefined();
       expect(spellSource(spell)).withContext(name).toBe('World of Warcraft');
+      expect(JSON.stringify(spell)).withContext(name).not.toContain('TBD');
+      expect(spell.eli5).withContext(name).toBeTruthy();
     }
   });
 
@@ -46,14 +48,14 @@ describe('World of Warcraft warlock spells (wow-spells.json)', () => {
     expect(text).toContain('end of each of its turns');
   });
 
-  it('stubs Hand of Gul\'dan (conjuration) and Rain of Fire (evocation) as level-3 concentration spells', () => {
-    expect(find("Hand of Gul'dan")).toEqual(jasmine.objectContaining({ level: 3, school: 'conjuration', concentration: true }));
-    expect(find('Rain of Fire')).toEqual(jasmine.objectContaining({ level: 3, school: 'evocation', concentration: true }));
+  it('records Hand of Gul\'dan (conjuration) and Rain of Fire (evocation) as level-3 concentration spells, with full text', () => {
+    const shared = { level: 3, concentration: true, range: '120 feet', components: ['v', 's'], duration: 'up to 1 minute' };
+    expect(find("Hand of Gul'dan")).toEqual(jasmine.objectContaining({ ...shared, school: 'conjuration' }));
+    expect(find('Rain of Fire')).toEqual(jasmine.objectContaining({ ...shared, school: 'evocation' }));
+    expect(find('Rain of Fire').higherLevelSlot).toBe('The Fire damage increases by 1d8 for each spell slot level above 3.');
     for (const name of ["Hand of Gul'dan", 'Rain of Fire']) {
-      expect(find(name).description).withContext(name)
-        .toBe('TBD — full text coming in the World of Warcraft spells update.');
-      expect(find(name).range).withContext(name).toBe('TBD');
-      expect(find(name).duration).withContext(name).toBe('TBD');
+      expect(find(name).description).withContext(name).not.toContain('TBD');
+      expect(find(name).description.length).withContext(name).toBeGreaterThan(40);
     }
   });
 

@@ -6,18 +6,18 @@ import { spellNames } from './hero-class';
 
 /**
  * Checks the shipped spell data (the real assets, served by the Karma builder)
- * for the WoW Evoker: its sixteen World of Warcraft spell stubs, and that every
- * spell its table, guidance and suggestions name resolves at the right level.
+ * for the WoW Evoker: its sixteen World of Warcraft spells (full text), and that
+ * every spell its table, guidance and suggestions name resolves at the right level.
  */
 describe('World of Warcraft evoker spells (wow-spells.json)', () => {
-  /** name → [level, concentration, level inferred from the tables]. */
-  const NEW_SPELLS: Record<string, [number, boolean, boolean]> = {
-    'Azure Strike': [1, false, false], 'Ebon Might': [1, false, false], 'Living Flame': [1, false, false],
-    'Dream Breath': [2, false, false], 'Eruption': [2, false, false], 'Blistering Scales': [3, true, false],
-    'Emerald Blossom': [3, false, true], 'Upheaval': [4, false, true], 'Emberstorm': [4, false, true],
-    'Time Dilation': [4, false, true], 'Breath of Eons': [5, false, true], 'Shattering Star': [5, false, true],
-    'Dream Flight': [5, false, true], 'Rescue': [5, false, true], 'Azure Sweep': [6, false, true],
-    'Lay Waste': [7, false, true],
+  /** name → [level, concentration], as the book prints them. */
+  const NEW_SPELLS: Record<string, [number, boolean]> = {
+    'Azure Strike': [1, false], 'Ebon Might': [1, false], 'Living Flame': [1, false],
+    'Dream Breath': [2, false], 'Eruption': [2, false], 'Blistering Scales': [3, true],
+    'Emerald Blossom': [3, true], 'Upheaval': [4, false], 'Emberstorm': [4, false],
+    'Time Dilation': [4, false], 'Breath of Eons': [4, true], 'Shattering Star': [5, false],
+    'Dream Flight': [5, true], 'Rescue': [5, false], 'Azure Sweep': [6, false],
+    'Lay Waste': [7, false],
   };
   let wow: DndSpell[];
   let index: Map<string, DndSpell>;
@@ -32,8 +32,8 @@ describe('World of Warcraft evoker spells (wow-spells.json)', () => {
 
   const find = (name: string) => wow.find(s => s.name === name)!;
 
-  it('adds the sixteen Evoker spells as sorcerer spell stubs from World of Warcraft', () => {
-    for (const [name, [level, concentration, inferred]] of Object.entries(NEW_SPELLS)) {
+  it('adds the sixteen Evoker spells as sorcerer spells from World of Warcraft, with full text', () => {
+    for (const [name, [level, concentration]] of Object.entries(NEW_SPELLS)) {
       const spell = find(name);
       expect(spell).withContext(name).toBeDefined();
       expect(spell.level).withContext(name).toBe(level);
@@ -41,13 +41,19 @@ describe('World of Warcraft evoker spells (wow-spells.json)', () => {
       expect(spell.classes).withContext(name).toEqual(['sorcerer']);
       expect(spell.subclasses).withContext(name).toBeUndefined();
       expect(spellSource(spell)).withContext(name).toBe('World of Warcraft');
-      expect(spell.description).withContext(name).toBe('TBD — full text coming in the World of Warcraft spells update.');
-      expect(spell.eli5).withContext(name).toBeUndefined();
-      expect([spell.range, spell.duration]).withContext(name).toEqual(['TBD', 'TBD']);
-      const note = (spell as DndSpell & { _note?: string })._note;
-      if (inferred) expect(note).withContext(name).toContain('level inferred');
-      else expect(note).withContext(name).toBeUndefined();
+      expect(JSON.stringify(spell)).withContext(name).not.toContain('TBD');
+      expect(spell.description.length).withContext(name).toBeGreaterThan(40);
+      expect(spell.eli5).withContext(name).toBeTruthy();
+      expect(spell.range).withContext(name).toBeTruthy();
+      expect(spell.duration).withContext(name).toBeTruthy();
+      expect((spell as DndSpell & { _note?: string })._note).withContext(name).toBeUndefined();
     }
+  });
+
+  it('records Breath of Eons as a level-4 concentration spell (the book, not the old inferred 5)', () => {
+    expect(find('Breath of Eons')).toEqual(jasmine.objectContaining({
+      level: 4, school: 'abjuration', concentration: true, range: 'Self', duration: 'up to 1 minute',
+    }));
   });
 
   it('hides them when the World of Warcraft source is off', () => {
