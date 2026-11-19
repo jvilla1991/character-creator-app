@@ -73,17 +73,8 @@ export function longRestPreview(pc: PC): LongRestPreview {
   };
 }
 
-/** "1st", "2nd", "3rd", "4th" … for spell levels. */
-export function ordinal(n: number): string {
-  const tens = n % 100;
-  if (tens >= 11 && tens <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
-  }
-}
+/** "1st", "2nd", "3rd", "4th" … for spell levels. One helper for the app: it lives with the slots. */
+export { ordinal } from './spell-slots';
 
 /**
  * The class name the long rest screens show beside the level: the hero class's

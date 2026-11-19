@@ -881,7 +881,7 @@ describe('CreateCharacterModalComponent — logic', () => {
         expect(draft.specialization).toBe('Unholy');
         expect('rune' in draft).toBeFalse();
         expect(draft.hp.max).toBe(12);          // Paladin d10 + CON 14
-        expect(draft.spellSlots).toEqual({});   // Paladin has no level-1 slots here
+        expect(draft.spellSlots).toEqual({ 1: { max: 2, used: 0 } });   // half caster: two 1st-level slots at level 1
         done();
       });
       component.submit();

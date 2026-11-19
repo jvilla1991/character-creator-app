@@ -1,13 +1,15 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { PC } from '../models/pc';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { hitDieFor, modFromScore } from '../utils/character-math';
+import { SpellSlots, restoreAllSlots, restoreSlot, slotLevels, spendSlot } from '../utils/spell-slots';
+import { SLOT_STATS, adjustmentSum, adjustmentsFor } from '../models/stat-adjustment';
 import {
   DEMO_PCS,
   DEMO_ACTIVITY_LOGS,
@@ -358,6 +360,125 @@ export class PCService {
     );
   }
 
+  // ── Spell slots: spend by hand, restore ────────────────────────────────────
+  // The slot count lives on the server (the maximum is the class table plus the
+  // DM's bonus lines; only `used` is state). These endpoints answer with the
+  // character's slots afterwards, which replace the ones on the sheet. Nothing
+  // is applied before the server answers, so a refusal leaves the sheet as it was.
+
+  /**
+   * Spend one slot of a spell level by hand: the owner at any time, or the
+   * campaign's DM on their behalf. The server answers 409 when no slot of that
+   * level is free. `asDm` only matters in demo mode, which has no login to tell
+   * the DM's view from the player's; the server works that out itself.
+   */
+  spendSpellSlot(pcId: number, spellLevel: number, asDm = false): Observable<SpellSlots> {
+    if (environment.demoMode) return this.demoSlotChange(pcId, asDm, 'spend', spellLevel);
+    return this.slotRequest(pcId, 'spend', { level: spellLevel });
+  }
+
+  /**
+   * Give one spent slot of a spell level back: the campaign's DM, or the owner
+   * of a character in no campaign (a campaign player gets 403: slots come back
+   * with a rest or from the DM). 409 when nothing is spent at that level.
+   */
+  restoreSpellSlot(pcId: number, spellLevel: number, asDm = false): Observable<SpellSlots> {
+    if (environment.demoMode) return this.demoSlotChange(pcId, asDm, 'restore', spellLevel);
+    return this.slotRequest(pcId, 'restore', { level: spellLevel });
+  }
+
+  /** Give every spent slot back; same people as {@link restoreSpellSlot}. Never refused for a rested character. */
+  restoreAllSpellSlots(pcId: number, asDm = false): Observable<SpellSlots> {
+    if (environment.demoMode) return this.demoSlotChange(pcId, asDm, 'restoreAll', null);
+    return this.slotRequest(pcId, 'restore', { all: true });
+  }
+
+  /**
+   * Read the character's slots again and show them, after a spend or restore
+   * the server refused: a refusal means the sheet was behind (someone else
+   * spent or restored in the meantime). The DM's view reads through the DM
+   * path. Quiet on failure, and nothing to do in demo mode.
+   */
+  refreshSpellSlots(pcId: number, asDm = false): void {
+    if (environment.demoMode) return;
+    const url = asDm ? `${this.pcUrl}${pcId}/as-dm` : `${this.pcUrl}find/${pcId}`;
+    this.http.get<PC>(url).subscribe({
+      next: raw => this.patchSpellSlots(pcId, this.deserializePC(raw).spellSlots ?? {}),
+      error: () => { /* keep what the sheet has */ },
+    });
+  }
+
+  private slotRequest(pcId: number, action: 'spend' | 'restore', body: { level?: number; all?: boolean }):
+      Observable<SpellSlots> {
+    return this.http.post<{ pcId: number; spellSlots: unknown }>(`${this.pcUrl}${pcId}/spell-slots/${action}`, body).pipe(
+      map(result => this.parseJsonField<SpellSlots>(result?.spellSlots, {})),
+      tap(spellSlots => this.patchSpellSlots(pcId, spellSlots)),
+    );
+  }
+
+  /**
+   * Put new slots on the character wherever it is showing. Unlike
+   * {@link patchLocalPC} this also reaches a character that is on screen but
+   * not in the viewer's own roster: the member a DM has open.
+   */
+  private patchSpellSlots(pcId: number, spellSlots: SpellSlots): void {
+    this.pcs = this.pcs.map(p => p.id === pcId ? { ...p, spellSlots } : p);
+    this.pcsSubject.next(this.pcs);
+    const active = this.activePCSubject.getValue();
+    if (active && active.id === pcId) {
+      this.activePCSubject.next({ ...active, spellSlots });
+    }
+  }
+
+  /**
+   * Demo mirror of the spend and restore endpoints: the same rules, the same
+   * refusals (as the HTTP errors the server would send, so callers handle one
+   * shape), and the same activity-log lines.
+   */
+  private demoSlotChange(
+    pcId: number, asDm: boolean, action: 'spend' | 'restore' | 'restoreAll', spellLevel: number | null,
+  ): Observable<SpellSlots> {
+    const refuse = (status: number, message: string) =>
+      throwError(() => new HttpErrorResponse({ status, error: { message } }));
+    const active = this.activePCSubject.getValue();
+    const pc = this.pcs.find(p => p.id === pcId) ?? (active?.id === pcId ? active : null);
+    if (!pc) return refuse(404, 'PC not found with id ' + pcId);
+    const level = spellLevel ?? 0;
+    if (action !== 'restoreAll' && (!Number.isInteger(level) || level < 1 || level > 9)) {
+      return refuse(400, 'level must be a spell level from 1 to 9');
+    }
+    if (action !== 'spend' && !asDm && pc.campaignId != null) {
+      return refuse(403, 'In a campaign, spell slots come back with a rest or from your Dungeon Master');
+    }
+
+    // "1 of 3 left": how the server's log line words a spell level.
+    const left = (slots: SpellSlots) => `${slots[level].max - slots[level].used} of ${slots[level].max} left`;
+    let next: SpellSlots | null;
+    let description: string;
+    if (action === 'restoreAll') {
+      next = restoreAllSlots(pc.spellSlots);
+      // Already rested: nothing changes and nothing is logged.
+      if (!slotLevels(pc.spellSlots).some(l => l.used > 0)) return of(next).pipe(delay(50));
+      description = (asDm ? 'DM restored' : 'Restored') + ' all spell slots';
+    } else if (action === 'spend') {
+      next = spendSlot(pc.spellSlots, level);
+      if (!next) return refuse(409, `No level ${level} slot available`);
+      description = `${asDm ? 'DM spent' : 'Spent'} a level ${level} spell slot (${left(next)})`;
+    } else {
+      next = restoreSlot(pc.spellSlots, level);
+      if (!next) return refuse(409, `No spent level ${level} slot to restore`);
+      description = `${asDm ? 'DM restored' : 'Restored'} a level ${level} spell slot (${left(next)})`;
+    }
+
+    this.patchSpellSlots(pcId, next);
+    const entry: PcActivityLogEntry = {
+      id: 'demo-slot-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), pcId,
+      actionType: 'SPELL_SLOT', description, createdAt: new Date().toISOString(),
+    };
+    this.demoLog[pcId] = [entry, ...(this.demoLog[pcId] ?? [])].slice(0, 10);
+    return of(next).pipe(delay(50));
+  }
+
   /** Mirror a server-returned PC into pcs$ and (when active) activePC$. */
   private mirrorPC(updated: PC): void {
     this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
@@ -458,7 +579,7 @@ export class PCService {
       currentProfBonus: demoProfBonus(current),
       newProfBonus: demoProfBonus(newLevel),
       currentSpellSlots: demoCurrentMaxSlots(pc),
-      newSpellSlots: demoSlotsFor(pc.clazz, newLevel),
+      newSpellSlots: this.demoSlotMaxes(pc, newLevel),
       subclassDue: newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass,
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
@@ -473,6 +594,21 @@ export class PCService {
       currentSpellsKnown: demoPreparedSpells(pc.clazz, current),
       newSpellsKnown: demoPreparedSpells(pc.clazz, newLevel),
     };
+  }
+
+  /**
+   * Demo mirror of the server's slot maximum at a level (SpellSlotState.maxFor): the
+   * class table plus the DM's `slot1`..`slot9` bonus lines; a level that comes to
+   * zero or less is left out.
+   */
+  private demoSlotMaxes(pc: PC, level: number): { [lvl: number]: number } {
+    const table = demoSlotsFor(pc.clazz, level);
+    const out: { [lvl: number]: number } = {};
+    SLOT_STATS.forEach((stat, i) => {
+      const total = (table[i + 1] ?? 0) + adjustmentSum(adjustmentsFor(pc, stat));
+      if (total > 0) out[i + 1] = total;
+    });
+    return out;
   }
 
   private applyDemoLevelUp(id: number, choices?: LevelUpChoices): Observable<PC> {
@@ -501,8 +637,9 @@ export class PCService {
     const hpGained = Math.max(1, dieValue + newConMod);
     const hpDelta = hpGained + (newLevel - 1) * (newConMod - oldConMod);
 
-    // Rebuild slots from the demo table, preserving `used` (clamped) like the server does.
-    const targetSlots = demoSlotsFor(existing.clazz, newLevel);
+    // Rebuild slots from the class table plus the DM's bonus lines, preserving `used`
+    // (clamped) like the server does.
+    const targetSlots = this.demoSlotMaxes(existing, newLevel);
     let spellSlots = existing.spellSlots;
     if (Object.keys(targetSlots).length > 0) {
       spellSlots = {};

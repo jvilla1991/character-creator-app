@@ -39,6 +39,7 @@ import {
   ALLEGIANCES, Allegiance, allegianceLanguageHint, allegianceLanguageOptions, allegiancePickCount,
   suggestedAllegiance, wowStartingLanguages,
 } from '../../models/wow-languages';
+import { startingSlots } from '../../utils/spell-slots';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -1016,17 +1017,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   // ── Starting spell slots (level 1) ───────────────────────────────────────
 
+  // The class table at level 1, so a new character shows its slots before the first
+  // save answers (and in demo mode, where there is no server). The server works the
+  // maximum out again on create and ignores the one sent here.
   private buildStartingSlots(clazz: string): { [level: number]: { max: number; used: number } } {
-    const key = clazz.toLowerCase();
-    const slotMap: Record<string, { [level: number]: { max: number; used: number } }> = {
-      bard:     { 1: { max: 2, used: 0 } },
-      cleric:   { 1: { max: 2, used: 0 } },
-      druid:    { 1: { max: 2, used: 0 } },
-      sorcerer: { 1: { max: 2, used: 0 } },
-      warlock:  { 1: { max: 1, used: 0 } },
-      wizard:   { 1: { max: 2, used: 0 } },
-    };
-    return slotMap[key] ?? {};
+    return startingSlots(clazz, 1);
   }
 
   // ── Source filter (step 4) ────────────────────────────────────────────────

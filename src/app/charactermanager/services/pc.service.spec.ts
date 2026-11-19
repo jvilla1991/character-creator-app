@@ -273,6 +273,113 @@ describe('PCService', () => {
     });
   });
 
+  // ── spell slots: spend by hand, restore ─────────────────────────────────────
+
+  describe('spell slots', () => {
+    const AFTER = { 1: { max: 4, used: 2 }, 3: { max: 2, used: 0 } };
+
+    it('POSTs the spell level to /{id}/spell-slots/spend and returns the slots the server answers with', (done) => {
+      service.spendSpellSlot(42, 1).subscribe(slots => {
+        expect(slots).toEqual(AFTER);
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/spell-slots/spend');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ level: 1 });
+      req.flush({ pcId: 42, spellSlots: { '1': { max: 4, used: 2 }, '3': { max: 2, used: 0 } } });
+    });
+
+    it('POSTs the spell level to /{id}/spell-slots/restore', (done) => {
+      service.restoreSpellSlot(42, 3).subscribe(slots => {
+        expect(slots).toEqual(AFTER);
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/spell-slots/restore');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ level: 3 });
+      req.flush({ pcId: 42, spellSlots: AFTER });
+    });
+
+    it('POSTs all: true to restore every slot', (done) => {
+      service.restoreAllSpellSlots(42).subscribe(slots => {
+        expect(slots).toEqual({ 1: { max: 4, used: 0 } });
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/spell-slots/restore');
+      expect(req.request.body).toEqual({ all: true });
+      req.flush({ pcId: 42, spellSlots: { 1: { max: 4, used: 0 } } });
+    });
+
+    it('reads the slots with the parsing the rest of the character uses: a JSON string works too', (done) => {
+      service.spendSpellSlot(42, 1).subscribe(slots => {
+        expect(slots).toEqual(AFTER);
+        done();
+      });
+      httpMock.expectOne(service.pcUrl + '42/spell-slots/spend')
+        .flush({ pcId: 42, spellSlots: JSON.stringify(AFTER) });
+    });
+
+    it('puts the answered slots on the character in the roster and on screen', () => {
+      const pc = makePC({ id: 42, spellSlots: { 1: { max: 4, used: 1 }, 3: { max: 2, used: 0 } } });
+      service.setPCs([pc]);
+      service.setActivePC(pc);
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+
+      service.spendSpellSlot(42, 1).subscribe();
+      httpMock.expectOne(service.pcUrl + '42/spell-slots/spend').flush({ pcId: 42, spellSlots: AFTER });
+
+      expect(active!.spellSlots).toEqual(AFTER);
+      expect(service.getPCById(42)!.spellSlots).toEqual(AFTER);
+      expect(active!.name).toBe('Aelindra'); // only the slots change
+    });
+
+    it('reaches a character that is on screen but not in the roster: the member a DM has open', () => {
+      service.setPCs([]);
+      service.setActivePC(makePC({ id: 42, spellSlots: { 1: { max: 4, used: 3 } } }));
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+
+      service.restoreAllSpellSlots(42, true).subscribe();
+      httpMock.expectOne(service.pcUrl + '42/spell-slots/restore').flush({ pcId: 42, spellSlots: { 1: { max: 4, used: 0 } } });
+
+      expect(active!.spellSlots).toEqual({ 1: { max: 4, used: 0 } });
+    });
+
+    it('leaves the character alone when the server refuses', () => {
+      const pc = makePC({ id: 42, spellSlots: { 1: { max: 4, used: 4 } } });
+      service.setPCs([pc]);
+      service.setActivePC(pc);
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+      let status = 0;
+
+      service.spendSpellSlot(42, 1).subscribe({ error: err => (status = err.status) });
+      httpMock.expectOne(service.pcUrl + '42/spell-slots/spend')
+        .flush({ message: 'No level 1 slot available' }, { status: 409, statusText: 'Conflict' });
+
+      expect(status).toBe(409);
+      expect(active!.spellSlots).toEqual({ 1: { max: 4, used: 4 } });
+    });
+
+    it('re-reads the slots through the owner path, or the DM path for a member', () => {
+      const pc = makePC({ id: 42, spellSlots: { 1: { max: 4, used: 0 } } });
+      service.setPCs([pc]);
+      service.setActivePC(pc);
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+
+      service.refreshSpellSlots(42);
+      httpMock.expectOne(service.pcUrl + 'find/42').flush({ ...makePC({ id: 42 }), name: 'Renamed', spellSlots: '{"1":{"max":4,"used":3}}' });
+      expect(active!.spellSlots).toEqual({ 1: { max: 4, used: 3 } });
+      expect(active!.name).toBe('Aelindra'); // only the slots are taken
+
+      service.refreshSpellSlots(42, true);
+      httpMock.expectOne(service.pcUrl + '42/as-dm').flush({}, { status: 403, statusText: 'Forbidden' });
+      expect(active!.spellSlots).toEqual({ 1: { max: 4, used: 3 } }); // a failed re-read keeps what is there
+    });
+  });
+
   // ── level-up (server-authoritative) ─────────────────────────────────────────
 
   describe('levelUpPreview', () => {
@@ -787,6 +894,194 @@ describe('PCService (demo mode)', () => {
         });
       };
       doNext();
+    });
+  });
+});
+
+// The demo mirrors of the spend and restore endpoints behave like the server:
+// same rules, same refusals, same log lines. Demo PC 17 is a level-5 wizard in
+// no campaign (4/3/2, one 1st-level slot spent); demo PC 1 is a bard in a campaign.
+describe('PCService spell slots (demo mode)', () => {
+  let service: PCService;
+  const WIZARD = 17;
+  const CAMPAIGN_BARD = 1;
+
+  beforeEach(() => {
+    localStorage.setItem(DEMO_MODE_KEY, 'true');
+    TestBed.configureTestingModule({
+      imports: [],
+      providers: [PCService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(PCService);
+  });
+
+  afterEach(() => {
+    TestBed.inject(HttpTestingController).verify(); // demo mode never calls the server
+    localStorage.removeItem(DEMO_MODE_KEY);
+  });
+
+  const slotsOf = (id: number) => service.getPCById(id)!.spellSlots!;
+
+  it('starts from the seeded characters this spec relies on', () => {
+    expect(service.getPCById(WIZARD)!.campaignId).toBeNull();
+    expect(slotsOf(WIZARD)).toEqual({ 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } });
+    expect(service.getPCById(CAMPAIGN_BARD)!.campaignId).toBe('veiled');
+    expect(slotsOf(CAMPAIGN_BARD)[1]).toEqual({ max: 4, used: 2 });
+  });
+
+  it('spends a slot, returns the new slots and puts them on the character', (done) => {
+    service.setActivePC(service.getPCById(WIZARD)!);
+    let active: PC | null = null;
+    service.activePC$.subscribe(v => (active = v));
+
+    service.spendSpellSlot(WIZARD, 2).subscribe(slots => {
+      expect(slots[2]).toEqual({ max: 3, used: 1 });
+      expect(slotsOf(WIZARD)[2]).toEqual({ max: 3, used: 1 });
+      expect(active!.spellSlots![2]).toEqual({ max: 3, used: 1 });
+      expect(slotsOf(WIZARD)[1]).toEqual({ max: 4, used: 1 }); // other levels untouched
+      done();
+    });
+  });
+
+  it('refuses a spend with no free slot as a 409, and changes nothing', (done) => {
+    service.spendSpellSlot(WIZARD, 3).subscribe(() => {
+      service.spendSpellSlot(WIZARD, 3).subscribe(() => {
+        service.spendSpellSlot(WIZARD, 3).subscribe({
+          next: () => fail('a third 3rd-level slot does not exist'),
+          error: err => {
+            expect(err.status).toBe(409);
+            expect(err.error.message).toBe('No level 3 slot available');
+            expect(slotsOf(WIZARD)[3]).toEqual({ max: 2, used: 2 });
+            done();
+          },
+        });
+      });
+    });
+  });
+
+  it('refuses a level the character has no slots for (409) and a level that is not 1-9 (400)', (done) => {
+    service.spendSpellSlot(WIZARD, 4).subscribe({
+      error: err => {
+        expect(err.status).toBe(409);
+        service.spendSpellSlot(WIZARD, 0).subscribe({
+          error: bad => {
+            expect(bad.status).toBe(400);
+            expect(bad.error.message).toBe('level must be a spell level from 1 to 9');
+            done();
+          },
+        });
+      },
+    });
+  });
+
+  it('lets a player in a campaign spend, but not restore: that is the DM\'s call (403)', (done) => {
+    service.spendSpellSlot(CAMPAIGN_BARD, 3).subscribe(() => {
+      expect(slotsOf(CAMPAIGN_BARD)[3]).toEqual({ max: 3, used: 1 });
+      service.restoreSpellSlot(CAMPAIGN_BARD, 3).subscribe({
+        next: () => fail('a campaign player may not restore'),
+        error: err => {
+          expect(err.status).toBe(403);
+          expect(err.error.message).toBe('In a campaign, spell slots come back with a rest or from your Dungeon Master');
+          service.restoreAllSpellSlots(CAMPAIGN_BARD).subscribe({
+            next: () => fail('nor restore all'),
+            error: all => {
+              expect(all.status).toBe(403);
+              expect(slotsOf(CAMPAIGN_BARD)[3]).toEqual({ max: 3, used: 1 });
+              done();
+            },
+          });
+        },
+      });
+    });
+  });
+
+  it('lets the DM restore one slot of a campaign character, and refuses when none is spent (409)', (done) => {
+    service.restoreSpellSlot(CAMPAIGN_BARD, 1, true).subscribe(slots => {
+      expect(slots[1]).toEqual({ max: 4, used: 1 });
+      service.restoreSpellSlot(CAMPAIGN_BARD, 3, true).subscribe({
+        next: () => fail('nothing is spent at 3rd level'),
+        error: err => {
+          expect(err.status).toBe(409);
+          expect(err.error.message).toBe('No spent level 3 slot to restore');
+          done();
+        },
+      });
+    });
+  });
+
+  it('lets the DM restore everything at once', (done) => {
+    service.restoreAllSpellSlots(CAMPAIGN_BARD, true).subscribe(slots => {
+      expect(Object.values(slots).every(slot => slot.used === 0)).toBeTrue();
+      expect(Object.values(slotsOf(CAMPAIGN_BARD)).map(slot => slot.max)).toEqual([4, 3, 3, 1]);
+      done();
+    });
+  });
+
+  it('lets the owner of a character in no campaign restore their own', (done) => {
+    service.restoreSpellSlot(WIZARD, 1).subscribe(slots => {
+      expect(slots[1]).toEqual({ max: 4, used: 0 });
+      // Fully rested now: restoring all is not an error and changes nothing.
+      service.getLog(WIZARD).subscribe(before => {
+        service.restoreAllSpellSlots(WIZARD).subscribe(again => {
+          expect(again).toEqual(slots);
+          service.getLog(WIZARD).subscribe(after => {
+            expect(after.length).toBe(before.length); // no log line for a restore that restored nothing
+            done();
+          });
+        });
+      });
+    });
+  });
+
+  it('writes the server\'s SPELL_SLOT log lines', (done) => {
+    service.spendSpellSlot(WIZARD, 1).subscribe(() => {
+      service.restoreSpellSlot(WIZARD, 1).subscribe(() => {
+        service.spendSpellSlot(CAMPAIGN_BARD, 2, true).subscribe(() => {
+          service.restoreAllSpellSlots(CAMPAIGN_BARD, true).subscribe(() => {
+            service.getLog(WIZARD).subscribe(wizardLog => {
+              expect(wizardLog.slice(0, 2).map(e => `${e.actionType}: ${e.description}`)).toEqual([
+                'SPELL_SLOT: Restored a level 1 spell slot (3 of 4 left)',
+                'SPELL_SLOT: Spent a level 1 spell slot (2 of 4 left)',
+              ]);
+              service.getLog(CAMPAIGN_BARD).subscribe(bardLog => {
+                expect(bardLog.slice(0, 2).map(e => `${e.actionType}: ${e.description}`)).toEqual([
+                  'SPELL_SLOT: DM restored all spell slots',
+                  'SPELL_SLOT: DM spent a level 2 spell slot (1 of 3 left)',
+                ]);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+
+  it('refuses an unknown character as a 404', (done) => {
+    service.spendSpellSlot(99999, 1).subscribe({
+      error: err => {
+        expect(err.status).toBe(404);
+        done();
+      },
+    });
+  });
+
+  it('a level-up keeps the DM\'s bonus slot lines on top of the new class table', (done) => {
+    const wizard = service.getPCById(WIZARD)!;
+    service.updatePC({
+      ...wizard,
+      statAdjustments: { slot3: [{ value: 1, label: 'Pearl of Power' }], slot5: [{ value: 1, label: 'Boon' }] },
+      spellSlots: { ...wizard.spellSlots, 3: { max: 3, used: 3 }, 5: { max: 1, used: 0 } },
+    }).subscribe(() => {
+      service.levelUpPreview(WIZARD).subscribe(preview => {
+        expect(preview.newSpellSlots).toEqual({ 1: 4, 2: 3, 3: 4, 5: 1 }); // wizard 6: 4/3/3, +1 at 3rd, +1 at 5th
+        service.levelUp(WIZARD).subscribe(updated => {
+          expect(updated.spellSlots).toEqual({
+            1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 4, used: 3 }, 5: { max: 1, used: 0 },
+          });
+          done();
+        });
+      });
     });
   });
 });

@@ -958,27 +958,10 @@ em, i, cite, dfn, address, var { font-style: normal; }
   text-transform: uppercase;
   color: var(--gold);
 }
-.spell-slots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* What is left of a spell level, in words ("3 of 4 left"), at the far end of
+   its heading row. */
+.spell-slots-left {
   margin-left: auto;
-}
-.spell-slot {
-  width: 11px; height: 11px;
-  border: 1px solid var(--gold);
-  border-radius: 50%;
-  cursor: pointer;
-  background: transparent;
-  padding: 0;
-  transition: background .15s;
-}
-.spell-slot.used { background: var(--gold); }
-/* The words that say what the pips mean ("3 of 4 left"), and the DM's
-   "Spent" before the editable used / max pair. */
-.spell-slots-left,
-.slot-edit-label {
-  margin-right: 4px;
   font-size: var(--text-xs);
   white-space: nowrap;
   color: var(--text-2);
@@ -1029,7 +1012,13 @@ em, i, cite, dfn, address, var { font-style: normal; }
   transition: background .15s, box-shadow .15s;
 }
 .spell-cast-btn:hover:not(:disabled) { background: rgba(212,175,55,0.12); box-shadow: var(--glow-gold); }
-.spell-cast-btn:disabled { opacity: 0.35; cursor: default; }
+/* Disabled the house way: dashed hairline and dim ink, never a fade. */
+.spell-cast-btn:disabled {
+  border-style: dashed;
+  border-color: var(--text-dim);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
 .spell-cast-strip {
   display: flex;
   align-items: center;
