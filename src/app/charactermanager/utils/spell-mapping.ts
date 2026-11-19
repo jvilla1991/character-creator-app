@@ -1,5 +1,6 @@
 import { DndSpell } from '../models/dnd-api.types';
 import { PcSpell } from '../models/pc';
+import { spellKey } from '../models/spell-names';
 
 /**
  * Converts a reference spell (SRD asset shape) into the lean PcSpell snapshot stored
@@ -22,5 +23,45 @@ export function toPcSpell(s: DndSpell): PcSpell {
     description: s.description,
     material: s.material,
     higherLevelSlot: s.higherLevelSlot,
+  };
+}
+
+/**
+ * True for a placeholder spell text: the description starts with "TBD", the
+ * marker the World of Warcraft spell stubs carried until their full text
+ * landed (the same test the spell data's own specs use).
+ */
+export function isPlaceholderSpell(spell: { description?: string }): boolean {
+  return (spell.description ?? '').startsWith('TBD');
+}
+
+/**
+ * The spell to DISPLAY for a saved snapshot. A character keeps a copy of each
+ * spell it learned, so one learned while its catalog entry was still a "TBD"
+ * stub keeps that stub forever. When the saved copy is such a placeholder and
+ * the catalog (lower-cased name → spell, looked up via {@link spellKey}) now
+ * has the finished text, this returns a new object with the catalog's text
+ * mapped through {@link toPcSpell}; anything else (homebrew, a spell missing
+ * from the catalog, a still-unfinished catalog entry, or a real snapshot even
+ * when it differs from the catalog) comes back as the same reference.
+ *
+ * Kept from the saved copy, as the character's own state rather than catalog
+ * data: `prepared`, `name` (the character's wording, e.g. an alias), any extra
+ * keys the save carries, and `lvl`: casting and slot spending are checked
+ * against the SAVED level (applyCastToPc here, SessionService on the server),
+ * so showing a different level would offer slots the cast then rejects.
+ *
+ * Display only: never write the result back to the character. Never mutates.
+ */
+export function refreshStaleSpell(saved: PcSpell, catalog: ReadonlyMap<string, DndSpell>): PcSpell {
+  if (!isPlaceholderSpell(saved)) return saved;
+  const entry = catalog.get(spellKey(saved.name));
+  if (!entry || isPlaceholderSpell(entry)) return saved;
+  return {
+    ...saved,
+    ...toPcSpell(entry),
+    name: saved.name,
+    lvl: saved.lvl,
+    prepared: saved.prepared,
   };
 }

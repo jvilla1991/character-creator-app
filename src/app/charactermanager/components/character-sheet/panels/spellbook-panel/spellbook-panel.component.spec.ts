@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SpellbookPanelComponent } from './spellbook-panel.component';
@@ -469,5 +469,98 @@ describe('SpellbookPanelComponent (ELI5 summaries)', () => {
 
     expect(fixture.nativeElement.querySelector('app-eli5-toggle button')).toBeNull();
     expect(descriptions(fixture)).toEqual([FULL, 'A spell nobody summarized.']);
+  });
+});
+
+describe('SpellbookPanelComponent (stale placeholder spells)', () => {
+  // A spell learned while its catalog entry was a "TBD" stub keeps that stub as
+  // its saved snapshot; the sheet shows the catalog's finished text instead.
+  const TBD = 'TBD: full text coming in the World of Warcraft spells update.';
+  const RUNE_TEXT = 'Your weapon flares with runes and deals an extra 1d6 Necrotic damage.';
+
+  const staleRune = spell({
+    lvl: 1, name: 'Rune Strike', school: 'necromancy', time: 'action', prepared: false,
+    range: 'TBD', duration: 'TBD', description: TBD, components: ['v', 's'],
+  });
+  const normal = spell({ description: 'Heals a creature you touch.', range: 'Touch', duration: 'Instantaneous' });
+
+  function render(spells: PcSpell[]): ComponentFixture<SpellbookPanelComponent> {
+    dndResources.getSpells.and.returnValue(of([
+      makeSpell({ name: 'Rune Strike', level: 1, school: 'evocation', actionType: 'bonus action',
+        range: 'Self', duration: 'up to 1 minute', components: ['v'], description: RUNE_TEXT }),
+      makeSpell({ name: 'Cure Wounds', level: 1, range: '60 feet', description: 'Catalog text that must not replace a real snapshot.' }),
+    ]));
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
+      spellSlots: { 1: { max: 4, used: 0 } },
+      spells,
+    } as PC);
+    fixture.componentRef.setInput('preparable', true);
+    fixture.detectChanges();
+    fixture.detectChanges(); // the catalog arrives from the load effect; render it
+    return fixture;
+  }
+
+  const rowText = (el: HTMLElement, name: string): string => {
+    const toggle = el.querySelector(`button.spell-toggle[aria-label="${name}"]`)!;
+    return toggle.closest('.spell-row')!.parentElement!.textContent!;
+  };
+
+  it("shows the catalog's description, range and duration instead of TBD", () => {
+    const fixture = render([staleRune, normal]);
+    const el = fixture.nativeElement as HTMLElement;
+    const rune = rowText(el, 'Rune Strike');
+
+    expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+    expect(rune).toContain(RUNE_TEXT);
+    expect(rune).toContain('Self');
+    expect(rune).toContain('up to 1 minute');
+    expect(rune).toContain('evocation');
+    expect(rune).toContain('bonus action');
+    expect(el.textContent).not.toContain('TBD');
+  });
+
+  it('renders a normal spell exactly from its snapshot, and never fetches the catalog for it', () => {
+    const fixture = render([normal]);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(dndResources.getSpells).not.toHaveBeenCalled();
+    expect(el.querySelector('.spell-desc')!.textContent!.trim()).toBe('Heals a creature you touch.');
+    expect(el.querySelector('.spell-range')!.textContent!.trim()).toBe('Touch');
+    expect(el.querySelector('.spell-school')!.textContent!.trim()).toBe('Evocation');
+  });
+
+  it('keeps a real snapshot as saved next to a refreshed one', () => {
+    const fixture = render([staleRune, normal]);
+    const cure = rowText(fixture.nativeElement, 'Cure Wounds');
+
+    expect(cure).toContain('Heals a creature you touch.');
+    expect(cure).toContain('Touch');
+    expect(cure).not.toContain('Catalog text');
+  });
+
+  it('keeps showing the saved snapshot until the catalog arrives', () => {
+    dndResources.getSpells.and.returnValue(new Subject<DndSpell[]>());
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam', spells: [staleRune],
+    } as PC);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.spell-desc').textContent.trim()).toBe(TBD);
+  });
+
+  it('preparing a refreshed spell persists the SAVED snapshot with only its flag flipped', () => {
+    const fixture = render([staleRune, normal]);
+    const emitted: PC[] = [];
+    fixture.componentInstance.pcChange.subscribe(p => emitted.push(p));
+
+    const prep: HTMLButtonElement = fixture.nativeElement.querySelector('.spell-row.unprepared .spell-prep-btn');
+    prep.click();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].spells![0]).toEqual({ ...staleRune, prepared: true });
+    expect(emitted[0].spells![1]).toBe(normal);
   });
 });
