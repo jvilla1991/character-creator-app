@@ -68,7 +68,7 @@ describe('World of Warcraft mage spells (wow-spells.json)', () => {
     const spell = find('Combustion');
     expect(spell).toEqual(jasmine.objectContaining({
       level: 6, school: 'evocation', actionType: 'action', concentration: false, ritual: false,
-      range: 'Self', components: ['v', 's'], duration: '1 minute',
+      range: 'Self (5-foot Emanation)', components: ['v', 's'], duration: '1 minute',
     }));
     expect(spell.higherLevelSlot).toBeUndefined();
     for (const part of ['Bright Light in a 20-foot radius', 'Dim Light for an additional 10 feet', 'Immunity to Fire damage',

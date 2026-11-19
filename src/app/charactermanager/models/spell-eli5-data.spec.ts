@@ -17,7 +17,7 @@ describe('ELI5 spell summaries (spell JSON assets)', () => {
     spells = lists.flat();
   });
 
-  /** World of Warcraft placeholders ("TBD …") have no rules text to summarize yet. */
+  /** Placeholder entries ("TBD …") have no rules text to summarize yet. */
   const isPlaceholder = (s: DndSpell): boolean => s.description.startsWith('TBD');
 
   it('gives every spell with real rules text a summary', () => {

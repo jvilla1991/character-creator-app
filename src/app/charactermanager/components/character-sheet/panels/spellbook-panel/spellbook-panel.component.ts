@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnChanges, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { PC, PcSpell } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { heroClassFor } from '../../../../models/hero-class';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
-import { toPcSpell } from '../../../../utils/spell-mapping';
+import { isPlaceholderSpell, toPcSpell } from '../../../../utils/spell-mapping';
 import { castWarning, castableLevels } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
@@ -11,6 +11,7 @@ import { SpellPickerComponent } from '../../../spell-picker/spell-picker.compone
 import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component';
 import { SpellEli5Service } from '../../../../services/spell-eli5.service';
+import { SpellRefreshService } from '../../../../services/spell-refresh.service';
 
 export interface SpellLevel {
   lvl: number;
@@ -76,7 +77,33 @@ export class SpellbookPanelComponent implements OnChanges {
     private cdr: ChangeDetectorRef,
     /** One-sentence spell summaries for the player's ELI5 switch (signal-backed). */
     readonly eli5: SpellEli5Service,
-  ) {}
+    private spellRefresh: SpellRefreshService,
+  ) {
+    // Only a sheet that still shows a "TBD" placeholder spell fetches the catalog.
+    effect(() => {
+      if ((this.pc().spells ?? []).some(isPlaceholderSpell)) untracked(() => this.spellRefresh.load());
+    });
+  }
+
+  /**
+   * The spells as displayed: saved snapshots, except a stale "TBD" placeholder
+   * shows the catalog's finished text. Display only; every save path maps a
+   * displayed spell back to its saved snapshot via originalOf().
+   */
+  private readonly shown = computed(() => {
+    const originals = new Map<PcSpell, PcSpell>();
+    const spells = (this.pc().spells ?? []).map(saved => {
+      const display = this.spellRefresh.refresh(saved);
+      originals.set(display, saved);
+      return display;
+    });
+    return { spells, originals };
+  });
+
+  /** The saved snapshot behind a displayed spell (itself when it was not refreshed). */
+  private originalOf(spell: PcSpell): PcSpell {
+    return this.shown().originals.get(spell) ?? spell;
+  }
 
   readonly hasSpells = computed(() => (this.pc().spells ?? []).length > 0);
   /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
@@ -92,7 +119,7 @@ export class SpellbookPanelComponent implements OnChanges {
   /** Distinct schools present on this PC's spells, sorted — drives the dropdown. */
   readonly schools = computed<string[]>(() => {
     const set = new Set<string>();
-    for (const s of this.pc().spells ?? []) {
+    for (const s of this.shown().spells) {
       if (s.school) set.add(s.school);
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
@@ -115,7 +142,7 @@ export class SpellbookPanelComponent implements OnChanges {
 
   readonly spellsByLevel = computed<SpellLevel[]>(() => {
     const pc = this.pc();
-    const spells = pc.spells ?? [];
+    const spells = this.shown().spells;
     if (!spells.length) return [];
 
     // Apply the player's name/school filters before grouping. A level with no
@@ -202,7 +229,7 @@ export class SpellbookPanelComponent implements OnChanges {
     this.pendingCast = null;
     this.blockedFor = null;
 
-    const warning = castWarning(this.pc(), spell);
+    const warning = castWarning(this.pc(), this.originalOf(spell));
     if (warning && this.strictComponents()) {
       this.blockedFor = { spellName: spell.name, message: `${warning} — this campaign requires it to cast.` };
       return;
@@ -224,7 +251,7 @@ export class SpellbookPanelComponent implements OnChanges {
   pickLevel(spell: PcSpell, atLevel: number, event: Event): void {
     event.stopPropagation();
     this.pickerFor = null;
-    this.resolveCast(spell.name, atLevel, castWarning(this.pc(), spell));
+    this.resolveCast(spell.name, atLevel, castWarning(this.pc(), this.originalOf(spell)));
   }
 
   /** Emit the cast, or park it behind the missing-component confirmation. */
@@ -285,8 +312,10 @@ export class SpellbookPanelComponent implements OnChanges {
     const preparing = !this.isPrepared(spell);
     if (preparing && !this.canTogglePrepared(spell)) return; // at cap; belt and braces
     const pc = this.pc();
+    // Persist the SAVED snapshot (only its flag flipped), never the refreshed display copy.
+    const saved = this.originalOf(spell);
     const spells = (pc.spells ?? []).map(s =>
-      s === spell ? { ...s, prepared: preparing } : s);
+      s === saved ? { ...s, prepared: preparing } : s);
     this.pcChange.emit({ ...pc, spells });
   }
 

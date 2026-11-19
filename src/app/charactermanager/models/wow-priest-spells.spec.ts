@@ -6,7 +6,7 @@ import { WOW_PRIEST, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SUGGESTED_SPELLS } from './
 
 /**
  * Checks the shipped spell data (the real assets, served by the Karma builder)
- * for the WoW Priest (Cleric): its six new World of Warcraft spells, and that every
+ * for the WoW Priest (Cleric): its six new World of Warcraft spells (full text), and that every
  * spell its guidance, suggestions and domain tables name exists.
  */
 describe('World of Warcraft priest spells (wow-spells.json)', () => {
@@ -15,7 +15,7 @@ describe('World of Warcraft priest spells (wow-spells.json)', () => {
     ['Prayer of Mending', 3, 'abjuration'],
     ['Holy Nova', 4, 'evocation'],
     ['Psychic Horror', 4, 'enchantment'],
-    ['Void Eruption', 5, 'evocation'],
+    ['Void Eruption', 5, 'necromancy'],
     ['Apotheosis', 9, 'transmutation'],
   ];
   let wow: DndSpell[];
@@ -31,16 +31,18 @@ describe('World of Warcraft priest spells (wow-spells.json)', () => {
 
   const find = (name: string) => wow.find(s => s.name === name)!;
 
-  it('stubs the six priest spells as World of Warcraft cleric spells at their level and school', () => {
+  it('adds the six priest spells as World of Warcraft cleric spells at their level and school, with full text', () => {
     for (const [name, level, school] of NEW_SPELLS) {
       const spell = find(name);
       expect(spell).withContext(name).toBeDefined();
       expect(spell).withContext(name).toEqual(jasmine.objectContaining({ level, school, classes: ['cleric'] }));
       expect(spell.subclasses).withContext(name).toBeUndefined();
       expect(spellSource(spell)).withContext(name).toBe('World of Warcraft');
-      expect(spell.description).withContext(name).toBe('TBD — full text coming in the World of Warcraft spells update.');
-      expect(spell.range).withContext(name).toBe('TBD');
-      expect(spell.duration).withContext(name).toBe('TBD');
+      expect(JSON.stringify(spell)).withContext(name).not.toContain('TBD');
+      expect(spell.description.length).withContext(name).toBeGreaterThan(40);
+      expect(spell.eli5).withContext(name).toBeTruthy();
+      expect(spell.range).withContext(name).toBeTruthy();
+      expect(spell.duration).withContext(name).toBeTruthy();
     }
   });
 
