@@ -1,5 +1,6 @@
 import { PcSpell } from '../models/pc';
 import {
+  isAlwaysPrepared, withPreparedCap,
   PREPARED_SPELLS, canChangeSpellsAtLongRest, canToggleLongRestSpell, countPreparedSpells, isSpellPrepared,
   leveledSpells, longRestSpellChange, preparedSpellCap, preparedSpellNames, samePreparedList, withPreparedSpells,
 } from './spell-preparation';
@@ -145,5 +146,45 @@ describe('spell-preparation at a long rest', () => {
       ['Guidance', true], ['Bless', false], ['Command', true], ['Aid', true],
     ]);
     expect(book[1].prepared).toBeTrue(); // the original is not mutated
+  });
+});
+
+describe('spell-preparation: always-prepared spells', () => {
+  const s = (name: string, lvl: number, extra: Partial<PcSpell> = {}): PcSpell =>
+    ({ name, lvl, school: 'Divination', time: '1 action', prepared: true, ...extra });
+  const mark = s("Hunter's Mark", 1, { alwaysPrepared: true, grantedBy: 'Favored Enemy' });
+  const book: PcSpell[] = [
+    s('Guidance', 0), mark, s('Goodberry', 1), s('Cure Wounds', 1), s('Jump', 1, { prepared: false }),
+  ];
+
+  it('recognizes the marker on leveled spells only', () => {
+    expect(isAlwaysPrepared(mark)).toBeTrue();
+    expect(isAlwaysPrepared(s('Goodberry', 1))).toBeFalse();
+    expect(isAlwaysPrepared(s('Guidance', 0, { alwaysPrepared: true }))).toBeFalse();
+  });
+
+  it('is prepared whatever its flag says, and never counts against the cap', () => {
+    expect(isSpellPrepared({ ...mark, prepared: false })).toBeTrue();
+    expect(countPreparedSpells(book)).toBe(2);   // Goodberry and Cure Wounds
+  });
+
+  it('stays out of the long-rest choice and keeps its flags when a list is written', () => {
+    expect(leveledSpells(book).map(x => x.name)).toEqual(['Goodberry', 'Cure Wounds', 'Jump']);
+    expect(preparedSpellNames(book)).toEqual(['Goodberry', 'Cure Wounds']);
+    const after = withPreparedSpells(book, ['Jump']);
+    expect(after.map(x => [x.name, x.prepared])).toEqual([
+      ['Guidance', true], ["Hunter's Mark", true], ['Goodberry', false], ['Cure Wounds', false], ['Jump', true],
+    ]);
+    expect(after[1]).toBe(mark);
+  });
+
+  it('withPreparedCap prepares the first picks up to the cap and leaves the rest unprepared', () => {
+    const picks = [s('Light', 0), s('A', 1), s('B', 1), mark, s('C', 1), s('D', 1)];
+    expect(withPreparedCap(picks, 2).map(x => [x.name, x.prepared])).toEqual([
+      ['Light', true], ['A', true], ['B', true], ["Hunter's Mark", true], ['C', false], ['D', false],
+    ]);
+    expect(picks[4].prepared).toBeTrue();          // the input is not mutated
+    expect(withPreparedCap(picks, null)).toEqual(picks);
+    expect(withPreparedCap(picks, 9)).toEqual(picks);
   });
 });

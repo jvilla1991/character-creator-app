@@ -236,3 +236,36 @@
     padding-right: 6px;       // breathing room for the scrollbar
   }
 }
+
+// ── Spells step: an Origin feat's own picks (Magic Initiate) ─────────────────
+.feat-spells {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.feat-spells-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.feat-spells-title {
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.feat-spells-count {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+
+.feat-spells-hint {
+  margin: 4px 0 10px;
+}

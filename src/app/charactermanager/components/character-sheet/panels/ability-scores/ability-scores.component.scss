@@ -1,1 +1,10 @@
 /* Rules in global styles.css */
+
+/* The score is the button; this stretches what can be pressed to the whole
+   tile, which already looks pressable (pointer, hover border). The tile is
+   position: relative in the global rules. */
+.breakdown-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}

@@ -51,7 +51,7 @@ import {
   SlotNotice, SpellSlots, allSlotsRestoredNotice, ordinal, restoreAllSlots, restoreSlot, slotMaxOf,
   slotRestoredNotice, slotSpentNotice, spendSlot, withSlotMax,
 } from '../../utils/spell-slots';
-import { StatBreakdown, applyAdjustments, breakdownOf, describeAdjustmentChange } from '../../utils/stat-breakdown';
+import { StatBreakdown, applyAdjustments, breakdownOf, describeStatSave } from '../../utils/stat-breakdown';
 import { StatBreakdownModalComponent, StatBreakdownSave } from './stat-breakdown-modal/stat-breakdown-modal.component';
 
 @Component({
@@ -774,10 +774,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   // ── Number breakdown ─────────────────────────────────────────────────────
-  // Clicking a calculated number (Armor Class, or a spell level's slot maximum
-  // from the strip on the Spells tab) shows the lines that make it up. Everyone
-  // may look; whoever may adjust the character can add labelled lines under the
-  // automatic ones ("+1 Taunka").
+  // Clicking a calculated number (Armor Class, an ability score, or a spell
+  // level's slot maximum from the strip on the Spells tab) shows the lines that
+  // make it up. Everyone may look; whoever may adjust the character can add
+  // labelled lines under the automatic ones ("+1 Taunka", "+1 Level 4 Increase")
+  // and, for Armor Class, take an automatic line out.
 
   /** The breakdown on screen, read once when the dialog opened; null when closed. */
   statBreakdown: StatBreakdown | null = null;
@@ -804,20 +805,21 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * Save the lines from the breakdown dialog. A DM's save goes through the same
    * refetch-merge-save as a grant, so the lines land on a fresh copy of the
    * character (the armor a player just swapped stays swapped) and the log says
-   * what was added or removed. An owner's save has no log and uses the sheet's
-   * own copy.
+   * what was added, removed or taken out of the total. An owner's save has no
+   * log and uses the sheet's own copy.
    */
   onStatAdjustmentsSaved(result: StatBreakdownSave): void {
     if (!this.statBreakdown || !this.canAdjustStats) return;
     const stat = this.statBreakdown.stat;
     this.statBreakdown = null;
-    const mutate = (fresh: PC): PC => applyAdjustments(fresh, stat, result.lines, result.keepUnlabelled);
+    const mutate = (fresh: PC): PC => applyAdjustments(
+      fresh, stat, result.lines, result.keepUnlabelled, { removed: result.removed, fromBase: result.fromBase });
     if (!this.editable) {
       this.persist(mutate(this.pc));
       return;
     }
     this.grantService.grantToPc(this.pc.id, mutate,
-      (fresh, updated) => describeAdjustmentChange(stat, breakdownOf(fresh, stat), breakdownOf(updated, stat)),
+      (fresh, updated) => describeStatSave(stat, fresh, updated),
     ).subscribe({ error: err => this.notifications.error('Could not save the adjustments. Try again.', err) });
   }
 

@@ -1,4 +1,6 @@
-import { acAutoLines, computeAc, parseArmorClass, shieldBonus, withRecomputedAc } from './armor-math';
+import {
+  acAutoLines, computeAc, parseArmorClass, shieldBonus, withAcFollowingDex, withRecomputedAc,
+} from './armor-math';
 import { PC, PcItem } from '../models/pc';
 
 const pcWith = (dex: number, inventory: PcItem[]): PC =>
@@ -54,6 +56,29 @@ describe('armor-math', () => {
         armor('Chain Mail', '16', false),
       ]);
       expect(computeAc(pc)).toBe(10);
+    });
+
+    it('leaves out a calculated line the DM removed', () => {
+      const gear = [armor('Studded Leather', '12 + Dex modifier'), armor('Shield', '+2')];
+      const noDex = { ...pcWith(16, gear), statAdjustments: { acRemoved: [{ value: 1, label: 'Dexterity' }] } };
+      expect(computeAc(noDex)).toBe(14); // 12 + shield 2, Dex 3 out
+
+      const noShield = { ...pcWith(16, gear), statAdjustments: { acRemoved: [{ value: 1, label: 'Shield' }] } };
+      expect(computeAc(noShield)).toBe(15); // 12 + Dex 3, shield out
+    });
+
+    it('takes one line out per removed entry, so a second shield of the same name still counts', () => {
+      const gear = [armor('Shield', '+2'), armor('Shield', '+2')];
+      const one = { ...pcWith(10, gear), statAdjustments: { acRemoved: [{ value: 1, label: 'Shield' }] } };
+      expect(computeAc(one)).toBe(12);
+
+      const both = { ...one, statAdjustments: { acRemoved: [{ value: 1, label: 'Shield' }, { value: 1, label: 'Shield' }] } };
+      expect(computeAc(both)).toBe(10);
+    });
+
+    it('ignores a removed entry whose line is not there', () => {
+      const pc = { ...pcWith(14, []), statAdjustments: { acRemoved: [{ value: 1, label: 'Plate' }] } };
+      expect(computeAc(pc)).toBe(12);
     });
   });
 
@@ -145,10 +170,91 @@ describe('armor-math', () => {
       expect(withRecomputedAc(after, before).ac).toBe(14); // 11 + the same 3
     });
 
+    it('does not lower AC again when a shield whose line was removed comes off', () => {
+      const removed = { acRemoved: [{ value: 1, label: 'Shield' }] };
+      const before: PcItem[] = [armor('Chain Shirt', '13 + Dex modifier (max 2)'), armor('Shield', '+2')];
+      const after = {
+        ...pcWith(14, [before[0], armor('Shield', '+2', false)]),
+        ac: 15,                 // 13 + Dex 2, the shield already out of the total
+        statAdjustments: removed,
+      };
+      const result = withRecomputedAc(after, before);
+      expect(result.ac).toBe(15);
+      expect(result.statAdjustments).toEqual(removed); // kept for when the shield goes back on
+    });
+
+    it('still leaves a removed shield out when it is put back on', () => {
+      const removed = { acRemoved: [{ value: 1, label: 'Shield' }] };
+      const before: PcItem[] = [armor('Shield', '+2', false)];
+      const after = { ...pcWith(14, [armor('Shield', '+2')]), ac: 12, statAdjustments: removed };
+      expect(withRecomputedAc(after, before).ac).toBe(12);
+    });
+
+    it('keeps Dexterity out through an armor change', () => {
+      const removed = { acRemoved: [{ value: 1, label: 'Dexterity' }] };
+      const before: PcItem[] = [armor('Leather', '11 + Dex modifier', false)];
+      const after = {
+        ...pcWith(16, [armor('Leather', '11 + Dex modifier')]),
+        ac: 10,                 // unarmored 10, Dex 3 out
+        statAdjustments: removed,
+      };
+      expect(withRecomputedAc(after, before).ac).toBe(11); // Leather 11, Dex still out
+    });
+
+    it('a removed armor line covers that item only: the next armor counts in full', () => {
+      const removed = { acRemoved: [{ value: 1, label: 'Leather' }] };
+      const before: PcItem[] = [armor('Leather', '11 + Dex modifier'), armor('Chain Mail', '16', false)];
+      const after = {
+        ...pcWith(14, [armor('Leather', '11 + Dex modifier', false), armor('Chain Mail', '16')]),
+        ac: 2,                  // Leather 11 out, only Dex 2 left
+        statAdjustments: removed,
+      };
+      expect(withRecomputedAc(after, before).ac).toBe(16); // Chain Mail 16 + Dex 0
+    });
+
     it('builds the total from the lines when no AC was ever saved', () => {
       const before: PcItem[] = [];
       const after = { ...pcWith(10, [armor('Plate', '18')]), ac: undefined, statAdjustments: taunka };
       expect(withRecomputedAc(after, before).ac).toBe(19);
+    });
+  });
+
+  describe('withAcFollowingDex', () => {
+    const dex = (pc: PC, score: number): PC => ({ ...pc, stats: { ...pc.stats!, DEX: score } });
+
+    it('moves the saved AC by the change in the Dexterity line, keeping everything else in it', () => {
+      const before = {
+        ...pcWith(14, [armor('Leather', '11 + Dex modifier')]),
+        ac: 16,                 // 11 + Dex 2 + Taunka 1 + 2 nobody labelled
+        statAdjustments: { ac: [{ value: 1, label: 'Taunka' }] },
+      };
+      expect(withAcFollowingDex(before, dex(before, 16)).ac).toBe(17);
+      expect(withAcFollowingDex(before, dex(before, 10)).ac).toBe(14);
+    });
+
+    it('moves nothing when the modifier did not change', () => {
+      const before = pcWith(14, []);
+      const after = dex(before, 15);
+      expect(withAcFollowingDex(before, after)).toBe(after);
+    });
+
+    it('respects the medium armor cap and heavy armor', () => {
+      const medium = { ...pcWith(14, [armor('Half Plate', '15 + Dex modifier (max 2)')]), ac: 17 };
+      expect(withAcFollowingDex(medium, dex(medium, 18)).ac).toBe(17); // already at the +2 cap
+      expect(withAcFollowingDex(medium, dex(medium, 10)).ac).toBe(15);
+
+      const heavy = { ...pcWith(14, [armor('Plate', '18')]), ac: 18 };
+      expect(withAcFollowingDex(heavy, dex(heavy, 20)).ac).toBe(18);
+    });
+
+    it('moves nothing when the DM removed the Dexterity line', () => {
+      const before = { ...pcWith(14, []), ac: 10, statAdjustments: { acRemoved: [{ value: 1, label: 'Dexterity' }] } };
+      expect(withAcFollowingDex(before, dex(before, 18)).ac).toBe(10);
+    });
+
+    it('leaves a character with no saved AC without one', () => {
+      const before = { ...pcWith(14, []), ac: undefined };
+      expect(withAcFollowingDex(before, dex(before, 18)).ac).toBeUndefined();
     });
   });
 });

@@ -235,6 +235,18 @@
           </select>
         </div>
       }
+      <!-- Spells a class feature always keeps prepared, gained this level (read-only) -->
+      @if (alwaysPreparedGrants.length) {
+        <div class="features-gained always-prepared-gained">
+          <div class="features-label">Always Prepared</div>
+          @for (g of alwaysPreparedGrants; track g.name) {
+            <div class="feature-item">
+              <span class="feature-name">{{ g.name }}</span>
+              <span class="feature-desc">From {{ g.grantedBy }}. Added to your spells. It does not count against your prepared spells.</span>
+            </div>
+          }
+        </div>
+      }
       <!-- Learn new cantrips/spells (casters who gain them this level) -->
       @if (showSpellPicker) {
         <div class="spell-pick">
@@ -257,7 +269,7 @@
             </span>
           </div>
           <app-spell-picker
-            [spells]="spellList"
+            [spells]="pickableSpells"
             [selected]="selectedSpells"
             [cantripLimit]="cantripDelta"
             [spellLimit]="spellDelta"

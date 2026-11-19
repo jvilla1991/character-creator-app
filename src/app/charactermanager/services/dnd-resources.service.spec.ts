@@ -6,6 +6,7 @@ import {
   ORIGIN_FEAT_OPTIONS, TOOL_NAMES, languageNames, originFeatsFor,
 } from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
+import { startingSlots } from '../utils/spell-slots';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('DndResourcesService', () => {
@@ -424,18 +425,35 @@ describe('DndResourcesService', () => {
     it('Sorcerer gets 4 cantrips at level 1', () => {
       expect(SPELL_COUNTS['sorcerer'].cantrips).toBe(4);
     });
+
+    it('Paladin and Ranger prepare 2 spells and learn no cantrips at level 1', () => {
+      expect(SPELL_COUNTS['paladin']).toEqual({ cantrips: 0, spells: 2 });
+      expect(SPELL_COUNTS['ranger']).toEqual({ cantrips: 0, spells: 2 });
+    });
+
+    it('has counts for every spellcasting class, and for no other', () => {
+      expect(Object.keys(SPELL_COUNTS).sort()).toEqual([...SPELLCASTING_CLASSES].sort());
+    });
+
+    it('every class that picks spells also starts with level 1 slots, and no other class does', () => {
+      const withSlots = ['barbarian', 'bard', 'cleric', 'druid', 'fighter', 'monk', 'paladin', 'ranger', 'rogue',
+        'sorcerer', 'warlock', 'wizard'].filter(cls => Object.keys(startingSlots(cls, 1)).length > 0);
+      expect(withSlots).toEqual([...SPELLCASTING_CLASSES].sort());
+      expect(startingSlots('paladin', 1)).toEqual({ 1: { max: 2, used: 0 } });
+      expect(startingSlots('ranger', 1)).toEqual({ 1: { max: 2, used: 0 } });
+    });
   });
 
   // ── SPELLCASTING_CLASSES constant ──────────────────────────────────────────
 
   describe('SPELLCASTING_CLASSES', () => {
-    ['bard','cleric','druid','sorcerer','warlock','wizard'].forEach(cls => {
+    ['bard','cleric','druid','paladin','ranger','sorcerer','warlock','wizard'].forEach(cls => {
       it(`${cls} is a spellcasting class`, () => {
         expect(SPELLCASTING_CLASSES.has(cls)).toBeTrue();
       });
     });
 
-    ['barbarian','fighter','monk','paladin','ranger','rogue'].forEach(cls => {
+    ['barbarian','fighter','monk','rogue'].forEach(cls => {
       it(`${cls} is not a spellcasting class`, () => {
         expect(SPELLCASTING_CLASSES.has(cls)).toBeFalse();
       });

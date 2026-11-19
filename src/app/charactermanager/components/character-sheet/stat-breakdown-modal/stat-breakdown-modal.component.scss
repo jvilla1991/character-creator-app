@@ -41,6 +41,25 @@
   color: var(--text);
 }
 
+/* A calculated line the DM took out: still listed, plainly not part of the sum.
+   The strike-through is backed by the "Not counted." note, so it never rests on
+   looks alone. */
+.not-counted .line-name,
+.not-counted .line-value {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+/* Calculated lines with a Remove / Restore control: the control gets a fixed
+   column so the amounts stay lined up whichever word the button shows. */
+.breakdown-line.has-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 5.75rem;
+  align-items: center;
+  gap: 12px;
+}
+.line-action { justify-self: stretch; }
+
 .breakdown-total {
   margin-top: 14px;
   border-bottom: none;
@@ -89,4 +108,12 @@
   margin-top: 8px;
 }
 
-.add-line { margin-top: 2px; }
+/* A line that names part of the base says so right under its row. */
+.from-base-note { margin: -2px 0 8px; }
+
+.add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}

@@ -876,6 +876,18 @@ describe('PCService (demo mode)', () => {
       });
     });
 
+    it('records an ability score improvement as a "Level N Increase" line, like the server', (done) => {
+      const before = service.getPCById(1)!;
+      service.levelUp(1, { abilityIncreases: { CHA: 1, CON: 1 } }).subscribe(updated => {
+        const label = `Level ${updated.level} Increase`;
+        expect(updated.stats?.CHA).toBe((before.stats?.CHA ?? 10) + 1);
+        expect(updated.statAdjustments?.CHA?.at(-1)).toEqual({ value: 1, label });
+        expect(updated.statAdjustments?.CON?.at(-1)).toEqual({ value: 1, label });
+        expect(updated.statAdjustments?.STR).toBeUndefined();
+        done();
+      });
+    });
+
     it('caps the demo log at 10 entries', (done) => {
       // Level up repeatedly past the cap and confirm the log never exceeds 10.
       const levelUpsNeeded = 12;
@@ -894,6 +906,22 @@ describe('PCService (demo mode)', () => {
         });
       };
       doNext();
+    });
+
+    it('previews half-caster slots and prepared spells for a demo Paladin and Ranger', (done) => {
+      // Demo PC 6 is a level 5 Paladin (Death Knight); 16 is a level 6 Ranger (Hunter).
+      service.levelUpPreview(6).subscribe(paladin => {
+        expect(paladin.newLevel).toBe(6);
+        expect(paladin.newSpellSlots).toEqual({ 1: 4, 2: 2 });
+        expect([paladin.currentSpellsKnown, paladin.newSpellsKnown]).toEqual([6, 6]);
+        expect(paladin.newCantripsKnown).toBe(0);
+        service.levelUpPreview(16).subscribe(ranger => {
+          expect(ranger.newLevel).toBe(7);
+          expect(ranger.newSpellSlots).toEqual({ 1: 4, 2: 3 });
+          expect([ranger.currentSpellsKnown, ranger.newSpellsKnown]).toEqual([6, 7]);
+          done();
+        });
+      });
     });
   });
 });

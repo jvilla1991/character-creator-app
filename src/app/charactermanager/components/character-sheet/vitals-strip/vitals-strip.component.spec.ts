@@ -42,6 +42,27 @@ describe('VitalsStripComponent', () => {
       component.pc = { ...basePc(), statAdjustments: { ac: [{ value: 1, label: 'Taunka' }] } };
       expect(component.armorLabel).toBe('+1 Taunka');
     });
+
+    it('names a calculated line the DM took out as not counted, instead of as worn', () => {
+      component.pc = {
+        ...basePc([
+          { name: 'Chain Shirt', category: 'armor', qty: 1, equipped: true, armorClass: '13 + Dex modifier (max 2)' },
+          { name: 'Shield', category: 'armor', qty: 1, equipped: true, armorClass: '+2' },
+        ]),
+        statAdjustments: { ac: [{ value: 1, label: 'Taunka' }], acRemoved: [{ value: 1, label: 'Shield' }] },
+      };
+      expect(component.armorLabel).toBe('Chain Shirt, +1 Taunka, Shield not counted');
+    });
+
+    it('says when Dexterity is not counted', () => {
+      component.pc = { ...basePc(), statAdjustments: { acRemoved: [{ value: 1, label: 'Dexterity' }] } };
+      expect(component.armorLabel).toBe('Dexterity not counted');
+    });
+
+    it('says nothing about a removal whose line is not there', () => {
+      component.pc = { ...basePc(), statAdjustments: { acRemoved: [{ value: 1, label: 'Plate' }] } };
+      expect(component.armorLabel).toBe('');
+    });
   });
 
   // --- AC breakdown button ---

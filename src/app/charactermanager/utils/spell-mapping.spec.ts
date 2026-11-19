@@ -1,4 +1,4 @@
-import { isPlaceholderSpell, refreshStaleSpell, toPcSpell } from './spell-mapping';
+import { isPlaceholderSpell, refreshStaleSpell, toGrantedSpell, toPcSpell } from './spell-mapping';
 import { PcSpell } from '../models/pc';
 import { DndSpell } from '../models/dnd-api.types';
 
@@ -163,4 +163,32 @@ describe('spell-mapping', () => {
     });
   });
 
+});
+
+describe('toGrantedSpell', () => {
+  const dnd = (name: string, level: number): DndSpell => ({
+    name, level, school: 'divination', classes: ['ranger'], actionType: 'bonus action', concentration: true,
+    ritual: false, range: '90 feet', components: ['v'], duration: '1 hour', description: `${name} text.`,
+  });
+
+  it('marks a leveled spell always prepared and records what grants it', () => {
+    const granted = toGrantedSpell(dnd("Hunter's Mark", 1), 'Favored Enemy');
+    expect(granted).toEqual({ ...toPcSpell(dnd("Hunter's Mark", 1)), alwaysPrepared: true, grantedBy: 'Favored Enemy' });
+    expect(granted.prepared).toBeTrue();
+  });
+
+  it('records only the source on a cantrip (cantrips are never counted)', () => {
+    const granted = toGrantedSpell(dnd('Guidance', 0), 'Magic Initiate (Cleric)');
+    expect(granted.alwaysPrepared).toBeUndefined();
+    expect(granted.grantedBy).toBe('Magic Initiate (Cleric)');
+  });
+
+  it('survives a placeholder refresh: the marker is the character\'s own state', () => {
+    const saved: PcSpell = { ...toGrantedSpell({ ...dnd('Rune Strike', 1), description: 'TBD' }, 'DM grant') };
+    const catalog = new Map([['rune strike', dnd('Rune Strike', 1)]]);
+    const shown = refreshStaleSpell(saved, catalog);
+    expect(shown.description).toBe('Rune Strike text.');
+    expect(shown.alwaysPrepared).toBeTrue();
+    expect(shown.grantedBy).toBe('DM grant');
+  });
 });

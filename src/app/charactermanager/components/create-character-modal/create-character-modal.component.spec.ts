@@ -135,8 +135,8 @@ describe('CreateCharacterModalComponent — logic', () => {
   // ── isSpellcastingClass ───────────────────────────────────────────────────
 
   describe('isSpellcastingClass', () => {
-    const casters    = ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'];
-    const nonCasters = ['barbarian', 'fighter', 'monk', 'paladin', 'ranger', 'rogue'];
+    const casters    = ['bard', 'cleric', 'druid', 'paladin', 'ranger', 'sorcerer', 'warlock', 'wizard'];
+    const nonCasters = ['barbarian', 'fighter', 'monk', 'rogue'];
 
     casters.forEach(cls => {
       it(`${cls} is a spellcasting class`, () => {
@@ -567,6 +567,41 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
+    it('records the background increases as lines on the new character, scores unchanged', (done) => {
+      prepareFullWizard();
+      component.step = component.equipmentStep;
+
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.statAdjustments).toEqual({
+          INT: [{ value: 2, label: 'Sage' }],
+          WIS: [{ value: 1, label: 'Sage' }],
+        });
+        expect(draft.stats).toEqual({ STR: 8, DEX: 12, CON: 13, INT: 17, WIS: 15, CHA: 10 });
+        done();
+      });
+
+      component.submit();
+    });
+
+    it('records the increases the same way for point buy', (done) => {
+      prepareFullWizard();
+      component.abilityMethod = 'point-buy';
+      component.pointBuyScores = { STR: 8, DEX: 14, CON: 14, INT: 15, WIS: 10, CHA: 8 };
+      component.step = component.equipmentStep;
+
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.stats.INT).toBe(17);
+        expect(draft.stats.WIS).toBe(11);
+        expect(draft.statAdjustments).toEqual({
+          INT: [{ value: 2, label: 'Sage' }],
+          WIS: [{ value: 1, label: 'Sage' }],
+        });
+        done();
+      });
+
+      component.submit();
+    });
+
     it('emits languages including Common and chosen language', (done) => {
       prepareFullWizard();
       component.step = component.equipmentStep;
@@ -829,9 +864,12 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.currentClassEquipment?.optionB.gp).toBe(150);
     });
 
-    it('keeps the Paladin step layout (no level-1 spells step)', () => {
-      expect(component.isSpellcastingClass).toBeFalse();
-      expect(component.totalSteps).toBe(8);
+    it('gets the spells step: two level-1 Paladin spells and no cantrips', () => {
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.totalSteps).toBe(9);
+      expect(component.equipmentStep).toBe(8);
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
     });
 
     it('requires a rune before the class step can advance', () => {
@@ -1090,6 +1128,172 @@ describe('CreateCharacterModalComponent — logic', () => {
     });
   });
 
+  describe('spells a new character starts with', () => {
+    const spell = (name: string, level: number, cls: string): any => ({
+      name, level, school: 'evocation', classes: [cls], actionType: 'action', concentration: false,
+      ritual: false, range: 'Self', components: ['v'], duration: 'Instantaneous', description: `${name} text.`,
+    });
+
+    it('prepares only four of a Wizard\'s six spellbook spells', (done) => {
+      const list = ['A', 'B', 'C', 'D', 'E', 'F'].map(n => spell(n, 1, 'wizard'));
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass('Wizard');
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(component.preparedAtStart).toBe(4);
+      expect(component.alwaysPreparedGrants).toEqual([]);
+      list.forEach(s => component.toggleSpell(s));
+      expect(component.selectedSpells.length).toBe(6);
+
+      component.name = 'Aelindra';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => s.prepared)).toEqual([true, true, true, true, false, false]);
+        done();
+      });
+      component.submit();
+    });
+
+    it('prepares every pick for a class that picks no more than it prepares', () => {
+      for (const cls of ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock']) {
+        component.clazz = cls;
+        expect(component.preparedAtStart).withContext(cls).toBeNull();
+      }
+    });
+
+    it('starts a Druid with Speak with Animals always prepared (Druidic)', (done) => {
+      const list = [spell('Druidcraft', 0, 'druid'), spell('Entangle', 1, 'druid'), spell('Speak with Animals', 1, 'druid')];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.classList = ['Druid'];
+      component.toggleClass('Druid');
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Druidcraft', 'Entangle']);
+      component.toggleSpell(list[1]);
+
+      component.name = 'Hrogar';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, !!s.alwaysPrepared, s.grantedBy ?? ''])).toEqual([
+          ['Entangle', false, ''], ['Speak with Animals', true, 'Druidic'],
+        ]);
+        done();
+      });
+      component.submit();
+    });
+
+    describe('Magic Initiate (Origin feat)', () => {
+      const light = spell('Light', 0, 'wizard');
+      const mageHand = spell('Mage Hand', 0, 'wizard');
+      const fireBolt = spell('Fire Bolt', 0, 'wizard');
+      const shield = spell('Shield', 1, 'wizard');
+      const fireball = spell('Fireball', 3, 'wizard');
+
+      beforeEach(() => {
+        dndResources.getSpellsForClass.and.returnValue(of([light, mageHand, fireBolt, shield, fireball]));
+        component.classEquipmentData = {};
+      });
+
+      it('gives a class without spellcasting a spells step when its background teaches spells', () => {
+        component.classList = ['Fighter'];
+        component.toggleClass('Fighter');
+        expect(component.hasSpellsStep).toBeFalse();
+        expect(component.totalSteps).toBe(8);
+
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;   // Magic Initiate (Wizard)
+        expect(component.magicInitiateFeats).toEqual([
+          { feat: 'Magic Initiate (Wizard)', spellList: 'wizard', className: 'Wizard' },
+        ]);
+        expect(component.magicInitiateFeats).toBe(component.magicInitiateFeats);   // stable for the template
+        expect(component.isSpellcastingClass).toBeFalse();
+        expect(component.hasSpellsStep).toBeTrue();
+        expect([component.totalSteps, component.equipmentStep, component.reviewStep]).toEqual([9, 8, 9]);
+      });
+
+      it('loads the feat\'s class list once (cantrips and level 1 only) and saves the picks', (done) => {
+        component.classList = ['Fighter'];
+        component.toggleClass('Fighter');
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        const feat = component.magicInitiateFeats[0];
+        component.step = 7;
+        (component as any).ensureStepData();
+        (component as any).ensureStepData();
+        expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('wizard');
+        expect(component.featSpellOptions(feat).map(s => s.name)).toEqual(['Light', 'Mage Hand', 'Fire Bolt', 'Shield']);
+
+        component.setFeatPicks(feat, [light, mageHand, shield]);
+        expect([component.featPickCount(feat, true), component.featPickCount(feat, false)]).toEqual([2, 1]);
+        expect(component.reviewFeatSpellNames).toBe('Light, Mage Hand, Shield (Magic Initiate (Wizard))');
+
+        component.name = 'Brakk';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.lvl, !!s.alwaysPrepared, s.grantedBy])).toEqual([
+            ['Light', 0, false, 'Magic Initiate (Wizard)'],
+            ['Mage Hand', 0, false, 'Magic Initiate (Wizard)'],
+            ['Shield', 1, true, 'Magic Initiate (Wizard)'],
+          ]);
+          expect(draft.spellSlots).toEqual({});   // a Fighter has no slots; the feat adds none
+          done();
+        });
+        component.submit();
+      });
+
+      it('adds the feat spells after a caster\'s own picks, without saving a spell twice', (done) => {
+        component.toggleClass('Wizard');
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        const feat = component.magicInitiateFeats[0];
+        component.selectedSpells = [light, shield];
+        component.setFeatPicks(feat, [light, fireBolt, shield]);
+
+        component.name = 'Aelindra';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.grantedBy ?? ''])).toEqual([
+            ['Light', ''], ['Shield', ''], ['Fire Bolt', 'Magic Initiate (Wizard)'],
+          ]);
+          done();
+        });
+        component.submit();
+      });
+
+      it('has no feat spells for a background without Magic Initiate, and keeps picks in the draft', () => {
+        component.toggleClass('Wizard');
+        component.backgroundDetail = { ...SAGE_BACKGROUND_DETAIL, feat: { index: 'alert', name: 'Alert', url: '' } } as any;
+        expect(component.magicInitiateFeats).toEqual([]);
+
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        component.name = 'Aelindra';
+        component.setFeatPicks(component.magicInitiateFeats[0], [light]);
+        component.ngOnDestroy();   // saves the draft
+        const restored = TestBed.runInInjectionContext(
+          () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+        restored.ngOnInit();
+        expect(restored.featSpellPicks['Magic Initiate (Wizard)'].map(s => s.name)).toEqual(['Light']);
+      });
+    });
+
+    it('drops the spells picked for one class when another class is chosen', () => {
+      component.toggleClass('Wizard');
+      component.selectedSpells = [spell('Shield', 1, 'wizard')];
+      component.toggleClass('Bard');
+      expect(component.selectedSpells).toEqual([]);
+    });
+
+    it('gives a class without spellcasting no spells at all', (done) => {
+      component.classList = ['Fighter'];
+      component.toggleClass('Fighter');
+      component.name = 'Brakk';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells).toEqual([]);
+        expect(draft.spellSlots).toEqual({});
+        done();
+      });
+      component.submit();
+    });
+  });
+
   describe('World of Warcraft Paladin', () => {
     const WOW_PALADIN_KEY = 'Paladin (World of Warcraft)';
 
@@ -1122,8 +1326,49 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.selectSpecialization('Holy');
       expect(component.canAdvance).toBeTrue();
       expect(component.specializationGuidance?.subclass.name).toBe('Oath of the Holy');
-      // No level-1 spells step for paladins: guidance stays text.
-      expect(component.isSpellcastingClass).toBeFalse();
+      // The specialization's level-1 spells are badged in the spells step.
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Shield of Faith']);
+    });
+
+    it('picks two level-1 Paladin spells, no cantrips, and saves them with two level-1 slots', (done) => {
+      const spell = (name: string, level: number): any => ({
+        name, level, school: 'evocation', classes: ['paladin'], actionType: 'action',
+        concentration: false, ritual: false, range: 'Touch', components: ['v'], duration: 'Instantaneous',
+        description: `${name} text.`,
+      });
+      const list = [spell('Bless', 1), spell('Cure Wounds', 1), spell('Shield of Faith', 1), spell('Light', 0)];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass(WOW_PALADIN_KEY);
+      component.selectSpecialization('Holy');
+      component.step = 6;
+      component.assignments = { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 13 };
+      component.bonusPlus2 = 'INT';
+      component.bonusPlus1 = 'WIS';
+      component.next();   // → step 7, the spells step
+      expect(component.step).toBe(7);
+      expect(component.stepName).toBe('Spells');
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Paladin');
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+
+      component.toggleSpell(list[3]);   // a cantrip: the class has no cantrip picks
+      expect(component.selectedSpells).toEqual([]);
+      component.toggleSpell(list[1]);
+      component.toggleSpell(list[2]);
+      component.toggleSpell(list[0]);   // a third spell: over the limit
+      expect(component.selectedSpells.map(s => s.name)).toEqual(['Cure Wounds', 'Shield of Faith']);
+
+      component.name = 'Tirion';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, s.lvl, s.prepared])).toEqual([
+          ['Cure Wounds', 1, true], ['Shield of Faith', 1, true],
+        ]);
+        expect(draft.spellSlots).toEqual({ 1: { max: 2, used: 0 } });
+        done();
+      });
+      component.submit();
     });
 
     it('emits clazz Paladin + null subclass + specialization in the create payload', (done) => {
@@ -1599,6 +1844,80 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.canAdvance).toBeTrue();
       expect(component.specializationGuidance?.subclass.name).toBe('Hunter');
       expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+    });
+
+    it('gets the spells step with the Ranger list: two level-1 spells, no cantrips, two level-1 slots', (done) => {
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Survival');
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.totalSteps).toBe(9);
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Ranger');
+
+      component.name = 'Rhonna';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spellSlots).toEqual({ 1: { max: 2, used: 0 } });
+        done();
+      });
+      component.submit();
+    });
+
+    it("starts every ranger with Hunter's Mark always prepared, on top of the two picks", (done) => {
+      const spell = (name: string): any => ({
+        name, level: 1, school: 'divination', classes: ['ranger'], actionType: 'action',
+        concentration: false, ritual: false, range: 'Self', components: ['v'], duration: '1 hour',
+        description: `${name} text.`,
+      });
+      const list = [spell('Cure Wounds'), spell('Goodberry'), spell("Hunter's Mark"), spell('Jump')];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Beast Mastery');
+      component.step = 7;
+      (component as any).ensureStepData();
+
+      expect(component.alwaysPreparedGrants).toEqual([{ name: "Hunter's Mark", grantedBy: 'Favored Enemy' }]);
+      expect(component.reviewAlwaysPreparedNames).toBe("Hunter's Mark (Favored Enemy)");
+      // It is not offered as a pick, and cannot take one of the two.
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Cure Wounds', 'Goodberry', 'Jump']);
+      component.toggleSpell(list[0]);
+      component.toggleSpell(list[1]);
+
+      component.name = 'Rhonna';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, s.prepared, s.alwaysPrepared ?? false, s.grantedBy ?? ''])).toEqual([
+          ['Cure Wounds', true, false, ''], ['Goodberry', true, false, ''],
+          ["Hunter's Mark", true, true, 'Favored Enemy'],
+        ]);
+        done();
+      });
+      component.submit();
+    });
+
+    it('loads the class list for a draft restored past the spells step, so the granted spell is still saved', () => {
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      component.toggleClass(HUNTER_KEY);
+      component.classEquipmentData = {};   // already loaded: only the spell list is owed
+      component.step = component.reviewStep;
+      (component as any).ensureStepData();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Ranger');
+      (component as any).ensureStepData();   // the same class row is not fetched twice
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives the Demon Hunter the same Ranger spells step', () => {
+      component.toggleClass('Demon Hunter (Ranger)');
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+      // No specialization guidance for a Demon Hunter, so nothing is badged.
+      component.selectSpecialization('Havoc');
+      expect(component.recommendedSpells).toEqual([]);
     });
 
     it('keeps the Demon Hunter separate: its subclass stays locked and its specs differ', () => {

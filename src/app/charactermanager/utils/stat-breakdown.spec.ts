@@ -2,8 +2,8 @@ import { PC, PcItem } from '../models/pc';
 import { SLOT_STATS, StatAdjustment, slotLevelOf, slotStat } from '../models/stat-adjustment';
 import { withRecomputedAc } from './armor-math';
 import {
-  STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, describeAdjustment,
-  describeAdjustmentChange, isValidAdjustment,
+  STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, cleanRemoved, creationAbilityLines,
+  describeAdjustment, describeAdjustmentChange, describeStatSave, isValidAdjustment,
 } from './stat-breakdown';
 
 const armor = (name: string, armorClass: string, equipped = true): PcItem =>
@@ -17,6 +17,8 @@ const pcWith = (overrides: Partial<PC> = {}): PC =>
      ac: 17, ...overrides } as PC);
 
 const taunka: StatAdjustment = { value: 1, label: 'Taunka' };
+/** A calculated line taken out of the total, as it is stored. */
+const out = (label: string): StatAdjustment => ({ value: 1, label });
 
 describe('stat-breakdown', () => {
   describe('breakdownOf', () => {
@@ -49,6 +51,31 @@ describe('stat-breakdown', () => {
       const b = breakdownOf(pcWith({ ac: undefined, statAdjustments: { ac: [taunka] } }), 'ac');
       expect(b.total).toBe(18);
       expect(b.unlabelled).toBe(0);
+    });
+
+    it('marks a removed calculated line and leaves it out of what is explained', () => {
+      const b = breakdownOf(pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } }), 'ac');
+      expect(b.auto).toEqual([
+        { label: 'Chain Shirt', value: 13 },
+        { label: 'Dexterity', value: 2, removed: true },
+        { label: 'Shield', value: 2 },
+      ]);
+      expect(b.removed).toEqual(['Dexterity']);
+      expect(b.unlabelled).toBe(0); // 13 + 2 = 15, nothing left over
+      expect(b.total).toBe(15);
+    });
+
+    it('never lists a removed entry among the DM lines', () => {
+      const b = breakdownOf(pcWith({ ac: 16, statAdjustments: { ac: [taunka], acRemoved: [out('Dexterity')] } }), 'ac');
+      expect(b.adjustments).toEqual([taunka]);
+    });
+
+    it('keeps a removed entry whose line is gone, without it counting for anything', () => {
+      const b = breakdownOf(pcWith({ statAdjustments: { acRemoved: [out('Plate')] } }), 'ac');
+      expect(b.removed).toEqual(['Plate']);
+      expect(b.auto.some(line => line.removed)).toBeFalse();
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(17);
     });
   });
 
@@ -99,6 +126,56 @@ describe('stat-breakdown', () => {
       expect(updated.ac).toBe(18);
     });
 
+    it('takes a calculated line out and lowers the saved total by exactly that line', () => {
+      const updated = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Dexterity'] });
+      expect(updated.statAdjustments).toEqual({ ac: [], acRemoved: [out('Dexterity')] });
+      expect(updated.ac).toBe(15);
+      expect(breakdownOf(updated, 'ac').unlabelled).toBe(0);
+    });
+
+    it('puts a calculated line back and raises the saved total by exactly that line', () => {
+      const pc = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Shield')] } });
+      const updated = applyAdjustments(pc, 'ac', [], true, { removed: [] });
+      expect(updated.statAdjustments).toEqual({ ac: [] }); // the companion key goes with its last entry
+      expect(updated.ac).toBe(17);
+      expect(breakdownOf(updated, 'ac').unlabelled).toBe(0);
+    });
+
+    it('leaves an unlabelled rest exactly as it was when a line is taken out or put back', () => {
+      const pc = pcWith({ ac: 20, statAdjustments: { ac: [taunka] } }); // 2 nobody labelled
+      const removed = applyAdjustments(pc, 'ac', [taunka], true, { removed: ['Shield'] });
+      expect(removed.ac).toBe(18);
+      expect(breakdownOf(removed, 'ac').unlabelled).toBe(2);
+
+      const restored = applyAdjustments(removed, 'ac', [taunka], true, { removed: [] });
+      expect(restored.ac).toBe(20);
+      expect(breakdownOf(restored, 'ac').unlabelled).toBe(2);
+    });
+
+    it('keeps the stored removals when a save does not mention them', () => {
+      const pc = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } });
+      const updated = applyAdjustments(pc, 'ac', [taunka], true);
+      expect(updated.statAdjustments).toEqual({ acRemoved: [out('Dexterity')], ac: [taunka] });
+      expect(updated.ac).toBe(16);
+    });
+
+    it('keeps a removal whose line is not there right now', () => {
+      const updated = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Plate', 'Dexterity'] });
+      expect(updated.statAdjustments?.acRemoved).toEqual([out('Plate'), out('Dexterity')]);
+      expect(updated.ac).toBe(15); // only Dexterity is there to take out
+    });
+
+    it('a removed line stays out of the total through the next armor swap', () => {
+      const noDex = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Dexterity'] }); // 15
+      const unequipped = {
+        ...noDex,
+        inventory: noDex.inventory!.map(i => ({ ...i, equipped: false })),
+      };
+      const swapped = withRecomputedAc(unequipped, noDex.inventory);
+      expect(swapped.ac).toBe(10); // unarmored 10, Dex still out
+      expect(breakdownOf(swapped, 'ac').unlabelled).toBe(0);
+    });
+
     it('produces a line that survives the next armor swap', () => {
       const withLine = applyAdjustments(pcWith(), 'ac', [taunka], true); // 18
       const unequipped = {
@@ -129,6 +206,28 @@ describe('stat-breakdown', () => {
     it('caps how many lines one number can carry', () => {
       const many = Array.from({ length: 20 }, (_, i) => ({ value: 1, label: `Line ${i}` }));
       expect(cleanAdjustments(many).length).toBe(12);
+    });
+
+    it('stores removed labels trimmed, without blanks, and cut to what the server accepts', () => {
+      expect(cleanRemoved(['  Dexterity ', '', '   '], [])).toEqual(['Dexterity']);
+      expect(cleanRemoved(['x'.repeat(60)], [])).toEqual(['x'.repeat(40)]);
+    });
+
+    it('at the limit, drops the oldest removal that matches no line before any that does', () => {
+      const stale = Array.from({ length: 12 }, (_, i) => `Old armor ${i}`);
+      const kept = cleanRemoved([...stale, 'Dexterity'], [{ label: 'Dexterity', value: 2 }]);
+      expect(kept.length).toBe(12);
+      expect(kept).toContain('Dexterity');
+      expect(kept).not.toContain('Old armor 0');
+    });
+
+    it('matches a long item name by the part that is stored', () => {
+      const name = 'Adamantine Breastplate of the Unbroken Shieldwall'; // 49 characters
+      const pc = pcWith({ inventory: [armor(name, '14 + Dex modifier (max 2)')], ac: 16 });
+      const updated = applyAdjustments(pc, 'ac', [], true, { removed: [name] });
+      expect(updated.statAdjustments?.acRemoved).toEqual([out(name.slice(0, 40).trim())]);
+      expect(updated.ac).toBe(2);
+      expect(breakdownOf(updated, 'ac').auto[0].removed).toBeTrue();
     });
 
     it('words a line with its sign', () => {
@@ -171,10 +270,259 @@ describe('stat-breakdown', () => {
       expect(log(before, after)).toBe('DM labelled +3 on AC as Unarmored Defense');
     });
 
+    it('names a calculated line taken out, with the new total', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: ['Dexterity'] })))
+        .toBe('DM removed the calculated Dexterity line from AC (AC 17 → 15)');
+    });
+
+    it('names several calculated lines taken out at once', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: ['Dexterity', 'Shield'] })))
+        .toBe('DM removed the calculated Dexterity and Shield lines from AC (AC 17 → 13)');
+    });
+
+    it('names a calculated line put back, with the new total', () => {
+      const before = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } });
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: [] })))
+        .toBe('DM restored the calculated Dexterity line on AC (AC 15 → 17)');
+    });
+
+    it('reports a line added and a calculated line taken out in one save', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [taunka], true, { removed: ['Shield'] })))
+        .toBe('DM added +1 Taunka to AC; removed the calculated Shield line from AC (AC 17 → 16)');
+    });
+
+    it('does not report a removal that was only tidied away as a line put back', () => {
+      const before = pcWith({ statAdjustments: { acRemoved: [out('Plate')] } }); // no Plate worn
+      expect(log(before, applyAdjustments(before, 'ac', [taunka], true, { removed: [] })))
+        .toBe('DM added +1 Taunka to AC (AC 17 → 18)');
+    });
+
     it('tells two identical lines apart from one', () => {
       const before = pcWith({ ac: 18, statAdjustments: { ac: [taunka] } });
       const after = applyAdjustments(before, 'ac', [taunka, taunka], true);
       expect(log(before, after)).toBe('DM added +1 Taunka to AC (AC 18 → 19)');
+    });
+  });
+
+  // ── Ability scores: a base plus the DM's lines ────────────────────────────
+
+  describe('ability scores', () => {
+    const soldier: StatAdjustment = { value: 2, label: 'Soldier' };
+    const level4: StatAdjustment = { value: 1, label: 'Level 4 Increase' };
+
+    it('have a definition each, named in full with the short key as the log word', () => {
+      const names = (['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const)
+        .map(key => `${STAT_DEFINITIONS[key].label} ${STAT_DEFINITIONS[key].title}`);
+      expect(names).toEqual([
+        'STR Strength', 'DEX Dexterity', 'CON Constitution', 'INT Intelligence', 'WIS Wisdom', 'CHA Charisma',
+      ]);
+      expect(STAT_DEFINITIONS.STR.baseLabel).toBe('Base score');
+      expect(STAT_DEFINITIONS.STR.removable).toBeFalsy(); // the base cannot be taken out
+      expect([STAT_DEFINITIONS.STR.min, STAT_DEFINITIONS.STR.max]).toEqual([1, 30]);
+      expect(STAT_DEFINITIONS.ac.baseLabel).toBeUndefined();
+    });
+
+    it('with no lines, the whole score is the base', () => {
+      const b = breakdownOf(pcWith(), 'DEX');
+      expect(b.auto).toEqual([{ label: 'Base score', value: 14 }]);
+      expect(b.adjustments).toEqual([]);
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(14);
+    });
+
+    it('the base is whatever the lines do not explain, so nothing is ever unlabelled', () => {
+      const pc = pcWith({
+        stats: { STR: 17, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+        statAdjustments: { STR: [soldier, level4] },
+      });
+      const b = breakdownOf(pc, 'STR');
+      expect(b.auto).toEqual([{ label: 'Base score', value: 14 }]);
+      expect(b.adjustments).toEqual([soldier, level4]);
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(17);
+    });
+
+    it('reads a character with no saved scores as 10', () => {
+      const b = breakdownOf(pcWith({ stats: undefined }), 'WIS');
+      expect(b.total).toBe(10);
+      expect(b.auto).toEqual([{ label: 'Base score', value: 10 }]);
+    });
+
+    it('a new line raises the score and leaves the base alone', () => {
+      const updated = applyAdjustments(pcWith(), 'STR', [level4], true);
+      expect(updated.stats?.STR).toBe(11);
+      expect(updated.statAdjustments).toEqual({ STR: [level4] });
+      expect(breakdownOf(updated, 'STR').auto[0].value).toBe(10);
+      expect(updated.stats?.CON).toBe(10); // the other scores are untouched
+    });
+
+    it('removing a line lowers the score by it', () => {
+      const pc = pcWith({
+        stats: { STR: 17, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+        statAdjustments: { STR: [soldier, level4] },
+      });
+      const updated = applyAdjustments(pc, 'STR', [soldier], true);
+      expect(updated.stats?.STR).toBe(16);
+      expect(breakdownOf(updated, 'STR').auto[0].value).toBe(14);
+    });
+
+    it('labelling part of the base adds the line without moving the score', () => {
+      const pc = pcWith({ stats: { STR: 17, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
+      const updated = applyAdjustments(pc, 'STR', [soldier, level4], true, { fromBase: 3 });
+      expect(updated.stats?.STR).toBe(17);
+      const b = breakdownOf(updated, 'STR');
+      expect(b.auto).toEqual([{ label: 'Base score', value: 14 }]);
+      expect(b.adjustments).toEqual([soldier, level4]);
+    });
+
+    it('one save can label part of the base and add something new', () => {
+      const pc = pcWith({ stats: { STR: 15, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
+      const belt = { value: 2, label: 'Belt of Strength' };
+      const updated = applyAdjustments(pc, 'STR', [level4, belt], true, { fromBase: 1 });
+      expect(updated.stats?.STR).toBe(17);                       // only the belt is new
+      expect(breakdownOf(updated, 'STR').auto[0].value).toBe(14); // the level increase came out of the base
+    });
+
+    it('keeps a score inside 1 to 30', () => {
+      const high = applyAdjustments(pcWith(), 'STR', [{ value: 25, label: 'Too much' }], true);
+      expect(high.stats?.STR).toBe(30);
+      const low = applyAdjustments(pcWith(), 'STR', [{ value: -15, label: 'Too little' }], true);
+      expect(low.stats?.STR).toBe(1);
+    });
+
+    it('fills in the other scores when none were saved', () => {
+      const updated = applyAdjustments(pcWith({ stats: undefined }), 'WIS', [level4], true);
+      expect(updated.stats).toEqual({ STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 11, CHA: 10 });
+    });
+
+    it('is pure and ignores a removed set, since a base cannot be taken out', () => {
+      const pc = pcWith();
+      const updated = applyAdjustments(pc, 'STR', [level4], true, { removed: ['Base score'] });
+      expect(updated.statAdjustments).toEqual({ STR: [level4] });
+      expect(updated.stats?.STR).toBe(11);
+      expect(pc.stats?.STR).toBe(10);
+    });
+
+    // --- saved numbers that depend on a score ---
+
+    it('Armor Class follows a Dexterity line, within what the armor lets through', () => {
+      // Chain shirt (max 2) at DEX 14 is already at the cap: more Dexterity adds nothing.
+      const capped = applyAdjustments(pcWith(), 'DEX', [{ value: 2, label: 'Gloves' }], true);
+      expect(capped.stats?.DEX).toBe(16);
+      expect(capped.ac).toBe(17);
+
+      // Less Dexterity does cost AC: 12 is +1, one below the cap.
+      const lower = applyAdjustments(pcWith(), 'DEX', [{ value: -2, label: 'Cursed' }], true);
+      expect(lower.ac).toBe(16);
+      expect(breakdownOf(lower, 'ac').unlabelled).toBe(0);
+    });
+
+    it('Armor Class follows Dexterity in full with no armor, keeping the AC lines and any unlabelled rest', () => {
+      const pc = pcWith({ inventory: [], ac: 15, statAdjustments: { ac: [taunka] } }); // 10 + 2 + 1, and 2 unlabelled
+      const updated = applyAdjustments(pc, 'DEX', [{ value: 4, label: 'Manual of Quickness' }], true);
+      expect(updated.stats?.DEX).toBe(18);
+      expect(updated.ac).toBe(17);
+      expect(breakdownOf(updated, 'ac').unlabelled).toBe(2);
+      expect(updated.statAdjustments).toEqual({ ac: [taunka], DEX: [{ value: 4, label: 'Manual of Quickness' }] });
+    });
+
+    it('Armor Class does not move when the Dexterity line was removed from it', () => {
+      const pc = pcWith({ inventory: [], ac: 10, statAdjustments: { acRemoved: [out('Dexterity')] } });
+      const updated = applyAdjustments(pc, 'DEX', [{ value: 4, label: 'Manual of Quickness' }], true);
+      expect(updated.ac).toBe(10);
+    });
+
+    it('labelling part of the Dexterity base moves neither the score nor Armor Class', () => {
+      const updated = applyAdjustments(pcWith({ inventory: [], ac: 12 }), 'DEX', [level4], true, { fromBase: 1 });
+      expect(updated.stats?.DEX).toBe(14);
+      expect(updated.ac).toBe(12);
+    });
+
+    it('leaves hit points alone when Constitution changes, like every other sheet edit', () => {
+      const pc = pcWith({ hp: { cur: 20, max: 24, temp: 0 } });
+      const updated = applyAdjustments(pc, 'CON', [{ value: 2, label: 'Amulet of Health' }], true);
+      expect(updated.stats?.CON).toBe(12);
+      expect(updated.hp).toEqual({ cur: 20, max: 24, temp: 0 });
+    });
+
+    it('leaves Armor Class alone for the other five scores', () => {
+      expect(applyAdjustments(pcWith(), 'STR', [level4], true).ac).toBe(17);
+    });
+
+    // --- log wording ---
+
+    it('logs an added line with the short ability name and the new score', () => {
+      const before = pcWith();
+      expect(describeStatSave('STR', before, applyAdjustments(before, 'STR', [level4], true)))
+        .toBe('DM added +1 Level 4 Increase to STR (STR 10 → 11)');
+    });
+
+    it('logs part of the base being labelled as that, since the score did not move', () => {
+      const before = pcWith({ stats: { STR: 17, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 } });
+      const one = applyAdjustments(before, 'STR', [level4], true, { fromBase: 1 });
+      expect(describeStatSave('STR', before, one))
+        .toBe('DM labelled +1 of the STR base score as Level 4 Increase');
+
+      const two = applyAdjustments(before, 'STR', [soldier, level4], true, { fromBase: 3 });
+      expect(describeStatSave('STR', before, two))
+        .toBe('DM labelled +2 of the STR base score as Soldier, +1 as Level 4 Increase');
+    });
+
+    it('does not mistake two new lines that cancel out for part of the base being labelled', () => {
+      const before = pcWith();
+      const after = applyAdjustments(before, 'STR', [{ value: 1, label: 'Blessed' }, { value: -1, label: 'Cursed' }], true);
+      expect(after.stats?.STR).toBe(10);
+      expect(describeStatSave('STR', before, after)).toBe('DM added +1 Blessed, -1 Cursed to STR');
+    });
+
+    it('adds the Armor Class change when it followed Dexterity', () => {
+      const before = pcWith({ inventory: [], ac: 12 });
+      const after = applyAdjustments(before, 'DEX', [{ value: 2, label: 'Gloves' }], true);
+      expect(describeStatSave('DEX', before, after))
+        .toBe('DM added +2 Gloves to DEX (DEX 14 → 16); AC 12 → 13');
+    });
+
+    it('logs an Armor Class save exactly as before', () => {
+      const before = pcWith();
+      expect(describeStatSave('ac', before, applyAdjustments(before, 'ac', [taunka], true)))
+        .toBe('DM added +1 Taunka to AC (AC 17 → 18)');
+    });
+  });
+
+  describe('creationAbilityLines', () => {
+    it('records each increase under its ability, labelled with the background', () => {
+      expect(creationAbilityLines([['INT', 2], ['WIS', 1]], 'Sage')).toEqual({
+        INT: [{ value: 2, label: 'Sage' }],
+        WIS: [{ value: 1, label: 'Sage' }],
+      });
+    });
+
+    it('opens a fresh character as a base score plus the background line', () => {
+      const pc = pcWith({
+        stats: { STR: 8, DEX: 12, CON: 13, INT: 17, WIS: 15, CHA: 10 }, // 15 + 2 and 14 + 1
+        statAdjustments: creationAbilityLines([['INT', 2], ['WIS', 1]], 'Sage'),
+      });
+      const b = breakdownOf(pc, 'INT');
+      expect(b.auto).toEqual([{ label: 'Base score', value: 15 }]);
+      expect(b.adjustments).toEqual([{ value: 2, label: 'Sage' }]);
+      expect(b.total).toBe(17);
+      expect(breakdownOf(pc, 'WIS').auto[0].value).toBe(14);
+      expect(breakdownOf(pc, 'STR').adjustments).toEqual([]);
+    });
+
+    it('skips an increase that was not chosen, and is null when there is nothing to record', () => {
+      expect(creationAbilityLines([['', 2], ['WIS', 1]], 'Sage')).toEqual({ WIS: [{ value: 1, label: 'Sage' }] });
+      expect(creationAbilityLines([['', 2], ['', 1]], 'Sage')).toBeNull();
+      expect(creationAbilityLines([['WIS', 0]], 'Sage')).toBeNull();
+    });
+
+    it('cuts a long source to what a label may hold, and names a missing one plainly', () => {
+      const long = 'Custom Background With A Very Long Descriptive Name';
+      expect(creationAbilityLines([['STR', 2]], long)?.STR?.[0].label).toBe(long.slice(0, 40).trim());
+      expect(creationAbilityLines([['STR', 2]], '  ')?.STR?.[0].label).toBe('Background');
     });
   });
 });
@@ -188,6 +536,47 @@ describe('stat-breakdown (spell slot maximums)', () => {
     ({ id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'P',
        spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 2 } },
        ...overrides } as PC);
+
+  it('has no removable lines: the class table always counts, whatever a save says', () => {
+    expect(STAT_DEFINITIONS.slot3.removable).toBeFalsy();
+    expect(STAT_DEFINITIONS.ac.removable).toBeTrue();
+
+    const next = applyAdjustments(wizard(), 'slot3', [pearl], true, { removed: ['Class table'] });
+    expect(next.statAdjustments).toEqual({ slot3: [pearl] });
+    expect(breakdownOf(next, 'slot3').removed).toEqual([]);
+    expect(breakdownOf(next, 'slot3').auto).toEqual([{ label: 'Class table', value: 2 }]);
+    expect(breakdownOf(next, 'slot3').total).toBe(3);
+  });
+
+  it('has no base to label: a save cannot take anything out of the class table', () => {
+    expect(STAT_DEFINITIONS.slot3.baseLabel).toBeUndefined();
+    expect(STAT_DEFINITIONS.slot3.min).toBeUndefined();
+
+    const next = applyAdjustments(wizard(), 'slot3', [pearl], true, { fromBase: 1 });
+    expect(breakdownOf(next, 'slot3').auto).toEqual([{ label: 'Class table', value: 2 }]);
+    expect(breakdownOf(next, 'slot3').total).toBe(3);
+  });
+
+  it('sits beside ability and Armor Class lines without any of them touching the others', () => {
+    const level4 = { value: 1, label: 'Level 4 Increase' };
+    const pc = wizard({
+      stats: { STR: 8, DEX: 14, CON: 12, INT: 16, WIS: 10, CHA: 10 }, ac: 12,
+      statAdjustments: { INT: [level4], acRemoved: [{ value: 1, label: 'Dexterity' }] },
+    });
+    const next = applyAdjustments(pc, 'slot3', [pearl], true);
+    expect(next.statAdjustments).toEqual({
+      INT: [level4], acRemoved: [{ value: 1, label: 'Dexterity' }], slot3: [pearl],
+    });
+    expect(next.stats).toEqual(pc.stats);
+    expect(next.ac).toBe(12);
+    expect(describeStatSave('slot3', pc, next))
+      .toBe('DM added +1 Pearl of Power to 3rd-level slots (3rd-level slots 2 → 3)');
+
+    const smarter = applyAdjustments(next, 'INT', [level4, { value: 2, label: 'Headband' }], true);
+    expect(smarter.stats?.INT).toBe(18);
+    expect(smarter.spellSlots).toEqual(next.spellSlots);
+    expect(breakdownOf(smarter, 'slot3').total).toBe(3);
+  });
 
   it('names the nine slot keys by spell level', () => {
     expect(SLOT_STATS.length).toBe(9);

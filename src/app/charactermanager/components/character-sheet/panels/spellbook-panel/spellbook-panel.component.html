@@ -57,6 +57,13 @@
         <input type="checkbox" [checked]="allClasses" (change)="toggleAllClasses(!allClasses)">
         All classes
       </label>
+      <label class="all-classes-toggle">
+        <input type="checkbox" [checked]="grantAlwaysPrepared" (change)="grantAlwaysPrepared = !grantAlwaysPrepared">
+        Always prepared
+      </label>
+      <div class="field-hint grant-always-hint">
+        For a spell a feature or trait gives. It does not count against the prepared limit and cannot be unprepared.
+      </div>
       <app-spell-picker
         [spells]="grantCandidates"
         [selected]="grantSelection"
@@ -148,7 +155,9 @@
               @if (s.range) {
                 <span class="spell-range">{{ s.range }}</span>
               }
-              @if (preparable() && s.lvl > 0) {
+              @if (isAlwaysPrepared(s)) {
+                <span class="spell-always-tag">Always prepared</span>
+              } @else if (preparable() && s.lvl > 0) {
                 <button
                   class="spell-prep-btn"
                   [class.active]="prepared"
@@ -215,6 +224,14 @@
             }
             @if (isExpanded(s.name)) {
               <div class="spell-expand">
+                @if (isAlwaysPrepared(s)) {
+                  <p class="spell-always-note">{{ alwaysPreparedLine(s) }}</p>
+                }
+                @if (addAllowed() && s.lvl > 0) {
+                  <button type="button" class="btn sm spell-always-toggle" (click)="toggleAlwaysPrepared(s, $event)">
+                    {{ isAlwaysPrepared(s) ? 'Count against prepared spells' : 'Mark always prepared' }}
+                  </button>
+                }
                 <!-- ELI5 on: the one-sentence summary stands in for the full text.
                 Spells without one (homebrew, placeholders) keep their description. -->
                 @let summary = eli5.summaryFor(s.name);

@@ -17,6 +17,16 @@ export interface PcSpell {
   description?: string;
   material?: string;
   higherLevelSlot?: string;
+  /**
+   * True for a leveled spell a feature always keeps prepared (a Ranger's
+   * Hunter's Mark, a Paladin's Find Steed, a DM grant marked so). It is outside
+   * the prepared list: it never counts against the prepared-spell limit, cannot
+   * be unprepared, and is not part of a long-rest spell change. Set by the
+   * create wizard, a level-up or the DM; read it through isAlwaysPrepared().
+   */
+  alwaysPrepared?: boolean;
+  /** What gives an always-prepared spell, shown beside it ('Favored Enemy'). */
+  grantedBy?: string;
 }
 
 /**

@@ -81,6 +81,32 @@
   padding: 16px;
 }
 
+// A spell a feature always keeps prepared: a quiet label where the Prepare
+// button would be, and one line of explanation in the spell's detail.
+.spell-always-tag {
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--celestial);
+  white-space: nowrap;
+}
+
+.spell-always-note {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.spell-always-toggle {
+  margin-bottom: 8px;
+}
+
+.grant-always-hint {
+  margin: -6px 0 10px;
+}
+
 .grant-form {
   margin-bottom: 14px;
   padding-bottom: 14px;

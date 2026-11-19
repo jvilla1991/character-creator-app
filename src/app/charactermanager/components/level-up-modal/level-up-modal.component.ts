@@ -4,7 +4,9 @@ import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
-import { toPcSpell } from '../../utils/spell-mapping';
+import { toGrantedSpell, toPcSpell } from '../../utils/spell-mapping';
+import { spellKey } from '../../models/spell-names';
+import { SpellGrant } from '../../models/granted-spells';
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
@@ -17,6 +19,8 @@ import {
 } from '../../models/hero-class';
 import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
 import { featPrerequisite, isWowFeat } from '../../models/wow-feats';
+
+const NO_GRANTS: readonly SpellGrant[] = [];
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -85,6 +89,9 @@ export class LevelUpModalComponent implements OnInit {
   selectedSpells: DndSpell[] = [];
   loadingSpells = false;
 
+  /** Spell data by lookup key, loaded once when the level has always-prepared spells to hand over. */
+  private grantSpellIndex: ReadonlyMap<string, DndSpell> | null = null;
+
   /** Player's ELI5 switch: when active, the spell pickers show one-sentence summaries. */
   readonly eli5 = inject(SpellEli5Service);
 
@@ -99,6 +106,8 @@ export class LevelUpModalComponent implements OnInit {
       next: preview => {
         this.preview = preview;
         this.loading = false;
+        this.grantSpellIndex = null;
+        if (this.anyGrantsOnOffer) this.loadGrantedSpells();
         if (this.cantripDelta > 0 || this.spellDelta > 0) this.loadSpells();
       },
       error: err => {
@@ -109,6 +118,68 @@ export class LevelUpModalComponent implements OnInit {
   }
 
   // ── Spell selection (learning new cantrips/spells) ──────────────────────────
+
+  /**
+   * Spells a class or subclass feature always keeps prepared that this level-up
+   * hands over (a Paladin's Find Steed at 5, the spells of the oath being chosen)
+   * — named by the server, shown read-only, and sent with the picks. They are not
+   * picks: they sit outside both counts. With a subclass picked this level, the
+   * server's list for that subclass is used.
+   */
+  get alwaysPreparedGrants(): readonly SpellGrant[] {
+    const bySubclass = this.preview?.alwaysPreparedSpellsBySubclass;
+    const forChoice = this.selectedSubclass ? bySubclass?.[this.selectedSubclass] : undefined;
+    return forChoice ?? this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
+  }
+
+  /** True when this level-up may hand over always-prepared spells, whichever subclass is picked. */
+  private get anyGrantsOnOffer(): boolean {
+    return (this.preview?.alwaysPreparedSpells?.length ?? 0) > 0
+      || Object.keys(this.preview?.alwaysPreparedSpellsBySubclass ?? {}).length > 0;
+  }
+
+  /**
+   * {@link alwaysPreparedGrants} found in the spell data, ready to send with the
+   * picks; empty until the spell data has loaded.
+   */
+  get grantedSpells(): { spell: DndSpell; grantedBy: string }[] {
+    const index = this.grantSpellIndex;
+    if (!index) return [];
+    return this.alwaysPreparedGrants.flatMap(g => {
+      const spell = index.get(spellKey(g.name));
+      return spell ? [{ spell, grantedBy: g.grantedBy }] : [];
+    });
+  }
+
+  /** Load the spell data the granted spells are looked up in (the server only knows their names). */
+  private loadGrantedSpells(): void {
+    this.dndResources.getSpells().subscribe({
+      next: spells => { this.grantSpellIndex = new Map(spells.map(s => [spellKey(s.name), s])); },
+      // Without the spell data the level-up still goes through; the spell can be granted later.
+      error: () => { this.grantSpellIndex = null; },
+    });
+  }
+
+  /**
+   * The spells offered as this level's picks: the class list, less any spell the
+   * level hands over as always prepared (it would waste a pick). Memoized on its
+   * inputs so the picker sees a stable array.
+   */
+  get pickableSpells(): DndSpell[] {
+    const granted = this.alwaysPreparedGrants.map(g => spellKey(g.name));
+    const key = granted.join('|');
+    if (this.pickableSource !== this.spellList || this.pickableKey !== key) {
+      this.pickableSource = this.spellList;
+      this.pickableKey = key;
+      this.pickableCache = granted.length
+        ? this.spellList.filter(s => !granted.includes(spellKey(s.name)))
+        : this.spellList;
+    }
+    return this.pickableCache;
+  }
+  private pickableSource: DndSpell[] | null = null;
+  private pickableKey = '';
+  private pickableCache: DndSpell[] = [];
 
   private loadSpells(): void {
     this.loadingSpells = true;
@@ -432,9 +503,15 @@ export class LevelUpModalComponent implements OnInit {
       choices.fightingStyle = this.selectedFightingStyle;
     }
     // A cantrip style's cantrips (Blessed / Druidic / Void Warrior) ride along with any spells learned this level.
-    const learned = [...this.selectedSpells, ...(this.cantripStyle ? this.styleCantrips : [])];
-    if (learned.length) {
-      choices.newSpells = learned.map(toPcSpell);
+    // A pick made before the subclass that grants the same spell was chosen is not sent twice.
+    const grantedKeys = this.grantedSpells.map(g => spellKey(g.spell.name));
+    const learned = [
+      ...this.selectedSpells.filter(s => !grantedKeys.includes(spellKey(s.name))),
+      ...(this.cantripStyle ? this.styleCantrips : []),
+    ];
+    const granted = this.grantedSpells.map(g => toGrantedSpell(g.spell, g.grantedBy));
+    if (learned.length || granted.length) {
+      choices.newSpells = [...learned.map(toPcSpell), ...granted];
     }
 
     const commit$ = this.asDm

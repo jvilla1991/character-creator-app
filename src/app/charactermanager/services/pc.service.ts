@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { PC } from '../models/pc';
+import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
@@ -623,9 +624,22 @@ export class PCService {
       STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...(existing.stats ?? {}),
     };
     const oldConMod = modFromScore(stats['CON']);
+    // Each raised score gets a "Level N Increase" line (mirrors the server), so
+    // the ability breakdown says where the points came from.
+    let statAdjustments = existing.statAdjustments;
     if (choices?.abilityIncreases) {
       for (const [ability, pts] of Object.entries(choices.abilityIncreases)) {
-        stats[ability] = Math.min(20, (stats[ability] ?? 10) + pts);
+        const raised = Math.min(20, (stats[ability] ?? 10) + pts);
+        const gained = raised - (stats[ability] ?? 10);
+        stats[ability] = raised;
+        const key = ability as AbilityStat;
+        const lines = statAdjustments?.[key] ?? [];
+        if (gained > 0 && lines.length < ADJUSTMENT_LINES_MAX) {
+          statAdjustments = {
+            ...(statAdjustments ?? {}),
+            [key]: [...lines, { value: gained, label: `Level ${newLevel} Increase` }],
+          };
+        }
       }
     }
     const newConMod = modFromScore(stats['CON']);
@@ -669,6 +683,7 @@ export class PCService {
       level: newLevel,
       prof: demoProfBonus(newLevel),
       stats: stats as PC['stats'],
+      statAdjustments,
       hp: existing.hp
         ? { ...existing.hp, max: existing.hp.max + hpDelta, cur: existing.hp.cur + hpDelta }
         : { max: hpDelta, cur: hpDelta, temp: 0 },

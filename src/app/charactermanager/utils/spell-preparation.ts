@@ -35,18 +35,47 @@ export function preparedSpellCap(clazz: string | undefined, level: number | unde
 }
 
 /**
- * Whether a spell counts as prepared. Cantrips are always prepared (2024 rules:
- * always available, never counted), and a missing `prepared` field — spells
- * saved before the flag existed — is treated as prepared so older characters
- * keep casting exactly as before.
+ * True for a leveled spell a feature always keeps prepared (`alwaysPrepared` on
+ * the saved spell). Such a spell is outside the prepared list altogether: it is
+ * always castable, never counts against the cap, and is not part of a long-rest
+ * spell change. The server's LongRestRules reads the same marker.
  */
-export function isSpellPrepared(spell: PcSpell): boolean {
-  return spell.lvl === 0 || spell.prepared !== false;
+export function isAlwaysPrepared(spell: PcSpell): boolean {
+  return spell.lvl > 0 && spell.alwaysPrepared === true;
 }
 
-/** How many leveled spells are currently prepared (cantrips excluded). */
+/**
+ * Whether a spell counts as prepared. Cantrips are always prepared (2024 rules:
+ * always available, never counted), so is a spell a feature always keeps
+ * prepared, and a missing `prepared` field — spells saved before the flag
+ * existed — is treated as prepared so older characters keep casting exactly as
+ * before.
+ */
+export function isSpellPrepared(spell: PcSpell): boolean {
+  return spell.lvl === 0 || isAlwaysPrepared(spell) || spell.prepared !== false;
+}
+
+/**
+ * How many leveled spells are prepared against the class cap: cantrips and
+ * always-prepared spells are not counted.
+ */
 export function countPreparedSpells(spells: PC['spells']): number {
-  return (spells ?? []).filter(s => s.lvl > 0 && isSpellPrepared(s)).length;
+  return (spells ?? []).filter(s => s.lvl > 0 && !isAlwaysPrepared(s) && isSpellPrepared(s)).length;
+}
+
+/**
+ * A copy of newly chosen spells with at most `cap` leveled ones prepared, in
+ * pick order; the rest start unprepared. A Wizard's six level-1 spellbook
+ * spells against four prepared is the one case at character creation. Cantrips
+ * and always-prepared spells are left alone; a null cap changes nothing.
+ */
+export function withPreparedCap(spells: readonly PcSpell[], cap: number | null): PcSpell[] {
+  let prepared = 0;
+  return spells.map(s => {
+    if (cap == null || s.lvl === 0 || isAlwaysPrepared(s) || !isSpellPrepared(s)) return s;
+    prepared++;
+    return prepared > cap ? { ...s, prepared: false } : s;
+  });
 }
 
 // ── Long rest ───────────────────────────────────────────────────────────────
@@ -70,9 +99,12 @@ export function longRestSpellChange(clazz: string | undefined): LongRestSpellCha
   }
 }
 
-/** The hero's leveled spells, in sheet order — the ones a prepared list is chosen from. */
+/**
+ * The hero's leveled spells, in sheet order — the ones a prepared list is chosen
+ * from, so always-prepared spells are left out.
+ */
 export function leveledSpells(spells: PC['spells']): PcSpell[] {
-  return (spells ?? []).filter(s => s.lvl > 0);
+  return (spells ?? []).filter(s => s.lvl > 0 && !isAlwaysPrepared(s));
 }
 
 /** Names of the leveled spells that count as prepared right now. */
@@ -116,8 +148,12 @@ export function samePreparedList(a: readonly string[], b: readonly string[]): bo
   return a.length === b.length && a.every(n => b.includes(n));
 }
 
-/** A copy of the spell list with `prepared` set from a chosen list of names (cantrips untouched). */
+/**
+ * A copy of the spell list with `prepared` set from a chosen list of names
+ * (cantrips and always-prepared spells untouched).
+ */
 export function withPreparedSpells(spells: PC['spells'], names: readonly string[]): PcSpell[] {
   const wanted = new Set(names.map(n => n.toLowerCase()));
-  return (spells ?? []).map(s => (s.lvl > 0 ? { ...s, prepared: wanted.has(s.name.toLowerCase()) } : s));
+  return (spells ?? []).map(s => (s.lvl > 0 && !isAlwaysPrepared(s)
+    ? { ...s, prepared: wanted.has(s.name.toLowerCase()) } : s));
 }
