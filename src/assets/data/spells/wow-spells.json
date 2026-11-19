@@ -974,7 +974,7 @@
   },
   {
     "name": "Mass Polymorph",
-    "level": 9,
+    "level": 7,
     "school": "transmutation",
     "classes": ["wizard"],
     "source": "World of Warcraft",

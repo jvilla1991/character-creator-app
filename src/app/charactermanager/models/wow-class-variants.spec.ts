@@ -866,8 +866,8 @@ describe('wow-class-variants', () => {
         expect(WOW_MAGE_SUGGESTED_SPELLS[spec].map(r => r.level)).withContext(spec).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         expect(flat(spec)).withContext(spec).toContain('Create Food and Water');
         expect(flat(spec)).withContext(spec).toContain("Heroes' Feast");
-        // Mass Polymorph is a level-9 spell, so it sits in the level-9 row.
-        expect(WOW_MAGE_SUGGESTED_SPELLS[spec][8].spells).withContext(spec).toContain('Mass Polymorph');
+        // Mass Polymorph is a level-7 spell, so it sits in the level-7 row.
+        expect(WOW_MAGE_SUGGESTED_SPELLS[spec][6].spells).withContext(spec).toContain('Mass Polymorph');
       }
       expect(WOW_MAGE_SUGGESTED_SPELLS['Arcane'][0].spells)
         .toEqual(['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar', 'Frost Nova']);

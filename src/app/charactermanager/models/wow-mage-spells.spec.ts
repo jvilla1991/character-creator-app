@@ -78,9 +78,9 @@ describe('World of Warcraft mage spells (wow-spells.json)', () => {
     }
   });
 
-  it('records Mass Polymorph: level-9 transmutation, 30-foot Emanation, Concentration, one CR 0 Beast form for all', () => {
+  it('records Mass Polymorph: level-7 transmutation, 30-foot Emanation, Concentration, one CR 0 Beast form for all', () => {
     expect(find('Mass Polymorph')).toEqual(jasmine.objectContaining({
-      level: 9, school: 'transmutation', actionType: 'action', concentration: true, ritual: false,
+      level: 7, school: 'transmutation', actionType: 'action', concentration: true, ritual: false,
       range: 'Self (30-foot Emanation)', components: ['v', 's', 'm'], material: 'a caterpillar cocoon',
       duration: 'up to 1 hour',
     }));
