@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnDestroy, OnInit, inject, input } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RestType, SessionState } from '../../models/session';
 import { PC } from '../../models/pc';
@@ -14,6 +14,7 @@ import { formatCp, SellRequest } from '../../models/shop';
 import { LocationType, LOCATION_TYPES, TimeOfDay } from '../../models/campaign';
 import { SurvivalAction, advanceGameTime, describeGameTime } from '../../utils/survival';
 import { CastRequest } from '../character-sheet/panels/spellbook-panel/spellbook-panel.component';
+import { SlotNotice, slotCastNotice } from '../../utils/spell-slots';
 import { withRecomputedAc } from '../../utils/armor-math';
 import { ParticipantView } from '../../models/session';
 import { SpellCarouselComponent } from './spell-carousel/spell-carousel.component';
@@ -572,15 +573,28 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * What the last cast spent, for the slot strip on the player's sheet: "Misty
+   * Step cast with a 2nd-level slot." Only a cast that spent a slot says
+   * anything; a cantrip and a ritual spend none.
+   */
+  readonly castNotice = signal<SlotNotice | null>(null);
+
   /** The player casts one of their spells — server-authoritative so the DM sees the slot spend. */
   onCast(ev: CastRequest, state: SessionState): void {
     const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
     if (mine?.pcId == null) return;
-    this.sessionService.castSpell(state.sessionId, mine.pcId, ev.spellName, ev.atLevel).subscribe({
+    const ritual = ev.ritual === true;
+    this.sessionService.castSpell(state.sessionId, mine.pcId, ev.spellName, ev.atLevel, ritual).subscribe({
       next: result => {
+        if (!ritual && ev.atLevel > 0) this.castNotice.set(slotCastNotice(ev.spellName, ev.atLevel));
         if (result.warning) this.notifications.notify(result.warning);
       },
-      error: err => this.notifications.notify(this.castErrorMessage(err)),
+      error: err => {
+        this.notifications.notify(this.castErrorMessage(err));
+        // A refused cast means the sheet was behind (the slot went elsewhere): catch up now.
+        this.sessionService.refresh();
+      },
     });
   }
 

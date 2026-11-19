@@ -10,12 +10,37 @@ export interface StatAdjustment {
 }
 
 /**
- * The numbers that can carry adjustment lines. Armor Class is the only one with
- * a breakdown today; a new entry here plus a definition in
+ * The maximum number of spell slots of one spell level, 1st to 9th. Unlike
+ * Armor Class the server works this total out itself: the class table plus
+ * these lines (`{ "slot3": [{ "value": 1, "label": "Pearl of Power" }] }` is
+ * one more 3rd-level slot). See SpellSlotState in the backend.
+ */
+export type SlotStat = 'slot1' | 'slot2' | 'slot3' | 'slot4' | 'slot5' | 'slot6' | 'slot7' | 'slot8' | 'slot9';
+
+/** Every slot key, in spell-level order: `SLOT_STATS[0]` is `slot1`. */
+export const SLOT_STATS: readonly SlotStat[] =
+  ['slot1', 'slot2', 'slot3', 'slot4', 'slot5', 'slot6', 'slot7', 'slot8', 'slot9'];
+
+/** The key holding the bonus lines for a spell level (1-9): 3 → `slot3`. */
+export function slotStat(spellLevel: number): SlotStat {
+  const stat = SLOT_STATS[spellLevel - 1];
+  if (!stat) throw new Error(`No spell slots of level ${spellLevel}`);
+  return stat;
+}
+
+/** The spell level a slot key stands for (`slot3` → 3); null for any other number. */
+export function slotLevelOf(stat: AdjustableStat): number | null {
+  const index = SLOT_STATS.indexOf(stat as SlotStat);
+  return index < 0 ? null : index + 1;
+}
+
+/**
+ * The numbers that can carry adjustment lines: Armor Class, and the slot
+ * maximum of each spell level. A new entry here plus a definition in
  * `utils/stat-breakdown.ts` is all another number needs (the stored JSON is
  * keyed by this name, so no schema change).
  */
-export type AdjustableStat = 'ac';
+export type AdjustableStat = 'ac' | SlotStat;
 
 /** The stored shape: `{ "ac": [{ "value": 1, "label": "Taunka" }] }`. */
 export type StatAdjustments = Partial<Record<AdjustableStat, StatAdjustment[]>>;

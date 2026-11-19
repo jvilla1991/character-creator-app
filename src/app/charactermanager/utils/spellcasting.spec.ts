@@ -1,6 +1,7 @@
 import {
   applyCastToPc,
   applyLongRestToSlots,
+  canCastAsRitual,
   castableLevels,
   castWarning,
   findComponentLine,
@@ -126,6 +127,48 @@ describe('spellcasting util', () => {
       expect(applyCastToPc(reusable, 'Revivify', 3).inventory![0].qty).toBe(2);
       const missing = basePC({ inventory: [] });
       expect(applyCastToPc(missing, 'Revivify', 3).inventory).toEqual([]);
+    });
+  });
+
+  describe('rituals', () => {
+    const withRitual = () => basePC({
+      spells: [...basePC().spells!, spell({ lvl: 1, name: 'Detect Magic', ritual: true })],
+    });
+
+    it('only a leveled spell marked as a ritual can be cast as one', () => {
+      expect(canCastAsRitual(spell({ lvl: 1, ritual: true }))).toBeTrue();
+      expect(canCastAsRitual(spell({ lvl: 1 }))).toBeFalse();
+      expect(canCastAsRitual(spell({ lvl: 1, ritual: false }))).toBeFalse();
+      expect(canCastAsRitual(spell({ lvl: 0, ritual: true }))).toBeFalse(); // a cantrip needs no slot to begin with
+    });
+
+    it('a ritual cast spends no slot, whatever level is sent along', () => {
+      const pc = withRitual();
+      expect(applyCastToPc(pc, 'Detect Magic', 1, true).spellSlots).toEqual(pc.spellSlots);
+      expect(applyCastToPc(pc, 'Detect Magic', 3, true).spellSlots).toEqual(pc.spellSlots);
+    });
+
+    it('a ritual cast works with every slot spent', () => {
+      const spent = { ...withRitual(), spellSlots: { 1: { max: 4, used: 4 } } };
+      expect(applyCastToPc(spent, 'Detect Magic', 1, true).spellSlots).toEqual({ 1: { max: 4, used: 4 } });
+    });
+
+    it('refuses a ritual cast of a spell that is not a ritual, or of a cantrip', () => {
+      expect(() => applyCastToPc(withRitual(), 'Cure Wounds', 1, true)).toThrowError('Cure Wounds cannot be cast as a ritual');
+      expect(() => applyCastToPc(withRitual(), 'Sacred Flame', 0, true)).toThrowError('Sacred Flame cannot be cast as a ritual');
+    });
+
+    it('still spends a consumed component on a ritual cast', () => {
+      const pc = basePC({
+        spells: [spell({ lvl: 3, name: 'Revivify', ritual: true, components: ['v', 'm'], material: 'diamonds worth 300+ GP' })],
+      });
+      const after = applyCastToPc(pc, 'Revivify', 3, true);
+      expect(after.inventory![0].qty).toBe(1);
+      expect(after.spellSlots).toEqual(pc.spellSlots);
+    });
+
+    it('the same spell cast the ordinary way still spends its slot', () => {
+      expect(applyCastToPc(withRitual(), 'Detect Magic', 1).spellSlots![1]).toEqual({ max: 4, used: 2 });
     });
   });
 

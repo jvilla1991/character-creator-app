@@ -27,9 +27,10 @@ describe('CharacterSheetComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService',
-      ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration', 'setPetFamily']);
+      ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration', 'setPetFamily',
+        'spendSpellSlot', 'restoreSpellSlot', 'restoreAllSpellSlots', 'refreshSpellSlots']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
-    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh', 'applySpellSlots']);
     followerChanges = new Subject<{ pcId: number }>();
     followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['update', 'list'],
       { changes$: followerChanges });
@@ -345,6 +346,268 @@ describe('CharacterSheetComponent', () => {
   });
 
   // --- DM feature grants ---
+
+  // --- Spell slots: spend by hand, restore, the slot maximum ---
+
+  describe('spell slots', () => {
+    const SLOTS = { 1: { max: 4, used: 1 }, 2: { max: 3, used: 3 }, 3: { max: 2, used: 0 } };
+    const caster = (overrides: Partial<PC> = {}): PC =>
+      makePC({ clazz: 'Wizard', level: 5, campaignId: 3, spellSlots: SLOTS, ...overrides });
+    /** The viewer is the character's owner, on their own interactive sheet. */
+    const asOwner = (pc: PC): void => { component.pc = pc; component.showActions = true; };
+    /** The viewer is the campaign's DM, on the cross-link view of a member. */
+    const asDm = (pc: PC): void => { component.pc = pc; component.editable = true; };
+
+    describe('who may do what', () => {
+      it('a player in a campaign may spend by hand but not restore', () => {
+        asOwner(caster());
+        expect(component.canSpendSlots).toBeTrue();
+        expect(component.canRestoreSlots).toBeFalse();
+      });
+
+      it('the owner of a character in no campaign may restore their own: there is no DM to ask', () => {
+        asOwner(caster({ campaignId: null }));
+        expect(component.canSpendSlots).toBeTrue();
+        expect(component.canRestoreSlots).toBeTrue();
+        asOwner(caster({ campaignId: undefined }));
+        expect(component.canRestoreSlots).toBeTrue();
+      });
+
+      it('the same holds on the sheet embedded in a live session', () => {
+        component.pc = caster();
+        component.showActions = false;
+        component.inventoryEditable = true;
+        component.sessionLive = true;
+        expect(component.canSpendSlots).toBeTrue();
+        expect(component.canRestoreSlots).toBeFalse();
+      });
+
+      it('the DM may spend on the player\'s behalf and restore', () => {
+        asDm(caster());
+        expect(component.canSpendSlots).toBeTrue();
+        expect(component.canRestoreSlots).toBeTrue();
+      });
+
+      it('a read-only viewer may do neither', () => {
+        component.pc = caster();
+        component.showActions = false;
+        expect(component.canSpendSlots).toBeFalse();
+        expect(component.canRestoreSlots).toBeFalse();
+      });
+
+      it('everyone may look at a slot maximum; only whoever may adjust the character changes it, as with Armor Class', () => {
+        asOwner(caster());
+        expect(component.slotMaximumAccess).toBe('view');
+        asOwner(caster({ campaignId: null }));
+        expect(component.slotMaximumAccess).toBe('edit');
+        asDm(caster());
+        expect(component.slotMaximumAccess).toBe('edit');
+      });
+
+      it('ignores a request the viewer may not make', () => {
+        component.pc = caster();
+        component.showActions = false;
+
+        component.onSlotSpend(1);
+        component.onSlotRestore(1);
+        component.onSlotsRestoreAll();
+        asOwner(caster());                 // a campaign player: spend only
+        component.onSlotRestore(1);
+        component.onSlotsRestoreAll();
+
+        expect(pcService.spendSpellSlot).not.toHaveBeenCalled();
+        expect(pcService.restoreSpellSlot).not.toHaveBeenCalled();
+        expect(pcService.restoreAllSpellSlots).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('spending and restoring', () => {
+      const AFTER = { ...SLOTS, 1: { max: 4, used: 2 } };
+
+      it('spends through the spend endpoint, never a sheet save, and says so on the strip', () => {
+        pcService.spendSpellSlot.and.returnValue(of(AFTER));
+        asOwner(caster());
+
+        component.onSlotSpend(1);
+
+        expect(pcService.spendSpellSlot).toHaveBeenCalledOnceWith(7, 1, false);
+        expect(pcService.updatePC).not.toHaveBeenCalled();
+        expect(component.slotNotice()).toEqual({ level: 1, text: 'One 1st-level slot spent by hand.' });
+        expect(component.slotsBusy()).toBeFalse();
+      });
+
+      it('hands the answered slots to the live session, so the embedded sheet shows them at once', () => {
+        pcService.spendSpellSlot.and.returnValue(of(AFTER));
+        asOwner(caster());
+
+        component.onSlotSpend(1);
+
+        expect(sessionService.applySpellSlots).toHaveBeenCalledOnceWith(7, AFTER);
+      });
+
+      it('the DM spends and restores as the DM', () => {
+        pcService.spendSpellSlot.and.returnValue(of(AFTER));
+        pcService.restoreSpellSlot.and.returnValue(of(SLOTS));
+        pcService.restoreAllSpellSlots.and.returnValue(of(SLOTS));
+        asDm(caster());
+
+        component.onSlotSpend(1);
+        component.onSlotRestore(2);
+        expect(component.slotNotice()).toEqual({ level: 2, text: 'One 2nd-level slot restored.' });
+        component.onSlotsRestoreAll();
+        expect(component.slotNotice()).toEqual({ level: null, text: 'All slots restored.' });
+
+        expect(pcService.spendSpellSlot).toHaveBeenCalledOnceWith(7, 1, true);
+        expect(pcService.restoreSpellSlot).toHaveBeenCalledOnceWith(7, 2, true);
+        expect(pcService.restoreAllSpellSlots).toHaveBeenCalledOnceWith(7, true);
+      });
+
+      it('holds a second request while the first is still on its way', () => {
+        const pending = new Subject<typeof SLOTS>();
+        pcService.spendSpellSlot.and.returnValue(pending);
+        asOwner(caster());
+
+        component.onSlotSpend(1);
+        expect(component.slotsBusy()).toBeTrue();
+        component.onSlotSpend(1);
+        expect(pcService.spendSpellSlot).toHaveBeenCalledTimes(1);
+        expect(component.slotNotice()).toBeNull(); // nothing is said before the server answers
+
+        pending.next(AFTER);
+        expect(component.slotsBusy()).toBeFalse();
+        expect(component.slotNotice()).not.toBeNull();
+      });
+
+      it('on a refusal says why, says nothing on the strip, and reads the slots again', () => {
+        const conflict = { status: 409, error: { message: 'No level 2 slot available' } };
+        pcService.spendSpellSlot.and.returnValue(throwError(() => conflict));
+        const notify = spyOn(TestBed.inject(NotificationService), 'error');
+        asOwner(caster());
+        component.sessionLive = true;
+
+        component.onSlotSpend(2);
+
+        expect(notify).toHaveBeenCalledWith('Could not spend that slot. Try again.', conflict);
+        expect(component.slotNotice()).toBeNull();
+        expect(component.slotsBusy()).toBeFalse();
+        expect(sessionService.applySpellSlots).not.toHaveBeenCalled();
+        expect(pcService.refreshSpellSlots).toHaveBeenCalledOnceWith(7, false);
+        expect(sessionService.refresh).toHaveBeenCalled();
+      });
+
+      it('a failed restore re-reads through the DM path for the DM', () => {
+        pcService.restoreSpellSlot.and.returnValue(throwError(() => new Error('offline')));
+        pcService.restoreAllSpellSlots.and.returnValue(throwError(() => new Error('offline')));
+        const notify = spyOn(TestBed.inject(NotificationService), 'error');
+        asDm(caster());
+
+        component.onSlotRestore(2);
+        component.onSlotsRestoreAll();
+
+        expect(notify.calls.allArgs().map(args => args[0])).toEqual(
+          ['Could not restore that slot. Try again.', 'Could not restore the slots. Try again.']);
+        expect(pcService.refreshSpellSlots.calls.allArgs()).toEqual([[7, true], [7, true]]);
+        expect(sessionService.refresh).not.toHaveBeenCalled(); // not embedded in a session
+      });
+
+      it('forgets what it said when a different character takes over the sheet', () => {
+        pcService.spendSpellSlot.and.returnValue(of(AFTER));
+        asOwner(caster());
+        component.onSlotSpend(1);
+        const previous = component.pc;
+
+        component.pc = caster({ id: 8 });
+        component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+        expect(component.slotNotice()).toBeNull();
+      });
+
+      it('keeps what it said through a refresh of the same character', () => {
+        pcService.spendSpellSlot.and.returnValue(of(AFTER));
+        asOwner(caster());
+        component.onSlotSpend(1);
+        const previous = component.pc;
+
+        component.pc = caster({ spellSlots: AFTER });
+        component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+        expect(component.slotNotice()).not.toBeNull();
+      });
+    });
+
+    describe('a cast in the session', () => {
+      it('passes on what the host says the cast spent, for the strip to say', () => {
+        component.pc = caster();
+        const notice = { level: 2, text: 'Misty Step cast with a 2nd-level slot.' };
+
+        component.castNotice = notice;
+        expect(component.slotNotice()).toBe(notice);
+
+        component.castNotice = null; // the host's signal before any cast: nothing to say, nothing unsaid
+        expect(component.slotNotice()).toBe(notice);
+      });
+    });
+
+    describe('the slot maximum', () => {
+      const pearl = { value: 1, label: 'Pearl of Power' };
+
+      it('opens the same breakdown as Armor Class, for the spell level asked about', () => {
+        asOwner(caster({ spellSlots: { ...SLOTS, 3: { max: 3, used: 0 } }, statAdjustments: { slot3: [pearl] } }));
+
+        component.onSlotMaximumRequested(3);
+
+        expect(component.statBreakdown?.stat).toBe('slot3');
+        expect(component.statBreakdown?.auto).toEqual([{ label: 'Class table', value: 2 }]);
+        expect(component.statBreakdown?.adjustments).toEqual([pearl]);
+        expect(component.statBreakdown?.total).toBe(3);
+        expect(component.dmEdit).toBeNull();
+      });
+
+      it('saves a DM line through the same refetch-merge-save path as Armor Class, on the FRESH character', () => {
+        grantService.grantToPc.and.returnValue(of(makePC()));
+        asDm(caster());
+        component.onSlotMaximumRequested(3);
+
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+
+        expect(component.statBreakdown).toBeNull();
+        expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+        const [id, mutate, describe] = grantService.grantToPc.calls.mostRecent().args;
+        expect(id).toBe(7);
+
+        // The player cast a 3rd-level spell between the sheet loading and the DM saving.
+        const fresh = caster({ spellSlots: { ...SLOTS, 3: { max: 2, used: 1 } } });
+        const updated = mutate(fresh);
+        expect(updated.statAdjustments).toEqual({ slot3: [pearl] });
+        expect(updated.spellSlots![3]).toEqual({ max: 3, used: 1 }); // one more slot, the cast still spent
+        expect(fresh.spellSlots![3]).toEqual({ max: 2, used: 1 });   // pure
+        expect(describe!(fresh, updated)).toBe('DM added +1 Pearl of Power to 3rd-level slots (3rd-level slots 2 → 3)');
+      });
+
+      it('saves the owner of a campaign-less character through the owner path', () => {
+        pcService.updatePC.and.returnValue(of(makePC()));
+        asOwner(caster({ campaignId: null }));
+        component.onSlotMaximumRequested(1);
+
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+
+        expect(grantService.grantToPc).not.toHaveBeenCalled();
+        expect(pcService.updatePC).toHaveBeenCalledWith(jasmine.objectContaining({
+          statAdjustments: { slot1: [pearl] },
+          spellSlots: { ...SLOTS, 1: { max: 5, used: 1 } },
+        }));
+      });
+
+      it('a player in a campaign may look but a save from them is ignored', () => {
+        asOwner(caster());
+        component.onSlotMaximumRequested(1);
+        expect(component.statBreakdown).not.toBeNull();
+
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+
+        expect(grantService.grantToPc).not.toHaveBeenCalled();
+        expect(pcService.updatePC).not.toHaveBeenCalled();
+      });
+    });
+  });
 
   it('grants a feature via GrantService using this PC\'s id', () => {
     grantService.grantToPc.and.returnValue(of(makePC()));
@@ -855,6 +1118,83 @@ describe('CharacterSheetComponent', () => {
 
       expect(changed).toHaveBeenCalledWith(applied);
       expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+    });
+
+    // A follower is not a character row: no spend / restore endpoint, no adjustment
+    // lines. Its slots are stat-block data, changed by the same rules and saved locally.
+    describe('spell slots', () => {
+      const SLOTS = { 1: { max: 2, used: 1 } };
+
+      beforeEach(() => {
+        component.pc = makePC({ id: -12, name: 'Brannoc', clazz: 'Guard', level: 2, spellSlots: SLOTS });
+        component.inventoryEditable = true; // the owner's interactive follower sheet
+      });
+
+      it('the owner spends by hand, saved with the stat block and never through the PC endpoints', () => {
+        component.onSlotSpend(1);
+
+        expect(changed).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: -12, spellSlots: { 1: { max: 2, used: 2 } } }));
+        expect(pcService.spendSpellSlot).not.toHaveBeenCalled();
+        expect(component.slotNotice()).toEqual({ level: 1, text: 'One 1st-level slot spent by hand.' });
+      });
+
+      it('says so when there is no slot left to spend, and saves nothing', () => {
+        const notify = spyOn(TestBed.inject(NotificationService), 'notify');
+        component.pc = makePC({ id: -12, spellSlots: { 1: { max: 2, used: 2 } } });
+
+        component.onSlotSpend(1);
+
+        expect(notify).toHaveBeenCalledWith('No 1st-level slot is left to spend.');
+        expect(changed).not.toHaveBeenCalled();
+        expect(component.slotNotice()).toBeNull();
+      });
+
+      it('the owner of a campaign character waits for the DM to restore their follower\'s slots', () => {
+        component.followerOwnerInCampaign = true;
+        expect(component.canSpendSlots).toBeTrue();
+        expect(component.canRestoreSlots).toBeFalse();
+
+        component.onSlotRestore(1);
+        component.onSlotsRestoreAll();
+        expect(changed).not.toHaveBeenCalled();
+      });
+
+      it('with no campaign, and so no DM, the owner restores them', () => {
+        component.followerOwnerInCampaign = false;
+        expect(component.canRestoreSlots).toBeTrue();
+
+        component.onSlotRestore(1);
+        expect(changed).toHaveBeenCalledOnceWith(jasmine.objectContaining({ spellSlots: { 1: { max: 2, used: 0 } } }));
+        expect(component.slotNotice()).toEqual({ level: 1, text: 'One 1st-level slot restored.' });
+        expect(pcService.restoreSpellSlot).not.toHaveBeenCalled();
+      });
+
+      it('the DM restores everything at once', () => {
+        component.inventoryEditable = false;
+        component.editable = true;
+        component.followerOwnerInCampaign = true;
+
+        component.onSlotsRestoreAll();
+
+        expect(changed).toHaveBeenCalledOnceWith(jasmine.objectContaining({ spellSlots: { 1: { max: 2, used: 0 } } }));
+        expect(component.slotNotice()).toEqual({ level: null, text: 'All slots restored.' });
+      });
+
+      it('has no breakdown: the owner gets no "Slot maximum", the DM types the number', () => {
+        expect(component.slotMaximumAccess).toBe('hidden');
+        component.onSlotMaximumRequested(1);
+        expect(component.statBreakdown).toBeNull();
+        expect(component.dmEdit).toBeNull();
+
+        component.editable = true;
+        expect(component.slotMaximumAccess).toBe('edit');
+        component.onSlotMaximumRequested(1);
+        expect(component.statBreakdown).toBeNull();
+        expect(component.dmEdit).toEqual(jasmine.objectContaining({ label: '1st-level slot maximum', value: 2, min: 1 }));
+
+        component.onDmEditConfirmed({ value: 1, description: null });
+        expect(changed).toHaveBeenCalledOnceWith(jasmine.objectContaining({ spellSlots: { 1: { max: 1, used: 1 } } }));
+      });
     });
 
     it('grants mutate the follower sheet directly, never through GrantService', () => {

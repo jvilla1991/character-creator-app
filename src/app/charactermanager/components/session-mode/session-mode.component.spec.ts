@@ -755,3 +755,86 @@ describe('SessionModeComponent short rest refresh', () => {
     expect(pcService.refreshPC).not.toHaveBeenCalled();
   });
 });
+
+// A cast from the player's embedded sheet: what goes to the server, and what
+// the slot strip is told afterwards.
+describe('SessionModeComponent casting', () => {
+  let component: SessionModeComponent;
+  let sessionService: jasmine.SpyObj<SessionService>;
+  let notifications: jasmine.SpyObj<NotificationService>;
+
+  const mySeat = { participantId: 5, pcId: 7, ownedByMe: true, name: 'Bex' } as ParticipantView;
+  const state = { sessionId: 1, dm: false, status: 'LOBBY', participants: [mySeat] } as SessionState;
+  const answer = (warning: string | null = null) =>
+    of({ pcId: 7, spellSlots: { 2: { max: 3, used: 1 } }, inventory: [], warning });
+
+  beforeEach(() => {
+    sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['castSpell', 'refresh'], { state$: of(null) });
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['notify']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, null as never, notifications, null as never, null as never, null as never));
+  });
+
+  it('a cast that spends a slot tells the strip which level paid', () => {
+    sessionService.castSpell.and.returnValue(answer());
+
+    component.onCast({ spellName: 'Misty Step', atLevel: 2 }, state);
+
+    expect(sessionService.castSpell).toHaveBeenCalledOnceWith(1, 7, 'Misty Step', 2, false);
+    expect(component.castNotice()).toEqual({ level: 2, text: 'Misty Step cast with a 2nd-level slot.' });
+  });
+
+  it('says a new thing for every cast, even the same spell at the same level twice', () => {
+    sessionService.castSpell.and.returnValue(answer());
+
+    component.onCast({ spellName: 'Misty Step', atLevel: 2 }, state);
+    const first = component.castNotice();
+    component.onCast({ spellName: 'Misty Step', atLevel: 2 }, state);
+
+    expect(component.castNotice()).toEqual(first!);
+    expect(component.castNotice()).not.toBe(first); // a new notice, so the strip says it again
+  });
+
+  it('a cantrip cast says nothing', () => {
+    sessionService.castSpell.and.returnValue(answer());
+
+    component.onCast({ spellName: 'Fire Bolt', atLevel: 0 }, state);
+
+    expect(sessionService.castSpell).toHaveBeenCalledOnceWith(1, 7, 'Fire Bolt', 0, false);
+    expect(component.castNotice()).toBeNull();
+  });
+
+  it('a ritual cast is sent as one and says nothing: it spent no slot', () => {
+    sessionService.castSpell.and.returnValue(answer());
+
+    component.onCast({ spellName: 'Detect Magic', atLevel: 1, ritual: true }, state);
+
+    expect(sessionService.castSpell).toHaveBeenCalledOnceWith(1, 7, 'Detect Magic', 1, true);
+    expect(component.castNotice()).toBeNull();
+  });
+
+  it('still passes on the server\'s warning about a missing component', () => {
+    sessionService.castSpell.and.returnValue(answer('Missing material component: a pearl worth 100+ GP'));
+
+    component.onCast({ spellName: 'Identify', atLevel: 1 }, state);
+
+    expect(notifications.notify).toHaveBeenCalledWith('Missing material component: a pearl worth 100+ GP');
+    expect(component.castNotice()).not.toBeNull();
+  });
+
+  it('a refused cast says why, says nothing on the strip, and catches the sheet up', () => {
+    sessionService.castSpell.and.returnValue(
+      throwError(() => ({ status: 409, error: { message: 'No level 2 slot available' } })));
+
+    component.onCast({ spellName: 'Misty Step', atLevel: 2 }, state);
+
+    expect(notifications.notify).toHaveBeenCalledWith('No level 2 slot available');
+    expect(component.castNotice()).toBeNull();
+    expect(sessionService.refresh).toHaveBeenCalled();
+  });
+
+  it('does nothing for a viewer with no seated character', () => {
+    component.onCast({ spellName: 'Misty Step', atLevel: 2 }, { ...state, participants: [] } as SessionState);
+    expect(sessionService.castSpell).not.toHaveBeenCalled();
+  });
+});

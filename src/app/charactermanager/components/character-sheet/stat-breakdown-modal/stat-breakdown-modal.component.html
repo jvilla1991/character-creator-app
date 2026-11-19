@@ -17,10 +17,7 @@
 
   @if (editable) {
     <h3 class="breakdown-heading">Adjustments</h3>
-    <p class="field-hint breakdown-hint">
-      Add what the sheet does not work out, such as a species trait or a class feature.
-      These lines stay when armor changes.
-    </p>
+    <p class="field-hint breakdown-hint">{{ definition.adjustHint }}</p>
 
     @if (drafts.length) {
       <div class="adjust-rows" data-testid="adjust-rows">

@@ -319,6 +319,7 @@
         [location]="state.location"
         [sessionLive]="true"
         [shortRestOpen]="state.shortRestOpen"
+        [castNotice]="castNotice()"
         (castRequested)="onCast($event, state)"
         (survivalActionRequested)="onSurvivalAction($event, state)"
         (spendHitDieRequested)="onSpendHitDie(state)"
