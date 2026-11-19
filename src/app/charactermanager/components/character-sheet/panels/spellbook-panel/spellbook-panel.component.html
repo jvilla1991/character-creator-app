@@ -27,7 +27,20 @@
 
   <!-- Spell slots: one strip at the top of the tab. Renders nothing for a
   character with no slot level at all. -->
-  <app-spell-slot-tracker [slots]="pc().spellSlots" [characterId]="pc().id"></app-spell-slot-tracker>
+  <app-spell-slot-tracker
+    [slots]="pc().spellSlots"
+    [characterId]="pc().id"
+    [canSpend]="slotsSpendable()"
+    [canRestore]="slotsRestorable()"
+    [showMaximum]="slotMaximum() !== 'hidden'"
+    [extraLevels]="zeroedSlotLevels()"
+    [busy]="slotsBusy()"
+    [notice]="slotNotice()"
+    (spend)="slotSpend.emit($event)"
+    (restore)="slotRestore.emit($event)"
+    (restoreAll)="slotsRestoreAll.emit()"
+    (maximumRequested)="slotMaximumRequested.emit($event)">
+  </app-spell-slot-tracker>
 
   @if (preparedHint() && hasLeveledSpells()) {
     <div class="field-hint prepared-locked-hint">{{ preparedHint() }}</div>
@@ -111,28 +124,11 @@
         <div class="spell-level-header">
           <button type="button" class="spell-level-toggle" [attr.aria-expanded]="!collapsedLevels.has(level.lvl)"
             (click)="toggleLevel(level.lvl)">{{ collapsedLevels.has(level.lvl) ? '▸' : '▾' }} {{ level.label }}</button>
-          @if (level.slots) {
-            <div class="spell-slots">
-              @if (!editable() && level.slots!.max > 0) {
-                <!-- What is left, in words. The strip at the top of the tab
-                draws the slots; this repeats the count where the spells are. -->
-                <span class="spell-slots-left">{{ slotsLeft(level.slots!) }}</span>
-              }
-              @if (editable()) {
-                <span class="slot-edit">
-                  <span class="slot-edit-label">Spent</span>
-                  <app-editable-number
-                    [value]="level.slots!.used" [editable]="true" [min]="0" [max]="level.slots!.max"
-                    label="slots spent" (committed)="setSlot(level.lvl, 'used', $event)"
-                  >{{ level.slots!.used }}</app-editable-number>
-                  <span class="slot-edit-sep">/</span>
-                  <app-editable-number
-                    [value]="level.slots!.max" [editable]="true" [min]="0"
-                    label="slots max" (committed)="setSlot(level.lvl, 'max', $event)"
-                  >{{ level.slots!.max }}</app-editable-number>
-                </span>
-              }
-            </div>
+          <!-- What is left, in words. The strip at the top of the tab draws
+          the slots (and is where they are spent and restored); this repeats
+          the count where the spells are. -->
+          @if (level.slots && level.slots.max > 0) {
+            <span class="spell-slots-left">{{ slotsLeft(level.slots) }}</span>
           }
         </div>
         <div [hidden]="collapsedLevels.has(level.lvl)">

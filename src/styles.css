@@ -958,17 +958,10 @@ em, i, cite, dfn, address, var { font-style: normal; }
   text-transform: uppercase;
   color: var(--gold);
 }
-.spell-slots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* What is left of a spell level, in words ("3 of 4 left"), at the far end of
+   its heading row. */
+.spell-slots-left {
   margin-left: auto;
-}
-/* What is left of a spell level, in words ("3 of 4 left"), and the DM's
-   "Spent" before the editable used / max pair. */
-.spell-slots-left,
-.slot-edit-label {
-  margin-right: 4px;
   font-size: var(--text-xs);
   white-space: nowrap;
   color: var(--text-2);

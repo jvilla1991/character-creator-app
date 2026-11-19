@@ -459,6 +459,95 @@ describe('SpellbookPanelComponent (spell slots)', () => {
     expect(words).toEqual([null, '3 of 4 left', 'None left']); // cantrips need no slot
     expect(el.querySelector('.spell-slot')).toBeNull();
   });
+
+  it('shows the DM the same words: the old inline Spent n / max inputs are gone', () => {
+    const el = render({}, { editable: true, slotsSpendable: true, slotsRestorable: true, slotMaximum: 'edit' });
+
+    const words = Array.from(el.querySelectorAll('.spell-level')).map(level =>
+      level.querySelector('.spell-slots-left')?.textContent?.trim() ?? null);
+    expect(words).toEqual([null, '3 of 4 left', 'None left']);
+    expect(el.querySelector('.slot-edit')).toBeNull();
+    expect(el.querySelector('app-editable-number')).toBeNull();
+    expect(el.textContent).not.toContain('Spent');
+  });
+
+  describe('wired to the sheet', () => {
+    function open(inputs: Record<string, unknown>, pc: Partial<PC> = {}) {
+      dndResources.getSpells.and.returnValue(of([]));
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      const fixture = TestBed.createComponent(SpellbookPanelComponent);
+      fixture.componentRef.setInput('pc', {
+        id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
+        spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 3 } },
+        spells: [spell({ lvl: 1, name: 'Shield' })],
+        ...pc,
+      } as PC);
+      for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const events: string[] = [];
+      const panel = fixture.componentInstance;
+      panel.slotSpend.subscribe(level => events.push(`spend ${level}`));
+      panel.slotRestore.subscribe(level => events.push(`restore ${level}`));
+      panel.slotsRestoreAll.subscribe(() => events.push('restore all'));
+      panel.slotMaximumRequested.subscribe(level => events.push(`maximum ${level}`));
+      const tap = (label: string): void => {
+        Array.from(el.querySelectorAll<HTMLButtonElement>('.sst-col'))
+          .find(c => c.querySelector('.sst-label')!.textContent!.trim() === label)!.click();
+        fixture.detectChanges();
+      };
+      const press = (attr: string): void => el.querySelector<HTMLButtonElement>(`[${attr}]`)!.click();
+      return { fixture, el, events, tap, press };
+    }
+
+    it('a player in a campaign may spend and look at the maximum, nothing more', () => {
+      const { el, events, tap, press } = open({ slotsSpendable: true, slotMaximum: 'view' });
+      tap('1st');
+
+      expect(el.querySelector('[data-restore]')).toBeNull();
+      expect(el.querySelector('[data-restore-all]')).toBeNull();
+      press('data-spend');
+      press('data-maximum');
+      expect(events).toEqual(['spend 1', 'maximum 1']);
+    });
+
+    it('the DM may also restore one slot or all of them', () => {
+      const { events, tap, press } = open({ slotsSpendable: true, slotsRestorable: true, slotMaximum: 'edit' });
+      tap('2nd');
+
+      press('data-restore');
+      press('data-restore-all');
+      expect(events).toEqual(['restore 2', 'restore all']);
+    });
+
+    it('a read-only viewer gets the strip with no actions', () => {
+      const { el, tap } = open({});
+      tap('1st');
+
+      expect(el.querySelector('.sst-detail')).not.toBeNull();
+      expect(el.querySelector('.sst-actions')).toBeNull();
+    });
+
+    it('passes on what the sheet says just happened', () => {
+      const { fixture, el } = open({ slotsSpendable: true });
+
+      fixture.componentRef.setInput('slotNotice', { level: 1, text: 'One 1st-level slot spent by hand.' });
+      fixture.detectChanges();
+      expect(el.querySelector('.sst-note')!.textContent!.trim()).toBe('One 1st-level slot spent by hand.');
+    });
+
+    it('shows whoever may change the lines a level the lines took to nothing', () => {
+      const cursed: Partial<PC> = {
+        spellSlots: { 1: { max: 4, used: 1 } },
+        statAdjustments: { ac: [{ value: 1, label: 'Taunka' }], slot2: [{ value: -3, label: 'Cursed' }] },
+      };
+      const labels = (el: HTMLElement) =>
+        Array.from(el.querySelectorAll('.sst-label')).map(l => l.textContent!.trim());
+
+      expect(labels(open({ slotMaximum: 'edit' }, cursed).el)).toEqual(['1st', '2nd']);
+      expect(labels(open({ slotMaximum: 'view' }, cursed).el)).toEqual(['1st']); // a player just has no 2nd-level slots
+    });
+  });
 });
 
 describe('SpellbookPanelComponent (ELI5 summaries)', () => {

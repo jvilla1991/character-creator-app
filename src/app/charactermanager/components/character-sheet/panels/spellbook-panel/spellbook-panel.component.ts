@@ -8,12 +8,12 @@ import { castWarning, castableLevels } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
-import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component';
 import { SpellEli5Service } from '../../../../services/spell-eli5.service';
 import { SpellRefreshService } from '../../../../services/spell-refresh.service';
 import { SpellSlotTrackerComponent } from '../../spell-slot-tracker/spell-slot-tracker.component';
-import { slotsLeftText } from '../../../../utils/spell-slots';
+import { SlotNotice, slotLevels, slotsLeftText } from '../../../../utils/spell-slots';
+import { SLOT_STATS, adjustmentsFor } from '../../../../models/stat-adjustment';
 
 export interface SpellLevel {
   lvl: number;
@@ -33,7 +33,7 @@ export interface CastRequest {
     templateUrl: './spellbook-panel.component.html',
     styleUrls: ['./spellbook-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [SpellPickerComponent, EditableNumberComponent, Eli5ToggleComponent, SpellSlotTrackerComponent]
+    imports: [SpellPickerComponent, Eli5ToggleComponent, SpellSlotTrackerComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
   readonly collapsedLevels = new Set<number>();
@@ -43,13 +43,13 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   readonly pc = input.required<PC>();
-  /** DM cross-link: replaces a level's "2 of 4 left" with editable used/max numbers. */
+  /** DM cross-link view. The DM casts nothing from here, so the Cast buttons are left out. */
   readonly editable = input(false);
   /** Campaign runs strict material components: a missing costly component blocks the cast. */
   readonly strictComponents = input(false);
   /** True only inside a live session — casting is a session-mode action, so the
-   *  Cast buttons appear only when this is set. Slots are never player-editable
-   *  by hand; they change solely through casting (session) or the DM's editor. */
+   *  Cast buttons appear only when this is set. Away from a session a slot is
+   *  spent by hand on the strip at the top of the tab. */
   readonly castable = input(false);
   /** DM cross-link: reveals the "Grant spells" control. Distinct from `editable`
    *  (slot editing) — a DM may be able to grant spells without also editing slots. */
@@ -62,6 +62,41 @@ export class SpellbookPanelComponent implements OnChanges {
   /** Shown instead of the Prepare buttons when the viewer cannot use them (e.g.
    *  "Prepared spells change during a long rest."); null for no hint. */
   readonly preparedHint = input<string | null>(null);
+  // ── Spell slot strip ─────────────────────────────────────────────────────
+  // Who may do what is the sheet's call; the panel only passes it through to
+  // the strip and the requests back up. The server enforces the same rules.
+
+  /** The viewer may spend a slot by hand: the owner, or the DM. */
+  readonly slotsSpendable = input(false);
+  /** The viewer may give slots back: the DM, or the owner of a character in no campaign. */
+  readonly slotsRestorable = input(false);
+  /** "Slot maximum" in the strip's detail row: left out, look only, or the viewer may change it. */
+  readonly slotMaximum = input<'hidden' | 'view' | 'edit'>('hidden');
+  /** A spend or restore is on its way to the server. */
+  readonly slotsBusy = input(false);
+  /** What just happened to the slots, for the strip to say (and the level to select). */
+  readonly slotNotice = input<SlotNotice | null>(null);
+  readonly slotSpend = output<number>();
+  readonly slotRestore = output<number>();
+  readonly slotsRestoreAll = output<void>();
+  /** The viewer asked how a spell level's maximum is made up; carries the spell level. */
+  readonly slotMaximumRequested = output<number>();
+
+  /**
+   * Spell levels whose maximum the DM's lines took to nothing. The server drops
+   * such a level from the slots, which would leave nobody a way back to its
+   * lines; whoever may change them keeps seeing the column (as 0/0).
+   */
+  readonly zeroedSlotLevels = computed<number[]>(() => {
+    if (this.slotMaximum() !== 'edit') return [];
+    const pc = this.pc();
+    const present = new Set(slotLevels(pc.spellSlots).map(l => l.level));
+    return SLOT_STATS
+      .map((stat, i) => ({ level: i + 1, lines: adjustmentsFor(pc, stat).length }))
+      .filter(l => l.lines > 0 && !present.has(l.level))
+      .map(l => l.level);
+  });
+
   readonly pcChange = output<PC>();
   /** A cast resolved to a slot level — the host forwards it to the live session. */
   readonly castRequested = output<CastRequest>();
@@ -320,19 +355,6 @@ export class SpellbookPanelComponent implements OnChanges {
     const spells = (pc.spells ?? []).map(s =>
       s === saved ? { ...s, prepared: preparing } : s);
     this.pcChange.emit({ ...pc, spells });
-  }
-
-  // ── DM slot editing ──────────────────────────────────────────────────────
-  // Edit a spell level's used/max slot counts, keeping used within [0, max].
-
-  setSlot(level: number, field: 'used' | 'max', value: number): void {
-    const pc = this.pc();
-    const slots = { ...(pc.spellSlots ?? {}) };
-    const existing = slots[level] ?? { max: 0, used: 0 };
-    const next = { ...existing, [field]: value };
-    next.used = Math.max(0, Math.min(next.used, next.max));
-    slots[level] = next;
-    this.pcChange.emit({ ...pc, spellSlots: slots });
   }
 
   // ── DM grant form ────────────────────────────────────────────────────────

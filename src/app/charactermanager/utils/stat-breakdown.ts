@@ -1,9 +1,10 @@
 import { PC } from '../models/pc';
 import {
   ADJUSTMENT_LABEL_MAX, ADJUSTMENT_LINES_MAX, ADJUSTMENT_VALUE_MAX,
-  AdjustableStat, StatAdjustment, adjustmentSum, adjustmentsFor, signed,
+  AdjustableStat, SLOT_STATS, SlotStat, StatAdjustment, adjustmentSum, adjustmentsFor, signed, slotStat,
 } from '../models/stat-adjustment';
 import { BreakdownLine, acAutoLines } from './armor-math';
+import { ordinal, slotMaxOf, withSlotMax } from './spell-slots';
 
 // ── How a calculated number is put together ─────────────────────────────────
 // A number on the sheet = the lines the app works out by itself + the labelled
@@ -20,21 +21,54 @@ import { BreakdownLine, acAutoLines } from './armor-math';
 export interface StatDefinition {
   /** Dialog title: "Armor Class". */
   title: string;
-  /** Short name used in log lines, matching the server's diff wording: "AC". */
+  /** Short name used in log lines: "AC", "3rd-level slots". */
   label: string;
+  /** What the DM reads above the lines they can add: what belongs there, and what the lines survive. */
+  adjustHint: string;
   autoLines: (pc: PC) => BreakdownLine[];
   read: (pc: PC) => number | undefined;
   write: (pc: PC, total: number) => PC;
+}
+
+/**
+ * The slot maximum of one spell level. The server owns this number (class table
+ * plus the DM's lines) and sends it back on every save, so the class-table line
+ * is read off it: the saved maximum minus the lines. No rule table is consulted
+ * here, and nothing is ever left over as "unlabelled".
+ *
+ * One blind spot follows from that: lines that take a level's maximum to zero
+ * or below make the server drop the level, and from then on the class-table
+ * line can only be read as "what the lines took away".
+ */
+function slotDefinition(spellLevel: number): StatDefinition {
+  const stat = slotStat(spellLevel);
+  return {
+    title: `${ordinal(spellLevel)}-level spell slots`,
+    label: `${ordinal(spellLevel)}-level slots`,
+    adjustHint: 'Add slots the class table does not give, such as a magic item or a boon. '
+      + 'These lines stay when the character levels up.',
+    autoLines: pc => [{
+      label: 'Class table',
+      value: slotMaxOf(pc.spellSlots, spellLevel) - adjustmentSum(adjustmentsFor(pc, stat)),
+    }],
+    read: pc => slotMaxOf(pc.spellSlots, spellLevel),
+    // What the server will answer with, so the sheet (and demo mode, which has
+    // no server) shows the new maximum at once. The server ignores a sent max.
+    write: (pc, total) => ({ ...pc, spellSlots: withSlotMax(pc.spellSlots, spellLevel, total) }),
+  };
 }
 
 export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
   ac: {
     title: 'Armor Class',
     label: 'AC',
+    adjustHint: 'Add what the sheet does not work out, such as a species trait or a class feature. '
+      + 'These lines stay when armor changes.',
     autoLines: acAutoLines,
     read: pc => pc.ac,
     write: (pc, total) => ({ ...pc, ac: total }),
   },
+  ...(Object.fromEntries(SLOT_STATS.map((stat, i) => [stat, slotDefinition(i + 1)])) as Record<SlotStat, StatDefinition>),
 };
 
 export interface StatBreakdown {

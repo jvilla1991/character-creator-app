@@ -180,6 +180,23 @@ export class SessionService {
     });
   }
 
+  /**
+   * A seated character's spell slots changed and the server has already said
+   * what they are now (a slot spent or restored on the sheet). Written onto the
+   * snapshot at once: the sheet embedded in the session reads its slots from
+   * the snapshot, and would otherwise show the old count until the next poll
+   * (which brings the same slots, since the change bumped the version). Does
+   * nothing when no session is loaded or the character is not seated in it.
+   */
+  applySpellSlots(pcId: number, spellSlots: PC['spellSlots']): void {
+    const state = this.stateSubject.getValue();
+    if (!state || !state.participants.some(p => p.pcId === pcId)) return;
+    const participants = state.participants.map(p =>
+      p.pcId === pcId ? { ...p, spellSlots: spellSlots ?? null } : p);
+    if (environment.demoMode) this.demoPatch({ participants });
+    else this.pushState({ ...state, participants });
+  }
+
   /** Stop polling and clear local state — used when leaving the session screen. */
   clear(): void {
     this.stopPolling();

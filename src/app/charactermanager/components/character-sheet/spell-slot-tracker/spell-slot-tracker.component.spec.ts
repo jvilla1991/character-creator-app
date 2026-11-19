@@ -34,6 +34,7 @@ describe('SpellSlotTrackerComponent', () => {
     component.spend.subscribe(level => events.push(`spend ${level}`));
     component.restore.subscribe(level => events.push(`restore ${level}`));
     component.restoreAll.subscribe(() => events.push('restore all'));
+    component.maximumRequested.subscribe(level => events.push(`maximum ${level}`));
   });
 
   describe('a character with no slots', () => {
@@ -229,6 +230,149 @@ describe('SpellSlotTrackerComponent', () => {
       component.onRestore();
       component.onRestoreAll();
       expect(events).toEqual([]);
+    });
+  });
+
+  describe('what just happened', () => {
+    it('says a notice under the title and selects the level it is about', () => {
+      render(WIZARD);
+      expect(el().querySelector('.sst-note')).toBeNull();
+
+      render({ ...WIZARD, 2: { max: 3, used: 1 } },
+        { notice: { level: 2, text: 'Misty Step cast with a 2nd-level slot.' } });
+
+      expect(column('2nd').getAttribute('aria-pressed')).toBe('true');
+      expect(text('.sst-detail-title')).toBe('2nd-level slots: 2 of 3 left');
+      expect(text('.sst-note')).toBe('Misty Step cast with a 2nd-level slot.');
+      expect(el().querySelector('[aria-live="polite"] .sst-note')).not.toBeNull();
+    });
+
+    it('moves the selection to the level that paid, wherever it was', () => {
+      render(WIZARD);
+      tap('1st');
+
+      render(WIZARD, { notice: { level: 3, text: 'One 3rd-level slot restored.' } });
+      expect(column('1st').getAttribute('aria-pressed')).toBe('false');
+      expect(column('3rd').getAttribute('aria-pressed')).toBe('true');
+      expect(text('.sst-note')).toBe('One 3rd-level slot restored.');
+    });
+
+    it('keeps the selection for a notice about no level in particular', () => {
+      render(WIZARD);
+      tap('1st');
+
+      render({ 1: { max: 4, used: 0 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } },
+        { notice: { level: null, text: 'All slots restored.' } });
+      expect(column('1st').getAttribute('aria-pressed')).toBe('true');
+      expect(text('.sst-detail-title')).toBe('1st-level slots: 4 of 4 left');
+      expect(text('.sst-note')).toBe('All slots restored.');
+    });
+
+    it('says a notice on its own line when no level is open', () => {
+      render(WIZARD);
+
+      render(WIZARD, { notice: { level: null, text: 'All slots restored.' } });
+      expect(el().querySelector('.sst-detail-title')).toBeNull();
+      expect(text('[aria-live="polite"] .sst-note')).toBe('All slots restored.');
+    });
+
+    it('drops the line when the viewer picks a column', () => {
+      render(WIZARD);
+      render(WIZARD, { notice: { level: 2, text: 'One 2nd-level slot spent by hand.' } });
+
+      tap('1st');
+      expect(el().querySelector('.sst-note')).toBeNull();
+      expect(text('.sst-detail-title')).toBe('1st-level slots: 2 of 4 left');
+    });
+
+    it('keeps the line while the slots it is given move on', () => {
+      render(WIZARD);
+      render(WIZARD, { notice: { level: 1, text: 'One 1st-level slot spent by hand.' } });
+
+      render({ ...WIZARD, 1: { max: 4, used: 3 } }); // the session poll catches up
+      expect(text('.sst-note')).toBe('One 1st-level slot spent by hand.');
+      expect(text('.sst-detail-title')).toBe('1st-level slots: 1 of 4 left');
+    });
+
+    it('never repeats a notice that was already there when the strip appeared', () => {
+      // Leaving the Spells tab and coming back builds a new strip; the last notice is old news.
+      render(WIZARD, { notice: { level: 2, text: 'One 2nd-level slot spent by hand.' } });
+
+      expect(el().querySelector('.sst-note')).toBeNull();
+      expect(el().querySelector('.sst-detail')).toBeNull();
+    });
+
+    it('drops the line for a different character', () => {
+      render(WIZARD, { characterId: 1 });
+      render(WIZARD, { notice: { level: 1, text: 'One 1st-level slot spent by hand.' } });
+      expect(text('.sst-note')).toBe('One 1st-level slot spent by hand.');
+
+      render(WIZARD, { characterId: 2 });
+      expect(el().querySelector('.sst-note')).toBeNull();
+    });
+  });
+
+  describe('while a change is on its way to the server', () => {
+    it('holds further spends and restores without restyling the buttons', () => {
+      render(WIZARD, { canSpend: true, canRestore: true, busy: true });
+      tap('1st');
+
+      expect(button('data-spend')!.disabled).toBeFalse();
+      button('data-spend')!.click();
+      button('data-restore')!.click();
+      button('data-restore-all')!.click();
+      expect(events).toEqual([]);
+      expect(el().querySelector('[aria-live="polite"]')!.getAttribute('aria-busy')).toBe('true');
+
+      render(WIZARD, { busy: false });
+      button('data-spend')!.click();
+      expect(events).toEqual(['spend 1']);
+    });
+  });
+
+  describe('the slot maximum', () => {
+    it('is not offered unless the host asks for it', () => {
+      render(WIZARD, { canSpend: true });
+      tap('1st');
+      expect(button('data-maximum')).toBeNull();
+    });
+
+    it('asks for the selected level\'s maximum, also for a viewer who may do nothing else', () => {
+      render(WIZARD, { showMaximum: true });
+      tap('3rd');
+
+      const maximum = button('data-maximum')!;
+      expect(maximum.textContent!.trim()).toBe('Slot maximum');
+      expect(maximum.getAttribute('aria-label')).toBe('Slot maximum for 3rd level');
+      expect(button('data-spend')).toBeNull();
+      maximum.click();
+      expect(events).toEqual(['maximum 3']);
+    });
+
+    it('keeps a level the DM\'s lines took to nothing on the strip, so the lines can be undone', () => {
+      render({ 1: { max: 4, used: 0 } }, { canSpend: true, canRestore: true, showMaximum: true, extraLevels: [6] });
+
+      expect(columns().map(c => c.getAttribute('aria-label')))
+        .toEqual(['1st level: 4 of 4 slots left', '6th level: 0 of 0 slots left']);
+      expect(column('6th').querySelectorAll('.sst-bar').length).toBe(0);
+      expect(column('6th').classList.contains('empty')).toBeTrue();
+
+      tap('6th');
+      expect(text('.sst-detail-title')).toBe('6th-level slots: none left');
+      expect(button('data-spend')!.disabled).toBeTrue();
+      expect(button('data-restore')!.disabled).toBeTrue();
+      button('data-maximum')!.click();
+      expect(events).toEqual(['maximum 6']);
+    });
+
+    it('shows such a level alone when it is the only one', () => {
+      render({}, { showMaximum: true, extraLevels: [1] });
+      expect(columns().length).toBe(1);
+    });
+
+    it('does not double a level that has slots after all', () => {
+      render(WIZARD, { extraLevels: [1, 2] });
+      expect(columns().length).toBe(3);
     });
   });
 

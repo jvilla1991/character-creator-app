@@ -51,6 +51,88 @@ export function slotsLeftText(slot: { max: number; used: number }): string {
   return left === 0 ? 'None left' : `${left} of ${slot.max} left`;
 }
 
+// ── Spending and restoring by hand ───────────────────────────────────────────
+// The same rules as the server's spend and restore endpoints (SpellSlotState).
+// Used where there is no server to ask: demo mode, and a follower's stat block.
+// Pure: each returns new slots, or null when the server would refuse (409).
+
+/** The slots as the server stores them: only levels with a maximum, `used` within 0..max. */
+function cleaned(slots: PC['spellSlots'] | null | undefined): SpellSlots {
+  const out: SpellSlots = {};
+  for (const level of slotLevels(slots)) out[level.level] = { max: level.max, used: level.used };
+  return out;
+}
+
+/** One slot of this spell level spent; null when the character has no free slot there. */
+export function spendSlot(slots: PC['spellSlots'] | null | undefined, spellLevel: number): SpellSlots | null {
+  const out = cleaned(slots);
+  const slot = out[spellLevel];
+  if (!slot || slot.used >= slot.max) return null;
+  out[spellLevel] = { max: slot.max, used: slot.used + 1 };
+  return out;
+}
+
+/** One spent slot of this spell level given back; null when none is spent there. */
+export function restoreSlot(slots: PC['spellSlots'] | null | undefined, spellLevel: number): SpellSlots | null {
+  const out = cleaned(slots);
+  const slot = out[spellLevel];
+  if (!slot || slot.used <= 0) return null;
+  out[spellLevel] = { max: slot.max, used: slot.used - 1 };
+  return out;
+}
+
+/** Every spent slot given back. Never refused: a rested character comes back unchanged. */
+export function restoreAllSlots(slots: PC['spellSlots'] | null | undefined): SpellSlots {
+  const out = cleaned(slots);
+  for (const level of Object.keys(out).map(Number)) out[level] = { max: out[level].max, used: 0 };
+  return out;
+}
+
+// ── A level's maximum ────────────────────────────────────────────────────────
+
+/** The saved maximum for a spell level; 0 when the character has no slots there. */
+export function slotMaxOf(slots: PC['spellSlots'] | null | undefined, spellLevel: number): number {
+  return Math.max(0, Math.trunc(Number(slots?.[spellLevel]?.max ?? 0)) || 0);
+}
+
+/**
+ * The slots with one spell level's maximum set, the way the server stores a
+ * maximum that moved: `used` comes down with a maximum that shrank, and a
+ * level whose maximum is zero or less is dropped altogether.
+ */
+export function withSlotMax(
+  slots: PC['spellSlots'] | null | undefined, spellLevel: number, max: number,
+): SpellSlots {
+  const out: SpellSlots = { ...(slots ?? {}) };
+  if (max > 0) {
+    const used = Math.max(0, Math.min(Math.trunc(Number(out[spellLevel]?.used ?? 0)) || 0, max));
+    out[spellLevel] = { max, used };
+  } else {
+    delete out[spellLevel];
+  }
+  return out;
+}
+
+// ── What the strip says after a change ───────────────────────────────────────
+
+/** A line for the strip's detail row, and the spell level it is about (null: all of them). */
+export interface SlotNotice {
+  level: number | null;
+  text: string;
+}
+
+export function slotSpentNotice(spellLevel: number): SlotNotice {
+  return { level: spellLevel, text: `One ${ordinal(spellLevel)}-level slot spent by hand.` };
+}
+
+export function slotRestoredNotice(spellLevel: number): SlotNotice {
+  return { level: spellLevel, text: `One ${ordinal(spellLevel)}-level slot restored.` };
+}
+
+export function allSlotsRestoredNotice(): SlotNotice {
+  return { level: null, text: 'All slots restored.' };
+}
+
 // ── Class slot tables ────────────────────────────────────────────────────────
 // Mirror of the server's ClassProgression.spellSlotsFor. Rows are character
 // levels 1-20, columns are spell levels from 1st up.

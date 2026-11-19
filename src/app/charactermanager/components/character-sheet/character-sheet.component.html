@@ -5,6 +5,7 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
     [pc]="followerPc"
     [followerMode]="true"
     [followerOwnerName]="pc.name"
+    [followerOwnerInCampaign]="inCampaign"
     [editable]="editable"
     [showActions]="false"
     [inventoryEditable]="showActions || inventoryEditable"
@@ -322,6 +323,15 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           [addAllowed]="editable"
           [preparable]="canPrepareSpells"
           [preparedHint]="preparedSpellsHint"
+          [slotsSpendable]="canSpendSlots"
+          [slotsRestorable]="canRestoreSlots"
+          [slotMaximum]="slotMaximumAccess"
+          [slotsBusy]="slotsBusy()"
+          [slotNotice]="slotNotice()"
+          (slotSpend)="onSlotSpend($event)"
+          (slotRestore)="onSlotRestore($event)"
+          (slotsRestoreAll)="onSlotsRestoreAll()"
+          (slotMaximumRequested)="onSlotMaximumRequested($event)"
           (castRequested)="onCastRequested($event)"
           (pcChange)="onPcChange($event)"
           (spellsGranted)="onSpellsGrant($event)">
@@ -413,7 +423,8 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
 }
 
 <!-- Number breakdown overlay — opened by clicking a calculated number (Armor
-Class) in the vitals strip. Read-only unless the viewer may adjust the character. -->
+Class in the vitals strip, "Slot maximum" on the spell slot strip). Read-only
+unless the viewer may adjust the character. -->
 @if (statBreakdown) {
   <div class="modal-backdrop" (click)="closeStatBreakdown()">
     <app-stat-breakdown-modal

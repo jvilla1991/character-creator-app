@@ -1,4 +1,7 @@
-import { classSlotTable, ordinal, slotLevels, slotsLeftText, startingSlots } from './spell-slots';
+import {
+  allSlotsRestoredNotice, classSlotTable, ordinal, restoreAllSlots, restoreSlot, slotLevels, slotMaxOf,
+  slotRestoredNotice, slotSpentNotice, slotsLeftText, spendSlot, startingSlots, withSlotMax,
+} from './spell-slots';
 
 describe('spell slots', () => {
   describe('ordinal', () => {
@@ -39,6 +42,85 @@ describe('spell slots', () => {
       expect(slotsLeftText({ max: 4, used: 2 })).toBe('2 of 4 left');
       expect(slotsLeftText({ max: 4, used: 0 })).toBe('4 of 4 left');
       expect(slotsLeftText({ max: 4, used: 4 })).toBe('None left');
+    });
+  });
+
+  // The same rules as the server's spend and restore endpoints (SpellSlotState).
+  describe('spending and restoring by hand', () => {
+    const slots = { 1: { max: 4, used: 1 }, 2: { max: 3, used: 3 }, 3: { max: 2, used: 0 } };
+
+    it('spends one slot of the level and leaves the others alone', () => {
+      expect(spendSlot(slots, 1)).toEqual({ 1: { max: 4, used: 2 }, 2: { max: 3, used: 3 }, 3: { max: 2, used: 0 } });
+    });
+
+    it('refuses to spend where no slot is free, or where the character has no slots', () => {
+      expect(spendSlot(slots, 2)).toBeNull();
+      expect(spendSlot(slots, 4)).toBeNull();
+      expect(spendSlot(undefined, 1)).toBeNull();
+      expect(spendSlot({ 1: { max: 0, used: 0 } }, 1)).toBeNull();
+    });
+
+    it('restores one spent slot of the level', () => {
+      expect(restoreSlot(slots, 2)).toEqual({ 1: { max: 4, used: 1 }, 2: { max: 3, used: 2 }, 3: { max: 2, used: 0 } });
+    });
+
+    it('refuses to restore where nothing is spent', () => {
+      expect(restoreSlot(slots, 3)).toBeNull();
+      expect(restoreSlot(slots, 9)).toBeNull();
+      expect(restoreSlot(null, 1)).toBeNull();
+    });
+
+    it('restores every spent slot, and is never refused', () => {
+      expect(restoreAllSlots(slots)).toEqual({ 1: { max: 4, used: 0 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } });
+      expect(restoreAllSlots({ 1: { max: 2, used: 0 } })).toEqual({ 1: { max: 2, used: 0 } });
+      expect(restoreAllSlots(undefined)).toEqual({});
+    });
+
+    it('is pure: the slots passed in are untouched', () => {
+      const before = JSON.stringify(slots);
+      spendSlot(slots, 1);
+      restoreSlot(slots, 2);
+      restoreAllSlots(slots);
+      expect(JSON.stringify(slots)).toBe(before);
+    });
+
+    it('counts from a used count that is out of range as the server would', () => {
+      expect(spendSlot({ 1: { max: 2, used: 7 } }, 1)).toBeNull();                       // read as 2 of 2 used
+      expect(restoreSlot({ 1: { max: 2, used: 7 } }, 1)).toEqual({ 1: { max: 2, used: 1 } });
+    });
+  });
+
+  describe('a level\'s maximum', () => {
+    it('reads the saved maximum, 0 where there are no slots', () => {
+      expect(slotMaxOf({ 3: { max: 2, used: 1 } }, 3)).toBe(2);
+      expect(slotMaxOf({ 3: { max: 2, used: 1 } }, 4)).toBe(0);
+      expect(slotMaxOf(undefined, 1)).toBe(0);
+    });
+
+    it('raises a maximum without touching what is spent', () => {
+      expect(withSlotMax({ 3: { max: 2, used: 1 } }, 3, 3)).toEqual({ 3: { max: 3, used: 1 } });
+    });
+
+    it('brings the used count down with a maximum that shrank', () => {
+      expect(withSlotMax({ 3: { max: 3, used: 3 } }, 3, 1)).toEqual({ 3: { max: 1, used: 1 } });
+    });
+
+    it('adds a level the character did not have, nothing spent', () => {
+      expect(withSlotMax({ 1: { max: 2, used: 0 } }, 2, 1)).toEqual({ 1: { max: 2, used: 0 }, 2: { max: 1, used: 0 } });
+      expect(withSlotMax(undefined, 1, 1)).toEqual({ 1: { max: 1, used: 0 } });
+    });
+
+    it('drops a level whose maximum comes to zero or less', () => {
+      expect(withSlotMax({ 1: { max: 4, used: 0 }, 6: { max: 1, used: 1 } }, 6, 0)).toEqual({ 1: { max: 4, used: 0 } });
+      expect(withSlotMax({ 6: { max: 1, used: 0 } }, 6, -2)).toEqual({});
+    });
+  });
+
+  describe('what the strip says after a change', () => {
+    it('words a hand spend, a restore and a restore of everything', () => {
+      expect(slotSpentNotice(3)).toEqual({ level: 3, text: 'One 3rd-level slot spent by hand.' });
+      expect(slotRestoredNotice(1)).toEqual({ level: 1, text: 'One 1st-level slot restored.' });
+      expect(allSlotsRestoredNotice()).toEqual({ level: null, text: 'All slots restored.' });
     });
   });
 

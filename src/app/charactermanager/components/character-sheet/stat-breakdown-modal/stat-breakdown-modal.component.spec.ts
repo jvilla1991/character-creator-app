@@ -91,6 +91,32 @@ describe('StatBreakdownModalComponent', () => {
     expect(saved()).toBeUndefined();
   });
 
+  // --- one dialog for every number ---
+
+  it('opens a spell level\'s slot maximum with its own title, lines and words', () => {
+    const slots: StatBreakdown = {
+      stat: 'slot3', auto: [{ label: 'Class table', value: 2 }],
+      adjustments: [{ value: 1, label: 'Pearl of Power' }], unlabelled: 0, total: 3,
+    };
+
+    open(slots, false);
+    expect(fixture.nativeElement.querySelector('h2').textContent).toContain('3rd-level spell slots');
+    expect(text('auto-lines')).toBe('Class table 2');
+    expect(text('adjust-lines')).toBe('Pearl of Power +1');
+    expect(text('total')).toBe('Total 3');
+    expect(fixture.nativeElement.querySelector('.breakdown-hint')).toBeNull(); // a player gets no editing words
+
+    open(slots, true);
+    const hint: string = fixture.nativeElement.querySelector('.breakdown-hint').textContent;
+    expect(hint).toContain('class table');
+    expect(hint).not.toContain('armor');
+  });
+
+  it('keeps the Armor Class words for Armor Class', () => {
+    open(breakdown(), true);
+    expect(fixture.nativeElement.querySelector('.breakdown-hint').textContent).toContain('These lines stay when armor changes.');
+  });
+
   // --- what the DM can do ---
 
   it('starts the DM on the saved lines, with nothing to save yet', () => {

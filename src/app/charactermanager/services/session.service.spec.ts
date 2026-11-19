@@ -294,6 +294,55 @@ describe('SessionService rests', () => {
     });
   });
 
+  // A slot spent or restored on the sheet: the server answered with the new
+  // slots, and the snapshot (which the embedded sheet reads) takes them at once.
+  describe('applySpellSlots', () => {
+    const seated = (pcId: number, spellSlots: PC['spellSlots']): ParticipantView =>
+      ({ participantId: pcId, pcId, npc: false, ownedByMe: pcId === 7, name: 'Hero ' + pcId, spellSlots } as ParticipantView);
+    const push = (state: Partial<SessionState>): void =>
+      (service as unknown as { pushState(s: SessionState): void }).pushState({
+        sessionId: 1, campaignId: 2, status: 'LOBBY', round: 1, version: 3, participants: [], ...state,
+      } as SessionState);
+    const current = (): SessionState | null => {
+      let s: SessionState | null = null;
+      service.state$.subscribe(v => (s = v));
+      return s;
+    };
+
+    it('writes the slots onto that character\'s seat and nobody else\'s, without a request', () => {
+      push({ participants: [seated(7, { 1: { max: 4, used: 1 } }), seated(8, { 1: { max: 2, used: 0 } })] });
+
+      service.applySpellSlots(7, { 1: { max: 4, used: 2 } });
+
+      const state = current()!;
+      expect(state.participants[0].spellSlots).toEqual({ 1: { max: 4, used: 2 } });
+      expect(state.participants[1].spellSlots).toEqual({ 1: { max: 2, used: 0 } });
+      expect(state.version).toBe(3); // the next poll still asks from the old version and gets the server's
+      httpMock.expectNone(() => true);
+    });
+
+    it('does nothing with no session loaded, or for a character not seated in it', () => {
+      service.applySpellSlots(7, { 1: { max: 4, used: 2 } });
+      expect(current()).toBeNull();
+
+      push({ participants: [seated(8, { 1: { max: 2, used: 0 } })] });
+      const before = current();
+      service.applySpellSlots(7, { 1: { max: 4, used: 2 } });
+      expect(current()).toBe(before);
+    });
+
+    it('in demo mode goes through the demo snapshot, bumping its version like a server change', () => {
+      spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
+      campaignService.getLocalCampaign.and.returnValue(undefined);
+      push({ sessionId: 'demo-session', version: 0, gameTime: null, participants: [seated(7, { 1: { max: 4, used: 1 } })] });
+
+      service.applySpellSlots(7, { 1: { max: 4, used: 0 } });
+
+      expect(current()!.participants[0].spellSlots).toEqual({ 1: { max: 4, used: 0 } });
+      expect(current()!.version).toBe(1);
+    });
+  });
+
   describe('demo mode', () => {
     const hero = (over: Partial<PC> = {}): PC => ({
       id: 7, name: 'Bex', clazz: 'Fighter', level: 5,

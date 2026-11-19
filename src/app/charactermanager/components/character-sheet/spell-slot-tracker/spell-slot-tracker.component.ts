@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { PC } from '../../../models/pc';
-import { SlotLevel, ordinal, slotLevels, slotsLeftText } from '../../../utils/spell-slots';
+import { SlotLevel, SlotNotice, ordinal, slotLevels, slotsLeftText } from '../../../utils/spell-slots';
 
 let nextId = 0;
 
@@ -22,8 +22,9 @@ interface SlotColumn extends SlotLevel {
  * Tapping a column opens a detail row for that level underneath.
  *
  * Presentational: it shows the slots it is given and emits what the viewer
- * asks for; the host decides who may do what and talks to the server. With no
- * slot level at all it renders nothing.
+ * asks for; the host decides who may do what and talks to the server. Nothing
+ * here changes a count by itself, so the strip always shows what the host
+ * last confirmed. With no slot level at all it renders nothing.
  */
 @Component({
   selector: 'app-spell-slot-tracker',
@@ -40,6 +41,20 @@ export class SpellSlotTrackerComponent {
   readonly canSpend = input(false);
   /** The viewer may give slots back: the DM, or the owner of a character in no campaign. */
   readonly canRestore = input(false);
+  /** Offer "Slot maximum" in the detail row: how the level's maximum is made up. */
+  readonly showMaximum = input(false);
+  /**
+   * Spell levels to show although their maximum is zero: levels the DM's lines
+   * took away. Only for a viewer who can open "Slot maximum" and undo that.
+   */
+  readonly extraLevels = input<readonly number[]>([]);
+  /** A spend or restore is on its way to the server; further taps wait for it. */
+  readonly busy = input(false);
+  /**
+   * What just happened to the slots, to say in the detail row: "Misty Step cast
+   * with a 2nd-level slot." A new notice also selects the level it is about.
+   */
+  readonly notice = input<SlotNotice | null>(null);
 
   /** Spend one slot of this spell level. */
   readonly spend = output<number>();
@@ -47,18 +62,28 @@ export class SpellSlotTrackerComponent {
   readonly restore = output<number>();
   /** Give every spent slot back. */
   readonly restoreAll = output<void>();
+  /** Show how this spell level's maximum is made up. */
+  readonly maximumRequested = output<number>();
 
   readonly headingId = `spell-slots-heading-${++nextId}`;
 
   /** The level the viewer tapped; kept while that level still exists. */
   private readonly selected = signal<number | null>(null);
+  /** The line under the detail title, until the viewer picks a column again. */
+  readonly note = signal<string | null>(null);
 
-  readonly columns = computed<SlotColumn[]>(() => slotLevels(this.slots()).map(level => ({
-    ...level,
-    label: ordinal(level.level),
-    ariaLabel: `${ordinal(level.level)} level: ${level.left} of ${level.max} slots left`,
-    bars: barsFor(level),
-  })));
+  readonly columns = computed<SlotColumn[]>(() => {
+    const levels = slotLevels(this.slots());
+    for (const level of this.extraLevels()) {
+      if (!levels.some(l => l.level === level)) levels.push({ level, max: 0, used: 0, left: 0 });
+    }
+    return levels.sort((a, b) => a.level - b.level).map(level => ({
+      ...level,
+      label: ordinal(level.level),
+      ariaLabel: `${ordinal(level.level)} level: ${level.left} of ${level.max} slots left`,
+      bars: barsFor(level),
+    }));
+  });
 
   /** The selected column, or null when nothing is selected or its level is gone. */
   readonly active = computed<SlotColumn | null>(() =>
@@ -72,31 +97,55 @@ export class SpellSlotTrackerComponent {
 
   readonly anySpent = computed(() => this.columns().some(column => column.used > 0));
 
+  /** The notice this strip was created with: old news, never shown. */
+  private seenNotice: SlotNotice | null | undefined;
+
   constructor() {
-    // Another character took over the sheet: its predecessor's selection does not carry.
+    // Another character took over the sheet: its predecessor's selection and note do not carry.
     effect(() => {
       this.characterId();
-      untracked(() => this.selected.set(null));
+      untracked(() => {
+        this.selected.set(null);
+        this.note.set(null);
+      });
+    });
+    // A notice that arrives while the strip is on screen is said, and its level selected.
+    effect(() => {
+      const notice = this.notice();
+      untracked(() => {
+        const first = this.seenNotice === undefined;
+        const fresh = notice !== this.seenNotice;
+        this.seenNotice = notice;
+        if (first || !fresh || !notice) return;
+        this.note.set(notice.text);
+        if (notice.level != null) this.selected.set(notice.level);
+      });
     });
   }
 
   /** Tap a column to open its detail row; tap it again to close it. */
   toggle(level: number): void {
     this.selected.set(this.active()?.level === level ? null : level);
+    this.note.set(null);
   }
 
   onSpend(): void {
     const active = this.active();
-    if (active && this.canSpend() && active.left > 0) this.spend.emit(active.level);
+    if (active && this.canSpend() && !this.busy() && active.left > 0) this.spend.emit(active.level);
   }
 
   onRestore(): void {
     const active = this.active();
-    if (active && this.canRestore() && active.used > 0) this.restore.emit(active.level);
+    if (active && this.canRestore() && !this.busy() && active.used > 0) this.restore.emit(active.level);
   }
 
   onRestoreAll(): void {
-    if (this.canRestore() && this.anySpent()) this.restoreAll.emit();
+    if (this.canRestore() && !this.busy() && this.anySpent()) this.restoreAll.emit();
+  }
+
+  onMaximum(): void {
+    const active = this.active();
+    if (active && this.showMaximum()) this.maximumRequested.emit(active.level);
   }
 }
 

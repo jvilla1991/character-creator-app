@@ -29,13 +29,16 @@
       }
     </div>
 
-    <div aria-live="polite">
+    <div aria-live="polite" [attr.aria-busy]="busy()">
       @if (active(); as level) {
         <div class="sst-detail">
           <div class="sst-detail-text">
             <span class="sst-detail-title">{{ detailTitle() }}</span>
+            @if (note(); as line) {
+              <span class="sst-note">{{ line }}</span>
+            }
           </div>
-          @if (canSpend() || canRestore()) {
+          @if (canSpend() || canRestore() || showMaximum()) {
             <div class="sst-actions">
               @if (canSpend()) {
                 <button type="button" class="btn sm sst-btn" data-spend [disabled]="level.left === 0"
@@ -45,8 +48,18 @@
                 <button type="button" class="btn sm sst-btn" data-restore [disabled]="level.used === 0"
                   (click)="onRestore()">Restore a slot</button>
               }
+              @if (showMaximum()) {
+                <button type="button" class="btn sm sst-btn sst-quiet" data-maximum
+                  [attr.aria-label]="'Slot maximum for ' + level.label + ' level'"
+                  (click)="onMaximum()">Slot maximum</button>
+              }
             </div>
           }
+        </div>
+      } @else if (note(); as line) {
+        <!-- A change with no level open (Restore all): the line stands alone. -->
+        <div class="sst-detail">
+          <span class="sst-note">{{ line }}</span>
         </div>
       }
     </div>

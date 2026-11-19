@@ -32,7 +32,7 @@ interface DraftLine {
  *
  * Knows nothing about Armor Class: everything it shows comes from the
  * {@link StatBreakdown} it is given, so any number with a definition in
- * `utils/stat-breakdown.ts` can open it.
+ * `utils/stat-breakdown.ts` can open it (a spell level's slot maximum does).
  *
  * The breakdown is read once, when the dialog opens. The sheet refreshes
  * itself in the background during a session, and a refresh must not throw

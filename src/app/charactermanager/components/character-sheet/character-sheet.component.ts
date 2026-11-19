@@ -11,6 +11,7 @@ import { FollowerService } from '../../services/follower.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { tintFor } from '../../utils/character-math';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { SurvivalAction, applyConsumeToPc } from '../../utils/survival';
 // NOTE: the type import is kept separate from the component import — sharing
@@ -45,7 +46,11 @@ import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/
 import { SpeciesSpellsComponent } from './panels/species-spells/species-spells.component';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
-import { AdjustableStat } from '../../models/stat-adjustment';
+import { AdjustableStat, slotStat } from '../../models/stat-adjustment';
+import {
+  SlotNotice, SpellSlots, allSlotsRestoredNotice, ordinal, restoreAllSlots, restoreSlot, slotMaxOf,
+  slotRestoredNotice, slotSpentNotice, spendSlot, withSlotMax,
+} from '../../utils/spell-slots';
 import { StatBreakdown, applyAdjustments, breakdownOf, describeAdjustmentChange } from '../../utils/stat-breakdown';
 import { StatBreakdownModalComponent, StatBreakdownSave } from './stat-breakdown-modal/stat-breakdown-modal.component';
 
@@ -107,6 +112,9 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   @Input() followerMode = false;
   /** Follower mode only: the name of the character this follower belongs to. */
   @Input() followerOwnerName = '';
+  /** Follower mode only: whether that character is in a campaign, and so has a DM
+   *  (a follower's own stat block carries no campaign). */
+  @Input() followerOwnerInCampaign = false;
   readonly deleteRequested = output<void>();
   readonly rollRequested = output<void>();
   readonly levelUpRequested = output<void>();
@@ -306,6 +314,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       if (!this.followerMode && previous && previous.id !== this.pc?.id) {
         this.closeFollower();
       }
+      // What was said about the last character's slots is not about this one.
+      if (previous && previous.id !== this.pc?.id) this.slotNotice.set(null);
       this.openRequestedFollower();
     }
   }
@@ -460,6 +470,134 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    */
   onCastRequested(ev: CastRequest): void {
     this.castRequested.emit(ev);
+  }
+
+  // ── Spell slots ──────────────────────────────────────────────────────────
+  // The strip at the top of the Spells tab. The count lives on the server:
+  // a spend or restore goes to its own endpoint and the answer replaces the
+  // slots on screen, so a refusal changes nothing here. A follower is not a
+  // character row and has no such endpoint; its slots are plain stat-block
+  // data, changed by the same rules and saved like any other follower edit.
+
+  /** What the strip says under the selected level; a new one also selects its level. */
+  readonly slotNotice = signal<SlotNotice | null>(null);
+  /** A spend or restore is on its way to the server. */
+  readonly slotsBusy = signal(false);
+
+  /** Whether a DM stands over these slots: the character's campaign, or for a follower its owner's. */
+  private get slotsHaveDm(): boolean {
+    return this.followerMode ? this.followerOwnerInCampaign : this.pc?.campaignId != null;
+  }
+
+  /** A slot may be spent by hand at any time by the owner, or by the DM on their behalf. */
+  get canSpendSlots(): boolean {
+    return this.editable || this.ownSheet;
+  }
+
+  /**
+   * Slots come back from the DM (or a rest). The owner may restore their own
+   * only while the character is in no campaign, where there is no DM to ask.
+   */
+  get canRestoreSlots(): boolean {
+    return this.editable || (this.ownSheet && !this.slotsHaveDm);
+  }
+
+  /**
+   * "Slot maximum" in the strip's detail row. A character's opens the same
+   * breakdown as Armor Class, for the same people: everyone may look, whoever
+   * may adjust the character may add lines. A follower has no lines; only the
+   * DM gets the button there, and it opens a plain number to type.
+   */
+  get slotMaximumAccess(): 'hidden' | 'view' | 'edit' {
+    if (this.followerMode) return this.editable ? 'edit' : 'hidden';
+    return this.canAdjustStats ? 'edit' : 'view';
+  }
+
+  onSlotSpend(level: number): void {
+    if (!this.canSpendSlots) return;
+    if (this.followerMode) {
+      this.changeFollowerSlots(spendSlot(this.pc.spellSlots, level), slotSpentNotice(level),
+        `No ${ordinal(level)}-level slot is left to spend.`);
+      return;
+    }
+    this.requestSlotChange(() => this.pcService.spendSpellSlot(this.pc.id, level, this.editable),
+      slotSpentNotice(level), 'Could not spend that slot. Try again.');
+  }
+
+  onSlotRestore(level: number): void {
+    if (!this.canRestoreSlots) return;
+    if (this.followerMode) {
+      this.changeFollowerSlots(restoreSlot(this.pc.spellSlots, level), slotRestoredNotice(level),
+        `No ${ordinal(level)}-level slot is spent.`);
+      return;
+    }
+    this.requestSlotChange(() => this.pcService.restoreSpellSlot(this.pc.id, level, this.editable),
+      slotRestoredNotice(level), 'Could not restore that slot. Try again.');
+  }
+
+  onSlotsRestoreAll(): void {
+    if (!this.canRestoreSlots) return;
+    if (this.followerMode) {
+      this.changeFollowerSlots(restoreAllSlots(this.pc.spellSlots), allSlotsRestoredNotice(), '');
+      return;
+    }
+    this.requestSlotChange(() => this.pcService.restoreAllSpellSlots(this.pc.id, this.editable),
+      allSlotsRestoredNotice(), 'Could not restore the slots. Try again.');
+  }
+
+  /**
+   * Send a spend or restore and wait for the server's slots. PCService puts
+   * them on the character; here they also go onto the live session's snapshot
+   * (the sheet embedded in a session reads its slots from there), and the strip
+   * is told what happened. A refusal says why, and the slots are read again:
+   * the server only refuses what the sheet wrongly thought possible.
+   */
+  private requestSlotChange(request: () => Observable<SpellSlots>, notice: SlotNotice, failed: string): void {
+    // One at a time: the request is only made once the last one has answered.
+    if (this.slotsBusy()) return;
+    const pcId = this.pc.id;
+    const asDm = this.editable;
+    this.slotsBusy.set(true);
+    request().subscribe({
+      next: slots => {
+        this.slotsBusy.set(false);
+        this.sessionService.applySpellSlots(pcId, slots);
+        if (this.pc?.id === pcId) this.slotNotice.set(notice);
+      },
+      error: err => {
+        this.slotsBusy.set(false);
+        this.notifications.error(failed, err);
+        this.pcService.refreshSpellSlots(pcId, asDm);
+        this.refreshSessionIfLive();
+      },
+    });
+  }
+
+  /** A follower's slots: `slots` is the outcome of the same rules, or null when they refuse. */
+  private changeFollowerSlots(slots: SpellSlots | null, notice: SlotNotice, refused: string): void {
+    if (!slots) {
+      this.notifications.notify(refused);
+      return;
+    }
+    this.persist({ ...this.pc, spellSlots: slots });
+    this.slotNotice.set(notice);
+  }
+
+  /** "Slot maximum" was pressed for a spell level in the strip. */
+  onSlotMaximumRequested(level: number): void {
+    if (!this.followerMode) {
+      this.onBreakdownRequested(slotStat(level));
+      return;
+    }
+    if (!this.editable) return;
+    // A follower's maximum is whatever its stat block says: the DM types it.
+    this.onDmEditRequested({
+      label: `${ordinal(level)}-level slot maximum`,
+      value: slotMaxOf(this.pc.spellSlots, level),
+      min: 1,
+      max: null,
+      apply: v => ({ ...this.pc, spellSlots: withSlotMax(this.pc.spellSlots, level, v) }),
+    });
   }
 
   // ── Portrait helpers ────────────────────────────────────────────────────────
@@ -634,9 +772,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   // ── Number breakdown ─────────────────────────────────────────────────────
-  // Clicking a calculated number (Armor Class today) shows the lines that make
-  // it up. Everyone may look; whoever may adjust the character can add labelled
-  // lines under the automatic ones ("+1 Taunka").
+  // Clicking a calculated number (Armor Class, or a spell level's slot maximum
+  // from the strip on the Spells tab) shows the lines that make it up. Everyone
+  // may look; whoever may adjust the character can add labelled lines under the
+  // automatic ones ("+1 Taunka").
 
   /** The breakdown on screen, read once when the dialog opened; null when closed. */
   statBreakdown: StatBreakdown | null = null;
