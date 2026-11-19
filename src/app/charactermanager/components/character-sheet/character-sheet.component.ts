@@ -491,9 +491,15 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return this.followerMode ? this.followerOwnerInCampaign : this.pc?.campaignId != null;
   }
 
-  /** A slot may be spent by hand at any time by the owner, or by the DM on their behalf. */
+  /**
+   * Who gets "Spend a slot": the DM, on the player's behalf, and the owner
+   * only while there is no DM (a character in no campaign can never be in a
+   * session, so the owner keeps the count by hand). A player in a campaign
+   * spends a slot by casting in a live session — the Cast button — and never
+   * by hand, so no spell is used outside a session.
+   */
   get canSpendSlots(): boolean {
-    return this.editable || this.ownSheet;
+    return this.editable || (this.ownSheet && !this.slotsHaveDm);
   }
 
   /**
@@ -506,13 +512,17 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /**
    * "Slot maximum" in the strip's detail row. A character's opens the same
-   * breakdown as Armor Class, for the same people: everyone may look, whoever
-   * may adjust the character may add lines. A follower has no lines; only the
-   * DM gets the button there, and it opens a plain number to type.
+   * breakdown as Armor Class: whoever may adjust the character (the DM, or the
+   * owner of a character in no campaign) may add lines. A player in a campaign
+   * does not get the button at all — the slots are the DM's business there,
+   * and the strip stays read-only for them. Any other viewer may look. A
+   * follower has no lines; only the DM gets the button there, and it opens a
+   * plain number to type.
    */
   get slotMaximumAccess(): 'hidden' | 'view' | 'edit' {
     if (this.followerMode) return this.editable ? 'edit' : 'hidden';
-    return this.canAdjustStats ? 'edit' : 'view';
+    if (this.canAdjustStats) return 'edit';
+    return this.ownSheet && this.slotsHaveDm ? 'hidden' : 'view';
   }
 
   onSlotSpend(level: number): void {
