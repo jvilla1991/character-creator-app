@@ -259,6 +259,15 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Increase your Intelligence by 1 (max 20). Your Cold damage ignores Resistance to Cold. When you deal Cold damage to a creature that has the Restrained condition, it takes extra Cold damage: a number of d4s equal to your Proficiency Bonus.',
   'Hot Streak':
     'Increase your Intelligence by 1 (max 20). Your Fire damage ignores Resistance to Fire. When a spell of yours deals Fire damage to a creature, it starts burning; if it was already burning, its burning damage increases by 1d4.',
+  //    The monk ones need Dexterity 13+ and Wisdom 13+ (the server only offers them then).
+  'Elusive Brawler':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Brewmaster\'s knack for rolling with the blows: you sway, stumble and slip aside so foes struggle to land a clean hit. See the World of Warcraft module for the full rules.',
+  'Enveloping Mist':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Mistweaver\'s art of wrapping an ally in soothing, healing mist. See the World of Warcraft module for the full rules.',
+  'Fists of Fury':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Windwalker\'s storm of rapid strikes, driving your fists into foes faster than they can follow. See the World of Warcraft module for the full rules.',
+  'Stagger and Sway':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Brewmaster\'s trick of soaking up punishment and letting it drain away over time instead of all at once. See the World of Warcraft module for the full rules.',
   // ── Fighting Style feats (gained through the Fighting Style class feature of
   //    Fighters, Paladins, and Rangers; also selectable at their ASI levels). ──
   'Archery':

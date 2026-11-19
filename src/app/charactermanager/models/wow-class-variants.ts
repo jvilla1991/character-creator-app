@@ -1,6 +1,7 @@
 import type {
-  HeroClassOption, HeroSpellRow, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
+  HeroClassOption, HeroFeature, HeroSpellRow, SpecializationGuidance, SubclassSpellRow, SuggestedSpellLevel,
 } from './hero-class';
+import { WARRIOR_OF_MYSTIC_BREWS, monkFeatureCards } from './wow-monk';
 import { PATH_OF_THE_ELEMENTS, PATH_OF_THE_SPIRITUAL_GUARDIAN, shamanFeatureCards } from './wow-shaman';
 import { DISCIPLINE_DOMAIN, SHADOW_DOMAIN, priestFeatureCards } from './wow-priest';
 import { BATTLE_MASTER, warriorFeatureCards } from './wow-warrior';
@@ -479,6 +480,66 @@ export const WOW_MAGE: HeroClassOption = {
   suggestedSpells: WOW_MAGE_SUGGESTED_SPELLS,
   extraSpellList: WOW_MAGE_EXTRA_SPELLS,
   renownNote: 'Adopting the Mage raises your Renown with the Kirin Tor by 3 — ask your DM to record it.',
+};
+
+// ── Monk ─────────────────────────────────────────────────────────────────────
+
+export const WOW_MONK_SPECIALIZATIONS = ['Brewmaster', 'Mistweaver', 'Windwalker'] as const;
+
+/** The WoW-only monk subclass (defined with its sheet cards); feature text comes from the server. */
+export { WARRIOR_OF_MYSTIC_BREWS };
+
+/**
+ * Per-specialization picks (class step box + sheet panel). Monks have no spells,
+ * so there are none to suggest; the ✦ feats need DEX 13+ and WIS 13+.
+ */
+export const WOW_MONK_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Brewmaster: {
+    subclass: { name: WARRIOR_OF_MYSTIC_BREWS },
+    feats: ['Chef', 'Crusher', 'Elusive Brawler', 'Grappler', 'Sentinel', 'Stagger and Sway'],
+  },
+  Mistweaver: {
+    subclass: { name: 'Warrior of Mercy' },
+    feats: ['Enveloping Mist', 'Observant', 'Poisoner', 'Shadow Touched', 'Skulker'],
+  },
+  Windwalker: {
+    subclass: { name: 'Warrior of the Open Hand' },
+    feats: ['Charger', 'Crusher', 'Fists of Fury', 'Speedy'],
+  },
+};
+
+/** The monastic orders of Pandaria, as a short lore list on the sheet panel. */
+export const WOW_MONK_ORDERS: readonly HeroFeature[] = [
+  { name: 'Crane Wing Order', desc: "Followers of Chi-Ji who teach that adapting to each moment is a monk's greatest strength." },
+  { name: 'Niuzao Sentinels', desc: 'Stern, steadfast guardians who hold the line against the Sha of Fear.' },
+  { name: 'Order of the Broken Temple', desc: 'Survivors of a shattered monastery who now stand against the Burning Legion.' },
+  { name: 'Order of the Cloud Serpent', desc: 'Riders bonded to the cloud serpents, with old ties to the way of the windwalker.' },
+  { name: 'Shado-Pan', desc: 'Elite watchers of the Wall who strike from the shadows.' },
+];
+
+export const WOW_MONK: HeroClassOption = {
+  key: 'Monk (World of Warcraft)',
+  label: variantLabel('Monk', 'Monk'),
+  name: 'Monk',
+  baseClass: 'Monk',
+  source: 'World of Warcraft',
+  blurb: 'The pandaren honed unarmed fighting while the mogu ruled them and forbade them weapons — then turned '
+    + 'those same fists against their masters. Monks seek balance and draw power from serenity; they mend life, '
+    + 'and some brew drinks of remarkable potency.',
+  subclassNote: 'Chosen as normal at Monk level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Brewmaster', desc: 'A staggering, seemingly drunken brawler fuelled by potent brews.' },
+    { name: 'Mistweaver', desc: "Weaves Pandaria's magical mists to heal allies and sap the strength of foes." },
+    { name: 'Windwalker', desc: 'The quintessential martial artist, unleashing a flurry of strikes.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  guidance: WOW_MONK_GUIDANCE,
+  wowSubclasses: [WARRIOR_OF_MYSTIC_BREWS],
+  lore: { title: 'Monastic orders of Pandaria', entries: WOW_MONK_ORDERS },
+  featureCards: monkFeatureCards,
 };
 
 // ── Paladin ──────────────────────────────────────────────────────────────────
@@ -1004,6 +1065,6 @@ export const WOW_WARRIOR: HeroClassOption = {
  * though it locks its (base-game) subclass like a hero class.
  */
 export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
-  WOW_DRUID, WOW_EVOKER, WOW_HUNTER, WOW_MAGE, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK,
+  WOW_DRUID, WOW_EVOKER, WOW_HUNTER, WOW_MAGE, WOW_MONK, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK,
   WOW_WARRIOR,
 ];

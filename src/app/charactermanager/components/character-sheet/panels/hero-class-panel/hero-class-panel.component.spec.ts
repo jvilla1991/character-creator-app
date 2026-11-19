@@ -1310,3 +1310,69 @@ describe('HeroClassPanelComponent — World of Warcraft Mage (Wizard)', () => {
     expect(el.querySelector('.hero-subclass-match')?.getAttribute('data-match')).toBe('different');
   });
 });
+
+describe('HeroClassPanelComponent — World of Warcraft Monk', () => {
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
+  let component: HeroClassPanelComponent;
+
+  function makeMonk(overrides: Partial<PC> = {}): PC {
+    return {
+      id: 18, name: 'Bao', clazz: 'Monk', subclass: 'Warrior of Mystic Brews', specialization: 'Brewmaster',
+      level: 6, playerName: 'Ravi', stats: { STR: 12, DEX: 16, CON: 14, INT: 10, WIS: 16, CHA: 8 }, prof: 3,
+      ...overrides,
+    };
+  }
+
+  function render(pc: PC): HTMLElement {
+    const fixture = TestBed.createComponent(HeroClassPanelComponent);
+    fixture.componentRef.setInput('pc', pc);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  beforeEach(() => {
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
+    dndResources.getSpells.and.returnValue(of([]));
+    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
+  });
+
+  it('shows the World of Warcraft Monk heading, the spec, and the monastic orders of Pandaria', () => {
+    const el = render(makeMonk());
+    expect(el.querySelector('.panel-title')?.textContent).toContain('World of Warcraft Monk');
+    expect(el.textContent).toContain('Brewmaster');
+    expect(el.textContent).toContain('Monastic orders of Pandaria');
+    const lore = Array.from(el.querySelectorAll('.hero-lore dt')).map(d => d.textContent!.trim());
+    expect(lore).toEqual([
+      'Crane Wing Order', 'Niuzao Sentinels', 'Order of the Broken Temple', 'Order of the Cloud Serpent', 'Shado-Pan',
+    ]);
+    expect(el.querySelector('.hero-lore')?.textContent).toContain('Sha of Fear');
+  });
+
+  it('matches the Mystic Brews recommendation and shows both Mystic Brews cards at Monk 6', () => {
+    const el = render(makeMonk());
+    expect(el.querySelector('.hero-subclass-match')?.getAttribute('data-match')).toBe('match');
+    const cards = Array.from(el.querySelectorAll('.feature-card')) as HTMLElement[];
+    expect(cards.map(c => c.getAttribute('aria-label'))).toEqual(['Warrior of Mystic Brews', 'Mystic Brew']);
+    expect(cards[1].textContent).toContain('Brew save DC');
+    expect(cards[1].textContent).toContain('14');
+    expect(cards[1].textContent).toContain('4d8 Fire');
+    expect(cards[1].textContent).toContain('6d8');
+    expect(dndResources.getSpells).not.toHaveBeenCalled();   // no spells on a monk panel
+  });
+
+  it('shows only the level-3 card at Monk 3, and no cards for another tradition', () => {
+    component.pc = makeMonk({ level: 3 });
+    expect(component.featureCards.map(c => c.name)).toEqual(['Warrior of Mystic Brews']);
+    component.pc = makeMonk({ specialization: 'Mistweaver', subclass: 'Warrior of Mercy' });
+    expect(component.featureCards).toEqual([]);
+    expect(component.guidance?.subclass.name).toBe('Warrior of Mercy');
+  });
+
+  it('shows no lore for the other variants', () => {
+    const el = render({
+      id: 17, name: 'Elandra', clazz: 'Wizard', specialization: 'Frost', level: 5, playerName: 'Q',
+    } as PC);
+    expect(el.querySelector('.hero-lore')).toBeNull();
+  });
+});

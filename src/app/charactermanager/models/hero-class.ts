@@ -280,6 +280,8 @@ export interface HeroClassOption {
   extraSpellList?: readonly string[];
   /** A one-line reminder shown in the class step and on the sheet panel. */
   renownNote?: string;
+  /** A short lore list on the sheet panel (e.g. the WoW Monk's monastic orders of Pandaria). Text only. */
+  lore?: { title: string; entries: readonly HeroFeature[] };
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
   /**

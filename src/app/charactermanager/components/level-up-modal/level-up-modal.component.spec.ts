@@ -1251,4 +1251,79 @@ describe('LevelUpModalComponent', () => {
       expect(dndResources.getSpellsForClass).not.toHaveBeenCalledWith('Wizard', jasmine.anything());
     });
   });
+
+  describe('World of Warcraft Monk (Warrior of Mystic Brews, DEX/WIS-gated feats, respec)', () => {
+    const traditions = [
+      'Warrior of Mercy', 'Warrior of Mystic Brews', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand',
+    ];
+
+    function renderModal(feat = false): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      if (feat) {
+        fixture.componentInstance.milestoneMode = 'feat';
+        fixture.detectChanges();
+      }
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Monk', level: 2, specialization: 'Brewmaster', ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: traditions, ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 3 })));
+      component.ngOnInit();
+    }
+
+    it('tags the Warrior of Mystic Brews World of Warcraft and badges it for Brewmaster', () => {
+      open({}, { recommendedSubclass: 'Warrior of Mystic Brews' });
+      expect(component.heroClass?.label).toBe('Monk');
+      expect(component.canRespec).toBeTrue();
+      expect(component.recommendedSubclass).toBe('Warrior of Mystic Brews');
+      expect(component.subclassSourceTag('Warrior of Mystic Brews')).toBe('World of Warcraft');
+      expect(component.subclassSourceTag('Warrior of Mercy')).toBeUndefined();
+      const el = renderModal();
+      const tagged = Array.from(el.querySelectorAll('.subclass-option')).filter(n => n.querySelector('.source-tag'));
+      expect(tagged.map(n => n.textContent)).toEqual([jasmine.stringContaining('Warrior of Mystic Brews')]);
+      expect(el.querySelector('.subclass-option.is-recommended')?.textContent).toContain('Warrior of Mystic Brews');
+      expect(el.querySelector('.subclass-option.is-recommended .recommended-badge')?.textContent)
+        .toContain('Recommended for Brewmaster');
+      expect(component.selectedSubclass).toBeFalsy();
+    });
+
+    it('recommends Warrior of Mercy for Mistweaver and the Open Hand for Windwalker, following a respec', () => {
+      open({ specialization: 'Mistweaver' });
+      expect(component.recommendedSubclass).toBe('Warrior of Mercy');
+      open({ specialization: 'Windwalker' });
+      expect(component.recommendedSubclass).toBe('Warrior of the Open Hand');
+      component.selectedSpecialization = 'Brewmaster';
+      expect(component.recommendedSubclass).toBe('Warrior of Mystic Brews');
+    });
+
+    it('shows the monk feats the server offers with their DEX/WIS prerequisite and a World of Warcraft tag', () => {
+      open({ level: 3, subclass: 'Warrior of Mystic Brews' }, {
+        currentLevel: 3, newLevel: 4, subclassDue: false, subclassOptions: [], asiDue: true,
+        featOptions: ['Clearcasting', 'Crusher', 'Elusive Brawler', 'Enveloping Mist', 'Fists of Fury', 'Stagger and Sway'],
+      });
+      expect(component.featPrerequisite('Elusive Brawler')).toBe('DEX 13+, WIS 13+');
+      expect(component.featPrerequisite('Crusher')).toBeUndefined();
+      const el = renderModal(true);
+      const options = Array.from(el.querySelectorAll('.subclass-option')) as HTMLElement[];
+      const nameOf = (n: HTMLElement) => n.querySelector('.feat-name')!.textContent!.trim();
+      expect(options.filter(n => n.querySelector('.feat-source-tag')).map(nameOf))
+        .toEqual(['Clearcasting', 'Elusive Brawler', 'Enveloping Mist', 'Fists of Fury', 'Stagger and Sway']);
+      const prereqs = options.filter(n => n.querySelector('.feat-prereq'));
+      expect(prereqs.map(nameOf)).toEqual(['Elusive Brawler', 'Enveloping Mist', 'Fists of Fury', 'Stagger and Sway']);
+      expect(prereqs[0].querySelector('.feat-prereq')!.textContent).toContain('Prerequisite: DEX 13+, WIS 13+');
+    });
+  });
 });

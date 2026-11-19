@@ -447,7 +447,7 @@ export class PCService {
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
-      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel) : [],
+      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel, pc.stats) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),
