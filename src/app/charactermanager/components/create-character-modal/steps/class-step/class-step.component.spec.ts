@@ -731,3 +731,58 @@ describe('ClassStepComponent — World of Warcraft Mage (Wizard)', () => {
     expect(box.querySelector('.feat-footnote')).toBeNull();
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Monk', () => {
+  const MONK_KEY = 'Monk (World of Warcraft)';
+  const detail = { hit_die: 8, saving_throws: [{ name: 'STR' }, { name: 'DEX' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(MONK_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Monk']));
+    fixture.componentRef.setInput('selectedKey', MONK_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Monk');
+    fixture.componentRef.setInput('clazz', 'Monk');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows two "Monk" rows, the WoW one tagged, with the pandaren blurb', () => {
+    const el = render();
+    const heads = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[])
+      .filter(h => h.textContent!.trim().startsWith('Monk'));
+    expect(heads.length).toBe(2);
+    expect(heads[0].querySelector('.source-tag')).toBeNull();
+    expect(heads[1].querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('mogu');
+    expect(el.querySelector('.hero-renown')).toBeNull();
+    expect(el.textContent).toContain('Chosen as normal at Monk level 3');
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Brewmaster', 'Mistweaver', 'Windwalker']);
+  });
+
+  it('shows the Brewmaster box: the Mystic Brews subclass and feats, ✦ on the monk feats, no spell rows', () => {
+    const box = render('Brewmaster').querySelector('.spec-guidance') as HTMLElement;
+    expect(Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim())).toEqual(['Level 3 subclass', 'Feats']);
+    expect(box.textContent).toContain('Warrior of Mystic Brews');
+    const marked = Array.from(box.querySelectorAll('.feat-list .feat'))
+      .filter(f => f.querySelector('.wow-mark')).map(f => f.textContent!.replace('✦', '').trim());
+    expect(marked).toEqual(['Elusive Brawler', 'Stagger and Sway']);
+    expect(box.querySelector('.feat-footnote')).not.toBeNull();
+  });
+
+  it('shows Warrior of Mercy with Enveloping Mist ✦, and the Open Hand with Fists of Fury ✦', () => {
+    const mist = render('Mistweaver').querySelector('.spec-guidance') as HTMLElement;
+    expect(mist.textContent).toContain('Warrior of Mercy');
+    expect(Array.from(mist.querySelectorAll('.feat-list .feat')).filter(f => f.querySelector('.wow-mark'))
+      .map(f => f.textContent!.replace('✦', '').trim())).toEqual(['Enveloping Mist']);
+    const wind = render('Windwalker').querySelector('.spec-guidance') as HTMLElement;
+    expect(wind.textContent).toContain('Warrior of the Open Hand');
+    expect(wind.textContent).toContain('Speedy');
+    expect(Array.from(wind.querySelectorAll('.feat-list .feat')).filter(f => f.querySelector('.wow-mark'))
+      .map(f => f.textContent!.replace('✦', '').trim())).toEqual(['Fists of Fury']);
+  });
+});

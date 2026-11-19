@@ -20,8 +20,23 @@ export const WOW_MAGE_FEATS: readonly WowFeat[] = [
   { name: 'Hot Streak' },
 ];
 
+/** The prerequisite every WoW monk feat carries on top of level 4+. */
+export const MONK_FEAT_PREREQUISITE = 'DEX 13+, WIS 13+';
+
+/**
+ * The WoW monk feats — each also raises Dexterity or Wisdom by 1. The server only
+ * offers them (in the level-up preview's featOptions) to a character with DEX 13+
+ * and WIS 13+, so the SPA just shows the prerequisite.
+ */
+export const WOW_MONK_FEATS: readonly WowFeat[] = [
+  { name: 'Elusive Brawler', prerequisite: MONK_FEAT_PREREQUISITE },
+  { name: 'Enveloping Mist', prerequisite: MONK_FEAT_PREREQUISITE },
+  { name: 'Fists of Fury', prerequisite: MONK_FEAT_PREREQUISITE },
+  { name: 'Stagger and Sway', prerequisite: MONK_FEAT_PREREQUISITE },
+];
+
 /** Every World of Warcraft feat, in table order. */
-export const WOW_FEATS: readonly WowFeat[] = [...WOW_MAGE_FEATS];
+export const WOW_FEATS: readonly WowFeat[] = [...WOW_MAGE_FEATS, ...WOW_MONK_FEATS];
 
 /** Hover text for a ✦ World of Warcraft feat. */
 export const WOW_FEAT_NOTE = 'World of Warcraft feat';

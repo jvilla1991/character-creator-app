@@ -13,7 +13,9 @@ import {
   WOW_HUNTER, WOW_HUNTER_GUIDANCE, WOW_HUNTER_SPECIALIZATIONS, WOW_HUNTER_SUGGESTED_SPELLS,
   EVOKER_SCHOOL, EVOKER_SCHOOL_LABEL, WOW_MAGE, WOW_MAGE_EXTRA_SPELLS, WOW_MAGE_GUIDANCE, WOW_MAGE_SPECIALIZATIONS,
   WOW_MAGE_SUGGESTED_SPELLS,
+  WARRIOR_OF_MYSTIC_BREWS, WOW_MONK, WOW_MONK_GUIDANCE, WOW_MONK_ORDERS, WOW_MONK_SPECIALIZATIONS,
 } from './wow-class-variants';
+import { isWowFeat } from './wow-feats';
 import { classDisplayName } from '../utils/class-display';
 
 describe('wow-class-variants', () => {
@@ -175,6 +177,7 @@ describe('wow-class-variants', () => {
       expect(WOW_WARLOCK.label).toBe('Warlock');
       expect(WOW_PRIEST.label).toBe('Priest (Cleric)');
       expect(WOW_MAGE.label).toBe('Mage (Wizard)');
+      expect(WOW_MONK.label).toBe('Monk');
     });
   });
 
@@ -885,6 +888,111 @@ describe('wow-class-variants', () => {
       expect(isExtraListSpell(WOW_MAGE, 'Blur')).toBeFalse();
       expect(isExtraListSpell(WOW_PRIEST, 'Flame Strike')).toBeFalse();
       expect(isExtraListSpell(undefined, 'Flame Strike')).toBeFalse();
+    });
+  });
+
+  describe('Monk', () => {
+    const monk = (overrides: { subclass?: string | null; specialization?: string | null; clazz?: string } = {}) =>
+      ({ clazz: 'Monk', subclass: null, specialization: 'Brewmaster', ...overrides });
+
+    it('reads "Monk" (same-name rule) on the Monk base class with no fixed subclass, and may respec', () => {
+      expect(WOW_MONK.label).toBe('Monk');
+      expect(WOW_MONK.key).toBe('Monk (World of Warcraft)');
+      expect(WOW_MONK.name).toBe('Monk');
+      expect(WOW_MONK.baseClass).toBe('Monk');
+      expect(WOW_MONK.subclass).toBeUndefined();
+      expect(WOW_MONK.subclassNote).toBe('Chosen as normal at Monk level 3');
+      expect(WOW_MONK.subclassTerm).toBe('subclass');
+      expect(WOW_MONK.subclassLevel).toBeUndefined();
+      expect(WOW_MONK.respecOnLevelUp).toBeTrue();
+      expect(WOW_MONK.spellTable).toEqual([]);
+      expect(WOW_MONK.suggestedSpells).toBeUndefined();
+      expect(WOW_MONK.extraSpellList).toBeUndefined();
+      expect(WOW_MONK.renownNote).toBeUndefined();
+      expect(WOW_MONK.wowSubclasses).toEqual(['Warrior of Mystic Brews']);
+      expect(WOW_MONK.featureCards).toBeDefined();
+      const specs = WOW_MONK.specializations.map(s => s.name);
+      expect(specs).toEqual([...WOW_MONK_SPECIALIZATIONS]);
+      expect(specs).toEqual(['Brewmaster', 'Mistweaver', 'Windwalker']);
+      expect(Object.keys(WOW_MONK_GUIDANCE)).toEqual(specs);
+    });
+
+    it('describes the pandaren, the mogu weapon ban, balance, serenity, mending and brewing', () => {
+      for (const word of ['pandaren', 'mogu', 'weapons', 'masters', 'balance', 'serenity', 'mend life', 'brew']) {
+        expect(WOW_MONK.blurb).withContext(word).toContain(word);
+      }
+      const desc = (name: string) => WOW_MONK.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Brewmaster')).toContain('drunken');
+      expect(desc('Brewmaster')).toContain('brews');
+      expect(desc('Mistweaver')).toContain('mists');
+      expect(desc('Mistweaver')).toContain('heal');
+      expect(desc('Windwalker')).toContain('martial artist');
+      expect(desc('Windwalker')).toContain('flurry of strikes');
+    });
+
+    it('lists the five monastic orders of Pandaria as panel lore', () => {
+      expect(WOW_MONK.lore?.title).toBe('Monastic orders of Pandaria');
+      expect(WOW_MONK.lore?.entries).toBe(WOW_MONK_ORDERS);
+      expect(WOW_MONK_ORDERS.map(o => o.name)).toEqual([
+        'Crane Wing Order', 'Niuzao Sentinels', 'Order of the Broken Temple', 'Order of the Cloud Serpent', 'Shado-Pan',
+      ]);
+      const desc = (name: string) => WOW_MONK_ORDERS.find(o => o.name === name)!.desc;
+      expect(desc('Crane Wing Order')).toContain('Chi-Ji');
+      expect(desc('Crane Wing Order')).toContain('adapt');
+      expect(desc('Niuzao Sentinels')).toContain('Sha of Fear');
+      expect(desc('Order of the Broken Temple')).toContain('Burning Legion');
+      expect(desc('Order of the Cloud Serpent')).toContain('cloud serpents');
+      expect(desc('Order of the Cloud Serpent')).toContain('windwalker');
+      expect(desc('Shado-Pan')).toContain('shadows');
+      for (const v of WOW_CLASS_VARIANTS.filter(x => x !== WOW_MONK)) {
+        expect(v.lore).withContext(v.key).toBeUndefined();
+      }
+    });
+
+    it('is a WoW monk with a specialization or the Warrior of Mystic Brews', () => {
+      expect(heroClassFor(monk())).toBe(WOW_MONK);
+      expect(heroClassFor(monk({ specialization: 'Windwalker', subclass: 'Warrior of the Open Hand' }))).toBe(WOW_MONK);
+      expect(heroClassFor(monk({ specialization: null, subclass: WARRIOR_OF_MYSTIC_BREWS }))).toBe(WOW_MONK);
+      expect(heroClassFor(monk({ specialization: null }))).toBeUndefined();
+      expect(heroClassFor(monk({ specialization: 'Frost' }))).toBeUndefined();
+      expect(heroClassFor(monk({ clazz: 'Fighter', subclass: WARRIOR_OF_MYSTIC_BREWS }))).toBeUndefined();
+      expect(classDisplayName('Monk', WARRIOR_OF_MYSTIC_BREWS, 'Brewmaster')).toBe('Monk');
+    });
+
+    it('recommends Warrior of Mystic Brews / Mercy / the Open Hand, and tags only the Mystic Brews World of Warcraft', () => {
+      expect(recommendedSubclassFor(WOW_MONK, 'Brewmaster')).toBe('Warrior of Mystic Brews');
+      expect(recommendedSubclassFor(WOW_MONK, 'Mistweaver')).toBe('Warrior of Mercy');
+      expect(recommendedSubclassFor(WOW_MONK, 'Windwalker')).toBe('Warrior of the Open Hand');
+      expect(subclassSource(WARRIOR_OF_MYSTIC_BREWS)).toBe('World of Warcraft');
+      expect(subclassSource('warrior of mystic brews')).toBe('World of Warcraft');
+      expect(subclassSource('Warrior of Mercy')).toBeUndefined();
+      expect(subclassSource('Warrior of the Open Hand')).toBeUndefined();
+    });
+
+    it('recommends feats per specialization, with the ✦ monk feats, and no spells', () => {
+      expect(WOW_MONK_GUIDANCE['Brewmaster'].feats)
+        .toEqual(['Chef', 'Crusher', 'Elusive Brawler', 'Grappler', 'Sentinel', 'Stagger and Sway']);
+      expect(WOW_MONK_GUIDANCE['Mistweaver'].feats)
+        .toEqual(['Enveloping Mist', 'Observant', 'Poisoner', 'Shadow Touched', 'Skulker']);
+      expect(WOW_MONK_GUIDANCE['Windwalker'].feats).toEqual(['Charger', 'Crusher', 'Fists of Fury', 'Speedy']);
+      expect(WOW_MONK_GUIDANCE['Brewmaster'].feats.filter(isWowFeat)).toEqual(['Elusive Brawler', 'Stagger and Sway']);
+      expect(WOW_MONK_GUIDANCE['Mistweaver'].feats.filter(isWowFeat)).toEqual(['Enveloping Mist']);
+      expect(WOW_MONK_GUIDANCE['Windwalker'].feats.filter(isWowFeat)).toEqual(['Fists of Fury']);
+      for (const g of Object.values(WOW_MONK_GUIDANCE)) {
+        expect(g.cantrips).toBeUndefined();
+        expect(g.level1Spells).toBeUndefined();
+        expect(g.subclass.label).toBeUndefined();
+      }
+      expect(recommendedStartingSpells(WOW_MONK, 'Brewmaster')).toEqual([]);
+    });
+
+    it('builds its sheet cards from the Mystic Brews subclass only', () => {
+      const cards = (subclass: string | null, level = 6) =>
+        WOW_MONK.featureCards!({ level, subclass, stats: { WIS: 16 } }).map(c => c.name);
+      expect(cards(WARRIOR_OF_MYSTIC_BREWS)).toEqual(['Warrior of Mystic Brews', 'Mystic Brew']);
+      expect(cards(WARRIOR_OF_MYSTIC_BREWS, 3)).toEqual(['Warrior of Mystic Brews']);
+      expect(cards('Warrior of Mercy')).toEqual([]);
+      expect(cards(null)).toEqual([]);
     });
   });
 });

@@ -25,6 +25,17 @@
       <p class="hero-note">{{ h.heroNote }}</p>
     }
 
+    <!-- WoW Monk: the monastic orders of Pandaria (lore, text only) -->
+    @if (h.lore; as lore) {
+      <h3 class="hero-spells-title">{{ lore.title }}</h3>
+      <dl class="suggested-spells hero-lore">
+        @for (entry of lore.entries; track entry.name) {
+          <dt>{{ entry.name }}</dt>
+          <dd>{{ entry.desc }}</dd>
+        }
+      </dl>
+    }
+
     @if (h.level1Feature; as f) {
       <div class="feature">
         <div class="feature-head">
