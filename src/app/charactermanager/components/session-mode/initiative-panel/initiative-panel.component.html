@@ -54,8 +54,19 @@
             {{ p.initRolled ? p.initiative : '—' }}
           }
         </div>
-        <!-- A button only where the DM can open this PC's sheet; the cell holds
-        no other controls, so the role does not nest anything. -->
+        <div class="board-hero-cell">
+        @if (p.followers.length) {
+          <button type="button" class="nest-toggle"
+            [attr.aria-expanded]="!collapsed.has(p.participantId)"
+            [attr.aria-label]="'Toggle followers of ' + p.name"
+            (click)="toggleFollowers(p)"
+          >{{ collapsed.has(p.participantId) ? '▸' : '▾' }}</button>
+        } @else if (anyFollowers) {
+          <span class="nest-crest" aria-hidden="true"></span>
+        }
+        <!-- A button only where the DM can open this PC's sheet; the hero holds
+        no other controls (the followers toggle sits beside it), so the role
+        does not nest anything. -->
         <div class="board-hero" [class.linkable]="canOpenSheet(p)" (click)="onHeroClick(p)"
           [attr.title]="canOpenSheet(p) ? 'Open character sheet' : null"
           [attr.role]="canOpenSheet(p) ? 'button' : null"
@@ -74,6 +85,7 @@
               }
             </div>
           </div>
+        </div>
         </div>
         <div class="board-hp" [class.bloodied]="!hpWithheld(p) && bloodied(p)">
           @if (!hpWithheld(p)) {
@@ -176,6 +188,71 @@
               </div>
             }
           </div>
+
+          <!-- Followers act on their owner's turn: nested under the owner, no
+          initiative of their own, and a softer copy of the owner's glow. -->
+          @if (!collapsed.has(p.participantId)) {
+            @for (f of p.followers; track f.followerId) {
+              <div
+                class="board-row member follower"
+                [class.with-current-turn]="isActive(p)"
+                [class.with-on-deck]="isOnDeck(p)"
+                style="cursor: default;"
+                >
+                <div class="board-num init-cell" title="Acts on {{ p.name }}'s turn">
+                  <span aria-hidden="true">—</span>
+                  <span class="visually-hidden">Acts on {{ p.name }}'s turn</span>
+                </div>
+                <div class="board-hero-cell">
+                  <span class="nest-crest" aria-hidden="true">↳</span>
+                  <div class="board-hero">
+                    <div style="min-width: 0;">
+                      <div class="board-hero-name">{{ f.name }}</div>
+                      <div class="board-hero-sub">{{ f.clazz }} {{ f.level }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="board-hp" [class.bloodied]="bloodied(f)">
+                  <div class="hp-text">
+                    <span>{{ f.hpCurrent ?? '—' }}/{{ f.hpMax ?? '—' }}@if (f.hpTemp) {
+                      +{{ f.hpTemp }}
+                    }</span>
+                    <span>{{ hpPct(f) | number:'1.0-0' }}%</span>
+                  </div>
+                  <div class="vital-bar"><span [style.width.%]="hpPct(f)"></span></div>
+                </div>
+                <div class="board-num lit ac-cell">
+                  <span class="num-label">AC</span>{{ f.ac != null ? f.ac : '—' }}
+                </div>
+                <div class="board-conditions">
+                  @if (!f.conditions.length) {
+                    <span class="board-cond calm">steady</span>
+                  }
+                  @for (c of f.conditions; track c) {
+                    <span class="board-cond">{{ c }}</span>
+                  }
+                </div>
+                @if (dm) {
+                  <div class="dm-adjust">
+                    <div class="adjust-row">
+                      <input
+                        type="number"
+                        class="dmg-input"
+                        min="0"
+                        placeholder="HP"
+                        [(ngModel)]="followerAmounts[f.followerId]"
+                        aria-label="HP amount"
+                        />
+                      <button class="btn-mini dmg" (click)="adjustFollowerHp(f, 1)" title="Apply damage"
+                        [attr.aria-label]="'Apply damage to ' + f.name">−</button>
+                      <button class="btn-mini heal" (click)="adjustFollowerHp(f, -1)" title="Apply healing"
+                        [attr.aria-label]="'Apply healing to ' + f.name">+</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
         }
       </div>
 

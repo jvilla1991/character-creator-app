@@ -107,7 +107,7 @@
       </button>
     </div>
     <app-party-board [members]="vm.members" [inviteCode]="vm.campaign.inviteCode ?? null"
-      (openHero)="openHero($event)"></app-party-board>
+      (openHero)="openHero($event)" (openFollower)="openFollower($event)"></app-party-board>
     <app-party-treasury [members]="vm.members" style="display: block; margin-top: 20px;"></app-party-treasury>
     <!-- Curated shops/encounters/loot are DM authoring tools that sit well below
     the fold on first paint — deferred until scrolled into view so the dashboard's

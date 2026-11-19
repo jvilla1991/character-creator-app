@@ -12,6 +12,26 @@ import { PC, PcSurvival } from './pc';
 
 export type SessionStatus = 'LOBBY' | 'ACTIVE' | 'ENDED';
 
+/**
+ * A seated PC's follower as the initiative order shows it (mirrors the backend
+ * FollowerCombatant). Followers share their owner's turn, so there is no
+ * initiative here; `conditions` arrives as a real array.
+ */
+export interface FollowerCombatant {
+  followerId: number;
+  pcId: number;
+  name: string;
+  clazz: string | null;
+  level: number | null;
+  portraitTint: string | null;
+  portraitInitials: string | null;
+  hpMax: number | null;
+  hpCurrent: number | null;
+  hpTemp: number | null;
+  ac: number | null;
+  conditions: string[];
+}
+
 export interface ParticipantView {
   participantId: number;
   pcId: number | null;
@@ -47,6 +67,9 @@ export interface ParticipantView {
   // Heroic Inspiration meter from the canonical PC row; null for NPCs.
   inspirationPips: number | null;
   heroicInspiration: boolean | null;
+  // The PC's followers, ordered by follower id; they act on their owner's
+  // turn. Empty for enemies, PCs without followers, and older backends.
+  followers: FollowerCombatant[];
 }
 
 /**

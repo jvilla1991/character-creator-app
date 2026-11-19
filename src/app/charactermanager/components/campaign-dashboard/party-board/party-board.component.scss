@@ -15,6 +15,12 @@
 // The widened passive columns need 730px of row, not the shared 720px floor.
 .board-row { min-width: 730px; }
 
+// A follower row opens a sheet like a member row, so it answers the pointer
+// the same way (the nested tint in styles.css would otherwise hold it still).
+.board-row.member.follower:hover {
+  background: color-mix(in oklch, var(--surface-2) 70%, transparent);
+}
+
 @media (max-width: 820px) {
 
   // Cancel the 720px floor that forces the sideways scroll.
@@ -40,13 +46,22 @@
     margin-bottom: 8px;
   }
 
-  .board-hero { grid-area: hero; }
+  .board-hero-cell { grid-area: hero; }
   .board-hp { grid-area: hp; }
   .board-conditions { grid-area: cond; }
   .board-chev {
     grid-area: chev;
     align-self: start;
     margin-top: 10px;
+  }
+
+  // A follower's card keeps the nested tint and steps in from the left edge;
+  // the card's own indent replaces the name's.
+  .board-row.member.follower {
+    margin-left: 16px;
+    background: color-mix(in oklch, var(--bg-2) 45%, transparent);
+
+    .board-hero-cell { padding-left: 0; }
   }
 
   // Names get room to wrap instead of being clipped to an ellipsis.

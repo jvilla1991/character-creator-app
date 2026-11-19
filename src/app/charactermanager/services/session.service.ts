@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { LootResultView } from '../models/loot';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from 'rxjs';
@@ -9,6 +9,7 @@ import {
   LongRestResultView,
   LongRestView,
   LongRestWaitView,
+  FollowerCombatant,
   ParticipantView,
   RestType,
   RestVoteView,
@@ -22,6 +23,7 @@ import { PC, PcItem, PcSurvival } from '../models/pc';
 import { CampaignGameTime, CampaignLocation, LocationType, LOCATION_TYPES, TimeOfDay } from '../models/campaign';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
+import { FollowerService } from './follower.service';
 import {
   SurvivalAction,
   advanceGameTime,
@@ -102,6 +104,9 @@ export class SessionService {
     private campaignService: CampaignService,
     private pcService: PCService,
   ) {}
+
+  // Read only in demo mode, to seat each demo PC's followers on the snapshot.
+  private readonly followerService = inject(FollowerService);
 
   /** DM opens a lobby for a campaign; stores and returns the initial snapshot. */
   createSession(campaignId: string): Observable<SessionState> {
@@ -191,6 +196,7 @@ export class SessionService {
    * hidden enemy's turn ends and a visible combatant comes up (null → id).
    */
   private pushState(state: SessionState | null): void {
+    this.announceFollowerChanges(state);
     if (state == null) {
       this.lastActiveId = undefined;
     } else {
@@ -202,6 +208,34 @@ export class SessionService {
       this.lastActiveId = current;
     }
     this.stateSubject.next(state);
+  }
+
+  // What each seated PC's followers looked like on the last snapshot, keyed by
+  // PC id (the rows serialized: ids, names, HP, AC, conditions).
+  private followerPrints = new Map<number, string>();
+
+  /**
+   * The snapshot is the one place a client learns that someone else touched a
+   * follower: the DM granted or dismissed one, or damaged one from the
+   * initiative order. When a PC's follower rows differ from the last snapshot,
+   * say so through FollowerService, so the views holding their own copy (the
+   * Followers tab, an open follower sheet) re-list. A PC's first appearance is
+   * only a baseline; nothing has changed yet.
+   */
+  private announceFollowerChanges(state: SessionState | null): void {
+    if (state == null) {
+      this.followerPrints.clear();
+      return;
+    }
+    const prints = new Map<number, string>();
+    for (const p of state.participants) {
+      if (p.pcId == null) continue;
+      const print = JSON.stringify(p.followers ?? []);
+      prints.set(p.pcId, print);
+      const before = this.followerPrints.get(p.pcId);
+      if (before !== undefined && before !== print) this.followerService.notifyChanged(p.pcId);
+    }
+    this.followerPrints = prints;
   }
 
   // --- turn-cue sound ---------------------------------------------------------
@@ -1065,6 +1099,21 @@ export class SessionService {
   }
 
   /**
+   * DM damages (positive) or heals (negative) a seated PC's follower. Same
+   * body and same snapshot reply as {@link applyDamage}; the follower's own
+   * stat block takes the change.
+   */
+  damageFollower(sessionId: number | string, followerId: number, amount: number): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoDamageFollower(followerId, amount));
+    return this.http.post<unknown>(
+      `${this.sessionBase}/${sessionId}/followers/${followerId}/damage`, { amount },
+    ).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
    * DM awards XP to a single seated PC. The backend writes it through to the
    * character (floored at 0) and bumps the session version; XP isn't on the
    * snapshot, so the result carries the new total for a confirmation toast. The
@@ -1161,6 +1210,33 @@ export class SessionService {
     return next;
   }
 
+  /** Demo: the follower's row on the snapshot takes the damage/heal, by the
+   *  same rules as {@link demoDamage} (temp HP first, healing capped at max). */
+  private demoDamageFollower(followerId: number, amount: number): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const participants = state.participants.map(p => {
+      if (!p.followers.some(f => f.followerId === followerId)) return p;
+      const followers = p.followers.map(f => {
+        if (f.followerId !== followerId) return f;
+        let cur = f.hpCurrent ?? 0;
+        let temp = f.hpTemp ?? 0;
+        if (amount > 0) {
+          const absorbed = Math.min(temp, amount);
+          temp -= absorbed;
+          cur = Math.max(0, cur - (amount - absorbed));
+        } else if (amount < 0) {
+          cur += -amount;
+          if (f.hpMax != null) cur = Math.min(cur, f.hpMax);
+        }
+        return { ...f, hpCurrent: cur, hpTemp: temp };
+      });
+      return { ...p, followers };
+    });
+    const next = { ...state, participants, version: state.version + 1 };
+    this.pushState(next);
+    return next;
+  }
+
   /** Demo: start the encounter — pointer at the top of the current order. */
   private demoStart(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
@@ -1214,7 +1290,7 @@ export class SessionService {
       initiative: null, initRolled: false, orderIndex: state.participants.length,
       hpMax, hpCurrent: hpMax, hpTemp: null, ac: armorClass, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
-      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null,
+      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null, followers: [],
     };
     const participants = this.demoSort([...state.participants, enemy]);
     const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
@@ -1232,7 +1308,7 @@ export class SessionService {
       initiative: null, initRolled: false, orderIndex: state.participants.length + i,
       hpMax: 7, hpCurrent: 7, hpTemp: null, ac: 15, conditions: [], survival: null, spellSlots: null,
       deathSaveSuccesses: 0, deathSaveFailures: 0,
-      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null,
+      hitDiceUsed: null, inspirationPips: null, heroicInspiration: null, followers: [],
     }));
     const participants = this.demoSort([...state.participants, ...goblins]);
     const next = this.demoWithPointers({ ...state, participants, version: state.version + 1 });
@@ -1427,6 +1503,20 @@ export class SessionService {
       hitDiceUsed: pc.hitDiceUsed ?? null,
       inspirationPips: pc.inspirationPips ?? null,
       heroicInspiration: pc.heroicInspiration ?? null,
+      followers: this.followerService.demoList(pc.id).map(f => ({
+        followerId: f.id,
+        pcId: pc.id,
+        name: f.name,
+        clazz: f.statBlock.clazz ?? null,
+        level: f.statBlock.level ?? null,
+        portraitTint: f.statBlock.portraitTint ?? null,
+        portraitInitials: f.statBlock.portraitInitials ?? null,
+        hpMax: f.statBlock.hp?.max ?? null,
+        hpCurrent: f.statBlock.hp?.cur ?? null,
+        hpTemp: f.statBlock.hp?.temp ?? null,
+        ac: f.statBlock.ac ?? null,
+        conditions: f.statBlock.conditions ?? [],
+      })),
     };
   }
 
@@ -1566,6 +1656,24 @@ export class SessionService {
       hitDiceUsed: p.hitDiceUsed ?? null,
       inspirationPips: p.inspirationPips ?? null,
       heroicInspiration: p.heroicInspiration ?? null,
+      followers: Array.isArray(p.followers) ? p.followers.map(f => this.deserializeFollower(f)) : [],
+    };
+  }
+
+  private deserializeFollower(f: FollowerCombatantDto): FollowerCombatant {
+    return {
+      followerId: f.followerId,
+      pcId: f.pcId,
+      name: f.name,
+      clazz: f.clazz ?? null,
+      level: f.level ?? null,
+      portraitTint: f.portraitTint ?? null,
+      portraitInitials: f.portraitInitials ?? null,
+      hpMax: f.hpMax ?? null,
+      hpCurrent: f.hpCurrent ?? null,
+      hpTemp: f.hpTemp ?? null,
+      ac: f.ac ?? null,
+      conditions: this.parseConditions(f.conditions),
     };
   }
 
@@ -1695,6 +1803,22 @@ interface ParticipantDto {
   hitDiceUsed?: number | null;
   inspirationPips?: number | null;
   heroicInspiration?: boolean | null;
+  followers?: FollowerCombatantDto[] | null;
+}
+
+interface FollowerCombatantDto {
+  followerId: number;
+  pcId: number;
+  name: string;
+  clazz?: string | null;
+  level?: number | null;
+  portraitTint?: string | null;
+  portraitInitials?: string | null;
+  hpMax?: number | null;
+  hpCurrent?: number | null;
+  hpTemp?: number | null;
+  ac?: number | null;
+  conditions?: unknown;
 }
 
 interface SessionRollDto {

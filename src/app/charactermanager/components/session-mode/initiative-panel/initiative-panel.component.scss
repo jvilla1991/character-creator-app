@@ -70,6 +70,26 @@
   }
 }
 
+// Followers share their owner's turn, so their rows carry a softer copy of
+// the owner's glow: a hairline ring and a faint wash, no bloom and no tinted
+// ink, so the owner's row stays the one that reads as "up".
+.board-row.member.follower.with-current-turn {
+  background: color-mix(in oklch, var(--emerald) 7%, transparent);
+  border-radius: var(--radius-panel);
+  border-bottom-color: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--emerald) 45%, transparent);
+}
+
+.board-row.member.follower.with-on-deck {
+  background: color-mix(in oklch, var(--gold) 6%, transparent);
+  border-radius: var(--radius-panel);
+  border-bottom-color: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--gold) 40%, transparent);
+}
+
+// A follower has no initiative: its Init cell holds a quiet dash.
+.board-row.member.follower .init-cell { color: var(--text-dim); }
+
 // DM inline controls -------------------------------------------------------
 .init-input {
   width: 40px;
@@ -414,11 +434,33 @@
   }
 
   .init-cell { grid-area: init; }
-  .board-hero { grid-area: hero; }
+  .board-hero-cell { grid-area: hero; }
   .ac-cell { grid-area: ac; }
   .board-hp { grid-area: hp; }
   .board-conditions { grid-area: cond; }
   .dm-adjust { grid-area: adj; }
+
+  // A follower's card steps in from the left edge under its owner's card and
+  // keeps the nested tint. It has no initiative, so its dash tile gives way
+  // and the name takes the whole first line.
+  .board .board-row.member.follower {
+    grid-template-areas:
+      "hero hero hero"
+      "hp   hp   ac"
+      "cond cond cond"
+      "adj  adj  adj";
+    margin-left: 16px;
+    background: color-mix(in oklch, var(--bg-2) 45%, transparent);
+
+    .init-cell { display: none; }
+    .board-hero-cell { padding-left: 0; }
+  }
+  .board .board-row.member.follower.with-current-turn {
+    background: color-mix(in oklch, var(--emerald) 7%, transparent);
+  }
+  .board .board-row.member.follower.with-on-deck {
+    background: color-mix(in oklch, var(--gold) 6%, transparent);
+  }
 
   // Initiative and AC read as labelled tiles: initiative leads the name, AC
   // sits beside the health bar, so the name keeps the card's full width.
