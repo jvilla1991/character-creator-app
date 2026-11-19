@@ -135,8 +135,8 @@ describe('CreateCharacterModalComponent — logic', () => {
   // ── isSpellcastingClass ───────────────────────────────────────────────────
 
   describe('isSpellcastingClass', () => {
-    const casters    = ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'];
-    const nonCasters = ['barbarian', 'fighter', 'monk', 'paladin', 'ranger', 'rogue'];
+    const casters    = ['bard', 'cleric', 'druid', 'paladin', 'ranger', 'sorcerer', 'warlock', 'wizard'];
+    const nonCasters = ['barbarian', 'fighter', 'monk', 'rogue'];
 
     casters.forEach(cls => {
       it(`${cls} is a spellcasting class`, () => {
@@ -829,9 +829,12 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.currentClassEquipment?.optionB.gp).toBe(150);
     });
 
-    it('keeps the Paladin step layout (no level-1 spells step)', () => {
-      expect(component.isSpellcastingClass).toBeFalse();
-      expect(component.totalSteps).toBe(8);
+    it('gets the spells step: two level-1 Paladin spells and no cantrips', () => {
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.totalSteps).toBe(9);
+      expect(component.equipmentStep).toBe(8);
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
     });
 
     it('requires a rune before the class step can advance', () => {
@@ -1122,8 +1125,49 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.selectSpecialization('Holy');
       expect(component.canAdvance).toBeTrue();
       expect(component.specializationGuidance?.subclass.name).toBe('Oath of the Holy');
-      // No level-1 spells step for paladins: guidance stays text.
-      expect(component.isSpellcastingClass).toBeFalse();
+      // The specialization's level-1 spells are badged in the spells step.
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Shield of Faith']);
+    });
+
+    it('picks two level-1 Paladin spells, no cantrips, and saves them with two level-1 slots', (done) => {
+      const spell = (name: string, level: number): any => ({
+        name, level, school: 'evocation', classes: ['paladin'], actionType: 'action',
+        concentration: false, ritual: false, range: 'Touch', components: ['v'], duration: 'Instantaneous',
+        description: `${name} text.`,
+      });
+      const list = [spell('Bless', 1), spell('Cure Wounds', 1), spell('Shield of Faith', 1), spell('Light', 0)];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass(WOW_PALADIN_KEY);
+      component.selectSpecialization('Holy');
+      component.step = 6;
+      component.assignments = { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 13 };
+      component.bonusPlus2 = 'INT';
+      component.bonusPlus1 = 'WIS';
+      component.next();   // → step 7, the spells step
+      expect(component.step).toBe(7);
+      expect(component.stepName).toBe('Spells');
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Paladin');
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+
+      component.toggleSpell(list[3]);   // a cantrip: the class has no cantrip picks
+      expect(component.selectedSpells).toEqual([]);
+      component.toggleSpell(list[1]);
+      component.toggleSpell(list[2]);
+      component.toggleSpell(list[0]);   // a third spell: over the limit
+      expect(component.selectedSpells.map(s => s.name)).toEqual(['Cure Wounds', 'Shield of Faith']);
+
+      component.name = 'Tirion';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, s.lvl, s.prepared])).toEqual([
+          ['Cure Wounds', 1, true], ['Shield of Faith', 1, true],
+        ]);
+        expect(draft.spellSlots).toEqual({ 1: { max: 2, used: 0 } });
+        done();
+      });
+      component.submit();
     });
 
     it('emits clazz Paladin + null subclass + specialization in the create payload', (done) => {
@@ -1599,6 +1643,37 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.canAdvance).toBeTrue();
       expect(component.specializationGuidance?.subclass.name).toBe('Hunter');
       expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
+    });
+
+    it('gets the spells step with the Ranger list: two level-1 spells, no cantrips, two level-1 slots', (done) => {
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Survival');
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.totalSteps).toBe(9);
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Ranger');
+
+      component.name = 'Rhonna';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spellSlots).toEqual({ 1: { max: 2, used: 0 } });
+        done();
+      });
+      component.submit();
+    });
+
+    it('gives the Demon Hunter the same Ranger spells step', () => {
+      component.toggleClass('Demon Hunter (Ranger)');
+      expect(component.isSpellcastingClass).toBeTrue();
+      expect(component.maxCantrips).toBe(0);
+      expect(component.maxKnownSpells).toBe(2);
+      // No specialization guidance for a Demon Hunter, so nothing is badged.
+      component.selectSpecialization('Havoc');
+      expect(component.recommendedSpells).toEqual([]);
     });
 
     it('keeps the Demon Hunter separate: its subclass stays locked and its specs differ', () => {

@@ -95,9 +95,15 @@ const RACE_LIST = [
 
 // ── Spell constants ───────────────────────────────────────────────────────────
 
-/** Classes that have a full spell list at character creation */
+/**
+ * Classes that pick spells at character creation (2024 PHB): the full casters,
+ * the Warlock, and the half casters Paladin and Ranger, who prepare two level-1
+ * spells from level 1 and learn no cantrips. A World of Warcraft class stored
+ * under one of these names (Death Knight, Demon Hunter, WoW Paladin, Hunter, ...)
+ * picks the same way.
+ */
 export const SPELLCASTING_CLASSES = new Set([
-  'bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'
+  'bard', 'cleric', 'druid', 'paladin', 'ranger', 'sorcerer', 'warlock', 'wizard'
 ]);
 
 /** Starting cantrips known + spells prepared/known at level 1, per class */
@@ -105,6 +111,8 @@ export const SPELL_COUNTS: Record<string, { cantrips: number; spells: number }> 
   bard:     { cantrips: 2, spells: 4 },
   cleric:   { cantrips: 3, spells: 4 },
   druid:    { cantrips: 2, spells: 4 },
+  paladin:  { cantrips: 0, spells: 2 },
+  ranger:   { cantrips: 0, spells: 2 },
   sorcerer: { cantrips: 4, spells: 2 },
   warlock:  { cantrips: 2, spells: 2 },
   wizard:   { cantrips: 3, spells: 6 },
@@ -604,9 +612,10 @@ export class DndResourcesService {
    * from the supplement file, then the World of Warcraft module's spells (in that
    * order). WoW entries carry `source: 'World of Warcraft'`. Hero-class spells
    * have `classes: []` (they ride on a subclass), so class-filtered pickers never
-   * offer them; the WoW Druid's and WoW Paladin's general spells (Wrath, Moonfire,
-   * Consecration, Divine Shield, …) have `classes: ['druid']` / `['paladin']` and
-   * appear in those class pickers under the WoW source filter.
+   * offer them; the WoW Druid's, WoW Paladin's and WoW Hunter's general spells
+   * (Wrath, Moonfire, Consecration, Divine Shield, Freezing Trap, …) have
+   * `classes: ['druid']` / `['paladin']` / `['ranger']` and appear in those class
+   * pickers under the WoW source filter.
    * Fetched once on first call; cached via shareReplay.
    */
   getSpells(): Observable<DndSpell[]> {

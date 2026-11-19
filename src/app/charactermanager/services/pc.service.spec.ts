@@ -895,6 +895,22 @@ describe('PCService (demo mode)', () => {
       };
       doNext();
     });
+
+    it('previews half-caster slots and prepared spells for a demo Paladin and Ranger', (done) => {
+      // Demo PC 6 is a level 5 Paladin (Death Knight); 16 is a level 6 Ranger (Hunter).
+      service.levelUpPreview(6).subscribe(paladin => {
+        expect(paladin.newLevel).toBe(6);
+        expect(paladin.newSpellSlots).toEqual({ 1: 4, 2: 2 });
+        expect([paladin.currentSpellsKnown, paladin.newSpellsKnown]).toEqual([6, 6]);
+        expect(paladin.newCantripsKnown).toBe(0);
+        service.levelUpPreview(16).subscribe(ranger => {
+          expect(ranger.newLevel).toBe(7);
+          expect(ranger.newSpellSlots).toEqual({ 1: 4, 2: 3 });
+          expect([ranger.currentSpellsKnown, ranger.newSpellsKnown]).toEqual([6, 7]);
+          done();
+        });
+      });
+    });
   });
 });
 

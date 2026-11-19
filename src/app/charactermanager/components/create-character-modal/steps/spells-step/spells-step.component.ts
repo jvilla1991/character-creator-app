@@ -5,7 +5,9 @@ import { spellKey } from '../../../../models/spell-names';
 
 /**
  * Step 7 (spellcasting classes only): pick cantrips/1st-level spells with a
- * filterable, expandable list. Presentational — the parent owns the spell list,
+ * filterable, expandable list. A class that learns no cantrips at level 1
+ * (Paladin, Ranger: `maxCantrips` 0) gets no cantrip tab, count or copy.
+ * Presentational — the parent owns the spell list,
  * the selection, the filter state, and which row is expanded. The child renders
  * the passed `filteredSpellList`, reimplements the trivial selected/open
  * predicates over the inputs, and reports filter changes and toggles via events.

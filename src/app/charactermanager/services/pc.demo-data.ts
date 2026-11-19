@@ -1168,11 +1168,13 @@ export function demoCantripsKnown(clazz: string, level: number): number {
   return b + (level >= 4 ? 1 : 0) + (level >= 10 ? 1 : 0);
 }
 
-// DEMO-ONLY mirror of the server prepared/known-spell tables (full-caster vs warlock pact).
+// DEMO-ONLY mirror of the server prepared/known-spell tables (full caster, warlock pact, half caster).
 const DEMO_FULL_PREPARED =
   [4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22];
 const DEMO_PACT_PREPARED =
   [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15];
+const DEMO_HALF_PREPARED =
+  [2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 14, 14, 15, 15];
 
 export function demoPreparedSpells(clazz: string, level: number): number {
   const key = (clazz ?? '').trim().toLowerCase();
@@ -1180,5 +1182,6 @@ export function demoPreparedSpells(clazz: string, level: number): number {
   const idx = Math.min(level, 20) - 1;
   if (['bard', 'cleric', 'druid', 'sorcerer', 'wizard'].includes(key)) return DEMO_FULL_PREPARED[idx];
   if (key === 'warlock') return DEMO_PACT_PREPARED[idx];
+  if (['paladin', 'ranger'].includes(key)) return DEMO_HALF_PREPARED[idx];
   return 0;
 }

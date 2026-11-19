@@ -558,7 +558,10 @@ export const OATH_OF_THE_HOLY_SPELLS: readonly SubclassSpellRow[] = [
   { classLevel: 17, spells: ['Greater Restoration', 'Mass Cure Wounds'] },
 ];
 
-/** Per-specialization picks (class step box + sheet panel). Paladins have no level-1 spells step, so spells are text. */
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * Paladins learn no cantrips at level 1; the level-1 spells are badged in the spells step.
+ */
 export const WOW_PALADIN_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
   Holy: {
     level1Spells: ['Cure Wounds', 'Shield of Faith'],
