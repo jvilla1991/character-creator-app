@@ -22,10 +22,24 @@ import { PCService } from './pc.service';
 export class GrantService {
   constructor(private pcService: PCService) {}
 
-  grantToPc(pcId: number, mutate: (fresh: PC) => PC): Observable<PC> {
+  /**
+   * `describe`, when given, writes the DM's activity-log line from the fresh
+   * copy and the mutated one — for changes the server's automatic before/after
+   * diff has no readable words for. Omitted, the automatic diff is kept.
+   */
+  grantToPc(
+    pcId: number,
+    mutate: (fresh: PC) => PC,
+    describe?: (fresh: PC, updated: PC) => string | null,
+  ): Observable<PC> {
     return this.pcService.getPCByIdAsDm(pcId).pipe(
-      map(fresh => mutate(fresh)),
-      switchMap(updated => this.pcService.updatePCAsDm(updated))
+      map(fresh => {
+        const updated = mutate(fresh);
+        return { updated, description: describe ? describe(fresh, updated) : null };
+      }),
+      switchMap(({ updated, description }) => description
+        ? this.pcService.updatePCAsDm(updated, description)
+        : this.pcService.updatePCAsDm(updated))
     );
   }
 }

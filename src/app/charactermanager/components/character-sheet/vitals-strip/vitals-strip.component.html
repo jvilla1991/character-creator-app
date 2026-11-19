@@ -28,13 +28,24 @@
 <!-- AC -->
 <div class="vital">
   <span class="eyebrow">Armor Class</span>
-  <div class="vital-value numeric"><app-editable-number
-    [value]="pc.ac" [editable]="editable" [min]="0"
-    [intercept]="true" (editRequested)="requestVital('ac')"
-    label="armor class" (committed)="setVital('ac', $event)"
-  >{{ pc.ac ?? '—' }}</app-editable-number></div>
+  <!-- A character's AC opens its breakdown for every viewer (the DM can add
+  lines there). A follower has no inventory to work it out from, so its AC
+  stays a plain number the DM types. -->
+  @if (breakdownEnabled) {
+    <div class="vital-value numeric"><button type="button" class="breakdown-btn"
+      [class.adjustable]="canAdjust"
+      [attr.aria-label]="acButtonLabel"
+      (click)="breakdownRequested.emit('ac')"
+    >{{ pc.ac ?? '—' }}</button></div>
+  } @else {
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.ac" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('ac')"
+      label="armor class" (committed)="setVital('ac', $event)"
+    >{{ pc.ac ?? '—' }}</app-editable-number></div>
+  }
   @if (armorLabel) {
-    <div style="font-size: 11px; color: var(--text-dim); margin-top: 8px;">{{ armorLabel }}</div>
+    <div class="vital-caption">{{ armorLabel }}</div>
   }
 </div>
 

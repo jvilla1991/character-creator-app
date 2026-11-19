@@ -193,6 +193,129 @@ describe('CharacterSheetComponent', () => {
       jasmine.objectContaining({ exhaustion: 0 }));
   });
 
+  // --- Number breakdown (Armor Class) and DM adjustment lines ---
+
+  describe('AC breakdown', () => {
+    /** DEX 14, chain shirt + shield: 13 + 2 + 2 = 17 from the gear. */
+    const armoured = (overrides: Partial<PC> = {}): PC => makePC({
+      stats: { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+      inventory: [
+        { name: 'Chain Shirt', category: 'armor', qty: 1, equipped: true, armorClass: '13 + Dex modifier (max 2)' },
+        { name: 'Shield', category: 'armor', qty: 1, equipped: true, armorClass: '+2' },
+      ],
+      ac: 17,
+      campaignId: 3,
+      ...overrides,
+    });
+    const taunka = { value: 1, label: 'Taunka' };
+
+    it('opens with the lines that make up the number, for any viewer', () => {
+      component.pc = armoured({ ac: 18, statAdjustments: { ac: [taunka] } });
+
+      component.onBreakdownRequested('ac');
+
+      expect(component.statBreakdown?.auto.map(l => l.label)).toEqual(['Chain Shirt', 'Dexterity', 'Shield']);
+      expect(component.statBreakdown?.adjustments).toEqual([taunka]);
+      expect(component.statBreakdown?.total).toBe(18);
+    });
+
+    it('lets the DM adjust, and nobody else in a campaign', () => {
+      component.pc = armoured();
+      component.showActions = true; // the player's own interactive sheet
+      expect(component.canAdjustStats).toBeFalse();
+
+      component.editable = true;    // DM cross-link
+      expect(component.canAdjustStats).toBeTrue();
+    });
+
+    it('lets the owner adjust a character that is in no campaign, since it has no DM', () => {
+      component.pc = armoured({ campaignId: null });
+      component.showActions = true;
+      expect(component.canAdjustStats).toBeTrue();
+
+      component.showActions = false; // a read-only view of someone else's character
+      expect(component.canAdjustStats).toBeFalse();
+    });
+
+    it('never offers adjustments on a follower', () => {
+      component.pc = armoured();
+      component.editable = true;
+      component.followerMode = true;
+      expect(component.canAdjustStats).toBeFalse();
+    });
+
+    it('saves a DM line through the refetch-merge-save grant path, on the FRESH character', () => {
+      grantService.grantToPc.and.returnValue(of(makePC()));
+      component.pc = armoured();
+      component.editable = true;
+      component.onBreakdownRequested('ac');
+
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+
+      expect(component.statBreakdown).toBeNull();
+      expect(pcService.updatePCAsDm).not.toHaveBeenCalled(); // never PUTs the sheet's own copy
+      const [id, mutate, describe] = grantService.grantToPc.calls.mostRecent().args;
+      expect(id).toBe(7);
+
+      // The player took the shield off between the sheet loading and the DM saving.
+      const fresh = armoured({
+        ac: 15,
+        inventory: [{ name: 'Chain Shirt', category: 'armor', qty: 1, equipped: true, armorClass: '13 + Dex modifier (max 2)' }],
+      });
+      const updated = mutate(fresh);
+      expect(updated.ac).toBe(16);                         // 13 + 2 + Taunka 1, shield still off
+      expect(updated.statAdjustments).toEqual({ ac: [taunka] });
+      expect(fresh.ac).toBe(15);                           // pure
+      expect(describe!(fresh, updated)).toBe('DM added +1 Taunka to AC (AC 15 → 16)');
+    });
+
+    it('tells the DM when the save fails', () => {
+      const error = new Error('network down');
+      grantService.grantToPc.and.returnValue(throwError(() => error));
+      const notify = spyOn(TestBed.inject(NotificationService), 'error');
+      component.pc = armoured();
+      component.editable = true;
+      component.onBreakdownRequested('ac');
+
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+
+      expect(notify).toHaveBeenCalledWith('Could not save the adjustments. Try again.', error);
+    });
+
+    it('saves the owner of a campaign-less character through the owner path', () => {
+      pcService.updatePC.and.returnValue(of(makePC()));
+      component.pc = armoured({ campaignId: null });
+      component.showActions = true;
+      component.onBreakdownRequested('ac');
+
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+
+      expect(grantService.grantToPc).not.toHaveBeenCalled();
+      expect(pcService.updatePC).toHaveBeenCalledWith(
+        jasmine.objectContaining({ ac: 18, statAdjustments: { ac: [taunka] } }));
+    });
+
+    it('ignores a save from a viewer who may not adjust', () => {
+      component.pc = armoured();
+      component.showActions = true; // a player in a campaign
+      component.onBreakdownRequested('ac');
+
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+
+      expect(grantService.grantToPc).not.toHaveBeenCalled();
+      expect(pcService.updatePC).not.toHaveBeenCalled();
+      expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+    });
+
+    it('closing drops the dialog without saving', () => {
+      component.pc = armoured();
+      component.onBreakdownRequested('ac');
+      component.closeStatBreakdown();
+      expect(component.statBreakdown).toBeNull();
+      expect(grantService.grantToPc).not.toHaveBeenCalled();
+    });
+  });
+
   // --- DM feature grants ---
 
   it('grants a feature via GrantService using this PC\'s id', () => {

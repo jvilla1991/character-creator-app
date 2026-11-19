@@ -18,3 +18,29 @@
   &:hover:not([disabled]) { background: rgba(76, 175, 125, 0.18); }
   &[disabled] { opacity: 0.45; cursor: not-allowed; }
 }
+
+/* Armor Class as a button that opens its breakdown. It takes the surrounding
+   numeral's type so the value does not move; the dashed underline is the same
+   "you can open this" cue the DM's editable numbers use, in a quieter ink for
+   a viewer who can only look. */
+.breakdown-btn {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed color-mix(in oklch, var(--text-dim) 70%, transparent);
+  border-radius: 4px;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: background 120ms ease;
+
+  &.adjustable {
+    border-bottom-color: color-mix(in oklch, var(--celestial) 55%, transparent);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in oklch, var(--celestial) 16%, transparent);
+    outline: none;
+  }
+}
