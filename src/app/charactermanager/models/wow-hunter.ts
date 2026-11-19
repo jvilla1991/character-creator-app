@@ -109,9 +109,18 @@ export function petFamilyLabel(family: PetFamily): string {
   return family.unusual ? `${base} ✦` : base;
 }
 
-/** True when a character keeps a hunter pet: Ranger + the Beast Master subclass (case-insensitive). */
-export function keepsHunterPet(pc: { clazz?: string | null; subclass?: string | null } | null | undefined): boolean {
+/** The Hunter specializations that keep a pet. A Marksmanship hunter has none (same rule as the server). */
+export const PET_SPECIALIZATIONS: readonly string[] = ['Beast Mastery', 'Survival'];
+
+/**
+ * True when a character keeps a hunter pet: a Ranger with the Beast Mastery or Survival
+ * specialization and the Beast Master subclass (class and subclass case-insensitive).
+ */
+export function keepsHunterPet(
+  pc: { clazz?: string | null; subclass?: string | null; specialization?: string | null } | null | undefined,
+): boolean {
   return (pc?.clazz ?? '').toLowerCase() === 'ranger'
+    && PET_SPECIALIZATIONS.includes(pc?.specialization ?? '')
     && (pc?.subclass ?? '').toLowerCase() === BEAST_MASTER.toLowerCase();
 }
 

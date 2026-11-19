@@ -325,6 +325,21 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     this.persist(updated);
   }
 
+  /**
+   * The hero-class panel picked (or cleared, with null) a WoW Hunter's pet family. A real
+   * character saves it through the pet endpoint — the generic update ignores `petFamily` —
+   * for the owner and the DM alike; a follower has no such endpoint and saves its stat block.
+   */
+  onPetFamilyChange(family: string | null): void {
+    if (this.followerMode) {
+      this.persist({ ...this.pc, petFamily: family });
+      return;
+    }
+    this.pcService.setPetFamily(this.pc.id, family).subscribe({
+      error: err => this.notifications.error('Could not change the pet family. Try again.', err),
+    });
+  }
+
   /** DM cycled a skill's proficiency marker (skills panel, cross-link mode only).
    *  The panel supplies the log line — a skills-map change has no readable
    *  auto-diff on the backend, so we pass the description through. */

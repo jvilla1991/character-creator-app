@@ -64,7 +64,7 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * the level-1 fighting style, subclass and maneuvers to consider (text only); for a WoW Priest, the
  * recommended domain, suggested spells, domain spells and the Discipline / Shadow Domain cards; for a WoW Evoker,
  * the Evoker Spells table, Metamagic, spells to prepare, Elemental Affinity and suggested spells; for a WoW Hunter
- * Beast Master, the Pet card (family selector — the one thing this panel saves, as `petFamily` through `pcChange` —
+ * Beast Master, the Pet card (family selector — saved through `petFamilyChange`, which the sheet sends to the pet endpoint —
  * plus the family's stat block, specialization, mastery and, for Beast Mastery at Ranger 6+, Pet Specialization).
  * Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
@@ -91,8 +91,13 @@ export class HeroClassPanelComponent {
 
   /** True when the viewer may change the pet family or the rune weapon (the owner, or the DM's cross-link view). */
   @Input() canEdit = false;
-  /** The pet family or the rune weapon was changed — the sheet persists the updated PC through the normal update path. */
+  /** The rune weapon was changed — the sheet persists the updated PC through the normal update path. */
   readonly pcChange = output<PC>();
+  /**
+   * The pet family was picked (a name) or cleared (null). Not part of `pcChange`: the server's
+   * generic update ignores `petFamily`, so the sheet saves it through the dedicated pet endpoint.
+   */
+  readonly petFamilyChange = output<string | null>();
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
   /** How the recommended subclass reads ('Evoker (school of evocation)' for a WoW Mage). */
@@ -323,12 +328,12 @@ export class HeroClassPanelComponent {
     this.classicForms = classicBeastForms(pc.level ?? 1, moon);
   }
 
-  /** Pick a pet family ('' clears it) and hand the updated PC to the sheet to save. */
+  /** Pick a pet family ('' clears it) and hand it to the sheet to save. */
   selectPetFamily(name: string): void {
     if (!this.canEdit) return;
     const next = name || null;
     if (next === (this._pc.petFamily ?? null)) return;
-    this.pcChange.emit({ ...this._pc, petFamily: next });
+    this.petFamilyChange.emit(next);
   }
 
   /** The Ranger level Pet Specialization arrives at (for the "from Ranger 6" note). */
