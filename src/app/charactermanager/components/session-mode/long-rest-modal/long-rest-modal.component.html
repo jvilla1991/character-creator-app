@@ -50,11 +50,13 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
               <dd class="lr-note">down from {{ p.exhaustionNow }}</dd>
             </div>
           }
-          @if (p.tempHp > 0) {
+          @if (p.tempHp > 0 || tempHpAfter() > 0) {
             <div class="lr-row" data-row="temp-hp">
               <dt class="lr-label">Temp HP</dt>
-              <dd class="numeric">0</dd>
-              <dd class="lr-note">{{ p.tempHp }} will fade</dd>
+              <dd class="numeric">{{ tempHpAfter() }}</dd>
+              <dd class="lr-note">
+                {{ tempHpAfter() > 0 ? 'from the Blood Rune' : p.tempHp + ' will fade' }}
+              </dd>
             </div>
           }
           @for (s of p.slots; track s.level) {
@@ -84,6 +86,8 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
         when the player readies up or takes it back. -->
         <button type="button" class="btn" [class.primary]="!ready()"
           [attr.data-ready]="ready() ? null : ''" [attr.data-unready]="ready() ? '' : null"
+          [disabled]="!ready() && readyBlocked() != null"
+          [attr.aria-describedby]="!ready() && readyBlocked() ? 'lr-ready-blocked' : null"
           (click)="readyChange.emit(!ready())">
           {{ ready() ? 'Not Ready' : 'Ready' }}
         </button>
@@ -91,6 +95,8 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
     </div>
     @if (ready()) {
       <div class="lr-waiting">Waiting on the rest of the party…</div>
+    } @else if (readyBlocked() && !cannotRest()) {
+      <div class="lr-waiting" id="lr-ready-blocked">{{ readyBlocked() }}</div>
     }
   </app-modal>
 </div>

@@ -285,7 +285,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         }
         <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
         @if (heroClass) {
-          <!-- canEdit: the owner or the DM's cross-link view may pick a WoW hunter's pet family -->
+          <!-- canEdit: the owner or the DM's cross-link view may pick a WoW hunter's pet family
+          or a Death Knight's rune weapon -->
           <app-hero-class-panel [pc]="pc" [canEdit]="ownSheet || editable" (pcChange)="onPcChange($event)"></app-hero-class-panel>
         }
         <app-other-features   [pc]="pc" [addAllowed]="editable" (featureGranted)="onOtherFeatureGrant($event)"></app-other-features>

@@ -5,6 +5,7 @@ import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
+  LongRestChoices,
   LongRestResultView,
   LongRestView,
   ParticipantView,
@@ -508,10 +509,18 @@ export class SessionService {
     );
   }
 
-  /** A player marks their own seated hero ready (or not) for the open long rest. */
-  setLongRestReady(sessionId: number | string, pcId: number, ready: boolean): Observable<SessionState> {
-    if (environment.demoMode) return of(this.demoSetLongRestReady(pcId, ready));
-    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest/ready`, { pcId, ready }).pipe(
+  /**
+   * A player marks their own seated hero ready (or not) for the open long
+   * rest. A Ready carries the hero's choices (prepared spells, rune weapon);
+   * the server checks them now and applies them when the rest finishes.
+   * Taking Ready back discards them.
+   */
+  setLongRestReady(
+    sessionId: number | string, pcId: number, ready: boolean, choices: LongRestChoices = {},
+  ): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoSetLongRestReady(pcId, ready, choices));
+    const body = ready ? { pcId, ready, ...choices } : { pcId, ready };
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest/ready`, body).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
@@ -661,24 +670,32 @@ export class SessionService {
       readyCount: 0,
       ableCount: readiness.filter(r => !r.cannotRest).length,
       readiness,
+      myChoices: null,
     };
   }
+
+  /** Demo: each ready hero's pending long rest choices, by PC id (the server keeps these on the seat). */
+  private demoLongRestChoices = new Map<number, LongRestChoices>();
 
   /** Demo mirror: the DM opens the phase without a vote. */
   private demoOpenLongRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     if (state.longRest) return state;
+    this.demoLongRestChoices.clear();
     return this.demoPatch({ shortRestOpen: false, longRest: this.demoLongRestView(state) });
   }
 
   /** Demo mirror: mark one hero ready; the last Ready finishes the rest. */
-  private demoSetLongRestReady(pcId: number, ready: boolean): SessionState {
+  private demoSetLongRestReady(pcId: number, ready: boolean, choices: LongRestChoices = {}): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     if (!state.longRest) return state;
+    const chose = ready && (choices.preparedSpells != null || !!choices.runeWeapon);
+    if (chose) this.demoLongRestChoices.set(pcId, choices);
+    else this.demoLongRestChoices.delete(pcId);
     const readiness = state.longRest.readiness.map(r =>
       r.pcId === pcId && !r.cannotRest ? { ...r, ready } : r);
     const readyCount = readiness.filter(r => r.ready).length;
-    const longRest = { ...state.longRest, readiness, readyCount };
+    const longRest = { ...state.longRest, readiness, readyCount, myChoices: chose ? choices : null };
     this.demoPatch({ longRest });
     const settled = longRest.ableCount > 0 && readyCount === longRest.ableCount;
     return settled ? this.demoFinishLongRest() : this.stateSubject.getValue()!;
@@ -720,10 +737,15 @@ export class SessionService {
       if (p.pcId == null || skippedIds.has(p.pcId)) return p;
       const pc = this.pcService.getPCById(p.pcId);
       if (!pc) return p;
-      const updated = applyLongRestToPc(pc, phase.undisturbed, survivalOn);
+      // Only a hero who readied has their choices applied; the others keep
+      // their spells and rune weapon as they were.
+      const isReady = phase.readiness.some(r => r.pcId === p.pcId && r.ready);
+      const updated = applyLongRestToPc(pc, phase.undisturbed, survivalOn,
+        isReady ? this.demoLongRestChoices.get(p.pcId) : undefined);
       this.pcService.patchLocalPC(p.pcId, {
         spellSlots: updated.spellSlots, survival: updated.survival, hp: updated.hp,
         hitDiceUsed: updated.hitDiceUsed, exhaustion: updated.exhaustion,
+        spells: updated.spells, runeWeapon: updated.runeWeapon,
       });
       return {
         ...p,
@@ -734,6 +756,7 @@ export class SessionService {
         hitDiceUsed: updated.hitDiceUsed ?? p.hitDiceUsed,
       };
     });
+    this.demoLongRestChoices.clear();
     return this.demoPatch({
       participants,
       longRest: null,
@@ -745,6 +768,7 @@ export class SessionService {
   private demoInterruptLongRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     if (!state.longRest) return state;
+    this.demoLongRestChoices.clear();
     return this.demoPatch({
       longRest: null,
       longRestResult: this.demoLongRestResult('INTERRUPTED', [], false),
@@ -1420,6 +1444,12 @@ export class SessionService {
       readyCount: v.readyCount ?? readiness.filter(r => r.ready).length,
       ableCount: v.ableCount ?? readiness.filter(r => !r.cannotRest).length,
       readiness,
+      myChoices: v.myChoices
+        ? {
+            ...(v.myChoices.preparedSpells ? { preparedSpells: v.myChoices.preparedSpells } : {}),
+            ...(v.myChoices.runeWeapon ? { runeWeapon: v.myChoices.runeWeapon } : {}),
+          }
+        : null,
     };
   }
 
@@ -1569,6 +1599,7 @@ interface LongRestDto {
     participantId: number; pcId?: number | null; displayName: string;
     ready?: boolean; cannotRest?: boolean;
   }>;
+  myChoices?: { preparedSpells?: string[] | null; runeWeapon?: string | null } | null;
 }
 
 interface RestVoteDto {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output, signal } from '@angular/core';
+import { RuneWeaponFieldComponent } from './rune-weapon-field.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
@@ -70,6 +71,7 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
   templateUrl: './hero-class-panel.component.html',
   styleUrls: ['./hero-class-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RuneWeaponFieldComponent],
 })
 export class HeroClassPanelComponent {
   private readonly dndResources = inject(DndResourcesService);
@@ -82,9 +84,9 @@ export class HeroClassPanelComponent {
   readonly petMasteryNote = PET_MASTERY_NOTE;
   readonly petHpNote = PET_HP_NOTE;
 
-  /** True when the viewer may change the pet family (the owner, or the DM's cross-link view). */
+  /** True when the viewer may change the pet family or the rune weapon (the owner, or the DM's cross-link view). */
   @Input() canEdit = false;
-  /** The pet family was changed — the sheet persists the updated PC through the normal update path. */
+  /** The pet family or the rune weapon was changed — the sheet persists the updated PC through the normal update path. */
   readonly pcChange = output<PC>();
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
