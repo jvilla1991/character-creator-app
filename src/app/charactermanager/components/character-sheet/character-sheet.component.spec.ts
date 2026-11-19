@@ -26,7 +26,7 @@ describe('CharacterSheetComponent', () => {
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService',
-      ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration']);
+      ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration', 'setPetFamily']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
     followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['update']);
@@ -179,6 +179,31 @@ describe('CharacterSheetComponent', () => {
 
     expect(notify).toHaveBeenCalledWith('Could not save that change. Try again.', error);
     expect(component.pc).toBe(before);
+  });
+
+  // --- WoW Hunter pet family: its own endpoint, never the generic update ---
+
+  it('saves a pet family (and "no pet") through setPetFamily, for the owner and the DM alike', () => {
+    pcService.setPetFamily.and.returnValue(of(makePC()));
+    component.pc = makePC({ id: 7 });
+
+    component.onPetFamilyChange('Wolf');
+    component.editable = true; // DM cross-link view
+    component.onPetFamilyChange(null);
+
+    expect(pcService.setPetFamily.calls.allArgs()).toEqual([[7, 'Wolf'], [7, null]]);
+    expect(pcService.updatePC).not.toHaveBeenCalled();
+    expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
+  });
+
+  it('tells the user when the pet family could not be saved', () => {
+    const error = new Error('network down');
+    pcService.setPetFamily.and.returnValue(throwError(() => error));
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+
+    component.onPetFamilyChange('Bear');
+
+    expect(notify).toHaveBeenCalledWith('Could not change the pet family. Try again.', error);
   });
 
   it('clamps the exhaustion level to the 0–6 range', () => {
@@ -619,6 +644,13 @@ describe('CharacterSheetComponent', () => {
       expect(changed.calls.argsFor(2)[0].heroicInspiration).toBeFalse();
       expect(pcService.setInspirationPips).not.toHaveBeenCalled();
       expect(pcService.useInspiration).not.toHaveBeenCalled();
+    });
+
+    it('a pet family change is plain stat-block data, not the PC pet endpoint', () => {
+      component.onPetFamilyChange('Wolf');
+
+      expect(changed).toHaveBeenCalledWith(jasmine.objectContaining({ id: -12, petFamily: 'Wolf' }));
+      expect(pcService.setPetFamily).not.toHaveBeenCalled();
     });
 
     it('leaves the bottom-tab-bar body flag to its character\'s sheet', () => {

@@ -349,7 +349,7 @@
           @if (canEdit) {
             <select id="pet-family-select" class="pet-family-select"
               (change)="selectPetFamily($any($event.target).value)">
-              <option value="" [selected]="!petFamily">Choose a family…</option>
+              <option value="" [selected]="!petFamily">{{ petFamily ? 'No pet' : 'Choose a family…' }}</option>
               @for (f of petFamilies; track f.name) {
                 <option [value]="f.name" [selected]="petFamily?.name === f.name">{{ petFamilyLabel(f) }}</option>
               }
