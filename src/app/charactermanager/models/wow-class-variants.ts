@@ -408,8 +408,8 @@ export const WOW_MAGE_GUIDANCE: Readonly<Record<string, SpecializationGuidance>>
 
 /**
  * Suggested (not always-prepared) spells per specialization, by spell level
- * (✦ WoW spells are flagged from the spell data). Mass Polymorph is a level-9
- * spell, so it sits in the level-9 row.
+ * (✦ WoW spells are flagged from the spell data). Mass Polymorph is a level-7
+ * spell, so it sits in the level-7 row.
  */
 export const WOW_MAGE_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
   Arcane: [
@@ -421,9 +421,9 @@ export const WOW_MAGE_SUGGESTED_SPELLS: Readonly<Record<string, readonly Suggest
       'Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', "Otiluke's Resilient Sphere", 'Polymorph'] },
     { level: 5, spells: ["Bigby's Hand", 'Teleportation Circle', 'Wall of Force'] },
     { level: 6, spells: ['Arcane Gate', 'Disintegrate', 'Globe of Invulnerability', "Heroes' Feast"] },
-    { level: 7, spells: ['Forcecage', "Mordenkainen's Sword", 'Prismatic Spray', 'Teleport'] },
+    { level: 7, spells: ['Forcecage', 'Mass Polymorph', "Mordenkainen's Sword", 'Prismatic Spray', 'Teleport'] },
     { level: 8, spells: ['Befuddlement', 'Maze'] },
-    { level: 9, spells: ['Mass Polymorph', 'Prismatic Wall', 'Time Stop'] },
+    { level: 9, spells: ['Prismatic Wall', 'Time Stop'] },
   ],
   Fire: [
     { level: 1, spells: ['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar', 'Frost Nova'] },
@@ -435,9 +435,9 @@ export const WOW_MAGE_SUGGESTED_SPELLS: Readonly<Record<string, readonly Suggest
     { level: 4, spells: ['Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', 'Polymorph', 'Wall of Fire'] },
     { level: 5, spells: ['Flame Strike', 'Teleportation Circle'] },
     { level: 6, spells: ['Arcane Gate', 'Combustion', "Heroes' Feast"] },
-    { level: 7, spells: ['Delayed Blast Fireball', 'Prismatic Spray', 'Teleport'] },
+    { level: 7, spells: ['Delayed Blast Fireball', 'Mass Polymorph', 'Prismatic Spray', 'Teleport'] },
     { level: 8, spells: ['Befuddlement', 'Incendiary Cloud', 'Maze'] },
-    { level: 9, spells: ['Mass Polymorph', 'Meteor Swarm', 'Prismatic Wall', 'Time Stop'] },
+    { level: 9, spells: ['Meteor Swarm', 'Prismatic Wall', 'Time Stop'] },
   ],
   Frost: [
     { level: 1, spells: ['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar'] },
@@ -448,9 +448,9 @@ export const WOW_MAGE_SUGGESTED_SPELLS: Readonly<Record<string, readonly Suggest
     { level: 4, spells: ['Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', 'Ice Storm', 'Polymorph'] },
     { level: 5, spells: ['Cone of Cold', 'Teleportation Circle'] },
     { level: 6, spells: ['Arcane Gate', "Heroes' Feast", "Otiluke's Freezing Sphere", 'Wall of Ice'] },
-    { level: 7, spells: ['Prismatic Spray', 'Teleport'] },
+    { level: 7, spells: ['Mass Polymorph', 'Prismatic Spray', 'Teleport'] },
     { level: 8, spells: ['Befuddlement', 'Maze'] },
-    { level: 9, spells: ['Mass Polymorph', 'Prismatic Wall', 'Time Stop'] },
+    { level: 9, spells: ['Prismatic Wall', 'Time Stop'] },
   ],
 };
 
