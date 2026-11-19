@@ -139,6 +139,12 @@
         (speciesToolChange)="setSpeciesTool($event)"
         [(languageChoice)]="languageChoice"
         [(languageChoice2)]="languageChoice2"
+        [(languageChoice3)]="languageChoice3"
+        [languageCount]="languagePickCount"
+        [languageHint]="languageHint"
+        [allegiances]="usesWowLanguages ? allegiances : null"
+        [allegiance]="effectiveAllegiance"
+        (allegianceChange)="setAllegiance($event)"
         [standardLanguages]="standardLanguages"
         (toggleSkill)="toggleSkillProf($event)">
       </app-proficiencies-step>
@@ -226,6 +232,7 @@
         [backgroundToolProfs]="reviewToolProfs"
         [languageChoice]="languageChoice"
         [languageChoice2]="languageChoice2"
+        [languages]="startingLanguages"
         [abilities]="abilities"
         [finalScore]="finalScore"
         [isSpellcastingClass]="isSpellcastingClass"

@@ -87,6 +87,58 @@ describe('ProficienciesStepComponent — species proficiencies', () => {
     expect(fixture.componentInstance.toolOptionsFor(1)).not.toContain('Lute');
   });
 
+  describe('languages by allegiance', () => {
+    const langSelects = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('select[name^="languageChoice"]')) as HTMLSelectElement[];
+    const optionsOf = (s: HTMLSelectElement) => Array.from(s.options).slice(1).map(o => o.textContent!.trim());
+
+    it('shows no allegiance picker and two dropdowns for a base-game species', () => {
+      const el = render({ standardLanguages: ['Elvish', 'Giant'] }).nativeElement as HTMLElement;
+      expect(el.querySelector('.allegiance-row')).toBeNull();
+      expect(langSelects(el).length).toBe(2);
+      expect(el.querySelector('.language-hint')).toBeNull();
+    });
+
+    it('offers the three allegiances, marks the one in force, and emits a click', () => {
+      const fixture = render({
+        allegiances: ['Alliance', 'Horde', 'Unaffiliated'], allegiance: 'Horde',
+        languageHint: 'You know Orcish, plus two languages of the Horde.',
+        standardLanguages: ['Zandali', 'Goblin'],
+      });
+      const el = fixture.nativeElement as HTMLElement;
+      const chips = Array.from(el.querySelectorAll('.allegiance-row button')) as HTMLButtonElement[];
+      expect(chips.map(c => c.textContent!.trim())).toEqual(['Alliance', 'Horde', 'Unaffiliated']);
+      expect(chips[1].classList).toContain('active');
+      expect(chips[1].getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('.language-hint')?.textContent).toContain('Orcish');
+
+      const emitted: string[] = [];
+      fixture.componentInstance.allegianceChange.subscribe(a => emitted.push(a));
+      chips[0].click();
+      expect(emitted).toEqual(['Alliance']);
+    });
+
+    it('shows a third dropdown for the unaffiliated, and no dropdown offers another one\'s pick', () => {
+      const el = render({
+        allegiances: ['Alliance', 'Horde', 'Unaffiliated'], allegiance: 'Unaffiliated', languageCount: 3,
+        standardLanguages: ['Common', 'Orcish', 'Pandaren', 'Zandali'],
+        languageChoice: 'Common', languageChoice2: 'Pandaren', languageChoice3: 'Zandali',
+      }).nativeElement as HTMLElement;
+      const selects = langSelects(el);
+      expect(selects.length).toBe(3);
+      expect(optionsOf(selects[0])).toEqual(['Common', 'Orcish']);
+      expect(optionsOf(selects[1])).toEqual(['Orcish', 'Pandaren']);
+      expect(optionsOf(selects[2])).toEqual(['Orcish', 'Zandali']);
+    });
+
+    it('ignores a left-over third pick while only two dropdowns show', () => {
+      const fixture = render({
+        standardLanguages: ['Elvish', 'Giant', 'Orc'], languageChoice3: 'Orc',
+      });
+      expect(fixture.componentInstance.firstLanguageOptions).toContain('Orc');
+    });
+  });
+
   it('without a lockedSkills list, still locks the background\'s skills on the class chips', () => {
     const el = render({ backgroundSkillProfs: ['Arcana'] }).nativeElement as HTMLElement;
     const arcana = Array.from(section(el, 'Wizard Skills')!.querySelectorAll('button'))

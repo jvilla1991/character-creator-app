@@ -2086,6 +2086,141 @@ describe('CreateCharacterModalComponent — logic', () => {
       reopened.cancel();
     });
 
+    describe('languages by allegiance', () => {
+      it('a base-game species keeps the Player\'s Handbook languages', () => {
+        component.toggleSpecies('Elf');
+        expect(component.usesWowLanguages).toBeFalse();
+        expect(component.standardLanguages).toContain('Elvish');
+        expect(component.languagePickCount).toBe(2);
+        expect(component.languageHint).toBe('');
+        component.languageChoice = 'Elvish';
+        expect(component.startingLanguages).toEqual(['Common', 'Elvish']);
+      });
+
+      it('a Dwarf of Azeroth is Alliance by default: Common plus two from the Alliance table', () => {
+        component.toggleSpecies('Dwarf (World of Warcraft)');
+        expect(component.usesWowLanguages).toBeTrue();
+        expect(component.effectiveAllegiance).toBe('Alliance');
+        expect(component.standardLanguages).toContain('Darnassian');
+        expect(component.standardLanguages).not.toContain('Elvish');
+        expect(component.standardLanguages).not.toContain('Zandali');
+        expect(component.languagePickCount).toBe(2);
+        component.languageChoice = 'Dwarven';
+        component.languageChoice2 = 'Gnomish';
+        expect(component.startingLanguages).toEqual(['Common', 'Dwarven', 'Gnomish']);
+        expect(component.startingLanguages).toBe(component.startingLanguages);
+        expect(component.standardLanguages).toBe(component.standardLanguages);
+      });
+
+      it('an Orc is Horde by default: Orcish plus two from the Horde table', () => {
+        component.toggleSpecies('Orc (World of Warcraft)');
+        expect(component.effectiveAllegiance).toBe('Horde');
+        component.languageChoice = 'Zandali';
+        expect(component.startingLanguages).toEqual(['Orcish', 'Zandali']);
+      });
+
+      it('an elf\'s default allegiance follows the lineage', () => {
+        component.toggleSpecies(WOW_ELF);
+        expect(component.effectiveAllegiance).toBe('');
+        component.patchSpeciesSelections({ lineage: 'Night Elf' });
+        expect(component.effectiveAllegiance).toBe('Alliance');
+        component.languageChoice = 'Darnassian';
+        component.languageChoice2 = 'Draconic';
+        // Blood elves stand with the Horde: Darnassian is off that table, Draconic is on it.
+        component.patchSpeciesSelections({ lineage: 'Blood Elf' });
+        expect(component.effectiveAllegiance).toBe('Horde');
+        expect(component.languageChoice).toBe('');
+        expect(component.languageChoice2).toBe('Draconic');
+      });
+
+      it('the player can overrule the default, and the picks follow the new table', () => {
+        component.toggleSpecies('Orc (World of Warcraft)');
+        component.languageChoice = 'Zandali';
+        component.setAllegiance('Alliance');
+        expect(component.effectiveAllegiance).toBe('Alliance');
+        expect(component.languageChoice).toBe('');
+        expect(component.standardLanguages).toContain('Darnassian');
+      });
+
+      it('an unaffiliated character picks any three, and loses the third on joining a side', () => {
+        component.toggleSpecies('Pandaren (World of Warcraft)');
+        component.setAllegiance('Unaffiliated');
+        expect(component.languagePickCount).toBe(3);
+        expect(component.standardLanguages.slice(0, 2)).toEqual(['Common', 'Orcish']);
+        component.languageChoice = 'Common';
+        component.languageChoice2 = 'Pandaren';
+        component.languageChoice3 = 'Zandali';
+        expect(component.startingLanguages).toEqual(['Common', 'Pandaren', 'Zandali']);
+        component.setAllegiance('Horde');
+        expect(component.languagePickCount).toBe(2);
+        expect(component.languageChoice).toBe('');   // Common is not a Horde pick
+        expect(component.languageChoice2).toBe('Pandaren');
+        expect(component.languageChoice3).toBe('');
+        expect(component.startingLanguages).toEqual(['Orcish', 'Pandaren']);
+      });
+
+      it('step 5 waits for an allegiance when the species has no usual side', () => {
+        component.clazz = 'Wizard';
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        component.toggleSpecies('Pandaren (World of Warcraft)');
+        component.selectedSkills = ['Insight', 'Medicine'];
+        component.step = 5;
+        expect(component.languageHint).toContain('Choose an allegiance');
+        expect(component.standardLanguages).toEqual([]);
+        expect(component.canAdvance).toBeFalse();
+        component.setAllegiance('Horde');
+        expect(component.canAdvance).toBeTrue();
+      });
+
+      it('changing to or from a World of Warcraft species starts the language picks over', () => {
+        component.toggleSpecies('Elf');
+        component.languageChoice = 'Elvish';
+        component.toggleSpecies('Orc (World of Warcraft)');
+        expect(component.languageChoice).toBe('');
+        component.setAllegiance('Alliance');
+        component.languageChoice = 'Darnassian';
+        component.toggleSpecies('Elf');
+        expect(component.languageChoice).toBe('');
+        expect(component.allegiance).toBe('');
+      });
+
+      it('changing between two base-game species keeps the language picks', () => {
+        component.toggleSpecies('Elf');
+        component.languageChoice = 'Elvish';
+        component.toggleSpecies('Human');
+        expect(component.languageChoice).toBe('Elvish');
+      });
+
+      it('submit saves the allegiance languages', (done) => {
+        fillRestOfWizard();
+        component.toggleSpecies('Tauren (World of Warcraft)');
+        component.patchSpeciesSelections({ lineage: 'Taunka' });
+        component.languageChoice = 'Taur-ahe';
+        component.languageChoice2 = 'Zandali';
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.languages).toEqual(['Orcish', 'Taur-ahe', 'Zandali']);
+          done();
+        });
+        component.submit();
+      });
+
+      it('a saved draft restores the allegiance and the third language', () => {
+        component.name = 'Chen';
+        component.toggleSpecies('Pandaren (World of Warcraft)');
+        component.setAllegiance('Unaffiliated');
+        component.languageChoice = 'Common';
+        component.languageChoice2 = 'Pandaren';
+        component.languageChoice3 = 'Orcish';
+        component.ngOnDestroy();
+        const reopened = TestBed.runInInjectionContext(
+          () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+        reopened.ngOnInit();
+        expect(reopened.allegiance).toBe('Unaffiliated');
+        expect(reopened.startingLanguages).toEqual(['Common', 'Pandaren', 'Orcish']);
+        reopened.cancel();
+      });
+    });
+
     it('a saved draft restores the species choices', () => {
       component.name = 'Thalyssra';
       component.toggleSpecies(WOW_ELF);

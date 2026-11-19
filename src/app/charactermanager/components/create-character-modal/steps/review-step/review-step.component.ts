@@ -61,8 +61,12 @@ export class ReviewStepComponent {
   readonly languageChoice2 = input('');
 
   /** 'Common' plus the chosen languages, for the languages review row. */
+  /** The character's starting languages as the wizard will save them; null falls back to Common + the two picks. */
+  readonly languages = input<string[] | null>(null);
+
   get languagesDisplay(): string {
-    return ['Common', this.languageChoice(), this.languageChoice2()].filter(l => !!l).join(', ');
+    const languages = this.languages() ?? ['Common', this.languageChoice(), this.languageChoice2()];
+    return languages.filter(l => !!l).join(', ') || '—';
   }
 
   // Ability scores
