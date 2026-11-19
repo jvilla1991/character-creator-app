@@ -108,6 +108,20 @@
   <div class="prof-section-header">
     <span class="eyebrow">Languages</span>
   </div>
+  @if (allegiances(); as sides) {
+    <!-- World of Warcraft species: languages follow the character's allegiance -->
+    <div class="allegiance-row">
+      <span class="allegiance-label" id="allegiance-label">Allegiance <span aria-label="required">*</span></span>
+      <div class="skill-chips" role="group" aria-labelledby="allegiance-label">
+        @for (side of sides; track side) {
+          <button type="button" class="class-pick"
+            [class.active]="allegiance() === side"
+            [attr.aria-pressed]="allegiance() === side"
+            (click)="allegianceChange.emit(side)">{{ side }}</button>
+        }
+      </div>
+    </div>
+  }
   <div class="language-row">
     <div class="field lang-field">
       <label for="extra-language-1">Additional Language 1</label>
@@ -127,5 +141,19 @@
         }
       </select>
     </div>
+    @if (languageCount() >= 3) {
+      <div class="field lang-field">
+        <label for="extra-language-3">Additional Language 3</label>
+        <select id="extra-language-3" [ngModel]="languageChoice3()" (ngModelChange)="languageChoice3Change.emit($event)" name="languageChoice3">
+          <option value="">— choose a language —</option>
+          @for (lang of thirdLanguageOptions; track lang) {
+            <option [value]="lang">{{ lang }}</option>
+          }
+        </select>
+      </div>
+    }
   </div>
+  @if (languageHint()) {
+    <p class="field-hint language-hint">{{ languageHint() }}</p>
+  }
 </div>

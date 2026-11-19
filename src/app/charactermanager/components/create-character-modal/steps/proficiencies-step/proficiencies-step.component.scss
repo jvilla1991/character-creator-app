@@ -92,3 +92,23 @@
   min-width: 160px;
   margin-bottom: 0;
 }
+
+// ── Allegiance (World of Warcraft species): decides the language table ─────
+
+.allegiance-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+
+.allegiance-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.language-hint { margin-bottom: 0; }

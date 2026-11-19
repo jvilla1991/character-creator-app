@@ -139,7 +139,17 @@ describe('DndResourcesService', () => {
       expect(baseOnly).not.toContain('Nathrezim');
       expect(baseOnly).toContain('Elvish');
       expect(languageNames({ 'Base Game': false, 'World of Warcraft': true })).toEqual(['Eredun', 'Nathrezim']);
-      expect(ALL_LANGUAGE_NAMES).toEqual(all);
+      // The DM's grant list starts with the pickable languages, then adds the rest of the WoW module's.
+      expect(ALL_LANGUAGE_NAMES.slice(0, all.length)).toEqual(all);
+    });
+
+    it('lets a DM grant any World of Warcraft language, each listed once', () => {
+      for (const name of ['Darnassian', 'Thalassian', 'Orcish', 'Zandali', 'Titan', 'Shath\'Yar', 'Thieves\' Cant']) {
+        expect(ALL_LANGUAGE_NAMES).withContext(name).toContain(name);
+      }
+      expect(new Set(ALL_LANGUAGE_NAMES).size).toBe(ALL_LANGUAGE_NAMES.length);
+      // Shared names are not doubled: Draconic is both a PHB and a WoW language.
+      expect(ALL_LANGUAGE_NAMES.filter(n => n === 'Draconic').length).toBe(1);
     });
   });
 

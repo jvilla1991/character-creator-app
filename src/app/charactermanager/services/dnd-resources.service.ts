@@ -4,6 +4,7 @@ import { forkJoin, Observable, of, shareReplay, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListResponse, DndResource, DndSpell, DndSpecies } from '../models/dnd-api.types';
 import { ContentSource, ContentSourceSelection, filterBySource, spellSource } from '../models/content-source';
+import { WOW_LANGUAGE_NAMES } from '../models/wow-languages';
 import { spellKey } from '../models/spell-names';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -387,7 +388,11 @@ export interface LanguageOption {
   source?: ContentSource;
 }
 
-/** Languages added by the World of Warcraft module (demonic tongues). */
+/**
+ * World of Warcraft languages a base-game species may pick while the World of
+ * Warcraft source is on (demonic tongues). A World of Warcraft species does not
+ * use this list — it picks from its allegiance's table (models/wow-languages.ts).
+ */
 export const WOW_LANGUAGES: readonly string[] = ['Eredun', 'Nathrezim'];
 
 /**
@@ -400,8 +405,14 @@ export const LANGUAGE_OPTIONS: readonly LanguageOption[] = [
   ...WOW_LANGUAGES.map((name): LanguageOption => ({ name, source: 'World of Warcraft' })),
 ];
 
-/** Every language name, all sources (the DM grant typeahead has no source filter). */
-export const ALL_LANGUAGE_NAMES: readonly string[] = LANGUAGE_OPTIONS.map(l => l.name);
+/**
+ * Every language name, all sources (the DM grant typeahead has no source filter):
+ * the pickable ones above, then the rest of the World of Warcraft module's
+ * languages — its faction tables and its rare tongues — each once.
+ */
+export const ALL_LANGUAGE_NAMES: readonly string[] = [...new Set([
+  ...LANGUAGE_OPTIONS.map(l => l.name), ...WOW_LANGUAGE_NAMES,
+])];
 
 /** Language names allowed by a content-source selection, in list order. */
 export function languageNames(selection: ContentSourceSelection): string[] {

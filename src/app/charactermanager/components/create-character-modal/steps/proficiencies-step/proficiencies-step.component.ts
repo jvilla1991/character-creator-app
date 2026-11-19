@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DndBackground } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
+import { Allegiance } from '../../../../models/wow-languages';
 
 /**
  * Step 5: choose class skills + an additional language; show background-granted
@@ -44,6 +45,16 @@ export class ProficienciesStepComponent {
   readonly speciesTools = input<string[]>([]);
   readonly languageChoice = input('');
   readonly languageChoice2 = input('');
+  /** Third pick — shown only when `languageCount` is 3 (an unaffiliated World of Warcraft character). */
+  readonly languageChoice3 = input('');
+  /** How many language dropdowns to show. */
+  readonly languageCount = input(2);
+  /** A line under the dropdowns saying what the character knows; '' shows nothing. */
+  readonly languageHint = input('');
+  /** The allegiances on offer for a World of Warcraft species; null hides the picker. */
+  readonly allegiances = input<readonly Allegiance[] | null>(null);
+  /** The allegiance in force ('' = none yet). */
+  readonly allegiance = input<Allegiance | ''>('');
   readonly standardLanguages = input<string[]>([]);
 
   /** A skill chip was clicked — parent runs toggleSkillProf. */
@@ -55,14 +66,30 @@ export class ProficienciesStepComponent {
   /** Additional-language selections (two-way [(languageChoice)]/[(languageChoice2)] on the parent). */
   readonly languageChoiceChange = output<string>();
   readonly languageChoice2Change = output<string>();
+  readonly languageChoice3Change = output<string>();
+  /** An allegiance chip was clicked — parent runs setAllegiance. */
+  readonly allegianceChange = output<Allegiance>();
 
   /** Options for each dropdown exclude the other dropdown's pick (no duplicate languages). */
   get firstLanguageOptions(): string[] {
-    return this.standardLanguages().filter(l => l !== this.languageChoice2());
+    return this.languageOptionsExcept(this.languageChoice2(), this.thirdPick);
   }
 
   get secondLanguageOptions(): string[] {
-    return this.standardLanguages().filter(l => l !== this.languageChoice());
+    return this.languageOptionsExcept(this.languageChoice(), this.thirdPick);
+  }
+
+  get thirdLanguageOptions(): string[] {
+    return this.languageOptionsExcept(this.languageChoice(), this.languageChoice2());
+  }
+
+  /** The third pick only counts while its dropdown is shown. */
+  private get thirdPick(): string {
+    return this.languageCount() >= 3 ? this.languageChoice3() : '';
+  }
+
+  private languageOptionsExcept(...taken: string[]): string[] {
+    return this.standardLanguages().filter(l => !taken.includes(l));
   }
 
   isSkillChosen(skill: string): boolean {

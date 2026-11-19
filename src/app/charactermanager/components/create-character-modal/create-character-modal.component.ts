@@ -35,6 +35,10 @@ import {
   chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
   speciesTools, speciesTraitFeatures, toSpeciesDetail,
 } from '../../models/species';
+import {
+  ALLEGIANCES, Allegiance, allegianceLanguageHint, allegianceLanguageOptions, allegiancePickCount,
+  suggestedAllegiance, wowStartingLanguages,
+} from '../../models/wow-languages';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -72,6 +76,10 @@ interface WizardDraft {
   selectedSkills: string[];
   languageChoice: string;
   languageChoice2: string;
+  /** Third pick — only an unaffiliated World of Warcraft character has one. */
+  languageChoice3?: string;
+  /** The allegiance the player chose for a World of Warcraft species ('' = the suggested one). */
+  allegiance?: Allegiance | '';
   abilityMethod: 'standard' | 'point-buy';
   pointBuyScores: Record<Ability, number>;
   assignments: Record<Ability, number | null>;
@@ -205,6 +213,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.speciesSelections = { ...this.speciesSelections, ability: '' };
     }
     this.dropNowGrantedClassSkills();
+    // A new lineage can change the species' usual allegiance, and with it the language table.
+    this.pruneLanguagePicks();
   }
 
   /** A class skill the species now grants outright (Night Elf: Stealth) frees its class pick. */
@@ -353,6 +363,19 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   /** Click a species row to choose+expand it; click the chosen one again to clear it. */
   toggleSpecies(key: string): void {
+    const hadWowLanguages = this.usesWowLanguages;
+    this.applySpeciesToggle(key);
+    // Moving to or from a World of Warcraft species swaps the whole language
+    // list (PHB languages vs. an allegiance's table), so those picks start over.
+    if (hadWowLanguages || this.usesWowLanguages) {
+      this.allegiance = '';
+      this.languageChoice = '';
+      this.languageChoice2 = '';
+      this.languageChoice3 = '';
+    }
+  }
+
+  private applySpeciesToggle(key: string): void {
     if (this.selectedSpeciesKey === key) {
       this.species = '';
       this.catalogSpeciesKey = '';
@@ -485,19 +508,88 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   // 2024 PHB: every character knows Common plus TWO chosen standard languages
   languageChoice = '';
   languageChoice2 = '';
+  /** Third pick — used only by an unaffiliated World of Warcraft character. */
+  languageChoice3 = '';
+
+  // World of Warcraft species choose languages by allegiance instead: Common or
+  // Orcish plus two from that side's table, or any three for the unaffiliated.
+  readonly allegiances = ALLEGIANCES;
+  /** The allegiance the player picked; '' until they do (the species' usual side then applies). */
+  allegiance: Allegiance | '' = '';
+
+  /** True when the chosen species uses the World of Warcraft language tables. */
+  get usesWowLanguages(): boolean {
+    return !!this.catalogSpecies;
+  }
+
+  /** The allegiance in force: the player's pick, else the species' usual side, else none yet. */
+  get effectiveAllegiance(): Allegiance | '' {
+    const catalog = this.catalogSpecies;
+    if (!catalog) return '';
+    return this.allegiance || suggestedAllegiance(catalog.name, this.speciesSelections.lineage);
+  }
+
+  setAllegiance(allegiance: Allegiance): void {
+    this.allegiance = allegiance;
+    this.pruneLanguagePicks();
+  }
+
+  /** How many language dropdowns the step shows: three for the unaffiliated, else two. */
+  get languagePickCount(): number {
+    return this.usesWowLanguages ? allegiancePickCount(this.effectiveAllegiance) : 2;
+  }
+
+  /** The line under the language pickers; '' for a base-game species. */
+  get languageHint(): string {
+    return this.usesWowLanguages ? allegianceLanguageHint(this.effectiveAllegiance) : '';
+  }
+
+  /** Drop picks the current allegiance does not offer, and a third pick it has no room for. */
+  private pruneLanguagePicks(): void {
+    if (!this.usesWowLanguages) return;
+    const options = allegianceLanguageOptions(this.effectiveAllegiance);
+    if (!options.includes(this.languageChoice)) this.languageChoice = '';
+    if (!options.includes(this.languageChoice2)) this.languageChoice2 = '';
+    if (!options.includes(this.languageChoice3) || this.languagePickCount < 3) this.languageChoice3 = '';
+  }
+
+  /** The languages the character will start with, in order. */
+  get startingLanguages(): string[] {
+    const picks = [this.languageChoice, this.languageChoice2, this.languageChoice3];
+    const key = `${this.usesWowLanguages}|${this.effectiveAllegiance}|${picks.join('|')}`;
+    if (key !== this.startingLanguagesKey) {
+      this.startingLanguagesCache = this.usesWowLanguages
+        ? wowStartingLanguages(this.effectiveAllegiance, picks)
+        : ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))];
+      this.startingLanguagesKey = key;
+    }
+    return this.startingLanguagesCache;
+  }
+  private startingLanguagesKey = '\u0000';
+  private startingLanguagesCache: string[] = [];
   /**
    * Languages offered for the background bonus, narrowed by the content-source
    * filter (Eredun/Nathrezim are World of Warcraft). Like a hidden class, an
    * already-picked language stays offered so the filter never discards a choice.
+   *
+   * A World of Warcraft species is offered its allegiance's table instead; the
+   * content-source filter plays no part there.
    */
   get standardLanguages(): string[] {
     // Memoized on its inputs: a fresh array per change-detection pass would trip
     // dev-mode's ExpressionChanged check on the [standardLanguages] binding.
-    const key = `${JSON.stringify(this.contentSources)}|${this.languageChoice}|${this.languageChoice2}`;
+    const wow = this.usesWowLanguages;
+    const key = wow
+      ? `wow|${this.effectiveAllegiance}`
+      : `${JSON.stringify(this.contentSources)}|${this.languageChoice}|${this.languageChoice2}`;
     if (key !== this.languagesKey) {
-      const visible = languageNames(this.contentSources);
-      const kept = [this.languageChoice, this.languageChoice2].filter(l => !!l && !visible.includes(l));
-      this.languagesCache = [...visible, ...kept];
+      if (wow) {
+        this.languagesCache = [...allegianceLanguageOptions(this.effectiveAllegiance)];
+      } else {
+        const visible = languageNames(this.contentSources);
+        const kept = [this.languageChoice, this.languageChoice2].filter(l => !!l && !visible.includes(l));
+        this.languagesCache = [...visible, ...kept];
+      }
       this.languagesKey = key;
     }
     return this.languagesCache;
@@ -790,7 +882,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                   && (!this.specializationRequired || !!this.specialization);
       case 4: return !!this.background && !this.speciesFeatConflict;
       case 5: return this.selectedSkills.length === this.classSkillConfig.choose
-                  && this.speciesProficienciesComplete;
+                  && this.speciesProficienciesComplete
+                  && (!this.usesWowLanguages || !!this.effectiveAllegiance);
       case 6: {
         const bonusesOk = !!this.bonusPlus2
                        && !!this.bonusPlus1
@@ -1122,7 +1215,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       skills:           [...this.backgroundSkillProfs, ...this.speciesSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
       toolProfs:        [...this.backgroundToolProfs, ...this.speciesToolPicks],
-      languages:        ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))],
+      languages:        [...this.startingLanguages],
       coins:            this.buildStartingCoins(),
       weapons:          this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.weapons ?? [])
@@ -1218,6 +1311,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       selectedSkills: this.selectedSkills,
       languageChoice: this.languageChoice,
       languageChoice2: this.languageChoice2,
+      languageChoice3: this.languageChoice3,
+      allegiance: this.allegiance,
       abilityMethod: this.abilityMethod,
       pointBuyScores: this.pointBuyScores,
       assignments: this.assignments,
@@ -1258,6 +1353,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.selectedSkills   = d.selectedSkills ?? [];
       this.languageChoice   = d.languageChoice ?? '';
       this.languageChoice2  = d.languageChoice2 ?? '';
+      this.languageChoice3  = d.languageChoice3 ?? '';
+      this.allegiance       = ALLEGIANCES.includes(d.allegiance as Allegiance) ? d.allegiance as Allegiance : '';
       this.abilityMethod    = d.abilityMethod ?? 'standard';
       this.pointBuyScores   = { ...this.pointBuyScores, ...(d.pointBuyScores ?? {}) };
       this.assignments      = { ...this.assignments, ...(d.assignments ?? {}) };
