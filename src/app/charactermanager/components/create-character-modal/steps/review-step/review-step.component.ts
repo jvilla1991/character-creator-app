@@ -32,6 +32,8 @@ export class ReviewStepComponent {
   readonly species = input('');
   readonly speciesDetail = input<DndSpecies | null>(null);
   readonly reviewSpeciesTraitNames = input('');
+  /** A catalog species' choices on one line ('Night Elf · Wisdom'); '' shows nothing. */
+  readonly speciesChoices = input('');
   /** Class as shown to the player — the hero-class label for e.g. Death Knight (Paladin). */
   readonly clazz = input('');
   readonly selectedSubclass = input('');

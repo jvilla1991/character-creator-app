@@ -54,7 +54,7 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
 
       <div class="sheet-subtitle">
         @if (pc.race) {
-          {{ pc.race }}
+          {{ pc | speciesDisplay }}
           <span class="dot">✦</span>
         }
         {{ pc | classDisplay }}

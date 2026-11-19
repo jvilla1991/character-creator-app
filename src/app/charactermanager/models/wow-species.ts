@@ -26,6 +26,11 @@ const LINEAGE_SPELL_RULE =
   + 'Long Rest without a spell slot, and you can also cast it with your spell slots. Intelligence, Wisdom or Charisma '
   + 'is your spellcasting ability for these spells; you choose which when you pick the lineage.';
 
+/** The same rule, worded for the card of a lineage that has already been chosen. */
+const CHOSEN_LINEAGE_SPELL_RULE =
+  'Each lineage spell is always prepared from the level you learn it. You can cast it once per Long Rest without a '
+  + 'spell slot, and you can also cast it with your spell slots.';
+
 const FEY_ANCESTRY: SpeciesTrait = {
   name: 'Fey Ancestry',
   desc: 'You have Advantage on saving throws to avoid or end the Charmed condition.',
@@ -88,7 +93,8 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
       spellLineage('Man\'ari', 'Resistance to Fire damage and the Fire Bolt cantrip.',
         'Hellish Rebuke', 'Darkness', { resistances: ['Fire'], cantrips: ['Fire Bolt'] }),
     ],
-    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES } },
+    lineageRule: CHOSEN_LINEAGE_SPELL_RULE,
+    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES, trait: 'Eredar Lineage' } },
   },
 
   // ── Dwarf ──────────────────────────────────────────────────────────────────
@@ -149,6 +155,7 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
           + 'you spend them in a trancelike meditation, during which you stay conscious.' },
     ],
     lineageTrait: 'Azeroth Elven Lineage',
+    lineageRule: CHOSEN_LINEAGE_SPELL_RULE,
     lineages: [
       spellLineage('Blood Elf',
         'You know the Prestidigitation cantrip, and after any Long Rest you can swap it for another Wizard cantrip.',
@@ -169,7 +176,7 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
     ],
     choices: {
       skill: { count: 1, from: ['Insight', 'Perception', 'Survival'] },
-      ability: { use: 'spellcasting', from: CASTING_ABILITIES },
+      ability: { use: 'spellcasting', from: CASTING_ABILITIES, trait: 'Azeroth Elven Lineage' },
     },
   },
 
@@ -211,7 +218,7 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
           + 'anyone can set it off with a touch as a Bonus Action. You can have three devices at a time. Each falls '
           + 'apart after 8 hours, or when you dismantle it with a touch as a Utilize action.' },
     ],
-    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES } },
+    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES, trait: 'Gnomish Lineage' } },
   },
 
   // ── Mechagnome ─────────────────────────────────────────────────────────────
@@ -271,7 +278,7 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
           + 'and you can also cast it with your spell slots. Intelligence, Wisdom or Charisma is your spellcasting '
           + 'ability for these spells; you choose which when you pick this species.' },
     ],
-    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES } },
+    choices: { ability: { use: 'spellcasting', from: CASTING_ABILITIES, trait: 'Haranir Magic' } },
   },
 
   // ── Human ──────────────────────────────────────────────────────────────────
@@ -353,9 +360,9 @@ export const WOW_SPECIES: readonly CatalogSpecies[] = [
           + 'condition. A creature can take this damage only once per turn.' },
       { name: 'Taunka',
         desc: 'You gain a +1 bonus to Armor Class and Resistance to Cold damage.',
-        acBonus: 1, resistances: ['Cold'] },
+        acBonus: 1, resistances: ['Cold'], noAbilityChoice: true },
     ],
-    choices: { ability: { use: 'save DC', from: ['STR', 'CON', 'WIS'] } },
+    choices: { ability: { use: 'save DC', from: ['STR', 'CON', 'WIS'], trait: 'Tauren Lineage' } },
   },
 
   // ── Troll ──────────────────────────────────────────────────────────────────

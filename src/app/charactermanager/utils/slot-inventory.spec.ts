@@ -124,6 +124,23 @@ describe('slot-inventory util', () => {
       expect(slotCapacity(pc)).toBe(28);
     });
 
+    it('uses the recorded size when the character has one (World of Warcraft species)', () => {
+      // STR 14 → +2. A Goblin's name says nothing about size; its size field does.
+      expect(slotCapacity(basePC({ race: 'Goblin', size: 'Small' }))).toBe(16);
+      expect(slotCapacity(basePC({ race: 'Forsaken', size: 'Small' }))).toBe(16);
+      expect(slotCapacity(basePC({ race: 'Forsaken', size: 'Medium' }))).toBe(20);
+    });
+
+    it('lets a recorded size overrule the name, but not a goliath\'s Powerful Build', () => {
+      expect(slotCapacity(basePC({ race: 'Gnome', size: 'Medium' }))).toBe(20);
+      expect(slotCapacity(basePC({ race: 'Goliath', size: 'Medium' }))).toBe(26); // 22 + 2×2
+    });
+
+    it('falls back to the species name when no size is recorded', () => {
+      expect(slotCapacity(basePC({ race: 'Gnome', size: null }))).toBe(16);
+      expect(slotCapacity(basePC({ race: 'Goblin', size: null }))).toBe(20);
+    });
+
     it('defaults unknown species and missing stats to Medium', () => {
       expect(slotCapacity(basePC({ race: undefined, stats: undefined }))).toBe(18);
     });

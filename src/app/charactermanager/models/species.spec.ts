@@ -1,6 +1,9 @@
 import { ALL_SKILLS } from '../services/dnd-resources.service';
 import {
-  buildSpeciesOptions, catalogSpeciesByKey, sizeLabel, speciesTraitFeatures, speciesTraitSource, toSpeciesDetail,
+  SpeciesSelections, buildSpeciesOptions, catalogSpeciesByKey, chosenLineage, emptySpeciesSelections,
+  grantedSpeciesSkills, needsAbilityChoice, sizeLabel, speciesChoicesComplete, speciesLabel,
+  speciesProficienciesComplete, speciesSkills, speciesTools, speciesTraitFeatures, speciesTraitSource,
+  toSpeciesDetail,
 } from './species';
 import { WOW_SPECIES } from './wow-species';
 
@@ -98,12 +101,25 @@ describe('species catalog (World of Warcraft)', () => {
   it('records the choices each species asks for', () => {
     expect(byName('Elf').choices).toEqual({
       skill: { count: 1, from: ['Insight', 'Perception', 'Survival'] },
-      ability: { use: 'spellcasting', from: ['INT', 'WIS', 'CHA'] },
+      ability: { use: 'spellcasting', from: ['INT', 'WIS', 'CHA'], trait: 'Azeroth Elven Lineage' },
     });
     expect(byName('Human').choices).toEqual({ skill: { count: 1, from: 'any' }, originFeat: true });
     expect(byName('Mechagnome').choices).toEqual({ tools: 2 });
-    expect(byName('Tauren').choices?.ability).toEqual({ use: 'save DC', from: ['STR', 'CON', 'WIS'] });
+    expect(byName('Tauren').choices?.ability)
+      .toEqual({ use: 'save DC', from: ['STR', 'CON', 'WIS'], trait: 'Tauren Lineage' });
     expect(byName('Dwarf').choices).toBeUndefined();
+  });
+
+  it('an ability choice always names one of the species\' own traits', () => {
+    for (const s of WOW_SPECIES) {
+      const trait = s.choices?.ability?.trait;
+      if (trait) expect(s.traits.some(t => t.name === trait)).withContext(s.name).toBeTrue();
+    }
+  });
+
+  it('only the Taunka lineage opts out of the ability choice', () => {
+    const optOuts = WOW_SPECIES.flatMap(s => (s.lineages ?? []).filter(l => l.noAbilityChoice).map(l => l.name));
+    expect(optOuts).toEqual(['Taunka']);
   });
 
   it('lets Forsaken and Human choose Small or Medium, and marks the Small species', () => {
@@ -187,5 +203,157 @@ describe('speciesTraitFeatures', () => {
     expect(lineage.desc).toContain('Darkspear Troll:');
     expect(lineage.desc).toContain('Zandalari Troll:');
     expect(cards.find(c => c.name === 'Troll Healing')!.desc).not.toContain('Amani');
+  });
+});
+
+describe('species selections', () => {
+  const species = (name: string) => catalogSpeciesByKey(`${name} (World of Warcraft)`)!;
+  const pick = (name: string, patch: Partial<SpeciesSelections> = {}): SpeciesSelections =>
+    ({ ...emptySpeciesSelections(species(name)), ...patch });
+
+  it('starts empty, with the size filled in when there is only one', () => {
+    expect(emptySpeciesSelections(species('Orc')))
+      .toEqual({ lineage: '', size: 'Medium', ability: '', skills: [], tools: [], originFeat: '' });
+    expect(emptySpeciesSelections(species('Goblin')).size).toBe('Small');
+    expect(emptySpeciesSelections(species('Human')).size).toBe('');
+    expect(emptySpeciesSelections(species('Mechagnome')).tools).toEqual(['', '']);
+    expect(emptySpeciesSelections().size).toBe('');
+  });
+
+  it('a species with nothing to choose is complete at once', () => {
+    for (const name of ['Dracthyr', 'Dwarf', 'Earthen', 'Goblin', 'Orc', 'Pandaren', 'Vulpera', 'Worgen', 'Mechagnome']) {
+      expect(speciesChoicesComplete(species(name), pick(name))).withContext(name).toBeTrue();
+    }
+  });
+
+  it('an Elf needs a lineage and a spellcasting ability', () => {
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf'))).toBeFalse();
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf', { lineage: 'Night Elf' }))).toBeFalse();
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf', { ability: 'WIS' }))).toBeFalse();
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf', { lineage: 'Night Elf', ability: 'WIS' }))).toBeTrue();
+  });
+
+  it('rejects a lineage or an ability the species does not offer', () => {
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf', { lineage: 'Taunka', ability: 'WIS' }))).toBeFalse();
+    expect(speciesChoicesComplete(species('Elf'), pick('Elf', { lineage: 'Night Elf', ability: 'STR' }))).toBeFalse();
+  });
+
+  it('a Tauren needs a lineage and a save ability, except the Taunka, who has no saving throw', () => {
+    const tauren = species('Tauren');
+    expect(speciesChoicesComplete(tauren, pick('Tauren', { lineage: 'Mulgore Tauren' }))).toBeFalse();
+    expect(speciesChoicesComplete(tauren, pick('Tauren', { lineage: 'Mulgore Tauren', ability: 'CON' }))).toBeTrue();
+    expect(needsAbilityChoice(tauren, pick('Tauren', { lineage: 'Taunka' }))).toBeFalse();
+    expect(speciesChoicesComplete(tauren, pick('Tauren', { lineage: 'Taunka' }))).toBeTrue();
+  });
+
+  it('a Troll needs only a lineage; a Gnome and a Haranir only an ability', () => {
+    expect(speciesChoicesComplete(species('Troll'), pick('Troll'))).toBeFalse();
+    expect(speciesChoicesComplete(species('Troll'), pick('Troll', { lineage: 'Amani Troll' }))).toBeTrue();
+    expect(speciesChoicesComplete(species('Gnome'), pick('Gnome'))).toBeFalse();
+    expect(speciesChoicesComplete(species('Gnome'), pick('Gnome', { ability: 'INT' }))).toBeTrue();
+    expect(speciesChoicesComplete(species('Haranir'), pick('Haranir', { ability: 'CHA' }))).toBeTrue();
+  });
+
+  it('a Forsaken needs a size; a Human a size and an Origin feat', () => {
+    expect(speciesChoicesComplete(species('Forsaken'), pick('Forsaken'))).toBeFalse();
+    expect(speciesChoicesComplete(species('Forsaken'), pick('Forsaken', { size: 'Small' }))).toBeTrue();
+    expect(speciesChoicesComplete(species('Human'), pick('Human', { size: 'Medium' }))).toBeFalse();
+    expect(speciesChoicesComplete(species('Human'), pick('Human', { size: 'Medium', originFeat: 'Alert' }))).toBeTrue();
+  });
+
+  it('knows the skills a species and its lineage grant outright', () => {
+    expect(grantedSpeciesSkills(species('Haranir'), pick('Haranir'))).toEqual(['Nature', 'Survival']);
+    expect(grantedSpeciesSkills(species('Elf'), pick('Elf'))).toEqual([]);
+    expect(grantedSpeciesSkills(species('Elf'), pick('Elf', { lineage: 'Night Elf' }))).toEqual(['Stealth']);
+    expect(speciesSkills(species('Elf'), pick('Elf', { lineage: 'Night Elf', skills: ['Perception'] })))
+      .toEqual(['Stealth', 'Perception']);
+    expect(chosenLineage(species('Elf'), pick('Elf', { lineage: 'Nightborne' }))?.darkvision).toBe(120);
+  });
+
+  it('the proficiency picks are complete only when every skill and tool slot is filled, with no repeats', () => {
+    const elf = species('Elf');
+    expect(speciesProficienciesComplete(elf, pick('Elf'))).toBeFalse();
+    expect(speciesProficienciesComplete(elf, pick('Elf', { skills: ['Insight'] }))).toBeTrue();
+    const mecha = species('Mechagnome');
+    expect(speciesProficienciesComplete(mecha, pick('Mechagnome'))).toBeFalse();
+    expect(speciesProficienciesComplete(mecha, pick('Mechagnome', { tools: ['Lute', ''] }))).toBeFalse();
+    expect(speciesProficienciesComplete(mecha, pick('Mechagnome', { tools: ['Lute', 'Lute'] }))).toBeFalse();
+    expect(speciesProficienciesComplete(mecha, pick('Mechagnome', { tools: ['Lute', 'Dice'] }))).toBeTrue();
+    expect(speciesTools(pick('Mechagnome', { tools: ['', 'Dice'] }))).toEqual(['Dice']);
+    expect(speciesProficienciesComplete(species('Orc'), pick('Orc'))).toBeTrue();
+  });
+});
+
+describe('speciesLabel', () => {
+  it('shows the lineage alone when it already names the species', () => {
+    expect(speciesLabel('Elf', 'Night Elf')).toBe('Night Elf');
+    expect(speciesLabel('Troll', 'Amani Troll')).toBe('Amani Troll');
+    expect(speciesLabel('Tauren', 'Mulgore Tauren')).toBe('Mulgore Tauren');
+  });
+
+  it('puts the lineage in brackets when it does not', () => {
+    expect(speciesLabel('Tauren', 'Taunka')).toBe('Tauren (Taunka)');
+    expect(speciesLabel('Elf', 'Nightborne')).toBe('Elf (Nightborne)');
+    expect(speciesLabel('Draenei', 'Lightforged')).toBe('Draenei (Lightforged)');
+  });
+
+  it('shows the bare species when there is no lineage or it says nothing new', () => {
+    expect(speciesLabel('Dwarf', null)).toBe('Dwarf');
+    expect(speciesLabel('Dwarf', undefined)).toBe('Dwarf');
+    expect(speciesLabel('Draenei', 'Draenei')).toBe('Draenei');
+    expect(speciesLabel(undefined, null)).toBe('');
+  });
+});
+
+describe('speciesTraitFeatures with choices made', () => {
+  const species = (name: string) => catalogSpeciesByKey(`${name} (World of Warcraft)`)!;
+  const pick = (name: string, patch: Partial<SpeciesSelections>): SpeciesSelections =>
+    ({ ...emptySpeciesSelections(species(name)), ...patch });
+
+  it('turns the lineage trait into the chosen lineage\'s own card', () => {
+    const cards = speciesTraitFeatures(species('Tauren'), pick('Tauren', { lineage: 'Taunka' }));
+    expect(cards.map(c => c.name)).toEqual(['Horns', 'Goring Rush', 'Hammering Horns', 'Tauren Lineage: Taunka']);
+    const taunka = cards[3];
+    expect(taunka.desc).toBe('You gain a +1 bonus to Armor Class and Resistance to Cold damage.');
+    expect(taunka.desc).not.toContain('Mulgore');
+    expect(taunka.category).toBe('other');
+  });
+
+  it('writes the save DC onto a Tauren lineage that has a saving throw', () => {
+    const cards = speciesTraitFeatures(species('Tauren'), pick('Tauren', { lineage: 'Mulgore Tauren', ability: 'CON' }));
+    const lineage = cards.find(c => c.name === 'Tauren Lineage: Mulgore Tauren')!;
+    expect(lineage.desc).toContain('war stomp');
+    expect(lineage.desc).toContain('Save DC: 8 + Proficiency Bonus + Constitution modifier.');
+  });
+
+  it('never writes an ability onto the Taunka card, even if one is left over', () => {
+    const cards = speciesTraitFeatures(species('Tauren'), pick('Tauren', { lineage: 'Taunka', ability: 'STR' }));
+    expect(cards[3].desc).not.toContain('Save DC');
+  });
+
+  it('adds the spell rule and the spellcasting ability to a spell lineage', () => {
+    const cards = speciesTraitFeatures(species('Elf'), pick('Elf', { lineage: 'Void Elf', ability: 'INT' }));
+    const lineage = cards.find(c => c.name === 'Azeroth Elven Lineage: Void Elf')!;
+    expect(lineage.desc).toContain('Mind Sliver');
+    expect(lineage.desc).toContain('Level 3: Entropic Embrace.');
+    expect(lineage.desc).toContain('always prepared');
+    expect(lineage.desc).toContain('Spellcasting ability: Intelligence.');
+    expect(lineage.desc).not.toContain('Night Elf');
+    // The rule appears once: the generic "you choose which" wording belongs to the unchosen card.
+    expect(lineage.desc).not.toContain('you choose which');
+  });
+
+  it('writes the spellcasting ability onto the right trait for a species without lineages', () => {
+    const gnome = speciesTraitFeatures(species('Gnome'), pick('Gnome', { ability: 'CHA' }));
+    expect(gnome.find(c => c.name === 'Gnomish Lineage')!.desc).toMatch(/Spellcasting ability: Charisma\.$/);
+    expect(gnome.find(c => c.name === 'Gnomish Cunning')!.desc).not.toContain('Spellcasting ability');
+    const haranir = speciesTraitFeatures(species('Haranir'), pick('Haranir', { ability: 'WIS' }));
+    expect(haranir.find(c => c.name === 'Haranir Magic')!.desc).toMatch(/Spellcasting ability: Wisdom\.$/);
+  });
+
+  it('a Troll lineage card carries no spell rule and no ability', () => {
+    const cards = speciesTraitFeatures(species('Troll'), pick('Troll', { lineage: 'Zandalari Troll' }));
+    const lineage = cards.find(c => c.name === 'Troll Lineage: Zandalari Troll')!;
+    expect(lineage.desc).toBe('If you roll a 1 on the d20 for a D20 Test, you gain Heroic Inspiration at the end of the current turn.');
   });
 });

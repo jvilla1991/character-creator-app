@@ -574,6 +574,10 @@ export class PCService {
       hpTemp: pc.hp?.temp ?? null,
       // Map frontend field names to backend column names
       species: pc.race ?? null,
+      // Species origin (World of Warcraft species) — explicit null for everyone else.
+      speciesSource: pc.speciesSource ?? null,
+      lineage: pc.lineage ?? null,
+      size: pc.size ?? null,
       initiative: pc.init ?? null,
       profBonus: pc.prof ?? null,
       // Scalar passthrough (rides on the spread, but kept explicit + defaulted so
@@ -642,6 +646,9 @@ export class PCService {
       specialization: (pc['specialization'] as string | null | undefined)
         ?? (legacyRune as string | null | undefined) ?? null,
       petFamily: (pc['petFamily'] as string | null | undefined) ?? null,
+      speciesSource: (pc['speciesSource'] as string | null | undefined) ?? null,
+      lineage: (pc['lineage'] as string | null | undefined) ?? null,
+      size: (pc['size'] as string | null | undefined) ?? null,
       stats: {
         STR: (pc['abilityStr'] as number) ?? pc.stats?.STR ?? 10,
         DEX: (pc['abilityDex'] as number) ?? pc.stats?.DEX ?? 10,

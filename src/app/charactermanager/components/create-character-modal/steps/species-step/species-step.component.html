@@ -49,6 +49,83 @@
                 <span class="detail-label">Speed</span>
                 <span class="detail-value">{{ catalog.speed }} ft.</span>
               </div>
+              @if (hasChoices(catalog)) {
+                <!-- The species' own choices; Next stays off until each is made -->
+                <div class="species-choices">
+                  <div class="species-traits-header">Your choices</div>
+                  @if (catalog.lineages; as lineages) {
+                    <div class="species-choice">
+                      <span class="choice-label" id="species-lineage-label">
+                        Lineage <span aria-label="required">*</span>
+                      </span>
+                      <div class="choice-chips" role="group" aria-labelledby="species-lineage-label">
+                        @for (lineage of lineages; track lineage.name) {
+                          <button type="button" class="class-pick"
+                            [class.active]="selections().lineage === lineage.name"
+                            [attr.aria-pressed]="selections().lineage === lineage.name"
+                            (click)="selectionsChange.emit({ lineage: lineage.name })">{{ lineage.name }}</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (catalog.sizes.length > 1) {
+                    <div class="species-choice">
+                      <span class="choice-label" id="species-size-label">
+                        Size <span aria-label="required">*</span>
+                      </span>
+                      <div class="choice-chips" role="group" aria-labelledby="species-size-label">
+                        @for (size of catalog.sizes; track size) {
+                          <button type="button" class="class-pick"
+                            [class.active]="selections().size === size"
+                            [attr.aria-pressed]="selections().size === size"
+                            (click)="selectionsChange.emit({ size: size })">{{ size }}</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (catalog.choices?.ability; as ability) {
+                    @if (showAbility(catalog)) {
+                      <div class="species-choice">
+                        <span class="choice-label" id="species-ability-label">
+                          {{ abilityLabel(catalog) }} <span aria-label="required">*</span>
+                        </span>
+                        <div class="choice-chips" role="group" aria-labelledby="species-ability-label">
+                          @for (a of ability.from; track a) {
+                            <button type="button" class="class-pick"
+                              [class.active]="selections().ability === a"
+                              [attr.aria-pressed]="selections().ability === a"
+                              (click)="selectionsChange.emit({ ability: a })">{{ abilityName(a) }}</button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                  @if (catalog.choices?.originFeat) {
+                    <div class="species-choice species-choice--stacked">
+                      <div class="field">
+                        <label for="species-origin-feat">Origin feat (Versatile) <span aria-label="required">*</span></label>
+                        <select id="species-origin-feat" name="speciesOriginFeat"
+                          [ngModel]="selections().originFeat"
+                          (ngModelChange)="selectionsChange.emit({ originFeat: $event })">
+                          <option value="">— choose a feat —</option>
+                          @for (feat of originFeats(); track feat.name) {
+                            <option [value]="feat.name">{{ feat.name }}</option>
+                          }
+                        </select>
+                      </div>
+                      @if (featDescription()) {
+                        <p class="choice-note">{{ featDescription() }}</p>
+                      }
+                      @if (blockedFeat()) {
+                        <p class="choice-note choice-note--warn" role="status">
+                          Your background already gives you {{ blockedFeat() }}, and it can't be taken twice.
+                          Choose a different feat here, or a different background.
+                        </p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
               <div class="species-traits">
                 <div class="species-traits-header">Traits</div>
                 @for (trait of catalog.traits; track trait.name) {
@@ -62,7 +139,7 @@
                 <div class="species-traits">
                   <div class="species-traits-header">{{ catalog.lineageTrait }} options</div>
                   @for (lineage of lineages; track lineage.name) {
-                    <div class="trait-item">
+                    <div class="trait-item" [class.chosen]="selections().lineage === lineage.name">
                       <span class="trait-name">{{ lineage.name }}</span>
                       <span class="trait-desc">{{ lineage.desc }}</span>
                     </div>

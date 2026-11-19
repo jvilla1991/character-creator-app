@@ -475,6 +475,54 @@ describe('PCService', () => {
     });
   });
 
+  // ── Species origin (World of Warcraft species) ───────────────────────────────
+
+  describe('species origin round-trip', () => {
+    it('sends the species source, lineage and size on create', () => {
+      service.addPC(makePC({
+        race: 'Tauren', speciesSource: 'World of Warcraft', lineage: 'Taunka', size: 'Medium',
+      })).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + 'add');
+      const body = req.request.body as Record<string, unknown>;
+      expect(body['species']).toBe('Tauren');
+      expect(body['speciesSource']).toBe('World of Warcraft');
+      expect(body['lineage']).toBe('Taunka');
+      expect(body['size']).toBe('Medium');
+      req.flush(makePC());
+    });
+
+    it('sends explicit nulls for a base-game species', () => {
+      service.updatePC(makePC()).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + '1');
+      const body = req.request.body as Record<string, unknown>;
+      expect(body['speciesSource']).toBeNull();
+      expect(body['lineage']).toBeNull();
+      expect(body['size']).toBeNull();
+      req.flush(makePC());
+    });
+
+    it('reads them back from the server, defaulting missing ones to null', (done) => {
+      const HttpParams = require('@angular/common/http').HttpParams;
+      service.PCById(new HttpParams().set('id', '21')).subscribe((elf: PC) => {
+        expect(elf.race).toBe('Elf');
+        expect(elf.speciesSource).toBe('World of Warcraft');
+        expect(elf.lineage).toBe('Night Elf');
+        expect(elf.size).toBe('Medium');
+        service.PCById(new HttpParams().set('id', '7')).subscribe((other: PC) => {
+          expect(other.speciesSource).toBeNull();
+          expect(other.lineage).toBeNull();
+          expect(other.size).toBeNull();
+          done();
+        });
+        httpMock.expectOne(service.pcUrl + 'find/7').flush({ id: 7, name: 'Plain', clazz: 'Fighter', level: 1 });
+      });
+      httpMock.expectOne(service.pcUrl + 'find/21').flush({
+        id: 21, name: 'Shandris', clazz: 'Ranger', level: 3,
+        species: 'Elf', speciesSource: 'World of Warcraft', lineage: 'Night Elf', size: 'Medium',
+      });
+    });
+  });
+
   // ── Hero-class specialization (Death Knight rune, Demon Hunter spec) ──────────
 
   describe('specialization round-trip', () => {
