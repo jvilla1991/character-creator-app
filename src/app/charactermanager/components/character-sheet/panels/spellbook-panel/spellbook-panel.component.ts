@@ -87,7 +87,7 @@ export class SpellbookPanelComponent implements OnChanges {
   // Who may do what is the sheet's call; the panel only passes it through to
   // the strip and the requests back up. The server enforces the same rules.
 
-  /** The viewer may spend a slot by hand: the owner, or the DM. */
+  /** The viewer may spend a slot by hand: the DM, or the owner of a character in no campaign. */
   readonly slotsSpendable = input(false);
   /** The viewer may give slots back: the DM, or the owner of a character in no campaign. */
   readonly slotsRestorable = input(false);

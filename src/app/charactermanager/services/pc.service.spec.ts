@@ -1079,8 +1079,20 @@ describe('PCService spell slots (demo mode)', () => {
     });
   });
 
-  it('lets a player in a campaign spend, but not restore: that is the DM\'s call (403)', (done) => {
-    service.spendSpellSlot(CAMPAIGN_BARD, 3).subscribe(() => {
+  it('refuses a player in a campaign a spend by hand: they cast in a session (403)', (done) => {
+    service.spendSpellSlot(CAMPAIGN_BARD, 3).subscribe({
+      next: () => fail('a campaign player may not spend by hand'),
+      error: err => {
+        expect(err.status).toBe(403);
+        expect(err.error.message).toBe('In a campaign, spell slots are spent by casting in a session');
+        expect(slotsOf(CAMPAIGN_BARD)[3]).toEqual({ max: 3, used: 0 });
+        done();
+      },
+    });
+  });
+
+  it('refuses a player in a campaign a restore: that is the DM\'s call (403)', (done) => {
+    service.spendSpellSlot(CAMPAIGN_BARD, 3, true).subscribe(() => {
       expect(slotsOf(CAMPAIGN_BARD)[3]).toEqual({ max: 3, used: 1 });
       service.restoreSpellSlot(CAMPAIGN_BARD, 3).subscribe({
         next: () => fail('a campaign player may not restore'),
