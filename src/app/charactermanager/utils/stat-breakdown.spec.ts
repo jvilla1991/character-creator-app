@@ -2,7 +2,7 @@ import { PC, PcItem } from '../models/pc';
 import { SLOT_STATS, StatAdjustment, slotLevelOf, slotStat } from '../models/stat-adjustment';
 import { withRecomputedAc } from './armor-math';
 import {
-  STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, describeAdjustment,
+  STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, cleanRemoved, describeAdjustment,
   describeAdjustmentChange, isValidAdjustment,
 } from './stat-breakdown';
 
@@ -17,6 +17,8 @@ const pcWith = (overrides: Partial<PC> = {}): PC =>
      ac: 17, ...overrides } as PC);
 
 const taunka: StatAdjustment = { value: 1, label: 'Taunka' };
+/** A calculated line taken out of the total, as it is stored. */
+const out = (label: string): StatAdjustment => ({ value: 1, label });
 
 describe('stat-breakdown', () => {
   describe('breakdownOf', () => {
@@ -49,6 +51,31 @@ describe('stat-breakdown', () => {
       const b = breakdownOf(pcWith({ ac: undefined, statAdjustments: { ac: [taunka] } }), 'ac');
       expect(b.total).toBe(18);
       expect(b.unlabelled).toBe(0);
+    });
+
+    it('marks a removed calculated line and leaves it out of what is explained', () => {
+      const b = breakdownOf(pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } }), 'ac');
+      expect(b.auto).toEqual([
+        { label: 'Chain Shirt', value: 13 },
+        { label: 'Dexterity', value: 2, removed: true },
+        { label: 'Shield', value: 2 },
+      ]);
+      expect(b.removed).toEqual(['Dexterity']);
+      expect(b.unlabelled).toBe(0); // 13 + 2 = 15, nothing left over
+      expect(b.total).toBe(15);
+    });
+
+    it('never lists a removed entry among the DM lines', () => {
+      const b = breakdownOf(pcWith({ ac: 16, statAdjustments: { ac: [taunka], acRemoved: [out('Dexterity')] } }), 'ac');
+      expect(b.adjustments).toEqual([taunka]);
+    });
+
+    it('keeps a removed entry whose line is gone, without it counting for anything', () => {
+      const b = breakdownOf(pcWith({ statAdjustments: { acRemoved: [out('Plate')] } }), 'ac');
+      expect(b.removed).toEqual(['Plate']);
+      expect(b.auto.some(line => line.removed)).toBeFalse();
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(17);
     });
   });
 
@@ -99,6 +126,56 @@ describe('stat-breakdown', () => {
       expect(updated.ac).toBe(18);
     });
 
+    it('takes a calculated line out and lowers the saved total by exactly that line', () => {
+      const updated = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Dexterity'] });
+      expect(updated.statAdjustments).toEqual({ ac: [], acRemoved: [out('Dexterity')] });
+      expect(updated.ac).toBe(15);
+      expect(breakdownOf(updated, 'ac').unlabelled).toBe(0);
+    });
+
+    it('puts a calculated line back and raises the saved total by exactly that line', () => {
+      const pc = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Shield')] } });
+      const updated = applyAdjustments(pc, 'ac', [], true, { removed: [] });
+      expect(updated.statAdjustments).toEqual({ ac: [] }); // the companion key goes with its last entry
+      expect(updated.ac).toBe(17);
+      expect(breakdownOf(updated, 'ac').unlabelled).toBe(0);
+    });
+
+    it('leaves an unlabelled rest exactly as it was when a line is taken out or put back', () => {
+      const pc = pcWith({ ac: 20, statAdjustments: { ac: [taunka] } }); // 2 nobody labelled
+      const removed = applyAdjustments(pc, 'ac', [taunka], true, { removed: ['Shield'] });
+      expect(removed.ac).toBe(18);
+      expect(breakdownOf(removed, 'ac').unlabelled).toBe(2);
+
+      const restored = applyAdjustments(removed, 'ac', [taunka], true, { removed: [] });
+      expect(restored.ac).toBe(20);
+      expect(breakdownOf(restored, 'ac').unlabelled).toBe(2);
+    });
+
+    it('keeps the stored removals when a save does not mention them', () => {
+      const pc = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } });
+      const updated = applyAdjustments(pc, 'ac', [taunka], true);
+      expect(updated.statAdjustments).toEqual({ acRemoved: [out('Dexterity')], ac: [taunka] });
+      expect(updated.ac).toBe(16);
+    });
+
+    it('keeps a removal whose line is not there right now', () => {
+      const updated = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Plate', 'Dexterity'] });
+      expect(updated.statAdjustments?.acRemoved).toEqual([out('Plate'), out('Dexterity')]);
+      expect(updated.ac).toBe(15); // only Dexterity is there to take out
+    });
+
+    it('a removed line stays out of the total through the next armor swap', () => {
+      const noDex = applyAdjustments(pcWith(), 'ac', [], true, { removed: ['Dexterity'] }); // 15
+      const unequipped = {
+        ...noDex,
+        inventory: noDex.inventory!.map(i => ({ ...i, equipped: false })),
+      };
+      const swapped = withRecomputedAc(unequipped, noDex.inventory);
+      expect(swapped.ac).toBe(10); // unarmored 10, Dex still out
+      expect(breakdownOf(swapped, 'ac').unlabelled).toBe(0);
+    });
+
     it('produces a line that survives the next armor swap', () => {
       const withLine = applyAdjustments(pcWith(), 'ac', [taunka], true); // 18
       const unequipped = {
@@ -129,6 +206,28 @@ describe('stat-breakdown', () => {
     it('caps how many lines one number can carry', () => {
       const many = Array.from({ length: 20 }, (_, i) => ({ value: 1, label: `Line ${i}` }));
       expect(cleanAdjustments(many).length).toBe(12);
+    });
+
+    it('stores removed labels trimmed, without blanks, and cut to what the server accepts', () => {
+      expect(cleanRemoved(['  Dexterity ', '', '   '], [])).toEqual(['Dexterity']);
+      expect(cleanRemoved(['x'.repeat(60)], [])).toEqual(['x'.repeat(40)]);
+    });
+
+    it('at the limit, drops the oldest removal that matches no line before any that does', () => {
+      const stale = Array.from({ length: 12 }, (_, i) => `Old armor ${i}`);
+      const kept = cleanRemoved([...stale, 'Dexterity'], [{ label: 'Dexterity', value: 2 }]);
+      expect(kept.length).toBe(12);
+      expect(kept).toContain('Dexterity');
+      expect(kept).not.toContain('Old armor 0');
+    });
+
+    it('matches a long item name by the part that is stored', () => {
+      const name = 'Adamantine Breastplate of the Unbroken Shieldwall'; // 49 characters
+      const pc = pcWith({ inventory: [armor(name, '14 + Dex modifier (max 2)')], ac: 16 });
+      const updated = applyAdjustments(pc, 'ac', [], true, { removed: [name] });
+      expect(updated.statAdjustments?.acRemoved).toEqual([out(name.slice(0, 40).trim())]);
+      expect(updated.ac).toBe(2);
+      expect(breakdownOf(updated, 'ac').auto[0].removed).toBeTrue();
     });
 
     it('words a line with its sign', () => {
@@ -171,6 +270,36 @@ describe('stat-breakdown', () => {
       expect(log(before, after)).toBe('DM labelled +3 on AC as Unarmored Defense');
     });
 
+    it('names a calculated line taken out, with the new total', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: ['Dexterity'] })))
+        .toBe('DM removed the calculated Dexterity line from AC (AC 17 → 15)');
+    });
+
+    it('names several calculated lines taken out at once', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: ['Dexterity', 'Shield'] })))
+        .toBe('DM removed the calculated Dexterity and Shield lines from AC (AC 17 → 13)');
+    });
+
+    it('names a calculated line put back, with the new total', () => {
+      const before = pcWith({ ac: 15, statAdjustments: { acRemoved: [out('Dexterity')] } });
+      expect(log(before, applyAdjustments(before, 'ac', [], true, { removed: [] })))
+        .toBe('DM restored the calculated Dexterity line on AC (AC 15 → 17)');
+    });
+
+    it('reports a line added and a calculated line taken out in one save', () => {
+      const before = pcWith();
+      expect(log(before, applyAdjustments(before, 'ac', [taunka], true, { removed: ['Shield'] })))
+        .toBe('DM added +1 Taunka to AC; removed the calculated Shield line from AC (AC 17 → 16)');
+    });
+
+    it('does not report a removal that was only tidied away as a line put back', () => {
+      const before = pcWith({ statAdjustments: { acRemoved: [out('Plate')] } }); // no Plate worn
+      expect(log(before, applyAdjustments(before, 'ac', [taunka], true, { removed: [] })))
+        .toBe('DM added +1 Taunka to AC (AC 17 → 18)');
+    });
+
     it('tells two identical lines apart from one', () => {
       const before = pcWith({ ac: 18, statAdjustments: { ac: [taunka] } });
       const after = applyAdjustments(before, 'ac', [taunka, taunka], true);
@@ -188,6 +317,17 @@ describe('stat-breakdown (spell slot maximums)', () => {
     ({ id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'P',
        spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 2 } },
        ...overrides } as PC);
+
+  it('has no removable lines: the class table always counts, whatever a save says', () => {
+    expect(STAT_DEFINITIONS.slot3.removable).toBeFalsy();
+    expect(STAT_DEFINITIONS.ac.removable).toBeTrue();
+
+    const next = applyAdjustments(wizard(), 'slot3', [pearl], true, { removed: ['Class table'] });
+    expect(next.statAdjustments).toEqual({ slot3: [pearl] });
+    expect(breakdownOf(next, 'slot3').removed).toEqual([]);
+    expect(breakdownOf(next, 'slot3').auto).toEqual([{ label: 'Class table', value: 2 }]);
+    expect(breakdownOf(next, 'slot3').total).toBe(3);
+  });
 
   it('names the nine slot keys by spell level', () => {
     expect(SLOT_STATS.length).toBe(9);

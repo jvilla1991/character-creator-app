@@ -11,9 +11,21 @@ const breakdown = (overrides: Partial<StatBreakdown> = {}): StatBreakdown => ({
     { label: 'Shield', value: 2 },
   ],
   adjustments: [],
+  removed: [],
   unlabelled: 0,
   total: 17,
   ...overrides,
+});
+
+/** The same armour with the Dexterity line taken out: 13 + 2 = 15. */
+const withoutDex = (): StatBreakdown => breakdown({
+  auto: [
+    { label: 'Chain Shirt', value: 13 },
+    { label: 'Dexterity', value: 2, removed: true },
+    { label: 'Shield', value: 2 },
+  ],
+  removed: ['Dexterity'],
+  total: 15,
 });
 
 describe('StatBreakdownModalComponent', () => {
@@ -96,7 +108,7 @@ describe('StatBreakdownModalComponent', () => {
   it('opens a spell level\'s slot maximum with its own title, lines and words', () => {
     const slots: StatBreakdown = {
       stat: 'slot3', auto: [{ label: 'Class table', value: 2 }],
-      adjustments: [{ value: 1, label: 'Pearl of Power' }], unlabelled: 0, total: 3,
+      adjustments: [{ value: 1, label: 'Pearl of Power' }], removed: [], unlabelled: 0, total: 3,
     };
 
     open(slots, false);
@@ -135,14 +147,14 @@ describe('StatBreakdownModalComponent', () => {
     component.drafts[0].label = '  Taunka ';
     expect(component.total).toBe(18);
     expect(component.lineProblem).toBeNull();
-    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true });
+    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [] });
   });
 
   it('removes a line', () => {
     open(breakdown({ adjustments: [{ value: 1, label: 'Taunka' }], total: 18 }), true);
     component.removeLine(0);
     expect(component.total).toBe(17);
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [] });
   });
 
   it('refuses a line with a zero, missing or fractional amount', () => {
@@ -171,7 +183,7 @@ describe('StatBreakdownModalComponent', () => {
     component.addLine(-2);
     component.drafts[0].label = 'Cursed';
     expect(component.total).toBe(15);
-    expect(saved()).toEqual({ lines: [{ value: -2, label: 'Cursed' }], keepUnlabelled: true });
+    expect(saved()).toEqual({ lines: [{ value: -2, label: 'Cursed' }], keepUnlabelled: true, removed: [] });
   });
 
   it('stops offering more lines at the limit', () => {
@@ -179,6 +191,121 @@ describe('StatBreakdownModalComponent', () => {
     expect(component.canAddLine).toBeFalse();
     component.addLine();
     expect(component.drafts.length).toBe(12);
+  });
+
+  // --- taking a calculated line out of the total ---
+
+  /** The Remove / Restore buttons on the calculated lines, by their visible word. */
+  const lineActions = (): string[] =>
+    Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('[data-testid="auto-lines"] button'))
+      .map(b => b.textContent!.trim());
+  const notCounted = (): string[] =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('[data-testid="not-counted"]'))
+      .map(el => el.textContent!.trim());
+  /** Press the Remove / Restore button on the calculated line at `index`. */
+  const pressLineAction = (index: number): void => {
+    const row: HTMLElement = fixture.nativeElement.querySelectorAll('[data-testid="auto-lines"] li')[index];
+    row.querySelector('button')!.click();
+    fixture.detectChanges();
+  };
+
+  it('offers the DM a Remove control on every calculated line', () => {
+    open(breakdown(), true);
+    expect(lineActions()).toEqual(['Remove', 'Remove', 'Remove']);
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="auto-lines"] button');
+    expect(button.getAttribute('aria-label')).toBe('Remove the Chain Shirt line from the total');
+    expect(button.type).toBe('button');
+  });
+
+  it('gives a player no way to take a calculated line out', () => {
+    open(breakdown(), false);
+    expect(lineActions()).toEqual([]);
+    component.removeAutoLine(1);
+    expect(component.removed).toEqual([]);
+  });
+
+  it('offers no Remove control on a number whose lines cannot be taken out (a spell level)', () => {
+    open({
+      stat: 'slot3', auto: [{ label: 'Class table', value: 2 }],
+      adjustments: [], removed: [], unlabelled: 0, total: 2,
+    }, true);
+    expect(lineActions()).toEqual([]);
+    component.removeAutoLine(0);
+    expect(component.removed).toEqual([]);
+    expect(component.total).toBe(2);
+  });
+
+  it('removing a line keeps it listed as not counted, drops it from the total and offers Restore', () => {
+    open(breakdown(), true);
+    pressLineAction(1);
+
+    expect(text('auto-lines')).toBe('Chain Shirt 13 Dexterity +2 Shield +2'); // still listed
+    const row: HTMLElement = fixture.nativeElement.querySelectorAll('[data-testid="auto-lines"] li')[1];
+    expect(row.classList).toContain('not-counted');
+    expect(notCounted()).toEqual(['Not counted.']);                              // said in words, not only by looks
+    expect(lineActions()).toEqual(['Remove', 'Restore', 'Remove']);
+    expect(text('total')).toBe('Total 15');
+    expect(fixture.nativeElement.querySelector('[data-testid="unlabelled"]')).toBeNull();
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Dexterity'] });
+  });
+
+  it('restoring a line counts it again', () => {
+    open(withoutDex(), true);
+    expect(text('total')).toBe('Total 15');
+    expect(component.canSave).toBeFalse(); // opened as saved
+
+    const restore = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
+      .find(b => b.textContent?.trim() === 'Restore')!;
+    expect(restore.getAttribute('aria-label')).toBe('Count the Dexterity line again');
+    pressLineAction(1);
+
+    expect(notCounted()).toEqual([]);
+    expect(text('total')).toBe('Total 17');
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [] });
+  });
+
+  it('has nothing to save once a removal is undone again', () => {
+    open(breakdown(), true);
+    component.removeAutoLine(2);
+    expect(component.canSave).toBeTrue();
+    component.restoreAutoLine(2);
+    expect(component.canSave).toBeFalse();
+    expect(component.total).toBe(17);
+  });
+
+  it('carries a removal whose line is not there right now through a save', () => {
+    open(breakdown({ removed: ['Plate'] }), true);
+    expect(notCounted()).toEqual([]);
+    component.removeAutoLine(1);
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Plate', 'Dexterity'] });
+  });
+
+  it('removes one of two lines with the same name at a time', () => {
+    open(breakdown({
+      auto: [{ label: 'Unarmored', value: 10 }, { label: 'Shield', value: 2 }, { label: 'Shield', value: 2 }],
+      total: 14,
+    }), true);
+    component.removeAutoLine(2);
+    expect(component.total).toBe(12);
+    expect(component.autoLines.filter(line => line.removed).length).toBe(1);
+    component.removeAutoLine(2);
+    expect(component.total).toBe(10);
+  });
+
+  it('shows a player a removed line as not counted, with who removed it and no controls', () => {
+    open(withoutDex(), false);
+    expect(text('auto-lines')).toBe('Chain Shirt 13 Dexterity +2 Shield +2');
+    expect(notCounted()).toEqual(['Not counted. Your DM removed this line.']);
+    expect(lineActions()).toEqual([]);
+    expect(text('total')).toBe('Total 15');
+  });
+
+  it('a removal does not disturb an unlabelled amount', () => {
+    open(breakdown({ unlabelled: 3, total: 20 }), true);
+    pressLineAction(2);
+    expect(text('unlabelled')).toBe('Unlabelled +3');
+    expect(text('total')).toBe('Total 18');
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Shield'] });
   });
 
   // --- the unlabelled rest of an older hand edit ---
@@ -191,7 +318,7 @@ describe('StatBreakdownModalComponent', () => {
     component.addLine();
     component.drafts[0].label = 'Taunka';
     expect(component.total).toBe(21);
-    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true });
+    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [] });
   });
 
   it('"Label it" turns the unlabelled amount into a line without moving the total', () => {
@@ -202,7 +329,7 @@ describe('StatBreakdownModalComponent', () => {
     expect(component.canSave).toBeFalse(); // still needs its label
 
     component.drafts[0].label = 'Unarmored Defense';
-    expect(saved()).toEqual({ lines: [{ value: 3, label: 'Unarmored Defense' }], keepUnlabelled: false });
+    expect(saved()).toEqual({ lines: [{ value: 3, label: 'Unarmored Defense' }], keepUnlabelled: false, removed: [] });
   });
 
   it('"Remove it" drops the unlabelled amount from the total', () => {
@@ -211,7 +338,7 @@ describe('StatBreakdownModalComponent', () => {
     expect(component.total).toBe(17);
     expect(text('total')).toBe('Total 17');
     expect(fixture.nativeElement.querySelector('[data-testid="unlabelled"]')).toBeNull();
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: false });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: false, removed: [] });
   });
 
   // --- lifetime ---

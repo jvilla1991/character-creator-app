@@ -1,16 +1,29 @@
 <app-modal [title]="definition.title" [tone]="editable ? 'celestial' : 'gold'" (dismiss)="cancel()">
 
-  <!-- The lines the app works out. The first is the starting value; the rest add to it. -->
+  <!-- The lines the app works out. The first is the starting value; the rest add to it.
+  A line the DM took out stays listed, struck through and marked in words, and
+  is left out of the total. -->
   <h3 class="breakdown-heading">Calculated</h3>
   <ul class="breakdown-lines" data-testid="auto-lines">
-    @for (line of breakdown.auto; track $index) {
-      <li class="breakdown-line">
-        <span class="line-label">{{ line.label }}
-          @if (line.note) {
+    @for (line of autoLines; track $index) {
+      <li class="breakdown-line" [class.not-counted]="line.removed" [class.has-action]="canRemoveLines">
+        <span class="line-label"><span class="line-name">{{ line.label }}</span>
+          @if (line.removed) {
+            <span class="line-note" data-testid="not-counted">{{ editable ? 'Not counted.' : 'Not counted. Your DM removed this line.' }}</span>
+          } @else if (line.note) {
             <span class="line-note">{{ line.note }}</span>
           }
         </span>
         <span class="line-value numeric">{{ $first ? line.value : signed(line.value) }}</span>
+        @if (canRemoveLines) {
+          @if (line.removed) {
+            <button type="button" class="btn sm line-action" (click)="restoreAutoLine($index)"
+              [attr.aria-label]="'Count the ' + line.label + ' line again'">Restore</button>
+          } @else {
+            <button type="button" class="btn sm line-action" (click)="removeAutoLine($index)"
+              [attr.aria-label]="'Remove the ' + line.label + ' line from the total'">Remove</button>
+          }
+        }
       </li>
     }
   </ul>
