@@ -13,6 +13,10 @@ export interface StatAdjustment {
   label: string;
 }
 
+/** The six ability scores, by the key they are stored and logged under. */
+export const ABILITY_STATS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
+export type AbilityStat = typeof ABILITY_STATS[number];
+
 /**
  * The maximum number of spell slots of one spell level, 1st to 9th. Unlike
  * Armor Class the server works this total out itself: the class table plus
@@ -39,12 +43,12 @@ export function slotLevelOf(stat: AdjustableStat): number | null {
 }
 
 /**
- * The numbers that can carry adjustment lines: Armor Class, and the slot
- * maximum of each spell level. A new entry here plus a definition in
- * `utils/stat-breakdown.ts` is all another number needs (the stored JSON is
- * keyed by this name, so no schema change).
+ * The numbers that can carry adjustment lines: Armor Class, the six ability
+ * scores, and the slot maximum of each spell level. A new entry here plus a
+ * definition in `utils/stat-breakdown.ts` is all another number needs (the
+ * stored JSON is keyed by this name, so no schema change).
  */
-export type AdjustableStat = 'ac' | SlotStat;
+export type AdjustableStat = 'ac' | AbilityStat | SlotStat;
 
 /** Where a number's removed calculated lines are stored: `acRemoved` for `ac`. */
 export type RemovedLinesKey = `${AdjustableStat}Removed`;

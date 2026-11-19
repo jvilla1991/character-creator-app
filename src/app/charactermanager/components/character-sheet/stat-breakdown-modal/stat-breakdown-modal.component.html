@@ -50,6 +50,11 @@
             <button type="button" class="btn sm" (click)="removeLine($index)"
               [attr.aria-label]="'Remove line ' + ($index + 1) + (line.label ? ', ' + line.label : '')">Remove</button>
           </div>
+          @if (line.fromBase) {
+            <p class="field-hint from-base-note" data-testid="from-base">
+              Line {{ $index + 1 }} comes out of the {{ definition.baseLabel!.toLowerCase() }}. The total stays the same.
+            </p>
+          }
         }
       </div>
     }
@@ -69,9 +74,14 @@
       </div>
     }
 
-    <button type="button" class="btn sm add-line" [disabled]="!canAddLine" (click)="addLine()">Add a line</button>
-    @if (lineProblem; as problem) {
-      <p class="field-hint" role="status">{{ problem }}</p>
+    <div class="add-actions">
+      <button type="button" class="btn sm" [disabled]="!canAddLine" (click)="addLine()">Add a line</button>
+      @if (hasBase) {
+        <button type="button" class="btn sm" [disabled]="!canAddLine" (click)="labelPartOfBase()">Label part of the {{ definition.baseLabel!.toLowerCase() }}</button>
+      }
+    </div>
+    @if (lineProblem ?? rangeProblem; as problem) {
+      <p class="field-hint" role="status" data-testid="problem">{{ problem }}</p>
     }
   } @else if (breakdown.adjustments.length || breakdown.unlabelled !== 0) {
     <h3 class="breakdown-heading">Adjustments</h3>

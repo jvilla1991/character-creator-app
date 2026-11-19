@@ -98,7 +98,23 @@ export function computeAc(pc: PC): number {
  * neither does armor whose line the DM removed: it was not in the total.
  */
 export function withRecomputedAc(pc: PC, previousInventory: PcItem[] | undefined): PC {
-  const before = computeAc({ ...pc, inventory: previousInventory } as PC);
+  return withAcShiftedBy(pc, { ...pc, inventory: previousInventory } as PC);
+}
+
+/**
+ * Keep the saved AC in step with Dexterity: when a change to the score moves
+ * the calculated Dexterity line (medium armor caps it, heavy armor ignores it,
+ * and a line the DM removed counts for nothing), shift the saved total by that
+ * much. `before` is the character as it was; `after` carries the new score.
+ * A character with no saved AC is left without one.
+ */
+export function withAcFollowingDex(before: PC, after: PC): PC {
+  return after.ac == null ? after : withAcShiftedBy(after, before);
+}
+
+/** Shift `pc`'s saved AC by how far its gear-and-Dexterity AC moved from `previous`. */
+function withAcShiftedBy(pc: PC, previous: PC): PC {
+  const before = computeAc(previous);
   const after = computeAc(pc);
   if (before === after) return pc;
   const adjustments = adjustmentSum(adjustmentsFor(pc, 'ac'));

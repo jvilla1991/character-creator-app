@@ -567,6 +567,41 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
+    it('records the background increases as lines on the new character, scores unchanged', (done) => {
+      prepareFullWizard();
+      component.step = component.equipmentStep;
+
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.statAdjustments).toEqual({
+          INT: [{ value: 2, label: 'Sage' }],
+          WIS: [{ value: 1, label: 'Sage' }],
+        });
+        expect(draft.stats).toEqual({ STR: 8, DEX: 12, CON: 13, INT: 17, WIS: 15, CHA: 10 });
+        done();
+      });
+
+      component.submit();
+    });
+
+    it('records the increases the same way for point buy', (done) => {
+      prepareFullWizard();
+      component.abilityMethod = 'point-buy';
+      component.pointBuyScores = { STR: 8, DEX: 14, CON: 14, INT: 15, WIS: 10, CHA: 8 };
+      component.step = component.equipmentStep;
+
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.stats.INT).toBe(17);
+        expect(draft.stats.WIS).toBe(11);
+        expect(draft.statAdjustments).toEqual({
+          INT: [{ value: 2, label: 'Sage' }],
+          WIS: [{ value: 1, label: 'Sage' }],
+        });
+        done();
+      });
+
+      component.submit();
+    });
+
     it('emits languages including Common and chosen language', (done) => {
       prepareFullWizard();
       component.step = component.equipmentStep;
