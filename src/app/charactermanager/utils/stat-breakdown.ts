@@ -1,11 +1,11 @@
 import { PC } from '../models/pc';
 import {
-  ADJUSTMENT_LABEL_MAX, ADJUSTMENT_LINES_MAX, ADJUSTMENT_VALUE_MAX,
-  AdjustableStat, BreakdownLine, SLOT_STATS, SlotStat, StatAdjustment, StatAdjustments, adjustmentSum,
-  adjustmentsFor, countedSum, markRemoved, removalLabel, removedEntries, removedKey, removedLabelsFor,
-  signed, slotStat,
+  ABILITY_STATS, ADJUSTMENT_LABEL_MAX, ADJUSTMENT_LINES_MAX, ADJUSTMENT_VALUE_MAX,
+  AbilityStat, AdjustableStat, BreakdownLine, SLOT_STATS, SlotStat, StatAdjustment, StatAdjustments,
+  adjustmentSum, adjustmentsFor, countedSum, markRemoved, removalLabel, removedEntries, removedKey,
+  removedLabelsFor, signed, slotStat,
 } from '../models/stat-adjustment';
-import { acAutoLines } from './armor-math';
+import { acAutoLines, withAcFollowingDex } from './armor-math';
 import { ordinal, slotMaxOf, withSlotMax } from './spell-slots';
 
 // ── How a calculated number is put together ─────────────────────────────────
@@ -15,12 +15,16 @@ import { ordinal, slotMaxOf, withSlotMax } from './spell-slots';
 // the breakdown never changes a number behind anyone's back. A DM may also take
 // one of the app's own lines out of a number; it stays listed, marked as not
 // counted, and can be put back.
+//
+// A number with no formula (an ability score) has one calculated line instead,
+// its base: whatever the DM lines do not explain. So it always adds up, and
+// never shows an unlabelled rest.
 
 /**
  * What a number needs to take part: how to name it, the lines the app can work
  * out for it, and where its saved total lives on the character. Add an entry to
  * {@link STAT_DEFINITIONS} (and the name to `AdjustableStat`) to give another
- * number, such as an ability score or speed, the same breakdown and DM lines.
+ * number, such as speed, the same breakdown and DM lines.
  */
 export interface StatDefinition {
   /** Dialog title: "Armor Class". */
@@ -29,9 +33,19 @@ export interface StatDefinition {
   label: string;
   /** What the DM reads above the lines they can add: what belongs there, and what the lines survive. */
   adjustHint: string;
-  autoLines: (pc: PC) => BreakdownLine[];
+  /** The lines the app works out. Leave out for a number with no formula and give `baseLabel`. */
+  autoLines?: (pc: PC) => BreakdownLine[];
+  /**
+   * For a number with no formula: the name of its single calculated line, which
+   * holds whatever the DM lines do not explain ("Base score"). Part of that
+   * base can be turned into a labelled line without moving the total.
+   */
+  baseLabel?: string;
   /** Whoever may adjust the number may also take its calculated lines out of the total. */
   removable?: boolean;
+  /** The range the total has to stay in, when the rules set one. */
+  min?: number;
+  max?: number;
   read: (pc: PC) => number | undefined;
   write: (pc: PC, total: number) => PC;
 }
@@ -64,6 +78,39 @@ function slotDefinition(spellLevel: number): StatDefinition {
   };
 }
 
+const ABILITY_TITLES: Record<AbilityStat, string> = {
+  STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution',
+  INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma',
+};
+
+/** A score the sheet shows when none was ever saved. */
+const DEFAULT_ABILITY_SCORE = 10;
+
+/**
+ * An ability score: no formula, so a base plus the DM's lines. Modifiers,
+ * saves, skills and spell numbers are worked out from the score when the sheet
+ * is drawn, so they follow by themselves. Saved numbers do not, and only one
+ * is moved here: Armor Class follows a change to Dexterity. Hit points are left
+ * alone when Constitution changes, as they are for every other sheet edit.
+ */
+function abilityDefinition(ability: AbilityStat): StatDefinition {
+  return {
+    title: ABILITY_TITLES[ability],
+    label: ability,
+    adjustHint: 'Each line adds to the base score, such as a level increase or a magic item. '
+      + 'To name an increase the score already includes, label part of the base score.',
+    baseLabel: 'Base score',
+    min: 1,
+    max: 30,
+    read: pc => pc.stats?.[ability] ?? DEFAULT_ABILITY_SCORE,
+    write: (pc, total) => {
+      const scores = Object.fromEntries(ABILITY_STATS.map(key => [key, DEFAULT_ABILITY_SCORE])) as NonNullable<PC['stats']>;
+      const next: PC = { ...pc, stats: { ...scores, ...(pc.stats ?? {}), [ability]: total } };
+      return ability === 'DEX' ? withAcFollowingDex(pc, next) : next;
+    },
+  };
+}
+
 export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
   ac: {
     title: 'Armor Class',
@@ -75,6 +122,12 @@ export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
     read: pc => pc.ac,
     write: (pc, total) => ({ ...pc, ac: total }),
   },
+  STR: abilityDefinition('STR'),
+  DEX: abilityDefinition('DEX'),
+  CON: abilityDefinition('CON'),
+  INT: abilityDefinition('INT'),
+  WIS: abilityDefinition('WIS'),
+  CHA: abilityDefinition('CHA'),
   ...(Object.fromEntries(SLOT_STATS.map((stat, i) => [stat, slotDefinition(i + 1)])) as Record<SlotStat, StatDefinition>),
 };
 
@@ -96,11 +149,22 @@ export interface StatBreakdown {
   total: number;
 }
 
+/**
+ * The lines the app works out for a number, none marked as removed. A number
+ * with no formula gets its one base line: the saved total less the DM lines.
+ */
+function calculatedLines(pc: PC, stat: AdjustableStat): BreakdownLine[] {
+  const def = STAT_DEFINITIONS[stat];
+  if (def.autoLines) return def.autoLines(pc);
+  const base = (def.read(pc) ?? 0) - adjustmentSum(adjustmentsFor(pc, stat));
+  return [{ label: def.baseLabel ?? 'Base', value: base }];
+}
+
 /** Take a number apart into its automatic lines, DM lines and any unlabelled rest. */
 export function breakdownOf(pc: PC, stat: AdjustableStat): StatBreakdown {
   const def = STAT_DEFINITIONS[stat];
   const removed = def.removable ? removedLabelsFor(pc, stat) : [];
-  const auto = markRemoved(def.autoLines(pc), removed);
+  const auto = markRemoved(calculatedLines(pc, stat), removed);
   const adjustments = adjustmentsFor(pc, stat);
   const explained = countedSum(auto) + adjustmentSum(adjustments);
   const total = def.read(pc) ?? explained;
@@ -115,6 +179,12 @@ export interface AdjustmentOptions {
    * definition does not allow removing lines.
    */
   removed?: string[];
+  /**
+   * How much of the new lines came out of the base instead of adding to the
+   * total ("label part of the base score"). Only means something for a number
+   * with a base line; 0 when left out.
+   */
+  fromBase?: number;
 }
 
 /**
@@ -123,7 +193,9 @@ export interface AdjustmentOptions {
  * the total by exactly its amount, a line put back raises it again.
  * `keepUnlabelled` carries the unlabelled rest over unchanged; pass false once
  * the DM has dealt with it (removed it, or turned it into one of `lines`).
- * Pure: returns a new character, never mutates the one passed in.
+ * For a number with a base line the base stays what it was, less whatever
+ * `fromBase` says was turned into lines, and the total is kept inside the
+ * number's range. Pure: returns a new character, never mutates the one passed in.
  */
 export function applyAdjustments(
   pc: PC, stat: AdjustableStat, lines: StatAdjustment[], keepUnlabelled: boolean,
@@ -134,18 +206,25 @@ export function applyAdjustments(
   const cleaned = cleanAdjustments(lines);
   const stored: StatAdjustments = { ...(pc.statAdjustments ?? {}), [stat]: cleaned };
   if (def.removable && options.removed) {
-    const removed = cleanRemoved(options.removed, def.autoLines(pc));
+    const removed = cleanRemoved(options.removed, calculatedLines(pc, stat));
     if (removed.length) stored[removedKey(stat)] = removedEntries(removed);
     else delete stored[removedKey(stat)];
   }
   const next: PC = { ...pc, statAdjustments: stored };
   // The calculated lines are the ones the character had coming in: only which
-  // of them count can change here. (A spell level's "Class table" line is read
-  // off the saved maximum less the lines, so it must not see the new lines.)
+  // of them count can change here. (A spell level's "Class table" line and an
+  // ability's base are both read off the saved total less the lines, so they
+  // must not see the new lines.) A base also gives up whatever part of it was
+  // turned into lines.
   const removedNow = def.removable ? removedLabelsFor(next, stat) : [];
-  const calculated = countedSum(markRemoved(def.autoLines(pc), removedNow));
+  const calculated = countedSum(markRemoved(calculatedLines(pc, stat), removedNow))
+    - (def.baseLabel ? options.fromBase ?? 0 : 0);
   const total = calculated + adjustmentSum(cleaned) + (keepUnlabelled ? before.unlabelled : 0);
-  return def.write(next, total);
+  return def.write(next, withinRange(def, total));
+}
+
+function withinRange(def: StatDefinition, total: number): number {
+  return Math.min(def.max ?? Infinity, Math.max(def.min ?? -Infinity, total));
 }
 
 /**
@@ -228,6 +307,16 @@ export function describeAdjustmentChange(
     return true;
   });
 
+  // "Label part of the base score": lines came in and the base gave up exactly
+  // what they are worth, so they name something the score already held.
+  const baseGaveUp = countedSum(before.auto) - countedSum(after.auto);
+  if (STAT_DEFINITIONS[stat].baseLabel && added.length && !removed.length
+      && baseGaveUp !== 0 && baseGaveUp === adjustmentSum(added)) {
+    const [first, ...rest] = added;
+    const more = rest.map(line => `, ${signed(line.value)} as ${line.label}`).join('');
+    return `DM labelled ${signed(first.value)} of the ${label} base score as ${first.label}${more}`;
+  }
+
   // "Label it": the unlabelled amount came back as exactly one new line.
   const cleared = before.unlabelled !== 0 && after.unlabelled === 0;
   if (cleared && !removed.length && added.length === 1 && added[0].value === before.unlabelled
@@ -251,4 +340,37 @@ export function describeAdjustmentChange(
   const what = parts.length ? parts.join('; ') : `updated the ${label} adjustments`;
   const totals = before.total !== after.total ? ` (${label} ${before.total} → ${after.total})` : '';
   return `DM ${what}${totals}`;
+}
+
+/**
+ * The activity-log line for a save from the breakdown dialog: what happened to
+ * the number's lines, then any other saved number that moved with it (Armor
+ * Class follows Dexterity), e.g.
+ * "DM added +2 Belt of Dexterity to DEX (DEX 14 → 16); AC 15 → 16".
+ */
+export function describeStatSave(stat: AdjustableStat, before: PC, after: PC): string {
+  const line = describeAdjustmentChange(stat, breakdownOf(before, stat), breakdownOf(after, stat));
+  const followed = stat !== 'ac' && before.ac != null && after.ac != null && before.ac !== after.ac;
+  return followed ? `${line}; AC ${before.ac} → ${after.ac}` : line;
+}
+
+/**
+ * The lines a new character starts with: each increase the creation wizard put
+ * on top of the rolled or assigned scores, labelled with where it came from
+ * (the background's name). The scores themselves are not touched here; the
+ * lines only say what part of each score is the increase, so a fresh character
+ * opens as "Base score" plus these. Null when there is nothing to record.
+ */
+export function creationAbilityLines(
+  increases: Array<[ability: string, amount: number]>, source: string,
+): StatAdjustments | null {
+  const label = removalLabel(source) || 'Background';
+  const lines: StatAdjustments = {};
+  for (const [ability, amount] of increases) {
+    if (!ABILITY_STATS.includes(ability as AbilityStat)) continue;
+    const key = ability as AbilityStat;
+    const cleaned = cleanAdjustments([...(lines[key] ?? []), { value: amount, label }]);
+    if (cleaned.length) lines[key] = cleaned;
+  }
+  return Object.keys(lines).length ? lines : null;
 }

@@ -232,6 +232,12 @@ export const DEMO_PCS: PC[] = [
     hp: { cur: 44, max: 44, temp: 0 },
     ac: 18, init: 0, speed: 30, prof: 3,
     stats: { STR: 17, DEX: 10, CON: 15, INT: 8, WIS: 12, CHA: 14 },
+    // Where the scores come from, for the ability breakdown: a base of STR 14 and
+    // CON 13, the Soldier background's +2 / +1, and the level 4 increase (+1 each).
+    statAdjustments: {
+      STR: [{ value: 2, label: 'Soldier' }, { value: 1, label: 'Level 4 Increase' }],
+      CON: [{ value: 1, label: 'Soldier' }, { value: 1, label: 'Level 4 Increase' }],
+    },
     saves: ['WIS', 'CHA'],
     skills: { Athletics: 'prof', Intimidation: 'prof', Religion: 'prof', Survival: 'prof' },
     conditions: [],

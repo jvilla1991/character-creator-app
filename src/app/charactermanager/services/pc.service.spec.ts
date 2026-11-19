@@ -876,6 +876,18 @@ describe('PCService (demo mode)', () => {
       });
     });
 
+    it('records an ability score improvement as a "Level N Increase" line, like the server', (done) => {
+      const before = service.getPCById(1)!;
+      service.levelUp(1, { abilityIncreases: { CHA: 1, CON: 1 } }).subscribe(updated => {
+        const label = `Level ${updated.level} Increase`;
+        expect(updated.stats?.CHA).toBe((before.stats?.CHA ?? 10) + 1);
+        expect(updated.statAdjustments?.CHA?.at(-1)).toEqual({ value: 1, label });
+        expect(updated.statAdjustments?.CON?.at(-1)).toEqual({ value: 1, label });
+        expect(updated.statAdjustments?.STR).toBeUndefined();
+        done();
+      });
+    });
+
     it('caps the demo log at 10 entries', (done) => {
       // Level up repeatedly past the cap and confirm the log never exceeds 10.
       const levelUpsNeeded = 12;

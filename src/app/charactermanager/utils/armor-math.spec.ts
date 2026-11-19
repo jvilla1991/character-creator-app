@@ -1,4 +1,6 @@
-import { acAutoLines, computeAc, parseArmorClass, shieldBonus, withRecomputedAc } from './armor-math';
+import {
+  acAutoLines, computeAc, parseArmorClass, shieldBonus, withAcFollowingDex, withRecomputedAc,
+} from './armor-math';
 import { PC, PcItem } from '../models/pc';
 
 const pcWith = (dex: number, inventory: PcItem[]): PC =>
@@ -214,6 +216,45 @@ describe('armor-math', () => {
       const before: PcItem[] = [];
       const after = { ...pcWith(10, [armor('Plate', '18')]), ac: undefined, statAdjustments: taunka };
       expect(withRecomputedAc(after, before).ac).toBe(19);
+    });
+  });
+
+  describe('withAcFollowingDex', () => {
+    const dex = (pc: PC, score: number): PC => ({ ...pc, stats: { ...pc.stats!, DEX: score } });
+
+    it('moves the saved AC by the change in the Dexterity line, keeping everything else in it', () => {
+      const before = {
+        ...pcWith(14, [armor('Leather', '11 + Dex modifier')]),
+        ac: 16,                 // 11 + Dex 2 + Taunka 1 + 2 nobody labelled
+        statAdjustments: { ac: [{ value: 1, label: 'Taunka' }] },
+      };
+      expect(withAcFollowingDex(before, dex(before, 16)).ac).toBe(17);
+      expect(withAcFollowingDex(before, dex(before, 10)).ac).toBe(14);
+    });
+
+    it('moves nothing when the modifier did not change', () => {
+      const before = pcWith(14, []);
+      const after = dex(before, 15);
+      expect(withAcFollowingDex(before, after)).toBe(after);
+    });
+
+    it('respects the medium armor cap and heavy armor', () => {
+      const medium = { ...pcWith(14, [armor('Half Plate', '15 + Dex modifier (max 2)')]), ac: 17 };
+      expect(withAcFollowingDex(medium, dex(medium, 18)).ac).toBe(17); // already at the +2 cap
+      expect(withAcFollowingDex(medium, dex(medium, 10)).ac).toBe(15);
+
+      const heavy = { ...pcWith(14, [armor('Plate', '18')]), ac: 18 };
+      expect(withAcFollowingDex(heavy, dex(heavy, 20)).ac).toBe(18);
+    });
+
+    it('moves nothing when the DM removed the Dexterity line', () => {
+      const before = { ...pcWith(14, []), ac: 10, statAdjustments: { acRemoved: [{ value: 1, label: 'Dexterity' }] } };
+      expect(withAcFollowingDex(before, dex(before, 18)).ac).toBe(10);
+    });
+
+    it('leaves a character with no saved AC without one', () => {
+      const before = { ...pcWith(14, []), ac: undefined };
+      expect(withAcFollowingDex(before, dex(before, 18)).ac).toBeUndefined();
     });
   });
 });

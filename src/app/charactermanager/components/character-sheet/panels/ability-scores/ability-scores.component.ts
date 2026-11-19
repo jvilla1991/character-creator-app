@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
+import { ABILITY_STATS, AbilityStat, AdjustableStat } from '../../../../models/stat-adjustment';
 import { modFromScore } from '../../../../utils/character-math';
 import { DmEditRequest } from '../../dm-edit-modal/dm-edit-request';
 import { EditableNumberComponent } from '../../editable-number/editable-number.component';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
 
 interface AbilityRow {
-  key: string;
+  key: AbilityStat;
   label: string;
   score: number;
   mod: number;
@@ -22,13 +23,22 @@ interface AbilityRow {
 })
 export class AbilityScoresComponent {
   readonly pc = input.required<PC>();
-  /** DM cross-link: makes each ability score click-to-edit. */
+  /** DM cross-link: makes each ability score click-to-edit (where it has no breakdown). */
   readonly editable = input(false);
+  /** Each score opens its breakdown instead of the plain number editor. Off for
+   *  a follower, whose scores are typed stat-block values with no lines. */
+  readonly breakdownEnabled = input(false);
+  /** The viewer may change the lines in that breakdown (the DM, or the owner of a
+   *  character that is in no campaign). Only changes the affordance here; the
+   *  parent decides what the dialog allows. */
+  readonly canAdjust = input(false);
   readonly pcChange = output<PC>();
   /** A DM clicked an intercepted ability score — the parent opens the DM edit modal. */
   readonly editRequested = output<DmEditRequest>();
+  /** Anyone clicked a score that has a breakdown — the parent opens the dialog. */
+  readonly breakdownRequested = output<AdjustableStat>();
 
-  private static readonly ORDER = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
+  private static readonly ORDER = ABILITY_STATS;
   private static readonly LABELS: Record<string, string> = {
     STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution',
     INT: 'Intelligence', WIS: 'Wisdom',   CHA: 'Charisma',
@@ -48,6 +58,13 @@ export class AbilityScoresComponent {
       };
     });
   });
+
+  /** Spoken name of a score's button: the value, then what activating it does. */
+  scoreButtonLabel(row: AbilityRow): string {
+    return this.canAdjust()
+      ? `${row.label} score ${row.score}. Show how it is worked out and adjust it`
+      : `${row.label} score ${row.score}. Show how it is worked out`;
+  }
 
   /** Pure builder: apply one ability score. */
   private buildScore(key: string, value: number): PC {

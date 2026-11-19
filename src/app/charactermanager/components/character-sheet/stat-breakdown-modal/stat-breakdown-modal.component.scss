@@ -108,4 +108,12 @@
   margin-top: 8px;
 }
 
-.add-line { margin-top: 2px; }
+/* A line that names part of the base says so right under its row. */
+.from-base-note { margin: -2px 0 8px; }
+
+.add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}

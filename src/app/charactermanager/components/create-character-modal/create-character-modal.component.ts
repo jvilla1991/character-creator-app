@@ -12,6 +12,7 @@ import {
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
+import { creationAbilityLines } from '../../utils/stat-breakdown';
 import { DialogDirective } from '../modal/dialog.directive';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
@@ -1357,6 +1358,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       init:             dexMod,
       speed:            30,
       stats,
+      // What part of each score is the background's increase, so the sheet's
+      // ability breakdown opens as "Base score" plus that line.
+      statAdjustments: creationAbilityLines([[this.bonusPlus2, 2], [this.bonusPlus1, 1]], this.background),
       saves,
       conditions:       [],
       feat:             this.backgroundFeatName || undefined,

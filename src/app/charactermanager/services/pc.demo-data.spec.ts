@@ -1,6 +1,22 @@
 import { DEMO_PCS, demoFeatOptions, demoFightingStyleOptions, demoSlotsFor, demoSubclassOptions } from './pc.demo-data';
 import { heroClassFor, heroClassSpells, subclassSpellsFor } from '../models/hero-class';
 import { classDisplayName } from '../utils/class-display';
+import { breakdownOf } from '../utils/stat-breakdown';
+
+describe('pc.demo-data (ability breakdown)', () => {
+  it('seeds a character whose Strength opens as a base score, a background line and a level increase', () => {
+    const isolde = DEMO_PCS.find(p => p.name === 'Isolde Grimhallow')!;
+    const strength = breakdownOf(isolde, 'STR');
+    expect(strength.auto).toEqual([{ label: 'Base score', value: 14 }]);
+    expect(strength.adjustments).toEqual([
+      { value: 2, label: 'Soldier' }, { value: 1, label: 'Level 4 Increase' },
+    ]);
+    expect(strength.total).toBe(17);
+    // The lines only explain the scores; the scores themselves are as they were.
+    expect(isolde.stats).toEqual({ STR: 17, DEX: 10, CON: 15, INT: 8, WIS: 12, CHA: 14 });
+    expect(breakdownOf(isolde, 'CON').auto[0].value).toBe(13);
+  });
+});
 
 describe('pc.demo-data (WoW mirrors)', () => {
   it('offers Blessed Warrior to every paladin and Druidic Warrior to every ranger at level 2', () => {

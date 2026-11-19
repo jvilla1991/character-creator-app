@@ -147,14 +147,14 @@ describe('StatBreakdownModalComponent', () => {
     component.drafts[0].label = '  Taunka ';
     expect(component.total).toBe(18);
     expect(component.lineProblem).toBeNull();
-    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [] });
+    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [], fromBase: 0 });
   });
 
   it('removes a line', () => {
     open(breakdown({ adjustments: [{ value: 1, label: 'Taunka' }], total: 18 }), true);
     component.removeLine(0);
     expect(component.total).toBe(17);
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [], fromBase: 0 });
   });
 
   it('refuses a line with a zero, missing or fractional amount', () => {
@@ -183,7 +183,7 @@ describe('StatBreakdownModalComponent', () => {
     component.addLine(-2);
     component.drafts[0].label = 'Cursed';
     expect(component.total).toBe(15);
-    expect(saved()).toEqual({ lines: [{ value: -2, label: 'Cursed' }], keepUnlabelled: true, removed: [] });
+    expect(saved()).toEqual({ lines: [{ value: -2, label: 'Cursed' }], keepUnlabelled: true, removed: [], fromBase: 0 });
   });
 
   it('stops offering more lines at the limit', () => {
@@ -246,7 +246,7 @@ describe('StatBreakdownModalComponent', () => {
     expect(lineActions()).toEqual(['Remove', 'Restore', 'Remove']);
     expect(text('total')).toBe('Total 15');
     expect(fixture.nativeElement.querySelector('[data-testid="unlabelled"]')).toBeNull();
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Dexterity'] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Dexterity'], fromBase: 0 });
   });
 
   it('restoring a line counts it again', () => {
@@ -261,7 +261,7 @@ describe('StatBreakdownModalComponent', () => {
 
     expect(notCounted()).toEqual([]);
     expect(text('total')).toBe('Total 17');
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: [], fromBase: 0 });
   });
 
   it('has nothing to save once a removal is undone again', () => {
@@ -277,7 +277,7 @@ describe('StatBreakdownModalComponent', () => {
     open(breakdown({ removed: ['Plate'] }), true);
     expect(notCounted()).toEqual([]);
     component.removeAutoLine(1);
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Plate', 'Dexterity'] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Plate', 'Dexterity'], fromBase: 0 });
   });
 
   it('removes one of two lines with the same name at a time', () => {
@@ -305,7 +305,7 @@ describe('StatBreakdownModalComponent', () => {
     pressLineAction(2);
     expect(text('unlabelled')).toBe('Unlabelled +3');
     expect(text('total')).toBe('Total 18');
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Shield'] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: true, removed: ['Shield'], fromBase: 0 });
   });
 
   // --- the unlabelled rest of an older hand edit ---
@@ -318,7 +318,7 @@ describe('StatBreakdownModalComponent', () => {
     component.addLine();
     component.drafts[0].label = 'Taunka';
     expect(component.total).toBe(21);
-    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [] });
+    expect(saved()).toEqual({ lines: [{ value: 1, label: 'Taunka' }], keepUnlabelled: true, removed: [], fromBase: 0 });
   });
 
   it('"Label it" turns the unlabelled amount into a line without moving the total', () => {
@@ -329,7 +329,7 @@ describe('StatBreakdownModalComponent', () => {
     expect(component.canSave).toBeFalse(); // still needs its label
 
     component.drafts[0].label = 'Unarmored Defense';
-    expect(saved()).toEqual({ lines: [{ value: 3, label: 'Unarmored Defense' }], keepUnlabelled: false, removed: [] });
+    expect(saved()).toEqual({ lines: [{ value: 3, label: 'Unarmored Defense' }], keepUnlabelled: false, removed: [], fromBase: 0 });
   });
 
   it('"Remove it" drops the unlabelled amount from the total', () => {
@@ -338,7 +338,7 @@ describe('StatBreakdownModalComponent', () => {
     expect(component.total).toBe(17);
     expect(text('total')).toBe('Total 17');
     expect(fixture.nativeElement.querySelector('[data-testid="unlabelled"]')).toBeNull();
-    expect(saved()).toEqual({ lines: [], keepUnlabelled: false, removed: [] });
+    expect(saved()).toEqual({ lines: [], keepUnlabelled: false, removed: [], fromBase: 0 });
   });
 
   // --- lifetime ---
@@ -363,5 +363,177 @@ describe('StatBreakdownModalComponent', () => {
     component.cancel();
     expect(closed).toBeTrue();
     expect(savedAnything).toBeFalse();
+  });
+
+  // --- a number with a base line (an ability score) ---
+
+  describe('ability score', () => {
+    /** Strength 17: a base of 14, the Soldier background's +2 and a level increase. */
+    const strength = (overrides: Partial<StatBreakdown> = {}): StatBreakdown => ({
+      stat: 'STR',
+      auto: [{ label: 'Base score', value: 14 }],
+      adjustments: [{ value: 2, label: 'Soldier' }, { value: 1, label: 'Level 4 Increase' }],
+      removed: [],
+      unlabelled: 0,
+      total: 17,
+      ...overrides,
+    });
+    /** Strength 17 with nothing recorded yet: the whole score is the base. */
+    const unexplained = (): StatBreakdown => strength({ auto: [{ label: 'Base score', value: 17 }], adjustments: [] });
+
+    const problem = (): string =>
+      (fixture.nativeElement.querySelector('[data-testid="problem"]')?.textContent ?? '').trim();
+    const buttonNamed = (label: string): HTMLButtonElement | undefined =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
+        .find(b => b.textContent?.trim() === label);
+
+    it('shows a player the base score, the lines and the total, read-only', () => {
+      open(strength(), false);
+      expect(fixture.nativeElement.querySelector('.modal-title, h2')?.textContent ?? fixture.nativeElement.textContent)
+        .toContain('Strength');
+      expect(text('auto-lines')).toBe('Base score 14');
+      expect(text('adjust-lines')).toBe('Soldier +2 Level 4 Increase +1');
+      expect(text('total')).toBe('Total 17');
+      expect(fixture.nativeElement.querySelector('input')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="unlabelled"]')).toBeNull();
+    });
+
+    it('never offers to remove the base score', () => {
+      open(strength(), true);
+      expect(fixture.nativeElement.querySelectorAll('[data-testid="auto-lines"] button').length).toBe(0);
+      component.removeAutoLine(0);
+      expect(component.removed).toEqual([]);
+    });
+
+    it('explains the lines in ability-score words, not armor words', () => {
+      open(strength(), true);
+      const hint: string = fixture.nativeElement.querySelector('.breakdown-hint').textContent;
+      expect(hint).toContain('base score');
+      expect(hint).not.toContain('armor');
+    });
+
+    it('a new line raises the score', () => {
+      open(strength(), true);
+      component.addLine(2);
+      component.drafts[2].label = 'Belt of Strength';
+      expect(component.total).toBe(19);
+      expect(saved()).toEqual({
+        lines: [{ value: 2, label: 'Soldier' }, { value: 1, label: 'Level 4 Increase' }, { value: 2, label: 'Belt of Strength' }],
+        keepUnlabelled: true, removed: [], fromBase: 0,
+      });
+    });
+
+    it('"Label part of the base score" takes the amount out of the base, so the total stays', () => {
+      open(unexplained(), true);
+      click('Label part of the base score');
+
+      expect(component.drafts).toEqual([{ value: 1, label: '', fromBase: true }]);
+      expect(text('auto-lines')).toBe('Base score 16');
+      expect(text('total')).toBe('Total 17');
+      expect(fixture.nativeElement.querySelector('[data-testid="from-base"]').textContent.trim())
+        .toBe('Line 1 comes out of the base score. The total stays the same.');
+      expect(component.canSave).toBeFalse(); // still needs its label
+
+      component.drafts[0].label = 'Level 4 Increase';
+      component.drafts[0].value = 2;
+      expect(component.autoLines[0].value).toBe(15);
+      expect(component.total).toBe(17);
+      expect(saved()).toEqual({
+        lines: [{ value: 2, label: 'Level 4 Increase' }], keepUnlabelled: true, removed: [], fromBase: 2,
+      });
+    });
+
+    it('can label part of the base and add something new in one go', () => {
+      open(unexplained(), true);
+      component.labelPartOfBase();
+      component.drafts[0].label = 'Soldier';
+      component.addLine(2);
+      component.drafts[1].label = 'Belt of Strength';
+      expect(component.autoLines[0].value).toBe(16);
+      expect(component.total).toBe(19);
+      expect(saved()?.fromBase).toBe(1);
+    });
+
+    it('gives the amount back to the base when the line is removed again before saving', () => {
+      open(unexplained(), true);
+      component.labelPartOfBase();
+      component.removeLine(0);
+      expect(component.autoLines[0].value).toBe(17);
+      expect(component.total).toBe(17);
+      expect(component.canSave).toBeFalse();
+    });
+
+    it('does not offer to label part of a base where there is none (Armor Class)', () => {
+      open(breakdown(), true);
+      expect(buttonNamed('Label part of the base score')).toBeUndefined();
+      component.labelPartOfBase();
+      expect(component.drafts).toEqual([]);
+    });
+
+    it('treats a spell level as neither: the class table is no base to label and has no range', () => {
+      open({
+        stat: 'slot3', auto: [{ label: 'Class table', value: 2 }],
+        adjustments: [], removed: [], unlabelled: 0, total: 2,
+      }, true);
+      expect(component.hasBase).toBeFalse();
+      expect(buttonNamed('Label part of the base score')).toBeUndefined();
+      expect(buttonNamed('Add a line')).toBeDefined();
+      component.labelPartOfBase();
+      expect(component.drafts).toEqual([]);
+
+      component.addLine(40);
+      component.drafts[0].label = 'Boon';
+      expect(component.rangeProblem).toBeNull();
+      expect(text('auto-lines')).toBe('Class table 2'); // nothing comes out of the class table
+      expect(saved()).toEqual({ lines: [{ value: 40, label: 'Boon' }], keepUnlabelled: true, removed: [], fromBase: 0 });
+    });
+
+    it('blocks Save, with a plain reason, when the score would leave 1 to 30', () => {
+      open(strength(), true);
+      component.addLine(14);
+      component.drafts[2].label = 'Wish';
+      fixture.detectChanges();
+      expect(component.total).toBe(31);
+      expect(component.canSave).toBeFalse();
+      expect(component.rangeProblem).toBe('Strength has to stay between 1 and 30.');
+
+      component.drafts[2].value = -17;
+      expect(component.total).toBe(0);
+      expect(component.canSave).toBeFalse();
+      expect(saved()).toBeUndefined();
+
+      component.drafts[2].value = 13;
+      expect(component.rangeProblem).toBeNull();
+      expect(component.canSave).toBeTrue();
+    });
+
+    it('shows that reason under the lines', () => {
+      open(strength(), true);
+      click('Add a line');
+      const amount: HTMLInputElement = fixture.nativeElement.querySelectorAll('.adjust-amount')[2];
+      const label: HTMLInputElement = fixture.nativeElement.querySelectorAll('.adjust-label')[2];
+      amount.value = '20'; amount.dispatchEvent(new Event('input'));
+      label.value = 'Wish'; label.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(problem()).toBe('Strength has to stay between 1 and 30.');
+      expect(buttonNamed('Save')!.disabled).toBeTrue();
+    });
+
+    it('blocks Save when more is labelled out of the base than it holds', () => {
+      open(unexplained(), true);
+      component.labelPartOfBase();
+      component.drafts[0].label = 'Typo';
+      component.drafts[0].value = 51;
+      expect(component.rangeProblem).toBe('These lines take more out of the base score than it holds.');
+      expect(component.canSave).toBeFalse();
+    });
+
+    it('puts no range on Armor Class', () => {
+      open(breakdown(), true);
+      component.addLine(60);
+      component.drafts[0].label = 'Divine Shield';
+      expect(component.rangeProblem).toBeNull();
+      expect(component.canSave).toBeTrue();
+    });
   });
 });
