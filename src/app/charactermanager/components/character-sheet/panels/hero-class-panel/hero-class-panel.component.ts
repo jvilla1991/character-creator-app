@@ -262,7 +262,7 @@ export class HeroClassPanelComponent {
 
   /**
    * True for a World of Warcraft spell (from the loaded spell data), or a base
-   * spell the variant adds to its class list (the WoW Priest's Blur and Levitate).
+   * spell the variant adds to its class list (e.g. the WoW Priest's Blur and Levitate).
    */
   isWowSpell(name: string): boolean {
     return this.spellFor(name)?.source === 'World of Warcraft' || isExtraListSpell(this.hero, name);

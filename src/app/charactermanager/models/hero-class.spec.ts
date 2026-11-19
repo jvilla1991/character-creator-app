@@ -329,9 +329,11 @@ describe('hero-class', () => {
       expect(subclassSource('Life Domain')).toBeUndefined();
     });
 
-    it('adds Blur and Levitate to its spell list, and no other class but the Mage adds anything', () => {
+    it('adds Blur, Mind Sliver and its other added spells to its spell list, and no other class but the Mage adds anything', () => {
       expect(isExtraListSpell(wowPriest, 'Blur')).toBeTrue();
       expect(isExtraListSpell(wowPriest, 'levitate')).toBeTrue();
+      expect(isExtraListSpell(wowPriest, 'Mind Sliver')).toBeTrue();
+      expect(isExtraListSpell(wowPriest, 'Dominate Monster')).toBeTrue();
       expect(isExtraListSpell(wowPriest, 'Cure Wounds')).toBeFalse();
       expect(isExtraListSpell(undefined, 'Blur')).toBeFalse();
       for (const hero of HERO_CLASSES.filter(h => h !== wowPriest && h.key !== 'Wizard (World of Warcraft)')) {
