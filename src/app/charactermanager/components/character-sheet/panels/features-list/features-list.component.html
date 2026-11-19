@@ -65,9 +65,24 @@
           <span class="feature-source">{{ f.source }}</span>
         </div>
         <div class="feature-desc">{{ descFor(f) }}</div>
+        @if (resourceFor(f); as r) {
+          <app-resource-counter [resource]="r" [editable]="resourcesEditable" [hideName]="r.name === f.name"
+            (usedChange)="setResourceUsed(r, $event)"></app-resource-counter>
+        }
       </div>
     }
-    @if (classFeatures.length === 0) {
+    <!-- Limited-use features the list above does not carry (the level 1 ones). -->
+    @for (r of unlistedResources; track r.key) {
+      <div class="feature" data-resource-feature>
+        <div class="feature-head">
+          <span class="feature-name">{{ r.feature }}</span>
+          <span class="feature-source">{{ pc.clazz }}</span>
+        </div>
+        <app-resource-counter [resource]="r" [editable]="resourcesEditable" [hideName]="r.name === r.feature"
+          (usedChange)="setResourceUsed(r, $event)"></app-resource-counter>
+      </div>
+    }
+    @if (classFeatures.length === 0 && unlistedResources.length === 0) {
       <div
         style="color: var(--text-dim); font-size: 13px; padding: 8px 0;">
         No features recorded.

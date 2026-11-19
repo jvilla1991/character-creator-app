@@ -37,6 +37,37 @@ describe('HeroClassPanelComponent', () => {
     expect(isHeroClass(null)).toBeFalse();
   });
 
+  describe('hero resource counter (replaces the display-only resource line)', () => {
+    it('a Death Knight tracks the Death Coil pool: 1 + Charisma modifier d8s', () => {
+      component.pc = makeDeathKnight({
+        stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 14 }, classResources: { deathCoil: 1 },
+      });
+
+      expect(component.heroResource).toEqual(jasmine.objectContaining({
+        key: 'deathCoil', name: 'Death Coil', max: 3, used: 1, remaining: 2, unit: 'd8', pool: true,
+      }));
+    });
+
+    it('spending emits the character with the new amount, only for a viewer who may edit', () => {
+      const emitted: PC[] = [];
+      component.pcChange.subscribe(p => emitted.push(p));
+      component.pc = makeDeathKnight({ stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 14 } });
+      const coil = component.heroResource!;
+
+      component.setHeroResourceUsed(coil, 2);
+      expect(emitted).toEqual([]);
+
+      component.canEdit = true;
+      component.setHeroResourceUsed(coil, 2);
+      expect(emitted[0].classResources).toEqual({ deathCoil: 2 });
+    });
+
+    it('a hero class without a tracked resource has none', () => {
+      component.pc = { id: 9, name: 'H', clazz: 'Druid', specialization: 'Guardian', level: 5, playerName: 'P' } as PC;
+      expect(component.heroResource).toBeUndefined();
+    });
+  });
+
   describe('Death Knight', () => {
     it('lists the oath spells for the level and rune', () => {
       component.pc = makeDeathKnight();

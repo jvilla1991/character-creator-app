@@ -66,6 +66,14 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
               <dd class="lr-note">{{ s.back > 0 ? '+' + s.back : 'none spent' }}</dd>
             </div>
           }
+          <!-- Limited-use class features: everything comes back. -->
+          @for (res of p.resources; track res.key) {
+            <div class="lr-row" data-row="resource">
+              <dt class="lr-label">{{ res.name }}</dt>
+              <dd class="numeric">{{ res.max }} / {{ res.max }}</dd>
+              <dd class="lr-note">{{ res.back > 0 ? res.now + ' of ' + res.max + ' now' : 'none spent' }}</dd>
+            </div>
+          }
         </dl>
 
         <!-- Slice 3: restored class features are projected here, inside the summary. -->

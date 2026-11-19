@@ -717,3 +717,41 @@ describe('SessionModeComponent long rest choices', () => {
     expect(component.isLongRestReady(state({ longRest: null }))).toBeFalse();
   });
 });
+
+describe('SessionModeComponent short rest refresh', () => {
+  let component: SessionModeComponent;
+  let pcService: jasmine.SpyObj<PCService>;
+
+  const mySeat = { participantId: 5, pcId: 7, ownedByMe: true, name: 'Bex' } as ParticipantView;
+  const state = (over: Partial<SessionState> = {}): SessionState =>
+    ({ sessionId: 1, dm: false, status: 'LOBBY', shortRestOpen: false, participants: [mySeat], ...over } as SessionState);
+  const track = (s: SessionState) =>
+    (component as unknown as { trackShortRest(s: SessionState): void }).trackShortRest(s);
+
+  beforeEach(() => {
+    const sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['clear'], { state$: of(null) });
+    pcService = jasmine.createSpyObj<PCService>('PCService', ['refreshPC']);
+    component = TestBed.runInInjectionContext(() => new SessionModeComponent(
+      sessionService, null as never, pcService, null as never, null as never, null as never, null as never));
+  });
+
+  it('refetches the player\'s hero when a short rest opens (the server gave uses back)', () => {
+    track(state());
+    track(state({ shortRestOpen: true }));
+
+    expect(pcService.refreshPC).toHaveBeenCalledOnceWith(7);
+
+    track(state({ shortRestOpen: true })); // still open: once is enough
+    track(state({ shortRestOpen: false })); // closing gives nothing back
+    expect(pcService.refreshPC).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refetch for a rest that was already open on joining, nor for the DM', () => {
+    track(state({ shortRestOpen: true }));
+    expect(pcService.refreshPC).not.toHaveBeenCalled();
+
+    track(state({ dm: true, shortRestOpen: false }));
+    track(state({ dm: true, shortRestOpen: true }));
+    expect(pcService.refreshPC).not.toHaveBeenCalled();
+  });
+});

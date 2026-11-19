@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+// An inset strip under the feature it belongs to.
+.rc {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+}
+
+.rc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.rc-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.rc-count {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+
+  .numeric {
+    font-size: var(--text-lg);
+    color: var(--text);
+  }
+}
+
+// Nothing left: the number steps down the ramp. The "0 / 3" itself says so.
+.rc.spent .rc-count .numeric {
+  color: var(--text-dim);
+}
+
+.rc-pips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-left: auto;
+}
+
+// A filled pip is a use that is still available.
+.rc-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+
+  &.filled {
+    background: var(--gold);
+  }
+}
+
+.rc-recovery {
+  margin-top: 4px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+
+.rc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rc-amount {
+  width: 72px;
+  min-height: 44px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+// Finger-sized on every screen, not only below the phone breakpoint.
+.rc-btn {
+  min-width: 76px;
+  min-height: 44px;
+}

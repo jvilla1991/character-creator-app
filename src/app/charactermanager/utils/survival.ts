@@ -3,6 +3,7 @@ import { CampaignGameTime, TimeOfDay } from '../models/campaign';
 import { LongRestChoices } from '../models/session';
 import { withPreparedSpells } from './spell-preparation';
 import { bloodRuneTempHp, runeWeaponOf } from './rune-weapon';
+import { restoreClassResources } from './class-resources';
 
 // ── Darker Dungeons "Survival Conditions" (ch. 31) ──────────────────────────
 // Pure stage math for campaigns with the survivalConditions variant rule.
@@ -275,7 +276,7 @@ export function applyLongRestToPc(
   };
   const runeTempHp = bloodRuneTempHp(chosen, runeWeaponOf(chosen) != null);
   const rested: PC = {
-    ...chosen,
+    ...restoreClassResources(chosen),
     spellSlots,
     hp: pc.hp ? { ...pc.hp, cur: Math.max(pc.hp.cur, pc.hp.max), temp: runeTempHp } : pc.hp,
     hitDiceUsed: pc.hitDiceUsed != null ? 0 : pc.hitDiceUsed,
