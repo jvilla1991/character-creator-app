@@ -430,9 +430,8 @@ p { margin: 0; }
 // --- phones -----------------------------------------------------------------------
 
 @media (max-width: 719px) {
-  // The app's floating dice button (bottom-right, outside the app's stacking
-  // layer) sits above every modal; the pinned bottom bars leave it room.
-  $fab-clearance: 84px;
+  // Pinned bottom bars clear the phone's home indicator.
+  $bar-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 
   .loot-split-modal {
     width: 100vw;
@@ -453,7 +452,7 @@ p { margin: 0; }
     position: sticky;
     bottom: 0;
     margin: 0 -16px;
-    padding: 14px 16px $fab-clearance;
+    padding: 14px 16px $bar-bottom;
     background: var(--bg-2);
     border-top: 1px solid var(--gold-deep);
     box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45);
@@ -489,7 +488,7 @@ p { margin: 0; }
     position: sticky;
     bottom: 0;
     margin: 0 -16px;
-    padding: 12px 16px $fab-clearance;
+    padding: 12px 16px $bar-bottom;
     background: var(--surface);
 
     flex-direction: column;
@@ -506,7 +505,7 @@ p { margin: 0; }
     position: sticky;
     bottom: 0;
     margin: 0 -16px;
-    padding-bottom: $fab-clearance;
+    padding-bottom: $bar-bottom;
     border-radius: 14px 14px 0 0;
   }
 
