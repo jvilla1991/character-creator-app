@@ -175,6 +175,16 @@ describe('SpellSlotTrackerComponent', () => {
 
       expect(el().querySelector('.sst-actions')).toBeNull();
       expect(button('data-restore-all')).toBeNull();
+      expect(button('data-maximum')).toBeNull();
+    });
+
+    it('still reads out the tapped level for such a viewer (a player in a campaign): the strip is read-only, not gone', () => {
+      render(WIZARD, { canSpend: false, canRestore: false, showMaximum: false });
+      tap('1st');
+
+      expect(text('.sst-detail-title')).toBe('1st-level slots: 2 of 4 left');
+      expect(el().querySelector('.sst-detail')!.children.length).toBe(1); // the text alone, no empty action row
+      expect(el().querySelector('.sst-head')!.classList).not.toContain('has-action');
     });
   });
 

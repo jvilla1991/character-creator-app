@@ -37,7 +37,7 @@ export class SpellSlotTrackerComponent {
   readonly slots = input<PC['spellSlots'] | null | undefined>(null);
   /** Whose slots these are. A different character starts with nothing selected. */
   readonly characterId = input<number | null>(null);
-  /** The viewer may spend a slot by hand: the owner, or the DM. */
+  /** The viewer may spend a slot by hand: the DM, or the owner of a character in no campaign. */
   readonly canSpend = input(false);
   /** The viewer may give slots back: the DM, or the owner of a character in no campaign. */
   readonly canRestore = input(false);

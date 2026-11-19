@@ -407,10 +407,12 @@ export class PCService {
   // is applied before the server answers, so a refusal leaves the sheet as it was.
 
   /**
-   * Spend one slot of a spell level by hand: the owner at any time, or the
-   * campaign's DM on their behalf. The server answers 409 when no slot of that
-   * level is free. `asDm` only matters in demo mode, which has no login to tell
-   * the DM's view from the player's; the server works that out itself.
+   * Spend one slot of a spell level by hand: the campaign's DM on the player's
+   * behalf, or the owner of a character in no campaign (a campaign player gets
+   * 403: they spend a slot by casting in a live session). The server answers
+   * 409 when no slot of that level is free. `asDm` only matters in demo mode,
+   * which has no login to tell the DM's view from the player's; the server
+   * works that out itself.
    */
   spendSpellSlot(pcId: number, spellLevel: number, asDm = false): Observable<SpellSlots> {
     if (environment.demoMode) return this.demoSlotChange(pcId, asDm, 'spend', spellLevel);
@@ -487,8 +489,10 @@ export class PCService {
     if (action !== 'restoreAll' && (!Number.isInteger(level) || level < 1 || level > 9)) {
       return refuse(400, 'level must be a spell level from 1 to 9');
     }
-    if (action !== 'spend' && !asDm && pc.campaignId != null) {
-      return refuse(403, 'In a campaign, spell slots come back with a rest or from your Dungeon Master');
+    if (!asDm && pc.campaignId != null) {
+      return refuse(403, action === 'spend'
+        ? 'In a campaign, spell slots are spent by casting in a session'
+        : 'In a campaign, spell slots come back with a rest or from your Dungeon Master');
     }
 
     // "1 of 3 left": how the server's log line words a spell level.
