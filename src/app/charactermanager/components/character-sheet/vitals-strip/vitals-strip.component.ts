@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
-import { AdjustableStat, adjustmentsFor } from '../../../models/stat-adjustment';
-import { describeAdjustment } from '../../../utils/stat-breakdown';
+import { AdjustableStat, adjustmentsFor, removalLabel } from '../../../models/stat-adjustment';
+import { breakdownOf, describeAdjustment } from '../../../utils/stat-breakdown';
 import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
 import { EditableNumberComponent } from '../editable-number/editable-number.component';
@@ -60,14 +60,28 @@ export class VitalsStripComponent {
   }
 
   /** Names of the currently-equipped armor/shield lines, then the DM's adjustment
-   *  lines ("Chain Shirt & Shield, +1 Taunka") — the caption shown under the AC
-   *  value. Empty when nothing is worn or adjusted, so the caption is hidden. */
+   *  lines, then any calculated line the DM took out of the total ("Chain Shirt,
+   *  +1 Taunka, Shield not counted") — the caption shown under the AC value.
+   *  Empty when nothing is worn, adjusted or removed, so the caption is hidden. */
   get armorLabel(): string {
+    const notCounted = breakdownOf(this.pc, 'ac').auto.filter(line => line.removed).map(line => line.label);
+    // Worn gear whose line is out of the total is named once, as not counted.
+    const out = notCounted.map(removalLabel);
     const worn = (this.pc.inventory ?? [])
       .filter(i => i.category === 'armor' && i.equipped && i.status !== 'dropped')
-      .map(i => i.name);
+      .map(i => i.name)
+      .filter(name => {
+        const at = out.indexOf(removalLabel(name));
+        if (at < 0) return true;
+        out.splice(at, 1);
+        return false;
+      });
     const adjusted = adjustmentsFor(this.pc, 'ac').map(describeAdjustment);
-    return [...(worn.length ? [worn.join(' & ')] : []), ...adjusted].join(', ');
+    return [
+      ...(worn.length ? [worn.join(' & ')] : []),
+      ...adjusted,
+      ...notCounted.map(label => `${label} not counted`),
+    ].join(', ');
   }
 
   /** Spoken name of the AC button: the value, then what activating it does. */

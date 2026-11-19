@@ -279,7 +279,7 @@ describe('CharacterSheetComponent', () => {
       component.editable = true;
       component.onBreakdownRequested('ac');
 
-      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true, removed: [] });
 
       expect(component.statBreakdown).toBeNull();
       expect(pcService.updatePCAsDm).not.toHaveBeenCalled(); // never PUTs the sheet's own copy
@@ -298,6 +298,42 @@ describe('CharacterSheetComponent', () => {
       expect(describe!(fresh, updated)).toBe('DM added +1 Taunka to AC (AC 15 → 16)');
     });
 
+    it('opens with a removed calculated line marked, and the saved total as it is', () => {
+      component.pc = armoured({ ac: 15, statAdjustments: { acRemoved: [{ value: 1, label: 'Dexterity' }] } });
+
+      component.onBreakdownRequested('ac');
+
+      expect(component.statBreakdown?.auto.map(l => !!l.removed)).toEqual([false, true, false]);
+      expect(component.statBreakdown?.removed).toEqual(['Dexterity']);
+      expect(component.statBreakdown?.unlabelled).toBe(0);
+      expect(component.statBreakdown?.total).toBe(15);
+    });
+
+    it('saves a removed calculated line on the FRESH character and logs it in plain words', () => {
+      grantService.grantToPc.and.returnValue(of(makePC()));
+      component.pc = armoured();
+      component.editable = true;
+      component.onBreakdownRequested('ac');
+
+      component.onStatAdjustmentsSaved({ lines: [], keepUnlabelled: true, removed: ['Dexterity'] });
+
+      const [, mutate, describe] = grantService.grantToPc.calls.mostRecent().args;
+      const fresh = armoured();
+      const updated = mutate(fresh);
+      expect(updated.ac).toBe(15);                          // 17 less the Dexterity line's 2
+      expect(updated.statAdjustments).toEqual({ ac: [], acRemoved: [{ value: 1, label: 'Dexterity' }] });
+      expect(fresh.ac).toBe(17);                            // pure
+      expect(describe!(fresh, updated)).toBe('DM removed the calculated Dexterity line from AC (AC 17 → 15)');
+
+      // Restoring it is the same save the other way round.
+      component.onBreakdownRequested('ac');
+      component.onStatAdjustmentsSaved({ lines: [], keepUnlabelled: true, removed: [] });
+      const [, undo, describeUndo] = grantService.grantToPc.calls.mostRecent().args;
+      const restored = undo(updated);
+      expect(restored.ac).toBe(17);
+      expect(describeUndo!(updated, restored)).toBe('DM restored the calculated Dexterity line on AC (AC 15 → 17)');
+    });
+
     it('tells the DM when the save fails', () => {
       const error = new Error('network down');
       grantService.grantToPc.and.returnValue(throwError(() => error));
@@ -306,7 +342,7 @@ describe('CharacterSheetComponent', () => {
       component.editable = true;
       component.onBreakdownRequested('ac');
 
-      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true, removed: [] });
 
       expect(notify).toHaveBeenCalledWith('Could not save the adjustments. Try again.', error);
     });
@@ -317,7 +353,7 @@ describe('CharacterSheetComponent', () => {
       component.showActions = true;
       component.onBreakdownRequested('ac');
 
-      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true, removed: [] });
 
       expect(grantService.grantToPc).not.toHaveBeenCalled();
       expect(pcService.updatePC).toHaveBeenCalledWith(
@@ -329,7 +365,7 @@ describe('CharacterSheetComponent', () => {
       component.showActions = true; // a player in a campaign
       component.onBreakdownRequested('ac');
 
-      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true });
+      component.onStatAdjustmentsSaved({ lines: [taunka], keepUnlabelled: true, removed: [] });
 
       expect(grantService.grantToPc).not.toHaveBeenCalled();
       expect(pcService.updatePC).not.toHaveBeenCalled();
@@ -566,7 +602,7 @@ describe('CharacterSheetComponent', () => {
         asDm(caster());
         component.onSlotMaximumRequested(3);
 
-        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true, removed: [] });
 
         expect(component.statBreakdown).toBeNull();
         expect(pcService.updatePCAsDm).not.toHaveBeenCalled();
@@ -587,7 +623,7 @@ describe('CharacterSheetComponent', () => {
         asOwner(caster({ campaignId: null }));
         component.onSlotMaximumRequested(1);
 
-        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true, removed: [] });
 
         expect(grantService.grantToPc).not.toHaveBeenCalled();
         expect(pcService.updatePC).toHaveBeenCalledWith(jasmine.objectContaining({
@@ -601,7 +637,7 @@ describe('CharacterSheetComponent', () => {
         component.onSlotMaximumRequested(1);
         expect(component.statBreakdown).not.toBeNull();
 
-        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true });
+        component.onStatAdjustmentsSaved({ lines: [pearl], keepUnlabelled: true, removed: [] });
 
         expect(grantService.grantToPc).not.toHaveBeenCalled();
         expect(pcService.updatePC).not.toHaveBeenCalled();

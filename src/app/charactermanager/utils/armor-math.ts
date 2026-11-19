@@ -1,5 +1,7 @@
 import { PC, PcItem } from '../models/pc';
-import { adjustmentSum, adjustmentsFor } from '../models/stat-adjustment';
+import {
+  BreakdownLine, adjustmentSum, adjustmentsFor, countedSum, markRemoved, removedLabelsFor,
+} from '../models/stat-adjustment';
 import { modFromScore } from './character-math';
 
 // ── Armor Class from equipped inventory ─────────────────────────────────────
@@ -12,16 +14,8 @@ export interface ArmorFormula {
   dex: 'full' | 'max2' | 'none';
 }
 
-/**
- * One line of a number's breakdown that the app works out by itself ("Chain
- * Shirt 13", "Dexterity +2"). `note` says why the amount is what it is when
- * that is not obvious from the label ("capped at +2 by medium armor").
- */
-export interface BreakdownLine {
-  label: string;
-  value: number;
-  note?: string;
-}
+// The line shape lives with the adjustment model; re-exported for older imports.
+export type { BreakdownLine };
 
 /** Parse a catalog armorClass string; null for shields and unparseable text. */
 export function parseArmorClass(str: string | undefined): ArmorFormula | null {
@@ -50,8 +44,9 @@ function equippedArmorLines(pc: PC): PcItem[] {
  * The lines the app can work out for AC from what's equipped: the highest-base
  * equipped armor, Dex per that armor's bounds, then every equipped shield; with
  * no armor equipped, unarmored 10 + Dex. Class features like Unarmored Defense
- * and species traits aren't modeled: the DM adds those as adjustment lines
- * (see {@link acBreakdown}).
+ * and species traits aren't modeled: the DM adds those as adjustment lines.
+ * Every line is listed here, including one the DM removed: {@link computeAc}
+ * is what leaves those out.
  */
 export function acAutoLines(pc: PC): BreakdownLine[] {
   const dexMod = modFromScore(pc.stats?.DEX ?? 10);
@@ -86,9 +81,12 @@ export function acAutoLines(pc: PC): BreakdownLine[] {
   return lines;
 }
 
-/** AC from what's equipped alone: the sum of {@link acAutoLines}, no adjustment lines. */
+/**
+ * AC from what's equipped alone: the sum of {@link acAutoLines} without the
+ * lines the DM removed, and without the adjustment lines.
+ */
 export function computeAc(pc: PC): number {
-  return acAutoLines(pc).reduce((sum, line) => sum + line.value, 0);
+  return countedSum(markRemoved(acAutoLines(pc), removedLabelsFor(pc, 'ac')));
 }
 
 /**
@@ -96,7 +94,8 @@ export function computeAc(pc: PC): number {
  * moves what the armor is worth, shift the saved total by exactly that much.
  * Everything else in the total rides along untouched: the DM's adjustment
  * lines, and any older hand-typed difference that has no line yet. Unrelated
- * inventory edits (qty changes, non-armor drops, notes) move nothing.
+ * inventory edits (qty changes, non-armor drops, notes) move nothing, and
+ * neither does armor whose line the DM removed: it was not in the total.
  */
 export function withRecomputedAc(pc: PC, previousInventory: PcItem[] | undefined): PC {
   const before = computeAc({ ...pc, inventory: previousInventory } as PC);
