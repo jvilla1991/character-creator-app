@@ -174,7 +174,10 @@
       </app-ability-scores-step>
     }
 
-    <!-- ── Step 7: Spells (spellcasting classes only) ────────────────── -->
+    <!-- ── Step 7: Spells (a spellcasting class, or an Origin feat that teaches spells) ── -->
+    @if (step === 7 && !isSpellcastingClass && hasSpellsStep) {
+      <h2 class="modal-title">Choose Your Spells</h2>
+    }
     @if (step === 7 && isSpellcastingClass) {
       <app-spells-step
         [filteredSpellList]="filteredSpellList"
@@ -195,6 +198,32 @@
         (toggleDesc)="toggleSpellDesc($event)"
         (toggleSpell)="toggleSpell($event)">
       </app-spells-step>
+    }
+    <!-- Magic Initiate: two cantrips and one always-prepared level 1 spell per feat -->
+    @if (step === 7) {
+      @for (feat of magicInitiateFeats; track feat.feat) {
+        <div class="feat-spells">
+          <div class="feat-spells-head">
+            <span class="feat-spells-title">{{ feat.feat }}</span>
+            <span class="feat-spells-count">
+              Cantrips {{ featPickCount(feat, true) }}/{{ magicInitiateCantrips }}
+              · Spell {{ featPickCount(feat, false) }}/{{ magicInitiateSpells }}
+            </span>
+          </div>
+          <div class="field-hint feat-spells-hint">
+            Pick two {{ feat.className }} cantrips and one level 1 {{ feat.className }} spell.
+            The spell is always prepared and does not count against your prepared spells.
+          </div>
+          <app-spell-picker
+            [spells]="featSpellOptions(feat)"
+            [selected]="featPicks(feat)"
+            [cantripLimit]="magicInitiateCantrips"
+            [spellLimit]="magicInitiateSpells"
+            [loading]="!featSpellLists[feat.spellList]"
+            (selectedChange)="setFeatPicks(feat, $event)">
+          </app-spell-picker>
+        </div>
+      }
     }
 
     <!-- ── Step 7/8: Starting Equipment ──────────────────────────────── -->
@@ -237,11 +266,12 @@
         [languages]="startingLanguages"
         [abilities]="abilities"
         [finalScore]="finalScore"
-        [isSpellcastingClass]="isSpellcastingClass"
+        [isSpellcastingClass]="hasSpellsStep"
         [selectedSpells]="selectedSpells"
         [reviewCantripNames]="reviewCantripNames"
         [reviewLeveledSpellNames]="reviewLeveledSpellNames"
         [alwaysPreparedNames]="isSpellcastingClass ? reviewAlwaysPreparedNames : ''"
+        [featSpellNames]="reviewFeatSpellNames"
         [equipmentChoice]="equipmentChoice"
         [equipmentStep]="equipmentStep"
         [currentClassEquipment]="currentClassEquipment"

@@ -178,7 +178,7 @@
         <span class="review-section-title">Spells</span>
         <button type="button" class="btn review-edit-btn" (click)="edit.emit(7)">Edit</button>
       </div>
-      @if (selectedSpells().length === 0) {
+      @if (selectedSpells().length === 0 && !featSpellNames()) {
         <div class="review-row">
           <span class="review-value review-value--muted">No spells selected yet</span>
         </div>
@@ -187,6 +187,12 @@
         <div class="review-row">
           <span class="review-label">Always Prepared</span>
           <span class="review-value review-value--wrap">{{ alwaysPreparedNames() }}</span>
+        </div>
+      }
+      @if (featSpellNames()) {
+        <div class="review-row">
+          <span class="review-label">Origin Feat</span>
+          <span class="review-value review-value--wrap">{{ featSpellNames() }}</span>
         </div>
       }
       @if (reviewCantripNames()) {

@@ -35,7 +35,11 @@ import {
   chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
   speciesTools, speciesTraitFeatures, toSpeciesDetail,
 } from '../../models/species';
-import { SpellGrant, level1ClassSpellGrants } from '../../models/granted-spells';
+import {
+  MAGIC_INITIATE_CANTRIPS, MAGIC_INITIATE_SPELLS, MagicInitiateFeat, SpellGrant, level1ClassSpellGrants,
+  magicInitiateFeat,
+} from '../../models/granted-spells';
+import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { spellKey } from '../../models/spell-names';
 import { toGrantedSpell, toPcSpell } from '../../utils/spell-mapping';
 import { preparedSpellCap, withPreparedCap } from '../../utils/spell-preparation';
@@ -92,7 +96,12 @@ interface WizardDraft {
   bonusPlus1: Ability | '';
   equipmentChoice: 'A' | 'B' | '';
   selectedSpells: DndSpell[];
+  /** Magic Initiate picks, by feat name. */
+  featSpellPicks?: Record<string, DndSpell[]>;
 }
+
+/** Stable empty list for a feat whose spell list has not loaded, or that has no picks yet. */
+const NO_SPELLS: DndSpell[] = [];
 
 /** Stable empty list for species without an Origin feat choice. */
 const NO_FEATS: readonly OriginFeatOption[] = [];
@@ -101,7 +110,7 @@ const NO_FEATS: readonly OriginFeatOption[] = [];
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
     styleUrls: ['./create-character-modal.component.scss'],
-    imports: [DialogDirective, MatTooltip, MatSlideToggle, ContentSourceFilterComponent, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
+    imports: [DialogDirective, MatTooltip, MatSlideToggle, ContentSourceFilterComponent, SpellPickerComponent, IdentityStepComponent, SpeciesStepComponent, ClassStepComponent, BackgroundStepComponent, ProficienciesStepComponent, AbilityScoresStepComponent, SpellsStepComponent, EquipmentStepComponent, ReviewStepComponent]
 })
 export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
@@ -112,18 +121,26 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return SPELLCASTING_CLASSES.has(this.clazz.toLowerCase());
   }
 
+  /**
+   * True when the wizard has a spells step: the class picks spells, or an Origin
+   * feat does (Magic Initiate, from the background or a Human's Versatile trait).
+   */
+  get hasSpellsStep(): boolean {
+    return this.isSpellcastingClass || this.magicInitiateFeats.length > 0;
+  }
+
   get totalSteps(): number {
-    return this.isSpellcastingClass ? 9 : 8;
+    return this.hasSpellsStep ? 9 : 8;
   }
 
   /** The step number for equipment — one before the review step. */
   get equipmentStep(): number {
-    return this.isSpellcastingClass ? 8 : 7;
+    return this.hasSpellsStep ? 8 : 7;
   }
 
   /** The final review step — always the last step. */
   get reviewStep(): number {
-    return this.isSpellcastingClass ? 9 : 8;
+    return this.hasSpellsStep ? 9 : 8;
   }
 
   /** Spoken with the step count; mirrors each step's heading. */
@@ -740,6 +757,70 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return cap != null && cap < this.maxKnownSpells ? cap : null;
   }
 
+  // ── Step 7: Magic Initiate (Origin feat spells) ──────────────────────────
+  readonly magicInitiateCantrips = MAGIC_INITIATE_CANTRIPS;
+  readonly magicInitiateSpells = MAGIC_INITIATE_SPELLS;
+
+  /**
+   * The Magic Initiate feats the character has: the background's Origin feat
+   * and, for a Human, the one picked for Versatile. Each brings two cantrips and
+   * one always-prepared level-1 spell, picked in the spells step.
+   */
+  get magicInitiateFeats(): readonly MagicInitiateFeat[] {
+    const speciesFeat = this.catalogSpecies?.choices?.originFeat ? this.speciesSelections.originFeat : '';
+    const key = `${this.backgroundFeatName}|${speciesFeat}`;
+    if (key !== this.magicInitiateKey) {
+      this.magicInitiateKey = key;
+      this.magicInitiateCache = [...new Set([this.backgroundFeatName, speciesFeat])].flatMap(name => {
+        const feat = magicInitiateFeat(name);
+        return feat ? [feat] : [];
+      });
+    }
+    return this.magicInitiateCache;
+  }
+  private magicInitiateKey = '\u0000';
+  private magicInitiateCache: MagicInitiateFeat[] = [];
+
+  /** Cantrips and level-1 spells of each class list a feat draws from, once loaded ('cleric' → spells). */
+  featSpellLists: Record<string, DndSpell[]> = {};
+  private featSpellListsRequested = new Set<string>();
+  /** What the player picked for each Magic Initiate feat, by feat name. */
+  featSpellPicks: Record<string, DndSpell[]> = {};
+
+  featSpellOptions(feat: MagicInitiateFeat): DndSpell[] {
+    return this.featSpellLists[feat.spellList] ?? NO_SPELLS;
+  }
+
+  featPicks(feat: MagicInitiateFeat): DndSpell[] {
+    return this.featSpellPicks[feat.feat] ?? NO_SPELLS;
+  }
+
+  setFeatPicks(feat: MagicInitiateFeat, spells: DndSpell[]): void {
+    this.featSpellPicks = { ...this.featSpellPicks, [feat.feat]: spells };
+  }
+
+  /** How many cantrips (or level-1 spells) are picked for a feat. */
+  featPickCount(feat: MagicInitiateFeat, cantrips: boolean): number {
+    return this.featPicks(feat).filter(s => (s.level === 0) === cantrips).length;
+  }
+
+  /** Fetch the class list behind each Magic Initiate feat, once each. */
+  private loadFeatSpellLists(): void {
+    for (const feat of this.magicInitiateFeats) {
+      if (this.featSpellListsRequested.has(feat.spellList)) continue;
+      this.featSpellListsRequested.add(feat.spellList);
+      this.dndResources.getSpellsForClass(feat.spellList)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: spells => {
+            this.featSpellLists = { ...this.featSpellLists, [feat.spellList]: spells.filter(s => s.level <= 1) };
+          },
+          // Forget the request so coming back to the step tries again.
+          error: () => { this.featSpellListsRequested.delete(feat.spellList); },
+        });
+    }
+  }
+
   get selectedCantrips(): number  { return this.selectedSpells.filter(s => s.level === 0).length; }
   get selectedLeveled(): number   { return this.selectedSpells.filter(s => s.level > 0).length; }
 
@@ -916,7 +997,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         if (this.abilityMethod === 'point-buy') return bonusesOk;
         return this.isArrayComplete && bonusesOk;
       }
-      case 7: return true; // spells — optional for casters (non-casters never reach here via switch)
+      case 7: return true; // spells — optional (reached only when the class or a feat picks spells)
       default: return false;
     }
   }
@@ -965,6 +1046,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
           error: () => { this.loadingSpells = false; this.spellListKey = null; },
         });
     }
+    if (this.step >= 7) this.loadFeatSpellLists();
     // Load equipment data when entering (or restoring past) the equipment step
     if (this.step >= this.equipmentStep && !this.classEquipmentData && !this.loadingEquipment) {
       this.loadingEquipment = true;
@@ -1019,22 +1101,42 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.alwaysPreparedGrants.map(g => `${g.name} (${g.grantedBy})`).join(', ');
   }
 
+  /** 'Guidance, Light, Bless (Magic Initiate (Cleric))' — the spells picked for each Origin feat. */
+  get reviewFeatSpellNames(): string {
+    return this.magicInitiateFeats
+      .filter(feat => this.featPicks(feat).length > 0)
+      .map(feat => `${this.featPicks(feat).map(s => s.name).join(', ')} (${feat.feat})`)
+      .join('; ');
+  }
+
   /**
-   * The spells a new character is saved with: the picks, with no more of them
-   * prepared than the class prepares at level 1, then the spells its level-1
-   * features always keep prepared (marked so they never count against that cap).
+   * The spells a new character is saved with: the class picks, with no more of
+   * them prepared than the class prepares at level 1; then the spells its
+   * level-1 features always keep prepared; then each Magic Initiate feat's two
+   * cantrips and its level-1 spell. Feature and feat spells are marked always
+   * prepared, so they never count against that cap. A spell is saved once: one
+   * already on the list is skipped.
    */
   private buildStartingSpells(): PcSpell[] {
     const grants = this.isSpellcastingClass ? this.alwaysPreparedGrants : [];
     const grantedKeys = grants.map(g => spellKey(g.name));
-    const picks = this.selectedSpells
+    const picks = (this.isSpellcastingClass ? this.selectedSpells : [])
       .filter(s => !grantedKeys.includes(spellKey(s.name)))
       .map(toPcSpell);
     const granted = grants.flatMap(g => {
       const spell = this.spellList.find(s => spellKey(s.name) === spellKey(g.name));
       return spell ? [toGrantedSpell(spell, g.grantedBy)] : [];
     });
-    return [...withPreparedCap(picks, preparedSpellCap(this.clazz, 1)), ...granted];
+    const spells = [...withPreparedCap(picks, preparedSpellCap(this.clazz, 1)), ...granted];
+    const taken = new Set(spells.map(s => spellKey(s.name)));
+    for (const feat of this.magicInitiateFeats) {
+      for (const spell of this.featPicks(feat)) {
+        if (taken.has(spellKey(spell.name))) continue;
+        taken.add(spellKey(spell.name));
+        spells.push(toGrantedSpell(spell, feat.feat));
+      }
+    }
+    return spells;
   }
 
   get reviewWeaponNames(): string {
@@ -1352,6 +1454,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       bonusPlus1: this.bonusPlus1,
       equipmentChoice: this.equipmentChoice,
       selectedSpells: this.selectedSpells,
+      featSpellPicks: this.featSpellPicks,
     };
     try {
       localStorage.setItem(this.draftKey, JSON.stringify(draft));
@@ -1394,6 +1497,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.bonusPlus1       = d.bonusPlus1 ?? '';
       this.equipmentChoice  = d.equipmentChoice ?? '';
       this.selectedSpells   = d.selectedSpells ?? [];
+      this.featSpellPicks   = d.featSpellPicks ?? {};
       this.restoredEnabledSources = d.enabledSources ?? null;
       if (this.restoredEnabledSources && Object.keys(this.enabledSources).length) {
         this.enabledSources = { ...this.enabledSources, ...this.restoredEnabledSources };

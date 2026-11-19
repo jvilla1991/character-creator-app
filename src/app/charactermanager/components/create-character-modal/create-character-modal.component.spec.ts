@@ -1147,6 +1147,97 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
+    describe('Magic Initiate (Origin feat)', () => {
+      const light = spell('Light', 0, 'wizard');
+      const mageHand = spell('Mage Hand', 0, 'wizard');
+      const fireBolt = spell('Fire Bolt', 0, 'wizard');
+      const shield = spell('Shield', 1, 'wizard');
+      const fireball = spell('Fireball', 3, 'wizard');
+
+      beforeEach(() => {
+        dndResources.getSpellsForClass.and.returnValue(of([light, mageHand, fireBolt, shield, fireball]));
+        component.classEquipmentData = {};
+      });
+
+      it('gives a class without spellcasting a spells step when its background teaches spells', () => {
+        component.classList = ['Fighter'];
+        component.toggleClass('Fighter');
+        expect(component.hasSpellsStep).toBeFalse();
+        expect(component.totalSteps).toBe(8);
+
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;   // Magic Initiate (Wizard)
+        expect(component.magicInitiateFeats).toEqual([
+          { feat: 'Magic Initiate (Wizard)', spellList: 'wizard', className: 'Wizard' },
+        ]);
+        expect(component.magicInitiateFeats).toBe(component.magicInitiateFeats);   // stable for the template
+        expect(component.isSpellcastingClass).toBeFalse();
+        expect(component.hasSpellsStep).toBeTrue();
+        expect([component.totalSteps, component.equipmentStep, component.reviewStep]).toEqual([9, 8, 9]);
+      });
+
+      it('loads the feat\'s class list once (cantrips and level 1 only) and saves the picks', (done) => {
+        component.classList = ['Fighter'];
+        component.toggleClass('Fighter');
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        const feat = component.magicInitiateFeats[0];
+        component.step = 7;
+        (component as any).ensureStepData();
+        (component as any).ensureStepData();
+        expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('wizard');
+        expect(component.featSpellOptions(feat).map(s => s.name)).toEqual(['Light', 'Mage Hand', 'Fire Bolt', 'Shield']);
+
+        component.setFeatPicks(feat, [light, mageHand, shield]);
+        expect([component.featPickCount(feat, true), component.featPickCount(feat, false)]).toEqual([2, 1]);
+        expect(component.reviewFeatSpellNames).toBe('Light, Mage Hand, Shield (Magic Initiate (Wizard))');
+
+        component.name = 'Brakk';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.lvl, !!s.alwaysPrepared, s.grantedBy])).toEqual([
+            ['Light', 0, false, 'Magic Initiate (Wizard)'],
+            ['Mage Hand', 0, false, 'Magic Initiate (Wizard)'],
+            ['Shield', 1, true, 'Magic Initiate (Wizard)'],
+          ]);
+          expect(draft.spellSlots).toEqual({});   // a Fighter has no slots; the feat adds none
+          done();
+        });
+        component.submit();
+      });
+
+      it('adds the feat spells after a caster\'s own picks, without saving a spell twice', (done) => {
+        component.toggleClass('Wizard');
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        const feat = component.magicInitiateFeats[0];
+        component.selectedSpells = [light, shield];
+        component.setFeatPicks(feat, [light, fireBolt, shield]);
+
+        component.name = 'Aelindra';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.grantedBy ?? ''])).toEqual([
+            ['Light', ''], ['Shield', ''], ['Fire Bolt', 'Magic Initiate (Wizard)'],
+          ]);
+          done();
+        });
+        component.submit();
+      });
+
+      it('has no feat spells for a background without Magic Initiate, and keeps picks in the draft', () => {
+        component.toggleClass('Wizard');
+        component.backgroundDetail = { ...SAGE_BACKGROUND_DETAIL, feat: { index: 'alert', name: 'Alert', url: '' } } as any;
+        expect(component.magicInitiateFeats).toEqual([]);
+
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+        component.name = 'Aelindra';
+        component.setFeatPicks(component.magicInitiateFeats[0], [light]);
+        component.ngOnDestroy();   // saves the draft
+        const restored = TestBed.runInInjectionContext(
+          () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+        restored.ngOnInit();
+        expect(restored.featSpellPicks['Magic Initiate (Wizard)'].map(s => s.name)).toEqual(['Light']);
+      });
+    });
+
     it('drops the spells picked for one class when another class is chosen', () => {
       component.toggleClass('Wizard');
       component.selectedSpells = [spell('Shield', 1, 'wizard')];

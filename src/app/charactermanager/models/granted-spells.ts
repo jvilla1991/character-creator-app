@@ -43,3 +43,31 @@ export function level1ClassSpellGrants(clazz: string | null | undefined): readon
 
 /** What the DM's "Grant spells" form records as the source of an always-prepared spell. */
 export const DM_GRANT_SOURCE = 'DM grant';
+
+// ── Magic Initiate (Origin feat) ─────────────────────────────────────────────
+
+/**
+ * A Magic Initiate Origin feat (2024 PHB): two cantrips and one level-1 spell
+ * from one class's spell list. The spell is always prepared. A character gets
+ * the feat from a background (Acolyte, Guide, Sage, ...) or a Human's Versatile
+ * trait, and picks its spells in the create wizard's spells step.
+ */
+export interface MagicInitiateFeat {
+  /** The feat name as stored on the character ('Magic Initiate (Cleric)'). */
+  feat: string;
+  /** The class whose spell list it draws from, lower-case ('cleric'). */
+  spellList: string;
+  /** The class name for display ('Cleric'). */
+  className: string;
+}
+
+export const MAGIC_INITIATE_CANTRIPS = 2;
+export const MAGIC_INITIATE_SPELLS = 1;
+
+const MAGIC_INITIATE_NAME = /^Magic Initiate \((Cleric|Druid|Wizard)\)$/;
+
+/** The Magic Initiate feat behind a feat name; undefined for every other feat. */
+export function magicInitiateFeat(feat: string | null | undefined): MagicInitiateFeat | undefined {
+  const match = MAGIC_INITIATE_NAME.exec((feat ?? '').trim());
+  return match ? { feat: match[0], spellList: match[1].toLowerCase(), className: match[1] } : undefined;
+}
