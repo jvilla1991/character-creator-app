@@ -1,4 +1,4 @@
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 
@@ -23,13 +23,16 @@ describe('CharacterSheetComponent', () => {
   let sessionService: jasmine.SpyObj<SessionService>;
   let followerService: jasmine.SpyObj<FollowerService>;
   let uiState: UiStateService;
+  let followerChanges: Subject<{ pcId: number }>;
 
   beforeEach(() => {
     pcService = jasmine.createSpyObj<PCService>('PCService',
       ['updatePC', 'updatePCAsDm', 'setInspirationPips', 'useInspiration']);
     grantService = jasmine.createSpyObj<GrantService>('GrantService', ['grantToPc']);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', ['refresh']);
-    followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['update']);
+    followerChanges = new Subject<{ pcId: number }>();
+    followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['update', 'list'],
+      { changes$: followerChanges });
     uiState = TestBed.inject(UiStateService);
     component = TestBed.runInInjectionContext(
       () => new CharacterSheetComponent(pcService, grantService, sessionService, followerService, uiState));
@@ -558,6 +561,113 @@ describe('CharacterSheetComponent', () => {
       component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
 
       expect(component.openFollowerPc()).not.toBeNull();
+    });
+
+    // The Party Vitals Board asks for a follower through UiState; the sheet
+    // for that character claims the request when the character reaches it.
+    describe('requested from outside the sheet', () => {
+      const arrive = () => component.ngOnChanges({ pc: new SimpleChange(undefined, component.pc, true) });
+
+      afterEach(() => uiState.takeFollowerRequest(7));
+
+      it('opens the requested follower of this character', () => {
+        followerService.list.and.returnValue(of([brannoc()]));
+        uiState.requestFollower(7, 12);
+
+        arrive();
+
+        expect(followerService.list).toHaveBeenCalledOnceWith(7);
+        expect(uiState.followerRequest()).toBeNull();
+        expect(uiState.openFollowerId()).toBe(12);
+        expect(component.openFollowerPc()).toEqual(jasmine.objectContaining({ id: -12, name: 'Brannoc' }));
+      });
+
+      it("leaves another character's request alone", () => {
+        uiState.requestFollower(99, 12);
+
+        arrive();
+
+        expect(followerService.list).not.toHaveBeenCalled();
+        expect(uiState.followerRequest()).toEqual({ pcId: 99, followerId: 12 });
+        uiState.takeFollowerRequest(99);
+      });
+
+      it('says so when the follower is gone, and stays on the character', () => {
+        const notifications = TestBed.inject(NotificationService);
+        const error = spyOn(notifications, 'error');
+        followerService.list.and.returnValue(of([]));
+        uiState.requestFollower(7, 12);
+
+        arrive();
+
+        expect(component.openFollowerPc()).toBeNull();
+        expect(uiState.openFollowerId()).toBeNull();
+        expect(error).toHaveBeenCalled();
+      });
+
+      it('a follower sheet never claims a request', () => {
+        component.followerMode = true;
+        uiState.requestFollower(7, 12);
+
+        arrive();
+
+        expect(followerService.list).not.toHaveBeenCalled();
+      });
+    });
+
+    // The DM damaged or dismissed the follower while its sheet is open here.
+    describe('changed somewhere else while open', () => {
+      beforeEach(() => component.onFollowerOpened(brannoc()));
+
+      it("shows the server's copy", () => {
+        followerService.list.and.returnValue(of([{ ...brannoc(), statBlock: { clazz: 'Guard', level: 2, ac: 12 } }]));
+
+        followerChanges.next({ pcId: 7 });
+
+        expect(followerService.list).toHaveBeenCalledOnceWith(7);
+        expect(component.openFollowerPc()?.ac).toBe(12);
+      });
+
+      it("ignores another character's followers", () => {
+        followerChanges.next({ pcId: 8 });
+
+        expect(followerService.list).not.toHaveBeenCalled();
+      });
+
+      it('never re-lists over a save of its own that is still in flight', () => {
+        const save = new Subject<Follower>();
+        followerService.update.and.returnValue(save);
+        component.onFollowerChanged({ ...component.openFollowerPc()!, ac: 18 });
+
+        followerChanges.next({ pcId: 7 });
+
+        expect(followerService.list).not.toHaveBeenCalled();
+        expect(component.openFollowerPc()?.ac).toBe(18);
+      });
+
+      it('drops a re-list that an edit overtook', () => {
+        const listing = new Subject<Follower[]>();
+        followerService.list.and.returnValue(listing);
+        followerService.update.and.returnValue(of(brannoc()));
+        followerChanges.next({ pcId: 7 });
+
+        component.onFollowerChanged({ ...component.openFollowerPc()!, ac: 18 });
+        listing.next([brannoc()]);   // the stale copy, AC 16
+
+        expect(component.openFollowerPc()?.ac).toBe(18);
+      });
+
+      it('closes the sheet of a follower who was dismissed', () => {
+        const notifications = TestBed.inject(NotificationService);
+        const notify = spyOn(notifications, 'notify');
+        followerService.list.and.returnValue(of([]));
+
+        followerChanges.next({ pcId: 7 });
+
+        expect(component.openFollowerPc()).toBeNull();
+        expect(uiState.openFollowerId()).toBeNull();
+        expect(notify).toHaveBeenCalledWith('Brannoc is no longer with Throk.');
+      });
     });
 
     it('destroying the sheet abandons the follower view', () => {

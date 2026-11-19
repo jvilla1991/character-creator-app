@@ -1970,6 +1970,43 @@ select:focus {
 .board-chev { color: var(--text-dim); width: 12px; height: 12px; }
 .board-row.member:hover .board-chev { color: var(--celestial); }
 
+/* === NESTED ROWS ===
+   One definition for "a row with rows under it": the expand toggle on the
+   parent and the crest on each child. Used by the renown panel (sub-factions
+   under a faction) and by both boards (followers under their character). */
+.nest-toggle, .nest-crest {
+  flex: 0 0 26px;
+  width: 26px;
+  min-height: 24px;
+  padding: 0;
+  text-align: center;
+  color: var(--gold);
+  background: transparent;
+  border: 0;
+}
+.nest-toggle {
+  cursor: pointer;
+  border-radius: var(--radius-sharp);
+}
+.nest-toggle:hover { color: var(--gold-2); }
+.nest-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Board rows: the name cell holds the toggle (or the crest) beside the hero.
+   A follower row is the sub-faction box: tinted, stepped in, crest first. */
+.board-hero-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.board-hero-cell > .board-hero { flex: 1 1 auto; }
+.board-hero-cell > .nest-toggle,
+.board-hero-cell > .nest-crest { font-size: var(--text-base); }
+.board-row.member.follower { background: color-mix(in oklch, var(--bg-2) 45%, transparent); }
+.board-row.member.follower .board-hero-cell { padding-left: 24px; }
+.board-row.member.follower .board-hero { grid-template-columns: minmax(0, 1fr); }
+.board-row.member.follower .board-hero-name { color: var(--text-2); }
+
 /* Treasury */
 .treasury-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
 .treasury-row {

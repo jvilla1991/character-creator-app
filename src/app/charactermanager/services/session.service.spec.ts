@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { SessionService } from './session.service';
 import { CampaignService } from './campaign.service';
 import { PCService } from './pc.service';
+import { FollowerService } from './follower.service';
 import { ParticipantView, SessionState } from '../models/session';
 import { PC } from '../models/pc';
 
@@ -191,6 +192,105 @@ describe('SessionService rests', () => {
       expect(state!.longRestResult).toBeNull();
       expect(state!.longRestAvailable).toBeTrue(); // no 24-hour rule on an older backend
       expect(state!.longRestWait).toBeNull();
+    });
+  });
+
+  describe('followers', () => {
+    const wire = {
+      followerId: 12, pcId: 7, name: 'Brannoc', clazz: 'Guard', level: 2,
+      hpMax: 16, hpCurrent: 4, ac: 16, conditions: ['Prone'],
+    };
+
+    it('reads each participant\'s followers off the snapshot', () => {
+      let state: SessionState | undefined;
+      service.getState(1).subscribe(s => (state = s));
+      httpMock.expectOne(`${base}/1/state`).flush(snapshot({
+        participants: [{ participantId: 1, pcId: 7, name: 'Aria', followers: [wire] }],
+      }));
+
+      expect(state!.participants[0].followers).toEqual([{
+        followerId: 12, pcId: 7, name: 'Brannoc', clazz: 'Guard', level: 2,
+        portraitTint: null, portraitInitials: null,
+        hpMax: 16, hpCurrent: 4, hpTemp: null, ac: 16, conditions: ['Prone'],
+      }]);
+    });
+
+    it('defaults followers to [] when the backend predates them', () => {
+      let state: SessionState | undefined;
+      service.getState(1).subscribe(s => (state = s));
+      httpMock.expectOne(`${base}/1/state`).flush(snapshot({
+        participants: [
+          { participantId: 1, pcId: 7, name: 'Aria' },
+          { participantId: 2, name: 'Goblin', npc: true, followers: null },
+        ],
+      }));
+
+      expect(state!.participants.map(p => p.followers)).toEqual([[], []]);
+    });
+
+    // How a player's Followers tab learns the DM granted one mid-session, and
+    // how an open follower sheet learns it was hurt from the initiative order.
+    describe('announced through FollowerService when a snapshot shows them changed', () => {
+      let changed: number[];
+      const poll = (...participants: unknown[]) => {
+        service.getState(1).subscribe();
+        httpMock.expectOne(`${base}/1/state`).flush(snapshot({ participants }));
+      };
+      const aria = (followers: unknown[]) => ({ participantId: 1, pcId: 7, name: 'Aria', followers });
+      const throk = { participantId: 2, pcId: 8, name: 'Throk', followers: [] };
+
+      beforeEach(() => {
+        changed = [];
+        TestBed.inject(FollowerService).changes$.subscribe(c => changed.push(c.pcId));
+      });
+
+      it('says nothing for the first snapshot, or for one that shows the same followers', () => {
+        poll(aria([wire]), throk);
+        poll(aria([wire]), throk);
+
+        expect(changed).toEqual([]);
+      });
+
+      it("names the PC whose follower ids changed (a grant, then a dismissal)", () => {
+        poll(aria([]), throk);
+
+        poll(aria([wire]), throk);
+        expect(changed).toEqual([7]);
+
+        poll(aria([]), throk);
+        expect(changed).toEqual([7, 7]);
+      });
+
+      it("names the PC whose follower was hurt", () => {
+        poll(aria([wire]), throk);
+
+        poll(aria([{ ...wire, hpCurrent: 1 }]), throk);
+
+        expect(changed).toEqual([7]);
+      });
+
+      it('starts over after the session is cleared', () => {
+        poll(aria([]), throk);
+        service.clear();
+
+        poll(aria([wire]), throk);
+
+        expect(changed).toEqual([]);
+      });
+    });
+
+    it('damageFollower POSTs the amount to the follower endpoint and publishes the snapshot', () => {
+      let state: SessionState | undefined;
+      service.damageFollower(1, 12, 5).subscribe(s => (state = s));
+
+      const req = httpMock.expectOne(`${base}/1/followers/12/damage`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ amount: 5 });
+      req.flush(snapshot({
+        participants: [{ participantId: 1, pcId: 7, name: 'Aria', followers: [{ ...wire, hpCurrent: 0 }] }],
+      }));
+
+      expect(state!.participants[0].followers[0].hpCurrent).toBe(0);
     });
   });
 

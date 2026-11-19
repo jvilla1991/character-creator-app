@@ -157,6 +157,26 @@ describe('UiStateService', () => {
       expect(service.openFollowerId()).toBeNull();
     });
 
+    it('a follower request waits for the sheet of its own character, and is taken once', () => {
+      const service = create();
+      service.requestFollower(7, 12);
+
+      expect(service.takeFollowerRequest(8)).toBeNull();   // another character's sheet
+      expect(service.takeFollowerRequest(7)).toBe(12);
+      expect(service.takeFollowerRequest(7)).toBeNull();
+      expect(service.followerRequest()).toBeNull();
+    });
+
+    it('returning to the campaign drops a follower request nobody took', () => {
+      const service = create();
+      service.viewHeroAsDm();
+      service.requestFollower(7, 12);
+
+      service.returnToCampaign();
+
+      expect(service.followerRequest()).toBeNull();
+    });
+
     it('returning to the campaign closes a follower opened from the member sheet', () => {
       const service = create();
       service.viewHeroAsDm();

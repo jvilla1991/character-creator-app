@@ -1,5 +1,5 @@
-import { Component, Input, inject, output } from '@angular/core';
-import { ParticipantView, SessionStatus } from '../../../models/session';
+import { Component, Input, OnChanges, SimpleChanges, inject, output } from '@angular/core';
+import { FollowerCombatant, ParticipantView, SessionStatus } from '../../../models/session';
 import { MAX_CUE_BYTES, SessionService, TURN_SOUNDS } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ConfirmService } from '../../modal/confirm.service';
@@ -25,6 +25,11 @@ import { DecimalPipe } from '@angular/common';
  * and the turn-sound picker. Everyone gets their own per-device cue controls:
  * a mute toggle, a volume slider, and an uploaded sound that stands in for the
  * DM's preset on this device only.
+ *
+ * A PC's followers act on their owner's turn, so they have no place of their
+ * own in the order: each sits in a nested row under its owner (folded away by
+ * the owner row's toggle) and carries a softer copy of the owner's glow. The
+ * DM can damage or heal a follower; nothing else is tracked for them here.
  */
 @Component({
     selector: 'app-initiative-panel',
@@ -32,7 +37,7 @@ import { DecimalPipe } from '@angular/common';
     styleUrls: ['./initiative-panel.component.scss'],
     imports: [FormsModule, DecimalPipe]
 })
-export class InitiativePanelComponent {
+export class InitiativePanelComponent implements OnChanges {
   @Input() participants: ParticipantView[] = [];
   @Input() sessionId!: number | string;
   @Input() dm = false;
@@ -57,6 +62,33 @@ export class InitiativePanelComponent {
 
   /** Per-row amount typed into the DM's damage/heal box, keyed by participant id. */
   amounts: { [participantId: number]: number | null } = {};
+
+  /** Amount typed into a follower row's damage/heal box, keyed by follower id. */
+  followerAmounts: { [followerId: number]: number | null } = {};
+
+  /** Owners (participant ids) whose follower rows this viewer folded away. */
+  readonly collapsed = new Set<number>();
+
+  /** Follower ids already seen under each owner, to notice a new arrival. */
+  private seenFollowers = new Map<number, Set<number>>();
+
+  /**
+   * Follower rows render straight from each snapshot. The one thing kept
+   * between snapshots is the fold, so when an owner gains a follower (the DM
+   * granted one mid-session) that owner is unfolded: a new follower always
+   * arrives in view.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['participants']) return;
+    const seen = new Map<number, Set<number>>();
+    for (const p of this.participants) {
+      const ids = new Set((p.followers ?? []).map(f => f.followerId));
+      const before = this.seenFollowers.get(p.participantId);
+      if (before && [...ids].some(id => !before.has(id))) this.collapsed.delete(p.participantId);
+      seen.set(p.participantId, ids);
+    }
+    this.seenFollowers = seen;
+  }
 
   /** Per-row XP amount typed into the DM's award box, keyed by participant id. */
   xpAmounts: { [participantId: number]: number | null } = {};
@@ -329,6 +361,29 @@ export class InitiativePanelComponent {
     });
   }
 
+  /** True when any combatant has followers: every row then keeps the toggle's
+   *  slot, so the portraits stay in one column. */
+  get anyFollowers(): boolean {
+    return this.participants.some(p => p.followers?.length);
+  }
+
+  toggleFollowers(p: ParticipantView): void {
+    if (!this.collapsed.delete(p.participantId)) this.collapsed.add(p.participantId);
+  }
+
+  /** DM: apply the follower row's typed amount as damage (+1) or healing (-1). */
+  adjustFollowerHp(f: FollowerCombatant, sign: 1 | -1): void {
+    const amt = this.followerAmounts[f.followerId];
+    if (amt == null || amt <= 0) return;
+    this.sessionService.damageFollower(this.sessionId, f.followerId, sign * amt).subscribe({
+      next: () => (this.followerAmounts[f.followerId] = null),
+      // The typed amount stays in the box, ready to resend.
+      error: err => this.notifications.error(sign > 0
+        ? `Could not damage ${f.name}. Try again.`
+        : `Could not heal ${f.name}. Try again.`, err),
+    });
+  }
+
   /** Award the row's typed XP to that PC, then toast the new total. */
   giveXp(p: ParticipantView): void {
     const amt = this.xpAmounts[p.participantId];
@@ -415,13 +470,13 @@ export class InitiativePanelComponent {
     return (p.portraitInitials || p.name.slice(0, 2)).toUpperCase();
   }
 
-  hpPct(p: ParticipantView): number {
+  hpPct(p: Pick<ParticipantView, 'hpMax' | 'hpCurrent'>): number {
     const max = p.hpMax ?? 0;
     const cur = p.hpCurrent ?? 0;
     return max <= 0 ? 0 : Math.max(0, Math.min(100, (cur / max) * 100));
   }
 
-  bloodied(p: ParticipantView): boolean {
+  bloodied(p: Pick<ParticipantView, 'hpMax' | 'hpCurrent'>): boolean {
     const max = p.hpMax ?? 0;
     const cur = p.hpCurrent ?? 0;
     return max > 0 && cur <= max / 2;
