@@ -4,7 +4,7 @@ import { DndSpell } from '../../../../models/dnd-api.types';
 import { heroClassFor } from '../../../../models/hero-class';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { isPlaceholderSpell, toPcSpell } from '../../../../utils/spell-mapping';
-import { castWarning, castableLevels } from '../../../../utils/spellcasting';
+import { canCastAsRitual, castWarning, castableLevels } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
@@ -12,7 +12,7 @@ import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component'
 import { SpellEli5Service } from '../../../../services/spell-eli5.service';
 import { SpellRefreshService } from '../../../../services/spell-refresh.service';
 import { SpellSlotTrackerComponent } from '../../spell-slot-tracker/spell-slot-tracker.component';
-import { SlotNotice, slotLevels, slotsLeftText } from '../../../../utils/spell-slots';
+import { SlotNotice, ordinal, slotLevels, slotsLeftText } from '../../../../utils/spell-slots';
 import { SLOT_STATS, adjustmentsFor } from '../../../../models/stat-adjustment';
 
 export interface SpellLevel {
@@ -26,6 +26,26 @@ export interface SpellLevel {
 export interface CastRequest {
   spellName: string;
   atLevel: number;
+  /** Cast as a ritual: no slot is spent and `atLevel` is not used. Left out for an ordinary cast. */
+  ritual?: true;
+}
+
+/** One slot level offered in the cast picker. A level with nothing left stays listed, disabled. */
+export interface CastOption {
+  level: number;
+  /** "2nd" */
+  label: string;
+  /** Slots still available at this level. */
+  left: number;
+}
+
+/** What the cast picker shows for one spell. */
+export interface CastPicker {
+  options: CastOption[];
+  /** The spell may be cast as a ritual, with no slot. */
+  ritual: boolean;
+  /** The spell's own "at higher levels" text, when a higher slot is on offer; null otherwise. */
+  higher: string | null;
 }
 
 @Component({
@@ -59,9 +79,9 @@ export class SpellbookPanelComponent implements OnChanges {
    *  is deliberately not enforced — tables manage that socially; only the 2024
    *  PHB prepared-count cap is. */
   readonly preparable = input(false);
-  /** Shown instead of the Prepare buttons when the viewer cannot use them (e.g.
-   *  "Prepared spells change during a long rest."); null for no hint. */
-  readonly preparedHint = input<string | null>(null);
+  /** Show the "Prepared n / cap" count to a viewer who may not change it: the
+   *  owner of a campaign character, whose prepared spells change at a long rest. */
+  readonly showPreparedCount = input(false);
   // ── Spell slot strip ─────────────────────────────────────────────────────
   // Who may do what is the sheet's call; the panel only passes it through to
   // the strip and the requests back up. The server enforces the same rules.
@@ -207,9 +227,24 @@ export class SpellbookPanelComponent implements OnChanges {
       });
   });
 
+  /** What the open cast picker / confirm were built from, to notice when it moved. */
+  private castInputs = '';
+
   ngOnChanges(): void {
-    // A new PC snapshot (including the one a cast produces) closes any open
-    // picker/confirm so stale cast UI never survives a data change.
+    // A character whose slots, spells or components changed (a cast does that)
+    // closes any open picker/confirm, so stale cast UI never survives the data
+    // it was built from. Only a real change counts: the session hands this
+    // panel a new but equal character object on every pass, and closing on
+    // that would shut the picker the moment it opened.
+    const pc = this.pc();
+    const inputs = JSON.stringify([
+      pc.id, pc.spellSlots ?? null,
+      (pc.spells ?? []).map(s => [s.name, s.lvl, s.prepared, s.ritual ?? false]),
+      (pc.inventory ?? []).filter(i => i.category === 'material-component'),
+      this.strictComponents(),
+    ]);
+    if (inputs === this.castInputs) return;
+    this.castInputs = inputs;
     this.pickerFor = null;
     this.pendingCast = null;
     this.blockedFor = null;
@@ -235,24 +270,32 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   // ── Casting ──────────────────────────────────────────────────────────────
-  // Cast resolves to a slot level, warns (or, in strict campaigns, blocks)
-  // when a costly material component is missing, then emits — the host owns
-  // the actual state change (local reducer or live-session endpoint).
+  // Cast resolves to a slot level (or to a ritual, which spends none), warns
+  // (or, in strict campaigns, blocks) when a costly material component is
+  // missing, then emits — the host owns the actual state change (the
+  // live-session endpoint). A slot above the spell's own level is only ever
+  // spent because the player picked it.
 
-  /** Spell whose upcast level picker is open. */
+  /** Spell whose slot picker is open. */
   pickerFor: string | null = null;
   /** Cast awaiting a "component missing — cast anyway?" confirmation. */
-  pendingCast: { spellName: string; atLevel: number; message: string } | null = null;
+  pendingCast: { spellName: string; atLevel: number; ritual: boolean; message: string } | null = null;
   /** Strict-campaign block message for a spell. */
   blockedFor: { spellName: string; message: string } | null = null;
 
+  /** Slot levels with a free slot that this spell could be cast with, lowest first. */
   levelsFor(spell: PcSpell): number[] {
     return castableLevels(this.pc(), spell);
   }
 
+  /** A leveled spell marked as a ritual: it can be cast with no slot (the server checks the same). */
+  isRitual(spell: PcSpell): boolean {
+    return canCastAsRitual(spell);
+  }
+
   canCast(spell: PcSpell): boolean {
     if (!this.isPrepared(spell)) return false;
-    return spell.lvl === 0 || this.levelsFor(spell).length > 0;
+    return spell.lvl === 0 || this.levelsFor(spell).length > 0 || this.isRitual(spell);
   }
 
   castTitle(spell: PcSpell): string {
@@ -260,12 +303,44 @@ export class SpellbookPanelComponent implements OnChanges {
     return this.canCast(spell) ? `Cast ${spell.name}` : 'No slots available';
   }
 
+  /**
+   * Whether Cast opens the slot picker for this spell instead of casting at
+   * once. It casts at once only when there is nothing to choose: exactly one
+   * slot level is free, it is the spell's own level, and the spell is not a
+   * ritual. A free slot only at a HIGHER level is a choice (an upcast), so it
+   * always asks.
+   */
+  castAsks(spell: PcSpell): boolean {
+    if (spell.lvl === 0) return false;
+    const levels = this.levelsFor(spell);
+    return !(levels.length === 1 && levels[0] === spell.lvl && !this.isRitual(spell));
+  }
+
+  /**
+   * The picker for a spell: every slot level the character has from the
+   * spell's own level up (a spent level stays in the list, disabled), and
+   * whether the ritual option belongs.
+   */
+  castPicker(spell: PcSpell): CastPicker {
+    const options = slotLevels(this.pc().spellSlots)
+      .filter(slot => slot.level >= spell.lvl)
+      .map(slot => ({ level: slot.level, label: ordinal(slot.level), left: slot.left }));
+    const upcast = options.some(option => option.level > spell.lvl);
+    return {
+      options,
+      ritual: this.isRitual(spell),
+      higher: upcast && spell.higherLevelSlot?.trim() ? spell.higherLevelSlot.trim() : null,
+    };
+  }
+
   onCastClick(spell: PcSpell, event: Event): void {
     event.stopPropagation(); // don't toggle the detail expand
-    if (!this.isPrepared(spell)) return; // button is disabled; belt and braces
+    if (!this.canCast(spell)) return; // button is disabled; belt and braces
+    const reopening = this.pickerFor === spell.name;
     this.pickerFor = null;
     this.pendingCast = null;
     this.blockedFor = null;
+    if (reopening) return; // a second press on Cast closes the picker again
 
     const warning = castWarning(this.pc(), this.originalOf(spell));
     if (warning && this.strictComponents()) {
@@ -274,50 +349,58 @@ export class SpellbookPanelComponent implements OnChanges {
     }
 
     if (spell.lvl === 0) {
-      this.resolveCast(spell.name, 0, warning);
-      return;
-    }
-    const levels = this.levelsFor(spell);
-    if (!levels.length) return; // button is disabled; belt and braces
-    if (levels.length === 1) {
-      this.resolveCast(spell.name, levels[0], warning);
-    } else {
+      this.resolveCast(spell.name, 0, false, warning);
+    } else if (this.castAsks(spell)) {
       this.pickerFor = spell.name;
+    } else {
+      this.resolveCast(spell.name, spell.lvl, false, warning);
     }
   }
 
   pickLevel(spell: PcSpell, atLevel: number, event: Event): void {
     event.stopPropagation();
+    if (!this.levelsFor(spell).includes(atLevel)) return; // a spent level's option is disabled; belt and braces
     this.pickerFor = null;
-    this.resolveCast(spell.name, atLevel, castWarning(this.pc(), this.originalOf(spell)));
+    this.resolveCast(spell.name, atLevel, false, castWarning(this.pc(), this.originalOf(spell)));
+  }
+
+  /** Cast as a ritual: ten minutes longer at the table, and no slot. */
+  pickRitual(spell: PcSpell, event: Event): void {
+    event.stopPropagation();
+    if (!this.isRitual(spell)) return;
+    this.pickerFor = null;
+    this.resolveCast(spell.name, spell.lvl, true, castWarning(this.pc(), this.originalOf(spell)));
+  }
+
+  closePicker(event: Event): void {
+    event.stopPropagation();
+    this.pickerFor = null;
   }
 
   /** Emit the cast, or park it behind the missing-component confirmation. */
-  private resolveCast(spellName: string, atLevel: number, warning: string | null): void {
+  private resolveCast(spellName: string, atLevel: number, ritual: boolean, warning: string | null): void {
     if (warning) {
-      this.pendingCast = { spellName, atLevel, message: warning };
+      this.pendingCast = { spellName, atLevel, ritual, message: warning };
       return;
     }
-    this.castRequested.emit({ spellName, atLevel });
+    this.emitCast(spellName, atLevel, ritual);
+  }
+
+  private emitCast(spellName: string, atLevel: number, ritual: boolean): void {
+    this.castRequested.emit(ritual ? { spellName, atLevel, ritual: true } : { spellName, atLevel });
   }
 
   confirmPendingCast(event: Event): void {
     event.stopPropagation();
     if (!this.pendingCast) return;
-    const { spellName, atLevel } = this.pendingCast;
+    const { spellName, atLevel, ritual } = this.pendingCast;
     this.pendingCast = null;
-    this.castRequested.emit({ spellName, atLevel });
+    this.emitCast(spellName, atLevel, ritual);
   }
 
   cancelPendingCast(event: Event): void {
     event.stopPropagation();
     this.pendingCast = null;
-  }
-
-  /** 1 → "1st", 2 → "2nd" … for the upcast level picker. */
-  ordinal(lvl: number): string {
-    const suffix = lvl === 1 ? 'st' : lvl === 2 ? 'nd' : lvl === 3 ? 'rd' : 'th';
-    return `${lvl}${suffix}`;
   }
 
   // ── Spell preparation (2024 PHB) ─────────────────────────────────────────

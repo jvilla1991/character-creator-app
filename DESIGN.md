@@ -378,8 +378,9 @@ than a hairline to read, the tones on either side of it are wrong.
   the `app-context-help` button ("?"): a tooltip on hover and focus, a small dialog on tap.
 - **Placement:** one "?" per panel, in the panel header, or directly beside the disabled button it
   explains. The circle is 28px with a 44px tap halo on touch, so it sits in a dense row.
-- **Counts over conventions:** when a mark's meaning is a convention (a filled spell-slot pip is a
-  spent slot), print the count in words beside it ("3 of 4 left") instead of relying on the mark.
+- **Counts over conventions:** when a mark's meaning is a convention (a filled spell-slot bar is a
+  slot still available), print the count in words beside it ("3 of 4 left") instead of relying on
+  the mark.
 
 ### Navigation
 

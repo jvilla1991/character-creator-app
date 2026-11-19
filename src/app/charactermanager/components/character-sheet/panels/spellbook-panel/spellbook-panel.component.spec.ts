@@ -129,6 +129,322 @@ describe('SpellbookPanelComponent (cast logic)', () => {
   });
 });
 
+describe('SpellbookPanelComponent (choosing the slot)', () => {
+  const SLOTS = { 1: { max: 4, used: 4 }, 2: { max: 3, used: 1 }, 3: { max: 2, used: 2 } };
+  const emits = (panel: SpellbookPanelComponent): unknown[] => {
+    const emitted: unknown[] = [];
+    panel.castRequested.subscribe(e => emitted.push(e));
+    return emitted;
+  };
+
+  describe('never upcasts unasked', () => {
+    it('opens the picker, casting nothing, when the spell\'s own level is spent and only a higher one is free', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 4 }, 2: { max: 2, used: 0 } }, spells: [shield] });
+      const emitted = emits(panel);
+
+      expect(panel.levelsFor(shield)).toEqual([2]); // exactly one castable level, but it is an upcast
+      panel.onCastClick(shield, stop());
+
+      expect(emitted).toEqual([]);
+      expect(panel.pickerFor).toBe('Shield');
+    });
+
+    it('casts at once only when the one free level is the spell\'s own', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 2, used: 2 } }, spells: [shield] });
+      const emitted = emits(panel);
+
+      expect(panel.castAsks(shield)).toBeFalse();
+      panel.onCastClick(shield, stop());
+
+      expect(emitted).toEqual([{ spellName: 'Shield', atLevel: 1 }]);
+      expect(panel.pickerFor).toBeNull();
+    });
+
+    it('asks when the own level and a higher one are both free', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spells: [shield] }); // 1st and 2nd both free
+      expect(panel.castAsks(shield)).toBeTrue();
+    });
+
+    it('a cantrip never asks', () => {
+      const bolt = spell({ lvl: 0, name: 'Fire Bolt', ritual: true }); // a stray flag changes nothing
+      const panel = makePanel({ spells: [bolt] });
+      const emitted = emits(panel);
+
+      expect(panel.castAsks(bolt)).toBeFalse();
+      expect(panel.isRitual(bolt)).toBeFalse();
+      panel.onCastClick(bolt, stop());
+      expect(emitted).toEqual([{ spellName: 'Fire Bolt', atLevel: 0 }]);
+    });
+  });
+
+  describe('the picker', () => {
+    it('lists every slot level from the spell\'s own up, spent ones included, and none below', () => {
+      const misty = spell({ lvl: 2, name: 'Misty Step' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [misty] });
+
+      expect(panel.castPicker(misty)).toEqual({
+        options: [{ level: 2, label: '2nd', left: 2 }, { level: 3, label: '3rd', left: 0 }],
+        ritual: false,
+        higher: null,
+      });
+      expect(panel.castPicker(spell({ name: 'Shield' })).options.map(o => o.label)).toEqual(['1st', '2nd', '3rd']);
+    });
+
+    it('casts with the level picked and closes', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [shield] });
+      const emitted = emits(panel);
+      panel.onCastClick(shield, stop());
+
+      panel.pickLevel(shield, 2, stop());
+
+      expect(emitted).toEqual([{ spellName: 'Shield', atLevel: 2 }]);
+      expect(panel.pickerFor).toBeNull();
+    });
+
+    it('ignores a spent level even if asked directly', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [shield] });
+      const emitted = emits(panel);
+      panel.onCastClick(shield, stop());
+
+      panel.pickLevel(shield, 1, stop());
+      panel.pickLevel(shield, 3, stop());
+
+      expect(emitted).toEqual([]);
+      expect(panel.pickerFor).toBe('Shield');
+    });
+
+    it('closes on Cancel, and on a second press of Cast', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [shield] });
+      const emitted = emits(panel);
+
+      panel.onCastClick(shield, stop());
+      panel.closePicker(stop());
+      expect(panel.pickerFor).toBeNull();
+
+      panel.onCastClick(shield, stop());
+      expect(panel.pickerFor).toBe('Shield');
+      panel.onCastClick(shield, stop());
+      expect(panel.pickerFor).toBeNull();
+      expect(emitted).toEqual([]);
+    });
+
+    it('shows the spell\'s own higher-level text when a higher slot is on offer, and invents none', () => {
+      const missile = spell({ name: 'Magic Missile', higherLevelSlot: 'One more dart for each slot level above 1.' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [missile] });
+      expect(panel.castPicker(missile).higher).toBe('One more dart for each slot level above 1.');
+      expect(panel.castPicker(spell({ name: 'Shield' })).higher).toBeNull();
+
+      // Nothing above the spell's own level to pick: the text would describe a choice that is not there.
+      const fireball = spell({ lvl: 3, name: 'Fireball', ritual: true, higherLevelSlot: 'More damage.' });
+      expect(panel.castPicker(fireball).higher).toBeNull();
+    });
+  });
+
+  describe('rituals', () => {
+    const detect = spell({ name: 'Detect Magic', ritual: true });
+
+    it('always asks for a ritual spell, even with one free slot at its own level', () => {
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 1 } }, spells: [detect] });
+      const emitted = emits(panel);
+
+      panel.onCastClick(detect, stop());
+
+      expect(emitted).toEqual([]);
+      expect(panel.pickerFor).toBe('Detect Magic');
+      expect(panel.castPicker(detect).ritual).toBeTrue();
+    });
+
+    it('casts as a ritual with no slot, and says so in the request', () => {
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 1 } }, spells: [detect] });
+      const emitted = emits(panel);
+      panel.onCastClick(detect, stop());
+
+      panel.pickRitual(detect, stop());
+
+      expect(emitted).toEqual([{ spellName: 'Detect Magic', atLevel: 1, ritual: true }]);
+      expect(panel.pickerFor).toBeNull();
+    });
+
+    it('still casts it with a slot when the player picks one', () => {
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 1 } }, spells: [detect] });
+      const emitted = emits(panel);
+      panel.onCastClick(detect, stop());
+
+      panel.pickLevel(detect, 1, stop());
+
+      expect(emitted).toEqual([{ spellName: 'Detect Magic', atLevel: 1 }]); // no ritual key on an ordinary cast
+    });
+
+    it('stays castable as a ritual when every slot is spent', () => {
+      const spent = { 1: { max: 4, used: 4 }, 2: { max: 3, used: 3 } };
+      const panel = makePanel({ spellSlots: spent, spells: [detect, spell({ name: 'Shield' })] });
+
+      expect(panel.canCast(detect)).toBeTrue();
+      expect(panel.canCast(panel.pc().spells![1])).toBeFalse(); // Shield is no ritual
+      panel.onCastClick(detect, stop());
+      expect(panel.pickerFor).toBe('Detect Magic');
+      expect(panel.castPicker(detect).options.every(o => o.left === 0)).toBeTrue();
+    });
+
+    it('is castable by a character with no slots at all', () => {
+      const panel = makePanel({ clazz: 'Fighter', spellSlots: {}, spells: [detect] });
+      expect(panel.canCast(detect)).toBeTrue();
+      expect(panel.castPicker(detect)).toEqual({ options: [], ritual: true, higher: null });
+    });
+
+    it('offers no ritual for a spell that is not flagged, whatever is asked', () => {
+      const shield = spell({ name: 'Shield' });
+      const panel = makePanel({ spellSlots: SLOTS, spells: [shield] });
+      const emitted = emits(panel);
+
+      expect(panel.castPicker(shield).ritual).toBeFalse();
+      panel.pickRitual(shield, stop());
+      expect(emitted).toEqual([]);
+    });
+
+    it('an unprepared ritual spell cannot be cast', () => {
+      const panel = makePanel({ spells: [spell({ name: 'Detect Magic', ritual: true, prepared: false })] });
+      expect(panel.canCast(panel.pc().spells![0])).toBeFalse();
+    });
+
+    it('carries the ritual through the missing-component confirm', () => {
+      const identify = spell({ name: 'Identify', ritual: true, components: ['v', 's', 'm'], material: 'a pearl worth 100+ GP' });
+      const panel = makePanel({ spellSlots: { 1: { max: 4, used: 0 } }, spells: [identify] });
+      const emitted = emits(panel);
+      panel.onCastClick(identify, stop());
+
+      panel.pickRitual(identify, stop());
+      expect(panel.pendingCast).toEqual(jasmine.objectContaining({ spellName: 'Identify', ritual: true }));
+      expect(emitted).toEqual([]);
+
+      panel.confirmPendingCast(stop());
+      expect(emitted).toEqual([{ spellName: 'Identify', atLevel: 1, ritual: true }]);
+    });
+  });
+
+  describe('on screen', () => {
+    function render(pc: Partial<PC>) {
+      dndResources.getSpells.and.returnValue(of([]));
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      const fixture = TestBed.createComponent(SpellbookPanelComponent);
+      const character = {
+        id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam', spellSlots: SLOTS, spells: [], ...pc,
+      } as PC;
+      fixture.componentRef.setInput('pc', character);
+      fixture.componentRef.setInput('castable', true);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const castButton = (name: string): HTMLButtonElement =>
+        el.querySelector(`button.spell-toggle[aria-label="${name}"]`)!.closest('.spell-row')!
+          .querySelector<HTMLButtonElement>('.spell-cast-btn')!;
+      const press = (button: HTMLButtonElement): void => { button.click(); fixture.detectChanges(); };
+      const options = (): HTMLButtonElement[] => Array.from(el.querySelectorAll<HTMLButtonElement>('.cast-option'));
+      const words = (button: HTMLElement): string => button.textContent!.replace(/\s+/g, ' ').trim();
+      /** What an option shows: its label and the line beside it. */
+      const shown = (option: HTMLElement): string =>
+        `${words(option.querySelector('.cast-option-label')!)} | ${words(option.querySelector('.cast-option-sub')!)}`;
+      return { fixture, el, character, castButton, press, options, words, shown };
+    }
+
+    it('opens under the spell with each level, what is left, and the word "spent" on a spent one', () => {
+      const { el, castButton, press, options, words, shown } = render({
+        spells: [spell({ name: 'Detect Magic', ritual: true, higherLevelSlot: 'Lasts longer.' })],
+      });
+      expect(el.querySelector('.cast-picker')).toBeNull();
+
+      press(castButton('Detect Magic'));
+
+      expect(words(el.querySelector('.cast-picker-title')!)).toBe('Which slot for Detect Magic?');
+      expect(options().map(shown))
+        .toEqual(['1st | All spent', '2nd | 2 left', '3rd | All spent', 'Ritual | No slot, 10 minutes longer']);
+      expect(options().map(o => o.disabled)).toEqual([true, false, true, false]);
+      expect(options().map(o => o.getAttribute('aria-label'))).toEqual(
+        ['1st level, all spent', '2nd level, 2 left', '3rd level, all spent', 'Ritual: no slot, 10 minutes longer']);
+      expect(words(el.querySelector('.cast-cancel')!)).toBe('Cancel');
+      expect(words(el.querySelector('.cast-picker-note')!)).toBe('Lasts longer.');
+      expect(castButton('Detect Magic').getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('casts from the picker and closes it', () => {
+      const { fixture, el, castButton, press, options } = render({ spells: [spell({ name: 'Shield' })] });
+      const emitted = emits(fixture.componentInstance);
+      press(castButton('Shield'));
+
+      press(options()[1]); // 2nd
+      expect(emitted).toEqual([{ spellName: 'Shield', atLevel: 2 }]);
+      expect(el.querySelector('.cast-picker')).toBeNull();
+    });
+
+    it('Cancel closes it without casting', () => {
+      const { fixture, el, castButton, press } = render({ spells: [spell({ name: 'Shield' })] });
+      const emitted = emits(fixture.componentInstance);
+      press(castButton('Shield'));
+
+      press(el.querySelector<HTMLButtonElement>('.cast-cancel')!);
+      expect(el.querySelector('.cast-picker')).toBeNull();
+      expect(emitted).toEqual([]);
+    });
+
+    it('shows no note under the options for a spell with no higher-level text', () => {
+      const { el, castButton, press } = render({ spells: [spell({ name: 'Shield' })] });
+      press(castButton('Shield'));
+      expect(el.querySelector('.cast-picker-note')).toBeNull();
+    });
+
+    it('a spell that casts on the press does not claim to open anything', () => {
+      const { castButton } = render({
+        spellSlots: { 1: { max: 4, used: 0 } }, spells: [spell({ name: 'Shield' }), spell({ lvl: 0, name: 'Fire Bolt' })],
+      });
+      expect(castButton('Shield').hasAttribute('aria-expanded')).toBeFalse();
+      expect(castButton('Fire Bolt').hasAttribute('aria-expanded')).toBeFalse();
+    });
+
+    it('disables Cast when nothing can pay and the spell is no ritual', () => {
+      const { castButton } = render({
+        spellSlots: { 1: { max: 4, used: 4 } }, spells: [spell({ name: 'Shield' }), spell({ name: 'Detect Magic', ritual: true })],
+      });
+      expect(castButton('Shield').disabled).toBeTrue();
+      expect(castButton('Detect Magic').disabled).toBeFalse();
+    });
+
+    // Session Mode hands the sheet a NEW but equal character object on every
+    // change-detection pass. The picker must survive that, or it closes on the
+    // very press that opened it.
+    it('stays open when the same character arrives as a new object', () => {
+      const { fixture, el, character, castButton, press } = render({ spells: [spell({ name: 'Shield' })] });
+      press(castButton('Shield'));
+
+      fixture.componentRef.setInput('pc', { ...character, hp: { cur: 9, max: 30, temp: 0 } }); // a poll: HP moved, nothing else
+      fixture.detectChanges();
+      expect(el.querySelector('.cast-picker')).not.toBeNull();
+    });
+
+    it('closes when the slots it was built from change', () => {
+      const { fixture, el, character, castButton, press } = render({ spells: [spell({ name: 'Shield' })] });
+      press(castButton('Shield'));
+
+      fixture.componentRef.setInput('pc', { ...character, spellSlots: { ...SLOTS, 2: { max: 3, used: 3 } } });
+      fixture.detectChanges();
+      expect(el.querySelector('.cast-picker')).toBeNull();
+    });
+
+    it('closes for a different character', () => {
+      const { fixture, el, character, castButton, press } = render({ spells: [spell({ name: 'Shield' })] });
+      press(castButton('Shield'));
+
+      fixture.componentRef.setInput('pc', { ...character, id: 2 });
+      fixture.detectChanges();
+      expect(el.querySelector('.cast-picker')).toBeNull();
+    });
+  });
+});
+
 describe('SpellbookPanelComponent — spell preparation', () => {
   it('reads the prepared cap from the 2024 class table and counts leveled spells only', () => {
     const panel = makePanel({
@@ -357,8 +673,8 @@ describe('SpellbookPanelComponent (description disclosure)', () => {
 
 describe('SpellbookPanelComponent (prepared spells locked to the long rest)', () => {
   // A campaign character on its owner's sheet: the Prepare buttons are withheld
-  // (preparable false) and the hint says why; the count stays, read-only.
-  function render(preparable: boolean, hint: string | null) {
+  // (preparable false); the count stays, read-only, and nothing explains it.
+  function render(preparable: boolean, showCount: boolean) {
     dndResources.getSpells.and.returnValue(of([]));
     dndResources.getSpellsForClass.and.returnValue(of([]));
     const fixture = TestBed.createComponent(SpellbookPanelComponent);
@@ -372,32 +688,31 @@ describe('SpellbookPanelComponent (prepared spells locked to the long rest)', ()
       ],
     } as PC);
     fixture.componentRef.setInput('preparable', preparable);
-    fixture.componentRef.setInput('preparedHint', hint);
+    fixture.componentRef.setInput('showPreparedCount', showCount);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('shows the hint and the read-only count, and no Prepare buttons', () => {
-    const el = render(false, 'Prepared spells change during a long rest.');
+  it('shows the owner of a campaign character the read-only count, no Prepare buttons and no hint line', () => {
+    const el = render(false, true);
 
-    expect(el.querySelector('.prepared-locked-hint')!.textContent).toContain('Prepared spells change during a long rest.');
     expect(el.querySelector('.prepared-counter')!.textContent).toContain('Prepared 1 / 9');
     expect(el.querySelectorAll('.spell-prep-btn').length).toBe(0);
     expect(el.querySelectorAll('.spell-row.unprepared').length).toBe(1); // Sleep is still shown as not prepared
+    expect(el.querySelector('.prepared-locked-hint')).toBeNull();
+    expect(el.textContent).not.toContain('Prepared spells change during a long rest');
   });
 
-  it('a viewer who may prepare gets the buttons and the count, with no hint', () => {
-    const el = render(true, null);
+  it('a viewer who may prepare gets the buttons and the count', () => {
+    const el = render(true, false);
 
-    expect(el.querySelector('.prepared-locked-hint')).toBeNull();
     expect(el.querySelector('.prepared-counter')!.textContent).toContain('Prepared 1 / 9');
     expect(el.querySelectorAll('.spell-prep-btn').length).toBe(2); // the two leveled spells, not the cantrip
   });
 
-  it('a read-only viewer gets neither the buttons, the count nor the hint, as before', () => {
-    const el = render(false, null);
+  it('a read-only viewer gets neither the buttons nor the count, as before', () => {
+    const el = render(false, false);
 
-    expect(el.querySelector('.prepared-locked-hint')).toBeNull();
     expect(el.querySelector('.prepared-counter')).toBeNull();
     expect(el.querySelectorAll('.spell-prep-btn').length).toBe(0);
   });

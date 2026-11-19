@@ -1012,7 +1012,13 @@ em, i, cite, dfn, address, var { font-style: normal; }
   transition: background .15s, box-shadow .15s;
 }
 .spell-cast-btn:hover:not(:disabled) { background: rgba(212,175,55,0.12); box-shadow: var(--glow-gold); }
-.spell-cast-btn:disabled { opacity: 0.35; cursor: default; }
+/* Disabled the house way: dashed hairline and dim ink, never a fade. */
+.spell-cast-btn:disabled {
+  border-style: dashed;
+  border-color: var(--text-dim);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
 .spell-cast-strip {
   display: flex;
   align-items: center;

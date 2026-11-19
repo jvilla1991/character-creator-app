@@ -959,17 +959,27 @@ export class SessionService {
    * version so the DM sees it live); the result patches the local PC store so an
    * open sheet updates without a refetch, and a non-null `warning` (missing
    * costly component in a lenient campaign) is surfaced to the caller.
+   *
+   * `ritual` casts the spell as a ritual: no slot is spent and `atLevel` is not
+   * used. The server refuses it (409) unless the spell is leveled and marked as
+   * a ritual. The flag is only sent when set, so an ordinary cast is the same
+   * request it always was.
    */
-  castSpell(sessionId: number | string, pcId: number, spellName: string, atLevel: number):
+  castSpell(sessionId: number | string, pcId: number, spellName: string, atLevel: number, ritual = false):
       Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
-    if (environment.demoMode) return this.demoCast(pcId, spellName, atLevel);
+    if (environment.demoMode) return this.demoCast(pcId, spellName, atLevel, ritual);
     return this.http.post<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }>(
-      `${this.sessionBase}/${sessionId}/spell/cast`, { pcId, spellName, atLevel },
+      `${this.sessionBase}/${sessionId}/spell/cast`,
+      ritual ? { pcId, spellName, atLevel, ritual: true } : { pcId, spellName, atLevel },
     ).pipe(
-      tap(result => this.pcService.patchLocalPC(pcId, {
-        spellSlots: result.spellSlots,
-        inventory: result.inventory ?? [],
-      })),
+      tap(result => {
+        this.pcService.patchLocalPC(pcId, {
+          spellSlots: result.spellSlots,
+          inventory: result.inventory ?? [],
+        });
+        // The embedded sheet reads its slots from the snapshot: show the spend now, not on the next poll.
+        this.applySpellSlots(pcId, result.spellSlots);
+      }),
     );
   }
 
@@ -1424,12 +1434,21 @@ export class SessionService {
   }
 
 
-  /** Demo mirror of the cast endpoint (shared reducer, local persistence + version bump). */
-  private demoCast(pcId: number, spellName: string, atLevel: number):
+  /**
+   * Demo mirror of the cast endpoint (shared reducer, local persistence + version bump).
+   * A cast the server would refuse (no free slot, or a ritual cast of a spell that is
+   * not a ritual) fails the same way: a 409 carrying the reason.
+   */
+  private demoCast(pcId: number, spellName: string, atLevel: number, ritual = false):
       Observable<{ pcId: number; spellSlots: PC['spellSlots']; inventory: PcItem[]; warning: string | null }> {
     const pc = this.pcService.getPCById(pcId);
     if (!pc) return throwError(() => new Error('Character not found'));
-    const updated = applyCastToPc(pc, spellName, atLevel);
+    let updated: PC;
+    try {
+      updated = applyCastToPc(pc, spellName, atLevel, ritual);
+    } catch (refused) {
+      return throwError(() => ({ status: 409, error: { message: (refused as Error).message } }));
+    }
     this.pcService.patchLocalPC(pcId, { spellSlots: updated.spellSlots, inventory: updated.inventory ?? [] });
 
     const state = this.stateSubject.getValue();

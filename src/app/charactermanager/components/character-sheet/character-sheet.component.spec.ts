@@ -533,6 +533,19 @@ describe('CharacterSheetComponent', () => {
       });
     });
 
+    describe('a cast in the session', () => {
+      it('passes on what the host says the cast spent, for the strip to say', () => {
+        component.pc = caster();
+        const notice = { level: 2, text: 'Misty Step cast with a 2nd-level slot.' };
+
+        component.castNotice = notice;
+        expect(component.slotNotice()).toBe(notice);
+
+        component.castNotice = null; // the host's signal before any cast: nothing to say, nothing unsaid
+        expect(component.slotNotice()).toBe(notice);
+      });
+    });
+
     describe('the slot maximum', () => {
       const pearl = { value: 1, label: 'Pearl of Power' };
 

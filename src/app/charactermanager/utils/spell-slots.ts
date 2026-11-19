@@ -22,10 +22,16 @@ export interface SlotLevel {
   left: number;
 }
 
-/** 1 → "1st", 2 → "2nd", 3 → "3rd", 4 → "4th" … */
+/** 1 → "1st", 2 → "2nd", 3 → "3rd", 4 → "4th" … (11th, 12th and 13th included). */
 export function ordinal(n: number): string {
-  const suffix = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
-  return `${n}${suffix}`;
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
 }
 
 /**
@@ -119,6 +125,11 @@ export function withSlotMax(
 export interface SlotNotice {
   level: number | null;
   text: string;
+}
+
+/** "Misty Step cast with a 2nd-level slot." — a cast that spent a slot. */
+export function slotCastNotice(spellName: string, spellLevel: number): SlotNotice {
+  return { level: spellLevel, text: `${spellName} cast with a ${ordinal(spellLevel)}-level slot.` };
 }
 
 export function slotSpentNotice(spellLevel: number): SlotNotice {

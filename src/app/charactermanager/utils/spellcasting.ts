@@ -35,6 +35,15 @@ export function castableLevels(pc: PC, spell: PcSpell): number[] {
 }
 
 /**
+ * Whether a spell may be cast as a ritual (no slot, ten minutes longer): a
+ * leveled spell marked `ritual`. The server's cast endpoint enforces exactly
+ * this, and refuses a ritual cast of anything else.
+ */
+export function canCastAsRitual(spell: PcSpell): boolean {
+  return spell.lvl > 0 && spell.ritual === true;
+}
+
+/**
  * The inventory line backing this spell's material component, if any — matched
  * by the spell NAME the shop stamped on the line at purchase time. Dropped and
  * empty lines don't count.
@@ -72,16 +81,21 @@ export function castWarning(pc: PC, spell: PcSpell): string | null {
  * Apply a cast to a whole PC — the out-of-session (and demo) mirror of the
  * server's cast endpoint: spends a slot at `atLevel` (nothing for cantrips)
  * and decrements a consumed-on-cast component line (removed at zero; a
- * reusable component is only required present, never spent). Returns a new
- * PC; the input is untouched. Throws when the spell is unknown or no slot at
- * `atLevel` is free — callers gate the UI with castableLevels first.
+ * reusable component is only required present, never spent). A `ritual` cast
+ * spends no slot and ignores `atLevel`; the component rules still apply.
+ * Returns a new PC; the input is untouched. Throws when the spell is unknown,
+ * no slot at `atLevel` is free, or a ritual cast is asked of a spell that
+ * cannot be one — callers gate the UI with castableLevels / canCastAsRitual
+ * first.
  */
-export function applyCastToPc(pc: PC, spellName: string, atLevel: number): PC {
+export function applyCastToPc(pc: PC, spellName: string, atLevel: number, ritual = false): PC {
   const spell = findSpell(pc, spellName);
   if (!spell) throw new Error(`Unknown spell: ${spellName}`);
 
   let spellSlots = pc.spellSlots;
-  if (spell.lvl > 0) {
+  if (ritual) {
+    if (!canCastAsRitual(spell)) throw new Error(`${spellName} cannot be cast as a ritual`);
+  } else if (spell.lvl > 0) {
     const slot = pc.spellSlots?.[atLevel];
     if (atLevel < spell.lvl || !slot || slot.used >= slot.max) {
       throw new Error(`No level ${atLevel} slot available`);

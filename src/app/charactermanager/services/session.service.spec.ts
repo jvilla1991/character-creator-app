@@ -294,6 +294,52 @@ describe('SessionService rests', () => {
     });
   });
 
+  describe('castSpell', () => {
+    const answer = { pcId: 7, spellSlots: { 1: { max: 4, used: 2 } }, inventory: [], warning: null };
+
+    it('POSTs an ordinary cast exactly as before: no ritual key', () => {
+      service.castSpell(1, 7, 'Shield', 1).subscribe();
+
+      const req = httpMock.expectOne(`${base}/1/spell/cast`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ pcId: 7, spellName: 'Shield', atLevel: 1 });
+      req.flush(answer);
+      expect(pcService.patchLocalPC).toHaveBeenCalledOnceWith(7, { spellSlots: { 1: { max: 4, used: 2 } }, inventory: [] });
+    });
+
+    it('sends ritual: true for a ritual cast', () => {
+      service.castSpell(1, 7, 'Detect Magic', 1, true).subscribe();
+
+      const req = httpMock.expectOne(`${base}/1/spell/cast`);
+      expect(req.request.body).toEqual({ pcId: 7, spellName: 'Detect Magic', atLevel: 1, ritual: true });
+      req.flush({ ...answer, spellSlots: { 1: { max: 4, used: 1 } } });
+    });
+
+    it('writes the answered slots onto the caster\'s seat at once, not on the next poll', () => {
+      (service as unknown as { pushState(s: SessionState): void }).pushState({
+        sessionId: 1, campaignId: 2, status: 'LOBBY', round: 1, version: 3,
+        participants: [{ participantId: 5, pcId: 7, npc: false, ownedByMe: true, name: 'Bex', spellSlots: { 1: { max: 4, used: 1 } } }],
+      } as unknown as SessionState);
+      let state: SessionState | null = null;
+      service.state$.subscribe(s => (state = s));
+
+      service.castSpell(1, 7, 'Shield', 1).subscribe();
+      httpMock.expectOne(`${base}/1/spell/cast`).flush(answer);
+
+      expect(state!.participants[0].spellSlots).toEqual({ 1: { max: 4, used: 2 } });
+    });
+
+    it('leaves everything alone when the server refuses', () => {
+      let status = 0;
+      service.castSpell(1, 7, 'Shield', 1).subscribe({ error: err => (status = err.status) });
+      httpMock.expectOne(`${base}/1/spell/cast`)
+        .flush({ message: 'No level 1 slot available' }, { status: 409, statusText: 'Conflict' });
+
+      expect(status).toBe(409);
+      expect(pcService.patchLocalPC).not.toHaveBeenCalled();
+    });
+  });
+
   // A slot spent or restored on the sheet: the server answered with the new
   // slots, and the snapshot (which the embedded sheet reads) takes them at once.
   describe('applySpellSlots', () => {
@@ -385,6 +431,50 @@ describe('SessionService rests', () => {
     beforeEach(() => {
       spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
       campaignService.getLocalCampaign.and.returnValue(undefined);
+    });
+
+    describe('casting', () => {
+      const caster = (): PC => hero({
+        clazz: 'Wizard', spellSlots: { 1: { max: 2, used: 1 } },
+        spells: [
+          { lvl: 1, name: 'Detect Magic', school: 'Divination', time: '1 action', prepared: true, ritual: true },
+          { lvl: 1, name: 'Shield', school: 'Abjuration', time: '1 reaction', prepared: true },
+        ],
+      });
+
+      it('an ordinary cast spends the slot on the character and on its seat', () => {
+        seed([caster()]);
+        service.castSpell('demo-session', 7, 'Shield', 1).subscribe();
+
+        expect(store.get(7)!.spellSlots).toEqual({ 1: { max: 2, used: 2 } });
+        expect(current().participants[0].spellSlots).toEqual({ 1: { max: 2, used: 2 } });
+      });
+
+      it('a ritual cast spends nothing', () => {
+        seed([caster()]);
+        let result: { spellSlots: PC['spellSlots'] } | undefined;
+        service.castSpell('demo-session', 7, 'Detect Magic', 1, true).subscribe(r => (result = r));
+
+        expect(result!.spellSlots).toEqual({ 1: { max: 2, used: 1 } });
+        expect(store.get(7)!.spellSlots).toEqual({ 1: { max: 2, used: 1 } });
+      });
+
+      it('refuses a ritual cast of a spell that is not a ritual, like the server (409)', () => {
+        seed([caster()]);
+        let refused: { status?: number; error?: { message?: string } } | undefined;
+        service.castSpell('demo-session', 7, 'Shield', 1, true).subscribe({ error: err => (refused = err) });
+
+        expect(refused).toEqual({ status: 409, error: { message: 'Shield cannot be cast as a ritual' } });
+        expect(pcService.patchLocalPC).not.toHaveBeenCalled();
+      });
+
+      it('refuses a cast with no free slot, like the server (409)', () => {
+        seed([hero({ ...caster(), spellSlots: { 1: { max: 2, used: 2 } } })]);
+        let refused: { status?: number; error?: { message?: string } } | undefined;
+        service.castSpell('demo-session', 7, 'Shield', 1).subscribe({ error: err => (refused = err) });
+
+        expect(refused).toEqual({ status: 409, error: { message: 'No level 1 slot available' } });
+      });
     });
 
     it('a short vote opens the hit-dice window; a long vote opens the long rest phase', () => {

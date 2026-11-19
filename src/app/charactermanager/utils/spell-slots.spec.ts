@@ -1,12 +1,16 @@
 import {
-  allSlotsRestoredNotice, classSlotTable, ordinal, restoreAllSlots, restoreSlot, slotLevels, slotMaxOf,
-  slotRestoredNotice, slotSpentNotice, slotsLeftText, spendSlot, startingSlots, withSlotMax,
+  allSlotsRestoredNotice, classSlotTable, ordinal, restoreAllSlots, restoreSlot, slotCastNotice, slotLevels,
+  slotMaxOf, slotRestoredNotice, slotSpentNotice, slotsLeftText, spendSlot, startingSlots, withSlotMax,
 } from './spell-slots';
 
 describe('spell slots', () => {
   describe('ordinal', () => {
     it('names the nine spell levels', () => {
       expect([1, 2, 3, 4, 9].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '9th']);
+    });
+
+    it('handles the teens, for anything else that counts', () => {
+      expect([11, 12, 13, 21, 22, 113].map(ordinal)).toEqual(['11th', '12th', '13th', '21st', '22nd', '113th']);
     });
   });
 
@@ -117,6 +121,11 @@ describe('spell slots', () => {
   });
 
   describe('what the strip says after a change', () => {
+    it('words a cast by the slot that paid for it', () => {
+      expect(slotCastNotice('Misty Step', 2)).toEqual({ level: 2, text: 'Misty Step cast with a 2nd-level slot.' });
+      expect(slotCastNotice('Shield', 3)).toEqual({ level: 3, text: 'Shield cast with a 3rd-level slot.' });
+    });
+
     it('words a hand spend, a restore and a restore of everything', () => {
       expect(slotSpentNotice(3)).toEqual({ level: 3, text: 'One 3rd-level slot spent by hand.' });
       expect(slotRestoredNotice(1)).toEqual({ level: 1, text: 'One 1st-level slot restored.' });

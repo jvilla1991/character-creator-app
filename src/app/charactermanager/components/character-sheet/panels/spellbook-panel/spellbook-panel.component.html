@@ -9,7 +9,7 @@
         Save DC {{ saveDc() }} · Spell Atk {{ spellAtk() }}
       </span>
     }
-    @if ((preparable() || preparedHint()) && hasLeveledSpells() && preparedCap() != null) {
+    @if ((preparable() || showPreparedCount()) && hasLeveledSpells() && preparedCap() != null) {
       <span
         class="prepared-counter"
         [class.at-cap]="preparedCount() >= preparedCap()!"
@@ -41,10 +41,6 @@
     (restoreAll)="slotsRestoreAll.emit()"
     (maximumRequested)="slotMaximumRequested.emit($event)">
   </app-spell-slot-tracker>
-
-  @if (preparedHint() && hasLeveledSpells()) {
-    <div class="field-hint prepared-locked-hint">{{ preparedHint() }}</div>
-  }
 
   <!-- At the cap every Prepare button is disabled; say why where a phone can
   read it (the reason was only in each button's hover tooltip). -->
@@ -162,21 +158,45 @@
                 >{{ prepared ? 'Prepared' : 'Prepare' }}</button>
               }
               @if (!editable() && castable()) {
+                <!-- Says it opens something only when it does: a spell with
+                nothing to choose casts on the press. -->
                 <button
                   class="spell-cast-btn"
                   [disabled]="!canCast(s)"
                   [title]="castTitle(s)"
+                  [attr.aria-expanded]="canCast(s) && castAsks(s) ? pickerFor === s.name : null"
                   (click)="onCastClick(s, $event)"
                 >Cast</button>
               }
             </div>
-            <!-- Upcast: pick which slot level to spend -->
+            <!-- Which slot pays: every level from the spell's own up. A level
+            with nothing left stays listed, disabled, and says so in words. -->
             @if (pickerFor === s.name) {
-              <div class="spell-cast-strip">
-                <span class="spell-cast-note">Cast at:</span>
-                @for (lvl of levelsFor(s); track lvl) {
-                  <button class="spell-cast-level"
-                  (click)="pickLevel(s, lvl, $event)">{{ ordinal(lvl) }}</button>
+              @let picker = castPicker(s);
+              <div class="cast-picker" role="group" [attr.aria-label]="'Which slot for ' + s.name + '?'">
+                <span class="cast-picker-title">Which slot for {{ s.name }}?</span>
+                <div class="cast-picker-options">
+                  @for (option of picker.options; track option.level) {
+                    <!-- The two parts sit side by side as separate boxes; the
+                    label reads them as one phrase. -->
+                    <button type="button" class="cast-option" [disabled]="option.left === 0"
+                      [attr.aria-label]="option.label + ' level, ' + (option.left === 0 ? 'all spent' : option.left + ' left')"
+                      (click)="pickLevel(s, option.level, $event)">
+                      <span class="cast-option-label">{{ option.label }}</span>
+                      <span class="cast-option-sub">{{ option.left === 0 ? 'All spent' : option.left + ' left' }}</span>
+                    </button>
+                  }
+                  @if (picker.ritual) {
+                    <button type="button" class="cast-option ritual"
+                      aria-label="Ritual: no slot, 10 minutes longer" (click)="pickRitual(s, $event)">
+                      <span class="cast-option-label">Ritual</span>
+                      <span class="cast-option-sub">No slot, 10 minutes longer</span>
+                    </button>
+                  }
+                  <button type="button" class="btn sm cast-cancel" (click)="closePicker($event)">Cancel</button>
+                </div>
+                @if (picker.higher; as higher) {
+                  <span class="cast-picker-note">{{ higher }}</span>
                 }
               </div>
             }

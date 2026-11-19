@@ -110,6 +110,12 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    *  `followerChanged` (the owning character's sheet persists it) instead of
    *  going to the PC endpoints — a follower is not a PC row. */
   @Input() followerMode = false;
+  /** Session embeds only: what the last cast spent ("Misty Step cast with a
+   *  2nd-level slot."), for the slot strip to say. Set by the host once the
+   *  server has confirmed the cast. */
+  @Input() set castNotice(notice: SlotNotice | null) {
+    if (notice) this.slotNotice.set(notice);
+  }
   /** Follower mode only: the name of the character this follower belongs to. */
   @Input() followerOwnerName = '';
   /** Follower mode only: whether that character is in a campaign, and so has a DM
@@ -439,11 +445,6 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return this.editable || (this.ownSheet && this.pc?.campaignId == null);
   }
 
-  /** Tells the owner of a campaign character why the Prepare buttons are gone. */
-  get preparedSpellsHint(): string | null {
-    return this.ownSheet && this.pc?.campaignId != null ? 'Prepared spells change during a long rest.' : null;
-  }
-
   /** Whether the viewer owns this sheet — drives the survival Eat/Drink buttons.
    *  Mirrors the pc-notes canWrite rule: interactive contexts minus DM cross-link. */
   get ownSheet(): boolean {
@@ -466,7 +467,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /**
    * A cast from the spellbook panel — only reachable inside a live session (the
    * Cast buttons are hidden otherwise). The host forwards it to Session Mode,
-   * which spends the slot, consumes the component, and bumps the poll version.
+   * which spends the slot (none for a ritual), consumes the component, and
+   * bumps the poll version; `castNotice` then tells the strip what was spent.
    */
   onCastRequested(ev: CastRequest): void {
     this.castRequested.emit(ev);
