@@ -12,13 +12,14 @@ import { EditableNumberComponent } from '../../editable-number/editable-number.c
 import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component';
 import { SpellEli5Service } from '../../../../services/spell-eli5.service';
 import { SpellRefreshService } from '../../../../services/spell-refresh.service';
+import { SpellSlotTrackerComponent } from '../../spell-slot-tracker/spell-slot-tracker.component';
+import { slotsLeftText } from '../../../../utils/spell-slots';
 
 export interface SpellLevel {
   lvl: number;
   label: string;
   spells: NonNullable<PC['spells']>;
   slots: { max: number; used: number } | null;
-  slotIndices: number[];
 }
 
 /** A cast the panel wants to make, resolved to a concrete slot level (0 = cantrip). */
@@ -32,7 +33,7 @@ export interface CastRequest {
     templateUrl: './spellbook-panel.component.html',
     styleUrls: ['./spellbook-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [SpellPickerComponent, EditableNumberComponent, Eli5ToggleComponent]
+    imports: [SpellPickerComponent, EditableNumberComponent, Eli5ToggleComponent, SpellSlotTrackerComponent]
 })
 export class SpellbookPanelComponent implements OnChanges {
   readonly collapsedLevels = new Set<number>();
@@ -42,7 +43,7 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   readonly pc = input.required<PC>();
-  /** DM cross-link: replaces the slot pips with editable used/max numbers. */
+  /** DM cross-link: replaces a level's "2 of 4 left" with editable used/max numbers. */
   readonly editable = input(false);
   /** Campaign runs strict material components: a missing costly component blocks the cast. */
   readonly strictComponents = input(false);
@@ -167,7 +168,6 @@ export class SpellbookPanelComponent implements OnChanges {
           label:       lvl === 0 ? 'Cantrips' : `Level ${lvl}`,
           spells:      map.get(lvl)!,
           slots,
-          slotIndices: slots ? Array.from({ length: slots.max }, (_, i) => i) : [],
         };
       });
   });
@@ -181,6 +181,9 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   trackByLvl(_: number, row: SpellLevel): number { return row.lvl; }
+
+  /** "2 of 4 left" / "None left" beside a spell level's heading. */
+  readonly slotsLeft = slotsLeftText;
 
   // ── Expand/collapse spell detail ─────────────────────────────────────────
   // Spells render expanded by default; the map only records the ones a reader

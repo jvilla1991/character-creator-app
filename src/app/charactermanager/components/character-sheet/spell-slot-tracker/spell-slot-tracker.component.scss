@@ -1,0 +1,187 @@
+:host {
+  display: block;
+}
+
+// An inset block on the panel: hairline border, the input ground behind it.
+.sst {
+  margin-bottom: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.sst-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+
+  // "Restore all" sits in the row: tighter, so the row does not grow around it.
+  &.has-action {
+    padding: 6px 8px 6px 12px;
+  }
+}
+
+.sst-title {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+// ── The strip ────────────────────────────────────────────────────────────────
+// Every column takes an equal share of one row and may shrink to nothing
+// (min-width: 0), so nine levels still fit a 375px phone without wrapping.
+
+.sst-strip {
+  display: flex;
+}
+
+.sst-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 4px 8px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--border-soft);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:first-child {
+    border-left-color: transparent;
+  }
+
+  // Pointer only: on a touch screen a hover sticks to the last column tapped.
+  @media (hover: hover) {
+    &:hover {
+      background: var(--surface);
+    }
+  }
+
+  // Selected: one tone step up and a gold underline.
+  &.selected {
+    background: var(--surface-2);
+    border-bottom-color: var(--gold);
+  }
+
+  // Inset, so the ring is not clipped by the block's edge or a neighbour.
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -2px;
+  }
+}
+
+.sst-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--gold);
+}
+
+// The stack is as tall as four bars and grows with the tallest column in the
+// row; bars sit on its floor, so every column's count lines up underneath.
+.sst-bars {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  width: 100%;
+  max-width: 44px;
+  min-height: 33px;
+}
+
+// Filled = a slot still available. Hollow = spent.
+.sst-bar {
+  height: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--gold);
+  border-radius: 1px;
+  background: var(--gold);
+  transition: background 0.15s;
+
+  &.spent {
+    background: transparent;
+    border-color: var(--text-dim);
+  }
+}
+
+.sst-count {
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+  color: var(--text);
+}
+
+// Nothing left at this level: its label and count step down the text ramp.
+.sst-col.empty .sst-label,
+.sst-col.empty .sst-count {
+  color: var(--text-dim);
+}
+
+// ── The detail row for the tapped level ──────────────────────────────────────
+
+.sst-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.sst-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sst-detail-title {
+  font-size: var(--text-md);
+  color: var(--text);
+}
+
+.sst-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// On top of the app's .btn.sm (hairline, Cinzel label, dashed when disabled).
+.btn.sst-btn {
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+// Finger-sized on a phone. (The min-height above would otherwise out-rank the
+// app-wide 44px rule for buttons.)
+@media (max-width: 820px) {
+  .sst-detail {
+    padding: 8px 8px 8px 12px;
+  }
+
+  .btn.sst-btn {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+}

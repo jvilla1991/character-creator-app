@@ -1,4 +1,4 @@
-import { DEMO_PCS, demoFeatOptions, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
+import { DEMO_PCS, demoFeatOptions, demoFightingStyleOptions, demoSlotsFor, demoSubclassOptions } from './pc.demo-data';
 import { heroClassFor, heroClassSpells, subclassSpellsFor } from '../models/hero-class';
 import { classDisplayName } from '../utils/class-display';
 
@@ -253,5 +253,28 @@ describe('pc.demo-data (WoW mirrors)', () => {
     }
     const options = demoFeatOptions('Monk', 4, { DEX: 16, WIS: 16 });
     expect(options).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe('pc.demo-data (spell slots)', () => {
+  it('levels a demo Paladin or Ranger up on the half-caster table, like the server', () => {
+    expect(demoSlotsFor('Paladin', 1)).toEqual({ 1: 2 });
+    expect(demoSlotsFor('Ranger', 5)).toEqual({ 1: 4, 2: 2 });
+    expect(demoSlotsFor('Paladin', 9)).toEqual({ 1: 4, 2: 3, 3: 2 });
+    expect(demoSlotsFor('Ranger', 20)).toEqual({ 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 });
+    expect(demoSlotsFor('Wizard', 5)).toEqual({ 1: 4, 2: 3, 3: 2 });
+    expect(demoSlotsFor('Warlock', 5)).toEqual({ 3: 2 });
+    expect(demoSlotsFor('Fighter', 5)).toEqual({});
+  });
+
+  it('seeds every demo caster with the slot maximums its class table gives at its level', () => {
+    const casters = ['bard', 'cleric', 'druid', 'sorcerer', 'wizard', 'warlock', 'paladin', 'ranger'];
+    const seeded = DEMO_PCS.filter(pc => casters.includes(pc.clazz.toLowerCase()));
+    expect(seeded.length).toBeGreaterThan(0);
+    for (const pc of seeded) {
+      const max = Object.fromEntries(Object.entries(pc.spellSlots ?? {}).map(([lvl, slot]) => [lvl, slot.max]));
+      expect(max).withContext(`${pc.name} (${pc.clazz} ${pc.level})`)
+        .toEqual(demoSlotsFor(pc.clazz, pc.level ?? 1) as Record<string, number>);
+    }
   });
 });

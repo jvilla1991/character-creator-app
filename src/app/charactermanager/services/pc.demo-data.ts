@@ -14,6 +14,7 @@
 import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
+import { classSlotTable } from '../utils/spell-slots';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
 import {
   CIRCLE_OF_THE_MOON, DRACONIC_SORCERY, EVOKER_SCHOOL, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER,
@@ -1033,33 +1034,11 @@ export function demoLevelUpFields(pc: PC) {
   return { current, newLevel: current + 1, hitDie, conMod, hpGained };
 }
 
-// DEMO-ONLY mirror of the server's ClassProgression spell-slot tables. Lives here purely so
-// the modal can show slot growth without a backend; production never reads it (the real tables
-// are server-side). Keep in sync with ClassProgression if you rely on the demo for slot checks.
-const DEMO_FULL_CASTERS = new Set(['bard', 'cleric', 'druid', 'sorcerer', 'wizard']);
-const DEMO_FULL_CASTER_SLOTS: number[][] = [
-  [2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2],
-  [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1],
-  [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1],
-  [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1],
-  [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1],
-];
-const DEMO_PACT_SLOTS: [number, number][] = [
-  [1, 1], [1, 2], [2, 2], [2, 2], [3, 2], [3, 2], [4, 2], [4, 2], [5, 2], [5, 2],
-  [5, 3], [5, 3], [5, 3], [5, 3], [5, 3], [5, 3], [5, 4], [5, 4], [5, 4], [5, 4],
-];
-
+// The class slot tables (full casters, the half casters Paladin and Ranger, Warlock pact
+// magic) live in utils/spell-slots.ts, the app's one copy of the server's ClassProgression
+// tables. The demo level-up reads them through this name.
 export function demoSlotsFor(clazz: string, level: number): { [lvl: number]: number } {
-  const key = (clazz ?? '').trim().toLowerCase();
-  const idx = Math.min(Math.max(level, 1), 20) - 1;
-  const out: { [lvl: number]: number } = {};
-  if (DEMO_FULL_CASTERS.has(key)) {
-    DEMO_FULL_CASTER_SLOTS[idx].forEach((max, i) => { if (max > 0) out[i + 1] = max; });
-  } else if (key === 'warlock') {
-    const [slotLevel, count] = DEMO_PACT_SLOTS[idx];
-    out[slotLevel] = count;
-  }
-  return out;
+  return classSlotTable(clazz, level);
 }
 
 export function demoCurrentMaxSlots(pc: PC): { [lvl: number]: number } {

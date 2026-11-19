@@ -1,0 +1,54 @@
+@if (columns().length) {
+  <section class="sst" [attr.aria-labelledby]="headingId">
+    <div class="sst-head" [class.has-action]="canRestore()">
+      <h2 class="sst-title" [id]="headingId">Spell slots</h2>
+      @if (canRestore()) {
+        <button type="button" class="btn sm sst-btn" data-restore-all [disabled]="!anySpent()"
+          (click)="onRestoreAll()">Restore all</button>
+      }
+    </div>
+
+    <!-- One row, one column per spell level, never wrapping. The bars are
+    decoration for the count under them; assistive tech reads the label. -->
+    <div class="sst-strip">
+      @for (column of columns(); track column.level) {
+        <button type="button" class="sst-col"
+          [class.selected]="column.level === active()?.level"
+          [class.empty]="column.left === 0"
+          [attr.aria-pressed]="column.level === active()?.level"
+          [attr.aria-label]="column.ariaLabel"
+          (click)="toggle(column.level)">
+          <span class="sst-label">{{ column.label }}</span>
+          <span class="sst-bars" aria-hidden="true">
+            @for (spent of column.bars; track $index) {
+              <span class="sst-bar" [class.spent]="spent"></span>
+            }
+          </span>
+          <span class="sst-count numeric">{{ column.left }}/{{ column.max }}</span>
+        </button>
+      }
+    </div>
+
+    <div aria-live="polite">
+      @if (active(); as level) {
+        <div class="sst-detail">
+          <div class="sst-detail-text">
+            <span class="sst-detail-title">{{ detailTitle() }}</span>
+          </div>
+          @if (canSpend() || canRestore()) {
+            <div class="sst-actions">
+              @if (canSpend()) {
+                <button type="button" class="btn sm sst-btn" data-spend [disabled]="level.left === 0"
+                  (click)="onSpend()">Spend a slot</button>
+              }
+              @if (canRestore()) {
+                <button type="button" class="btn sm sst-btn" data-restore [disabled]="level.used === 0"
+                  (click)="onRestore()">Restore a slot</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </section>
+}

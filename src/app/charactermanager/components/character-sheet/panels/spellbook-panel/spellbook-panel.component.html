@@ -25,6 +25,10 @@
     }
   </div>
 
+  <!-- Spell slots: one strip at the top of the tab. Renders nothing for a
+  character with no slot level at all. -->
+  <app-spell-slot-tracker [slots]="pc().spellSlots" [characterId]="pc().id"></app-spell-slot-tracker>
+
   @if (preparedHint() && hasLeveledSpells()) {
     <div class="field-hint prepared-locked-hint">{{ preparedHint() }}</div>
   }
@@ -109,21 +113,10 @@
             (click)="toggleLevel(level.lvl)">{{ collapsedLevels.has(level.lvl) ? '▸' : '▾' }} {{ level.label }}</button>
           @if (level.slots) {
             <div class="spell-slots">
-              @if (!editable()) {
-                <!-- Display-only for players: slots are spent by casting (in session),
-                never toggled by hand. The DM edits them via the numbers below.
-                A filled pip is a SPENT slot, which reads backwards on its own, so
-                the count beside the pips says what is left in words; the pips are
-                hidden from assistive tech, which reads the count instead. -->
-                <span class="spell-slots-left">{{ level.slots!.max - level.slots!.used }} of {{ level.slots!.max }} left</span>
-                @for (i of level.slotIndices; track i) {
-                  <span
-                    class="spell-slot"
-                    aria-hidden="true"
-                    [class.used]="i < level.slots!.used"
-                    [title]="i < level.slots!.used ? 'Spent' : 'Available'"
-                  ></span>
-                }
+              @if (!editable() && level.slots!.max > 0) {
+                <!-- What is left, in words. The strip at the top of the tab
+                draws the slots; this repeats the count where the spells are. -->
+                <span class="spell-slots-left">{{ slotsLeft(level.slots!) }}</span>
               }
               @if (editable()) {
                 <span class="slot-edit">

@@ -403,6 +403,64 @@ describe('SpellbookPanelComponent (prepared spells locked to the long rest)', ()
   });
 });
 
+describe('SpellbookPanelComponent (spell slots)', () => {
+  function render(pc: Partial<PC>, inputs: Record<string, unknown> = {}): HTMLElement {
+    dndResources.getSpells.and.returnValue(of([]));
+    dndResources.getSpellsForClass.and.returnValue(of([]));
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam',
+      spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 3 } },
+      spells: [spell({ lvl: 0, name: 'Fire Bolt' }), spell({ lvl: 1, name: 'Shield' }), spell({ lvl: 2, name: 'Misty Step' })],
+      ...pc,
+    } as PC);
+    for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const before = (a: Element, b: Element): boolean =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('puts the slot strip at the top of the tab, above the search box', () => {
+    const el = render({});
+
+    const strip = el.querySelector('app-spell-slot-tracker .sst')!;
+    expect(strip).not.toBeNull();
+    expect(Array.from(strip.querySelectorAll('.sst-count')).map(c => c.textContent!.trim())).toEqual(['3/4', '0/3']);
+    expect(before(el.querySelector('.panel-header')!, strip)).toBeTrue();
+    expect(before(strip, el.querySelector('.spell-filter-bar')!)).toBeTrue();
+    expect(before(strip, el.querySelector('.spell-level')!)).toBeTrue();
+  });
+
+  it('shows a character with no slot level nothing new', () => {
+    // A Fighter who knows a spell or two (a species trait, a feat) but has no slots.
+    for (const spellSlots of [undefined, {}, { 1: { max: 0, used: 0 } }]) {
+      const el = render({ clazz: 'Fighter', spellSlots: spellSlots as PC['spellSlots'] });
+
+      expect(el.querySelector('.sst')).withContext(JSON.stringify(spellSlots)).toBeNull();
+      expect(el.querySelector('app-spell-slot-tracker')!.textContent!.trim()).toBe('');
+      expect(el.querySelector('.spell-slots-left')).toBeNull();
+      expect(el.textContent).not.toContain('Spell slots');
+      expect(el.querySelectorAll('.spell-level').length).toBe(3); // the spells are listed as before
+    }
+  });
+
+  it('shows the strip to a caster who knows no spells yet', () => {
+    const el = render({ clazz: 'Paladin', level: 1, spellSlots: { 1: { max: 2, used: 0 } }, spells: [] });
+    expect(el.querySelector('.sst')).not.toBeNull();
+  });
+
+  it('keeps the words beside each spell level and drops the old pips', () => {
+    const el = render({});
+
+    const words = Array.from(el.querySelectorAll('.spell-level')).map(level =>
+      level.querySelector('.spell-slots-left')?.textContent?.trim() ?? null);
+    expect(words).toEqual([null, '3 of 4 left', 'None left']); // cantrips need no slot
+    expect(el.querySelector('.spell-slot')).toBeNull();
+  });
+});
+
 describe('SpellbookPanelComponent (ELI5 summaries)', () => {
   const ELI5_KEY = 'tm_eli5';
   const FULL = 'A creature you touch regains a number of Hit Points equal to 2d8 plus your spellcasting ability modifier.';
