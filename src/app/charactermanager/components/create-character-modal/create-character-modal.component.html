@@ -190,6 +190,8 @@
         [expandedSpellName]="expandedSpellName"
         [recommendedSpells]="recommendedSpells"
         [recommendedFor]="specialization"
+        [alwaysPrepared]="alwaysPreparedGrants"
+        [preparedAtStart]="preparedAtStart"
         (toggleDesc)="toggleSpellDesc($event)"
         (toggleSpell)="toggleSpell($event)">
       </app-spells-step>
@@ -239,6 +241,7 @@
         [selectedSpells]="selectedSpells"
         [reviewCantripNames]="reviewCantripNames"
         [reviewLeveledSpellNames]="reviewLeveledSpellNames"
+        [alwaysPreparedNames]="isSpellcastingClass ? reviewAlwaysPreparedNames : ''"
         [equipmentChoice]="equipmentChoice"
         [equipmentStep]="equipmentStep"
         [currentClassEquipment]="currentClassEquipment"

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 import { spellKey } from '../../../../models/spell-names';
+import { SpellGrant } from '../../../../models/granted-spells';
 
 /**
  * Step 7 (spellcasting classes only): pick cantrips/1st-level spells with a
@@ -47,6 +48,18 @@ export class SpellsStepComponent {
   private readonly recommendedSet = computed(
     () => new Set(this.recommendedSpells().map(spellKey)),
   );
+
+  /**
+   * Spells a level-1 class feature always keeps prepared (a Ranger's Hunter's
+   * Mark). The wizard saves them on top of the picks, so the list leaves them
+   * out and this step only says so.
+   */
+  readonly alwaysPrepared = input<readonly SpellGrant[]>([]);
+  /**
+   * How many picks start prepared when the class picks more spells than it
+   * prepares (a Wizard's spellbook); null when every pick does.
+   */
+  readonly preparedAtStart = input<number | null>(null);
 
   /** Filter tab clicked (two-way [(spellLevelFilter)] on the parent). */
   readonly spellLevelFilterChange = output<number | 'all'>();

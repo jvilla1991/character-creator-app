@@ -4,7 +4,9 @@ import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
-import { toPcSpell } from '../../utils/spell-mapping';
+import { toGrantedSpell, toPcSpell } from '../../utils/spell-mapping';
+import { spellKey } from '../../models/spell-names';
+import { SpellGrant } from '../../models/granted-spells';
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
@@ -17,6 +19,8 @@ import {
 } from '../../models/hero-class';
 import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
 import { featPrerequisite, isWowFeat } from '../../models/wow-feats';
+
+const NO_GRANTS: readonly SpellGrant[] = [];
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -85,6 +89,12 @@ export class LevelUpModalComponent implements OnInit {
   selectedSpells: DndSpell[] = [];
   loadingSpells = false;
 
+  /**
+   * The level's always-prepared spells (see {@link alwaysPreparedGrants}) found
+   * in the spell data, ready to send with the picks.
+   */
+  grantedSpells: { spell: DndSpell; grantedBy: string }[] = [];
+
   /** Player's ELI5 switch: when active, the spell pickers show one-sentence summaries. */
   readonly eli5 = inject(SpellEli5Service);
 
@@ -99,6 +109,8 @@ export class LevelUpModalComponent implements OnInit {
       next: preview => {
         this.preview = preview;
         this.loading = false;
+        this.grantedSpells = [];
+        if (this.alwaysPreparedGrants.length) this.loadGrantedSpells();
         if (this.cantripDelta > 0 || this.spellDelta > 0) this.loadSpells();
       },
       error: err => {
@@ -110,9 +122,38 @@ export class LevelUpModalComponent implements OnInit {
 
   // ── Spell selection (learning new cantrips/spells) ──────────────────────────
 
+  /**
+   * Spells a class feature always keeps prepared, gained at this level (a
+   * Paladin's Find Steed at 5) — named by the server, shown read-only, and sent
+   * with the picks. They are not picks: they sit outside both counts.
+   */
+  get alwaysPreparedGrants(): readonly SpellGrant[] {
+    return this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
+  }
+
+  /** Look the granted spells up in the spell data (the server only knows their names). */
+  private loadGrantedSpells(): void {
+    const grants = this.alwaysPreparedGrants;
+    this.dndResources.getSpells().subscribe({
+      next: spells => {
+        const byKey = new Map(spells.map(s => [spellKey(s.name), s]));
+        this.grantedSpells = grants.flatMap(g => {
+          const spell = byKey.get(spellKey(g.name));
+          return spell ? [{ spell, grantedBy: g.grantedBy }] : [];
+        });
+      },
+      // Without the spell data the level-up still goes through; the spell can be granted later.
+      error: () => { this.grantedSpells = []; },
+    });
+  }
+
   private loadSpells(): void {
     this.loadingSpells = true;
-    const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
+    // A spell this level grants outright is never offered as a pick.
+    const known = new Set([
+      ...(this.pc.spells ?? []).map(s => s.name.toLowerCase()),
+      ...this.alwaysPreparedGrants.map(g => g.name.toLowerCase()),
+    ]);
     const maxLevel = this.maxLearnableSpellLevel;
     // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = this.heroClass?.extraSpellList;
@@ -433,8 +474,9 @@ export class LevelUpModalComponent implements OnInit {
     }
     // A cantrip style's cantrips (Blessed / Druidic / Void Warrior) ride along with any spells learned this level.
     const learned = [...this.selectedSpells, ...(this.cantripStyle ? this.styleCantrips : [])];
-    if (learned.length) {
-      choices.newSpells = learned.map(toPcSpell);
+    const granted = this.grantedSpells.map(g => toGrantedSpell(g.spell, g.grantedBy));
+    if (learned.length || granted.length) {
+      choices.newSpells = [...learned.map(toPcSpell), ...granted];
     }
 
     const commit$ = this.asDm

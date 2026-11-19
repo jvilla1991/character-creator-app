@@ -618,6 +618,26 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(component.grantSelection).toEqual([]);
   });
 
+  it('grants leveled spells as always prepared when the box is ticked, and resets the box', () => {
+    dndResources.getSpells.and.returnValue(of([]));
+    const emitted: any[] = [];
+    component.spellsGranted.subscribe(v => emitted.push(v));
+    component.openGrantForm();
+    component.grantAlwaysPrepared = true;
+    component.grantSelection = [
+      makeSpell({ name: 'Find Steed', level: 2 }), makeSpell({ name: 'Mage Hand', level: 0 }),
+    ];
+
+    component.confirmGrant();
+
+    expect(emitted[0][0]).toEqual(jasmine.objectContaining({
+      lvl: 2, name: 'Find Steed', prepared: true, alwaysPrepared: true, grantedBy: 'DM grant',
+    }));
+    // A cantrip is never counted, so it needs no marker.
+    expect(emitted[0][1].alwaysPrepared).toBeUndefined();
+    expect(component.grantAlwaysPrepared).toBeFalse();
+  });
+
   it('does not emit when the selection is empty', () => {
     const emitted: any[] = [];
     component.spellsGranted.subscribe(v => emitted.push(v));
@@ -1025,5 +1045,80 @@ describe('SpellbookPanelComponent (stale placeholder spells)', () => {
     expect(emitted.length).toBe(1);
     expect(emitted[0].spells![0]).toEqual({ ...staleRune, prepared: true });
     expect(emitted[0].spells![1]).toBe(normal);
+  });
+});
+
+describe('SpellbookPanelComponent (always-prepared spells)', () => {
+  const mark = spell({ name: "Hunter's Mark", alwaysPrepared: true, grantedBy: 'Favored Enemy' });
+  const ranger = (spells: PcSpell[]): Partial<PC> =>
+    ({ clazz: 'Ranger', level: 1, spellSlots: { 1: { max: 2, used: 0 } }, spells });
+
+  it('does not count against the prepared cap, so both picks can still be prepared', () => {
+    const panel = makePanel(ranger([mark, spell({ name: 'Goodberry' }), spell({ name: 'Jump', prepared: false })]));
+    expect(panel.preparedCap()).toBe(2);
+    expect(panel.preparedCount()).toBe(1);
+    expect(panel.canTogglePrepared(panel.pc().spells![2])).toBeTrue();
+  });
+
+  it('is prepared and castable, and its prepared state cannot be toggled', () => {
+    const panel = makePanel(ranger([{ ...mark, prepared: false }]));
+    const saved = panel.pc().spells![0];
+    expect(panel.isAlwaysPrepared(saved)).toBeTrue();
+    expect(panel.isPrepared(saved)).toBeTrue();
+    expect(panel.canCast(saved)).toBeTrue();
+    const emitted: PC[] = [];
+    panel.pcChange.subscribe(pc => emitted.push(pc));
+    panel.togglePrepared(saved, stop());
+    expect(emitted).toEqual([]);
+  });
+
+  it('shows "Always prepared" in place of the Prepare button, and says why in the detail', () => {
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Rhonna', playerName: 'Pia', ...ranger([mark, spell({ name: 'Goodberry' })]),
+    } as PC);
+    fixture.componentRef.setInput('preparable', true);
+    fixture.detectChanges();
+    const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.spell-row'));
+    expect(rows[0].querySelector('.spell-always-tag')?.textContent?.trim()).toBe('Always prepared');
+    expect(rows[0].querySelector('.spell-prep-btn')).toBeNull();
+    expect(rows[1].querySelector('.spell-prep-btn')).not.toBeNull();
+    expect(rows[1].querySelector('.spell-always-tag')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.spell-always-note')?.textContent?.trim())
+      .toBe('Always prepared (Favored Enemy). It does not count against your prepared spells.');
+    // Only the DM gets the control that changes the marker.
+    expect((fixture.nativeElement as HTMLElement).querySelector('.spell-always-toggle')).toBeNull();
+  });
+
+  it('hides the prepared count and hints when every leveled spell is always prepared', () => {
+    const panel = makePanel(ranger([mark]));
+    expect(panel.hasLeveledSpells()).toBeFalse();
+  });
+
+  it('lets the DM mark a spell always prepared and put it back', () => {
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    const panel = fixture.componentInstance;
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Rhonna', playerName: 'Pia',
+      ...ranger([spell({ name: "Hunter's Mark", prepared: false }), spell({ name: 'Goodberry' })]),
+    } as PC);
+    const emitted: PC[] = [];
+    panel.pcChange.subscribe(pc => emitted.push(pc));
+
+    panel.toggleAlwaysPrepared(panel.pc().spells![0], stop());   // not the DM: nothing happens
+    expect(emitted).toEqual([]);
+
+    fixture.componentRef.setInput('addAllowed', true);
+    panel.toggleAlwaysPrepared(panel.pc().spells![0], stop());
+    expect(emitted[0].spells![0]).toEqual(jasmine.objectContaining({
+      name: "Hunter's Mark", prepared: true, alwaysPrepared: true, grantedBy: 'DM grant',
+    }));
+    expect(emitted[0].spells![1]).toBe(panel.pc().spells![1]);
+
+    fixture.componentRef.setInput('pc', emitted[0]);
+    panel.toggleAlwaysPrepared(panel.pc().spells![0], stop());
+    expect('alwaysPrepared' in emitted[1].spells![0]).toBeFalse();
+    expect('grantedBy' in emitted[1].spells![0]).toBeFalse();
+    expect(emitted[1].spells![0].prepared).toBeTrue();
   });
 });

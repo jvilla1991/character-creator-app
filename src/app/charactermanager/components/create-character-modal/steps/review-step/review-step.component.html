@@ -183,6 +183,12 @@
           <span class="review-value review-value--muted">No spells selected yet</span>
         </div>
       }
+      @if (alwaysPreparedNames()) {
+        <div class="review-row">
+          <span class="review-label">Always Prepared</span>
+          <span class="review-value review-value--wrap">{{ alwaysPreparedNames() }}</span>
+        </div>
+      }
       @if (reviewCantripNames()) {
         <div class="review-row">
           <span class="review-label">Cantrips</span>

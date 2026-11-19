@@ -7,6 +7,20 @@
     Select {{ maxKnownSpells() }} level 1 spell{{ maxKnownSpells() !== 1 ? 's' : '' }}. Your class learns no cantrips at level 1.
   }
 </div>
+@if (alwaysPrepared().length) {
+  <p class="spell-recommend-note spell-always-note">
+    You also start with
+    @for (g of alwaysPrepared(); track g.name; let last = $last) {
+      <em>{{ g.name }}</em> ({{ g.grantedBy }}){{ last ? '' : ',' }}
+    }
+    always prepared. It is not one of your picks.
+  </p>
+}
+@if (preparedAtStart() !== null) {
+  <p class="spell-recommend-note spell-prepared-note">
+    Your first {{ preparedAtStart() }} spells start prepared. The others wait in your spellbook.
+  </p>
+}
 @if (recommendedSpells().length && recommendedFor()) {
   <p class="spell-recommend-note">Spells marked <em>Recommended</em> suit the {{ recommendedFor() }} specialization — pick whatever you like.</p>
 }

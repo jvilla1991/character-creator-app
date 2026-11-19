@@ -55,6 +55,13 @@ export interface LevelUpPreview {
   // Blessed Warrior; Protection → Interception, Protection; Retribution → Great Weapon
   // Fighting). Optional — the SPA derives the same list from the variant table when absent.
   recommendedFightingStyles?: string[];
+  /**
+   * Spells a class feature always keeps prepared, gained at this level (a
+   * Paladin's Find Steed at 5). The modal shows them and sends the full spell
+   * along in `newSpells`; the server marks them `alwaysPrepared`, outside the
+   * pick count. Absent from a server that predates the field.
+   */
+  alwaysPreparedSpells?: { name: string; grantedBy: string }[];
 }
 
 /**

@@ -80,6 +80,8 @@ export class ReviewStepComponent {
   readonly selectedSpells = input<DndSpell[]>([]);
   readonly reviewCantripNames = input('');
   readonly reviewLeveledSpellNames = input('');
+  /** "Hunter's Mark (Favored Enemy)" — spells the class always keeps prepared; '' for none. */
+  readonly alwaysPreparedNames = input('');
 
   // Equipment
   readonly equipmentChoice = input<'A' | 'B' | ''>('');

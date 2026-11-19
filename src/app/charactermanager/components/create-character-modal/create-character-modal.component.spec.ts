@@ -1093,6 +1093,81 @@ describe('CreateCharacterModalComponent — logic', () => {
     });
   });
 
+  describe('spells a new character starts with', () => {
+    const spell = (name: string, level: number, cls: string): any => ({
+      name, level, school: 'evocation', classes: [cls], actionType: 'action', concentration: false,
+      ritual: false, range: 'Self', components: ['v'], duration: 'Instantaneous', description: `${name} text.`,
+    });
+
+    it('prepares only four of a Wizard\'s six spellbook spells', (done) => {
+      const list = ['A', 'B', 'C', 'D', 'E', 'F'].map(n => spell(n, 1, 'wizard'));
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass('Wizard');
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(component.preparedAtStart).toBe(4);
+      expect(component.alwaysPreparedGrants).toEqual([]);
+      list.forEach(s => component.toggleSpell(s));
+      expect(component.selectedSpells.length).toBe(6);
+
+      component.name = 'Aelindra';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => s.prepared)).toEqual([true, true, true, true, false, false]);
+        done();
+      });
+      component.submit();
+    });
+
+    it('prepares every pick for a class that picks no more than it prepares', () => {
+      for (const cls of ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock']) {
+        component.clazz = cls;
+        expect(component.preparedAtStart).withContext(cls).toBeNull();
+      }
+    });
+
+    it('starts a Druid with Speak with Animals always prepared (Druidic)', (done) => {
+      const list = [spell('Druidcraft', 0, 'druid'), spell('Entangle', 1, 'druid'), spell('Speak with Animals', 1, 'druid')];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.classList = ['Druid'];
+      component.toggleClass('Druid');
+      component.step = 7;
+      (component as any).ensureStepData();
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Druidcraft', 'Entangle']);
+      component.toggleSpell(list[1]);
+
+      component.name = 'Hrogar';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, !!s.alwaysPrepared, s.grantedBy ?? ''])).toEqual([
+          ['Entangle', false, ''], ['Speak with Animals', true, 'Druidic'],
+        ]);
+        done();
+      });
+      component.submit();
+    });
+
+    it('drops the spells picked for one class when another class is chosen', () => {
+      component.toggleClass('Wizard');
+      component.selectedSpells = [spell('Shield', 1, 'wizard')];
+      component.toggleClass('Bard');
+      expect(component.selectedSpells).toEqual([]);
+    });
+
+    it('gives a class without spellcasting no spells at all', (done) => {
+      component.classList = ['Fighter'];
+      component.toggleClass('Fighter');
+      component.name = 'Brakk';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells).toEqual([]);
+        expect(draft.spellSlots).toEqual({});
+        done();
+      });
+      component.submit();
+    });
+  });
+
   describe('World of Warcraft Paladin', () => {
     const WOW_PALADIN_KEY = 'Paladin (World of Warcraft)';
 
@@ -1664,6 +1739,49 @@ describe('CreateCharacterModalComponent — logic', () => {
         done();
       });
       component.submit();
+    });
+
+    it("starts every ranger with Hunter's Mark always prepared, on top of the two picks", (done) => {
+      const spell = (name: string): any => ({
+        name, level: 1, school: 'divination', classes: ['ranger'], actionType: 'action',
+        concentration: false, ritual: false, range: 'Self', components: ['v'], duration: '1 hour',
+        description: `${name} text.`,
+      });
+      const list = [spell('Cure Wounds'), spell('Goodberry'), spell("Hunter's Mark"), spell('Jump')];
+      dndResources.getSpellsForClass.and.returnValue(of(list));
+      component.toggleClass(HUNTER_KEY);
+      component.selectSpecialization('Beast Mastery');
+      component.step = 7;
+      (component as any).ensureStepData();
+
+      expect(component.alwaysPreparedGrants).toEqual([{ name: "Hunter's Mark", grantedBy: 'Favored Enemy' }]);
+      expect(component.reviewAlwaysPreparedNames).toBe("Hunter's Mark (Favored Enemy)");
+      // It is not offered as a pick, and cannot take one of the two.
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Cure Wounds', 'Goodberry', 'Jump']);
+      component.toggleSpell(list[0]);
+      component.toggleSpell(list[1]);
+
+      component.name = 'Rhonna';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.spells.map((s: any) => [s.name, s.prepared, s.alwaysPrepared ?? false, s.grantedBy ?? ''])).toEqual([
+          ['Cure Wounds', true, false, ''], ['Goodberry', true, false, ''],
+          ["Hunter's Mark", true, true, 'Favored Enemy'],
+        ]);
+        done();
+      });
+      component.submit();
+    });
+
+    it('loads the class list for a draft restored past the spells step, so the granted spell is still saved', () => {
+      dndResources.getSpellsForClass.and.returnValue(of([]));
+      component.toggleClass(HUNTER_KEY);
+      component.classEquipmentData = {};   // already loaded: only the spell list is owed
+      component.step = component.reviewStep;
+      (component as any).ensureStepData();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Ranger');
+      (component as any).ensureStepData();   // the same class row is not fetched twice
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledTimes(1);
     });
 
     it('gives the Demon Hunter the same Ranger spells step', () => {

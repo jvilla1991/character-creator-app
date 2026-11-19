@@ -90,6 +90,24 @@ describe('spell creation level groups', () => {
     expect(el.querySelector('.spell-counter')!.textContent).toContain('0/3 cantrips');
   });
 
+  it('says which spell the class always keeps prepared, and how many picks start prepared', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    fixture.componentRef.setInput('maxKnownSpells', 2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const text = (sel: string) => el.querySelector(sel)?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(el.querySelector('.spell-always-note')).toBeNull();
+    expect(el.querySelector('.spell-prepared-note')).toBeNull();
+
+    fixture.componentRef.setInput('alwaysPrepared', [{ name: "Hunter's Mark", grantedBy: 'Favored Enemy' }]);
+    fixture.componentRef.setInput('preparedAtStart', 4);
+    fixture.detectChanges();
+    expect(text('.spell-always-note'))
+      .toBe("You also start with Hunter's Mark (Favored Enemy) always prepared. It is not one of your picks.");
+    expect(text('.spell-prepared-note'))
+      .toBe('Your first 4 spells start prepared. The others wait in your spellbook.');
+  });
+
   it('badges recommended spells without selecting them', () => {
     const fixture = TestBed.createComponent(SpellsStepComponent);
     const base: DndSpell = { name: 'Druidcraft', level: 0, school: 'transmutation',

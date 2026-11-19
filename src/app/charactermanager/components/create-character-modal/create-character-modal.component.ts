@@ -35,6 +35,10 @@ import {
   chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
   speciesTools, speciesTraitFeatures, toSpeciesDetail,
 } from '../../models/species';
+import { SpellGrant, level1ClassSpellGrants } from '../../models/granted-spells';
+import { spellKey } from '../../models/spell-names';
+import { toGrantedSpell, toPcSpell } from '../../utils/spell-mapping';
+import { preparedSpellCap, withPreparedCap } from '../../utils/spell-preparation';
 import {
   ALLEGIANCES, Allegiance, allegianceLanguageHint, allegianceLanguageOptions, allegiancePickCount,
   suggestedAllegiance, wowStartingLanguages,
@@ -718,11 +722,31 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   get maxCantrips(): number   { return SPELL_COUNTS[this.clazz.toLowerCase()]?.cantrips ?? 0; }
   get maxKnownSpells(): number { return SPELL_COUNTS[this.clazz.toLowerCase()]?.spells ?? 0; }
 
+  /**
+   * Spells the class's level-1 features always keep prepared (a Ranger's Hunter's
+   * Mark, a Druid's Speak with Animals). Saved on top of the picks, so the pick
+   * list leaves them out.
+   */
+  get alwaysPreparedGrants(): readonly SpellGrant[] {
+    return level1ClassSpellGrants(this.clazz);
+  }
+
+  /**
+   * How many of the picked spells start prepared when the class picks more than
+   * it prepares (a Wizard's six spellbook spells against four); null otherwise.
+   */
+  get preparedAtStart(): number | null {
+    const cap = preparedSpellCap(this.clazz, 1);
+    return cap != null && cap < this.maxKnownSpells ? cap : null;
+  }
+
   get selectedCantrips(): number  { return this.selectedSpells.filter(s => s.level === 0).length; }
   get selectedLeveled(): number   { return this.selectedSpells.filter(s => s.level > 0).length; }
 
   get filteredSpellList(): DndSpell[] {
+    const granted = this.alwaysPreparedGrants.map(g => spellKey(g.name));
     return filterBySource(this.spellList, this.contentSources).filter(s => {
+      if (granted.includes(spellKey(s.name))) return false;
       const levelOk = this.spellLevelFilter === 'all'
         ? s.level <= 1
         : s.level === this.spellLevelFilter;
@@ -923,9 +947,10 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // Load spells when entering step 7 (casters only)
     // A WoW variant can add spells to its base class's list (e.g. the Priest's Blur
     // and Levitate), so the loaded list is keyed by class row and reloaded if that changes.
+    // Loaded from the spells step on (not only on it): a draft restored on a later
+    // step still needs the list, to save the class's always-prepared spells.
     const spellListKey = this.selectedClassKey;
-    const staleList = this.spellListKey !== null && this.spellListKey !== spellListKey;
-    if (this.step === 7 && this.isSpellcastingClass && (!this.spellList.length || staleList)) {
+    if (this.step >= 7 && this.isSpellcastingClass && this.spellListKey !== spellListKey) {
       this.loadingSpells = true;
       this.spellListKey = spellListKey;
       const extras = this.heroClass?.extraSpellList;
@@ -936,7 +961,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: spells => { this.spellList = spells; this.loadingSpells = false; },
-          error: () => { this.loadingSpells = false; },
+          // Forget the key so coming back to the step tries again.
+          error: () => { this.loadingSpells = false; this.spellListKey = null; },
         });
     }
     // Load equipment data when entering (or restoring past) the equipment step
@@ -986,6 +1012,29 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   get reviewLeveledSpellNames(): string {
     return this.selectedSpells.filter(s => s.level > 0).map(s => s.name).join(', ');
+  }
+
+  /** "Hunter's Mark (Favored Enemy)" — the always-prepared spells the class starts with. */
+  get reviewAlwaysPreparedNames(): string {
+    return this.alwaysPreparedGrants.map(g => `${g.name} (${g.grantedBy})`).join(', ');
+  }
+
+  /**
+   * The spells a new character is saved with: the picks, with no more of them
+   * prepared than the class prepares at level 1, then the spells its level-1
+   * features always keep prepared (marked so they never count against that cap).
+   */
+  private buildStartingSpells(): PcSpell[] {
+    const grants = this.isSpellcastingClass ? this.alwaysPreparedGrants : [];
+    const grantedKeys = grants.map(g => spellKey(g.name));
+    const picks = this.selectedSpells
+      .filter(s => !grantedKeys.includes(spellKey(s.name)))
+      .map(toPcSpell);
+    const granted = grants.flatMap(g => {
+      const spell = this.spellList.find(s => spellKey(s.name) === spellKey(g.name));
+      return spell ? [toGrantedSpell(spell, g.grantedBy)] : [];
+    });
+    return [...withPreparedCap(picks, preparedSpellCap(this.clazz, 1)), ...granted];
   }
 
   get reviewWeaponNames(): string {
@@ -1068,6 +1117,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.clazz = option?.baseClass ?? key;
       this.heroClassKey = option?.hero ? option.key : '';
     }
+    // Spells picked for another class row are not this one's to keep.
+    this.selectedSpells = [];
     this.classDetail = null;
     this.onClassChange();
   }
@@ -1238,21 +1289,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                           // A World of Warcraft species brings its trait cards (Other Features).
                           ...(catalog ? speciesTraitFeatures(catalog, this.speciesSelections) : []),
                         ],
-      spells: this.selectedSpells.map((s): PcSpell => ({
-        lvl:            s.level,
-        name:           s.name,
-        school:         s.school,
-        time:           s.actionType,
-        prepared:       true,
-        concentration:  s.concentration,
-        ritual:         s.ritual,
-        range:          s.range,
-        components:     s.components,
-        duration:       s.duration,
-        description:    s.description,
-        material:       s.material,
-        higherLevelSlot: s.higherLevelSlot,
-      })),
+      spells: this.buildStartingSpells(),
       spellSlots: this.buildStartingSlots(this.clazz),
     };
 

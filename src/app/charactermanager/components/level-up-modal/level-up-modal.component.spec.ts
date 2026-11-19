@@ -41,7 +41,7 @@ describe('LevelUpModalComponent', () => {
   beforeEach(() => {
     pcService = makePcServiceSpy();
     dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService',
-      ['getFeatDescription', 'getSpellsForClass']);
+      ['getFeatDescription', 'getSpellsForClass', 'getSpells']);
     dndResources.getFeatDescription.and.returnValue('A mighty feat.');
     dndResources.getSpellsForClass.and.returnValue(of([]));
     component = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
@@ -793,6 +793,89 @@ describe('LevelUpModalComponent', () => {
           jasmine.objectContaining({ lvl: 0, name: 'Thaumaturgy' }),
         ],
       });
+    });
+
+    it('offers a level 2 paladin one new prepared spell from the Paladin list, with no cantrip pick', () => {
+      const bless = { ...cantrip('Bless'), level: 1, classes: ['paladin'] };
+      open({ spells: [] }, { currentSpellsKnown: 2, newSpellsKnown: 3, newSpellSlots: { 1: 2 } });
+      dndResources.getSpellsForClass.and.returnValue(of([bless, { ...cantrip('Aid'), level: 2 }]));
+      component.ngOnInit();
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Paladin');
+      expect(component.showSpellPicker).toBeTrue();
+      expect([component.cantripDelta, component.spellDelta]).toEqual([0, 1]);
+      expect(component.showCantrips).toBeFalse();
+      // Only 1st-level slots at level 2, so the 2nd-level spell is not offered.
+      expect(component.spellList.map(s => s.name)).toEqual(['Bless']);
+    });
+
+    it('sends the level 2 spell and the Blessed Warrior cantrips in one request', () => {
+      open({ spells: [] }, { currentSpellsKnown: 2, newSpellsKnown: 3, newSpellSlots: { 1: 2 } });
+      const bless = { ...cantrip('Bless'), level: 1 };
+      component.selectedSpells = [bless];
+      component.selectFightingStyle('Blessed Warrior');
+      component.styleCantrips = [cantrip('Guidance'), cantrip('Sacred Flame')];
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        fightingStyle: 'Blessed Warrior',
+        newSpells: [
+          jasmine.objectContaining({ lvl: 1, name: 'Bless' }),
+          jasmine.objectContaining({ lvl: 0, name: 'Guidance' }),
+          jasmine.objectContaining({ lvl: 0, name: 'Sacred Flame' }),
+        ],
+      });
+    });
+
+    it('shows a spell the level always keeps prepared and sends it marked, outside the picks', () => {
+      const findSteed = { ...cantrip('Find Steed'), level: 2, classes: ['paladin'] };
+      const aid = { ...cantrip('Aid'), level: 2, classes: ['paladin'] };
+      dndResources.getSpells.and.returnValue(of([findSteed, aid]));
+      open({ level: 4, subclass: 'Oath of Devotion', spells: [] }, {
+        currentLevel: 4, newLevel: 5, fightingStyleDue: false, fightingStyleOptions: [],
+        currentSpellsKnown: 5, newSpellsKnown: 6, newSpellSlots: { 1: 4, 2: 2 },
+        alwaysPreparedSpells: [{ name: 'Find Steed', grantedBy: 'Faithful Steed' }],
+      });
+      dndResources.getSpellsForClass.and.returnValue(of([findSteed, aid]));
+      component.ngOnInit();
+
+      expect(component.alwaysPreparedGrants).toEqual([{ name: 'Find Steed', grantedBy: 'Faithful Steed' }]);
+      expect(component.grantedSpells.map(g => g.spell.name)).toEqual(['Find Steed']);
+      // The granted spell is not offered as the level's pick.
+      expect(component.spellList.map(s => s.name)).toEqual(['Aid']);
+      const el = renderModal();
+      expect(el.querySelector('.always-prepared-gained .feature-name')?.textContent).toContain('Find Steed');
+      expect(el.querySelector('.always-prepared-gained .feature-desc')?.textContent).toContain('From Faithful Steed.');
+
+      component.selectedSpells = [aid];
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        newSpells: [
+          jasmine.objectContaining({ lvl: 2, name: 'Aid', prepared: true }),
+          jasmine.objectContaining({ lvl: 2, name: 'Find Steed', alwaysPrepared: true, grantedBy: 'Faithful Steed' }),
+        ],
+      });
+    });
+
+    it('sends a granted spell even at a level with no picks, and nothing extra when the server names none', () => {
+      const smite = { ...cantrip('Divine Smite'), level: 1, classes: ['paladin'] };
+      dndResources.getSpells.and.returnValue(of([smite]));
+      open({ spells: [] }, {
+        fightingStyleDue: false, fightingStyleOptions: [],
+        alwaysPreparedSpells: [{ name: 'Divine Smite', grantedBy: 'Divine Smite' }],
+      });
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        newSpells: [jasmine.objectContaining({ name: 'Divine Smite', alwaysPrepared: true })],
+      });
+
+      pcService.levelUp.calls.reset();
+      dndResources.getSpells.calls.reset();
+      open({ spells: [] }, { fightingStyleDue: false, fightingStyleOptions: [] });
+      expect(component.alwaysPreparedGrants).toEqual([]);
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+      component.submitting = false;
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
     });
 
     it('badges the server\'s recommendedFightingStyles, keeping only offered ones', () => {
