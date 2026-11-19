@@ -229,6 +229,25 @@ describe('PCService', () => {
       expect(body['species']).toBe('Elf');
       req.flush(pc);
     });
+
+    it('sends the adjustment lines as a JSON string', () => {
+      const pc = makePC({ id: 42, statAdjustments: { ac: [{ value: 1, label: 'Taunka' }] } });
+      service.updatePC(pc).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42');
+      expect((req.request.body as Record<string, unknown>)['statAdjustments'])
+        .toBe('{"ac":[{"value":1,"label":"Taunka"}]}');
+      req.flush(pc);
+    });
+
+    it('sends null adjustment lines when the character carries none, so the server keeps its own', () => {
+      const pc = makePC({ id: 42 });
+      service.updatePC(pc).subscribe();
+
+      const req = httpMock.expectOne(service.pcUrl + '42');
+      expect((req.request.body as Record<string, unknown>)['statAdjustments']).toBeNull();
+      req.flush(pc);
+    });
   });
 
   describe('setPetFamily', () => {
@@ -651,6 +670,32 @@ describe('PCService', () => {
         abilityInt: 8, abilityWis: 12, abilityCha: 9,
         hpMax: 11, hpCurrent: 11, hpTemp: 0,
       });
+    });
+
+    it('parses the adjustment lines, and reads a missing or malformed column as none', (done) => {
+      const flat = {
+        name: 'Test', clazz: 'Fighter', level: 1,
+        saves: '[]', skills: '{}', spells: '[]', spellSlots: '{}', conditions: '[]', coins: '{}',
+        weapons: '[]', gear: '[]', features: '[]', languages: '[]', toolProfs: '[]',
+      };
+      const results: PC[] = [];
+      const params = (id: string) => new (require('@angular/common/http').HttpParams)().set('id', id);
+      const collect = (result: PC) => {
+        results.push(result);
+        if (results.length < 3) return;
+        expect(results[0].statAdjustments).toEqual({ ac: [{ value: 1, label: 'Taunka' }] });
+        expect(results[1].statAdjustments).toBeNull();
+        expect(results[2].statAdjustments).toBeNull();
+        done();
+      };
+
+      service.PCById(params('11')).subscribe(collect);
+      httpMock.expectOne(service.pcUrl + 'find/11')
+        .flush({ ...flat, id: 11, statAdjustments: '{"ac":[{"value":1,"label":"Taunka"}]}' });
+      service.PCById(params('12')).subscribe(collect);
+      httpMock.expectOne(service.pcUrl + 'find/12').flush({ ...flat, id: 12, statAdjustments: null });
+      service.PCById(params('13')).subscribe(collect);
+      httpMock.expectOne(service.pcUrl + 'find/13').flush({ ...flat, id: 13, statAdjustments: 'not json' });
     });
 
     it('survives malformed JSON in TEXT fields by using default values', (done) => {

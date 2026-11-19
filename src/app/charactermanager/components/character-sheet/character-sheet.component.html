@@ -239,10 +239,13 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
     <app-vitals-strip
       [pc]="pc"
       [editable]="editable"
+      [breakdownEnabled]="!followerMode"
+      [canAdjust]="canAdjustStats"
       [canSpendHitDie]="sessionLive && shortRestOpen && ownSheet"
       (spendHitDie)="onSpendHitDie()"
       (pcChange)="onPcChange($event)"
-      (editRequested)="onDmEditRequested($event)">
+      (editRequested)="onDmEditRequested($event)"
+      (breakdownRequested)="onBreakdownRequested($event)">
     </app-vitals-strip>
   }
 
@@ -406,6 +409,19 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
       (confirm)="onDmEditConfirmed($event)"
       (close)="closeDmEdit()">
     </app-dm-edit-modal>
+  </div>
+}
+
+<!-- Number breakdown overlay — opened by clicking a calculated number (Armor
+Class) in the vitals strip. Read-only unless the viewer may adjust the character. -->
+@if (statBreakdown) {
+  <div class="modal-backdrop" (click)="closeStatBreakdown()">
+    <app-stat-breakdown-modal
+      [breakdown]="statBreakdown"
+      [editable]="canAdjustStats"
+      (save)="onStatAdjustmentsSaved($event)"
+      (close)="closeStatBreakdown()">
+    </app-stat-breakdown-modal>
   </div>
 }
 }

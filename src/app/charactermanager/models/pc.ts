@@ -1,4 +1,6 @@
 
+import { StatAdjustments } from './stat-adjustment';
+
 /** A spell as stored on a character — lean subset of DndSpell plus enrichment fields */
 export interface PcSpell {
   lvl: number;
@@ -118,7 +120,15 @@ export interface PC {
 
   // Combat
   hp?: { cur: number; max: number; temp: number };
+  // Saved total: the lines the app works out (armor, Dex, shields) plus every
+  // adjustment line below. Read it through acBreakdown() in utils/armor-math.ts
+  // when the parts matter.
   ac?: number;
+  // DM-added lines on calculated numbers, keyed by the number they adjust
+  // ({ ac: [{ value: 1, label: 'Taunka' }] }). In a campaign only the DM's save
+  // changes them (the server keeps the stored lines on an owner's update);
+  // omitting the field on an update keeps the stored value.
+  statAdjustments?: StatAdjustments | null;
   init?: number;
   speed?: number;
   prof?: number;
