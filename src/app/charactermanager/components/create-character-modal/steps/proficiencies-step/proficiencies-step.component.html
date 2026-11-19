@@ -47,6 +47,62 @@
   </div>
 }
 
+<!-- Species proficiencies (World of Warcraft species): granted skills, skill picks, tool picks -->
+@if (hasSpeciesProficiencies) {
+  <div class="prof-section">
+    <div class="prof-section-header">
+      <span class="eyebrow">{{ species() }} Proficiencies
+        @if (speciesSkillChoice() || speciesToolCount()) { <span aria-label="required">*</span> }
+      </span>
+      @if (speciesSkillChoice(); as choice) {
+        <span class="prof-counter" [class.complete]="speciesSkillsFull">
+          {{ speciesSkillPicks().length }}/{{ choice.count }} chosen
+        </span>
+      }
+    </div>
+    @if (speciesGrantedSkills().length) {
+      <div class="skill-chips">
+        @for (skill of speciesGrantedSkills(); track skill) {
+          <span class="class-pick locked">{{ skill }}</span>
+        }
+      </div>
+    }
+    @if (speciesSkillChoice(); as choice) {
+      <div class="skill-chips species-skill-picks">
+        @for (skill of choice.from; track skill) {
+          @let held = isSpeciesSkillHeld(skill);
+          @let picked = speciesSkillPicks().includes(skill);
+          <button
+            type="button"
+            class="class-pick"
+            [class.active]="picked"
+            [class.disabled]="held || (!picked && speciesSkillsFull)"
+            [disabled]="held"
+            [attr.aria-pressed]="picked"
+          (click)="toggleSpeciesSkill.emit(skill)">{{ skill }}</button>
+        }
+      </div>
+    }
+    @if (speciesToolCount()) {
+      <div class="language-row species-tool-row">
+        @for (slot of speciesToolSlots; track slot) {
+          <div class="field lang-field">
+            <label [for]="'species-tool-' + slot">Tool {{ slot + 1 }}</label>
+            <select [id]="'species-tool-' + slot" [name]="'speciesTool' + slot"
+              [ngModel]="speciesTools()[slot] || ''"
+              (ngModelChange)="speciesToolChange.emit({ index: slot, tool: $event })">
+              <option value="">— choose a tool —</option>
+              @for (tool of toolOptionsFor(slot); track tool) {
+                <option [value]="tool">{{ tool }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
 <!-- Language selection -->
 <div class="prof-section">
   <div class="prof-section-header">

@@ -38,6 +38,7 @@ import { PcLogComponent } from './panels/pc-log/pc-log.component';
 import { ProfessionsPanelComponent } from './panels/professions-panel/professions-panel.component';
 import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
 import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
+import { SpeciesDisplayPipe } from '../../pipes/species-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
@@ -47,7 +48,7 @@ import { NotificationService } from '../../services/notification.service';
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, ContextHelpComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {

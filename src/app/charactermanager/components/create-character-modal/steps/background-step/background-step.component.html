@@ -63,6 +63,12 @@
                       See the 2024 Player's Handbook for full details.
                     </div>
                   }
+                  @if (featConflict()) {
+                    <p class="feat-conflict" role="status">
+                      You already chose {{ backgroundFeatName() }} as your species' Origin feat, and it can't be
+                      taken twice. Pick a different background, or go back to Species and change the feat.
+                    </p>
+                  }
                 </div>
               }
             </div>

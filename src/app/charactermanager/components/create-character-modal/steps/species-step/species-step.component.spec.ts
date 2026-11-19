@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SpeciesStepComponent } from './species-step.component';
-import { buildSpeciesOptions } from '../../../../models/species';
+import { buildSpeciesOptions, catalogSpeciesByKey, emptySpeciesSelections } from '../../../../models/species';
 import { DndSpecies } from '../../../../models/dnd-api.types';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 
@@ -106,6 +106,88 @@ describe('SpeciesStepComponent', () => {
     }).nativeElement as HTMLElement;
     expect(el.querySelector('.filter-note')?.textContent).toContain('Elf (World of Warcraft)');
     expect(el.querySelectorAll('.accordion-body').length).toBe(0);
+  });
+
+  describe('choices', () => {
+    const chips = (el: HTMLElement, label: string) => {
+      const row = Array.from(el.querySelectorAll('.species-choice'))
+        .find(r => r.querySelector('.choice-label')?.textContent?.includes(label));
+      return Array.from(row?.querySelectorAll('button.class-pick') ?? []) as HTMLButtonElement[];
+    };
+    const emptyFor = (key: string) => emptySpeciesSelections(catalogSpeciesByKey(key));
+
+    it('offers an Elf its five lineages and three spellcasting abilities, and emits each pick as a patch', () => {
+      const fixture = render({ selectedKey: WOW_ELF, selections: emptyFor(WOW_ELF) });
+      const el = fixture.nativeElement as HTMLElement;
+      const patches: unknown[] = [];
+      fixture.componentInstance.selectionsChange.subscribe(p => patches.push(p));
+
+      const lineages = chips(el, 'Lineage');
+      expect(lineages.map(b => b.textContent!.trim()))
+        .toEqual(['Blood Elf', 'Night Elf', 'Nightborne', 'Void Elf', 'High Elf']);
+      const abilities = chips(el, 'Spellcasting ability');
+      expect(abilities.map(b => b.textContent!.trim())).toEqual(['Intelligence', 'Wisdom', 'Charisma']);
+      expect(chips(el, 'Size').length).toBe(0); // one size — nothing to choose
+
+      lineages[1].click();
+      abilities[2].click();
+      expect(patches).toEqual([{ lineage: 'Night Elf' }, { ability: 'CHA' }]);
+    });
+
+    it('marks the chosen lineage on its chip and in the list that describes it', () => {
+      const el = render({
+        selectedKey: WOW_ELF, selections: { ...emptyFor(WOW_ELF), lineage: 'Void Elf', ability: 'INT' },
+      }).nativeElement as HTMLElement;
+      const active = chips(el, 'Lineage').filter(b => b.classList.contains('active'));
+      expect(active.map(b => b.textContent!.trim())).toEqual(['Void Elf']);
+      expect(active[0].getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('.trait-item.chosen .trait-name')?.textContent).toBe('Void Elf');
+      expect(chips(el, 'Spellcasting ability').find(b => b.classList.contains('active'))?.textContent!.trim())
+        .toBe('Intelligence');
+    });
+
+    it('asks a Tauren for a saving throw ability, but not once the Taunka lineage is chosen', () => {
+      const key = 'Tauren (World of Warcraft)';
+      const before = render({ selectedKey: key, selections: emptyFor(key) }).nativeElement as HTMLElement;
+      expect(chips(before, 'Saving throw ability').map(b => b.textContent!.trim()))
+        .toEqual(['Strength', 'Constitution', 'Wisdom']);
+      const taunka = render({
+        selectedKey: key, selections: { ...emptyFor(key), lineage: 'Taunka' },
+      }).nativeElement as HTMLElement;
+      expect(chips(taunka, 'Saving throw ability').length).toBe(0);
+    });
+
+    it('offers a Forsaken the two sizes', () => {
+      const key = 'Forsaken (World of Warcraft)';
+      const fixture = render({ selectedKey: key, selections: emptyFor(key) });
+      const patches: unknown[] = [];
+      fixture.componentInstance.selectionsChange.subscribe(p => patches.push(p));
+      const sizes = chips(fixture.nativeElement, 'Size');
+      expect(sizes.map(b => b.textContent!.trim())).toEqual(['Small', 'Medium']);
+      sizes[0].click();
+      expect(patches).toEqual([{ size: 'Small' }]);
+    });
+
+    it('offers a Human an Origin feat with its description, and warns about a repeat', () => {
+      const key = 'Human (World of Warcraft)';
+      const el = render({
+        selectedKey: key,
+        selections: { ...emptyFor(key), originFeat: 'Alert' },
+        originFeats: [{ name: 'Alert' }, { name: 'Child of the Sea' }],
+        featDescription: 'Add your Proficiency Bonus to Initiative.',
+        blockedFeat: 'Alert',
+      }).nativeElement as HTMLElement;
+      const options = Array.from(el.querySelectorAll('#species-origin-feat option')).map(o => o.textContent!.trim());
+      expect(options).toEqual(['— choose a feat —', 'Alert', 'Child of the Sea']);
+      expect(el.querySelector('.choice-note')?.textContent).toContain('Add your Proficiency Bonus');
+      expect(el.querySelector('.choice-note--warn')?.textContent).toContain('already gives you Alert');
+    });
+
+    it('shows no choices block for a species with nothing to choose', () => {
+      const key = 'Orc (World of Warcraft)';
+      const el = render({ selectedKey: key, selections: emptyFor(key) }).nativeElement as HTMLElement;
+      expect(el.querySelector('.species-choices')).toBeNull();
+    });
   });
 
   it('asks for a content source when the filter leaves no rows', () => {

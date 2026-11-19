@@ -47,6 +47,8 @@ export interface SpeciesLineage extends SpeciesGrants {
   name: string;
   /** Everything the lineage gives, as one readable line. */
   desc: string;
+  /** True when this lineage never uses the species' ability choice (the Taunka has no saving throw). */
+  noAbilityChoice?: boolean;
 }
 
 /** The choices a player makes when taking the species. */
@@ -57,8 +59,8 @@ export interface SpeciesChoices {
   tools?: number;
   /** Pick an Origin feat. */
   originFeat?: boolean;
-  /** Pick one ability, and what it is used for. */
-  ability?: { use: 'spellcasting' | 'save DC'; from: readonly SpeciesAbility[] };
+  /** Pick one ability: what it is used for, and the trait whose card records it. */
+  ability?: { use: 'spellcasting' | 'save DC'; from: readonly SpeciesAbility[]; trait: string };
 }
 
 export interface CatalogSpecies extends SpeciesGrants {
@@ -77,6 +79,8 @@ export interface CatalogSpecies extends SpeciesGrants {
   /** The trait that makes the player pick one of {@link lineages}. */
   lineageTrait?: string;
   lineages?: readonly SpeciesLineage[];
+  /** What holds for whichever lineage is chosen (how its spells work); added to the chosen lineage's card. */
+  lineageRule?: string;
   choices?: SpeciesChoices;
 }
 
@@ -129,26 +133,147 @@ export function toSpeciesDetail(species: CatalogSpecies): DndSpecies {
   };
 }
 
+// ── The player's choices ─────────────────────────────────────────────────────
+
+/** What the player picked for a catalog species. Empty strings mean "not chosen yet". */
+export interface SpeciesSelections {
+  lineage: string;
+  size: SpeciesSize | '';
+  ability: SpeciesAbility | '';
+  /** Skills picked for the species' skill choice (Keen Senses, Skillful). */
+  skills: string[];
+  /** Tools picked for the species' tool choice, one slot per pick ('' = empty slot). */
+  tools: string[];
+  /** The Origin feat picked for a Human's Versatile trait. */
+  originFeat: string;
+}
+
+/** Nothing chosen; a species with a single size has it filled in. */
+export function emptySpeciesSelections(species?: CatalogSpecies): SpeciesSelections {
+  return {
+    lineage: '',
+    size: species?.sizes.length === 1 ? species.sizes[0] : '',
+    ability: '',
+    skills: [],
+    tools: Array.from({ length: species?.choices?.tools ?? 0 }, () => ''),
+    originFeat: '',
+  };
+}
+
+export const SPECIES_ABILITY_NAMES: Readonly<Record<SpeciesAbility, string>> = {
+  STR: 'Strength', CON: 'Constitution', INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma',
+};
+
+/** The chosen lineage's catalog entry, if the species has lineages and one is chosen. */
+export function chosenLineage(species: CatalogSpecies, selections: SpeciesSelections): SpeciesLineage | undefined {
+  return species.lineages?.find(l => l.name === selections.lineage);
+}
+
+/** True when the species asks for an ability and the chosen lineage (if any) uses it. */
+export function needsAbilityChoice(species: CatalogSpecies, selections: SpeciesSelections): boolean {
+  return !!species.choices?.ability && !chosenLineage(species, selections)?.noAbilityChoice;
+}
+
+/**
+ * The species-step choices are all made: a lineage where there are lineages, a
+ * size where there are two, the ability, and a Human's Origin feat.
+ */
+export function speciesChoicesComplete(species: CatalogSpecies, selections: SpeciesSelections): boolean {
+  if (species.lineages?.length && !chosenLineage(species, selections)) return false;
+  if (!species.sizes.includes(selections.size as SpeciesSize)) return false;
+  if (needsAbilityChoice(species, selections)
+    && !species.choices!.ability!.from.includes(selections.ability as SpeciesAbility)) return false;
+  if (species.choices?.originFeat && !selections.originFeat) return false;
+  return true;
+}
+
+/** Skills the species gives with no choice involved: its own plus the chosen lineage's. */
+export function grantedSpeciesSkills(species: CatalogSpecies, selections: SpeciesSelections): string[] {
+  return [...(species.skills ?? []), ...(chosenLineage(species, selections)?.skills ?? [])];
+}
+
+/** Every skill a species makes the character proficient in: granted, then picked. */
+export function speciesSkills(species: CatalogSpecies, selections: SpeciesSelections): string[] {
+  return [...new Set([...grantedSpeciesSkills(species, selections), ...selections.skills])];
+}
+
+/** The tools picked so far, without the empty slots. */
+export function speciesTools(selections: SpeciesSelections): string[] {
+  return selections.tools.filter(t => !!t);
+}
+
+/** The proficiency-step choices are all made: every skill pick and every tool pick, no repeats. */
+export function speciesProficienciesComplete(species: CatalogSpecies, selections: SpeciesSelections): boolean {
+  const skillCount = species.choices?.skill?.count ?? 0;
+  const toolCount = species.choices?.tools ?? 0;
+  const tools = speciesTools(selections);
+  return selections.skills.length === skillCount
+    && tools.length === toolCount
+    && new Set(tools).size === tools.length;
+}
+
+/**
+ * How a character's species reads on the sheet: the lineage where it already
+ * names the species ('Night Elf', 'Amani Troll'), 'Tauren (Taunka)' where it
+ * doesn't, and the bare species when there is no lineage or it adds nothing
+ * (a Draenei of the Draenei lineage).
+ */
+export function speciesLabel(race: string | null | undefined, lineage: string | null | undefined): string {
+  const species = race ?? '';
+  if (!lineage || lineage === species) return species;
+  if (!species) return lineage;
+  return lineage.toLowerCase().includes(species.toLowerCase()) ? lineage : `${species} (${lineage})`;
+}
+
+// ── Feature cards ────────────────────────────────────────────────────────────
+
 /** The source line on a species trait's feature card: 'Elf (World of Warcraft) · Species Trait'. */
 export function speciesTraitSource(species: CatalogSpecies): string {
   return `${species.key} · Species Trait`;
 }
 
+/** 'Spellcasting ability: Wisdom.' / 'Save DC: 8 + Proficiency Bonus + Constitution modifier.' */
+function abilityLine(species: CatalogSpecies, selections: SpeciesSelections): string {
+  const choice = species.choices?.ability;
+  if (!choice || !selections.ability || !needsAbilityChoice(species, selections)) return '';
+  const name = SPECIES_ABILITY_NAMES[selections.ability];
+  return choice.use === 'spellcasting'
+    ? `Spellcasting ability: ${name}.`
+    : `Save DC: 8 + Proficiency Bonus + ${name} modifier.`;
+}
+
 /**
  * The feature cards a catalog species adds to a new character: one per trait,
- * filed under Other Features. The lineage trait lists every lineage until the
- * wizard records which one was chosen.
+ * filed under Other Features. With a lineage chosen, the lineage trait becomes
+ * that lineage's own card ('Tauren Lineage: Taunka'); until then it lists every
+ * lineage. The chosen ability is written onto the card of the trait it belongs to.
  */
 export function speciesTraitFeatures(
   species: CatalogSpecies,
+  selections: SpeciesSelections = emptySpeciesSelections(species),
 ): Array<{ name: string; source: string; desc: string; category: 'other' }> {
   const source = speciesTraitSource(species);
-  return species.traits.map(trait => ({
-    name: trait.name,
-    source,
-    desc: trait.name === species.lineageTrait && species.lineages?.length
-      ? `${trait.desc} ${species.lineages.map(l => `${l.name}: ${l.desc}`).join(' ')}`
-      : trait.desc,
-    category: 'other' as const,
-  }));
+  const lineage = chosenLineage(species, selections);
+  const ability = abilityLine(species, selections);
+  const join = (...parts: Array<string | undefined>) => parts.filter(p => !!p).join(' ');
+  return species.traits.map(trait => {
+    const isLineageTrait = trait.name === species.lineageTrait && !!species.lineages?.length;
+    const abilityHere = species.choices?.ability?.trait === trait.name ? ability : '';
+    if (isLineageTrait && lineage) {
+      return {
+        name: `${trait.name}: ${lineage.name}`,
+        source,
+        desc: join(lineage.desc, lineage.spells?.length ? species.lineageRule : undefined, abilityHere),
+        category: 'other' as const,
+      };
+    }
+    return {
+      name: trait.name,
+      source,
+      desc: isLineageTrait
+        ? join(trait.desc, ...species.lineages!.map(l => `${l.name}: ${l.desc}`))
+        : join(trait.desc, abilityHere),
+      category: 'other' as const,
+    };
+  });
 }

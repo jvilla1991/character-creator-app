@@ -24,6 +24,8 @@ export class BackgroundStepComponent {
   readonly backgroundProficiencyNames = input('');
   readonly backgroundFeatName = input('');
   readonly backgroundFeatDescription = input('');
+  /** True when the species' own Origin feat repeats this background's and can't be taken twice. */
+  readonly featConflict = input(false);
 
   /** A source-book checkbox was toggled — parent runs toggleSource. */
   readonly toggleSource = output<string>();

@@ -60,6 +60,12 @@
         <span class="review-value">{{ detail.size }}, {{ detail.speed }} ft.</span>
       </div>
     }
+    @if (speciesChoices()) {
+      <div class="review-row">
+        <span class="review-label">Choices</span>
+        <span class="review-value review-value--wrap">{{ speciesChoices() }}</span>
+      </div>
+    }
     @if (reviewSpeciesTraitNames()) {
       <div class="review-row">
         <span class="review-label">Traits</span>

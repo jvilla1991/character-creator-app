@@ -1747,8 +1747,264 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.species).toBe('Elf');
       expect(component.catalogSpeciesKey).toBe(WOW_ELF);
       expect(component.selectedSpeciesKey).toBe(WOW_ELF);
+    });
+
+    it('step 2 stays closed for the WoW Elf until a lineage and a spellcasting ability are chosen', () => {
       component.step = 2;
+      component.toggleSpecies(WOW_ELF);
+      expect(component.canAdvance).toBeFalse();
+      component.patchSpeciesSelections({ lineage: 'Night Elf' });
+      expect(component.canAdvance).toBeFalse();
+      component.patchSpeciesSelections({ ability: 'WIS' });
       expect(component.canAdvance).toBeTrue();
+    });
+
+    it('step 2 opens at once for a WoW species with nothing to choose, and for a base-game species', () => {
+      component.step = 2;
+      component.toggleSpecies('Orc (World of Warcraft)');
+      expect(component.speciesSelections.size).toBe('Medium');
+      expect(component.canAdvance).toBeTrue();
+      component.toggleSpecies('Elf');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('changing species starts the choices over', () => {
+      component.toggleSpecies(WOW_ELF);
+      component.patchSpeciesSelections({ lineage: 'Night Elf', ability: 'WIS' });
+      component.toggleSpecies('Tauren (World of Warcraft)');
+      expect(component.speciesSelections.lineage).toBe('');
+      expect(component.speciesSelections.ability).toBe('');
+    });
+
+    it('picking the Taunka lineage drops a save ability chosen for another Tauren lineage', () => {
+      component.step = 2;
+      component.toggleSpecies('Tauren (World of Warcraft)');
+      component.patchSpeciesSelections({ lineage: 'Mulgore Tauren' });
+      component.patchSpeciesSelections({ ability: 'CON' });
+      expect(component.canAdvance).toBeTrue();
+      component.patchSpeciesSelections({ lineage: 'Taunka' });
+      expect(component.speciesSelections.ability).toBe('');
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('a Forsaken must choose a size', () => {
+      component.step = 2;
+      component.toggleSpecies('Forsaken (World of Warcraft)');
+      expect(component.canAdvance).toBeFalse();
+      component.patchSpeciesSelections({ size: 'Small' });
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    describe('skills and tools (step 5)', () => {
+      beforeEach(() => {
+        component.clazz = 'Wizard'; // mock: choose 2 of Arcana, History, Insight, Investigation, Medicine, Religion
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any; // grants Arcana, History
+        component.step = 5;
+      });
+
+      it('a Night Elf holds Stealth outright and still owes a Keen Senses pick', () => {
+        component.toggleSpecies(WOW_ELF);
+        component.patchSpeciesSelections({ lineage: 'Night Elf', ability: 'WIS' });
+        component.selectedSkills = ['Insight', 'Medicine'];
+        expect(component.speciesGrantedSkills).toEqual(['Stealth']);
+        expect(component.speciesSkillChoice).toEqual({ count: 1, from: ['Insight', 'Perception', 'Survival'] });
+        expect(component.canAdvance).toBeFalse();
+        component.toggleSpeciesSkill('Perception');
+        expect(component.speciesSkillPicks).toEqual(['Perception']);
+        expect(component.canAdvance).toBeTrue();
+        expect(component.reviewAllSkills).toEqual(['Arcana', 'History', 'Stealth', 'Perception', 'Insight', 'Medicine']);
+      });
+
+      it('a species skill pick cannot repeat a class pick, and takes only as many as allowed', () => {
+        component.toggleSpecies(WOW_ELF);
+        component.selectedSkills = ['Insight', 'Medicine'];
+        component.toggleSpeciesSkill('Insight'); // already a class pick
+        expect(component.speciesSkillPicks).toEqual([]);
+        component.toggleSpeciesSkill('Stealth'); // not one of the three
+        expect(component.speciesSkillPicks).toEqual([]);
+        component.toggleSpeciesSkill('Survival');
+        component.toggleSpeciesSkill('Perception'); // only one allowed
+        expect(component.speciesSkillPicks).toEqual(['Survival']);
+        component.toggleSpeciesSkill('Survival'); // click again to unpick
+        expect(component.speciesSkillPicks).toEqual([]);
+      });
+
+      it('a species skill locks the matching class chip', () => {
+        component.toggleSpecies(WOW_ELF);
+        component.toggleSpeciesSkill('Insight');
+        expect(component.isSkillLocked('Insight')).toBeTrue();
+        expect(component.lockedSkills).toEqual(['Arcana', 'History', 'Insight']);
+        component.toggleSkillProf('Insight');
+        expect(component.selectedSkills).toEqual([]);
+        expect(component.lockedSkills).toBe(component.lockedSkills);
+      });
+
+      it('a lineage that grants a skill frees a class pick spent on it', () => {
+        dndResources.getClassSkillChoices.and.returnValue({ choose: 2, from: ['Acrobatics', 'Stealth', 'Insight'] });
+        component.toggleSpecies(WOW_ELF);
+        component.selectedSkills = ['Stealth', 'Acrobatics'];
+        component.patchSpeciesSelections({ lineage: 'Night Elf' });
+        expect(component.selectedSkills).toEqual(['Acrobatics']);
+      });
+
+      it('a species pick the background later grants no longer counts', () => {
+        component.toggleSpecies('Human (World of Warcraft)');
+        component.backgroundDetail = null;
+        component.toggleSpeciesSkill('Arcana');
+        expect(component.speciesSkillPicks).toEqual(['Arcana']);
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any; // Sage grants Arcana
+        expect(component.speciesSkillPicks).toEqual([]);
+        component.selectedSkills = ['Insight', 'Medicine'];
+        expect(component.canAdvance).toBeFalse();
+      });
+
+      it('a Human picks any one skill', () => {
+        component.toggleSpecies('Human (World of Warcraft)');
+        expect(component.speciesSkillChoice!.from.length).toBe(18);
+        component.toggleSpeciesSkill('Athletics');
+        expect(component.speciesSkillPicks).toEqual(['Athletics']);
+      });
+
+      it('a Mechagnome picks two different tools', () => {
+        component.toggleSpecies('Mechagnome (World of Warcraft)');
+        component.selectedSkills = ['Insight', 'Medicine'];
+        expect(component.speciesToolCount).toBe(2);
+        expect(component.canAdvance).toBeFalse();
+        component.setSpeciesTool({ index: 0, tool: 'Tinker\'s Tools' });
+        expect(component.canAdvance).toBeFalse();
+        component.setSpeciesTool({ index: 1, tool: 'Tinker\'s Tools' });
+        expect(component.speciesToolPicks).toEqual(['Tinker\'s Tools']);
+        expect(component.canAdvance).toBeFalse();
+        component.setSpeciesTool({ index: 1, tool: 'Lute' });
+        expect(component.canAdvance).toBeTrue();
+        expect(component.reviewToolProfs).toEqual(['Tinker\'s Tools', 'Lute']);
+        expect(component.reviewToolProfs).toBe(component.reviewToolProfs);
+      });
+
+      it('a species with no skill or tool choice adds nothing to step 5', () => {
+        component.toggleSpecies('Orc (World of Warcraft)');
+        component.selectedSkills = ['Insight', 'Medicine'];
+        expect(component.speciesSkillChoice).toBeNull();
+        expect(component.speciesToolCount).toBe(0);
+        expect(component.canAdvance).toBeTrue();
+      });
+    });
+
+    describe('a Human\'s Origin feat', () => {
+      beforeEach(() => {
+        component.toggleSpecies('Human (World of Warcraft)');
+        component.patchSpeciesSelections({ size: 'Medium' });
+      });
+
+      it('is required, and offers the PHB feats plus the three Human ones', () => {
+        component.step = 2;
+        expect(component.canAdvance).toBeFalse();
+        expect(component.speciesOriginFeats.map(f => f.name)).toContain('Child of the Sea');
+        expect(component.speciesOriginFeats).toBe(component.speciesOriginFeats);
+        component.patchSpeciesSelections({ originFeat: 'Child of the Sea' });
+        expect(component.canAdvance).toBeTrue();
+      });
+
+      it('blocks the background step when the background grants the same feat', () => {
+        component.step = 4;
+        component.background = 'Sage';
+        component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any; // Magic Initiate (Wizard)
+        component.patchSpeciesSelections({ originFeat: 'Magic Initiate (Wizard)' });
+        expect(component.speciesFeatConflict).toBeTrue();
+        expect(component.canAdvance).toBeFalse();
+        component.patchSpeciesSelections({ originFeat: 'Alert' });
+        expect(component.speciesFeatConflict).toBeFalse();
+        expect(component.canAdvance).toBeTrue();
+      });
+
+      it('lets Skilled be taken twice', () => {
+        component.backgroundDetail = { ...SAGE_BACKGROUND_DETAIL, feat: { index: 'skilled', name: 'Skilled', url: '' } } as any;
+        component.patchSpeciesSelections({ originFeat: 'Skilled' });
+        expect(component.speciesFeatConflict).toBeFalse();
+      });
+
+      it('a species without the choice has no feats to offer and never conflicts', () => {
+        component.toggleSpecies('Orc (World of Warcraft)');
+        expect(component.speciesOriginFeats).toEqual([]);
+        expect(component.speciesFeatConflict).toBeFalse();
+      });
+    });
+
+    it('submit records the source, lineage and size, and builds the chosen lineage\'s card', (done) => {
+      fillRestOfWizard();
+      component.toggleSpecies('Tauren (World of Warcraft)');
+      component.patchSpeciesSelections({ lineage: 'Taunka' });
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.race).toBe('Tauren');
+        expect(draft.speciesSource).toBe('World of Warcraft');
+        expect(draft.lineage).toBe('Taunka');
+        expect(draft.size).toBe('Medium');
+        const lineage = draft.features.find((f: any) => f.name === 'Tauren Lineage: Taunka');
+        expect(lineage.desc).toContain('+1 bonus to Armor Class');
+        // The wizard never adds the bonus itself — that is the DM's to grant.
+        expect(draft.ac).toBe(10 + 1); // DEX 12 → +1, nothing from Taunka
+        done();
+      });
+      component.submit();
+    });
+
+    it('submit adds the species skills, tools and the Human\'s Origin feat card', (done) => {
+      fillRestOfWizard();
+      dndResources.getFeatDescription.and.callFake((name: string) => `About ${name}.`);
+      component.toggleSpecies('Human (World of Warcraft)');
+      component.patchSpeciesSelections({ size: 'Small', originFeat: 'Will to Survive' });
+      component.toggleSpeciesSkill('Athletics');
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.size).toBe('Small');
+        expect(draft.lineage).toBeNull();
+        expect(draft.skills['Athletics']).toBe('prof');
+        expect(draft.skills['Arcana']).toBe('prof');
+        const feat = draft.features.find((f: any) => f.name === 'Will to Survive');
+        expect(feat.source).toBe('Human (World of Warcraft) · Origin Feat');
+        expect(feat.desc).toBe('About Will to Survive.');
+        // The background's feat stays the character's recorded Origin feat.
+        expect(draft.feat).toBe('Magic Initiate (Wizard)');
+        done();
+      });
+      component.submit();
+    });
+
+    it('submit adds a Mechagnome\'s tools after the background\'s', (done) => {
+      fillRestOfWizard();
+      component.toggleSpecies('Mechagnome (World of Warcraft)');
+      component.setSpeciesTool({ index: 0, tool: 'Smith\'s Tools' });
+      component.setSpeciesTool({ index: 1, tool: 'Drum' });
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.toolProfs).toEqual(['Smith\'s Tools', 'Drum']);
+        expect(draft.size).toBe('Small');
+        done();
+      });
+      component.submit();
+    });
+
+    it('submit leaves source, lineage and size empty for a base-game species', (done) => {
+      fillRestOfWizard();
+      component.toggleSpecies('Elf');
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.speciesSource).toBeNull();
+        expect(draft.lineage).toBeNull();
+        expect(draft.size).toBeNull();
+        done();
+      });
+      component.submit();
+    });
+
+    it('the review step shows the chosen size and a one-line summary of the choices', () => {
+      component.toggleSpecies('Forsaken (World of Warcraft)');
+      expect(component.reviewSpeciesDetail?.size).toBe('Small or Medium');
+      component.patchSpeciesSelections({ size: 'Small' });
+      expect(component.reviewSpeciesDetail?.size).toBe('Small');
+      expect(component.reviewSpeciesChoices).toBe('');
+      component.toggleSpecies(WOW_ELF);
+      component.patchSpeciesSelections({ lineage: 'Void Elf', ability: 'INT' });
+      expect(component.reviewSpeciesChoices).toBe('Void Elf · Intelligence');
+      component.toggleSpecies('Elf');
+      expect(component.reviewSpeciesChoices).toBe('');
     });
 
     it('loads a WoW species from the catalog without calling the rules API', () => {
@@ -1827,6 +2083,35 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(reopened.species).toBe('Elf');
       expect(reopened.catalogSpeciesKey).toBe(WOW_ELF);
       expect(reopened.speciesDetail?.traits.length).toBe(5);
+      reopened.cancel();
+    });
+
+    it('a saved draft restores the species choices', () => {
+      component.name = 'Thalyssra';
+      component.toggleSpecies(WOW_ELF);
+      component.patchSpeciesSelections({ lineage: 'Nightborne', ability: 'CHA' });
+      component.toggleSpeciesSkill('Survival');
+      component.ngOnDestroy(); // persists the draft
+      const reopened = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      reopened.ngOnInit();
+      expect(reopened.speciesSelections)
+        .toEqual({ lineage: 'Nightborne', size: 'Medium', ability: 'CHA', skills: ['Survival'], tools: [], originFeat: '' });
+      expect(reopened.speciesChoicesComplete).toBeTrue();
+      reopened.cancel();
+    });
+
+    it('a draft saved before species choices existed restores with none made', () => {
+      localStorage.setItem('tm_pc_draft:tester', JSON.stringify({
+        v: 1, step: 2, name: 'Old', species: 'Elf', catalogSpeciesKey: WOW_ELF,
+      }));
+      const reopened = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      reopened.ngOnInit();
+      expect(reopened.catalogSpeciesKey).toBe(WOW_ELF);
+      expect(reopened.speciesSelections.lineage).toBe('');
+      expect(reopened.speciesSelections.size).toBe('Medium');
+      expect(reopened.speciesChoicesComplete).toBeFalse();
       reopened.cancel();
     });
 

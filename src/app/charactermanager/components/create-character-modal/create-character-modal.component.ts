@@ -5,7 +5,10 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { PC, PcSpell, Coins } from '../../models/pc';
 import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndSpell, DndSpecies } from '../../models/dnd-api.types';
-import { ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, languageNames } from '../../services/dnd-resources.service';
+import {
+  ALL_SKILLS, CLASS_SKILL_CHOICES, DndResourcesService, ORIGIN_FEAT_OPTIONS, OriginFeatOption, SPELL_COUNTS,
+  SPELLCASTING_CLASSES, TOOL_NAMES, languageNames, originFeatsFor,
+} from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
 // FEAT_DESCRIPTIONS is accessed via dndResources.getFeatDescription()
 import { fmtMod, modFromScore } from '../../utils/character-math';
@@ -28,7 +31,9 @@ import {
   recommendedStartingSpells, recommendedSubclassFor,
 } from '../../models/hero-class';
 import {
-  CatalogSpecies, SpeciesOption, buildSpeciesOptions, catalogSpeciesByKey, speciesTraitFeatures, toSpeciesDetail,
+  CatalogSpecies, SPECIES_ABILITY_NAMES, SpeciesOption, SpeciesSelections, buildSpeciesOptions, catalogSpeciesByKey,
+  chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
+  speciesTools, speciesTraitFeatures, toSpeciesDetail,
 } from '../../models/species';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
@@ -47,6 +52,8 @@ interface WizardDraft {
   species: string;
   /** Catalog species row key (e.g. 'Elf (World of Warcraft)'); absent/'' for a base-game species. */
   catalogSpeciesKey?: string;
+  /** The catalog species' choices (lineage, size, ability, skills, tools, Origin feat). */
+  speciesSelections?: Partial<SpeciesSelections>;
   clazz: string;
   /**
    * Hero class row key (e.g. 'Death Knight (Paladin)', 'Druid (World of Warcraft)');
@@ -73,6 +80,9 @@ interface WizardDraft {
   equipmentChoice: 'A' | 'B' | '';
   selectedSpells: DndSpell[];
 }
+
+/** Stable empty list for species without an Origin feat choice. */
+const NO_FEATS: readonly OriginFeatOption[] = [];
 
 @Component({
     selector: 'app-create-character-modal',
@@ -175,9 +185,170 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return !!key && !this.loadingSpecies && !this.visibleSpeciesOptions.some(o => o.key === key);
   }
 
+  /** What the player picked for the chosen catalog species; all empty for a base-game species. */
+  speciesSelections: SpeciesSelections = emptySpeciesSelections();
+
   onSpeciesChange(): void {
     this.speciesDetail = null;
+    // A different species means different choices — start them over.
+    this.speciesSelections = emptySpeciesSelections(this.catalogSpecies);
+    this.dropNowGrantedClassSkills();
     if (this.species) this.speciesTrigger$.next(this.species);
+  }
+
+  /** A species-step choice changed (lineage, size, ability, Origin feat). */
+  patchSpeciesSelections(patch: Partial<SpeciesSelections>): void {
+    this.speciesSelections = { ...this.speciesSelections, ...patch };
+    const catalog = this.catalogSpecies;
+    // An ability picked for one lineage means nothing for a lineage that has no use for it.
+    if (catalog && !needsAbilityChoice(catalog, this.speciesSelections)) {
+      this.speciesSelections = { ...this.speciesSelections, ability: '' };
+    }
+    this.dropNowGrantedClassSkills();
+  }
+
+  /** A class skill the species now grants outright (Night Elf: Stealth) frees its class pick. */
+  private dropNowGrantedClassSkills(): void {
+    const granted = this.speciesGrantedSkills;
+    if (granted.length) this.selectedSkills = this.selectedSkills.filter(s => !granted.includes(s));
+  }
+
+  /** True when every species-step choice of the chosen catalog species is made. */
+  get speciesChoicesComplete(): boolean {
+    const catalog = this.catalogSpecies;
+    return !catalog || speciesChoicesComplete(catalog, this.speciesSelections);
+  }
+
+  /** Origin feats a Human may pick for Versatile; empty when the species has no such choice. */
+  get speciesOriginFeats(): readonly OriginFeatOption[] {
+    const catalog = this.catalogSpecies;
+    if (!catalog?.choices?.originFeat) return NO_FEATS;
+    return this.originFeatsCache[catalog.name] ??= originFeatsFor(catalog.name);
+  }
+  private originFeatsCache: Record<string, OriginFeatOption[]> = {};
+
+  get speciesFeatDescription(): string {
+    return this.speciesSelections.originFeat
+      ? this.dndResources.getFeatDescription(this.speciesSelections.originFeat)
+      : '';
+  }
+
+  /**
+   * True when the Human's Origin feat is the one the background also grants and
+   * the feat can't be taken twice — the background step blocks Next until one changes.
+   */
+  get speciesFeatConflict(): boolean {
+    const feat = this.catalogSpecies?.choices?.originFeat ? this.speciesSelections.originFeat : '';
+    if (!feat || feat !== this.backgroundFeatName) return false;
+    return !ORIGIN_FEAT_OPTIONS.find(f => f.name === feat)?.repeatable;
+  }
+
+  /** Skills the chosen species grants with no choice (its own plus the lineage's). */
+  get speciesGrantedSkills(): string[] {
+    const catalog = this.catalogSpecies;
+    return catalog ? grantedSpeciesSkills(catalog, this.speciesSelections) : [];
+  }
+
+  /** The species' skill choice with its options spelled out; null when it has none. */
+  get speciesSkillChoice(): { count: number; from: readonly string[] } | null {
+    const choice = this.catalogSpecies?.choices?.skill;
+    if (!choice) return null;
+    return { count: choice.count, from: choice.from === 'any' ? ALL_SKILLS : choice.from };
+  }
+
+  /**
+   * The species skill picks that still count: a pick the background or the
+   * lineage has since granted outright no longer does, and must be made again.
+   */
+  get speciesSkillPicks(): string[] {
+    const taken = new Set([...this.backgroundSkillProfs, ...this.speciesGrantedSkills]);
+    const options = this.speciesSkillChoice?.from ?? [];
+    return this.speciesSelections.skills.filter(s => options.includes(s) && !taken.has(s));
+  }
+
+  /** Every skill the species makes the character proficient in: granted, then picked. */
+  get speciesSkillProfs(): string[] {
+    return [...new Set([...this.speciesGrantedSkills, ...this.speciesSkillPicks])];
+  }
+
+  /** Click a species skill chip: pick it, or unpick it. Skills held elsewhere are not pickable. */
+  toggleSpeciesSkill(skill: string): void {
+    const choice = this.speciesSkillChoice;
+    if (!choice || !choice.from.includes(skill)) return;
+    const picks = this.speciesSkillPicks;
+    if (picks.includes(skill)) {
+      this.speciesSelections = { ...this.speciesSelections, skills: picks.filter(s => s !== skill) };
+      return;
+    }
+    const held = [...this.backgroundSkillProfs, ...this.speciesGrantedSkills, ...this.selectedSkills];
+    if (held.includes(skill) || picks.length >= choice.count) return;
+    this.speciesSelections = { ...this.speciesSelections, skills: [...picks, skill] };
+  }
+
+  /** How many tool proficiencies the species lets the player pick. */
+  get speciesToolCount(): number {
+    return this.catalogSpecies?.choices?.tools ?? 0;
+  }
+
+  /** Tools the species can still add: every tool the background has not already given. */
+  get speciesToolOptions(): readonly string[] {
+    const key = this.backgroundToolProfs.join('|');
+    if (key !== this.toolOptionsKey) {
+      const held = new Set(this.backgroundToolProfs);
+      this.toolOptionsCache = TOOL_NAMES.filter(t => !held.has(t));
+      this.toolOptionsKey = key;
+    }
+    return this.toolOptionsCache;
+  }
+  private toolOptionsKey = '\u0000';
+  private toolOptionsCache: readonly string[] = [];
+
+  /** The species tool picks that still count (a tool the background now gives does not). */
+  get speciesToolPicks(): string[] {
+    const options = this.speciesToolOptions;
+    return [...new Set(speciesTools(this.speciesSelections).filter(t => options.includes(t)))];
+  }
+
+  setSpeciesTool(change: { index: number; tool: string }): void {
+    const tools = Array.from({ length: this.speciesToolCount }, (_, i) => this.speciesSelections.tools[i] ?? '');
+    tools[change.index] = change.tool;
+    this.speciesSelections = { ...this.speciesSelections, tools };
+  }
+
+  /** True when the species' skill and tool picks are all made. */
+  get speciesProficienciesComplete(): boolean {
+    return this.speciesSkillPicks.length === (this.speciesSkillChoice?.count ?? 0)
+      && this.speciesToolPicks.length === this.speciesToolCount;
+  }
+
+  /** Background tools then species tool picks, for the review step. */
+  get reviewToolProfs(): string[] {
+    const key = `${this.backgroundToolProfs.join('|')}#${this.speciesToolPicks.join('|')}`;
+    if (key !== this.reviewToolsKey) {
+      this.reviewToolsCache = [...this.backgroundToolProfs, ...this.speciesToolPicks];
+      this.reviewToolsKey = key;
+    }
+    return this.reviewToolsCache;
+  }
+  private reviewToolsKey = '\u0000';
+  private reviewToolsCache: string[] = [];
+
+  /** The species detail for the review step, with the chosen size in place of 'Small or Medium'. */
+  get reviewSpeciesDetail(): DndSpecies | null {
+    const size = this.catalogSpecies ? this.speciesSelections.size : '';
+    return this.speciesDetail && size ? { ...this.speciesDetail, size } : this.speciesDetail;
+  }
+
+  /** One line for the review step: 'Night Elf · Wisdom · Feat: Alert'; '' when there is nothing to say. */
+  get reviewSpeciesChoices(): string {
+    const catalog = this.catalogSpecies;
+    if (!catalog) return '';
+    const sel = this.speciesSelections;
+    return [
+      chosenLineage(catalog, sel)?.name,
+      sel.ability && needsAbilityChoice(catalog, sel) ? SPECIES_ABILITY_NAMES[sel.ability] : '',
+      catalog.choices?.originFeat && sel.originFeat ? `Feat: ${sel.originFeat}` : '',
+    ].filter(part => !!part).join(' · ');
   }
 
   /** Click a species row to choose+expand it; click the chosen one again to clear it. */
@@ -360,12 +531,25 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   }
 
   isSkillChosen(skill: string): boolean {
-    return this.selectedSkills.includes(skill) || this.backgroundSkillProfs.includes(skill);
+    return this.selectedSkills.includes(skill) || this.isSkillLocked(skill);
   }
 
+  /** A skill the background or the species already gives can't be spent as a class pick. */
   isSkillLocked(skill: string): boolean {
-    return this.backgroundSkillProfs.includes(skill);
+    return this.backgroundSkillProfs.includes(skill) || this.speciesSkillProfs.includes(skill);
   }
+
+  /** Background and species skills together — the class chips show these as already held. */
+  get lockedSkills(): string[] {
+    const key = `${this.backgroundSkillProfs.join('|')}#${this.speciesSkillProfs.join('|')}`;
+    if (key !== this.lockedSkillsKey) {
+      this.lockedSkillsCache = [...new Set([...this.backgroundSkillProfs, ...this.speciesSkillProfs])];
+      this.lockedSkillsKey = key;
+    }
+    return this.lockedSkillsCache;
+  }
+  private lockedSkillsKey = '\u0000';
+  private lockedSkillsCache: string[] = [];
 
   toggleSkillProf(skill: string): void {
     if (this.isSkillLocked(skill)) return;
@@ -600,12 +784,13 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
     switch (this.step) {
       case 1: return this.name.trim().length > 0;
-      case 2: return !!this.species;
+      case 2: return !!this.species && this.speciesChoicesComplete;
       case 3: return !!this.clazz
                   && (!this.requiresLevel1Subclass || !!this.selectedSubclass)
                   && (!this.specializationRequired || !!this.specialization);
-      case 4: return !!this.background;
-      case 5: return this.selectedSkills.length === this.classSkillConfig.choose;
+      case 4: return !!this.background && !this.speciesFeatConflict;
+      case 5: return this.selectedSkills.length === this.classSkillConfig.choose
+                  && this.speciesProficienciesComplete;
       case 6: {
         const bonusesOk = !!this.bonusPlus2
                        && !!this.bonusPlus1
@@ -690,7 +875,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   /** Combined skill proficiencies: background (locked) + class choices */
   get reviewAllSkills(): string[] {
     const seen = new Set<string>();
-    return [...this.backgroundSkillProfs, ...this.selectedSkills].filter(s => {
+    return [...this.backgroundSkillProfs, ...this.speciesSkillProfs, ...this.selectedSkills].filter(s => {
       if (seen.has(s)) return false;
       seen.add(s);
       return true;
@@ -906,11 +1091,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       .map(s => s.name) as Array<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'>;
 
     const displayPlayer = this.player.trim() || '—';
+    const catalog = this.catalogSpecies;
+    const speciesFeat = catalog?.choices?.originFeat ? this.speciesSelections.originFeat : '';
     const draft: Partial<PC> = {
       name:             trimmedName,
       playerName:       displayPlayer,   // required by PC interface (backend compat)
       player:           displayPlayer,   // display field used by new UI
       race:             this.species,
+      // A World of Warcraft species records where it came from and what was chosen;
+      // a base-game species leaves all three empty.
+      speciesSource:    catalog?.source ?? null,
+      lineage:          (catalog && chosenLineage(catalog, this.speciesSelections)?.name) || null,
+      size:             (catalog && this.speciesSelections.size) || null,
       clazz:            this.clazz,
       subclass:         this.selectedSubclass || undefined,
       specialization:   this.specializationRequired && this.specialization ? this.specialization : null,
@@ -927,9 +1119,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       saves,
       conditions:       [],
       feat:             this.backgroundFeatName || undefined,
-      skills:           [...this.backgroundSkillProfs, ...this.selectedSkills]
+      skills:           [...this.backgroundSkillProfs, ...this.speciesSkillProfs, ...this.selectedSkills]
                           .reduce((acc, s) => ({ ...acc, [s]: 'prof' as const }), {}),
-      toolProfs:        [...this.backgroundToolProfs],
+      toolProfs:        [...this.backgroundToolProfs, ...this.speciesToolPicks],
       languages:        ['Common', ...new Set([this.languageChoice, this.languageChoice2].filter(l => !!l))],
       coins:            this.buildStartingCoins(),
       weapons:          this.equipmentChoice === 'A'
@@ -947,8 +1139,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
                                           || 'See the 2024 Player\'s Handbook for full details.',
                               }]
                             : []),
+                          // A Human's own Origin feat (Versatile), beside the background's.
+                          ...(catalog && speciesFeat
+                            ? [{
+                                name:   speciesFeat,
+                                source: `${catalog.key} · Origin Feat`,
+                                desc:   this.dndResources.getFeatDescription(speciesFeat),
+                              }]
+                            : []),
                           // A World of Warcraft species brings its trait cards (Other Features).
-                          ...(this.catalogSpecies ? speciesTraitFeatures(this.catalogSpecies) : []),
+                          ...(catalog ? speciesTraitFeatures(catalog, this.speciesSelections) : []),
                         ],
       spells: this.selectedSpells.map((s): PcSpell => ({
         lvl:            s.level,
@@ -1007,6 +1207,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       name: this.name,
       species: this.species,
       catalogSpeciesKey: this.catalogSpeciesKey,
+      speciesSelections: this.speciesSelections,
       clazz: this.clazz,
       heroClassLabel: this.heroClassKey,
       specialization: this.specialization,
@@ -1047,6 +1248,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       // Only a key that still names this species counts — otherwise it's a base-game pick.
       this.catalogSpeciesKey = catalogSpeciesByKey(d.catalogSpeciesKey)?.name === this.species
         ? d.catalogSpeciesKey! : '';
+      this.speciesSelections = { ...emptySpeciesSelections(this.catalogSpecies), ...(d.speciesSelections ?? {}) };
       this.clazz            = d.clazz ?? '';
       this.heroClassKey     = heroClassByKey(d.heroClassLabel) ? d.heroClassLabel! : '';
       this.specialization   = d.specialization ?? d.rune ?? '';
