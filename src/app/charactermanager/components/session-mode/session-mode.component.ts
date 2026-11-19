@@ -113,6 +113,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
           this.trackRestVote(state);
           this.trackLongRest(state);
           this.trackLongRestDraft(state);
+          this.trackShortRest(state);
           this.trackLevelUp(state);
         }
       });
@@ -435,6 +436,22 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       error: err => this.notifications.notify(this.restVoteError(err,
         'Could not toggle the short rest.')),
     });
+  }
+
+  /** undefined until the first snapshot, so joining mid-rest does not look like one opening. */
+  private lastShortRestOpen: boolean | undefined = undefined;
+
+  /**
+   * When a short rest opens the server gives every seated hero back what
+   * their class features regain on one. Those counters live on the character,
+   * not on the poll snapshot, so the player's hero is refetched.
+   */
+  private trackShortRest(state: SessionState): void {
+    const opened = this.lastShortRestOpen === false && state.shortRestOpen;
+    this.lastShortRestOpen = state.shortRestOpen;
+    if (!opened || state.dm) return;
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId != null) this.pcService.refreshPC(mine.pcId);
   }
 
   // ── Rest vote (player-initiated, unanimous, 60s window) ────────────────────

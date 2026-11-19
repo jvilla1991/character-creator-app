@@ -289,6 +289,11 @@ describe('survival util', () => {
       expect(applyLongRestToPc(knight, true, false).hp!.temp).toBe(0);
     });
 
+    it('hands every class resource back', () => {
+      const fighter = basePC({ clazz: 'Fighter', level: 5, classResources: { secondWind: 2, actionSurge: 1 } });
+      expect(applyLongRestToPc(fighter, true, false).classResources).toEqual({});
+    });
+
     it('gives nothing to a hero at 0 Hit Points', () => {
       const down = casterPc({ hp: { cur: 0, max: 30, temp: 0 }, hitDiceUsed: 3, exhaustion: 2 });
       expect(applyLongRestToPc(down, true, true)).toBe(down);

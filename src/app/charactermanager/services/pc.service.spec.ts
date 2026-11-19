@@ -187,6 +187,28 @@ describe('PCService', () => {
   // ── updatePC serialization ──────────────────────────────────────────────────
 
   describe('updatePC', () => {
+    it('sends class resource uses as JSON, an empty object included, and null only when never loaded', () => {
+      service.updatePC(makePC({ id: 42, classResources: { secondWind: 1 } })).subscribe();
+      const spent = httpMock.expectOne(service.pcUrl + '42');
+      expect(spent.request.body.classResources).toBe('{"secondWind":1}');
+      spent.flush({});
+
+      service.updatePC(makePC({ id: 42, classResources: {} })).subscribe();
+      const regained = httpMock.expectOne(service.pcUrl + '42');
+      expect(regained.request.body.classResources).toBe('{}'); // "everything back" must reach the server
+      regained.flush({});
+
+      service.updatePC(makePC({ id: 42 })).subscribe();
+      const unknown = httpMock.expectOne(service.pcUrl + '42');
+      expect(unknown.request.body.classResources).toBeNull(); // the server then keeps what it has
+      unknown.flush({});
+    });
+
+    it('reads class resource uses back from the JSON column', () => {
+      expect(service.deserialize({ id: 1, classResources: '{"rage":2}' }).classResources).toEqual({ rage: 2 });
+      expect(service.deserialize({ id: 1 }).classResources).toEqual({});
+    });
+
     it('sends a PUT to /{id}', () => {
       const pc = makePC({ id: 42 });
       service.updatePC(pc).subscribe();

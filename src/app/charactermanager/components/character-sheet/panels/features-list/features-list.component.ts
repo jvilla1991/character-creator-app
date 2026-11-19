@@ -7,6 +7,10 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 import { PreferencesService } from '../../../../services/preferences.service';
 import { FormsModule } from '@angular/forms';
 import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
+import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
+import {
+  ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
+} from '../../../../utils/class-resources';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
@@ -20,7 +24,7 @@ const nameKey = (name: string): string => name.trim().toLowerCase();
     templateUrl: './features-list.component.html',
     styleUrls: ['./features-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule]
+    imports: [FormsModule, ResourceCounterComponent]
 })
 export class FeaturesListComponent {
   private readonly classFeatureService = inject(ClassFeatureService);
@@ -123,6 +127,48 @@ export class FeaturesListComponent {
    */
   get classFeatures(): Feature[] {
     return this.unlocked();
+  }
+
+  // ── Limited-use features (class resource counters) ───────────────────────
+
+  /** The viewer may spend and regain uses: the sheet's owner, or the DM. */
+  @Input() resourcesEditable = false;
+  /** A resource was spent or regained — the sheet saves the updated character. */
+  readonly pcChange = output<PC>();
+
+  /**
+   * Where each counter goes. A resource sits under the listed feature it
+   * belongs to (Sorcery Points under Font of Magic). One whose feature is not
+   * in the list — the level 1 features, which the roadmap does not carry —
+   * gets a row of its own, named after that feature. Death Coil and Soul
+   * Fragments are left to the hero-class panel, beside the hero feature.
+   */
+  private readonly resourcePlacement = computed(() => {
+    const byFeature = new Map<Feature, ClassResourceState>();
+    const unlisted: ClassResourceState[] = [];
+    const features = this.unlocked();
+    for (const resource of classResourceStates(this.pcSignal())) {
+      if (HERO_PANEL_RESOURCES.includes(resource.key)) continue;
+      const home = features.find(f => nameKey(f.name) === nameKey(resource.feature) && !byFeature.has(f));
+      if (home) byFeature.set(home, resource);
+      else unlisted.push(resource);
+    }
+    return { byFeature, unlisted };
+  });
+
+  /** The counter that belongs under a listed feature, if any. */
+  resourceFor(feature: Feature): ClassResourceState | undefined {
+    return this.resourcePlacement().byFeature.get(feature);
+  }
+
+  /** Resources whose feature is not listed above; each is shown as a feature row of its own. */
+  get unlistedResources(): ClassResourceState[] {
+    return this.resourcePlacement().unlisted;
+  }
+
+  setResourceUsed(resource: ClassResourceState, used: number): void {
+    if (!this.resourcesEditable) return;
+    this.pcChange.emit({ ...this.pc, classResources: withResourceUsed(this.pc, resource.key, used) });
   }
 
   /** Roadmap features above the character's level, in level order. */

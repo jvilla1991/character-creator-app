@@ -52,6 +52,68 @@ describe('FeaturesListComponent', () => {
       playerName: 'P', features } as PC;
   }
 
+  // --- Limited-use features: a counter under the feature it belongs to ---
+
+  describe('class resource counters', () => {
+    it('puts a counter under the listed feature it belongs to', () => {
+      const surge = { name: 'Action Surge', source: 'Fighter 2', desc: 'Act again.' };
+      component.pc = { ...component.pc, features: [surge], classResources: { actionSurge: 1 } };
+
+      expect(component.resourceFor(surge)).toEqual(jasmine.objectContaining({ key: 'actionSurge', used: 1, remaining: 0 }));
+    });
+
+    it('gives a level 1 feature the list does not carry a row of its own', () => {
+      component.pc = { ...component.pc, features: [{ name: 'Action Surge', source: 'Fighter 2', desc: '' }] };
+
+      // Second Wind is a Fighter 1 feature: not on the roadmap, not saved here.
+      expect(component.unlistedResources.map(r => r.feature)).toEqual(['Second Wind']);
+    });
+
+    it('matches points to the feature that grants them (Sorcery Points under Font of Magic)', () => {
+      const font = { name: 'Font of Magic', source: 'Sorcerer 2', desc: 'Points.' };
+      component.pc = { id: 3, name: 'Z', clazz: 'Sorcerer', level: 5, playerName: 'P', features: [font] } as PC;
+
+      expect(component.resourceFor(font)?.name).toBe('Sorcery Points');
+      expect(component.unlistedResources).toEqual([]);
+    });
+
+    it('uses a saved level 1 feature when the character has one', () => {
+      const wind = { name: 'Second Wind', source: 'Fighter 1', desc: 'Heal.' };
+      component.pc = { ...component.pc, features: [wind] };
+
+      expect(component.resourceFor(wind)?.key).toBe('secondWind');
+      expect(component.unlistedResources.map(r => r.key)).toEqual(['actionSurge']);
+    });
+
+    it('leaves Death Coil and Soul Fragments to the hero-class panel', () => {
+      component.pc = { id: 4, name: 'T', clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', level: 5,
+        playerName: 'P', features: [] } as PC;
+
+      expect(component.unlistedResources.map(r => r.key)).toEqual(['channelDivinity']); // no deathCoil here
+    });
+
+    it('shows nothing for a class with no tracked resource', () => {
+      component.pc = { id: 5, name: 'W', clazz: 'Wizard', level: 5, playerName: 'P', features: [] } as PC;
+      expect(component.unlistedResources).toEqual([]);
+    });
+
+    it('emits the character with the new used amount when the viewer may edit', () => {
+      const emitted: PC[] = [];
+      component.pcChange.subscribe(p => emitted.push(p));
+      component.pc = { ...component.pc, classResources: { secondWind: 1 } };
+      const wind = component.unlistedResources.find(r => r.key === 'secondWind')!;
+
+      component.setResourceUsed(wind, 2); // read-only: nothing happens
+      expect(emitted).toEqual([]);
+
+      component.resourcesEditable = true;
+      component.setResourceUsed(wind, 2);
+      expect(emitted.length).toBe(1);
+      expect(emitted[0].classResources).toEqual({ secondWind: 2 });
+      expect(emitted[0].id).toBe(1);
+    });
+  });
+
   // --- Category filtering (the Other Features panel owns 'other' entries) ---
 
   it('classFeatures keeps untagged and class-tagged entries, dropping other-tagged ones', () => {

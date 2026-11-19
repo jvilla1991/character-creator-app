@@ -1,0 +1,39 @@
+@let r = resource();
+<div class="rc" [class.spent]="r.remaining === 0" [attr.data-resource]="r.key">
+  <div class="rc-head">
+    @if (!hideName()) {
+      <span class="rc-name">{{ r.name }}</span>
+    }
+    <!-- The count is the state in words; the pips beside it are decoration. -->
+    <span class="rc-count">
+      <span class="numeric">{{ r.remaining }} / {{ r.max }}</span><span class="rc-left">{{ countSuffix() }}</span>
+    </span>
+    @if (pips().length) {
+      <span class="rc-pips" aria-hidden="true">
+        @for (i of pips(); track i) {
+          <span class="rc-pip" [class.filled]="i < r.remaining"></span>
+        }
+      </span>
+    }
+  </div>
+
+  <div class="rc-recovery">{{ recovery() }}</div>
+
+  @if (editable()) {
+    <div class="rc-actions">
+      @if (r.pool) {
+        <!-- Hidden label: the field sits between the count and Spend / Regain, and
+        a visible one pushed Regain onto a second row on a phone. -->
+        <label class="visually-hidden" [attr.for]="amountId">Amount of {{ r.name }}</label>
+        <input class="rc-amount" type="number" inputmode="numeric" min="1" [attr.max]="r.max"
+          [id]="amountId" [value]="step()" (input)="onAmount($event)">
+      }
+      <button type="button" class="btn rc-btn" data-spend [disabled]="r.remaining === 0"
+        [attr.aria-label]="spendLabel() + ' ' + (r.pool ? step() + ' ' + r.name : 'one ' + r.name)"
+        (click)="spend()">{{ spendLabel() }}</button>
+      <button type="button" class="btn rc-btn" data-regain [disabled]="r.used === 0"
+        [attr.aria-label]="'Regain ' + (r.pool ? step() + ' ' + r.name : 'one ' + r.name)"
+        (click)="regain()">Regain</button>
+    </div>
+  }
+</div>

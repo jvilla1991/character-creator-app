@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output, signal } from '@angular/core';
 import { RuneWeaponFieldComponent } from './rune-weapon-field.component';
+import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
+import {
+  ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
+} from '../../../../utils/class-resources';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
@@ -72,7 +76,7 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
   templateUrl: './hero-class-panel.component.html',
   styleUrls: ['./hero-class-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RuneWeaponFieldComponent],
+  imports: [RuneWeaponFieldComponent, ResourceCounterComponent],
 })
 export class HeroClassPanelComponent {
   private readonly dndResources = inject(DndResourcesService);
@@ -98,6 +102,16 @@ export class HeroClassPanelComponent {
   /** Spell data keyed by lower-cased name; null until loaded (loaded once, on demand). */
   readonly spellIndex = signal<Map<string, DndSpell> | null>(null);
   private spellsRequested = false;
+
+  /** The hero class's own tracked resource — the Death Coil pool or Soul Fragments — once the character has it. */
+  get heroResource(): ClassResourceState | undefined {
+    return classResourceStates(this._pc).find(r => HERO_PANEL_RESOURCES.includes(r.key));
+  }
+
+  setHeroResourceUsed(resource: ClassResourceState, used: number): void {
+    if (!this.canEdit) return;
+    this.pcChange.emit({ ...this._pc, classResources: withResourceUsed(this._pc, resource.key, used) });
+  }
 
   /** WoW variant derived state — recomputed whenever the character changes. */
   suggestedSpells: SuggestedSpellLevelView[] = [];

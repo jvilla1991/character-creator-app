@@ -52,6 +52,16 @@ describe('long rest util', () => {
       ]);
     });
 
+    it('lists the class resources that come back', () => {
+      const p = longRestPreview(pc({ classResources: { secondWind: 2 } })); // Fighter 5
+
+      expect(p.resources).toEqual([
+        { key: 'secondWind', name: 'Second Wind', max: 3, now: 1, back: 2 },
+        { key: 'actionSurge', name: 'Action Surge', max: 1, now: 1, back: 0 },
+      ]);
+      expect(longRestPreview(pc({ clazz: 'Wizard' })).resources).toEqual([]);
+    });
+
     it('never counts more dice or slots back than the hero has', () => {
       const p = longRestPreview(pc({ level: 3, hitDiceUsed: 9, spellSlots: { 1: { max: 2, used: 5 } } }));
 
