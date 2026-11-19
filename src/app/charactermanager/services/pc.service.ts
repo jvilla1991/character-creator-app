@@ -634,6 +634,10 @@ export class PCService {
       traits: JSON.stringify(pc.traits ?? {}),
       languages: JSON.stringify(pc.languages ?? []),
       toolProfs: JSON.stringify(pc.toolProfs ?? []),
+      // null (not a stringified default) when the character carries none — the
+      // backend keeps the stored lines on a null, so a payload built from a
+      // source without the field can't wipe the DM's adjustments.
+      statAdjustments: pc.statAdjustments ? JSON.stringify(pc.statAdjustments) : null,
     };
   }
 
@@ -693,6 +697,7 @@ export class PCService {
       traits: this.parseJsonField(pc['traits'], undefined),
       languages: this.parseJsonField(pc['languages'], []),
       toolProfs: this.parseJsonField(pc['toolProfs'], []),
+      statAdjustments: this.parseJsonField(pc['statAdjustments'], null),
     } as PC;
   }
 

@@ -1,0 +1,92 @@
+/* Section label: the same Cinzel micro-label the .field labels use. */
+.breakdown-heading {
+  margin: 18px 0 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.breakdown-heading:first-of-type { margin-top: 0; }
+
+.breakdown-hint { margin: 0 0 12px; }
+
+.breakdown-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* One row: what it is on the left, what it is worth on the right. */
+.breakdown-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.line-label { color: var(--text); }
+.line-note {
+  display: block;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.line-value {
+  flex: none;
+  min-width: 3ch;
+  text-align: right;
+  color: var(--text);
+}
+
+.breakdown-total {
+  margin-top: 14px;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-size: 18px;
+}
+.breakdown-total .line-label {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.08em;
+}
+
+/* Editable lines: amount, label, remove. */
+.adjust-rows { margin-bottom: 10px; }
+.adjust-row {
+  display: grid;
+  grid-template-columns: 5.5ch minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.adjust-head {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.adjust-row input {
+  width: 100%;
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 8px;
+  font-family: 'Newsreader', serif;
+  font-size: 15px;
+  border-radius: var(--radius-sharp);
+  outline: none;
+}
+.adjust-row input:focus { border-color: var(--celestial); }
+.adjust-amount { text-align: center; }
+
+.unlabelled { margin-bottom: 10px; }
+.unlabelled-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.add-line { margin-top: 2px; }

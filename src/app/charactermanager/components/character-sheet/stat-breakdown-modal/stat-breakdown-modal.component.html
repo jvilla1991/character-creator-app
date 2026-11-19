@@ -1,0 +1,99 @@
+<app-modal [title]="definition.title" [tone]="editable ? 'celestial' : 'gold'" (dismiss)="cancel()">
+
+  <!-- The lines the app works out. The first is the starting value; the rest add to it. -->
+  <h3 class="breakdown-heading">Calculated</h3>
+  <ul class="breakdown-lines" data-testid="auto-lines">
+    @for (line of breakdown.auto; track $index) {
+      <li class="breakdown-line">
+        <span class="line-label">{{ line.label }}
+          @if (line.note) {
+            <span class="line-note">{{ line.note }}</span>
+          }
+        </span>
+        <span class="line-value numeric">{{ $first ? line.value : signed(line.value) }}</span>
+      </li>
+    }
+  </ul>
+
+  @if (editable) {
+    <h3 class="breakdown-heading">Adjustments</h3>
+    <p class="field-hint breakdown-hint">
+      Add what the sheet does not work out, such as a species trait or a class feature.
+      These lines stay when armor changes.
+    </p>
+
+    @if (drafts.length) {
+      <div class="adjust-rows" data-testid="adjust-rows">
+        <div class="adjust-row adjust-head" aria-hidden="true">
+          <span>Amount</span><span>Label</span><span></span>
+        </div>
+        @for (line of drafts; track $index) {
+          <div class="adjust-row">
+            <input type="number" class="adjust-amount numeric"
+              [(ngModel)]="line.value" [min]="-valueMax" [max]="valueMax" step="1"
+              [attr.aria-label]="'Amount for line ' + ($index + 1)"
+              (keydown.enter)="submit()">
+            <input type="text" class="adjust-label" #labelInput
+              [(ngModel)]="line.label" [maxLength]="labelMax"
+              [attr.aria-label]="'Label for line ' + ($index + 1)"
+              (keydown.enter)="submit()">
+            <button type="button" class="btn sm" (click)="removeLine($index)"
+              [attr.aria-label]="'Remove line ' + ($index + 1) + (line.label ? ', ' + line.label : '')">Remove</button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (unlabelled !== 0) {
+      <div class="unlabelled" data-testid="unlabelled">
+        <div class="breakdown-line">
+          <span class="line-label">Unlabelled
+            <span class="line-note">Part of the saved total that no line explains, from an earlier hand edit.</span>
+          </span>
+          <span class="line-value numeric">{{ signed(unlabelled) }}</span>
+        </div>
+        <div class="unlabelled-actions">
+          <button type="button" class="btn sm" [disabled]="!canAddLine" (click)="labelUnlabelled()">Label it</button>
+          <button type="button" class="btn sm" (click)="removeUnlabelled()">Remove it</button>
+        </div>
+      </div>
+    }
+
+    <button type="button" class="btn sm add-line" [disabled]="!canAddLine" (click)="addLine()">Add a line</button>
+    @if (lineProblem; as problem) {
+      <p class="field-hint" role="status">{{ problem }}</p>
+    }
+  } @else if (breakdown.adjustments.length || breakdown.unlabelled !== 0) {
+    <h3 class="breakdown-heading">Adjustments</h3>
+    <ul class="breakdown-lines" data-testid="adjust-lines">
+      @for (line of breakdown.adjustments; track $index) {
+        <li class="breakdown-line">
+          <span class="line-label">{{ line.label }}</span>
+          <span class="line-value numeric">{{ signed(line.value) }}</span>
+        </li>
+      }
+      @if (breakdown.unlabelled !== 0) {
+        <li class="breakdown-line" data-testid="unlabelled">
+          <span class="line-label">Unlabelled
+            <span class="line-note">Set by hand earlier. Your DM can give it a label.</span>
+          </span>
+          <span class="line-value numeric">{{ signed(breakdown.unlabelled) }}</span>
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="breakdown-line breakdown-total" data-testid="total">
+    <span class="line-label">Total</span>
+    <span class="line-value numeric">{{ total }}</span>
+  </div>
+
+  <div class="modal-actions">
+    @if (editable) {
+      <button class="btn" type="button" (click)="cancel()">Cancel</button>
+      <button class="btn primary" type="button" [disabled]="!canSave" (click)="submit()">Save</button>
+    } @else {
+      <button class="btn" type="button" (click)="cancel()">Close</button>
+    }
+  </div>
+</app-modal>

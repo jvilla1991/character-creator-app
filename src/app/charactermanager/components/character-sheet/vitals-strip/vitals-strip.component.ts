@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
 import { PC } from '../../../models/pc';
+import { AdjustableStat, adjustmentsFor } from '../../../models/stat-adjustment';
+import { describeAdjustment } from '../../../utils/stat-breakdown';
 import { hitDieFor } from '../../../utils/character-math';
 import { DmEditRequest } from '../dm-edit-modal/dm-edit-request';
 import { EditableNumberComponent } from '../editable-number/editable-number.component';
@@ -29,12 +31,21 @@ export class VitalsStripComponent {
   /** True while the DM's short-rest window is open on the player's own live
    *  session sheet — reveals the Spend Hit Die button under the Hit Dice tile. */
   @Input() canSpendHitDie = false;
+  /** Armor Class opens its breakdown instead of the plain number editor. Off for
+   *  a follower, whose AC is a typed stat-block value with nothing to break down. */
+  @Input() breakdownEnabled = false;
+  /** The viewer may change the adjustment lines in that breakdown (the DM, or the
+   *  owner of a character that is in no campaign). Only changes the affordance
+   *  here; the parent decides what the dialog allows. */
+  @Input() canAdjust = false;
   /** Emits the full updated PC for the parent to persist. */
   readonly pcChange = output<PC>();
   /** The player spends a hit die (short rest) — the host owns the server call. */
   readonly spendHitDie = output<void>();
   /** A DM clicked an intercepted vital — the parent opens the DM edit modal. */
   readonly editRequested = output<DmEditRequest>();
+  /** Anyone clicked a number that has a breakdown — the parent opens the dialog. */
+  readonly breakdownRequested = output<AdjustableStat>();
 
   get hpPct(): number {
     if (!this.pc.hp) return 0;
@@ -48,13 +59,23 @@ export class VitalsStripComponent {
     return Math.max(0, (this.pc.level ?? 0) - (this.pc.hitDiceUsed ?? 0));
   }
 
-  /** Names of the currently-equipped armor/shield lines — the caption shown under
-   *  the AC value. Empty when nothing is worn, so the caption is hidden. */
+  /** Names of the currently-equipped armor/shield lines, then the DM's adjustment
+   *  lines ("Chain Shirt & Shield, +1 Taunka") — the caption shown under the AC
+   *  value. Empty when nothing is worn or adjusted, so the caption is hidden. */
   get armorLabel(): string {
     const worn = (this.pc.inventory ?? [])
       .filter(i => i.category === 'armor' && i.equipped && i.status !== 'dropped')
       .map(i => i.name);
-    return worn.length ? worn.join(' & ') : '';
+    const adjusted = adjustmentsFor(this.pc, 'ac').map(describeAdjustment);
+    return [...(worn.length ? [worn.join(' & ')] : []), ...adjusted].join(', ');
+  }
+
+  /** Spoken name of the AC button: the value, then what activating it does. */
+  get acButtonLabel(): string {
+    const value = this.pc.ac ?? 'not set';
+    return this.canAdjust
+      ? `Armor class ${value}. Show how it is worked out and adjust it`
+      : `Armor class ${value}. Show how it is worked out`;
   }
 
   /** Pure builder: apply one HP field, keeping current within [0, max]. */

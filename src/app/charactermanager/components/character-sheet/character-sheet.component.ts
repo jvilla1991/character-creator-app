@@ -43,13 +43,16 @@ import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/
 import { SpeciesSpellsComponent } from './panels/species-spells/species-spells.component';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
+import { AdjustableStat } from '../../models/stat-adjustment';
+import { StatBreakdown, applyAdjustments, breakdownOf, describeAdjustmentChange } from '../../utils/stat-breakdown';
+import { StatBreakdownModalComponent, StatBreakdownSave } from './stat-breakdown-modal/stat-breakdown-modal.component';
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, SpeciesSpellsComponent, ContextHelpComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, SpeciesSpellsComponent, ContextHelpComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -559,6 +562,53 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   closeDmEdit(): void {
     this.dmEdit = null;
+  }
+
+  // ── Number breakdown ─────────────────────────────────────────────────────
+  // Clicking a calculated number (Armor Class today) shows the lines that make
+  // it up. Everyone may look; whoever may adjust the character can add labelled
+  // lines under the automatic ones ("+1 Taunka").
+
+  /** The breakdown on screen, read once when the dialog opened; null when closed. */
+  statBreakdown: StatBreakdown | null = null;
+
+  /**
+   * Who may change adjustment lines: the DM (cross-link view), or the owner of
+   * a character that is in no campaign and so has no DM. The server enforces
+   * the same rule. Followers have no stored adjustments at all.
+   */
+  get canAdjustStats(): boolean {
+    if (this.followerMode) return false;
+    return this.editable || (this.ownSheet && this.pc.campaignId == null);
+  }
+
+  onBreakdownRequested(stat: AdjustableStat): void {
+    this.statBreakdown = breakdownOf(this.pc, stat);
+  }
+
+  closeStatBreakdown(): void {
+    this.statBreakdown = null;
+  }
+
+  /**
+   * Save the lines from the breakdown dialog. A DM's save goes through the same
+   * refetch-merge-save as a grant, so the lines land on a fresh copy of the
+   * character (the armor a player just swapped stays swapped) and the log says
+   * what was added or removed. An owner's save has no log and uses the sheet's
+   * own copy.
+   */
+  onStatAdjustmentsSaved(result: StatBreakdownSave): void {
+    if (!this.statBreakdown || !this.canAdjustStats) return;
+    const stat = this.statBreakdown.stat;
+    this.statBreakdown = null;
+    const mutate = (fresh: PC): PC => applyAdjustments(fresh, stat, result.lines, result.keepUnlabelled);
+    if (!this.editable) {
+      this.persist(mutate(this.pc));
+      return;
+    }
+    this.grantService.grantToPc(this.pc.id, mutate,
+      (fresh, updated) => describeAdjustmentChange(stat, breakdownOf(fresh, stat), breakdownOf(updated, stat)),
+    ).subscribe({ error: err => this.notifications.error('Could not save the adjustments. Try again.', err) });
   }
 
   // ── Conditions (wired fully in Phase 5) ─────────────────────────────────────

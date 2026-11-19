@@ -1,4 +1,5 @@
 import { PC, PcItem } from '../models/pc';
+import { adjustmentSum, adjustmentsFor } from '../models/stat-adjustment';
 import { modFromScore } from './character-math';
 
 // ── Armor Class from equipped inventory ─────────────────────────────────────
@@ -9,6 +10,17 @@ import { modFromScore } from './character-math';
 export interface ArmorFormula {
   base: number;
   dex: 'full' | 'max2' | 'none';
+}
+
+/**
+ * One line of a number's breakdown that the app works out by itself ("Chain
+ * Shirt 13", "Dexterity +2"). `note` says why the amount is what it is when
+ * that is not obvious from the label ("capped at +2 by medium armor").
+ */
+export interface BreakdownLine {
+  label: string;
+  value: number;
+  note?: string;
 }
 
 /** Parse a catalog armorClass string; null for shields and unparseable text. */
@@ -35,42 +47,62 @@ function equippedArmorLines(pc: PC): PcItem[] {
 }
 
 /**
- * AC from what's equipped: the highest-base equipped armor (+Dex per its
- * bounds) plus every equipped shield's bonus; with no armor equipped,
- * unarmored 10 + Dex. (Class features like Unarmored Defense aren't modeled —
- * the AC field on the sheet stays hand-editable for those tables.)
+ * The lines the app can work out for AC from what's equipped: the highest-base
+ * equipped armor, Dex per that armor's bounds, then every equipped shield; with
+ * no armor equipped, unarmored 10 + Dex. Class features like Unarmored Defense
+ * and species traits aren't modeled: the DM adds those as adjustment lines
+ * (see {@link acBreakdown}).
  */
-export function computeAc(pc: PC): number {
+export function acAutoLines(pc: PC): BreakdownLine[] {
   const dexMod = modFromScore(pc.stats?.DEX ?? 10);
-  const lines = equippedArmorLines(pc);
+  const equipped = equippedArmorLines(pc);
 
-  const armors = lines
-    .map(i => parseArmorClass(i.armorClass))
-    .filter((f): f is ArmorFormula => f !== null)
-    .sort((a, b) => b.base - a.base);
-  const shields = lines.reduce((sum, i) => sum + shieldBonus(i.armorClass), 0);
+  const best = equipped
+    .map(item => ({ item, formula: parseArmorClass(item.armorClass) }))
+    .filter((a): a is { item: PcItem; formula: ArmorFormula } => a.formula !== null)
+    .sort((a, b) => b.formula.base - a.formula.base)[0];
 
-  if (armors.length === 0) return 10 + dexMod + shields;
-  const best = armors[0];
-  const dex = best.dex === 'full' ? dexMod : best.dex === 'max2' ? Math.min(2, dexMod) : 0;
-  return best.base + dex + shields;
+  const lines: BreakdownLine[] = [];
+  if (!best) {
+    lines.push({ label: 'Unarmored', value: 10 });
+    lines.push({ label: 'Dexterity', value: dexMod });
+  } else {
+    lines.push({ label: best.item.name, value: best.formula.base });
+    if (best.formula.dex === 'full') {
+      lines.push({ label: 'Dexterity', value: dexMod });
+    } else if (best.formula.dex === 'max2') {
+      const capped = Math.min(2, dexMod);
+      lines.push(capped < dexMod
+        ? { label: 'Dexterity', value: capped, note: 'capped at +2 by medium armor' }
+        : { label: 'Dexterity', value: capped });
+    } else {
+      lines.push({ label: 'Dexterity', value: 0, note: 'heavy armor adds none' });
+    }
+  }
+  for (const item of equipped) {
+    const bonus = shieldBonus(item.armorClass);
+    if (bonus !== 0) lines.push({ label: item.name, value: bonus });
+  }
+  return lines;
+}
+
+/** AC from what's equipped alone: the sum of {@link acAutoLines}, no adjustment lines. */
+export function computeAc(pc: PC): number {
+  return acAutoLines(pc).reduce((sum, line) => sum + line.value, 0);
 }
 
 /**
- * Recompute AC only when the equipped-armor picture actually changed between
- * two inventories — leaves hand-set AC alone for unrelated inventory edits
- * (qty changes, non-armor drops, notes).
+ * Keep the saved AC in step with the equipped armor: when an inventory change
+ * moves what the armor is worth, shift the saved total by exactly that much.
+ * Everything else in the total rides along untouched: the DM's adjustment
+ * lines, and any older hand-typed difference that has no line yet. Unrelated
+ * inventory edits (qty changes, non-armor drops, notes) move nothing.
  */
 export function withRecomputedAc(pc: PC, previousInventory: PcItem[] | undefined): PC {
-  const before = armorSignature({ ...pc, inventory: previousInventory } as PC);
-  const after = armorSignature(pc);
+  const before = computeAc({ ...pc, inventory: previousInventory } as PC);
+  const after = computeAc(pc);
   if (before === after) return pc;
-  return { ...pc, ac: computeAc(pc) };
-}
-
-function armorSignature(pc: PC): string {
-  return equippedArmorLines(pc)
-    .map(i => i.armorClass)
-    .sort()
-    .join('|');
+  const adjustments = adjustmentSum(adjustmentsFor(pc, 'ac'));
+  const saved = pc.ac ?? before + adjustments;
+  return { ...pc, ac: saved + (after - before) };
 }
