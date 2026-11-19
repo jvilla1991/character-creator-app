@@ -987,5 +987,37 @@
     "duration": "up to 1 hour",
     "description": "You try to turn a crowd of foes into harmless animals. Any number of creatures you choose in a 30-foot Emanation originating from you make a Wisdom saving throw. Only Beasts, Giants, Humanoids, and Monstrosities can be changed; any other creature succeeds on the save automatically. You choose one Beast form with a Challenge Rating of 0 (a goat is a classic choice), and every creature that fails the save takes that form for the duration. Each target's game statistics are replaced by the Beast's stat block, but it keeps its alignment, personality, creature type, Hit Points, and Hit Point Dice.\n\nEach target gains Temporary Hit Points equal to the Beast form's Hit Points, and the spell ends early on a target that has none of those Temporary Hit Points left.\n\nA target can take only the actions its new form's body allows, and it can't speak or cast spells. Its gear melds into the new form; it can't use or otherwise benefit from any of that equipment.",
     "eli5": "Turn any number of Beasts, Giants, Humanoids or Monstrosities you choose within 30 feet that fail a Wisdom save into one CR 0 beast form, like a goat, until the form's hit points run out."
+  },
+  {
+    "name": "Arcane Pulse",
+    "level": 0,
+    "school": "evocation",
+    "classes": [],
+    "source": "World of Warcraft",
+    "actionType": "action",
+    "concentration": false,
+    "ritual": false,
+    "range": "Self (10-foot Emanation)",
+    "components": ["v", "s"],
+    "duration": "1 round",
+    "description": "A pulse of arcane energy bursts out in a 10-foot Emanation around you. Each creature you choose in it makes a Constitution saving throw. On a failed save, it takes 1d8 Force damage and its Speed is reduced by 10 feet, to no less than 0, until the end of your next turn.",
+    "eli5": "Blast creatures you pick within 10 feet with arcane force for 1d8 damage and slow them by 10 feet if they fail a Constitution save."
+  },
+  {
+    "name": "Entropic Embrace",
+    "level": 1,
+    "school": "necromancy",
+    "classes": [],
+    "source": "World of Warcraft",
+    "actionType": "reaction",
+    "concentration": false,
+    "ritual": false,
+    "castingTrigger": "which you take when you make a D20 Test with Advantage or Disadvantage and both dice show the same number",
+    "range": "Self",
+    "components": ["v"],
+    "duration": "1 minute",
+    "description": "The Void fills you for the duration and wraps you in shadow. You automatically succeed on Constitution saving throws to maintain Concentration, and your space is Lightly Obscured. Once on each of your turns, you can deal an extra 1d4 Necrotic damage to one creature you damage, or restore an extra 1d4 Hit Points to one creature you heal.",
+    "higherLevelSlot": "The extra damage or healing increases by 1d4 for each spell slot level above 1.",
+    "eli5": "For a minute you never lose Concentration to damage, your space is Lightly Obscured, and once per turn you add 1d4 to damage you deal or healing you give."
   }
 ]

@@ -225,6 +225,40 @@ export function speciesLabel(race: string | null | undefined, lineage: string | 
   return lineage.toLowerCase().includes(species.toLowerCase()) ? lineage : `${species} (${lineage})`;
 }
 
+// ── Spells a species gives ───────────────────────────────────────────────────
+
+/** The catalog species a saved character is, from its stored species name and source. */
+export function catalogSpeciesFor(
+  race: string | null | undefined, speciesSource: string | null | undefined,
+): CatalogSpecies | undefined {
+  return race && speciesSource ? catalogSpeciesByKey(`${race} (${speciesSource})`) : undefined;
+}
+
+/** A spell a species hands the character, and the character level it arrives at (1 = from the start). */
+export interface SpeciesSpellGrant {
+  name: string;
+  level: number;
+  /** True for a cantrip: known and cast at will, rather than once per Long Rest. */
+  cantrip: boolean;
+}
+
+/**
+ * Every spell the species and the chosen lineage give, earliest first: their
+ * cantrips (known from level 1), then the always-prepared spells in the order
+ * they are learned.
+ */
+export function speciesSpellGrants(
+  species: CatalogSpecies, lineageName: string | null | undefined,
+): SpeciesSpellGrant[] {
+  const lineage = species.lineages?.find(l => l.name === lineageName);
+  const cantrips = [...(species.cantrips ?? []), ...(lineage?.cantrips ?? [])]
+    .map((name): SpeciesSpellGrant => ({ name, level: 1, cantrip: true }));
+  const spells = [...(species.spells ?? []), ...(lineage?.spells ?? [])]
+    .map((s): SpeciesSpellGrant => ({ name: s.name, level: s.level, cantrip: false }))
+    .sort((a, b) => a.level - b.level);
+  return [...cantrips, ...spells];
+}
+
 // ── Feature cards ────────────────────────────────────────────────────────────
 
 /** The source line on a species trait's feature card: 'Elf (World of Warcraft) · Species Trait'. */

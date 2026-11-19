@@ -1,0 +1,42 @@
+@if (view(); as v) {
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ v.title }}</span>
+    </div>
+
+    <p class="hero-spells-note">
+      Always prepared; they don't count against your prepared spells.
+      @if (v.hasLevelledSpells) {
+        Each spell of level 1 or higher can be cast once per Long Rest without a spell slot, or with your spell slots.
+      }
+    </p>
+
+    @if (v.known.length) {
+      <ul class="hero-spells">
+        @for (entry of v.known; track entry.name) {
+          @let spell = spellFor(entry.name);
+          <li>
+            <details class="hero-spell">
+              <summary>
+                <span class="hero-spell-name">{{ entry.name }}</span>@if (spell?.source === 'World of Warcraft') {<span class="wow-mark" title="World of Warcraft spell" aria-label="World of Warcraft spell">✦</span>}
+                <span class="hero-spell-meta">
+                  {{ entry.cantrip ? 'Cantrip' : 'From level ' + entry.level }}
+                  @if (spell) {
+                    · {{ spell.level === 0 ? 'at will' : 'Level ' + spell.level }} {{ spell.school }}
+                  }
+                </span>
+              </summary>
+              <p class="hero-spell-desc">
+                {{ spell?.description || (spellIndex() ? 'No description available.' : 'Loading spell text…') }}
+              </p>
+            </details>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (v.upcoming.length) {
+      <p class="hero-spells-note species-spells-upcoming">Still to come: {{ upcomingLine(v) }}.</p>
+    }
+  </div>
+}
