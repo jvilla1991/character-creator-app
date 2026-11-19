@@ -99,6 +99,45 @@ export class PCService {
     });
   }
 
+  /**
+   * Check the server for a level change made from another client — the DM
+   * granting or revoking a level-up, an XP award, the player spending a grant —
+   * and show it. Nothing is pushed when the level, XP and grant all match the
+   * local copy, so a quiet check doesn't re-render the sheet. A copy BEHIND the
+   * local one on level (a request that left before a level-up committed here)
+   * is dropped.
+   *
+   * Only a new level replaces the whole character (HP, features and spells
+   * moved with it). A grant or XP change patches just those two fields, so a
+   * check that crosses one of the player's own saves can't undo it.
+   *
+   * `asDm` reads through the campaign-DM path, for a DM watching a member's
+   * sheet. Demo mode is single-client: there is nothing to fetch.
+   */
+  syncLevelState(pcId: number, asDm = false): Observable<void> {
+    if (environment.demoMode) return of(undefined);
+    const url = asDm ? `${this.pcUrl}${pcId}/as-dm` : `${this.pcUrl}find/${pcId}`;
+    return this.http.get<PC>(url).pipe(
+      map(raw => {
+        const fresh = this.deserializePC(raw);
+        const active = this.activePCSubject.getValue();
+        const local = active?.id === pcId ? active : this.getPCById(pcId);
+        if (!local) return;
+        const localLevel = local.level ?? 1;
+        const freshLevel = fresh.level ?? 1;
+        if (freshLevel < localLevel) return;
+        if (freshLevel === localLevel
+            && (fresh.xp ?? 0) === (local.xp ?? 0)
+            && (fresh.pendingLevelGrant === true) === (local.pendingLevelGrant === true)) {
+          return;
+        }
+        this.mirrorPC(freshLevel > localLevel
+          ? fresh
+          : { ...local, xp: fresh.xp, pendingLevelGrant: fresh.pendingLevelGrant });
+      }),
+    );
+  }
+
   getPCs() {
     if (environment.demoMode) {
       return of(this.pcs).pipe(delay(300));
