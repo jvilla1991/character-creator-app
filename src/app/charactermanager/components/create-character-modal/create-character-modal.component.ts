@@ -921,8 +921,8 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     if (this.step === 3 && !this.classDetail      && !this.loadingClassDetail      && this.clazz)      this.classTrigger$.next(this.clazz);
     if (this.step === 4 && !this.backgroundDetail && !this.loadingBackgroundDetail && this.background) this.backgroundTrigger$.next(this.background);
     // Load spells when entering step 7 (casters only)
-    // A WoW variant can add spells to its base class's list (the Priest's Blur and
-    // Levitate), so the loaded list is keyed by class row and reloaded if that changes.
+    // A WoW variant can add spells to its base class's list (e.g. the Priest's Blur
+    // and Levitate), so the loaded list is keyed by class row and reloaded if that changes.
     const spellListKey = this.selectedClassKey;
     const staleList = this.spellListKey !== null && this.spellListKey !== spellListKey;
     if (this.step === 7 && this.isSpellcastingClass && (!this.spellList.length || staleList)) {

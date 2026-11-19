@@ -274,7 +274,7 @@ export interface HeroClassOption {
   wowSubclasses?: readonly string[];
   /**
    * Base spells from other class lists that this variant adds to its base
-   * class's spell list (the WoW Priest's Blur and Levitate). Class spell
+   * class's spell list (e.g. the WoW Priest's Blur and Levitate). Class spell
    * pickers offer them to this variant only; the base class is unchanged.
    */
   extraSpellList?: readonly string[];
@@ -594,7 +594,7 @@ export function recommendedStartingSpells(
 
 /**
  * True when a spell name is on a variant's added spell list (the WoW Priest's
- * Blur and Levitate), case-insensitive; false for every other class.
+ * Blur, Haste and others), case-insensitive; false for every other class.
  */
 export function isExtraListSpell(hero: HeroClassOption | undefined, name: string): boolean {
   const n = name.toLowerCase();

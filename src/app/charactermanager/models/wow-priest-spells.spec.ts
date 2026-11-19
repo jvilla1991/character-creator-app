@@ -2,7 +2,9 @@ import { DndSpell } from './dnd-api.types';
 import { filterBySource, spellSource } from './content-source';
 import { isExtraListSpell } from './hero-class';
 import { spellKey } from './spell-names';
-import { WOW_PRIEST, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SUGGESTED_SPELLS } from './wow-class-variants';
+import {
+  WOW_PRIEST, WOW_PRIEST_EXTRA_SPELLS, WOW_PRIEST_GUIDANCE, WOW_PRIEST_SUGGESTED_SPELLS,
+} from './wow-class-variants';
 
 /**
  * Checks the shipped spell data (the real assets, served by the Karma builder)
@@ -82,7 +84,9 @@ describe('World of Warcraft priest spells (wow-spells.json)', () => {
     }
   });
 
-  it('adds Blur and Levitate as base-game spells that are not cleric spells', () => {
+  it('adds the seven base-game spells of the Priest Spells table, none of them a cleric spell', () => {
+    expect([...WOW_PRIEST_EXTRA_SPELLS]).toEqual(
+      ['Mind Sliver', 'Blur', 'Levitate', 'Haste', 'Summon Undead', 'Dominate Person', 'Dominate Monster']);
     for (const name of WOW_PRIEST.extraSpellList!) {
       const spell = all.find(s => s.name === name);
       expect(spell).withContext(name).toBeDefined();

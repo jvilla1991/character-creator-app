@@ -114,7 +114,7 @@ export class LevelUpModalComponent implements OnInit {
     this.loadingSpells = true;
     const known = new Set((this.pc.spells ?? []).map(s => s.name.toLowerCase()));
     const maxLevel = this.maxLearnableSpellLevel;
-    // A WoW variant may add spells to its class list (the Priest's Blur and Levitate).
+    // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = this.heroClass?.extraSpellList;
     const spells$ = extras?.length
       ? this.dndResources.getSpellsForClass(this.pc.clazz, extras)

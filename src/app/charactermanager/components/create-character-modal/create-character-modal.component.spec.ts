@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
 import { DndResourcesService, LEVEL1_SUBCLASSES } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
+import { WOW_PRIEST_EXTRA_SPELLS } from '../../models/wow-class-variants';
 
 /**
  * Minimal stand-in for the injected DestroyRef — these tests instantiate the
@@ -1347,11 +1348,11 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
-    it('loads the cleric list plus Blur and Levitate for a WoW priest, and the plain list for a base cleric', () => {
+    it('loads the cleric list plus its added spells for a WoW priest, and the plain list for a base cleric', () => {
       component.toggleClass(WOW_PRIEST_KEY);
       component.selectSpecialization('Holy');
       loadSpellsStep();
-      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', ['Blur', 'Levitate']);
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', WOW_PRIEST_EXTRA_SPELLS);
       dndResources.getSpellsForClass.calls.reset();
       component.toggleClass('Cleric');
       loadSpellsStep();

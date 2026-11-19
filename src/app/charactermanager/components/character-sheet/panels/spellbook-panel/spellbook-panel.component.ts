@@ -477,7 +477,7 @@ export class SpellbookPanelComponent implements OnChanges {
     this.loadingGrantSpells = true;
     this.grantSelection = [];
     const known = new Set((this.pc().spells ?? []).map(s => s.name.toLowerCase()));
-    // A WoW variant may add spells to its class list (the Priest's Blur and Levitate).
+    // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = heroClassFor(this.pc())?.extraSpellList;
     const spells$ = this.allClasses ? this.dndResources.getSpells()
       : extras?.length ? this.dndResources.getSpellsForClass(this.pc().clazz, extras)

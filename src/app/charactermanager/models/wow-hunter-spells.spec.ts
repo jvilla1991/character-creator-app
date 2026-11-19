@@ -40,7 +40,7 @@ describe('World of Warcraft hunter spells (wow-spells.json)', () => {
       range: '60 feet', components: ['s'], duration: 'up to 1 minute',
     }));
     const text = find('Freezing Trap').description;
-    for (const part of ['invisible, intangible', 'within 5 feet', 'the spell ends', 'Constitution saving throw',
+    for (const part of ['Invisible, intangible', 'within 5 feet', 'the spell ends', 'Constitution saving throw',
       'Restrained condition for 1 minute', 'Taking any damage']) {
       expect(text).withContext(part).toContain(part);
     }
@@ -65,7 +65,7 @@ describe('World of Warcraft hunter spells (wow-spells.json)', () => {
       range: '60 feet', components: ['s'], duration: 'up to 1 minute',
     }));
     const text = find('Explosive Trap').description;
-    for (const part of ['invisible, intangible', 'within 5 feet', '20-foot-radius Sphere', 'the spell ends',
+    for (const part of ['Invisible, intangible', 'within 5 feet', '20-foot-radius Sphere', 'the spell ends',
       'Dexterity saving throw', '8d6 Fire damage', 'Huge or smaller', 'pushed 20 feet']) {
       expect(text).withContext(part).toContain(part);
     }

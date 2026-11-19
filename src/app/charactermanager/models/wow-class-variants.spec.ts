@@ -251,9 +251,10 @@ describe('wow-class-variants', () => {
       expect(flat('Shadow')).not.toContain('Shadow Word: Pain');
     });
 
-    it('adds Blur and Levitate to its Cleric spell list — only the Priest and the Mage have an added list', () => {
+    it('adds seven base spells to its Cleric spell list — only the Priest and the Mage have an added list', () => {
       expect(WOW_PRIEST.extraSpellList).toBe(WOW_PRIEST_EXTRA_SPELLS);
-      expect([...WOW_PRIEST.extraSpellList!]).toEqual(['Blur', 'Levitate']);
+      expect([...WOW_PRIEST.extraSpellList!]).toEqual(
+        ['Mind Sliver', 'Blur', 'Levitate', 'Haste', 'Summon Undead', 'Dominate Person', 'Dominate Monster']);
       for (const v of WOW_CLASS_VARIANTS.filter(v => v !== WOW_PRIEST && v !== WOW_MAGE)) {
         expect(v.extraSpellList).withContext(v.key).toBeUndefined();
       }
@@ -603,7 +604,8 @@ describe('wow-class-variants', () => {
       expect(Object.keys(WOW_EVOKER_GUIDANCE)).toEqual([...WOW_EVOKER_SPECIALIZATIONS]);
       const aug = WOW_EVOKER_GUIDANCE['Augmentation'];
       expect(aug.cantrips).toEqual(['Elementalism', 'Light', 'Sorcerous Burst', 'Thunderclap']);
-      expect(aug.extraPrepared).toEqual(['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame']);
+      expect(aug.extraPrepared)
+        .toEqual(['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame', 'Shield']);
       expect(aug.metamagic).toEqual(['Empowered Spell', 'Extended Spell']);
       expect(aug.elementalAffinity).toBe('Fire');
       expect(aug.feats).toEqual(['Elemental Adept (Fire)', 'Speedy', 'Spell Sniper', 'War Caster']);
