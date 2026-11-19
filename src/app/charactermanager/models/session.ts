@@ -1,4 +1,5 @@
 import { LootResultView } from './loot';
+import { TimeOfDay } from './campaign';
 /**
  * Live "Session Mode" types — the client mirror of the backend SessionStateView /
  * ParticipantView DTOs. State is server-authoritative: the client renders what
@@ -136,6 +137,28 @@ export interface LongRestReadiness {
   displayName: string;
   ready: boolean;
   cannotRest: boolean;
+  // What it takes to name the hero's class the way the sheet does (a Paladin
+  // with the Oath of the Ebon Blade is a Death Knight). Null from a backend
+  // that predates them.
+  clazz: string | null;
+  subclass: string | null;
+  specialization: string | null;
+  level: number | null;
+}
+
+/**
+ * Why the party cannot start a long rest yet: one long rest every 24 hours,
+ * counted on the campaign clock (three segments a day). Null on the snapshot
+ * when a long rest may start. `reason` is the sentence for players, e.g. "The
+ * party finished a long rest this morning. The next one can start tonight."
+ */
+export interface LongRestWaitView {
+  finishedTimeOfDay: TimeOfDay;
+  segmentsSince: number;
+  segmentsLeft: number;
+  availableTimeOfDay: TimeOfDay;
+  availableTomorrow: boolean;
+  reason: string;
 }
 
 /**
@@ -256,4 +279,9 @@ export interface SessionState {
   longRest: LongRestView | null;
   // The latest long rest outcome (broadcast), or null.
   longRestResult: LongRestResultView | null;
+  // One long rest every 24 hours on the campaign clock: false, with the wait
+  // saying why and until when, while the party must still wait. Only that rule
+  // — a rest can also be blocked by an encounter or a vote in progress.
+  longRestAvailable: boolean;
+  longRestWait: LongRestWaitView | null;
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../modal/modal.component';
 import { RestType } from '../../../models/session';
 
@@ -20,5 +20,20 @@ export class RestChooserComponent {
   /** Cancel, the close button, Escape or a backdrop click. */
   readonly dismissed = output<void>();
 
-  readonly selected = signal<RestType>('SHORT');
+  /**
+   * Why a long rest cannot be called right now (one every 24 hours on the
+   * campaign clock), or null. The Long Rest card is then disabled and shows
+   * this instead of what the rest does.
+   */
+  readonly longRestBlocked = input<string | null>(null);
+
+  private readonly picked = signal<RestType>('SHORT');
+  /** The chosen rest — never the long rest while it is unavailable. */
+  readonly selected = computed<RestType>(() =>
+    (this.picked() === 'LONG' && this.longRestBlocked() ? 'SHORT' : this.picked()));
+
+  select(rest: RestType): void {
+    if (rest === 'LONG' && this.longRestBlocked()) return;
+    this.picked.set(rest);
+  }
 }

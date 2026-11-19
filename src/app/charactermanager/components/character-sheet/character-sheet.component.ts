@@ -330,6 +330,21 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     this.persist(change.pc, change.description);
   }
 
+  /**
+   * Who may toggle prepared spells on the sheet: the DM (cross-link edit) at
+   * any time, and the owner only while the character is in no campaign. In a
+   * campaign prepared spells change during a long rest — the same split as
+   * the DM-only exhaustion stepper.
+   */
+  get canPrepareSpells(): boolean {
+    return this.editable || (this.ownSheet && this.pc?.campaignId == null);
+  }
+
+  /** Tells the owner of a campaign character why the Prepare buttons are gone. */
+  get preparedSpellsHint(): string | null {
+    return this.ownSheet && this.pc?.campaignId != null ? 'Prepared spells change during a long rest.' : null;
+  }
+
   /** Whether the viewer owns this sheet — drives the survival Eat/Drink buttons.
    *  Mirrors the pc-notes canWrite rule: interactive contexts minus DM cross-link. */
   get ownSheet(): boolean {

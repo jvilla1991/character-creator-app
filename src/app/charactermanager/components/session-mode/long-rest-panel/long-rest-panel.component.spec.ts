@@ -13,9 +13,9 @@ describe('LongRestPanelComponent', () => {
     readyCount: 1,
     ableCount: 2,
     readiness: [
-      { participantId: 5, pcId: 7, displayName: 'Bex', ready: true, cannotRest: false },
-      { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: false },
-      { participantId: 9, pcId: 9, displayName: 'Thorne', ready: false, cannotRest: true },
+      { participantId: 5, pcId: 7, displayName: 'Bex', ready: true, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+      { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+      { participantId: 9, pcId: 9, displayName: 'Thorne', ready: false, cannotRest: true, clazz: null, subclass: null, specialization: null, level: null },
     ],
     myChoices: null,
     ...over,
@@ -63,6 +63,17 @@ describe('LongRestPanelComponent', () => {
     expect(rows[0].detail).toBe('Fighter 5 · +26 HP');
     expect(rows[1].detail).toBe('Cleric 5');          // already full — no gain shown
     expect(rows[2].detail).toBe('Paladin 5');         // at 0 Hit Points — gains nothing
+  });
+
+  it('names the hero class from the readiness row by its short name (Death Knight, not Paladin)', () => {
+    const view = phase();
+    view.readiness[0] = {
+      ...view.readiness[0], clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Frost', level: 6,
+    };
+    render(view);
+
+    expect(component.rows()[0].detail).toBe('Death Knight 6 · +26 HP');
+    expect(component.rows()[1].detail).toBe('Cleric 5'); // no details sent: the seat's own class
   });
 
   it('a hero missing from the participant list still gets a row', () => {

@@ -1,5 +1,6 @@
 import { PC } from '../models/pc';
 import { hitDieFor } from './character-math';
+import { heroClassFor } from '../models/hero-class';
 
 /** One spell level's slots as a long rest will leave them. */
 export interface LongRestSlotLine {
@@ -65,4 +66,16 @@ export function ordinal(n: number): string {
     case 3: return `${n}rd`;
     default: return `${n}th`;
   }
+}
+
+/**
+ * The class name the long rest screens show beside the level: the hero class's
+ * short name ("Death Knight", "Demon Hunter", "Shaman") when the character is
+ * one, otherwise the stored class. Shorter than `classDisplayName`, which adds
+ * the base class in brackets — these lines sit in a narrow dialog and a list.
+ */
+export function longRestClassName(
+  clazz: string | null | undefined, subclass?: string | null, specialization?: string | null,
+): string {
+  return heroClassFor({ clazz, subclass, specialization })?.name ?? clazz ?? '';
 }

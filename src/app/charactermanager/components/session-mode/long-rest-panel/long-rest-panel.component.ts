@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { LongRestReadiness, LongRestView, ParticipantView } from '../../../models/session';
+import { longRestClassName } from '../../../utils/long-rest';
 
 /** One party row: who, what the rest gives them, and where they are. */
 interface HeroRow {
@@ -42,7 +43,11 @@ export class LongRestPanelComponent {
 
   private toRow(r: LongRestReadiness, p: ParticipantView | undefined): HeroRow {
     const parts: string[] = [];
-    if (p?.clazz) parts.push(p.level != null ? `${p.clazz} ${p.level}` : p.clazz);
+    // The hero's class by its short name (Death Knight, not Paladin); the seat's
+    // own class is the fallback for a backend that does not send the details.
+    const clazz = r.clazz ? longRestClassName(r.clazz, r.subclass, r.specialization) : p?.clazz;
+    const level = r.level ?? p?.level;
+    if (clazz) parts.push(level != null ? `${clazz} ${level}` : clazz);
     if (!r.cannotRest && p?.hpMax != null && p.hpCurrent != null && p.hpMax > p.hpCurrent) {
       parts.push(`+${p.hpMax - p.hpCurrent} HP`);
     }

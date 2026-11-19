@@ -128,9 +128,11 @@
             @let longRestBlocked = dmLongRestBlockedReason(state);
             <button class="btn" data-dm-long-rest (click)="openLongRest(state)"
               [disabled]="longRestBlocked != null"
-              [title]="longRestBlocked ?? 'Start a long rest — the party readies up, then you finish it'">
+              [title]="dmLongRestHint(state)">
               Long Rest
             </button>
+            <!-- Why Long Rest is disabled, where a phone can read it. -->
+            <app-context-help label="Long Rest" [text]="dmLongRestHint(state)"></app-context-help>
             <button class="btn" [class.primary]="state.shortRestOpen" (click)="shortRest(state)"
               [disabled]="!!state.longRest"
               [title]="state.longRest
@@ -335,6 +337,7 @@
     <!-- The player's Rest dialog: short or long, then the party votes. -->
     @if (!state.dm && restChooserOpen && restBlockedReason(state) == null) {
       <app-rest-chooser
+        [longRestBlocked]="state.longRestWait?.reason ?? null"
         (chosen)="callRest($event, state)"
         (dismissed)="restChooserOpen = false">
       </app-rest-chooser>
