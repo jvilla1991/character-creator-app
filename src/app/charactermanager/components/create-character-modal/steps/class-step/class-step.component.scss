@@ -62,20 +62,6 @@
 
 // ── Hero classes (World of Warcraft module) ───────────────────────────────
 
-.source-tag {
-  margin-left: 8px;
-  padding: 1px 7px;
-  border-radius: 100px;
-  border: 1px solid var(--border);
-  font-family: 'Newsreader', serif;
-  font-size: var(--text-2xs);
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
 .hero-blurb {
   margin: 0 0 4px;
   font-family: 'Newsreader', serif;
@@ -87,13 +73,6 @@
 .locked-note {
   font-family: 'Newsreader', serif;
   font-weight: 400;
-  color: var(--text-dim);
-}
-
-.class-filter-note {
-  margin: 0 0 10px;
-  font-family: 'Newsreader', serif;
-  font-size: 12px;
   color: var(--text-dim);
 }
 

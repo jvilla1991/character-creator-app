@@ -10,6 +10,14 @@
   scrollbar-color: var(--border) transparent;
 }
 
+// A catalog (World of Warcraft) species has full trait text and a lineage list:
+// far more than the capped card holds. Let it run its full height and scroll
+// with the step instead of inside a second, 220px scroll box.
+.species-detail--catalog {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .species-traits {
   margin-top: 10px;
 }

@@ -166,6 +166,13 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'You are proficient with improvised weapons. Your unarmed strikes deal 1d4 + Strength or Dexterity. Once per turn you can attempt to grapple or shove a creature you hit unarmed.',
   'Tough':
     'Your Hit Point maximum increases by 2, and it increases by 2 again each time you gain a level.',
+  // ── World of Warcraft Origin feats (Human only). ────────────────────────────
+  'Arathi Heritage':
+    'Human only. You have Advantage on saving throws to avoid or end the Charmed condition. When you fail a saving throw to avoid or end the Unconscious condition, you can succeed instead; once you do, you can\'t do so again until you finish 1d4 Long Rests.',
+  'Child of the Sea':
+    'Human only. You can hold your breath for a number of minutes equal to 2 plus your Constitution modifier (at least 1 minute), and you have a Swim Speed equal to your Speed.',
+  'Will to Survive':
+    'Human only. While you have the Incapacitated condition but not the Unconscious condition, you can ignore Incapacitated on your turn. If you do, you gain 1 Exhaustion level.',
   // ── General feats (level 4+; the alternative to an ASI). Names are validated
   //    server-side; these descriptions are for display only. ───────────────────
   'Great Weapon Master':

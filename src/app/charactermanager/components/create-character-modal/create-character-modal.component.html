@@ -15,7 +15,7 @@
     <span class="ruleset-coming-soon">Coming Soon</span>
   </div>
 
-  <!-- Content sources — filters the class list and the spell list -->
+  <!-- Content sources — filters the species, class and spell lists -->
   <app-content-source-filter
     class="wizard-sources"
     [selection]="contentSources"
@@ -58,8 +58,9 @@
     <!-- ── Step 2: Species ─────────────────────────────────────────────── -->
     @if (step === 2) {
       <app-species-step
-        [speciesList]="speciesList"
-        [species]="species"
+        [options]="visibleSpeciesOptions"
+        [selectedKey]="selectedSpeciesKey"
+        [selectedHidden]="selectedSpeciesHidden"
         [loadingSpecies]="loadingSpecies"
         [loadingSpeciesDetail]="loadingSpeciesDetail"
         [speciesDetail]="speciesDetail"
@@ -191,7 +192,7 @@
         [reviewInitiative]="reviewInitiative"
         [name]="name"
         [player]="player"
-        [species]="species"
+        [species]="selectedSpeciesKey"
         [speciesDetail]="speciesDetail"
         [reviewSpeciesTraitNames]="reviewSpeciesTraitNames"
         [clazz]="selectedClassLabel"
