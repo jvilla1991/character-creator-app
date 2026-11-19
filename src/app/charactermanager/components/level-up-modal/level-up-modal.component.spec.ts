@@ -6,6 +6,7 @@ import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { PC } from '../../models/pc';
 import { LevelUpPreview } from '../../models/level-up';
+import { WOW_PRIEST_EXTRA_SPELLS } from '../../models/wow-class-variants';
 
 /** A SpyObj PCService — the modal only touches the preview/commit pairs (owner + as-dm). */
 function makePcServiceSpy(): jasmine.SpyObj<PCService> {
@@ -1070,10 +1071,10 @@ describe('LevelUpModalComponent', () => {
         .toContain('Recommended for Discipline');
     });
 
-    it('loads the cleric list plus Blur and Levitate when a WoW priest learns spells, and the plain list for a base cleric', () => {
+    it('loads the cleric list plus its added spells when a WoW priest learns spells, and the plain list for a base cleric', () => {
       const learn = { currentSpellsKnown: 5, newSpellsKnown: 6, newSpellSlots: { 1: 4, 2: 2 } };
       open({}, learn);
-      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Cleric', ['Blur', 'Levitate']);
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Cleric', WOW_PRIEST_EXTRA_SPELLS);
       dndResources.getSpellsForClass.calls.reset();
       open({ specialization: null, subclass: undefined }, learn);
       expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('Cleric');

@@ -178,7 +178,7 @@ const DRACONIC = { name: DRACONIC_SORCERY } as const;
 export const WOW_EVOKER_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
   Augmentation: {
     cantrips: ['Elementalism', 'Light', 'Sorcerous Burst', 'Thunderclap'],
-    extraPrepared: ['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame'],
+    extraPrepared: ['Arcane Vigor', 'Enhance Ability', 'Flaming Sphere', 'Ice Knife', 'Living Flame', 'Shield'],
     metamagic: ['Empowered Spell', 'Extended Spell'],
     elementalAffinity: 'Fire',
     subclass: DRACONIC,
@@ -657,7 +657,9 @@ export const SHADOW_DOMAIN_SPELLS: readonly SubclassSpellRow[] = [
 ];
 
 /** Base (non-cleric) spells the WoW Priest adds to its Cleric spell list. */
-export const WOW_PRIEST_EXTRA_SPELLS = ['Blur', 'Levitate'] as const;
+export const WOW_PRIEST_EXTRA_SPELLS = [
+  'Mind Sliver', 'Blur', 'Levitate', 'Haste', 'Summon Undead', 'Dominate Person', 'Dominate Monster',
+] as const;
 
 const THAUMATURGE = { feature: 'Divine Order', option: 'Thaumaturge' } as const;
 

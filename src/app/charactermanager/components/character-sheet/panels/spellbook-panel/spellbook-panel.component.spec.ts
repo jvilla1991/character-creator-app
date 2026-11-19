@@ -6,6 +6,7 @@ import { DndResourcesService } from '../../../../services/dnd-resources.service'
 import { UI_ROLE_KEY, UiStateService } from '../../../../services/ui-state.service';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { PC, PcSpell } from '../../../../models/pc';
+import { WOW_PRIEST_EXTRA_SPELLS } from '../../../../models/wow-class-variants';
 
 /**
  * Class-level tests via TestBed fixtures: the panel's cast-resolution logic —
@@ -272,7 +273,7 @@ describe('SpellbookPanelComponent — DM grants', () => {
     expect(component.grantCandidates.map(s => s.name)).toEqual(['Mage Hand']);
   });
 
-  it('narrows a WoW priest to the cleric list plus Blur and Levitate', () => {
+  it('narrows a WoW priest to the cleric list plus its added spells', () => {
     fixture.componentRef.setInput('pc', makePC({ clazz: 'Cleric', subclass: 'Shadow Domain', specialization: 'Shadow' }));
     dndResources.getSpells.and.returnValue(of([]));
     dndResources.getSpellsForClass.and.returnValue(of([makeSpell({ name: 'Blur', level: 2 })]));
@@ -280,7 +281,7 @@ describe('SpellbookPanelComponent — DM grants', () => {
 
     component.toggleAllClasses(false);
 
-    expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', ['Blur', 'Levitate']);
+    expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('Cleric', WOW_PRIEST_EXTRA_SPELLS);
     expect(component.grantCandidates.map(s => s.name)).toEqual(['Blur']);
   });
 
