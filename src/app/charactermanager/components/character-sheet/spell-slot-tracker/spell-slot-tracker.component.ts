@@ -145,7 +145,10 @@ export class SpellSlotTrackerComponent {
 
   onMaximum(): void {
     const active = this.active();
-    if (active && this.showMaximum()) this.maximumRequested.emit(active.level);
+    if (!active || !this.showMaximum()) return;
+    // The maximum may be about to change; "All slots restored." would be stale beside the new count.
+    this.note.set(null);
+    this.maximumRequested.emit(active.level);
   }
 }
 

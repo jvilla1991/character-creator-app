@@ -14,7 +14,7 @@
       @for (column of columns(); track column.level) {
         <button type="button" class="sst-col"
           [class.selected]="column.level === active()?.level"
-          [class.empty]="column.left === 0"
+          [class.none-left]="column.left === 0"
           [attr.aria-pressed]="column.level === active()?.level"
           [attr.aria-label]="column.ariaLabel"
           (click)="toggle(column.level)">

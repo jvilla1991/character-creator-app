@@ -132,8 +132,10 @@
 }
 
 // Nothing left at this level: its label and count step down the text ramp.
-.sst-col.empty .sst-label,
-.sst-col.empty .sst-count {
+// Not named `.empty`: the app's global `.empty` (the full-page empty state,
+// min-height 70vh) would reach in and stretch the whole strip.
+.sst-col.none-left .sst-label,
+.sst-col.none-left .sst-count {
   color: var(--text-dim);
 }
 
@@ -214,6 +216,9 @@
 
   .sst-actions .btn.sst-btn {
     padding: 4px 8px;
+    // Tighter tracking keeps "Restore a slot" on one line in a half-width
+    // button down to a 360px phone; below that it may still break.
+    letter-spacing: 0.08em;
     white-space: normal;
     line-height: 1.3;
 

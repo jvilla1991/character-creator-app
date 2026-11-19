@@ -86,7 +86,7 @@ describe('SpellSlotTrackerComponent', () => {
 
     it('marks a level with nothing left, so its label and count step down the ramp', () => {
       render(WIZARD);
-      expect(columns().map(c => c.classList.contains('empty'))).toEqual([false, false, true]);
+      expect(columns().map(c => c.classList.contains('none-left'))).toEqual([false, false, true]);
     });
 
     it('draws a very large maximum to scale instead of one bar per slot', () => {
@@ -355,7 +355,7 @@ describe('SpellSlotTrackerComponent', () => {
       expect(columns().map(c => c.getAttribute('aria-label')))
         .toEqual(['1st level: 4 of 4 slots left', '6th level: 0 of 0 slots left']);
       expect(column('6th').querySelectorAll('.sst-bar').length).toBe(0);
-      expect(column('6th').classList.contains('empty')).toBeTrue();
+      expect(column('6th').classList.contains('none-left')).toBeTrue();
 
       tap('6th');
       expect(text('.sst-detail-title')).toBe('6th-level slots: none left');
