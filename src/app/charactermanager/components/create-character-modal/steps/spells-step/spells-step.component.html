@@ -1,8 +1,26 @@
 <h2 class="modal-title">Choose Your Spells</h2>
 <div class="modal-sub">
-  Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
-  {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
+  @if (maxCantrips() > 0) {
+    Select {{ maxCantrips() }} cantrip{{ maxCantrips() !== 1 ? 's' : '' }} and
+    {{ maxKnownSpells() }} spell{{ maxKnownSpells() !== 1 ? 's' : '' }} to begin your arcane journey.
+  } @else {
+    Select {{ maxKnownSpells() }} level 1 spell{{ maxKnownSpells() !== 1 ? 's' : '' }}. Your class learns no cantrips at level 1.
+  }
 </div>
+@if (alwaysPrepared().length) {
+  <p class="spell-recommend-note spell-always-note">
+    You also start with
+    @for (g of alwaysPrepared(); track g.name; let last = $last) {
+      <em>{{ g.name }}</em> ({{ g.grantedBy }}){{ last ? '' : ',' }}
+    }
+    always prepared. It is not one of your picks.
+  </p>
+}
+@if (preparedAtStart() !== null) {
+  <p class="spell-recommend-note spell-prepared-note">
+    Your first {{ preparedAtStart() }} spells start prepared. The others wait in your spellbook.
+  </p>
+}
 @if (recommendedSpells().length && recommendedFor()) {
   <p class="spell-recommend-note">Spells marked <em>Recommended</em> suit the {{ recommendedFor() }} specialization — pick whatever you like.</p>
 }
@@ -12,9 +30,11 @@
   <button type="button" class="spell-level-tab"
     [class.active]="spellLevelFilter() === 'all'"
   (click)="spellLevelFilterChange.emit('all')">All</button>
-  <button type="button" class="spell-level-tab"
-    [class.active]="spellLevelFilter() === 0"
-  (click)="spellLevelFilterChange.emit(0)">Cantrip</button>
+  @if (maxCantrips() > 0) {
+    <button type="button" class="spell-level-tab"
+      [class.active]="spellLevelFilter() === 0"
+    (click)="spellLevelFilterChange.emit(0)">Cantrip</button>
+  }
   <button type="button" class="spell-level-tab"
     [class.active]="spellLevelFilter() === 1"
   (click)="spellLevelFilterChange.emit(1)">1st</button>
@@ -116,10 +136,12 @@
 
   <!-- Selection counter -->
   <div class="spell-counter">
-    <span [class.complete]="selectedCantrips() === maxCantrips()">
-      {{ selectedCantrips() }}/{{ maxCantrips() }} cantrips
-    </span>
-    <span class="spell-counter-sep">·</span>
+    @if (maxCantrips() > 0) {
+      <span [class.complete]="selectedCantrips() === maxCantrips()">
+        {{ selectedCantrips() }}/{{ maxCantrips() }} cantrips
+      </span>
+      <span class="spell-counter-sep">·</span>
+    }
     <span [class.complete]="selectedLeveled() === maxKnownSpells()">
       {{ selectedLeveled() }}/{{ maxKnownSpells() }} spells
     </span>

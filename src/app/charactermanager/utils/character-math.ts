@@ -41,9 +41,8 @@ export function hitDieFor(clazz: string): number {
 }
 
 // ── Spellcasting (2024 PHB) ─────────────────────────────────────────────────
-// Casting ability per class. Paladin/Ranger are half-casters the app doesn't
-// model as slot-casters, but their save DC math is still CHA/WIS-based when
-// they do carry spells (e.g. DM-granted), so they're mapped here.
+// Casting ability per class: the full casters, the Warlock, and the half
+// casters Paladin (CHA) and Ranger (WIS).
 
 export const CASTING_ABILITY: Record<string, 'INT' | 'WIS' | 'CHA'> = {
   Bard: 'CHA', Paladin: 'CHA', Sorcerer: 'CHA', Warlock: 'CHA',

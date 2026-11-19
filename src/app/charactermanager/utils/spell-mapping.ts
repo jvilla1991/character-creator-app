@@ -27,6 +27,16 @@ export function toPcSpell(s: DndSpell): PcSpell {
 }
 
 /**
+ * The snapshot of a spell a feature always keeps prepared: {@link toPcSpell}
+ * plus the `alwaysPrepared` marker and what grants it. A cantrip needs no
+ * marker (cantrips are never counted), so it only records the source.
+ */
+export function toGrantedSpell(s: DndSpell, grantedBy: string): PcSpell {
+  const spell = toPcSpell(s);
+  return s.level > 0 ? { ...spell, alwaysPrepared: true, grantedBy } : { ...spell, grantedBy };
+}
+
+/**
  * True for a placeholder spell text: the description starts with "TBD", the
  * marker the World of Warcraft spell stubs carried until their full text
  * landed (the same test the spell data's own specs use).

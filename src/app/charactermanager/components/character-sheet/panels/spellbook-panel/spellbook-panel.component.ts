@@ -3,9 +3,10 @@ import { PC, PcSpell } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { heroClassFor } from '../../../../models/hero-class';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
-import { isPlaceholderSpell, toPcSpell } from '../../../../utils/spell-mapping';
+import { isPlaceholderSpell, toGrantedSpell, toPcSpell } from '../../../../utils/spell-mapping';
+import { DM_GRANT_SOURCE } from '../../../../models/granted-spells';
 import { canCastAsRitual, castWarning, castableLevels } from '../../../../utils/spellcasting';
-import { countPreparedSpells, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
+import { countPreparedSpells, isAlwaysPrepared, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
 import { Eli5ToggleComponent } from '../../../eli5-toggle/eli5-toggle.component';
@@ -165,7 +166,8 @@ export class SpellbookPanelComponent implements OnChanges {
   /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
   readonly preparedCount = computed(() => countPreparedSpells(this.pc().spells ?? []));
   readonly preparedCap = computed(() => preparedSpellCap(this.pc().clazz, this.pc().level));
-  readonly hasLeveledSpells = computed(() => (this.pc().spells ?? []).some(s => s.lvl > 0));
+  /** True when the hero has leveled spells to choose a prepared list from (always-prepared ones are not a choice). */
+  readonly hasLeveledSpells = computed(() => (this.pc().spells ?? []).some(s => s.lvl > 0 && !isAlwaysPrepared(s)));
 
   // ── Player filters (name search + magic school) ──────────────────────────
   // Purely a view over the known-spells list; they narrow what spellsByLevel()
@@ -239,7 +241,7 @@ export class SpellbookPanelComponent implements OnChanges {
     const pc = this.pc();
     const inputs = JSON.stringify([
       pc.id, pc.spellSlots ?? null,
-      (pc.spells ?? []).map(s => [s.name, s.lvl, s.prepared, s.ritual ?? false]),
+      (pc.spells ?? []).map(s => [s.name, s.lvl, s.prepared, s.alwaysPrepared ?? false, s.ritual ?? false]),
       (pc.inventory ?? []).filter(i => i.category === 'material-component'),
       this.strictComponents(),
     ]);
@@ -413,6 +415,38 @@ export class SpellbookPanelComponent implements OnChanges {
     return isSpellPrepared(spell);
   }
 
+  /** A spell a feature always keeps prepared: no Prepare button, never counted against the cap. */
+  isAlwaysPrepared(spell: PcSpell): boolean {
+    return isAlwaysPrepared(spell);
+  }
+
+  /** 'Always prepared (Favored Enemy).' — the line in the spell's detail. */
+  alwaysPreparedLine(spell: PcSpell): string {
+    const source = spell.grantedBy ? ` (${spell.grantedBy})` : '';
+    return `Always prepared${source}. It does not count against your prepared spells.`;
+  }
+
+  /**
+   * DM only: mark a leveled spell always prepared, or put it back among the
+   * chosen ones. The way to fix a spell a feature gives that was learned or
+   * granted before the marker existed (an older Ranger's Hunter's Mark).
+   */
+  toggleAlwaysPrepared(spell: PcSpell, event: Event): void {
+    event.stopPropagation();
+    if (!this.addAllowed() || spell.lvl === 0) return;
+    const pc = this.pc();
+    const saved = this.originalOf(spell);
+    const spells = (pc.spells ?? []).map(s => {
+      if (s !== saved) return s;
+      if (isAlwaysPrepared(s)) {
+        const { alwaysPrepared: _marker, grantedBy: _source, ...rest } = s;
+        return { ...rest, prepared: true };
+      }
+      return { ...s, prepared: true, alwaysPrepared: true, grantedBy: s.grantedBy ?? DM_GRANT_SOURCE };
+    });
+    this.pcChange.emit({ ...pc, spells });
+  }
+
   /** Unpreparing is always allowed; preparing is blocked at the class cap. */
   canTogglePrepared(spell: PcSpell): boolean {
     if (this.isPrepared(spell)) return true;
@@ -430,6 +464,7 @@ export class SpellbookPanelComponent implements OnChanges {
   togglePrepared(spell: PcSpell, event: Event): void {
     event.stopPropagation(); // don't toggle the detail expand
     if (spell.lvl === 0) return;                 // cantrips have no toggle
+    if (isAlwaysPrepared(spell)) return;         // always prepared: nothing to toggle
     const preparing = !this.isPrepared(spell);
     if (preparing && !this.canTogglePrepared(spell)) return; // at cap; belt and braces
     const pc = this.pc();
@@ -449,6 +484,8 @@ export class SpellbookPanelComponent implements OnChanges {
 
   grantFormOpen = false;
   allClasses = true;
+  /** Grant the picked leveled spells as always prepared (a feature's spell), outside the prepared limit. */
+  grantAlwaysPrepared = false;
   loadingGrantSpells = false;
   grantCandidates: DndSpell[] = [];
   grantSelection: DndSpell[] = [];
@@ -469,7 +506,8 @@ export class SpellbookPanelComponent implements OnChanges {
 
   confirmGrant(): void {
     if (!this.grantSelection.length) return;
-    this.spellsGranted.emit(this.grantSelection.map(toPcSpell));
+    this.spellsGranted.emit(this.grantSelection.map(s => (this.grantAlwaysPrepared && s.level > 0
+      ? toGrantedSpell(s, DM_GRANT_SOURCE) : toPcSpell(s))));
     this.resetGrantForm();
   }
 
@@ -498,6 +536,7 @@ export class SpellbookPanelComponent implements OnChanges {
   private resetGrantForm(): void {
     this.grantFormOpen = false;
     this.allClasses = true;
+    this.grantAlwaysPrepared = false;
     this.grantCandidates = [];
     this.grantSelection = [];
   }

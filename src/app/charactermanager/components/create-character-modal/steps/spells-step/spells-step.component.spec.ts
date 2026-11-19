@@ -65,6 +65,49 @@ describe('spell creation level groups', () => {
     expect(fixture.nativeElement.querySelector('details').open).toBeTrue();
   });
 
+  it('drops the cantrip copy, tab and count for a class with no cantrips (Paladin, Ranger)', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const smite: DndSpell = { name: 'Searing Smite', level: 1, school: 'evocation',
+      classes: ['paladin'], actionType: 'bonus action', concentration: false, ritual: false,
+      range: 'Self', components: ['v'], duration: '1 minute', description: 'Smite text.' };
+    fixture.componentRef.setInput('filteredSpellList', [smite]);
+    fixture.componentRef.setInput('maxCantrips', 0);
+    fixture.componentRef.setInput('maxKnownSpells', 2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.modal-sub')!.textContent!.replace(/\s+/g, ' ').trim())
+      .toBe('Select 2 level 1 spells. Your class learns no cantrips at level 1.');
+    const tabs = Array.from(el.querySelectorAll('.spell-level-tab')).map(t => t.textContent!.trim());
+    expect(tabs).toEqual(['All', '1st']);
+    expect(el.querySelector('.spell-counter')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('0/2 spells');
+    expect(el.querySelectorAll('details').length).toBe(1);
+
+    // A class with cantrips keeps all three.
+    fixture.componentRef.setInput('maxCantrips', 3);
+    fixture.detectChanges();
+    expect(el.querySelector('.modal-sub')!.textContent).toContain('Select 3 cantrips and 2 spells');
+    expect(el.querySelectorAll('.spell-level-tab').length).toBe(3);
+    expect(el.querySelector('.spell-counter')!.textContent).toContain('0/3 cantrips');
+  });
+
+  it('says which spell the class always keeps prepared, and how many picks start prepared', () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    fixture.componentRef.setInput('maxKnownSpells', 2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const text = (sel: string) => el.querySelector(sel)?.textContent?.replace(/\s+/g, ' ').trim();
+    expect(el.querySelector('.spell-always-note')).toBeNull();
+    expect(el.querySelector('.spell-prepared-note')).toBeNull();
+
+    fixture.componentRef.setInput('alwaysPrepared', [{ name: "Hunter's Mark", grantedBy: 'Favored Enemy' }]);
+    fixture.componentRef.setInput('preparedAtStart', 4);
+    fixture.detectChanges();
+    expect(text('.spell-always-note'))
+      .toBe("You also start with Hunter's Mark (Favored Enemy) always prepared. It is not one of your picks.");
+    expect(text('.spell-prepared-note'))
+      .toBe('Your first 4 spells start prepared. The others wait in your spellbook.');
+  });
+
   it('badges recommended spells without selecting them', () => {
     const fixture = TestBed.createComponent(SpellsStepComponent);
     const base: DndSpell = { name: 'Druidcraft', level: 0, school: 'transmutation',
