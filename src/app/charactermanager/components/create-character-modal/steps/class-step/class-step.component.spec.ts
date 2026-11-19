@@ -657,3 +657,77 @@ describe('ClassStepComponent — World of Warcraft Hunter (Ranger)', () => {
     expect(sv).toContain('Polearm Master');
   });
 });
+
+describe('ClassStepComponent — World of Warcraft Mage (Wizard)', () => {
+  const MAGE_KEY = 'Wizard (World of Warcraft)';
+  const detail = { hit_die: 6, saving_throws: [{ name: 'INT' }, { name: 'WIS' }] } as unknown as DndClass;
+
+  function render(specialization = '') {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hero = heroClassByKey(MAGE_KEY)!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Wizard']));
+    fixture.componentRef.setInput('selectedKey', MAGE_KEY);
+    fixture.componentRef.setInput('selectedLabel', 'Mage (Wizard)');
+    fixture.componentRef.setInput('clazz', 'Wizard');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', specialization);
+    fixture.componentRef.setInput('guidance', specialization ? hero.guidance![specialization] : null);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows "Wizard" and a tagged "Mage (Wizard)" row with the blurb and the Kirin Tor renown note', () => {
+    const el = render();
+    const heads = (Array.from(el.querySelectorAll('.accordion-head')) as HTMLElement[]).map(h => h.textContent!.trim());
+    expect(heads[0]).toBe('Wizard');
+    const active = el.querySelector('.accordion-head.active') as HTMLElement;
+    expect(active.textContent).toContain('Mage (Wizard)');
+    expect(active.querySelector('.source-tag')?.textContent).toContain('World of Warcraft');
+    expect(el.querySelector('.hero-blurb')?.textContent).toContain('Kirin Tor of Dalaran');
+    expect(el.querySelector('.hero-renown')?.textContent).toContain('Kirin Tor by 3');
+    expect(el.textContent).toContain('Chosen as normal at Wizard level 3');
+    expect(Array.from(el.querySelectorAll('.subclass-card .subclass-name')).map(n => n.textContent!.trim()))
+      .toEqual(['Arcane', 'Fire', 'Frost']);
+  });
+
+  it('shows the Frost box: cantrips, a spellbook, the Evoker school (not the Evoker class) and feats with ✦', () => {
+    const box = render('Frost').querySelector('.spec-guidance') as HTMLElement;
+    const terms = Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim());
+    expect(terms).toEqual(['Cantrips', 'Spellbook', 'Level 3 subclass', 'Feats']);
+    expect(box.textContent).toContain('Light, Mage Hand, Ray of Frost');
+    expect(box.textContent).toContain('Detect Magic, Feather Fall, Frost Nova, Ice Knife, Mage Armor, Shield');
+    expect(box.textContent).toContain('Evoker (school of evocation)');
+    const feats = Array.from(box.querySelectorAll('.feat-list .feat')) as HTMLElement[];
+    expect(feats.map(f => f.textContent!.replace('✦', '').trim())).toEqual(['Fingers of Frost', 'Spell Sniper', 'War Caster']);
+    expect(feats.map(f => !!f.querySelector('.wow-mark'))).toEqual([true, false, false]);
+    expect(feats[0].querySelector('.wow-mark')?.getAttribute('title')).toBe('World of Warcraft feat');
+    expect(box.querySelector('.feat-footnote')?.textContent).toContain('World of Warcraft feat');
+  });
+
+  it('marks Clearcasting for Arcane and Hot Streak for Fire, and no PHB feat', () => {
+    const marked = (spec: string) => Array.from(render(spec).querySelectorAll('.feat-list .feat'))
+      .filter(f => f.querySelector('.wow-mark')).map(f => f.textContent!.replace('✦', '').trim());
+    expect(marked('Arcane')).toEqual(['Clearcasting']);
+    expect(marked('Fire')).toEqual(['Hot Streak']);
+    const fire = render('Fire').querySelector('.spec-guidance')!.textContent!;
+    expect(fire).toContain('Fire Bolt');
+    expect(fire).toContain('Burning Hands');
+    expect(fire).toContain('Elemental Adept');
+  });
+
+  it('keeps "Level 1 spells", the bare subclass name and no feat footnote for other variants', () => {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    const hunter = heroClassByKey('Ranger (World of Warcraft)')!;
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Ranger']));
+    fixture.componentRef.setInput('selectedKey', hunter.key);
+    fixture.componentRef.setInput('clazz', 'Ranger');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('specialization', 'Marksmanship');
+    fixture.componentRef.setInput('guidance', hunter.guidance!['Marksmanship']);
+    fixture.detectChanges();
+    const box = (fixture.nativeElement as HTMLElement).querySelector('.spec-guidance') as HTMLElement;
+    expect(Array.from(box.querySelectorAll('dt')).map(d => d.textContent!.trim())).toContain('Level 1 spells');
+    expect(box.querySelectorAll('.feat-list .wow-mark').length).toBe(0);
+    expect(box.querySelector('.feat-footnote')).toBeNull();
+  });
+});

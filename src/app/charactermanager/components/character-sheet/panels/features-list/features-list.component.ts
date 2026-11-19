@@ -6,6 +6,7 @@ import { ClassFeatureService } from '../../../../services/class-feature.service'
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { PreferencesService } from '../../../../services/preferences.service';
 import { FormsModule } from '@angular/forms';
+import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
 
@@ -141,6 +142,19 @@ export class FeaturesListComponent {
    * (the backend doesn't own feat descriptions — they live in the frontend), so for those we
    * fall back to the local feat-description lookup. Class features carry their own desc.
    */
+  /** Hover text for the ✦ on a World of Warcraft feat. */
+  readonly wowFeatNote = WOW_FEAT_NOTE;
+
+  /** True for a World of Warcraft feat name (Clearcasting, …) — marked ✦ in the grant typeahead. */
+  isWowFeat(name: string): boolean {
+    return isWowFeat(name);
+  }
+
+  /** True when a listed entry is a World of Warcraft feat the character took (source 'Feat …'). */
+  isWowFeatFeature(feature: Feature): boolean {
+    return !!feature.source?.toLowerCase().startsWith('feat') && isWowFeat(feature.name);
+  }
+
   descFor(feature: Feature): string {
     if (feature.desc) return feature.desc;
     if (feature.source?.toLowerCase().startsWith('feat')) {

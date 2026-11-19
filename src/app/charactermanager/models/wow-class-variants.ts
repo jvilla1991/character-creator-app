@@ -357,6 +357,130 @@ export const WOW_HUNTER: HeroClassOption = {
   hunterPets: true,
 };
 
+// ── Mage (Wizard) ────────────────────────────────────────────────────────────
+
+export const WOW_MAGE_SPECIALIZATIONS = ['Arcane', 'Fire', 'Frost'] as const;
+
+/**
+ * The Wizard's PHB subclass every mage specialization recommends. Its name
+ * clashes with the WoW Evoker (Sorcerer) class, so guidance text shows
+ * {@link EVOKER_SCHOOL_LABEL} instead; the stored subclass stays 'Evoker'.
+ */
+export const EVOKER_SCHOOL = 'Evoker';
+
+/** How the Wizard's Evoker subclass reads in guidance, so it isn't mistaken for the Evoker (Sorcerer) class. */
+export const EVOKER_SCHOOL_LABEL = 'Evoker (school of evocation)';
+
+/** The World of Warcraft mage spells (✦), on the Wizard list. Their full text is in the spell data. */
+export const WOW_MAGE_SPELLS = ['Frost Nova', 'Flurry', 'Combustion', 'Mass Polymorph'] as const;
+
+/** Base (non-wizard) spells the WoW Mage adds to its Wizard spell list. */
+export const WOW_MAGE_EXTRA_SPELLS = ['Create Food and Water', 'Flame Strike', "Heroes' Feast"] as const;
+
+const EVOKER_SCHOOL_PICK = { name: EVOKER_SCHOOL, label: EVOKER_SCHOOL_LABEL } as const;
+
+/**
+ * Per-specialization picks (class step box + spells-step highlights + sheet panel).
+ * Wizards keep their level-1 spells in a spellbook, so `level1Spells` is the
+ * starting spellbook; they are badged in the spells step with the cantrips.
+ */
+export const WOW_MAGE_GUIDANCE: Readonly<Record<string, SpecializationGuidance>> = {
+  Arcane: {
+    cantrips: ['Light', 'Mage Hand', 'Thunderclap'],
+    level1Spells: ['Detect Magic', 'Feather Fall', 'Mage Armor', 'Magic Missile', 'Shield', 'Thunderwave'],
+    subclass: EVOKER_SCHOOL_PICK,
+    feats: ['Clearcasting', 'Spell Sniper', 'War Caster'],
+  },
+  Fire: {
+    cantrips: ['Light', 'Mage Hand', 'Fire Bolt'],
+    level1Spells: ['Burning Hands', 'Detect Magic', 'Feather Fall', 'Mage Armor', 'Shield', 'Thunderwave'],
+    subclass: EVOKER_SCHOOL_PICK,
+    feats: ['Elemental Adept', 'Hot Streak', 'Spell Sniper', 'War Caster'],
+  },
+  Frost: {
+    cantrips: ['Light', 'Mage Hand', 'Ray of Frost'],
+    level1Spells: ['Detect Magic', 'Feather Fall', 'Frost Nova', 'Ice Knife', 'Mage Armor', 'Shield'],
+    subclass: EVOKER_SCHOOL_PICK,
+    feats: ['Fingers of Frost', 'Spell Sniper', 'War Caster'],
+  },
+};
+
+/**
+ * Suggested (not always-prepared) spells per specialization, by spell level
+ * (✦ WoW spells are flagged from the spell data). Mass Polymorph is a level-9
+ * spell, so it sits in the level-9 row.
+ */
+export const WOW_MAGE_SUGGESTED_SPELLS: Readonly<Record<string, readonly SuggestedSpellLevel[]>> = {
+  Arcane: [
+    { level: 1, spells: ['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar', 'Frost Nova'] },
+    { level: 2, spells: ['Enhance Ability', 'Invisibility', 'Mirror Image', 'Misty Step', 'Shatter'] },
+    { level: 3, spells: [
+      'Blink', 'Counterspell', 'Create Food and Water', 'Dispel Magic', 'Haste', 'Remove Curse', 'Slow', 'Tongues'] },
+    { level: 4, spells: [
+      'Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', "Otiluke's Resilient Sphere", 'Polymorph'] },
+    { level: 5, spells: ["Bigby's Hand", 'Teleportation Circle', 'Wall of Force'] },
+    { level: 6, spells: ['Arcane Gate', 'Disintegrate', 'Globe of Invulnerability', "Heroes' Feast"] },
+    { level: 7, spells: ['Forcecage', "Mordenkainen's Sword", 'Prismatic Spray', 'Teleport'] },
+    { level: 8, spells: ['Befuddlement', 'Maze'] },
+    { level: 9, spells: ['Mass Polymorph', 'Prismatic Wall', 'Time Stop'] },
+  ],
+  Fire: [
+    { level: 1, spells: ['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar', 'Frost Nova'] },
+    { level: 2, spells: [
+      "Dragon's Breath", 'Enhance Ability', 'Flaming Sphere', 'Invisibility', 'Mirror Image', 'Misty Step',
+      'Scorching Ray'] },
+    { level: 3, spells: [
+      'Counterspell', 'Create Food and Water', 'Dispel Magic', 'Fireball', 'Haste', 'Remove Curse', 'Slow', 'Tongues'] },
+    { level: 4, spells: ['Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', 'Polymorph', 'Wall of Fire'] },
+    { level: 5, spells: ['Flame Strike', 'Teleportation Circle'] },
+    { level: 6, spells: ['Arcane Gate', 'Combustion', "Heroes' Feast"] },
+    { level: 7, spells: ['Delayed Blast Fireball', 'Prismatic Spray', 'Teleport'] },
+    { level: 8, spells: ['Befuddlement', 'Incendiary Cloud', 'Maze'] },
+    { level: 9, spells: ['Mass Polymorph', 'Meteor Swarm', 'Prismatic Wall', 'Time Stop'] },
+  ],
+  Frost: [
+    { level: 1, spells: ['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar'] },
+    { level: 2, spells: ["Dragon's Breath", 'Enhance Ability', 'Invisibility', 'Mirror Image', 'Misty Step'] },
+    { level: 3, spells: [
+      'Counterspell', 'Create Food and Water', 'Dispel Magic', 'Flurry', 'Haste', 'Remove Curse', 'Sleet Storm', 'Slow',
+      'Tongues'] },
+    { level: 4, spells: ['Conjure Minor Elementals', 'Fire Shield', 'Greater Invisibility', 'Ice Storm', 'Polymorph'] },
+    { level: 5, spells: ['Cone of Cold', 'Teleportation Circle'] },
+    { level: 6, spells: ['Arcane Gate', "Heroes' Feast", "Otiluke's Freezing Sphere", 'Wall of Ice'] },
+    { level: 7, spells: ['Prismatic Spray', 'Teleport'] },
+    { level: 8, spells: ['Befuddlement', 'Maze'] },
+    { level: 9, spells: ['Mass Polymorph', 'Prismatic Wall', 'Time Stop'] },
+  ],
+};
+
+export const WOW_MAGE: HeroClassOption = {
+  key: 'Wizard (World of Warcraft)',
+  // The WoW name differs from the base name, so the row reads "Mage (Wizard)".
+  label: variantLabel('Mage', 'Wizard'),
+  name: 'Mage',
+  baseClass: 'Wizard',
+  source: 'World of Warcraft',
+  blurb: 'A mage walks a path of intellect and discipline. Mages wear no armor, trusting arcane shields to turn '
+    + 'blows aside while they hurl fire and frost at their foes. Azeroth still eyes them with suspicion — the '
+    + "Highborne's reckless magic once opened the way for the Burning Legion — and many mages answer to the "
+    + 'Kirin Tor of Dalaran.',
+  subclassNote: 'Chosen as normal at Wizard level 3',
+  subclassTerm: 'subclass',
+  specializationLabel: 'specialization',
+  specializations: [
+    { name: 'Arcane', desc: 'Bends raw arcane magic to its will to overwhelm foes.' },
+    { name: 'Fire',   desc: 'Assails enemies with searing, combustive flame.' },
+    { name: 'Frost',  desc: 'Freezes enemies in their tracks, then shatters them.' },
+  ],
+  respecOnLevelUp: true,
+  spellTable: [],
+  level1SpellsLabel: 'Spellbook',
+  guidance: WOW_MAGE_GUIDANCE,
+  suggestedSpells: WOW_MAGE_SUGGESTED_SPELLS,
+  extraSpellList: WOW_MAGE_EXTRA_SPELLS,
+  renownNote: 'Adopting the Mage raises your Renown with the Kirin Tor by 3 — ask your DM to record it.',
+};
+
 // ── Paladin ──────────────────────────────────────────────────────────────────
 
 export const WOW_PALADIN_SPECIALIZATIONS = ['Holy', 'Protection', 'Retribution'] as const;
@@ -880,5 +1004,6 @@ export const WOW_WARRIOR: HeroClassOption = {
  * though it locks its (base-game) subclass like a hero class.
  */
 export const WOW_CLASS_VARIANTS: readonly HeroClassOption[] = [
-  WOW_DRUID, WOW_EVOKER, WOW_HUNTER, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK, WOW_WARRIOR,
+  WOW_DRUID, WOW_EVOKER, WOW_HUNTER, WOW_MAGE, WOW_PALADIN, WOW_PRIEST, WOW_ROGUE, WOW_SHAMAN, WOW_WARLOCK,
+  WOW_WARRIOR,
 ];

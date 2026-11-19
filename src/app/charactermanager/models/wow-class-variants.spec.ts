@@ -1,6 +1,7 @@
 import {
   HERO_CLASSES, heroClassFor, heroClassForSubclass, heroClassSpells, recommendedFightingStylesFor,
-  recommendedStartingSpells, recommendedSubclassFor, subclassSource,
+  isExtraListSpell, recommendedStartingSpells, recommendedSubclassFor, subclassGuidanceName, subclassOptionLabel,
+  subclassSource,
 } from './hero-class';
 import {
   WOW_CLASS_VARIANTS, WOW_DRUID, WOW_DRUID_SUGGESTED_SPELLS, WOW_PALADIN, WOW_PALADIN_GUIDANCE,
@@ -10,6 +11,8 @@ import {
   WOW_WARRIOR_MANEUVERS, WOW_WARRIOR_SPECIALIZATIONS, variantLabel, WOW_EVOKER, WOW_EVOKER_GUIDANCE,
   WOW_EVOKER_SPECIALIZATIONS, WOW_EVOKER_SPELL_TABLE, WOW_EVOKER_SUGGESTED_SPELLS, DRACONIC_SORCERY,
   WOW_HUNTER, WOW_HUNTER_GUIDANCE, WOW_HUNTER_SPECIALIZATIONS, WOW_HUNTER_SUGGESTED_SPELLS,
+  EVOKER_SCHOOL, EVOKER_SCHOOL_LABEL, WOW_MAGE, WOW_MAGE_EXTRA_SPELLS, WOW_MAGE_GUIDANCE, WOW_MAGE_SPECIALIZATIONS,
+  WOW_MAGE_SUGGESTED_SPELLS,
 } from './wow-class-variants';
 import { classDisplayName } from '../utils/class-display';
 
@@ -171,6 +174,7 @@ describe('wow-class-variants', () => {
       expect(WOW_SHAMAN.label).toBe('Shaman (Barbarian)');
       expect(WOW_WARLOCK.label).toBe('Warlock');
       expect(WOW_PRIEST.label).toBe('Priest (Cleric)');
+      expect(WOW_MAGE.label).toBe('Mage (Wizard)');
     });
   });
 
@@ -244,10 +248,10 @@ describe('wow-class-variants', () => {
       expect(flat('Shadow')).not.toContain('Shadow Word: Pain');
     });
 
-    it('adds Blur and Levitate to its Cleric spell list — the only variant with an added list', () => {
+    it('adds Blur and Levitate to its Cleric spell list — only the Priest and the Mage have an added list', () => {
       expect(WOW_PRIEST.extraSpellList).toBe(WOW_PRIEST_EXTRA_SPELLS);
       expect([...WOW_PRIEST.extraSpellList!]).toEqual(['Blur', 'Levitate']);
-      for (const v of WOW_CLASS_VARIANTS.filter(v => v !== WOW_PRIEST)) {
+      for (const v of WOW_CLASS_VARIANTS.filter(v => v !== WOW_PRIEST && v !== WOW_MAGE)) {
         expect(v.extraSpellList).withContext(v.key).toBeUndefined();
       }
     });
@@ -729,6 +733,158 @@ describe('wow-class-variants', () => {
 
     it('is the only variant that keeps hunter pets', () => {
       expect(HERO_CLASSES.filter(h => h.hunterPets)).toEqual([WOW_HUNTER]);
+    });
+  });
+
+  describe('Mage (Wizard)', () => {
+    const mage = (overrides: { subclass?: string | null; specialization?: string | null; clazz?: string } = {}) =>
+      ({ clazz: 'Wizard', subclass: null, specialization: 'Frost', ...overrides });
+    const flat = (spec: string) => WOW_MAGE_SUGGESTED_SPELLS[spec].flatMap(r => r.spells);
+
+    it('reads "Mage (Wizard)" on the Wizard base class with no fixed subclass, and may respec', () => {
+      expect(WOW_MAGE.label).toBe('Mage (Wizard)');
+      expect(WOW_MAGE.key).toBe('Wizard (World of Warcraft)');
+      expect(WOW_MAGE.name).toBe('Mage');
+      expect(WOW_MAGE.baseClass).toBe('Wizard');
+      expect(WOW_MAGE.subclass).toBeUndefined();
+      expect(WOW_MAGE.subclassTerm).toBe('subclass');
+      expect(WOW_MAGE.subclassNote).toBe('Chosen as normal at Wizard level 3');
+      expect(WOW_MAGE.subclassLevel).toBeUndefined();
+      expect(WOW_MAGE.respecOnLevelUp).toBeTrue();
+      expect(WOW_MAGE.spellTable).toEqual([]);
+      expect(WOW_MAGE.wowSubclasses).toBeUndefined();
+      expect(WOW_MAGE.subclassSpells).toBeUndefined();
+      expect(WOW_MAGE.featureCards).toBeUndefined();
+      const specs = WOW_MAGE.specializations.map(s => s.name);
+      expect(specs).toEqual([...WOW_MAGE_SPECIALIZATIONS]);
+      expect(specs).toEqual(['Arcane', 'Fire', 'Frost']);
+      expect(Object.keys(WOW_MAGE_GUIDANCE)).toEqual(specs);
+      expect(Object.keys(WOW_MAGE_SUGGESTED_SPELLS)).toEqual(specs);
+    });
+
+    it('describes intellect, arcane shields, fire and frost, the Legion suspicion and the Kirin Tor', () => {
+      for (const word of ['intellect', 'discipline', 'no armor', 'arcane shields', 'fire and frost', 'suspicion',
+        'Highborne', 'Burning Legion', 'Kirin Tor of Dalaran']) {
+        expect(WOW_MAGE.blurb).withContext(word).toContain(word);
+      }
+      const desc = (name: string) => WOW_MAGE.specializations.find(s => s.name === name)!.desc;
+      expect(desc('Arcane')).toContain('arcane magic');
+      expect(desc('Arcane')).toContain('overwhelm');
+      expect(desc('Fire')).toContain('combustive flame');
+      expect(desc('Frost')).toContain('Freezes');
+      expect(desc('Frost')).toContain('shatters');
+    });
+
+    it('reminds the player about Kirin Tor renown', () => {
+      expect(WOW_MAGE.renownNote).toContain('Kirin Tor');
+      expect(WOW_MAGE.renownNote).toContain('by 3');
+      expect(WOW_MAGE.renownNote).toContain('ask your DM');
+    });
+
+    it('is a WoW mage with any of its specializations, and shows "Mage (Wizard)" as the class name', () => {
+      expect(heroClassFor(mage())).toBe(WOW_MAGE);
+      expect(heroClassFor(mage({ subclass: 'Evoker' }))).toBe(WOW_MAGE);
+      expect(heroClassFor(mage({ subclass: 'Diviner', specialization: 'Arcane' }))).toBe(WOW_MAGE);
+      expect(heroClassFor(mage({ clazz: 'wizard', specialization: 'fire' }))).toBe(WOW_MAGE);
+      expect(heroClassFor(mage({ specialization: null }))).toBeUndefined();
+      expect(heroClassFor(mage({ specialization: null, subclass: 'Evoker' }))).toBeUndefined();
+      expect(heroClassFor(mage({ specialization: 'Devastation' }))).toBeUndefined();
+      expect(heroClassFor(mage({ clazz: 'Sorcerer' }))).toBeUndefined();
+      expect(classDisplayName('Wizard', 'Evoker', 'Frost')).toBe('Mage (Wizard)');
+      expect(classDisplayName('Wizard', null, 'Arcane')).toBe('Mage (Wizard)');
+      expect(classDisplayName('Wizard', 'Evoker', null)).toBe('Wizard');
+      expect(classDisplayName('Wizard', null, null)).toBe('Wizard');
+    });
+
+    it('recommends the Evoker for every specialization, shown as the school of evocation', () => {
+      for (const spec of WOW_MAGE_SPECIALIZATIONS) {
+        expect(recommendedSubclassFor(WOW_MAGE, spec)).withContext(spec).toBe('Evoker');
+        expect(WOW_MAGE_GUIDANCE[spec].subclass.name).withContext(spec).toBe(EVOKER_SCHOOL);
+        expect(subclassGuidanceName(WOW_MAGE_GUIDANCE[spec])).withContext(spec).toBe('Evoker (school of evocation)');
+      }
+      expect(EVOKER_SCHOOL_LABEL).toBe('Evoker (school of evocation)');
+      expect(subclassOptionLabel(WOW_MAGE, 'Evoker')).toBe('Evoker (school of evocation)');
+      expect(subclassOptionLabel(WOW_MAGE, 'evoker')).toBe('Evoker (school of evocation)');
+      expect(subclassOptionLabel(WOW_MAGE, 'Abjurer')).toBe('Abjurer');
+      // No other class relabels its subclasses, and a base wizard (no hero class) never does.
+      expect(subclassOptionLabel(undefined, 'Evoker')).toBe('Evoker');
+      expect(subclassOptionLabel(WOW_EVOKER, 'Evoker')).toBe('Evoker');
+      for (const v of WOW_CLASS_VARIANTS.filter(x => x !== WOW_MAGE)) {
+        for (const g of Object.values(v.guidance ?? {})) {
+          expect(g.subclass.label).withContext(v.key).toBeUndefined();
+          expect(subclassGuidanceName(g)).withContext(v.key).toBe(g.subclass.name);
+        }
+      }
+      // The Wizard school is a base-game subclass: it marks no hero class and carries no WoW tag.
+      expect(heroClassForSubclass('Evoker')).toBeUndefined();
+      expect(subclassSource('Evoker')).toBeUndefined();
+    });
+
+    it('recommends cantrips, a spellbook and feats per specialization', () => {
+      expect(WOW_MAGE.level1SpellsLabel).toBe('Spellbook');
+      expect(WOW_MAGE_GUIDANCE['Arcane']).toEqual(jasmine.objectContaining({
+        cantrips: ['Light', 'Mage Hand', 'Thunderclap'],
+        level1Spells: ['Detect Magic', 'Feather Fall', 'Mage Armor', 'Magic Missile', 'Shield', 'Thunderwave'],
+        feats: ['Clearcasting', 'Spell Sniper', 'War Caster'],
+      }));
+      expect(WOW_MAGE_GUIDANCE['Fire']).toEqual(jasmine.objectContaining({
+        cantrips: ['Light', 'Mage Hand', 'Fire Bolt'],
+        level1Spells: ['Burning Hands', 'Detect Magic', 'Feather Fall', 'Mage Armor', 'Shield', 'Thunderwave'],
+        feats: ['Elemental Adept', 'Hot Streak', 'Spell Sniper', 'War Caster'],
+      }));
+      expect(WOW_MAGE_GUIDANCE['Frost']).toEqual(jasmine.objectContaining({
+        cantrips: ['Light', 'Mage Hand', 'Ray of Frost'],
+        level1Spells: ['Detect Magic', 'Feather Fall', 'Frost Nova', 'Ice Knife', 'Mage Armor', 'Shield'],
+        feats: ['Fingers of Frost', 'Spell Sniper', 'War Caster'],
+      }));
+      for (const g of Object.values(WOW_MAGE_GUIDANCE)) {
+        expect(g.extraPrepared).toBeUndefined();
+        expect(g.weaponMastery).toBeUndefined();
+        expect(g.fightingStyles).toBeUndefined();
+      }
+      for (const v of WOW_CLASS_VARIANTS.filter(x => x !== WOW_MAGE)) {
+        expect(v.level1SpellsLabel).withContext(v.key).toBeUndefined();
+      }
+    });
+
+    it('badges the recommended cantrips and level-1 spellbook spells in the spells step', () => {
+      expect(recommendedStartingSpells(WOW_MAGE, 'Frost')).toEqual([
+        'Light', 'Mage Hand', 'Ray of Frost',
+        'Detect Magic', 'Feather Fall', 'Frost Nova', 'Ice Knife', 'Mage Armor', 'Shield',
+      ]);
+      expect(recommendedStartingSpells(WOW_MAGE, 'Arcane')).toContain('Thunderclap');
+      expect(recommendedStartingSpells(WOW_MAGE, 'Fire')).toContain('Burning Hands');
+      expect(recommendedStartingSpells(WOW_MAGE, 'Frost')).toBe(recommendedStartingSpells(WOW_MAGE, 'Frost'));
+      expect(recommendedStartingSpells(WOW_MAGE, null)).toEqual([]);
+    });
+
+    it('suggests spells for levels 1 to 9 per specialization, with the WoW mage spells', () => {
+      for (const spec of WOW_MAGE_SPECIALIZATIONS) {
+        expect(WOW_MAGE_SUGGESTED_SPELLS[spec].map(r => r.level)).withContext(spec).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        expect(flat(spec)).withContext(spec).toContain('Create Food and Water');
+        expect(flat(spec)).withContext(spec).toContain("Heroes' Feast");
+        // Mass Polymorph is a level-9 spell, so it sits in the level-9 row.
+        expect(WOW_MAGE_SUGGESTED_SPELLS[spec][8].spells).withContext(spec).toContain('Mass Polymorph');
+      }
+      expect(WOW_MAGE_SUGGESTED_SPELLS['Arcane'][0].spells)
+        .toEqual(['Chromatic Orb', 'Comprehend Languages', 'Disguise Self', 'Find Familiar', 'Frost Nova']);
+      expect(flat('Arcane')).toEqual(jasmine.arrayContaining(["Bigby's Hand", "Mordenkainen's Sword", "Otiluke's Resilient Sphere"]));
+      expect(WOW_MAGE_SUGGESTED_SPELLS['Fire'][4].spells).toEqual(['Flame Strike', 'Teleportation Circle']);
+      expect(WOW_MAGE_SUGGESTED_SPELLS['Fire'][5].spells).toEqual(['Arcane Gate', 'Combustion', "Heroes' Feast"]);
+      expect(flat('Fire')).toContain('Meteor Swarm');
+      expect(WOW_MAGE_SUGGESTED_SPELLS['Frost'][0].spells).not.toContain('Frost Nova');   // it's in the spellbook
+      expect(WOW_MAGE_SUGGESTED_SPELLS['Frost'][2].spells).toContain('Flurry');
+      expect(flat('Frost')).toContain("Otiluke's Freezing Sphere");
+      expect(flat('Frost')).not.toContain('Flame Strike');
+    });
+
+    it("adds Create Food and Water, Flame Strike and Heroes' Feast to the Wizard list for WoW mages only", () => {
+      expect(WOW_MAGE.extraSpellList).toBe(WOW_MAGE_EXTRA_SPELLS);
+      expect([...WOW_MAGE.extraSpellList!]).toEqual(['Create Food and Water', 'Flame Strike', "Heroes' Feast"]);
+      expect(isExtraListSpell(WOW_MAGE, 'flame strike')).toBeTrue();
+      expect(isExtraListSpell(WOW_MAGE, 'Blur')).toBeFalse();
+      expect(isExtraListSpell(WOW_PRIEST, 'Flame Strike')).toBeFalse();
+      expect(isExtraListSpell(undefined, 'Flame Strike')).toBeFalse();
     });
   });
 });

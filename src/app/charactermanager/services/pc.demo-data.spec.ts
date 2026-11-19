@@ -1,4 +1,4 @@
-import { DEMO_PCS, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
+import { DEMO_PCS, demoFeatOptions, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
 import { heroClassFor, heroClassSpells, subclassSpellsFor } from '../models/hero-class';
 import { classDisplayName } from '../utils/class-display';
 
@@ -191,5 +191,32 @@ describe('pc.demo-data (WoW mirrors)', () => {
     const dh = DEMO_PCS.find(p => p.subclass === 'Demon Hunter')!;
     expect(heroClassFor(dh)?.label).toBe('Demon Hunter (Ranger)');
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('seeds a level-5 Frost mage on the Evoker school who knows Ray of Frost, Frost Nova and Ice Knife', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Wizard' && p.specialization === 'Frost')!;
+    expect(pc).toBeDefined();
+    expect(pc.level).toBe(5);
+    expect(pc.subclass).toBe('Evoker');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Wizard (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Mage (Wizard)');
+    const names = (pc.spells ?? []).map(s => s.name);
+    expect(names).toEqual(jasmine.arrayContaining(['Ray of Frost', 'Frost Nova', 'Ice Knife']));
+    expect((pc.spells ?? []).filter(s => s.lvl === 0).map(s => s.name))
+      .toEqual(jasmine.arrayContaining(['Light', 'Mage Hand', 'Ray of Frost']));
+    expect(Object.keys(pc.spellSlots ?? {})).toEqual(['1', '2', '3']);
+    expect(pc.bio).toContain('Kirin Tor');
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('offers the World of Warcraft mage feats among the General feats at an ASI level', () => {
+    for (const clazz of ['Wizard', 'Fighter', 'Barbarian']) {
+      expect(demoFeatOptions(clazz, 4)).withContext(clazz)
+        .toEqual(jasmine.arrayContaining(['Clearcasting', 'Fingers of Frost', 'Hot Streak', 'War Caster']));
+    }
+    const options = demoFeatOptions('Wizard', 8);
+    expect(options).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    expect(new Set(options).size).toBe(options.length);
   });
 });

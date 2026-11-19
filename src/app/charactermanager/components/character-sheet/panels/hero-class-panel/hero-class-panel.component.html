@@ -89,7 +89,7 @@
           <span class="feature-source">{{ h.baseClass }} {{ subclassLevel }}</span>
         </div>
         <div class="feature-desc">
-          {{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }
+          {{ subclassGuidanceName(g) }}@if (g.subclass.note) { — {{ g.subclass.note }} }
         </div>
         <div class="hero-subclass-match" [attr.data-match]="subclassMatch">
           @switch (subclassMatch) {
