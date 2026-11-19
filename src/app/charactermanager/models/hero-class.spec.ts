@@ -13,11 +13,12 @@ describe('hero-class', () => {
     it('lists base classes in the given order, then the WoW hero classes', () => {
       const options = buildClassOptions(['Barbarian', 'Paladin', 'Wizard']);
       expect(options.map(o => o.label))
-        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
+        .toEqual(['Barbarian', 'Paladin', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Mage (Wizard)', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
       expect(options.map(o => o.source)).toEqual([
         'Base Game', 'Base Game', 'Base Game',
         'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
         'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft', 'World of Warcraft',
+        'World of Warcraft',
       ]);
     });
 
@@ -328,12 +329,12 @@ describe('hero-class', () => {
       expect(subclassSource('Life Domain')).toBeUndefined();
     });
 
-    it('adds Blur and Levitate to its spell list, and no other class adds anything', () => {
+    it('adds Blur and Levitate to its spell list, and no other class but the Mage adds anything', () => {
       expect(isExtraListSpell(wowPriest, 'Blur')).toBeTrue();
       expect(isExtraListSpell(wowPriest, 'levitate')).toBeTrue();
       expect(isExtraListSpell(wowPriest, 'Cure Wounds')).toBeFalse();
       expect(isExtraListSpell(undefined, 'Blur')).toBeFalse();
-      for (const hero of HERO_CLASSES.filter(h => h !== wowPriest)) {
+      for (const hero of HERO_CLASSES.filter(h => h !== wowPriest && h.key !== 'Wizard (World of Warcraft)')) {
         expect(hero.extraSpellList).withContext(hero.key).toBeUndefined();
         expect(isExtraListSpell(hero, 'Blur')).withContext(hero.key).toBeFalse();
       }

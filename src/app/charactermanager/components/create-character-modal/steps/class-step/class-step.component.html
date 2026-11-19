@@ -101,7 +101,7 @@
                       <dd>{{ g.cantrips!.join(', ') }}</dd>
                     }
                     @if (g.level1Spells?.length) {
-                      <dt>Level 1 spells</dt>
+                      <dt>{{ hero.level1SpellsLabel ?? 'Level 1 spells' }}</dt>
                       <dd>{{ g.level1Spells!.join(', ') }}</dd>
                     }
                     @if (g.extraPrepared?.length) {
@@ -128,7 +128,7 @@
                     <!-- A hero class's locked subclass is already shown "(fixed)" above -->
                     @if (!hero.subclass) {
                       <dt>{{ subclassGuidanceLabel(hero) }}</dt>
-                      <dd>{{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
+                      <dd>{{ subclassGuidanceName(g) }}@if (g.subclass.note) { — {{ g.subclass.note }} }</dd>
                     }
                     @if (g.elementalAffinity) {
                       <dt>Level 6 Elemental Affinity</dt>
@@ -158,7 +158,11 @@
                     }
                     @if (g.feats.length) {
                       <dt>Feats</dt>
-                      <dd>{{ g.feats.join(', ') }}</dd>
+                      <dd class="feat-list">
+                        @for (name of g.feats; track name; let last = $last) {
+                          <span class="feat">{{ name }}@if (isWowFeat(name)) {<span class="wow-mark" [attr.title]="wowFeatNote" [attr.aria-label]="wowFeatNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+                        }
+                      </dd>
                     }
                   </dl>
                   @if (g.note) {
@@ -167,6 +171,9 @@
                   @if (invocationRows(g).length && hero.wowInvocations?.length) {
                     <p class="spec-guidance-note invocation-footnote">✦ World of Warcraft invocation — {{ wowInvocationNote }}
                       Invocations aren't tracked here; note them on your sheet.</p>
+                  }
+                  @if (hasWowFeat(g)) {
+                    <p class="spec-guidance-note feat-footnote">✦ World of Warcraft feat — take it instead of an Ability Score Improvement from level 4.</p>
                   }
                   @if (g.maneuvers?.length && hero.wowManeuvers?.length) {
                     <p class="spec-guidance-note maneuver-footnote">✦ World of Warcraft maneuver — {{ wowManeuverNote }}

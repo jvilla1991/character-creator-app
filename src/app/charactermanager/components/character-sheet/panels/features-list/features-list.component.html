@@ -36,7 +36,7 @@
             <ul class="feat-options" role="listbox">
               @for (n of filteredFeats; track n) {
                 <li role="option">
-                  <button type="button" class="feat-option" (mousedown)="$event.preventDefault(); selectFeat(n)">{{ n }}</button>
+                  <button type="button" class="feat-option" (mousedown)="$event.preventDefault(); selectFeat(n)">{{ n }}@if (isWowFeat(n)) {<span class="wow-mark" [attr.title]="wowFeatNote" [attr.aria-label]="wowFeatNote">✦</span>}</button>
                 </li>
               }
             </ul>
@@ -61,7 +61,7 @@
     @for (f of classFeatures; track f) {
       <div class="feature">
         <div class="feature-head">
-          <span class="feature-name">{{ f.name }}</span>
+          <span class="feature-name">{{ f.name }}@if (isWowFeatFeature(f)) {<span class="wow-mark" [attr.title]="wowFeatNote" [attr.aria-label]="wowFeatNote">✦</span>}</span>
           <span class="feature-source">{{ f.source }}</span>
         </div>
         <div class="feature-desc">{{ descFor(f) }}</div>

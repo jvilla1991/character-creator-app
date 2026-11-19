@@ -12,9 +12,11 @@ import { Eli5ToggleComponent } from '../eli5-toggle/eli5-toggle.component';
 import { SpellEli5Service } from '../../services/spell-eli5.service';
 import { ModifierPipe } from '../../pipes/modifier.pipe';
 import {
-  HeroClassOption, heroClassFor, recommendedFightingStylesFor, recommendedSubclassFor, subclassSource,
+  HeroClassOption, heroClassFor, recommendedFightingStylesFor, recommendedSubclassFor, subclassOptionLabel,
+  subclassSource,
 } from '../../models/hero-class';
 import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
+import { featPrerequisite, isWowFeat } from '../../models/wow-feats';
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -287,6 +289,11 @@ export class LevelUpModalComponent implements OnInit {
     return subclassSource(name);
   }
 
+  /** How a subclass option reads — a WoW Mage's 'Evoker' shows as 'Evoker (school of evocation)'. */
+  subclassOptionLabel(name: string): string {
+    return subclassOptionLabel(this.heroClass, name);
+  }
+
   private loadStyleCantrips(rule: CantripFightingStyle): void {
     const cached = this.styleCantripCache.get(rule.spellList);
     if (cached) {
@@ -375,6 +382,16 @@ export class LevelUpModalComponent implements OnInit {
 
   featDescription(name: string): string {
     return this.dndResources.getFeatDescription(name);
+  }
+
+  /** True for a World of Warcraft feat on offer (Clearcasting, …) — tagged in the picker. */
+  isWowFeat(name: string): boolean {
+    return isWowFeat(name);
+  }
+
+  /** A WoW feat's prerequisite beyond level 4 (e.g. 'DEX 13+, WIS 13+'); undefined otherwise. */
+  featPrerequisite(name: string): string | undefined {
+    return featPrerequisite(name);
   }
 
   /** Whether the milestone choice (ASI or feat) is satisfied. */

@@ -2,8 +2,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { DndClass } from '../../../../models/dnd-api.types';
 import {
   ClassOption, SpecializationGuidance, WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, invocationRows,
-  isWowInvocation, isWowManeuver, orList, specializationHeading, subclassGuidanceLabel, weaponMasteryLead,
+  isWowInvocation, isWowManeuver, orList, specializationHeading, subclassGuidanceLabel, subclassGuidanceName,
+  weaponMasteryLead,
 } from '../../../../models/hero-class';
+import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
@@ -77,4 +79,12 @@ export class ClassStepComponent {
   readonly isWowManeuver = isWowManeuver;
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
   readonly fightingStyleLevelOf = fightingStyleLevelOf;
+  readonly subclassGuidanceName = subclassGuidanceName;
+  readonly isWowFeat = isWowFeat;
+  readonly wowFeatNote = WOW_FEAT_NOTE;
+
+  /** True when a guidance recommends a ✦ World of Warcraft feat (footnoted under the box). */
+  hasWowFeat(g: SpecializationGuidance): boolean {
+    return g.feats.some(isWowFeat);
+  }
 }

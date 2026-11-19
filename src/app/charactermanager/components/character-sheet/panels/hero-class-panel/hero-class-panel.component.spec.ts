@@ -1217,3 +1217,96 @@ describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', ()
     expect(el.querySelector('.pet-card')).toBeNull();
   });
 });
+
+describe('HeroClassPanelComponent — World of Warcraft Mage (Wizard)', () => {
+  let dndResources: jasmine.SpyObj<DndResourcesService>;
+  let component: HeroClassPanelComponent;
+
+  const spell = (name: string, level: number, classes: string[], wow = false) => ({
+    name, level, school: 'evocation', classes, actionType: 'action', concentration: false, ritual: false,
+    range: '60 feet', components: ['v', 's'], duration: 'Instantaneous', description: `${name} text.`,
+    ...(wow ? { source: 'World of Warcraft' } : {}),
+  }) as DndSpell;
+
+  function makeMage(overrides: Partial<PC> = {}): PC {
+    return {
+      id: 17, name: 'Elandra', clazz: 'Wizard', subclass: 'Evoker', specialization: 'Frost',
+      level: 5, playerName: 'Quinn', stats: { STR: 8, DEX: 14, CON: 13, INT: 18, WIS: 12, CHA: 10 },
+      spells: [
+        { lvl: 1, name: 'Frost Nova', school: 'Evocation', time: '1 action', prepared: true },
+        { lvl: 3, name: 'Sleet Storm', school: 'Conjuration', time: '1 action', prepared: false },
+      ],
+      ...overrides,
+    };
+  }
+
+  function render(pc: PC): HTMLElement {
+    const fixture = TestBed.createComponent(HeroClassPanelComponent);
+    fixture.componentRef.setInput('pc', pc);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  beforeEach(() => {
+    dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
+    dndResources.getSpells.and.returnValue(of([
+      spell('Flurry', 3, ['wizard'], true), spell('Mass Polymorph', 9, ['wizard'], true),
+      spell('Create Food and Water', 3, ['cleric', 'paladin']), spell('Sleet Storm', 3, ['sorcerer', 'wizard']),
+      spell('Arcane Hand', 5, ['wizard']),
+    ]));
+    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
+  });
+
+  it('renders for a wizard with a Mage specialization, with or without a subclass', () => {
+    expect(isHeroClass(makeMage())).toBeTrue();
+    expect(isHeroClass(makeMage({ subclass: undefined }))).toBeTrue();
+    expect(isHeroClass(makeMage({ specialization: null }))).toBeFalse();
+    expect(isHeroClass(makeMage({ specialization: 'Shadow' }))).toBeFalse();
+  });
+
+  it('shows the World of Warcraft Mage heading, the Frost spec, the renown note and the Evoker school', () => {
+    const el = render(makeMage());
+    expect(el.querySelector('.panel-title')?.textContent).toContain('World of Warcraft Mage');
+    expect(el.textContent).toContain('Frost');
+    expect(el.textContent).toContain('shatters');
+    expect(el.textContent).toContain('Renown with the Kirin Tor by 3');
+    const rec = Array.from(el.querySelectorAll('.feature'))
+      .find(f => f.textContent!.includes('Recommended subclass')) as HTMLElement;
+    expect(rec.textContent).toContain('Evoker (school of evocation)');
+    expect(rec.textContent).toContain('Wizard 3');
+    expect(rec.querySelector('.hero-subclass-match')?.getAttribute('data-match')).toBe('match');
+    expect(component.spellSections).toEqual([]);   // no always-prepared table
+  });
+
+  it('suggests the Frost spells with ✦ on WoW spells and on the added base spells, tagging known ones', () => {
+    component.pc = makeMage();
+    expect(component.suggestedSpells.map(r => r.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const level3 = component.suggestedSpells[2].spells;
+    expect(level3.find(s => s.name === 'Sleet Storm')).toEqual({ name: 'Sleet Storm', known: true, prepared: false });
+    expect(component.isWowSpell('Flurry')).toBeTrue();
+    expect(component.isWowSpell('Mass Polymorph')).toBeTrue();
+    expect(component.isWowSpell('Create Food and Water')).toBeTrue();
+    expect(component.wowSpellTitle('Create Food and Water'))
+      .toBe('Added to the Wizard spell list by the World of Warcraft Mage');
+    expect(component.wowSpellTitle('Flurry')).toBe('World of Warcraft spell');
+    expect(component.isWowSpell('Sleet Storm')).toBeFalse();
+  });
+
+  it("tags an aliased suggestion as known when the character has it under its SRD name (Bigby's Hand)", () => {
+    component.pc = makeMage({
+      specialization: 'Arcane', level: 9,
+      spells: [{ lvl: 5, name: 'Arcane Hand', school: 'Evocation', time: '1 action', prepared: true }],
+    });
+    const level5 = component.suggestedSpells.find(r => r.level === 5)!.spells;
+    expect(level5.find(s => s.name === "Bigby's Hand")).toEqual({ name: "Bigby's Hand", known: true, prepared: true });
+    expect(component.spellFor("Bigby's Hand")?.name).toBe('Arcane Hand');
+  });
+
+  it('notes the pending subclass before Wizard 3 and accepts any other school', () => {
+    let el = render(makeMage({ level: 2, subclass: undefined }));
+    expect(el.querySelector('.hero-subclass-match')?.textContent).toContain('You choose your subclass at Wizard level 3');
+    el = render(makeMage({ subclass: 'Diviner' }));
+    expect(el.querySelector('.hero-subclass-match')?.getAttribute('data-match')).toBe('different');
+  });
+});
