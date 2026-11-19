@@ -231,6 +231,29 @@ describe('PCService', () => {
     });
   });
 
+  describe('setPetFamily', () => {
+    it('PUTs the family to /{id}/pet and returns the saved character', (done) => {
+      service.setPetFamily(42, 'Wolf').subscribe(saved => {
+        expect(saved.petFamily).toBe('Wolf');
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/pet');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ family: 'Wolf' });
+      req.flush({ ...makePC({ id: 42 }), petFamily: 'Wolf' });
+    });
+
+    it('sends an explicit null to clear the pet', (done) => {
+      service.setPetFamily(42, null).subscribe(saved => {
+        expect(saved.petFamily).toBeNull();
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/pet');
+      expect(req.request.body).toEqual({ family: null });
+      req.flush({ ...makePC({ id: 42 }), petFamily: null });
+    });
+  });
+
   // ── level-up (server-authoritative) ─────────────────────────────────────────
 
   describe('levelUpPreview', () => {

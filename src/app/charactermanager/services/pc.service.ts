@@ -342,6 +342,22 @@ export class PCService {
     );
   }
 
+  /**
+   * Set (a family name) or clear (null) a WoW Hunter's pet family — the owner or the
+   * campaign's DM. This is the only way to change it: the server's generic update
+   * ignores `petFamily`, so a null there can never be mistaken for "no pet".
+   */
+  setPetFamily(pcId: number, family: string | null): Observable<PC> {
+    if (environment.demoMode) {
+      this.patchLocalPC(pcId, { petFamily: family });
+      return of(this.getPCById(pcId) as PC).pipe(delay(50));
+    }
+    return this.http.put<PC>(`${this.pcUrl}${pcId}/pet`, { family }).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
   /** Mirror a server-returned PC into pcs$ and (when active) activePC$. */
   private mirrorPC(updated: PC): void {
     this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);

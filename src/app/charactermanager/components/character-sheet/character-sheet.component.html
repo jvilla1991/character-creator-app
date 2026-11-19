@@ -288,7 +288,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         @if (heroClass) {
           <!-- canEdit: the owner or the DM's cross-link view may pick a WoW hunter's pet family
           or a Death Knight's rune weapon -->
-          <app-hero-class-panel [pc]="pc" [canEdit]="ownSheet || editable" (pcChange)="onPcChange($event)"></app-hero-class-panel>
+          <app-hero-class-panel [pc]="pc" [canEdit]="ownSheet || editable" (pcChange)="onPcChange($event)"
+            (petFamilyChange)="onPetFamilyChange($event)"></app-hero-class-panel>
         }
         <!-- Cantrips and always-prepared spells from a World of Warcraft species; renders nothing otherwise -->
         <app-species-spells [pc]="pc"></app-species-spells>

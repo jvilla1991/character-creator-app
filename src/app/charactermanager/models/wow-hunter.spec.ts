@@ -1,5 +1,5 @@
 import {
-  BEAST_MASTER, HUNTER_PET_FAMILIES, PetFamily, keepsHunterPet, petFamilyByName, petFamilyLabel, petSpecialization,
+  BEAST_MASTER, HUNTER_PET_FAMILIES, PET_SPECIALIZATIONS, PetFamily, keepsHunterPet, petFamilyByName, petFamilyLabel, petSpecialization,
   petStatCard, petStatCards, tenacityHpBonus,
 } from './wow-hunter';
 
@@ -64,13 +64,18 @@ describe('wow-hunter (pet families)', () => {
     });
   });
 
-  it('keeps a pet only for a ranger with the Beast Master subclass', () => {
+  it('keeps a pet only for a Beast Mastery or Survival ranger with the Beast Master subclass', () => {
     expect(BEAST_MASTER).toBe('Beast Master');
-    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Beast Master' })).toBeTrue();
-    expect(keepsHunterPet({ clazz: 'ranger', subclass: 'beast master' })).toBeTrue();
-    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Hunter' })).toBeFalse();
-    expect(keepsHunterPet({ clazz: 'Ranger', subclass: null })).toBeFalse();
-    expect(keepsHunterPet({ clazz: 'Druid', subclass: 'Beast Master' })).toBeFalse();
+    expect(PET_SPECIALIZATIONS).toEqual(['Beast Mastery', 'Survival']);
+    const bm = 'Beast Mastery';
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Beast Master', specialization: bm })).toBeTrue();
+    expect(keepsHunterPet({ clazz: 'ranger', subclass: 'beast master', specialization: 'Survival' })).toBeTrue();
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Beast Master', specialization: 'Marksmanship' })).toBeFalse();
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Beast Master', specialization: null })).toBeFalse();
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Beast Master' })).toBeFalse();
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: 'Hunter', specialization: bm })).toBeFalse();
+    expect(keepsHunterPet({ clazz: 'Ranger', subclass: null, specialization: bm })).toBeFalse();
+    expect(keepsHunterPet({ clazz: 'Druid', subclass: 'Beast Master', specialization: bm })).toBeFalse();
     expect(keepsHunterPet(null)).toBeFalse();
   });
 

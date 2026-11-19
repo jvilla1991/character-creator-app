@@ -1135,6 +1135,9 @@ describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', ()
     expect(component.showPet).toBeTrue();
     component.pc = makeHunter({ specialization: 'Marksmanship', subclass: 'Hunter', petFamily: null });
     expect(component.showPet).toBeFalse();
+    // A Marksmanship hunter keeps no pet, even with the Beast Master subclass.
+    component.pc = makeHunter({ specialization: 'Marksmanship', petFamily: null });
+    expect(component.showPet).toBeFalse();
     component.pc = makeHunter({ subclass: undefined, level: 2, petFamily: null });
     expect(component.showPet).toBeFalse();
     // The Demon Hunter keeps its own panel, with no pet.
@@ -1162,40 +1165,42 @@ describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', ()
     const { el } = render(makeHunter({ petFamily: 'Courser' }));
     const select = el.querySelector('#pet-family-select') as HTMLSelectElement;
     const options = Array.from(select.options);
-    expect(options.length).toBe(48);   // the "Choose" placeholder + 47 families
+    expect(options.length).toBe(48);   // the "No pet" option + 47 families
     expect(options[0].value).toBe('');
+    expect(options[0].textContent!.trim()).toBe('No pet');
     expect(select.value).toBe('Courser');
     expect(options.find(o => o.value === 'Courser')!.textContent!.trim()).toBe('Courser (horses)');
     expect(options.find(o => o.value === 'Feathermane')!.textContent!.trim()).toBe('Feathermane (gryphons) ✦');
   });
 
-  it('saves a new family through pcChange as the bare name, and clears it with the placeholder', () => {
+  it('emits a new family through petFamilyChange as the bare name, and null for "No pet"', () => {
     const { el, cmp } = render(makeHunter());
-    const saved: PC[] = [];
-    cmp.pcChange.subscribe(pc => saved.push(pc));
+    const families: (string | null)[] = [];
+    const pcs: PC[] = [];
+    cmp.petFamilyChange.subscribe(f => families.push(f));
+    cmp.pcChange.subscribe(pc => pcs.push(pc));
     const select = el.querySelector('#pet-family-select') as HTMLSelectElement;
     select.value = 'Mechanized Animal';
     select.dispatchEvent(new Event('change'));
-    expect(saved.length).toBe(1);
-    expect(saved[0].petFamily).toBe('Mechanized Animal');
-    expect(saved[0].name).toBe('Rhonna');
     select.value = '';
     select.dispatchEvent(new Event('change'));
-    expect(saved[1].petFamily).toBeNull();
+    expect(families).toEqual(['Mechanized Animal', null]);
+    // The pet never rides the generic update: the server ignores petFamily there.
+    expect(pcs).toEqual([]);
   });
 
   it('does not emit when the family is unchanged or the viewer cannot edit', () => {
     const { cmp } = render(makeHunter());
-    const saved: PC[] = [];
-    cmp.pcChange.subscribe(pc => saved.push(pc));
+    const families: (string | null)[] = [];
+    cmp.petFamilyChange.subscribe(f => families.push(f));
     cmp.selectPetFamily('Wolf');
-    expect(saved).toEqual([]);
+    expect(families).toEqual([]);
     const readOnly = render(makeHunter(), false);
-    readOnly.cmp.pcChange.subscribe(pc => saved.push(pc));
+    readOnly.cmp.petFamilyChange.subscribe(f => families.push(f));
     expect(readOnly.el.querySelector('#pet-family-select')).toBeNull();
     expect(readOnly.el.querySelector('.pet-family-value')?.textContent).toContain('Wolf');
     readOnly.cmp.selectPetFamily('Bear');
-    expect(saved).toEqual([]);
+    expect(families).toEqual([]);
   });
 
   it('prompts to pick a family when none is chosen', () => {
@@ -1203,7 +1208,9 @@ describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', ()
     expect(el.querySelector('.pet-prompt')?.textContent).toContain('Pick your pet');
     expect(el.querySelector('.pet-stat-card')).toBeNull();
     expect(el.querySelector('.pet-specialization')).toBeNull();
-    expect((el.querySelector('#pet-family-select') as HTMLSelectElement).value).toBe('');
+    const select = el.querySelector('#pet-family-select') as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(select.options[0].textContent!.trim()).toBe('Choose a family…');
   });
 
   it('notes the special ability an unusual family needs, and gives the Serpent both stat blocks', () => {
