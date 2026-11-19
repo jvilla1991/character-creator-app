@@ -1250,7 +1250,7 @@ describe('HeroClassPanelComponent — World of Warcraft Mage (Wizard)', () => {
   beforeEach(() => {
     dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
     dndResources.getSpells.and.returnValue(of([
-      spell('Flurry', 3, ['wizard'], true), spell('Mass Polymorph', 9, ['wizard'], true),
+      spell('Flurry', 3, ['wizard'], true), spell('Mass Polymorph', 7, ['wizard'], true),
       spell('Create Food and Water', 3, ['cleric', 'paladin']), spell('Sleet Storm', 3, ['sorcerer', 'wizard']),
       spell('Arcane Hand', 5, ['wizard']),
     ]));
