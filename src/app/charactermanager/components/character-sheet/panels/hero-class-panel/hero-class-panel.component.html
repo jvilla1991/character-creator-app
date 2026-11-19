@@ -46,11 +46,10 @@
       </div>
     }
 
-    @if (resource; as r) {
-      <div class="hero-resource">
-        <span class="hero-resource-name">{{ r.name }}</span>
-        <span class="hero-resource-amount">{{ r.amount }}</span>
-      </div>
+    <!-- The Death Coil pool / Soul Fragments, as a live counter. -->
+    @if (heroResource; as r) {
+      <app-resource-counter [resource]="r" [editable]="canEdit"
+        (usedChange)="setHeroResourceUsed(r, $event)"></app-resource-counter>
     }
 
     @for (section of spellSections; track section.title) {

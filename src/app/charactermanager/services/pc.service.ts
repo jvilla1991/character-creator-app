@@ -585,6 +585,9 @@ export class PCService {
       petFamily: pc.petFamily ?? null,
       // Rune weapon — null lets the backend keep the stored one.
       runeWeapon: pc.runeWeapon ?? null,
+      // Class resource uses: null (field never loaded) lets the backend keep the
+      // stored amounts; an object — even an empty one — replaces them.
+      classResources: pc.classResources == null ? null : JSON.stringify(pc.classResources),
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -654,6 +657,7 @@ export class PCService {
       },
       spells: this.parseJsonField(pc['spells'], []),
       spellSlots: this.parseJsonField(pc['spellSlots'], {}),
+      classResources: this.parseJsonField(pc['classResources'], {}),
       saves: this.parseJsonField(pc['saves'], []),
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),

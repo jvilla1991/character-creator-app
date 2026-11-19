@@ -1,6 +1,7 @@
 import { PC } from '../models/pc';
 import { hitDieFor } from './character-math';
 import { heroClassFor } from '../models/hero-class';
+import { classResourceStates } from './class-resources';
 
 /** One spell level's slots as a long rest will leave them. */
 export interface LongRestSlotLine {
@@ -30,6 +31,19 @@ export interface LongRestPreview {
   exhaustionAfter: number;
   /** Spell levels the hero has slots for; empty for a non-caster. */
   slots: LongRestSlotLine[];
+  /** Limited-use class features (Second Wind, Lay On Hands, ...) and how much of each comes back. */
+  resources: LongRestResourceLine[];
+}
+
+/** One class resource as a long rest will leave it: full. */
+export interface LongRestResourceLine {
+  key: string;
+  name: string;
+  max: number;
+  /** What the hero has left right now. */
+  now: number;
+  /** Uses or points that come back. */
+  back: number;
 }
 
 export function longRestPreview(pc: PC): LongRestPreview {
@@ -53,6 +67,9 @@ export function longRestPreview(pc: PC): LongRestPreview {
     exhaustionNow,
     exhaustionAfter: Math.max(0, exhaustionNow - 1),
     slots,
+    resources: classResourceStates(pc).map(r => ({
+      key: r.key, name: r.name, max: r.max, now: r.remaining, back: r.used,
+    })),
   };
 }
 

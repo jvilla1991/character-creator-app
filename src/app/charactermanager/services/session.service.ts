@@ -33,6 +33,7 @@ import {
   setGameTime,
 } from '../utils/survival';
 import { applyCastToPc } from '../utils/spellcasting';
+import { applyShortRestToPc } from '../utils/class-resources';
 import {
   LastLongRest, longRestFinishedAt, longRestWaitFor, segmentsForward, tickLongRest,
 } from '../utils/long-rest-limit';
@@ -580,7 +581,25 @@ export class SessionService {
   /** Demo mirror: flip the short-rest window on the in-memory state. */
   private demoShortRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    return this.demoPatch({ shortRestOpen: !state.shortRestOpen });
+    if (state.shortRestOpen) return this.demoPatch({ shortRestOpen: false });
+    return this.demoPatch({ shortRestOpen: true, participants: this.demoShortRestRecovery(state) });
+  }
+
+  /**
+   * Demo mirror of what opening a short rest gives every seated hero: the
+   * class resources that return on one, and a Warlock's Pact Magic slots.
+   * Returns the participants with their slots brought up to date.
+   */
+  private demoShortRestRecovery(state: SessionState): ParticipantView[] {
+    return state.participants.map(p => {
+      if (p.pcId == null) return p;
+      const pc = this.pcService.getPCById(p.pcId);
+      if (!pc) return p;
+      const rested = applyShortRestToPc(pc);
+      if (rested === pc) return p;
+      this.pcService.patchLocalPC(p.pcId, { classResources: rested.classResources, spellSlots: rested.spellSlots });
+      return { ...p, spellSlots: rested.spellSlots ?? p.spellSlots };
+    });
   }
 
   /**
@@ -657,7 +676,7 @@ export class SessionService {
   private demoRestPassed(state: SessionState, restType: RestType): Partial<SessionState> {
     return restType === 'LONG'
       ? { shortRestOpen: false, longRest: this.demoLongRestView(state) }
-      : { shortRestOpen: true };
+      : { shortRestOpen: true, participants: this.demoShortRestRecovery(state) };
   }
 
   /** Demo: a fresh phase for the seated heroes — nobody ready, default options. */
@@ -762,7 +781,7 @@ export class SessionService {
       this.pcService.patchLocalPC(p.pcId, {
         spellSlots: updated.spellSlots, survival: updated.survival, hp: updated.hp,
         hitDiceUsed: updated.hitDiceUsed, exhaustion: updated.exhaustion,
-        spells: updated.spells, runeWeapon: updated.runeWeapon,
+        spells: updated.spells, runeWeapon: updated.runeWeapon, classResources: updated.classResources,
       });
       return {
         ...p,

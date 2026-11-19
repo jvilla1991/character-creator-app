@@ -98,6 +98,11 @@ export interface PC {
   // that no longer matches a melee weapon on the sheet counts as unset — read it
   // through runeWeaponOf() in utils/rune-weapon.ts.
   runeWeapon?: string | null;
+  // Limited-use class features (Second Wind, Rage, Lay On Hands, ...): how much
+  // of each is USED, keyed by resource — { secondWind: 1 }. The maximum is
+  // computed (utils/class-resources.ts), never stored; read it through
+  // classResourceStates(). The server cleans the map on every save.
+  classResources?: Record<string, number> | null;
   background?: string;
   alignment?: string;
   portraitInitials?: string;

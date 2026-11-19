@@ -93,6 +93,19 @@ describe('LongRestModalComponent', () => {
     expect(rows[1]).toContain('none spent');
   });
 
+  it('lists the class resources the rest restores, with what the hero has now', () => {
+    render(pc({ classResources: { secondWind: 2 } })); // Fighter 5: Second Wind 1 of 3, Action Surge full
+
+    const rows = fixture.debugElement.queryAll(By.css('[data-row="resource"]'))
+      .map(r => r.nativeElement.textContent.replace(/\s+/g, ' ').trim());
+    expect(rows.length).toBe(2);
+    expect(rows[0]).toContain('Second Wind');
+    expect(rows[0]).toContain('3 / 3');
+    expect(rows[0]).toContain('1 of 3 now');
+    expect(rows[1]).toContain('Action Surge');
+    expect(rows[1]).toContain('none spent');
+  });
+
   it('shows no slot rows for a hero without spell slots', () => {
     render(pc());
     expect(fixture.debugElement.query(By.css('[data-row="slots"]'))).toBeNull();

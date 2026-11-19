@@ -481,6 +481,51 @@ describe('SessionService rests', () => {
       });
     });
 
+    describe('class resources', () => {
+      const fighter = (over: Partial<PC> = {}): PC => hero({
+        clazz: 'Fighter', spellSlots: undefined, classResources: { secondWind: 2, actionSurge: 1 }, ...over,
+      });
+
+      it('opening a short rest gives back what the rules say; closing it gives nothing', () => {
+        seed([fighter()]);
+
+        service.shortRest('demo-session').subscribe();
+        expect(current().shortRestOpen).toBeTrue();
+        expect(store.get(7)!.classResources).toEqual({ secondWind: 1 }); // one use back; Action Surge all back
+
+        service.shortRest('demo-session').subscribe();
+        expect(current().shortRestOpen).toBeFalse();
+        expect(store.get(7)!.classResources).toEqual({ secondWind: 1 });
+      });
+
+      it('a passed short rest vote gives the same recovery', () => {
+        seed([fighter()]);
+
+        service.initiateRestVote('demo-session', 'SHORT').subscribe();
+
+        expect(store.get(7)!.classResources).toEqual({ secondWind: 1 });
+      });
+
+      it('a short rest restores a Warlock\'s Pact Magic slots on the sheet and the snapshot', () => {
+        seed([hero({ clazz: 'Warlock', spellSlots: { 3: { max: 2, used: 2 } } })]);
+
+        service.shortRest('demo-session').subscribe();
+
+        expect(store.get(7)!.spellSlots).toEqual({ 3: { max: 2, used: 0 } });
+        expect(current().participants[0].spellSlots).toEqual({ 3: { max: 2, used: 0 } });
+      });
+
+      it('finishing a long rest hands every resource back', () => {
+        seed([fighter()]);
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+
+        service.finishLongRest('demo-session').subscribe();
+
+        expect(store.get(7)!.classResources).toEqual({});
+      });
+    });
+
     it('interrupting closes the phase and nobody recovers', () => {
       seed([hero()]);
       service.openLongRest('demo-session').subscribe();

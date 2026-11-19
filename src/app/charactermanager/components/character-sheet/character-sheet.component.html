@@ -283,7 +283,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
             (actionRequested)="onSurvivalAction($event)">
           </app-survival-panel>
         }
-        <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"></app-features-list>
+        <app-features-list    [pc]="pc" [addAllowed]="editable" (featureGranted)="onFeatureGrant($event)"
+          [resourcesEditable]="ownSheet || editable" (pcChange)="onPcChange($event)"></app-features-list>
         @if (heroClass) {
           <!-- canEdit: the owner or the DM's cross-link view may pick a WoW hunter's pet family
           or a Death Knight's rune weapon -->
