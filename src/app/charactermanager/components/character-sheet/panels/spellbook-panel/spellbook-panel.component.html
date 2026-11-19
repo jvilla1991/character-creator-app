@@ -9,7 +9,7 @@
         Save DC {{ saveDc() }} · Spell Atk {{ spellAtk() }}
       </span>
     }
-    @if (preparable() && hasLeveledSpells() && preparedCap() != null) {
+    @if ((preparable() || preparedHint()) && hasLeveledSpells() && preparedCap() != null) {
       <span
         class="prepared-counter"
         [class.at-cap]="preparedCount() >= preparedCap()!"
@@ -24,6 +24,10 @@
       <app-eli5-toggle></app-eli5-toggle>
     }
   </div>
+
+  @if (preparedHint() && hasLeveledSpells()) {
+    <div class="field-hint prepared-locked-hint">{{ preparedHint() }}</div>
+  }
 
   <!-- At the cap every Prepare button is disabled; say why where a phone can
   read it (the reason was only in each button's hover tooltip). -->

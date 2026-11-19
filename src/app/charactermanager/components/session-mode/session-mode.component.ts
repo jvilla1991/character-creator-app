@@ -29,6 +29,7 @@ import { RestChooserComponent } from './rest-chooser/rest-chooser.component';
 import { LongRestModalComponent } from './long-rest-modal/long-rest-modal.component';
 import { LongRestPanelComponent } from './long-rest-panel/long-rest-panel.component';
 import { LongRestChoicesComponent } from './long-rest-choices/long-rest-choices.component';
+import { dmLongRestWaitHint } from '../../utils/long-rest-limit';
 import {
   LongRestDraft, draftBlockedReason, draftChoices, draftTempHp, hasLongRestChoices, startLongRestDraft,
 } from '../../utils/long-rest-choices';
@@ -296,10 +297,19 @@ export class SessionModeComponent implements OnInit, OnDestroy {
 
   /** Why the DM cannot start a long rest right now, or null when they can. */
   dmLongRestBlockedReason(state: SessionState): string | null {
-    if (state.longRest) return 'A long rest is already underway';
-    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is being tallied — allow or deny it';
-    if (state.status !== 'LOBBY') return 'No resting mid-encounter';
+    if (state.longRest) return 'A long rest is already underway.';
+    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is being tallied. Allow or deny it first.';
+    if (state.status !== 'LOBBY') return 'No resting mid-encounter. End the encounter first.';
+    // One long rest every 24 hours on the campaign clock — and the clock is the DM's to move.
+    if (state.longRestWait) return dmLongRestWaitHint(state.longRestWait);
     return null;
+  }
+
+  /** DM's Long Rest button: what it does, or why it is unavailable. The
+   *  button's tooltip and the tap-reachable "?" beside it share this text. */
+  dmLongRestHint(state: SessionState): string {
+    return this.dmLongRestBlockedReason(state)
+      ?? 'Starts a long rest. The party readies up, then you finish it.';
   }
 
   /** DM starts the long rest phase directly, with no vote. */

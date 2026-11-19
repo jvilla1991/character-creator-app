@@ -65,8 +65,8 @@ describe('SessionService rests', () => {
         longRest: {
           advanceClock: true, undisturbed: false, readyCount: 0, ableCount: 1,
           readiness: [
-            { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false },
-            { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: true },
+            { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+            { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: true, clazz: null, subclass: null, specialization: null, level: null },
           ],
         },
       }));
@@ -74,8 +74,8 @@ describe('SessionService rests', () => {
       expect(state!.longRest).toEqual({
         advanceClock: true, undisturbed: false, readyCount: 0, ableCount: 1,
         readiness: [
-          { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false },
-          { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: true },
+          { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+          { participantId: 6, pcId: 8, displayName: 'Mira', ready: false, cannotRest: true, clazz: null, subclass: null, specialization: null, level: null },
         ],
         myChoices: null,
       });
@@ -154,6 +154,30 @@ describe('SessionService rests', () => {
       });
     });
 
+    it('reads the 24-hour wait, and the class details on a readiness row', () => {
+      let state: SessionState | undefined;
+      service.openLongRest(1).subscribe(s => (state = s));
+      const longRestWait = {
+        finishedTimeOfDay: 'morning', segmentsSince: 1, segmentsLeft: 1, availableTimeOfDay: 'night',
+        availableTomorrow: false,
+        reason: 'The party finished a long rest this morning. The next one can start tonight.',
+      };
+      httpMock.expectOne(`${base}/1/long-rest`).flush(snapshot({
+        longRestAvailable: false,
+        longRestWait,
+        longRest: { readiness: [{
+          participantId: 5, pcId: 7, displayName: 'Thorne', clazz: 'Paladin',
+          subclass: 'Oath of the Ebon Blade', specialization: 'Frost', level: 5,
+        }] },
+      }));
+
+      expect(state!.longRestAvailable).toBeFalse();
+      expect(state!.longRestWait).toEqual(longRestWait as SessionState['longRestWait']);
+      expect(state!.longRest!.readiness[0]).toEqual(jasmine.objectContaining({
+        clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Frost', level: 5,
+      }));
+    });
+
     it('a snapshot from a backend that predates the long rest still reads cleanly', () => {
       let state: SessionState | undefined;
       service.initiateRestVote(1).subscribe(s => (state = s));
@@ -165,6 +189,8 @@ describe('SessionService rests', () => {
       expect(state!.restVote!.restType).toBe('SHORT');
       expect(state!.longRest).toBeNull();
       expect(state!.longRestResult).toBeNull();
+      expect(state!.longRestAvailable).toBeTrue(); // no 24-hour rule on an older backend
+      expect(state!.longRestWait).toBeNull();
     });
   });
 
@@ -234,7 +260,7 @@ describe('SessionService rests', () => {
 
       expect(current().longRest).toEqual({
         advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
-        readiness: [{ participantId: 7, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false }],
+        readiness: [{ participantId: 7, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false, clazz: 'Fighter', subclass: null, specialization: null, level: 5 }],
         myChoices: null,
       });
       expect(current().shortRestOpen).toBeFalse();
@@ -394,6 +420,64 @@ describe('SessionService rests', () => {
 
         expect(store.get(8)!.runeWeapon).toBe('Greatsword');
         expect(store.get(8)!.hp!.temp).toBe(8); // already inscribed, so the Blood Rune still gives
+      });
+    });
+
+    describe('one long rest every 24 hours', () => {
+      const clock = (timeOfDay: string) =>
+        ({ year: '1', month: '1', day: '1', timeOfDay, weekday: null, week: 1 } as never);
+
+      it('a finished rest starts the wait from the morning the clock walked to', () => {
+        seed([hero()], { gameTime: clock('noon') });
+        service.openLongRest('demo-session').subscribe();
+
+        service.finishLongRest('demo-session').subscribe();
+
+        expect(current().longRestAvailable).toBeFalse();
+        expect(current().longRestWait!.reason)
+          .toBe('The party finished a long rest this morning. The next one can start tonight.');
+      });
+
+      it('inside the wait neither the DM nor a long vote opens a rest, but a short vote still works', () => {
+        seed([hero()], { gameTime: clock('noon') });
+        service.openLongRest('demo-session').subscribe();
+        service.finishLongRest('demo-session').subscribe();
+
+        service.openLongRest('demo-session').subscribe();
+        expect(current().longRest).toBeNull();
+        service.initiateRestVote('demo-session', 'LONG').subscribe();
+        expect(current().longRest).toBeNull();
+
+        service.initiateRestVote('demo-session', 'SHORT').subscribe();
+        expect(current().shortRestOpen).toBeTrue();
+      });
+
+      it('advancing the clock twice ends the wait', () => {
+        seed([hero()], { gameTime: clock('noon') });
+        service.openLongRest('demo-session').subscribe();
+        service.finishLongRest('demo-session').subscribe();
+
+        service.advanceTime('demo-session').subscribe();
+        expect(current().longRestWait!.segmentsLeft).toBe(1);
+        service.advanceTime('demo-session').subscribe();
+        expect(current().longRestWait).toBeNull();
+        expect(current().longRestAvailable).toBeTrue();
+
+        service.openLongRest('demo-session').subscribe();
+        expect(current().longRest).not.toBeNull();
+      });
+
+      it('an interrupted rest does not count, and neither does one on a clock nobody set', () => {
+        seed([hero()], { gameTime: clock('noon') });
+        service.openLongRest('demo-session').subscribe();
+        service.interruptLongRest('demo-session').subscribe();
+        expect(current().longRestAvailable).toBeTrue();
+
+        seed([hero()]); // gameTime null
+        service.openLongRest('demo-session').subscribe();
+        service.setLongRestOptions('demo-session', { advanceClock: false }).subscribe();
+        service.finishLongRest('demo-session').subscribe();
+        expect(current().longRestWait).toBeNull();
       });
     });
 

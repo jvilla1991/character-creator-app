@@ -355,6 +355,54 @@ describe('SpellbookPanelComponent (description disclosure)', () => {
   });
 });
 
+describe('SpellbookPanelComponent (prepared spells locked to the long rest)', () => {
+  // A campaign character on its owner's sheet: the Prepare buttons are withheld
+  // (preparable false) and the hint says why; the count stays, read-only.
+  function render(preparable: boolean, hint: string | null) {
+    dndResources.getSpells.and.returnValue(of([]));
+    dndResources.getSpellsForClass.and.returnValue(of([]));
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 5, playerName: 'Sam', // wizard 5 → cap 9
+      spellSlots: { 1: { max: 4, used: 0 } },
+      spells: [
+        spell({ lvl: 1, name: 'Shield' }),
+        spell({ lvl: 1, name: 'Sleep', prepared: false }),
+        spell({ lvl: 0, name: 'Fire Bolt' }),
+      ],
+    } as PC);
+    fixture.componentRef.setInput('preparable', preparable);
+    fixture.componentRef.setInput('preparedHint', hint);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('shows the hint and the read-only count, and no Prepare buttons', () => {
+    const el = render(false, 'Prepared spells change during a long rest.');
+
+    expect(el.querySelector('.prepared-locked-hint')!.textContent).toContain('Prepared spells change during a long rest.');
+    expect(el.querySelector('.prepared-counter')!.textContent).toContain('Prepared 1 / 9');
+    expect(el.querySelectorAll('.spell-prep-btn').length).toBe(0);
+    expect(el.querySelectorAll('.spell-row.unprepared').length).toBe(1); // Sleep is still shown as not prepared
+  });
+
+  it('a viewer who may prepare gets the buttons and the count, with no hint', () => {
+    const el = render(true, null);
+
+    expect(el.querySelector('.prepared-locked-hint')).toBeNull();
+    expect(el.querySelector('.prepared-counter')!.textContent).toContain('Prepared 1 / 9');
+    expect(el.querySelectorAll('.spell-prep-btn').length).toBe(2); // the two leveled spells, not the cantrip
+  });
+
+  it('a read-only viewer gets neither the buttons, the count nor the hint, as before', () => {
+    const el = render(false, null);
+
+    expect(el.querySelector('.prepared-locked-hint')).toBeNull();
+    expect(el.querySelector('.prepared-counter')).toBeNull();
+    expect(el.querySelectorAll('.spell-prep-btn').length).toBe(0);
+  });
+});
+
 describe('SpellbookPanelComponent (ELI5 summaries)', () => {
   const ELI5_KEY = 'tm_eli5';
   const FULL = 'A creature you touch regains a number of Hit Points equal to 2d8 plus your spellcasting ability modifier.';

@@ -28,6 +28,25 @@
     background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
     color: var(--gold);
   }
+
+  // Unavailable: the house disabled look — a dashed hairline and the dim
+  // step, no fill, no hover. The reason is written on the card itself.
+  &:disabled,
+  &:disabled:hover {
+    border-style: dashed;
+    border-color: var(--text-dim);
+    color: var(--text-dim);
+    cursor: not-allowed;
+
+    .rest-option-name {
+      color: var(--text-dim);
+    }
+  }
+}
+
+// The reason stays readable on a disabled card.
+.rest-option-desc.rest-option-blocked {
+  color: var(--text-2);
 }
 
 .rest-option-icon {

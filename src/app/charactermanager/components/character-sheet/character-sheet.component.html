@@ -313,7 +313,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           [strictComponents]="strictComponents"
           [castable]="sessionLive"
           [addAllowed]="editable"
-          [preparable]="ownSheet || editable"
+          [preparable]="canPrepareSpells"
+          [preparedHint]="preparedSpellsHint"
           (castRequested)="onCastRequested($event)"
           (pcChange)="onPcChange($event)"
           (spellsGranted)="onSpellsGrant($event)">
