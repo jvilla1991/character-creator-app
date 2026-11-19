@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { ModalComponent } from '../../modal/modal.component';
 import { LongRestView } from '../../../models/session';
 import { PC } from '../../../models/pc';
-import { longRestPreview, ordinal } from '../../../utils/long-rest';
+import { longRestPreview } from '../../../utils/long-rest';
+import { classDisplayName } from '../../../utils/class-display';
 
 /**
  * A seated player's long rest screen, shown while the session's long rest
@@ -67,5 +68,7 @@ export class LongRestModalComponent {
       : `Hit Points are full at ${p.hpMax}`;
   });
 
-  readonly ordinal = ordinal;
+  /** The class as the sheet names it: a Paladin sworn to the Ebon Blade is a Death Knight. */
+  readonly classLabel = computed(() =>
+    classDisplayName(this.pc().clazz, this.pc().subclass, this.pc().specialization));
 }

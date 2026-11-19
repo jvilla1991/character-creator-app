@@ -25,6 +25,10 @@
     }
   </div>
 
+  @if (preparedHint() && hasLeveledSpells()) {
+    <div class="field-hint prepared-locked-hint">{{ preparedHint() }}</div>
+  }
+
   <!-- At the cap every Prepare button is disabled; say why where a phone can
   read it (the reason was only in each button's hover tooltip). -->
   @if (preparable() && hasLeveledSpells() && preparedCap() != null && preparedCount() >= preparedCap()!) {

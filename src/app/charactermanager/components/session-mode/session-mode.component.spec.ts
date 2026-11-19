@@ -485,11 +485,38 @@ describe('SessionModeComponent long rest phase', () => {
   it('the DM cannot start one while a phase is open, a vote runs, or an encounter is on', () => {
     expect(component.dmLongRestBlockedReason(state({ dm: true }))).toBeNull();
     expect(component.dmLongRestBlockedReason(state({ dm: true, longRest: {} as LongRestView })))
-      .toBe('A long rest is already underway');
+      .toBe('A long rest is already underway.');
     expect(component.dmLongRestBlockedReason(state({ dm: true, restVote: { status: 'ACTIVE' } as RestVoteView })))
-      .toBe('A rest vote is being tallied — allow or deny it');
+      .toBe('A rest vote is being tallied. Allow or deny it first.');
     expect(component.dmLongRestBlockedReason(state({ dm: true, status: 'ACTIVE' })))
-      .toBe('No resting mid-encounter');
+      .toBe('No resting mid-encounter. End the encounter first.');
+  });
+
+  it('the DM cannot start one inside the 24-hour wait, and is told how to move on', () => {
+    const longRestWait = {
+      finishedTimeOfDay: 'morning', segmentsSince: 0, segmentsLeft: 2, availableTimeOfDay: 'night',
+      availableTomorrow: false,
+      reason: 'The party finished a long rest this morning. The next one can start tonight.',
+    } as SessionState['longRestWait'];
+
+    expect(component.dmLongRestBlockedReason(state({ dm: true, longRestAvailable: false, longRestWait }))).toBe(
+      'The party finished a long rest this morning. The next one can start tonight. '
+      + 'Advance the clock, or set a later time of day, to move on.');
+    // An encounter is the more pressing reason.
+    expect(component.dmLongRestBlockedReason(state({ dm: true, status: 'ACTIVE', longRestWait })))
+      .toBe('No resting mid-encounter. End the encounter first.');
+  });
+
+  it('the Long Rest hint says what the button does, or why it is unavailable', () => {
+    expect(component.dmLongRestHint(state({ dm: true })))
+      .toBe('Starts a long rest. The party readies up, then you finish it.');
+    expect(component.dmLongRestHint(state({ dm: true, status: 'ACTIVE' })))
+      .toBe('No resting mid-encounter. End the encounter first.');
+  });
+
+  it('the 24-hour wait does not block the player Rest button: a short rest is still on offer', () => {
+    const longRestWait = { reason: 'wait' } as SessionState['longRestWait'];
+    expect(component.restBlockedReason(state({ longRestAvailable: false, longRestWait }))).toBeNull();
   });
 
   it('Ready is sent for the player\'s own seated hero', () => {
@@ -596,7 +623,7 @@ describe('SessionModeComponent long rest choices', () => {
 
   const phase = (over: Partial<LongRestView> = {}): LongRestView => ({
     advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
-    readiness: [{ participantId: 5, pcId: 7, displayName: 'Mira', ready: false, cannotRest: false }],
+    readiness: [{ participantId: 5, pcId: 7, displayName: 'Mira', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null }],
     myChoices: null,
     ...over,
   });

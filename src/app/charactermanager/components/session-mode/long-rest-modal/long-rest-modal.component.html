@@ -4,7 +4,7 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
   <app-modal class="long-rest-modal" title="Long Rest" tone="celestial"
     [closable]="false" [dialogDismissible]="false">
     @let p = preview();
-    <div class="modal-sub">{{ pc().name }} · {{ pc().clazz }} {{ pc().level }}</div>
+    <div class="modal-sub">{{ pc().name }} · {{ classLabel() }} {{ pc().level }}</div>
 
     @if (cannotRest()) {
       <p class="lr-blocked" role="status">
@@ -61,7 +61,7 @@ escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
           }
           @for (s of p.slots; track s.level) {
             <div class="lr-row" data-row="slots">
-              <dt class="lr-label">{{ ordinal(s.level) }} level slots</dt>
+              <dt class="lr-label">Lv {{ s.level }} slots</dt>
               <dd class="numeric">{{ s.max }} / {{ s.max }}</dd>
               <dd class="lr-note">{{ s.back > 0 ? '+' + s.back : 'none spent' }}</dd>
             </div>

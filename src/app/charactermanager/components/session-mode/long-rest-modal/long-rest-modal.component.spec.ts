@@ -23,9 +23,9 @@ describe('LongRestModalComponent', () => {
     readyCount: 1,
     ableCount: 3,
     readiness: [
-      { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false },
-      { participantId: 6, pcId: 8, displayName: 'Mira', ready: true, cannotRest: false },
-      { participantId: 9, pcId: 9, displayName: 'Oswin', ready: false, cannotRest: false },
+      { participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+      { participantId: 6, pcId: 8, displayName: 'Mira', ready: true, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
+      { participantId: 9, pcId: 9, displayName: 'Oswin', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null },
     ],
     myChoices: null,
     ...over,
@@ -86,10 +86,10 @@ describe('LongRestModalComponent', () => {
     const rows = fixture.debugElement.queryAll(By.css('[data-row="slots"]'))
       .map(r => r.nativeElement.textContent.replace(/\s+/g, ' ').trim());
     expect(rows.length).toBe(2); // a level with no slots is not listed
-    expect(rows[0]).toContain('1st level slots');
+    expect(rows[0]).toContain('Lv 1 slots');
     expect(rows[0]).toContain('4 / 4');
     expect(rows[0]).toContain('+3');
-    expect(rows[1]).toContain('2nd level slots');
+    expect(rows[1]).toContain('Lv 2 slots');
     expect(rows[1]).toContain('none spent');
   });
 
@@ -172,6 +172,15 @@ describe('LongRestModalComponent', () => {
     expect(row('temp-hp')).toContain('from the Blood Rune');
   });
 
+  it('names the class the way the sheet does: an Ebon Blade paladin is a Death Knight', () => {
+    render(pc({ name: 'Thorne', clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Blood' }));
+    const sub = fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent;
+    expect(sub).toContain('Thorne · Death Knight (Paladin) 5');
+
+    render(pc());
+    expect(fixture.debugElement.query(By.css('.modal-sub')).nativeElement.textContent).toContain('Bex · Fighter 5');
+  });
+
   it('is a blocking dialog: no close button', () => {
     render(pc());
     expect(fixture.debugElement.query(By.css('.modal-close'))).toBeNull();
@@ -192,7 +201,7 @@ class SlotHostComponent {
   hero = { id: 7, name: 'Bex', clazz: 'Fighter', level: 5, hp: { cur: 18, max: 44, temp: 0 } } as PC;
   view: LongRestView = {
     advanceClock: true, undisturbed: true, readyCount: 0, ableCount: 1,
-    readiness: [{ participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false }],
+    readiness: [{ participantId: 5, pcId: 7, displayName: 'Bex', ready: false, cannotRest: false, clazz: null, subclass: null, specialization: null, level: null }],
     myChoices: null,
   };
 }

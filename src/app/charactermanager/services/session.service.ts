@@ -8,6 +8,7 @@ import {
   LongRestChoices,
   LongRestResultView,
   LongRestView,
+  LongRestWaitView,
   ParticipantView,
   RestType,
   RestVoteView,
@@ -32,6 +33,9 @@ import {
   setGameTime,
 } from '../utils/survival';
 import { applyCastToPc } from '../utils/spellcasting';
+import {
+  LastLongRest, longRestFinishedAt, longRestWaitFor, segmentsForward, tickLongRest,
+} from '../utils/long-rest-limit';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 
 const POLL_INTERVAL_MS = 2000;
@@ -619,6 +623,7 @@ export class SessionService {
    */
   private demoInitiateRestVote(restType: RestType = 'SHORT'): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (restType === 'LONG' && state.longRestWait) return state; // inside the 24-hour wait
     const me = state.participants.find(p => p.pcId != null);
     const restVote: RestVoteView = {
       voteId: Date.now(),
@@ -657,13 +662,20 @@ export class SessionService {
 
   /** Demo: a fresh phase for the seated heroes — nobody ready, default options. */
   private demoLongRestView(state: SessionState): LongRestView {
-    const readiness = state.participants.filter(p => p.pcId != null).map(p => ({
-      participantId: p.participantId,
-      pcId: p.pcId,
-      displayName: p.name,
-      ready: false,
-      cannotRest: p.hpCurrent != null && p.hpCurrent <= 0,
-    }));
+    const readiness = state.participants.filter(p => p.pcId != null).map(p => {
+      const pc = this.pcService.getPCById(p.pcId!);
+      return {
+        participantId: p.participantId,
+        pcId: p.pcId,
+        displayName: p.name,
+        ready: false,
+        cannotRest: p.hpCurrent != null && p.hpCurrent <= 0,
+        clazz: pc?.clazz ?? p.clazz,
+        subclass: pc?.subclass ?? null,
+        specialization: pc?.specialization ?? null,
+        level: pc?.level ?? p.level,
+      };
+    });
     return {
       advanceClock: true,
       undisturbed: true,
@@ -674,13 +686,16 @@ export class SessionService {
     };
   }
 
+  /** Demo: the last finished long rest (the server keeps this on the campaign). */
+  private demoLastLongRest: LastLongRest | null = null;
+
   /** Demo: each ready hero's pending long rest choices, by PC id (the server keeps these on the seat). */
   private demoLongRestChoices = new Map<number, LongRestChoices>();
 
   /** Demo mirror: the DM opens the phase without a vote. */
   private demoOpenLongRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    if (state.longRest) return state;
+    if (state.longRest || state.longRestWait) return state; // already open, or inside the 24-hour wait
     this.demoLongRestChoices.clear();
     return this.demoPatch({ shortRestOpen: false, longRest: this.demoLongRestView(state) });
   }
@@ -732,6 +747,8 @@ export class SessionService {
     }
 
     const state = this.stateSubject.getValue() ?? before;
+    // Remember when the rest finished — unless nobody ever set the clock.
+    if (state.gameTime) this.demoLastLongRest = longRestFinishedAt(state.gameTime.timeOfDay);
     const survivalOn = !!this.campaignService.getLocalCampaign(state.campaignId)?.variantRules?.survivalConditions;
     const participants = state.participants.map(p => {
       if (p.pcId == null || skippedIds.has(p.pcId)) return p;
@@ -1207,7 +1224,11 @@ export class SessionService {
   /** Demo: apply a session-settings patch (visibility, sound) locally. */
   private demoPatch(patch: Partial<SessionState>): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    const next = { ...state, ...patch, version: state.version + 1 };
+    const merged = { ...state, ...patch, version: state.version + 1 };
+    // One long rest every 24 hours: restated from the record on every change,
+    // since the clock, a finished rest and a hand-set time all move it.
+    const longRestWait = longRestWaitFor(this.demoLastLongRest, merged.gameTime?.timeOfDay);
+    const next = { ...merged, longRestWait, longRestAvailable: longRestWait == null };
     this.pushState(next);
     return next;
   }
@@ -1268,6 +1289,7 @@ export class SessionService {
       });
     }
     this.campaignService.setLocalGameTime(state.campaignId, next);
+    if (current) this.demoLastLongRest = tickLongRest(this.demoLastLongRest);
     return of(this.demoPatch({ gameTime: next, participants }));
   }
 
@@ -1283,6 +1305,9 @@ export class SessionService {
     // the weekday history drives it (unchanged-weekday corrections guarded).
     const next = setGameTime(current, time, campaign?.weekDays);
     this.campaignService.setLocalGameTime(state.campaignId, next);
+    // A hand-set time of day still passes segments; a new date alone does not.
+    this.demoLastLongRest = tickLongRest(
+      this.demoLastLongRest, segmentsForward(current.timeOfDay, next.timeOfDay));
     return of(this.demoPatch({ gameTime: next }));
   }
 
@@ -1338,6 +1363,8 @@ export class SessionService {
       lootResult: null,
       longRest: null,
       longRestResult: null,
+      longRestAvailable: true,
+      longRestWait: null,
     };
   }
 
@@ -1350,6 +1377,7 @@ export class SessionService {
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
       restVote: null, lootResult: null, longRest: null, longRestResult: null,
+      longRestAvailable: true, longRestWait: null,
     };
   }
 
@@ -1426,6 +1454,9 @@ export class SessionService {
             createdAt: dto.longRestResult.createdAt ?? null,
           }
         : null,
+      // A backend that predates the 24-hour rule sends neither: no wait.
+      longRestWait: dto.longRestWait ?? null,
+      longRestAvailable: dto.longRestWait == null && dto.longRestAvailable !== false,
     };
   }
 
@@ -1436,6 +1467,10 @@ export class SessionService {
       displayName: r.displayName,
       ready: !!r.ready,
       cannotRest: !!r.cannotRest,
+      clazz: r.clazz ?? null,
+      subclass: r.subclass ?? null,
+      specialization: r.specialization ?? null,
+      level: r.level ?? null,
     }));
     return {
       // Both options default to on, like the server's.
@@ -1581,6 +1616,8 @@ interface SessionStateDto {
   restVote?: RestVoteDto | null;
   lootResult?: LootResultView | null;
   longRest?: LongRestDto | null;
+  longRestAvailable?: boolean;
+  longRestWait?: LongRestWaitView | null;
   longRestResult?: {
     id: number;
     outcome: LongRestResultView['outcome'];
@@ -1598,6 +1635,7 @@ interface LongRestDto {
   readiness?: Array<{
     participantId: number; pcId?: number | null; displayName: string;
     ready?: boolean; cannotRest?: boolean;
+    clazz?: string | null; subclass?: string | null; specialization?: string | null; level?: number | null;
   }>;
   myChoices?: { preparedSpells?: string[] | null; runeWeapon?: string | null } | null;
 }

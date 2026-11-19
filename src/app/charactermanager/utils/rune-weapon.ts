@@ -1,6 +1,7 @@
 import { PC } from '../models/pc';
 import { EBON_BLADE_SUBCLASS } from '../models/hero-class';
 import { modFromScore } from './character-math';
+import { catalogWeaponRanged } from './weapon-catalog';
 
 /**
  * Death Knight Runeforging (World of Warcraft tabletop module): from Paladin
@@ -22,12 +23,19 @@ export function isRuneforger(pc: Pick<PC, 'clazz' | 'subclass' | 'level'> | null
     && (pc?.level ?? 0) >= 3;
 }
 
-// A sheet's weapon entries carry no melee/ranged flag (only the shop catalog
-// does), so this reads what they do carry: the Ammunition property, or a
-// telling name. Same test as the server.
+// Fallback for a weapon the catalog does not know (a custom or renamed weapon,
+// a free-text entry like "Handaxes (4)"): read what the entry does carry — the
+// Ammunition property, or a telling name. Same two steps as the server.
 const RANGED_NAME = /(bow\b|\bsling\b|\bdarts?\b|\bblowgun\b|\bmusket\b|\bpistol\b|\bnet\b)/i;
 
-export function isRangedWeapon(name: string, properties?: string[] | null): boolean {
+/**
+ * Whether a weapon on a sheet is ranged. A catalog weapon (matched by its
+ * catalog key, else by its exact name) answers from the catalog's own
+ * melee/ranged data; anything else falls back to its properties and name.
+ */
+export function isRangedWeapon(name: string, properties?: string[] | null, catalogKey?: string | null): boolean {
+  const known = catalogWeaponRanged(catalogKey, name);
+  if (known !== undefined) return known;
   if ((properties ?? []).some(p => (p ?? '').trim().toLowerCase().startsWith('ammunition'))) return true;
   return RANGED_NAME.test(name);
 }
@@ -41,7 +49,7 @@ export function meleeWeapons(pc: Pick<PC, 'inventory' | 'weapons'>): MeleeWeapon
   for (const item of pc.inventory ?? []) {
     const name = (item.name ?? '').trim();
     if (!name || item.category !== 'weapon' || item.status === 'dropped') continue;
-    if (isRangedWeapon(name, item.properties)) continue;
+    if (isRangedWeapon(name, item.properties, item.catalogKey)) continue;
     if (!byKey.has(name.toLowerCase())) byKey.set(name.toLowerCase(), { name, damage: item.damage ?? null });
   }
   for (const weapon of pc.weapons ?? []) {

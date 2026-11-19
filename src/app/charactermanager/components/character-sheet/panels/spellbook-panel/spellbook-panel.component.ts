@@ -57,6 +57,9 @@ export class SpellbookPanelComponent implements OnChanges {
    *  is deliberately not enforced — tables manage that socially; only the 2024
    *  PHB prepared-count cap is. */
   readonly preparable = input(false);
+  /** Shown instead of the Prepare buttons when the viewer cannot use them (e.g.
+   *  "Prepared spells change during a long rest."); null for no hint. */
+  readonly preparedHint = input<string | null>(null);
   readonly pcChange = output<PC>();
   /** A cast resolved to a slot level — the host forwards it to the live session. */
   readonly castRequested = output<CastRequest>();
