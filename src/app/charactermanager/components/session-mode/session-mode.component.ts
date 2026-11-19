@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnDestroy, OnInit, inject, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SessionState } from '../../models/session';
+import { RestType, SessionState } from '../../models/session';
 import { PC } from '../../models/pc';
 import { SessionService } from '../../services/session.service';
 import { UiStateService } from '../../services/ui-state.service';
@@ -25,7 +25,9 @@ import { ShopPanelComponent } from './shop-panel/shop-panel.component';
 import { LootPanelComponent } from './loot-panel/loot-panel.component';
 import { CharacterSheetComponent } from '../character-sheet/character-sheet.component';
 import { RestVoteModalComponent } from './rest-vote-modal/rest-vote-modal.component';
-import { ModalComponent } from '../modal/modal.component';
+import { RestChooserComponent } from './rest-chooser/rest-chooser.component';
+import { LongRestModalComponent } from './long-rest-modal/long-rest-modal.component';
+import { LongRestPanelComponent } from './long-rest-panel/long-rest-panel.component';
 import { AsyncPipe, TitleCasePipe } from '@angular/common';
 import { ContextHelpComponent } from '../context-help/context-help.component';
 
@@ -41,7 +43,7 @@ import { ContextHelpComponent } from '../context-help/context-help.component';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, ModalComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, RestChooserComponent, LongRestModalComponent, LongRestPanelComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
@@ -104,6 +106,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
           this.resolveVariants(state);
           this.trackClock(state);
           this.trackRestVote(state);
+          this.trackLongRest(state);
           this.trackLevelUp(state);
         }
       });
@@ -156,13 +159,11 @@ export class SessionModeComponent implements OnInit, OnDestroy {
   }
 
   /** Label for the DM's advance button: the segment it advances INTO. */
-  /** Player's Short Rest button: what it does, or why it is unavailable. The
+  /** Player's Rest button: what it does, or why it is unavailable. The
    *  button's tooltip and the tap-reachable "?" beside it share this text. */
-  shortRestHint(state: SessionState): string {
-    if (state.shortRestOpen) return 'A short rest is already underway.';
-    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is already being tallied.';
-    if (state.status !== 'LOBBY') return 'No resting mid-encounter. Wait until the encounter ends.';
-    return 'Calls for a short rest. The party votes, and a unanimous yes opens the rest.';
+  restHint(state: SessionState): string {
+    return this.restBlockedReason(state)
+      ?? 'Calls for a short or a long rest. The party votes, and a unanimous yes opens the rest.';
   }
 
   /** DM only: what the clock buttons do, including what Advance costs the
@@ -172,7 +173,8 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       + (this.survivalConditions
         ? ' Time passes: the party eats its supplies, and hunger, thirst and fatigue shift.'
         : '')
-      + ' Long Rest restores spell slots'
+      + ' Long Rest starts a long rest: the party readies up, and finishing it restores'
+      + ' Hit Points, Hit Dice and spell slots'
       + (this.survivalConditions ? ' and sheds fatigue' : '')
       + '. Short Rest lets players spend Hit Dice to heal until you end it.';
   }
@@ -278,22 +280,99 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Long rest (DM) ─────────────────────────────────────────────────────────
-  // The DM rests the party: recovers spell slots and, in a survival campaign,
-  // sheds fatigue. A modal asks whether the rest was undisturbed (−3) or not (−1).
+  // ── Long rest phase ────────────────────────────────────────────────────────
+  // Opened by a passed LONG vote or by the DM's Long Rest button. While it is
+  // open nothing has been recovered: players mark Ready on a blocking screen,
+  // the DM watches the readiness panel, and recovery lands for everyone when
+  // the DM finishes it or the last able hero readies up.
 
-  longRestModalOpen = false;
+  /** undefined until the first snapshot, so a stale outcome is not announced on (re)join. */
+  private lastLongRestResultId: number | null | undefined = undefined;
 
-  openLongRest(): void { this.longRestModalOpen = true; }
-  cancelLongRest(): void { this.longRestModalOpen = false; }
+  /** Why the DM cannot start a long rest right now, or null when they can. */
+  dmLongRestBlockedReason(state: SessionState): string | null {
+    if (state.longRest) return 'A long rest is already underway';
+    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is being tallied — allow or deny it';
+    if (state.status !== 'LOBBY') return 'No resting mid-encounter';
+    return null;
+  }
 
-  confirmLongRest(undisturbed: boolean, state: SessionState): void {
-    this.longRestModalOpen = false;
-    this.sessionService.longRest(state.sessionId, undisturbed).subscribe({
-      next: () => this.notifications.notify(
-        undisturbed ? 'The party rests soundly.' : 'The party rests, but fitfully.'),
-      error: () => this.notifications.notify('Could not rest the party. Try again.'),
+  /** DM starts the long rest phase directly, with no vote. */
+  openLongRest(state: SessionState): void {
+    this.sessionService.openLongRest(state.sessionId).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not start the long rest. Try again.')),
     });
+  }
+
+  /** DM changes a phase option (the clock, or how a survival rest went). */
+  setLongRestOptions(options: { advanceClock?: boolean; undisturbed?: boolean }, state: SessionState): void {
+    this.sessionService.setLongRestOptions(state.sessionId, options).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not change that. Try again.')),
+    });
+  }
+
+  finishLongRest(state: SessionState): void {
+    this.sessionService.finishLongRest(state.sessionId).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not finish the long rest. Try again.')),
+    });
+  }
+
+  interruptLongRest(state: SessionState): void {
+    this.sessionService.interruptLongRest(state.sessionId).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not interrupt the long rest. Try again.')),
+    });
+  }
+
+  /** The player marks their own hero ready, or takes it back. */
+  setLongRestReady(ready: boolean, state: SessionState): void {
+    const mine = state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (mine?.pcId == null) return;
+    this.sessionService.setLongRestReady(state.sessionId, mine.pcId, ready).subscribe({
+      error: err => this.notifications.notify(this.restVoteError(err,
+        'Could not mark you ready. Try again.')),
+    });
+  }
+
+  /** The hero the player's long rest screen is about; undefined for the DM or a spectator. */
+  longRestPc(state: SessionState): PC | undefined {
+    return state.dm ? undefined : this.myPc(state);
+  }
+
+  /**
+   * Announce each long rest outcome once (keyed on the result id, like the
+   * loot split's), and pull the player's fresh character after a finished
+   * rest — Exhaustion is not on the poll snapshot.
+   */
+  private trackLongRest(state: SessionState): void {
+    const result = state.longRestResult;
+    const id = result?.id ?? null;
+    const firstLook = this.lastLongRestResultId === undefined;
+    if (id === this.lastLongRestResultId) return;
+    this.lastLongRestResultId = id;
+    if (!result || firstLook) return;
+
+    const mine = state.dm ? undefined : state.participants.find(p => p.ownedByMe && p.pcId != null);
+    if (result.outcome === 'INTERRUPTED') {
+      this.notifications.notify('The long rest was interrupted. Nobody recovered.');
+      return;
+    }
+    if (mine?.pcId != null) this.pcService.refreshPC(mine.pcId);
+    this.notifications.notify(this.longRestFinishedMessage(result.skipped, mine?.name ?? null));
+  }
+
+  private longRestFinishedMessage(skipped: string[], myHero: string | null): string {
+    if (myHero != null) {
+      return skipped.includes(myHero)
+        ? `The long rest is over. ${myHero} was at 0 Hit Points and did not recover.`
+        : `The long rest is over. ${myHero} is restored.`;
+    }
+    return skipped.length
+      ? `The long rest is over. At 0 Hit Points, not recovered: ${skipped.join(', ')}.`
+      : 'The long rest is over.';
   }
 
   // ── Short rest (DM window + player hit-die spends) ─────────────────────────
@@ -309,16 +388,36 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Short rest vote (player-initiated, unanimous, 60s window) ──────────────
+  // ── Rest vote (player-initiated, unanimous, 60s window) ────────────────────
 
   /** Snapshot transition tracker: announce a vote's outcome exactly once. */
   private lastVoteSeen: { voteId: number; status: string } | null = null;
 
-  /** A player calls the short rest — every seated PC gets a ballot. */
-  initiateRestVote(state: SessionState): void {
-    this.sessionService.initiateRestVote(state.sessionId).subscribe({
+  /** The player's Rest dialog (short or long) is open. */
+  restChooserOpen = false;
+
+  /** Why a player cannot call a rest right now, or null when they can. */
+  restBlockedReason(state: SessionState): string | null {
+    if (state.longRest) return 'A long rest is already underway.';
+    if (state.shortRestOpen) return 'A short rest is already underway.';
+    if (state.restVote?.status === 'ACTIVE') return 'A rest vote is already being tallied.';
+    if (state.status !== 'LOBBY') return 'No resting mid-encounter. Wait until the encounter ends.';
+    return null;
+  }
+
+  openRestChooser(): void { this.restChooserOpen = true; }
+
+  /** The player picked a rest in the dialog — close it and call the vote. */
+  callRest(restType: RestType, state: SessionState): void {
+    this.restChooserOpen = false;
+    this.initiateRestVote(state, restType);
+  }
+
+  /** A player calls a rest — every seated PC gets a ballot. */
+  initiateRestVote(state: SessionState, restType: RestType = 'SHORT'): void {
+    this.sessionService.initiateRestVote(state.sessionId, restType).subscribe({
       error: err => this.notifications.notify(this.restVoteError(err,
-        'Could not call a short rest.')),
+        restType === 'LONG' ? 'Could not call a long rest.' : 'Could not call a short rest.')),
     });
   }
 
@@ -348,9 +447,13 @@ export class SessionModeComponent implements OnInit, OnDestroy {
     if (!vote) { this.lastVoteSeen = null; return; }
     const prev = this.lastVoteSeen;
     if (prev?.voteId === vote.voteId && prev.status === 'ACTIVE' && vote.status !== 'ACTIVE') {
+      const long = vote.restType === 'LONG';
       const message =
-        vote.status === 'PASSED' ? 'The party rests — spend hit dice while the window is open.'
-        : vote.status === 'FAILED' ? 'No rest — the vote failed.'
+        vote.status === 'PASSED'
+          ? (long ? 'The vote passed — the long rest begins.'
+                  : 'The party rests — spend hit dice while the window is open.')
+        : vote.status === 'FAILED'
+          ? (long ? 'No long rest — the vote failed.' : 'No rest — the vote failed.')
         : 'The rest vote was called off.';
       this.notifications.notify(message);
     }

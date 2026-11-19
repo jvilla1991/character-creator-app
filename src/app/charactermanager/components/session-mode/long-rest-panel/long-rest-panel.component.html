@@ -1,0 +1,57 @@
+<div class="panel long-rest-panel">
+  <div class="panel-header" style="margin-bottom: 0;">
+    <span class="panel-title">Long Rest</span>
+    <span class="lr-count" role="status">
+      {{ longRest().readyCount }} of {{ longRest().ableCount }} ready
+    </span>
+  </div>
+
+  <ul class="lr-party">
+    @for (row of rows(); track row.participantId) {
+      <li class="lr-hero">
+        <span class="lr-hero-id">
+          <span class="lr-hero-name">{{ row.name }}</span>
+          @if (row.detail) {
+            <span class="lr-hero-detail">{{ row.detail }}</span>
+          }
+        </span>
+        <span class="lr-status" [class]="'lr-status ' + row.status">{{ row.statusLabel }}</span>
+      </li>
+    }
+  </ul>
+
+  <div class="lr-options">
+    <label class="lr-check">
+      <input type="checkbox" data-advance-clock
+        [checked]="longRest().advanceClock" (change)="onAdvanceClock($event)">
+      <span>Move the clock to the next morning</span>
+    </label>
+    @if (survivalConditions()) {
+      <div class="seg-mini lr-disturbance" role="group" aria-label="How the rest went">
+        <button type="button" data-undisturbed
+          [class.active]="longRest().undisturbed"
+          [attr.aria-pressed]="longRest().undisturbed"
+          (click)="setUndisturbed(true)">
+          Undisturbed (−3 fatigue)
+        </button>
+        <button type="button" data-disturbed
+          [class.active]="!longRest().undisturbed"
+          [attr.aria-pressed]="!longRest().undisturbed"
+          (click)="setUndisturbed(false)">
+          Disturbed (−1 fatigue)
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="lr-actions">
+    <button type="button" class="btn danger" data-interrupt (click)="interrupt.emit()"
+      title="End the rest now. Nobody recovers.">
+      Interrupt
+    </button>
+    <button type="button" class="btn primary" data-finish (click)="finish.emit()"
+      title="End the rest now. Every hero above 0 Hit Points recovers.">
+      Finish the Rest
+    </button>
+  </div>
+</div>

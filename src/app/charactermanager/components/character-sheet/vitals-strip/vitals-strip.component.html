@@ -71,7 +71,7 @@
 </div>
 
 <!-- Hit Dice: remaining of the level-sized pool. Spends happen in a live
-session while the DM's short-rest window is open; a long rest restores half. -->
+session while the DM's short-rest window is open; a long rest restores them all. -->
 <div class="vital">
   <span class="eyebrow">Hit Dice</span>
   <div class="vital-value numeric"
@@ -82,7 +82,7 @@ session while the DM's short-rest window is open; a long rest restores half. -->
     <button class="spend-die-btn" (click)="spendHitDie.emit()"
       [disabled]="hitDiceRemaining === 0"
       [title]="hitDiceRemaining === 0
-        ? 'No hit dice left — a long rest restores half'
+        ? 'No hit dice left — a long rest restores them all'
         : 'Roll 1d' + hitDie + ' + CON and heal (short rest)'">
       {{ hitDiceRemaining === 0 ? 'No Hit Dice left' : 'Spend Hit Die (1d' + hitDie + '+CON)' }}
     </button>

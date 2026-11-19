@@ -1,0 +1,96 @@
+<!-- BLOCKING on purpose, like the rest vote: no backdrop-click close, no
+escape-close. The exits are Ready, the DM finishing, or the DM interrupting. -->
+<div class="modal-backdrop">
+  <app-modal class="long-rest-modal" title="Long Rest" tone="celestial"
+    [closable]="false" [dialogDismissible]="false">
+    @let p = preview();
+    <div class="modal-sub">{{ pc().name }} · {{ pc().clazz }} {{ pc().level }}</div>
+
+    @if (cannotRest()) {
+      <p class="lr-blocked" role="status">
+        {{ pc().name }} is at 0 Hit Points and cannot benefit from this long rest.
+      </p>
+    } @else {
+      <section class="lr-summary" aria-labelledby="lr-summary-title">
+        <div class="eyebrow" id="lr-summary-title">This rest restores</div>
+
+        <div class="lr-hp">
+          <div class="lr-hp-head">
+            <span class="lr-label">Hit Points</span>
+            @if (p.hpGain > 0) {
+              <span class="lr-gain numeric">+{{ p.hpGain }}</span>
+            }
+          </div>
+          <div class="lr-hp-nums numeric">
+            @if (p.hpGain > 0) {
+              <span class="lr-hp-now">{{ p.hpNow }}</span>
+              <svg aria-hidden="true" width="18" height="12" viewBox="0 0 18 12" fill="none"
+                stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 6h15M11 1l5 5-5 5"/>
+              </svg>
+            }
+            <span class="lr-hp-max">{{ p.hpMax }}</span>
+            <span class="lr-hp-of">/ {{ p.hpMax }}</span>
+          </div>
+          <div class="lr-bar" role="img" [attr.aria-label]="hpBarLabel()">
+            <div class="lr-bar-now" [style.width.%]="hpNowPercent()"></div>
+          </div>
+        </div>
+
+        <dl class="lr-rows">
+          <div class="lr-row" data-row="hit-dice">
+            <dt class="lr-label">Hit Dice</dt>
+            <dd class="numeric">{{ p.hitDiceTotal }} / {{ p.hitDiceTotal }} d{{ p.hitDie }}</dd>
+            <dd class="lr-note">{{ p.hitDiceBack > 0 ? '+' + p.hitDiceBack : 'none spent' }}</dd>
+          </div>
+          @if (p.exhaustionNow > 0) {
+            <div class="lr-row" data-row="exhaustion">
+              <dt class="lr-label">Exhaustion</dt>
+              <dd class="numeric">{{ p.exhaustionAfter }}</dd>
+              <dd class="lr-note">down from {{ p.exhaustionNow }}</dd>
+            </div>
+          }
+          @if (p.tempHp > 0) {
+            <div class="lr-row" data-row="temp-hp">
+              <dt class="lr-label">Temp HP</dt>
+              <dd class="numeric">0</dd>
+              <dd class="lr-note">{{ p.tempHp }} will fade</dd>
+            </div>
+          }
+          @for (s of p.slots; track s.level) {
+            <div class="lr-row" data-row="slots">
+              <dt class="lr-label">{{ ordinal(s.level) }} level slots</dt>
+              <dd class="numeric">{{ s.max }} / {{ s.max }}</dd>
+              <dd class="lr-note">{{ s.back > 0 ? '+' + s.back : 'none spent' }}</dd>
+            </div>
+          }
+        </dl>
+
+        <!-- Slice 3: restored class features are projected here, inside the summary. -->
+        <ng-content select="[longRestRestored]" />
+      </section>
+
+      <!-- Slice 2: the hero's choices for the day (prepared spells, rune
+      weapon) are projected here, between the summary and Ready. -->
+      <ng-content select="[longRestChoices]" />
+    }
+
+    <div class="lr-foot">
+      <span class="lr-tally" role="status">
+        {{ longRest().readyCount }} of {{ longRest().ableCount }} ready
+      </span>
+      @if (!cannotRest()) {
+        <!-- One button that changes its word, so keyboard focus stays on it
+        when the player readies up or takes it back. -->
+        <button type="button" class="btn" [class.primary]="!ready()"
+          [attr.data-ready]="ready() ? null : ''" [attr.data-unready]="ready() ? '' : null"
+          (click)="readyChange.emit(!ready())">
+          {{ ready() ? 'Not Ready' : 'Ready' }}
+        </button>
+      }
+    </div>
+    @if (ready()) {
+      <div class="lr-waiting">Waiting on the rest of the party…</div>
+    }
+  </app-modal>
+</div>

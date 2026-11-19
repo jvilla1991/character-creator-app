@@ -1,0 +1,105 @@
+.rest-options {
+  display: grid;
+  gap: 8px;
+}
+
+// A choice card: an inset ground at rest; the selected one takes the gold
+// hairline and a raised fill (selection raises the fill, as chips do).
+.rest-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+
+  &:hover {
+    border-color: var(--gold);
+  }
+
+  &.selected {
+    border-color: var(--gold);
+    background: color-mix(in oklch, var(--gold) 12%, var(--bg-2));
+    color: var(--gold);
+  }
+}
+
+.rest-option-icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+.rest-option-body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+// The tick is the cue that does not rely on colour; it keeps its width when
+// hidden so choosing never shifts the text.
+.rest-option-check {
+  flex: none;
+  width: 14px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  visibility: hidden;
+
+  .rest-option.selected & {
+    visibility: visible;
+  }
+}
+
+.rest-option-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.rest-option-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: var(--text-md);
+  letter-spacing: var(--track-title);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.rest-option-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+
+.rest-option-desc {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.rest-notes {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+// The vote label is long; let the pair wrap on a phone instead of clipping.
+.rest-actions {
+  flex-wrap: wrap;
+
+  .btn.primary {
+    flex: 1 1 auto;
+  }
+}

@@ -5,7 +5,10 @@ import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
+  LongRestResultView,
+  LongRestView,
   ParticipantView,
+  RestType,
   RestVoteView,
   SessionRollGroup,
   SessionRollView,
@@ -493,13 +496,56 @@ export class SessionService {
   }
 
   /**
-   * DM long rest for the seated party: restores every PC's spell slots and, in
-   * a survival campaign, sheds fatigue (3 undisturbed / 1 disturbed). Server-
-   * authoritative and version-bumped so every sheet updates via the poll.
+   * DM opens a long rest phase for the seated party, with no vote. Nothing is
+   * recovered yet: the phase arrives on the snapshot (`longRest`), players mark
+   * Ready, and recovery lands on finishLongRest or the last Ready.
    */
-  longRest(sessionId: number | string, undisturbed: boolean): Observable<SessionState> {
-    if (environment.demoMode) return this.demoLongRest(undisturbed);
-    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest`, { undisturbed }).pipe(
+  openLongRest(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoOpenLongRest());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /** A player marks their own seated hero ready (or not) for the open long rest. */
+  setLongRestReady(sessionId: number | string, pcId: number, ready: boolean): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoSetLongRestReady(pcId, ready));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest/ready`, { pcId, ready }).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => this.pushState(state)),
+    );
+  }
+
+  /**
+   * DM sets the open long rest's options. Send only what changed:
+   * `advanceClock` (move the clock to the next morning on finish) and
+   * `undisturbed` (survival fatigue relief of 3, or 1 when false).
+   */
+  setLongRestOptions(
+    sessionId: number | string,
+    options: { advanceClock?: boolean; undisturbed?: boolean },
+  ): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoSetLongRestOptions(options));
+    return this.http.put<unknown>(`${this.sessionBase}/${sessionId}/long-rest/options`, options).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => { this.pushState(state); }),
+    );
+  }
+
+  /** DM finishes the open long rest now: every seated hero recovers. */
+  finishLongRest(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoFinishLongRest());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest/finish`, {}).pipe(
+      map(raw => this.deserialize(raw)),
+      tap(state => { this.pushState(state); this.mirrorGameTime(state); }),
+    );
+  }
+
+  /** DM interrupts the open long rest: the phase closes and nobody recovers. */
+  interruptLongRest(sessionId: number | string): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoInterruptLongRest());
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/long-rest/interrupt`, {}).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
@@ -525,14 +571,15 @@ export class SessionService {
   }
 
   /**
-   * A seated player calls a short rest: opens a 60-second unanimous vote among
-   * every seated PC (the caller's ballot is pre-set to yes). Passing opens the
-   * same shortRestOpen window as the DM's toggle. The vote itself arrives on
-   * the snapshot (`restVote`) via the poll.
+   * A seated player calls a rest: opens a 60-second unanimous vote among
+   * every seated PC (the caller's ballot is pre-set to yes). A passed SHORT
+   * vote opens the same shortRestOpen window as the DM's toggle; a passed LONG
+   * vote opens the long rest phase. The vote itself arrives on the snapshot
+   * (`restVote`) via the poll.
    */
-  initiateRestVote(sessionId: number | string): Observable<SessionState> {
-    if (environment.demoMode) return of(this.demoInitiateRestVote());
-    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/rest-vote`, {}).pipe(
+  initiateRestVote(sessionId: number | string, restType: RestType = 'SHORT'): Observable<SessionState> {
+    if (environment.demoMode) return of(this.demoInitiateRestVote(restType));
+    return this.http.post<unknown>(`${this.sessionBase}/${sessionId}/rest-vote`, { restType }).pipe(
       map(raw => this.deserialize(raw)),
       tap(state => this.pushState(state)),
     );
@@ -558,20 +605,22 @@ export class SessionService {
 
   /**
    * Demo mirror: a solo table is unanimity of one, so the vote passes on the
-   * spot and the rest window opens — no fake 60-second wait.
+   * spot — the rest window (SHORT) or the long rest phase (LONG) opens with no
+   * fake 60-second wait.
    */
-  private demoInitiateRestVote(): SessionState {
+  private demoInitiateRestVote(restType: RestType = 'SHORT'): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
     const me = state.participants.find(p => p.pcId != null);
     const restVote: RestVoteView = {
       voteId: Date.now(),
       status: 'PASSED',
+      restType,
       initiatorParticipantId: me?.participantId ?? null,
       initiatorName: me?.name ?? 'You',
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
       votes: me ? [{ participantId: me.participantId, displayName: me.name, vote: true }] : [],
     };
-    return this.demoPatch({ restVote, shortRestOpen: true });
+    return this.demoPatch({ restVote, ...this.demoRestPassed(state, restType) });
   }
 
   /** Demo mirror: settle the (already terminal) vote per the ballot cast. */
@@ -580,18 +629,132 @@ export class SessionService {
     if (!state.restVote) return state;
     return this.demoPatch({
       restVote: { ...state.restVote, status: vote ? 'PASSED' : 'FAILED' },
-      shortRestOpen: vote,
+      ...(vote ? this.demoRestPassed(state, state.restVote.restType)
+        : { shortRestOpen: false, longRest: null }),
     });
   }
 
   /** Demo mirror of the DM override: pass now or fail now. */
   private demoOverrideRestVote(vote: boolean): SessionState {
+    return this.demoCastRestVote(vote);
+  }
+
+  /** Demo: what a passed vote opens — the hit-dice window or the long rest phase. */
+  private demoRestPassed(state: SessionState, restType: RestType): Partial<SessionState> {
+    return restType === 'LONG'
+      ? { shortRestOpen: false, longRest: this.demoLongRestView(state) }
+      : { shortRestOpen: true };
+  }
+
+  /** Demo: a fresh phase for the seated heroes — nobody ready, default options. */
+  private demoLongRestView(state: SessionState): LongRestView {
+    const readiness = state.participants.filter(p => p.pcId != null).map(p => ({
+      participantId: p.participantId,
+      pcId: p.pcId,
+      displayName: p.name,
+      ready: false,
+      cannotRest: p.hpCurrent != null && p.hpCurrent <= 0,
+    }));
+    return {
+      advanceClock: true,
+      undisturbed: true,
+      readyCount: 0,
+      ableCount: readiness.filter(r => !r.cannotRest).length,
+      readiness,
+    };
+  }
+
+  /** Demo mirror: the DM opens the phase without a vote. */
+  private demoOpenLongRest(): SessionState {
     const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    if (!state.restVote) return state;
-    return this.demoPatch({
-      restVote: { ...state.restVote, status: vote ? 'PASSED' : 'FAILED' },
-      shortRestOpen: vote,
+    if (state.longRest) return state;
+    return this.demoPatch({ shortRestOpen: false, longRest: this.demoLongRestView(state) });
+  }
+
+  /** Demo mirror: mark one hero ready; the last Ready finishes the rest. */
+  private demoSetLongRestReady(pcId: number, ready: boolean): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (!state.longRest) return state;
+    const readiness = state.longRest.readiness.map(r =>
+      r.pcId === pcId && !r.cannotRest ? { ...r, ready } : r);
+    const readyCount = readiness.filter(r => r.ready).length;
+    const longRest = { ...state.longRest, readiness, readyCount };
+    this.demoPatch({ longRest });
+    const settled = longRest.ableCount > 0 && readyCount === longRest.ableCount;
+    return settled ? this.demoFinishLongRest() : this.stateSubject.getValue()!;
+  }
+
+  /** Demo mirror of the DM's phase options. */
+  private demoSetLongRestOptions(options: { advanceClock?: boolean; undisturbed?: boolean }): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (!state.longRest) return state;
+    return this.demoPatch({ longRest: { ...state.longRest, ...options } });
+  }
+
+  /**
+   * Demo mirror of the finish: the clock walks to the next morning first (a
+   * segment at a time, so survival bumps apply), then every seated hero above
+   * 0 Hit Points recovers.
+   */
+  private demoFinishLongRest(): SessionState {
+    const before = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    const phase = before.longRest;
+    if (!phase) return before;
+    const skipped = phase.readiness.filter(r => r.cannotRest).map(r => r.displayName);
+    const skippedIds = new Set(phase.readiness.filter(r => r.cannotRest).map(r => r.pcId));
+
+    if (phase.advanceClock) {
+      if (before.gameTime == null) {
+        this.demoAdvanceTime(); // establishes day 1 morning, no bumps
+      } else {
+        for (let step = 0; step < 3; step++) {
+          this.demoAdvanceTime();
+          if (this.stateSubject.getValue()?.gameTime?.timeOfDay === 'morning') break;
+        }
+      }
+    }
+
+    const state = this.stateSubject.getValue() ?? before;
+    const survivalOn = !!this.campaignService.getLocalCampaign(state.campaignId)?.variantRules?.survivalConditions;
+    const participants = state.participants.map(p => {
+      if (p.pcId == null || skippedIds.has(p.pcId)) return p;
+      const pc = this.pcService.getPCById(p.pcId);
+      if (!pc) return p;
+      const updated = applyLongRestToPc(pc, phase.undisturbed, survivalOn);
+      this.pcService.patchLocalPC(p.pcId, {
+        spellSlots: updated.spellSlots, survival: updated.survival, hp: updated.hp,
+        hitDiceUsed: updated.hitDiceUsed, exhaustion: updated.exhaustion,
+      });
+      return {
+        ...p,
+        survival: updated.survival ?? p.survival,
+        spellSlots: updated.spellSlots ?? p.spellSlots,
+        hpCurrent: updated.hp?.cur ?? p.hpCurrent,
+        hpTemp: updated.hp?.temp ?? p.hpTemp,
+        hitDiceUsed: updated.hitDiceUsed ?? p.hitDiceUsed,
+      };
     });
+    return this.demoPatch({
+      participants,
+      longRest: null,
+      longRestResult: this.demoLongRestResult('FINISHED', skipped, phase.advanceClock),
+    });
+  }
+
+  /** Demo mirror of the interrupt: the phase closes, nobody recovers. */
+  private demoInterruptLongRest(): SessionState {
+    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
+    if (!state.longRest) return state;
+    return this.demoPatch({
+      longRest: null,
+      longRestResult: this.demoLongRestResult('INTERRUPTED', [], false),
+    });
+  }
+
+  private demoLongRestResult(
+    outcome: LongRestResultView['outcome'], skipped: string[], clockAdvanced: boolean,
+  ): LongRestResultView {
+    return { id: Date.now(), outcome, skipped, clockAdvanced, createdAt: new Date().toISOString() };
   }
 
   /**
@@ -1084,21 +1247,6 @@ export class SessionService {
     return of(this.demoPatch({ gameTime: next, participants }));
   }
 
-  /** Demo mirror of the DM long rest (restore slots + shed fatigue for the party). */
-  private demoLongRest(undisturbed: boolean): Observable<SessionState> {
-    const state = this.stateSubject.getValue() ?? this.emptyState('demo-session');
-    const survivalOn = !!this.campaignService.getLocalCampaign(state.campaignId)?.variantRules?.survivalConditions;
-    const participants = state.participants.map(p => {
-      if (p.pcId == null) return p;
-      const pc = this.pcService.getPCById(p.pcId);
-      if (!pc) return p;
-      const updated = applyLongRestToPc(pc, undisturbed, survivalOn);
-      this.pcService.patchLocalPC(p.pcId, { spellSlots: updated.spellSlots, survival: updated.survival });
-      return { ...p, survival: updated.survival ?? p.survival };
-    });
-    return of(this.demoPatch({ participants }));
-  }
-
   private demoSetTime(
     time: { year: string; month: string; day: string; timeOfDay: TimeOfDay;
             weekday: string | null; week?: number | null },
@@ -1164,6 +1312,8 @@ export class SessionService {
       rolls: [],
       restVote: null,
       lootResult: null,
+      longRest: null,
+      longRestResult: null,
     };
   }
 
@@ -1175,7 +1325,7 @@ export class SessionService {
       lootStatus: null, lootName: null, myXp: null, myLevelGrant: null,
       shopOpen: false, shopForMe: false, shopCategory: null,
       gameTime: null, location: null, weekDays: null, participants: [], rolls: [],
-      restVote: null, lootResult: null,
+      restVote: null, lootResult: null, longRest: null, longRestResult: null,
     };
   }
 
@@ -1242,6 +1392,34 @@ export class SessionService {
       lootResult: dto.lootResult
         ? { ...dto.lootResult, pvpCallers: dto.lootResult.pvpCallers ?? [] }
         : null,
+      longRest: dto.longRest ? this.deserializeLongRest(dto.longRest) : null,
+      longRestResult: dto.longRestResult
+        ? {
+            id: dto.longRestResult.id,
+            outcome: dto.longRestResult.outcome,
+            skipped: dto.longRestResult.skipped ?? [],
+            clockAdvanced: !!dto.longRestResult.clockAdvanced,
+            createdAt: dto.longRestResult.createdAt ?? null,
+          }
+        : null,
+    };
+  }
+
+  private deserializeLongRest(v: LongRestDto): LongRestView {
+    const readiness = (v.readiness ?? []).map(r => ({
+      participantId: r.participantId,
+      pcId: r.pcId ?? null,
+      displayName: r.displayName,
+      ready: !!r.ready,
+      cannotRest: !!r.cannotRest,
+    }));
+    return {
+      // Both options default to on, like the server's.
+      advanceClock: v.advanceClock !== false,
+      undisturbed: v.undisturbed !== false,
+      readyCount: v.readyCount ?? readiness.filter(r => r.ready).length,
+      ableCount: v.ableCount ?? readiness.filter(r => !r.cannotRest).length,
+      readiness,
     };
   }
 
@@ -1249,6 +1427,7 @@ export class SessionService {
     return {
       voteId: v.voteId,
       status: v.status,
+      restType: v.restType === 'LONG' ? 'LONG' : 'SHORT',
       initiatorParticipantId: v.initiatorParticipantId ?? null,
       initiatorName: v.initiatorName,
       expiresAt: v.expiresAt,
@@ -1371,11 +1550,31 @@ interface SessionStateDto {
   rolls?: SessionRollDto[];
   restVote?: RestVoteDto | null;
   lootResult?: LootResultView | null;
+  longRest?: LongRestDto | null;
+  longRestResult?: {
+    id: number;
+    outcome: LongRestResultView['outcome'];
+    skipped?: string[] | null;
+    clockAdvanced?: boolean;
+    createdAt?: string | null;
+  } | null;
+}
+
+interface LongRestDto {
+  advanceClock?: boolean;
+  undisturbed?: boolean;
+  readyCount?: number;
+  ableCount?: number;
+  readiness?: Array<{
+    participantId: number; pcId?: number | null; displayName: string;
+    ready?: boolean; cannotRest?: boolean;
+  }>;
 }
 
 interface RestVoteDto {
   voteId: number;
   status: RestVoteView['status'];
+  restType?: string | null;
   initiatorParticipantId?: number | null;
   initiatorName: string;
   expiresAt: string;

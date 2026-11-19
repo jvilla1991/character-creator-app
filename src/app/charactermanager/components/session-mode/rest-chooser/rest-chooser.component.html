@@ -1,0 +1,58 @@
+<div class="modal-backdrop" (click)="dismissed.emit()">
+  <app-modal class="rest-chooser" title="Call for a Rest" (dismiss)="dismissed.emit()">
+    <div class="modal-sub">The party votes, and everyone must agree.</div>
+
+    <div class="rest-options" role="group" aria-label="Which rest">
+      <button type="button" class="rest-option" data-rest="SHORT"
+        [class.selected]="selected() === 'SHORT'"
+        [attr.aria-pressed]="selected() === 'SHORT'"
+        (click)="selected.set('SHORT')">
+        <svg class="rest-option-icon" aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>
+        </svg>
+        <span class="rest-option-body">
+          <span class="rest-option-head">
+            <span class="rest-option-name">Short Rest</span>
+            <span class="rest-option-time">1 hour</span>
+          </span>
+          <span class="rest-option-desc">Spend Hit Dice to heal.</span>
+        </span>
+        <span class="rest-option-check" aria-hidden="true">✓</span>
+      </button>
+
+      <button type="button" class="rest-option" data-rest="LONG"
+        [class.selected]="selected() === 'LONG'"
+        [attr.aria-pressed]="selected() === 'LONG'"
+        (click)="selected.set('LONG')">
+        <svg class="rest-option-icon" aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>
+          <path d="M16 4v3M14.5 5.5h3"/>
+        </svg>
+        <span class="rest-option-body">
+          <span class="rest-option-head">
+            <span class="rest-option-name">Long Rest</span>
+            <span class="rest-option-time">8 hours</span>
+          </span>
+          <span class="rest-option-desc">All Hit Points, Hit Dice and spell slots come back.</span>
+        </span>
+        <span class="rest-option-check" aria-hidden="true">✓</span>
+      </button>
+    </div>
+
+    @if (selected() === 'LONG') {
+      <ul class="rest-notes">
+        <li>A hero needs at least 1 Hit Point to begin a long rest.</li>
+        <li>Only one long rest counts every 24 hours.</li>
+      </ul>
+    }
+
+    <div class="modal-actions rest-actions">
+      <button type="button" class="btn" (click)="dismissed.emit()">Cancel</button>
+      <button type="button" class="btn primary" data-call-vote (click)="chosen.emit(selected())">
+        Call the {{ selected() === 'LONG' ? 'Long' : 'Short' }} Rest Vote
+      </button>
+    </div>
+  </app-modal>
+</div>

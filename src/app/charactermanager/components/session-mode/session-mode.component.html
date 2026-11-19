@@ -50,16 +50,18 @@
           </button>
         }
         @if (!state.dm && myParticipantId(state) != null) {
+          @let restBlocked = restBlockedReason(state);
           <button
             class="btn"
-            (click)="initiateRestVote(state)"
-            [disabled]="state.shortRestOpen || state.restVote?.status === 'ACTIVE' || state.status !== 'LOBBY'"
-            [title]="shortRestHint(state)">
-            Short Rest
+            data-rest
+            (click)="openRestChooser()"
+            [disabled]="restBlocked != null"
+            [title]="restHint(state)">
+            Rest
           </button>
           <!-- What the button does, or why it is disabled: a phone has no hover
           and a disabled button shows no tooltip at all. -->
-          <app-context-help label="Short Rest" [text]="shortRestHint(state)"></app-context-help>
+          <app-context-help label="Rest" [text]="restHint(state)"></app-context-help>
         }
         @if (!state.dm && myParticipantId(state) != null) {
           <button
@@ -91,6 +93,18 @@
         (overrideCast)="overrideRestVote($event, state)">
       </app-rest-vote-modal>
     }
+    <!-- DM view of an open long rest: who is ready, the options, and the two
+    ways it ends. In the panel flow, like the vote banner above. -->
+    @if (state.dm && state.longRest) {
+      <app-long-rest-panel
+        [longRest]="state.longRest"
+        [participants]="state.participants"
+        [survivalConditions]="survivalConditions"
+        (optionsChange)="setLongRestOptions($event, state)"
+        (finish)="finishLongRest(state)"
+        (interrupt)="interruptLongRest(state)">
+      </app-long-rest-panel>
+    }
     <!-- Clock + location share one row for the DM; players (no location panel)
     get the clock full width. Stacks on narrow screens. -->
     <div class="clock-location-row" [class.two-up]="state.dm">
@@ -111,12 +125,17 @@
             <button class="btn" (click)="toggleTimeEdit(state)">
               {{ editingTime ? 'Cancel' : 'Set date' }}
             </button>
-            <button class="btn" (click)="openLongRest()"
-              title="Rest the party: recover spell slots and (in survival campaigns) shed fatigue">
+            @let longRestBlocked = dmLongRestBlockedReason(state);
+            <button class="btn" data-dm-long-rest (click)="openLongRest(state)"
+              [disabled]="longRestBlocked != null"
+              [title]="longRestBlocked ?? 'Start a long rest — the party readies up, then you finish it'">
               Long Rest
             </button>
             <button class="btn" [class.primary]="state.shortRestOpen" (click)="shortRest(state)"
-              [title]="state.shortRestOpen
+              [disabled]="!!state.longRest"
+              [title]="state.longRest
+                ? 'A long rest is underway'
+                : state.shortRestOpen
                 ? 'The short rest is open — players may spend hit dice. Click to end it.'
                 : 'Announce a short rest — players may then spend hit dice to heal'">
               {{ state.shortRestOpen ? 'End Short Rest' : 'Short Rest' }}
@@ -313,28 +332,25 @@
         (voteCast)="castRestVote($event, state)">
       </app-rest-vote-modal>
     }
-    <!-- Long rest modal (DM): was the rest undisturbed? -->
-    @if (state.dm && longRestModalOpen) {
-      <div class="modal-backdrop" (click)="cancelLongRest()">
-        <app-modal title="Long Rest" (dismiss)="cancelLongRest()">
-          <div class="modal-sub">The party settles in to rest — spell slots recover for everyone.
-            @if (survivalConditions) {
-              Was the rest undisturbed?
-            }
-          </div>
-          <div class="modal-actions" style="flex-wrap: wrap;">
-            <button class="btn" (click)="cancelLongRest()">Cancel</button>
-            @if (survivalConditions) {
-              <button class="btn" (click)="confirmLongRest(false, state)">
-                Disturbed (−1 fatigue)
-              </button>
-            }
-            <button class="btn primary" style="flex: none;" (click)="confirmLongRest(true, state)">
-              {{ survivalConditions ? 'Undisturbed (−3 fatigue)' : 'Rest the party' }}
-            </button>
-          </div>
-        </app-modal>
-      </div>
+    <!-- The player's Rest dialog: short or long, then the party votes. -->
+    @if (!state.dm && restChooserOpen && restBlockedReason(state) == null) {
+      <app-rest-chooser
+        (chosen)="callRest($event, state)"
+        (dismissed)="restChooserOpen = false">
+      </app-rest-chooser>
+    }
+    <!-- Player view of an open long rest: blocking, like the vote. Shown to
+    every player with a seated hero until the rest finishes or is interrupted. -->
+    @if (state.longRest) {
+      @let restingPc = longRestPc(state);
+      @if (restingPc) {
+        <app-long-rest-modal
+          [longRest]="state.longRest"
+          [pc]="restingPc"
+          [myParticipantId]="myParticipantId(state)"
+          (readyChange)="setLongRestReady($event, state)">
+        </app-long-rest-modal>
+      }
     }
   </div>
 } @else {
