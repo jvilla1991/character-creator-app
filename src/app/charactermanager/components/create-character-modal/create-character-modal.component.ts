@@ -27,6 +27,9 @@ import {
   ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
   recommendedStartingSpells, recommendedSubclassFor,
 } from '../../models/hero-class';
+import {
+  CatalogSpecies, SpeciesOption, buildSpeciesOptions, catalogSpeciesByKey, speciesTraitFeatures, toSpeciesDetail,
+} from '../../models/species';
 
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 const ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
@@ -42,6 +45,8 @@ interface WizardDraft {
   step: number;
   name: string;
   species: string;
+  /** Catalog species row key (e.g. 'Elf (World of Warcraft)'); absent/'' for a base-game species. */
+  catalogSpeciesKey?: string;
   clazz: string;
   /**
    * Hero class row key (e.g. 'Death Knight (Paladin)', 'Druid (World of Warcraft)');
@@ -116,8 +121,16 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
   player = '';
 
   // ── Step 2: Species ──────────────────────────────────────────────────────
+  /** Base-game species names from the 2024 API, in API order. */
   speciesList: string[] = [];
+  /**
+   * The species NAME (e.g. 'Elf') — what is stored on the PC. A World of
+   * Warcraft species sets this to its name and records itself in
+   * `catalogSpeciesKey`, because five names exist in both sources.
+   */
   species     = '';
+  /** Chosen catalog species row key ('Elf (World of Warcraft)'), or '' for a base-game species. */
+  catalogSpeciesKey = '';
   loadingSpecies = true;
   speciesDetail: DndSpecies | null = null;
   loadingSpeciesDetail = false;
@@ -127,25 +140,67 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return (this.speciesDetail?.subspecies ?? []).map(s => s.name).join(', ');
   }
 
+  /** The chosen World of Warcraft species, or undefined for a base-game one. */
+  get catalogSpecies(): CatalogSpecies | undefined {
+    return catalogSpeciesByKey(this.catalogSpeciesKey);
+  }
+
+  /** The key of the chosen species row — the catalog key, else the species name. */
+  get selectedSpeciesKey(): string {
+    return this.catalogSpecies?.key ?? this.species;
+  }
+
+  /** Every species row: base-game species (API order) then the World of Warcraft ones. */
+  get speciesOptions(): SpeciesOption[] {
+    return buildSpeciesOptions(this.speciesList);
+  }
+
+  /** Species rows allowed by the content-source filter. */
+  get visibleSpeciesOptions(): SpeciesOption[] {
+    // Memoized on its inputs: a fresh array per change-detection pass would trip
+    // dev-mode's ExpressionChanged check on the [options] binding.
+    const key = `${JSON.stringify(this.contentSources)}|${this.speciesList.join(',')}`;
+    if (key !== this.speciesOptionsKey) {
+      this.speciesOptionsCache = filterBySource(this.speciesOptions, this.contentSources);
+      this.speciesOptionsKey = key;
+    }
+    return this.speciesOptionsCache;
+  }
+  private speciesOptionsKey = '';
+  private speciesOptionsCache: SpeciesOption[] = [];
+
+  /** True when the chosen species is hidden by the content-source filter (it stays chosen). */
+  get selectedSpeciesHidden(): boolean {
+    const key = this.selectedSpeciesKey;
+    return !!key && !this.loadingSpecies && !this.visibleSpeciesOptions.some(o => o.key === key);
+  }
+
   onSpeciesChange(): void {
     this.speciesDetail = null;
     if (this.species) this.speciesTrigger$.next(this.species);
   }
 
-  /** Click a species to choose+expand it; click the chosen one again to clear it. */
-  toggleSpecies(s: string): void {
-    this.species = this.species === s ? '' : s;
+  /** Click a species row to choose+expand it; click the chosen one again to clear it. */
+  toggleSpecies(key: string): void {
+    if (this.selectedSpeciesKey === key) {
+      this.species = '';
+      this.catalogSpeciesKey = '';
+    } else {
+      const catalog = catalogSpeciesByKey(key);
+      this.species = catalog?.name ?? key;
+      this.catalogSpeciesKey = catalog?.key ?? '';
+    }
     this.onSpeciesChange();
   }
 
-  // ── Content-source filter (top of the wizard; filters classes and spells) ─
+  // ── Content-source filter (top of the wizard; filters species, classes and spells) ─
   contentSources: ContentSourceSelection = allContentSources();
 
   toggleContentSource(source: ContentSource): void {
     this.contentSources = { ...this.contentSources, [source]: !this.contentSources[source] };
-    // A selected class or spells hidden by the filter stay selected: the filter
-    // narrows what's offered, it never discards a choice the player made. The
-    // class step says so when the chosen class is hidden.
+    // A selected species, class or spells hidden by the filter stay selected: the
+    // filter narrows what's offered, it never discards a choice the player made.
+    // The species and class steps say so when the chosen row is hidden.
   }
 
   // ── Step 3: Class ────────────────────────────────────────────────────────
@@ -461,6 +516,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // ── switchMap pipelines — automatically cancels stale requests ──────────
     this.speciesTrigger$.pipe(
       switchMap(name => {
+        // A World of Warcraft species is local data — no request to wait for.
+        const catalog = this.catalogSpecies;
+        if (catalog) return of(toSpeciesDetail(catalog));
         this.loadingSpeciesDetail = true;
         return this.dndResources.getSpeciesDetail(name).pipe(
           catchError(() => of(null))  // graceful 404 fallback (e.g. legacy species)
@@ -880,14 +938,18 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       gear:             this.equipmentChoice === 'A'
                           ? (this.currentClassEquipment?.optionA.gear ?? [])
                           : [],
-      features:         this.backgroundFeatName
-                          ? [{
-                              name:   this.backgroundFeatName,
-                              source: `${this.background} · Origin Feat`,
-                              desc:   this.backgroundFeatDescription
-                                        || 'See the 2024 Player\'s Handbook for full details.',
-                            }]
-                          : [],
+      features:         [
+                          ...(this.backgroundFeatName
+                            ? [{
+                                name:   this.backgroundFeatName,
+                                source: `${this.background} · Origin Feat`,
+                                desc:   this.backgroundFeatDescription
+                                          || 'See the 2024 Player\'s Handbook for full details.',
+                              }]
+                            : []),
+                          // A World of Warcraft species brings its trait cards (Other Features).
+                          ...(this.catalogSpecies ? speciesTraitFeatures(this.catalogSpecies) : []),
+                        ],
       spells: this.selectedSpells.map((s): PcSpell => ({
         lvl:            s.level,
         name:           s.name,
@@ -944,6 +1006,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       step: this.step,
       name: this.name,
       species: this.species,
+      catalogSpeciesKey: this.catalogSpeciesKey,
       clazz: this.clazz,
       heroClassLabel: this.heroClassKey,
       specialization: this.specialization,
@@ -981,6 +1044,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
       this.step             = d.step ?? 1;
       this.name             = d.name ?? '';
       this.species          = d.species ?? '';
+      // Only a key that still names this species counts — otherwise it's a base-game pick.
+      this.catalogSpeciesKey = catalogSpeciesByKey(d.catalogSpeciesKey)?.name === this.species
+        ? d.catalogSpeciesKey! : '';
       this.clazz            = d.clazz ?? '';
       this.heroClassKey     = heroClassByKey(d.heroClassLabel) ? d.heroClassLabel! : '';
       this.specialization   = d.specialization ?? d.rune ?? '';

@@ -1704,4 +1704,142 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.standardLanguages).toBe(component.standardLanguages);
     });
   });
+
+  describe('World of Warcraft species', () => {
+    const WOW_ELF = 'Elf (World of Warcraft)';
+
+    /** Everything submit() needs besides the species. */
+    function fillRestOfWizard() {
+      component.name = 'Thalyssra';
+      component.clazz = 'Wizard';
+      component.background = 'Sage';
+      component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
+      component.selectedSkills = ['Arcana', 'History'];
+      component.assignments = { STR: 8, DEX: 12, CON: 13, INT: 15, WIS: 14, CHA: 10 };
+      component.bonusPlus2 = 'INT';
+      component.bonusPlus1 = 'WIS';
+      component.equipmentChoice = 'B';
+      (component as any).classDetail = { hit_die: 6, saving_throws: [{ name: 'INT' }, { name: 'WIS' }] };
+    }
+
+    it('lists the base-game species then the seventeen WoW species', () => {
+      const names = component.visibleSpeciesOptions.map(o => o.name);
+      expect(names.slice(0, 3)).toEqual(['Elf', 'Human', 'Dwarf']);
+      expect(names.length).toBe(3 + 17);
+      expect(names.filter(n => n === 'Elf').length).toBe(2);
+    });
+
+    it('hides the WoW species with World of Warcraft off, and the base ones with Base Game off', () => {
+      component.toggleContentSource('World of Warcraft');
+      expect(component.visibleSpeciesOptions.map(o => o.key)).toEqual(['Elf', 'Human', 'Dwarf']);
+      component.toggleContentSource('World of Warcraft');
+      component.toggleContentSource('Base Game');
+      expect(component.visibleSpeciesOptions.length).toBe(17);
+      expect(component.visibleSpeciesOptions.every(o => o.source === 'World of Warcraft')).toBeTrue();
+    });
+
+    it('returns the same array between checks while nothing changes', () => {
+      expect(component.visibleSpeciesOptions).toBe(component.visibleSpeciesOptions);
+    });
+
+    it('choosing the WoW Elf row stores the plain species name and remembers the row', () => {
+      component.toggleSpecies(WOW_ELF);
+      expect(component.species).toBe('Elf');
+      expect(component.catalogSpeciesKey).toBe(WOW_ELF);
+      expect(component.selectedSpeciesKey).toBe(WOW_ELF);
+      component.step = 2;
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('loads a WoW species from the catalog without calling the rules API', () => {
+      dndResources.getSpeciesDetail.calls.reset();
+      component.toggleSpecies(WOW_ELF);
+      expect(dndResources.getSpeciesDetail).not.toHaveBeenCalled();
+      expect(component.speciesDetail?.size).toBe('Medium');
+      expect(component.speciesSubspeciesNames).toContain('Night Elf');
+      expect(component.reviewSpeciesTraitNames).toContain('Trance');
+    });
+
+    it('choosing the base-game Elf row is not the WoW Elf', () => {
+      component.toggleSpecies('Elf');
+      expect(component.species).toBe('Elf');
+      expect(component.catalogSpeciesKey).toBe('');
+      expect(component.catalogSpecies).toBeUndefined();
+      expect(dndResources.getSpeciesDetail).toHaveBeenCalledWith('Elf');
+    });
+
+    it('switching from the WoW row to the base row of the same name clears the WoW pick', () => {
+      component.toggleSpecies(WOW_ELF);
+      component.toggleSpecies('Elf');
+      expect(component.catalogSpeciesKey).toBe('');
+      expect(component.selectedSpeciesKey).toBe('Elf');
+    });
+
+    it('clicking the chosen WoW row again clears the species', () => {
+      component.toggleSpecies(WOW_ELF);
+      component.toggleSpecies(WOW_ELF);
+      expect(component.species).toBe('');
+      expect(component.catalogSpeciesKey).toBe('');
+    });
+
+    it('keeps a chosen WoW species selected when the filter hides it, and flags it', () => {
+      component.toggleSpecies(WOW_ELF);
+      expect(component.selectedSpeciesHidden).toBeFalse();
+      component.toggleContentSource('World of Warcraft');
+      expect(component.species).toBe('Elf');
+      expect(component.catalogSpeciesKey).toBe(WOW_ELF);
+      expect(component.selectedSpeciesHidden).toBeTrue();
+    });
+
+    it('submit stores the species name and adds the trait cards under Other Features', (done) => {
+      fillRestOfWizard();
+      component.toggleSpecies(WOW_ELF);
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.race).toBe('Elf');
+        const traits = draft.features.filter((f: any) => f.source === 'Elf (World of Warcraft) · Species Trait');
+        expect(traits.map((f: any) => f.name))
+          .toEqual(['Darkvision', 'Azeroth Elven Lineage', 'Fey Ancestry', 'Keen Senses', 'Trance']);
+        expect(traits.every((f: any) => f.category === 'other')).toBeTrue();
+        // The background's origin feat is still there, ahead of the traits.
+        expect(draft.features[0].name).toBe('Magic Initiate (Wizard)');
+        done();
+      });
+      component.submit();
+    });
+
+    it('submit adds no species trait cards for a base-game species', (done) => {
+      fillRestOfWizard();
+      component.toggleSpecies('Elf');
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.features.map((f: any) => f.name)).toEqual(['Magic Initiate (Wizard)']);
+        done();
+      });
+      component.submit();
+    });
+
+    it('a saved draft restores the WoW species row', () => {
+      component.name = 'Thalyssra';
+      component.toggleSpecies(WOW_ELF);
+      component.ngOnDestroy(); // persists the draft
+      const reopened = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      reopened.ngOnInit();
+      expect(reopened.species).toBe('Elf');
+      expect(reopened.catalogSpeciesKey).toBe(WOW_ELF);
+      expect(reopened.speciesDetail?.traits.length).toBe(5);
+      reopened.cancel();
+    });
+
+    it('a draft whose species key no longer matches falls back to the base-game species', () => {
+      localStorage.setItem('tm_pc_draft:tester', JSON.stringify({
+        v: 1, step: 2, name: 'Old', species: 'Dwarf', catalogSpeciesKey: WOW_ELF,
+      }));
+      const reopened = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      reopened.ngOnInit();
+      expect(reopened.species).toBe('Dwarf');
+      expect(reopened.catalogSpeciesKey).toBe('');
+      reopened.cancel();
+    });
+  });
 });
