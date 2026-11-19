@@ -119,6 +119,39 @@ describe('LevelUpPromptService', () => {
     expect(service.prompt()).toBeNull();
   });
 
+  it('offers the next level once the modal closes when it came due while the modal was open', () => {
+    service.evaluate(pc({ pendingLevelGrant: true }));
+    service.levelUpNow();
+
+    // The commit lands with enough XP for one more level, before the modal closes.
+    service.evaluate(pc({ level: 4, xp: 6_500 }));
+    expect(service.prompt()).toBeNull();
+
+    service.closeLevelUp();
+    expect(service.prompt()).toEqual(jasmine.objectContaining({ targetLevel: 5, reason: 'xp' }));
+  });
+
+  it('does not offer a held level the character was later seen not ready for', () => {
+    service.openLevelUp(pc(), false);
+    service.evaluate(pc({ pendingLevelGrant: true }));
+    service.evaluate(pc({ pendingLevelGrant: false })); // DM revoked it meanwhile
+
+    service.closeLevelUp();
+    expect(service.prompt()).toBeNull();
+  });
+
+  it('chains DM grants: grant, level up, grant again prompts for the next level', () => {
+    service.evaluate(pc({ pendingLevelGrant: true }));
+    service.levelUpNow();
+    service.evaluate(pc({ level: 4, pendingLevelGrant: false })); // the commit consumed the grant
+    service.closeLevelUp();
+    expect(service.prompt()).toBeNull();
+
+    service.evaluate(pc({ level: 4, pendingLevelGrant: true })); // the DM grants again
+
+    expect(service.prompt()).toEqual(jasmine.objectContaining({ targetLevel: 5, reason: 'grant' }));
+  });
+
   it('openLevelUp keeps the DM flag for the cross-link path', () => {
     const member = pc();
     service.openLevelUp(member, true);

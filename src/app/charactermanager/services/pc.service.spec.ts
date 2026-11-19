@@ -574,6 +574,83 @@ describe('PCService', () => {
     });
   });
 
+  // ── syncLevelState (level-ups from another client) ─────────────────────────
+
+  describe('syncLevelState', () => {
+    /** The server's copy of PC 42, serialized like the real endpoint. */
+    const serverPc = (over: Record<string, unknown> = {}) => ({
+      id: 42, name: 'Aelindra', clazz: 'Wizard', level: 3, xp: 900,
+      pendingLevelGrant: false, hpCurrent: 20, hpMax: 20,
+      spells: '[]', spellSlots: '{}', saves: '[]', skills: '{}',
+      conditions: '[]', coins: '{}', weapons: '[]', gear: '[]',
+      features: '[]', languages: '[]', toolProfs: '[]',
+      ...over,
+    });
+
+    let pushes: (PC | null)[];
+
+    beforeEach(() => {
+      service.setPCs([makePC({ id: 42, level: 3, xp: 900, pendingLevelGrant: false })]);
+      service.setActivePC(service.getPCById(42)!);
+      pushes = [];
+      service.activePC$.subscribe(pc => pushes.push(pc));
+      pushes = []; // drop the BehaviorSubject's replay of the current value
+    });
+
+    it('pushes nothing when level, XP and grant all match', () => {
+      service.syncLevelState(42).subscribe();
+      httpMock.expectOne(service.pcUrl + 'find/42').flush(serverPc({ name: 'Renamed elsewhere' }));
+
+      expect(pushes).toEqual([]);
+    });
+
+    it('patches just the grant (and XP) when the DM granted a level-up', () => {
+      service.syncLevelState(42).subscribe();
+      httpMock.expectOne(service.pcUrl + 'find/42')
+        .flush(serverPc({ pendingLevelGrant: true, name: 'Renamed elsewhere' }));
+
+      expect(pushes.length).toBe(1);
+      expect(pushes[0]?.pendingLevelGrant).toBeTrue();
+      // Same level: the rest of the local copy is kept, not swapped for the server's.
+      expect(pushes[0]?.name).toBe('Aelindra');
+      expect(service.getPCById(42)?.pendingLevelGrant).toBeTrue();
+    });
+
+    it('replaces the whole character when the level went up', () => {
+      service.syncLevelState(42).subscribe();
+      httpMock.expectOne(service.pcUrl + 'find/42')
+        .flush(serverPc({ level: 4, hpCurrent: 27, hpMax: 27 }));
+
+      expect(pushes.length).toBe(1);
+      expect(pushes[0]?.level).toBe(4);
+      expect(pushes[0]?.hp?.max).toBe(27);
+    });
+
+    it('drops a copy that is behind the local one on level', () => {
+      service.setActivePC({ ...service.getPCById(42)!, level: 4 });
+      pushes = [];
+
+      service.syncLevelState(42).subscribe();
+      httpMock.expectOne(service.pcUrl + 'find/42').flush(serverPc({ level: 3, pendingLevelGrant: true }));
+
+      expect(pushes).toEqual([]);
+    });
+
+    it('reads through the campaign-DM path for a DM watching a member', () => {
+      // A member's character is not in the DM's own roster — only on screen.
+      service.setPCs([]);
+      service.setActivePC(makePC({ id: 42, level: 3, xp: 900, pendingLevelGrant: true }));
+      pushes = [];
+
+      service.syncLevelState(42, true).subscribe();
+      httpMock.expectOne(service.pcUrl + '42/as-dm').flush(serverPc({ level: 4, pendingLevelGrant: false }));
+
+      expect(pushes.length).toBe(1);
+      expect(pushes[0]?.level).toBe(4);
+      expect(pushes[0]?.pendingLevelGrant).toBeFalse();
+    });
+  });
+
   // ── deletePC ────────────────────────────────────────────────────────────────
 
   describe('deletePC', () => {

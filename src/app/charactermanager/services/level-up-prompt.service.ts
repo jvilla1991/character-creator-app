@@ -50,6 +50,13 @@ export class LevelUpPromptService {
   private answered: Record<string, number> = this.load();
 
   /**
+   * A character that came due while the level-up modal was open (e.g. enough
+   * XP for a second level). Offered when the modal closes, so level-ups chain
+   * without waiting for something else to change.
+   */
+  private deferred: PC | null = null;
+
+  /**
    * Look at a character the player owns and open the prompt if it can level
    * and the player hasn't already answered for that level. Only call this for
    * the player's OWN character — never the DM cross-link view.
@@ -63,13 +70,18 @@ export class LevelUpPromptService {
     if (!ready) {
       this.forget(pc.id);
       if (this._prompt()?.pcId === pc.id) this._prompt.set(null);
+      if (this.deferred?.id === pc.id) this.deferred = null;
       return;
     }
 
     const targetLevel = level + 1;
     if (this.answered[pc.id] === targetLevel) return;
     // The player is already in the level-up flow; don't stack a prompt on it.
-    if (this._levelUp()) return;
+    // Hold the character instead and offer it once the modal closes.
+    if (this._levelUp()) {
+      this.deferred = pc;
+      return;
+    }
 
     const reason: LevelUpReason = grant ? 'grant' : 'xp';
     const open = this._prompt();
@@ -101,14 +113,19 @@ export class LevelUpPromptService {
     this._levelUp.set({ pc, asDm });
   }
 
+  /** Close the level-up modal, then offer anything that came due while it was open. */
   closeLevelUp(): void {
     this._levelUp.set(null);
+    const held = this.deferred;
+    this.deferred = null;
+    if (held) this.evaluate(held);
   }
 
   /** Drop any open prompt/modal (the shell is going away, e.g. sign-out). Keeps answers. */
   reset(): void {
     this._prompt.set(null);
     this._levelUp.set(null);
+    this.deferred = null;
   }
 
   // ── Answered-level bookkeeping ─────────────────────────────────────────────
