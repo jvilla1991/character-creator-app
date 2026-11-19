@@ -1,5 +1,8 @@
 import { PC, PcItem, PcSurvival } from '../models/pc';
 import { CampaignGameTime, TimeOfDay } from '../models/campaign';
+import { LongRestChoices } from '../models/session';
+import { withPreparedSpells } from './spell-preparation';
+import { bloodRuneTempHp, runeWeaponOf } from './rune-weapon';
 
 // ── Darker Dungeons "Survival Conditions" (ch. 31) ──────────────────────────
 // Pure stage math for campaigns with the survivalConditions variant rule.
@@ -248,18 +251,40 @@ export function applyConsumeToPc(pc: PC, action: SurvivalAction): PC {
 }
 
 /**
- * DM long rest (demo/local mirror): restore every spell slot and, in a survival
- * campaign, shed fatigue — 3 for an undisturbed rest, 1 for a disturbed one.
+ * A finished long rest (demo/local mirror of the server, 2024 PHB): Hit Points
+ * to maximum, temporary Hit Points gone, every Hit Die and spell slot back,
+ * Exhaustion down one and, in a survival campaign, fatigue down 3 for an
+ * undisturbed rest or 1 for a disturbed one. A hero at 0 Hit Points cannot
+ * benefit and comes back unchanged.
+ *
+ * `choices` are the long rest choices of a hero who readied: a new prepared
+ * list and/or the Death Knight's rune weapon. A Blood-rune Death Knight whose
+ * rune is on a weapon afterwards gains temporary Hit Points.
  */
-export function applyLongRestToPc(pc: PC, undisturbed: boolean, survivalOn: boolean): PC {
+export function applyLongRestToPc(
+  pc: PC, undisturbed: boolean, survivalOn: boolean, choices?: LongRestChoices,
+): PC {
+  if (pc.hp && pc.hp.cur <= 0) return pc;
   const spellSlots = pc.spellSlots
     ? Object.fromEntries(Object.entries(pc.spellSlots).map(([lvl, slot]) => [lvl, { ...slot, used: 0 }]))
     : pc.spellSlots;
-  if (!survivalOn) return { ...pc, spellSlots };
+  const chosen: PC = {
+    ...pc,
+    spells: choices?.preparedSpells ? withPreparedSpells(pc.spells, choices.preparedSpells) : pc.spells,
+    runeWeapon: choices?.runeWeapon ?? pc.runeWeapon,
+  };
+  const runeTempHp = bloodRuneTempHp(chosen, runeWeaponOf(chosen) != null);
+  const rested: PC = {
+    ...chosen,
+    spellSlots,
+    hp: pc.hp ? { ...pc.hp, cur: Math.max(pc.hp.cur, pc.hp.max), temp: runeTempHp } : pc.hp,
+    hitDiceUsed: pc.hitDiceUsed != null ? 0 : pc.hitDiceUsed,
+    exhaustion: pc.exhaustion ? pc.exhaustion - 1 : pc.exhaustion,
+  };
+  if (!survivalOn) return rested;
   const s = survivalOf(pc);
   return {
-    ...pc,
-    spellSlots,
+    ...rested,
     survival: { ...s, fatigue: clampStage(s.fatigue - (undisturbed ? 3 : 1)), seeded: pc.survival?.seeded },
   };
 }

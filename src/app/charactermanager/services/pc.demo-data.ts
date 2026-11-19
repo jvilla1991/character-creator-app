@@ -16,8 +16,11 @@ import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
 import {
-  CIRCLE_OF_THE_MOON, DRACONIC_SORCERY, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER, WOW_CLASS_VARIANTS,
+  CIRCLE_OF_THE_MOON, DRACONIC_SORCERY, EVOKER_SCHOOL, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER,
+  WOW_CLASS_VARIANTS,
 } from '../models/wow-class-variants';
+import { WOW_MAGE_FEATS, WOW_MONK_FEATS } from '../models/wow-feats';
+import { WARRIOR_OF_MYSTIC_BREWS } from '../models/wow-monk';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
 import { BATTLE_MASTER } from '../models/wow-warrior';
@@ -26,8 +29,8 @@ import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantri
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
-// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Evoker, Hunter, Paladin, Priest, Rogue, Shaman, Warlock and
-// Warrior.
+// unbound World of Warcraft Death Knight, Demon Hunter, Druid, Evoker, Hunter, Mage, Monk, Paladin, Priest, Rogue,
+// Shaman, Warlock and Warrior.
 // Source: design_handoff_arcane_redesign/prototype/data.js
 // ---------------------------------------------------------------------------
 export const DEMO_PCS: PC[] = [
@@ -843,6 +846,132 @@ export const DEMO_PCS: PC[] = [
     bio: 'A dwarven hunter from the hills of Dun Morogh who never goes anywhere without Ashmane, the grey wolf at her side.',
     notes: '',
   },
+  // World of Warcraft Mage (Wizard) — an ordinary Wizard with the Frost specialization and
+  // the PHB Evoker subclass (the school of evocation), so the "Mage (Wizard)" header, the
+  // suggested Frost spells (Frost Nova ✦ known) and the Kirin Tor renown note render.
+  {
+    id: 17,
+    name: 'Elandra Frostmantle',
+    playerName: 'Quinn',
+    player: 'Quinn',
+    campaignId: null,
+    race: 'Human',
+    clazz: 'Wizard',
+    subclass: EVOKER_SCHOOL,
+    specialization: 'Frost',
+    level: 5,
+    background: 'Sage',
+    alignment: 'Lawful Neutral',
+    portraitInitials: 'EF',
+    portraitTint: 'celestial',
+    hp: { cur: 27, max: 27, temp: 0 },
+    ac: 12, init: 2, speed: 30, prof: 3,
+    stats: { STR: 8, DEX: 14, CON: 13, INT: 18, WIS: 12, CHA: 10 },
+    saves: ['INT', 'WIS'],
+    skills: { Arcana: 'prof', History: 'prof', Investigation: 'prof', Insight: 'prof' },
+    conditions: [],
+    coins: { cp: 0, sp: 18, gp: 64 },
+    spellSlots: { 1: { max: 4, used: 1 }, 2: { max: 3, used: 0 }, 3: { max: 2, used: 0 } },
+    spells: [
+      { lvl: 0, name: 'Light', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Mage Hand', school: 'Conjuration', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Ray of Frost', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 0, name: 'Fire Bolt', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Frost Nova', school: 'Evocation', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Ice Knife', school: 'Conjuration', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Mage Armor', school: 'Abjuration', time: '1 action', prepared: true },
+      { lvl: 1, name: 'Shield', school: 'Abjuration', time: '1 reaction', prepared: true },
+      { lvl: 1, name: 'Detect Magic', school: 'Divination', time: '1 action', prepared: false },
+      { lvl: 1, name: 'Feather Fall', school: 'Abjuration', time: '1 reaction', prepared: false },
+      { lvl: 2, name: 'Misty Step', school: 'Conjuration', time: '1 bonus action', prepared: true },
+      { lvl: 2, name: 'Mirror Image', school: 'Illusion', time: '1 action', prepared: true },
+      { lvl: 3, name: 'Counterspell', school: 'Abjuration', time: '1 reaction', prepared: true },
+      { lvl: 3, name: 'Sleet Storm', school: 'Conjuration', time: '1 action', prepared: true },
+    ],
+    weapons: [
+      { name: 'Quarterstaff', dmg: '1d6-1 bludgeoning', notes: 'Mastery: Topple' },
+    ],
+    gear: [
+      { name: 'Spellbook (violet leather, Kirin Tor seal)' },
+      { name: 'Arcane Focus (a frost-rimed crystal)' },
+      { name: "Scholar's Pack" },
+    ],
+    features: [
+      { name: 'Arcane Recovery', source: 'Wizard 1', desc: 'Once per day on a Short Rest, recover expended spell slots.' },
+      { name: 'Ritual Adept', source: 'Wizard 1', desc: 'Cast ritual spells from your spellbook without preparing them.' },
+      { name: 'Scholar', source: 'Wizard 2', desc: 'Expertise in one of Arcana, History, Investigation, Medicine, Nature, or Religion.' },
+      { name: 'Evocation Savant', source: 'Evoker 3', desc: 'Add two Evocation spells to your spellbook for free.' },
+      { name: 'Potent Cantrip', source: 'Evoker 3', desc: 'Your damaging cantrips deal half damage even when they miss or the target saves.' },
+      { name: 'Memorize Spell', source: 'Wizard 5', desc: 'After a Short Rest, swap one prepared spell for another from your spellbook.' },
+    ],
+    traits: {
+      Personality: 'Measures every problem twice and every person three times.',
+      Ideals: 'Discipline. Magic without restraint is how the Legion found its way in.',
+      Bonds: 'The Violet Citadel of Dalaran, and the tutor who vouched for her there.',
+      Flaws: 'Freezes a room long before she thinks to talk to it.',
+    },
+    bio: 'A human mage of the Kirin Tor, trained in the spires of Dalaran, who favours frost because it ends fights without burning down the library.',
+    notes: '',
+  },
+  // World of Warcraft Monk — an ordinary Monk with the Brewmaster specialization and the
+  // WoW-only Warrior of Mystic Brews (chosen at level 3), so the "Monk" header, the
+  // monastic-orders lore and the Mystic Brew card (Monk 6) render. Goliath stands in
+  // for a pandaren.
+  {
+    id: 18,
+    name: 'Bao Emberbrew',
+    playerName: 'Ravi',
+    player: 'Ravi',
+    campaignId: null,
+    race: 'Goliath',
+    clazz: 'Monk',
+    subclass: WARRIOR_OF_MYSTIC_BREWS,
+    specialization: 'Brewmaster',
+    level: 6,
+    background: 'Artisan',
+    alignment: 'Neutral Good',
+    portraitInitials: 'BE',
+    portraitTint: 'gold',
+    hp: { cur: 45, max: 45, temp: 0 },
+    ac: 16, init: 3, speed: 45, prof: 3,
+    stats: { STR: 12, DEX: 16, CON: 14, INT: 10, WIS: 16, CHA: 8 },
+    saves: ['STR', 'DEX'],
+    skills: { Acrobatics: 'prof', Insight: 'prof', Performance: 'prof', Persuasion: 'prof' },
+    conditions: [],
+    coins: { cp: 10, sp: 25, gp: 30 },
+    spells: [],
+    weapons: [
+      { name: 'Unarmed Strike', dmg: '1d8+3 bludgeoning', notes: 'Martial Arts' },
+      { name: 'Quarterstaff', dmg: '1d8+3 bludgeoning', notes: 'Mastery: Topple' },
+    ],
+    gear: [
+      { name: "Brewer's Supplies", equipped: true },
+      { name: 'Keg-shaped gourd of stout' },
+      { name: "Explorer's Pack" },
+    ],
+    features: [
+      { name: 'Martial Arts', source: 'Monk 1', desc: 'Unarmed Strikes use your Martial Arts die (d8 at Monk 6).' },
+      { name: 'Unarmored Defense', source: 'Monk 1', desc: 'AC 10 + DEX + WIS without armor or a shield.' },
+      { name: "Monk's Focus", source: 'Monk 2', desc: '6 Focus Points for Flurry of Blows, Patient Defense and Step of the Wind.' },
+      { name: 'Deflect Attacks', source: 'Monk 3', desc: 'Reaction: reduce damage from an attack that hits you.' },
+      { name: 'Bonus Proficiencies', source: 'Warrior of Mystic Brews 3', desc: "Performance and Brewer's Supplies." },
+      { name: 'Drunken Technique', source: 'Warrior of Mystic Brews 3', desc: 'Patient Defense with Focus adds 10 ft. of Speed and an Unarmed Strike.' },
+      { name: 'Slow Fall', source: 'Monk 4', desc: 'Reaction: reduce falling damage.' },
+      { name: 'Extra Attack', source: 'Monk 5', desc: 'Attack twice when you take the Attack action.' },
+      { name: 'Stunning Strike', source: 'Monk 5', desc: 'Spend 1 Focus Point on a hit to try to Stun the target.' },
+      { name: 'Empowered Strikes', source: 'Monk 6', desc: 'Your Unarmed Strikes can deal Force damage.' },
+      { name: 'Tipsy Sway', source: 'Warrior of Mystic Brews 6', desc: 'Leap to your feet, and redirect a missed melee attack.' },
+      { name: 'Mystic Brew', source: 'Warrior of Mystic Brews 6', desc: 'Brew a magical beverage after a rest.' },
+    ],
+    traits: {
+      Personality: 'Laughs loudest at his own jokes, and sways like a reed in every fight.',
+      Ideals: 'Balance. A good brew, like a good life, needs a little of everything.',
+      Bonds: 'The Stormstout brewery, and the master who taught him to brew and to brawl.',
+      Flaws: 'Will stop mid-quest to sample any brew he has never tasted.',
+    },
+    bio: 'A wandering brewmaster in the pandaren tradition who learned to fight from a brewery-keeper of the Valley of the Four Winds, and has never met a keg he could not lift or a punch he could not stagger away from.',
+    notes: '',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1031,11 +1160,16 @@ export const DEMO_EPIC_BOONS = [
   'Boon of Truesight', 'Boon of the Night Spirit',
 ];
 
-// DEMO-ONLY mirror of FeatCatalog.featOptions: General feats always, Fighting
-// Style feats for classes with the Fighting Style feature, Epic Boons at 19+.
-export function demoFeatOptions(clazz: string, newLevel: number): string[] {
+// DEMO-ONLY mirror of FeatCatalog.featOptions: General feats (incl. the World of
+// Warcraft mage feats, open to every class, and the WoW monk feats for anyone with
+// DEX 13+ and WIS 13+) always, Fighting Style feats for classes with the Fighting
+// Style feature, Epic Boons at 19+.
+export function demoFeatOptions(clazz: string, newLevel: number, stats?: Partial<NonNullable<PC['stats']>>): string[] {
   const key = (clazz ?? '').trim().toLowerCase();
-  const options = [...DEMO_GENERAL_FEATS];
+  const options = [...DEMO_GENERAL_FEATS, ...WOW_MAGE_FEATS.map(f => f.name)];
+  if ((stats?.DEX ?? 0) >= 13 && (stats?.WIS ?? 0) >= 13) {
+    options.push(...WOW_MONK_FEATS.map(f => f.name));
+  }
   if (key === 'fighter' || key === 'paladin' || key === 'ranger') {
     options.push(...DEMO_FIGHTING_STYLE_FEATS);
   }

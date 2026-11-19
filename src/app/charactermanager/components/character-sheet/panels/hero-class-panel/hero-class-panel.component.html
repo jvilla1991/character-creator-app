@@ -14,12 +14,26 @@
       </div>
     }
 
+    <app-rune-weapon-field [pc]="pc" [editable]="canEdit"
+      (runeWeaponChange)="pcChange.emit({ ...pc, runeWeapon: $event })"></app-rune-weapon-field>
+
     @if (h.renownNote) {
       <p class="hero-note">{{ h.renownNote }}</p>
     }
 
     @if (h.heroNote) {
       <p class="hero-note">{{ h.heroNote }}</p>
+    }
+
+    <!-- WoW Monk: the monastic orders of Pandaria (lore, text only) -->
+    @if (h.lore; as lore) {
+      <h3 class="hero-spells-title">{{ lore.title }}</h3>
+      <dl class="suggested-spells hero-lore">
+        @for (entry of lore.entries; track entry.name) {
+          <dt>{{ entry.name }}</dt>
+          <dd>{{ entry.desc }}</dd>
+        }
+      </dl>
     }
 
     @if (h.level1Feature; as f) {
@@ -86,7 +100,7 @@
           <span class="feature-source">{{ h.baseClass }} {{ subclassLevel }}</span>
         </div>
         <div class="feature-desc">
-          {{ g.subclass.name }}@if (g.subclass.note) { — {{ g.subclass.note }} }
+          {{ subclassGuidanceName(g) }}@if (g.subclass.note) { — {{ g.subclass.note }} }
         </div>
         <div class="hero-subclass-match" [attr.data-match]="subclassMatch">
           @switch (subclassMatch) {

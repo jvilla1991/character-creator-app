@@ -134,3 +134,11 @@
   font-size: 13px;
   color: var(--text-dim);
 }
+
+// ✦ after a World of Warcraft feat (list entry or grant typeahead option).
+.wow-mark {
+  margin-left: 2px;
+  font-size: 10px;
+  color: var(--gold-2);
+  cursor: help;
+}

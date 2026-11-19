@@ -1,4 +1,4 @@
-import { DEMO_PCS, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
+import { DEMO_PCS, demoFeatOptions, demoFightingStyleOptions, demoSubclassOptions } from './pc.demo-data';
 import { heroClassFor, heroClassSpells, subclassSpellsFor } from '../models/hero-class';
 import { classDisplayName } from '../utils/class-display';
 
@@ -191,5 +191,67 @@ describe('pc.demo-data (WoW mirrors)', () => {
     const dh = DEMO_PCS.find(p => p.subclass === 'Demon Hunter')!;
     expect(heroClassFor(dh)?.label).toBe('Demon Hunter (Ranger)');
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('seeds a level-5 Frost mage on the Evoker school who knows Ray of Frost, Frost Nova and Ice Knife', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Wizard' && p.specialization === 'Frost')!;
+    expect(pc).toBeDefined();
+    expect(pc.level).toBe(5);
+    expect(pc.subclass).toBe('Evoker');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Wizard (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Mage (Wizard)');
+    const names = (pc.spells ?? []).map(s => s.name);
+    expect(names).toEqual(jasmine.arrayContaining(['Ray of Frost', 'Frost Nova', 'Ice Knife']));
+    expect((pc.spells ?? []).filter(s => s.lvl === 0).map(s => s.name))
+      .toEqual(jasmine.arrayContaining(['Light', 'Mage Hand', 'Ray of Frost']));
+    expect(Object.keys(pc.spellSlots ?? {})).toEqual(['1', '2', '3']);
+    expect(pc.bio).toContain('Kirin Tor');
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('offers the World of Warcraft mage feats among the General feats at an ASI level', () => {
+    for (const clazz of ['Wizard', 'Fighter', 'Barbarian']) {
+      expect(demoFeatOptions(clazz, 4)).withContext(clazz)
+        .toEqual(jasmine.arrayContaining(['Clearcasting', 'Fingers of Frost', 'Hot Streak', 'War Caster']));
+    }
+    const options = demoFeatOptions('Wizard', 8);
+    expect(options).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    expect(new Set(options).size).toBe(options.length);
+  });
+
+  it('offers the Warrior of Mystic Brews only to WoW monks', () => {
+    expect(demoSubclassOptions('Monk', 'Brewmaster')).toContain('Warrior of Mystic Brews');
+    expect(demoSubclassOptions('Monk', 'Windwalker')).toContain('Warrior of Mystic Brews');
+    expect(demoSubclassOptions('Monk', null)).not.toContain('Warrior of Mystic Brews');
+    expect(demoSubclassOptions('Fighter', 'Brewmaster')).not.toContain('Warrior of Mystic Brews');
+  });
+
+  it('seeds a level-6 Brewmaster monk on the Warrior of Mystic Brews with WIS 16', () => {
+    const pc = DEMO_PCS.find(p => p.clazz === 'Monk' && p.specialization === 'Brewmaster')!;
+    expect(pc).toBeDefined();
+    expect(pc.level).toBe(6);
+    expect(pc.subclass).toBe('Warrior of Mystic Brews');
+    expect(pc.stats?.WIS).toBe(16);
+    expect(pc.bio).toContain('pandaren');
+    const hero = heroClassFor(pc);
+    expect(hero?.key).toBe('Monk (World of Warcraft)');
+    expect(classDisplayName(pc.clazz, pc.subclass, pc.specialization)).toBe('Monk');
+    const cards = hero!.featureCards!({ level: pc.level!, subclass: pc.subclass, stats: pc.stats, prof: pc.prof });
+    expect(cards.map(c => c.name)).toEqual(['Warrior of Mystic Brews', 'Mystic Brew']);
+    expect((pc.features ?? []).map(f => f.name)).toEqual(jasmine.arrayContaining(['Drunken Technique', 'Mystic Brew']));
+    expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
+  });
+
+  it('offers the World of Warcraft monk feats only with DEX 13+ and WIS 13+', () => {
+    const monkFeats = ['Elusive Brawler', 'Enveloping Mist', 'Fists of Fury', 'Stagger and Sway'];
+    expect(demoFeatOptions('Monk', 8, { DEX: 13, WIS: 13 })).toEqual(jasmine.arrayContaining(monkFeats));
+    expect(demoFeatOptions('Fighter', 4, { DEX: 16, WIS: 14 })).toEqual(jasmine.arrayContaining(monkFeats));
+    for (const stats of [{ DEX: 12, WIS: 16 }, { DEX: 16, WIS: 12 }, {}, undefined]) {
+      const options = demoFeatOptions('Monk', 4, stats);
+      for (const feat of monkFeats) expect(options).withContext(JSON.stringify(stats)).not.toContain(feat);
+    }
+    const options = demoFeatOptions('Monk', 4, { DEX: 16, WIS: 16 });
+    expect(options).toEqual([...options].sort((a, b) => a.localeCompare(b)));
   });
 });

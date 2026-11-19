@@ -33,6 +33,9 @@ describe('spell-names', () => {
     expect(spellKey("EVARD'S BLACK TENTACLES")).toBe('black tentacles');
     expect(spellKey('Black Tentacles')).toBe('black tentacles');
     expect(spellKey("Otiluke's Freezing Sphere")).toBe('freezing sphere');
+    expect(spellKey("Bigby's Hand")).toBe('arcane hand');
+    expect(spellKey("Mordenkainen's Sword")).toBe('arcane sword');
+    expect(spellKey("Otiluke's Resilient Sphere")).toBe('resilient sphere');
     for (const [alias, target] of Object.entries(SPELL_NAME_ALIASES)) {
       expect(alias).toBe(alias.toLowerCase());
       expect(target).toBe(target.toLowerCase());
@@ -67,6 +70,17 @@ describe('spell-names', () => {
       const row = priest.subclassSpells!['Shadow Domain'].find(r => r.classLevel === 7)!;
       expect(row.spells).toContain("Evard's Black Tentacles");
       expect(index.get(spellKey("Evard's Black Tentacles"))?.name).toBe('Black Tentacles');
+    });
+
+    it("finds the WoW Mage's Bigby's Hand, Mordenkainen's Sword and Otiluke's Resilient Sphere under their SRD names", () => {
+      const mage = HERO_CLASSES.find(h => h.name === 'Mage')!;
+      const arcane = mage.suggestedSpells!['Arcane'].flatMap(r => r.spells);
+      for (const [name, srd] of [
+        ["Bigby's Hand", 'Arcane Hand'], ["Mordenkainen's Sword", 'Arcane Sword'], ["Otiluke's Resilient Sphere", 'Resilient Sphere'],
+      ]) {
+        expect(arcane).withContext(name).toContain(name);
+        expect(index.get(spellKey(name))?.name).withContext(name).toBe(srd);
+      }
     });
 
     it('resolves every spell every World of Warcraft table names', () => {

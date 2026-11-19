@@ -137,8 +137,9 @@ export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[
 
 /**
  * Short descriptions for the 2024 PHB feats, grouped by category
- * (Origin, General, Fighting Style, Epic Boon).
- * Expansion-specific feats are not listed here and will render without a description.
+ * (Origin, General, Fighting Style, Epic Boon), plus the World of Warcraft
+ * module's General feats (paraphrased; tagged via models/wow-feats).
+ * Other expansion feats are not listed here and will render without a description.
  */
 export const FEAT_DESCRIPTIONS: Record<string, string> = {
   'Alert':
@@ -251,6 +252,22 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You can speak telepathically to creatures within 60 feet and always have Detect Thoughts prepared, casting it once per Long Rest for free.',
   'Weapon Master':
     'Increase Strength or Dexterity by 1 (max 20). You gain the Weapon Mastery property of two kinds of weapons you are proficient with.',
+  // ── World of Warcraft General feats (level 4+; tagged ✦ via models/wow-feats). ──
+  'Clearcasting':
+    'Increase your Intelligence by 1 (max 20). When you score a Critical Hit with a spell attack, you can take a Reaction to cast a cantrip that has a casting time of an action. When you roll Force damage for a spell, treat any 1 on a damage die as a 2.',
+  'Fingers of Frost':
+    'Increase your Intelligence by 1 (max 20). Your Cold damage ignores Resistance to Cold. When you deal Cold damage to a creature that has the Restrained condition, it takes extra Cold damage: a number of d4s equal to your Proficiency Bonus.',
+  'Hot Streak':
+    'Increase your Intelligence by 1 (max 20). Your Fire damage ignores Resistance to Fire. When a spell of yours deals Fire damage to a creature, it starts burning; if it was already burning, its burning damage increases by 1d4.',
+  //    The monk ones need Dexterity 13+ and Wisdom 13+ (the server only offers them then).
+  'Elusive Brawler':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Brewmaster\'s knack for rolling with the blows: you sway, stumble and slip aside so foes struggle to land a clean hit. See the World of Warcraft module for the full rules.',
+  'Enveloping Mist':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Mistweaver\'s art of wrapping an ally in soothing, healing mist. See the World of Warcraft module for the full rules.',
+  'Fists of Fury':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Windwalker\'s storm of rapid strikes, driving your fists into foes faster than they can follow. See the World of Warcraft module for the full rules.',
+  'Stagger and Sway':
+    'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Brewmaster\'s trick of soaking up punishment and letting it drain away over time instead of all at once. See the World of Warcraft module for the full rules.',
   // ── Fighting Style feats (gained through the Fighting Style class feature of
   //    Fighters, Paladins, and Rangers; also selectable at their ASI levels). ──
   'Archery':

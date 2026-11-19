@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output, signal } from '@angular/core';
+import { RuneWeaponFieldComponent } from './rune-weapon-field.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PC } from '../../../../models/pc';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import {
   FeatureCard, HeroClassOption, HeroResource, HeroSpellEntry, InvocationRow, SpecializationGuidance,
   WOW_INVOCATION_NOTE, WOW_MANEUVER_NOTE, fightingStyleLevelOf, heroClassFor, heroClassSpells, invocationRows,
-  isExtraListSpell, isWowInvocation, isWowManeuver, orList, specializationTitle, subclassLevelOf, subclassSpellsFor,
+  isExtraListSpell, isWowInvocation, isWowManeuver, orList, specializationTitle, subclassGuidanceName, subclassLevelOf,
+  subclassSpellsFor,
 } from '../../../../models/hero-class';
 import {
   BEAST_FORM_UNCHANGED, BeastFormCard, BeastFormInput, ClassicBeastForm, bearForm, catForm, classicBeastForms,
@@ -70,6 +72,7 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
   templateUrl: './hero-class-panel.component.html',
   styleUrls: ['./hero-class-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RuneWeaponFieldComponent],
 })
 export class HeroClassPanelComponent {
   private readonly dndResources = inject(DndResourcesService);
@@ -82,12 +85,14 @@ export class HeroClassPanelComponent {
   readonly petMasteryNote = PET_MASTERY_NOTE;
   readonly petHpNote = PET_HP_NOTE;
 
-  /** True when the viewer may change the pet family (the owner, or the DM's cross-link view). */
+  /** True when the viewer may change the pet family or the rune weapon (the owner, or the DM's cross-link view). */
   @Input() canEdit = false;
-  /** The pet family was changed — the sheet persists the updated PC through the normal update path. */
+  /** The pet family or the rune weapon was changed — the sheet persists the updated PC through the normal update path. */
   readonly pcChange = output<PC>();
   readonly wowInvocationNote = WOW_INVOCATION_NOTE;
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
+  /** How the recommended subclass reads ('Evoker (school of evocation)' for a WoW Mage). */
+  readonly subclassGuidanceName = subclassGuidanceName;
 
   private _pc!: PC;
   /** Spell data keyed by lower-cased name; null until loaded (loaded once, on demand). */
@@ -270,15 +275,15 @@ export class HeroClassPanelComponent {
     ].filter(section => section.entries.length > 0);
     const spec = pc?.specialization;
     const levels = (spec && hero?.suggestedSpells?.[spec]) || [];
-    const owned = new Map((pc?.spells ?? []).map(s => [s.name.toLowerCase(), s]));
+    const owned = new Map((pc?.spells ?? []).map(s => [spellKey(s.name), s]));
     this.extraPrepared = ((spec && hero?.guidance?.[spec]?.extraPrepared) || []).map(name => {
-      const have = owned.get(name.toLowerCase());
+      const have = owned.get(spellKey(name));
       return { name, known: !!have, prepared: !!have?.prepared };
     });
     this.suggestedSpells = levels.map(row => ({
       level: row.level,
       spells: row.spells.map(name => {
-        const have = owned.get(name.toLowerCase());
+        const have = owned.get(spellKey(name));
         return { name, known: !!have, prepared: !!have?.prepared };
       }),
     }));

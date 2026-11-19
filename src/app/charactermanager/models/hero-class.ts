@@ -98,8 +98,13 @@ export interface SpecializationGuidance {
   metamagic?: readonly string[];
   /** The damage type(s) to pick for Draconic Sorcery's level-6 Elemental Affinity, as running text ('Cold or Fire'). */
   elementalAffinity?: string;
-  /** The subclass to take when it comes due, with an optional flavour note. */
-  subclass: { name: string; note?: string };
+  /**
+   * The subclass to take when it comes due, with an optional flavour note.
+   * `name` is the stored subclass name (what pickers match on); `label`, when
+   * set, is how guidance text shows it — the Wizard's 'Evoker' reads
+   * 'Evoker (school of evocation)' so it isn't mistaken for the Evoker class.
+   */
+  subclass: { name: string; label?: string; note?: string };
   feats: readonly string[];
   /** An extra play tip shown on the sheet panel. */
   tip?: string;
@@ -240,6 +245,11 @@ export interface HeroClassOption {
   bonusSpells?: readonly HeroBonusSpell[];
   /** Always-prepared spells by base-class level and specialization. */
   spellTable: readonly HeroSpellRow[];
+  /**
+   * What the class step calls the guidance's `level1Spells` row; absent reads
+   * 'Level 1 spells'. A wizard keeps them in a spellbook ('Spellbook').
+   */
+  level1SpellsLabel?: string;
   /** Recommended starting picks per specialization (wizard guidance). */
   guidance?: Readonly<Record<string, SpecializationGuidance>>;
   /** Suggested spells per specialization, by spell level (sheet panel). */
@@ -270,6 +280,8 @@ export interface HeroClassOption {
   extraSpellList?: readonly string[];
   /** A one-line reminder shown in the class step and on the sheet panel. */
   renownNote?: string;
+  /** A short lore list on the sheet panel (e.g. the WoW Monk's monastic orders of Pandaria). Text only. */
+  lore?: { title: string; entries: readonly HeroFeature[] };
   /** True when the sheet panel shows the WoW druid beast forms. */
   beastForms?: boolean;
   /**
@@ -478,6 +490,23 @@ export function recommendedSubclassFor(
   hero: HeroClassOption | undefined, specialization: string | null | undefined,
 ): string | undefined {
   return specialization ? hero?.guidance?.[specialization]?.subclass.name : undefined;
+}
+
+/** How guidance text shows a recommended subclass: its label when it has one, else its name. */
+export function subclassGuidanceName(guidance: SpecializationGuidance): string {
+  return guidance.subclass.label ?? guidance.subclass.name;
+}
+
+/**
+ * How a subclass picker option reads for this hero class: the guidance label of
+ * the matching recommended subclass ('Evoker' → 'Evoker (school of evocation)'
+ * for a WoW Mage), else the name unchanged. Display only — the stored value
+ * stays the name.
+ */
+export function subclassOptionLabel(hero: HeroClassOption | undefined, name: string): string {
+  const n = name.toLowerCase();
+  const match = Object.values(hero?.guidance ?? {}).find(g => !!g.subclass.label && g.subclass.name.toLowerCase() === n);
+  return match?.subclass.label ?? name;
 }
 
 /** The base-class level a variant's subclass is chosen at (3 unless the class says otherwise). */

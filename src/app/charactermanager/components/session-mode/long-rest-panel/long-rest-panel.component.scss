@@ -1,0 +1,117 @@
+// Sits in the normal panel flow, flagged as live like the DM's vote banner.
+.long-rest-panel {
+  border-color: var(--celestial);
+}
+
+.lr-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.lr-party {
+  display: grid;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lr-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.lr-hero-id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lr-hero-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-md);
+  letter-spacing: var(--track-title);
+  color: var(--text);
+}
+
+.lr-hero-detail {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+
+// Status pill (pills are for status). The glyph and the words carry the
+// state; colour only reinforces it.
+.lr-status {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+
+  &.ready {
+    color: var(--emerald);
+    border-color: color-mix(in oklch, var(--emerald) 50%, transparent);
+    background: color-mix(in oklch, var(--emerald) 12%, transparent);
+  }
+
+  &.down {
+    color: var(--crimson);
+    border-color: color-mix(in oklch, var(--crimson) 50%, transparent);
+    background: color-mix(in oklch, var(--crimson) 10%, transparent);
+  }
+}
+
+.lr-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.lr-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-md);
+  color: var(--text);
+  cursor: pointer;
+
+  input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--gold);
+  }
+}
+
+.lr-disturbance {
+  flex-wrap: wrap;
+}
+
+.lr-finish-note {
+  margin: 12px 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}

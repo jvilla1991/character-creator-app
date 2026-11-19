@@ -397,7 +397,20 @@
   color: var(--text-dim);
 }
 
-// Subclass option from the World of Warcraft module (e.g. Oath of the Holy).
+// A feat's prerequisite beyond level 4 (World of Warcraft monk feats).
+.feat-prereq {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+// Feat option from the World of Warcraft module: keep the tag top-right of the row.
+.feat-source-tag {
+  align-self: flex-start;
+  margin-left: auto;
+}
+
+// Subclass or feat option from the World of Warcraft module (e.g. Oath of the Holy).
 .source-tag {
   padding: 0 6px;
   border: 1px solid var(--border);

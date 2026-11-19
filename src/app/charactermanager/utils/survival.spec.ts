@@ -247,6 +247,52 @@ describe('survival util', () => {
       expect(after.spellSlots![1].used).toBe(0);
       expect(after.survival!.fatigue).toBe(5); // untouched
     });
+
+    it('restores Hit Points to maximum, drops temporary Hit Points and returns every Hit Die', () => {
+      const after = applyLongRestToPc(
+        casterPc({ level: 5, hp: { cur: 12, max: 30, temp: 5 }, hitDiceUsed: 4 }), true, false);
+      expect(after.hp).toEqual({ cur: 30, max: 30, temp: 0 });
+      expect(after.hitDiceUsed).toBe(0); // all of them, not half the level
+    });
+
+    it('lowers Exhaustion by one, never below zero', () => {
+      expect(applyLongRestToPc(casterPc({ exhaustion: 2 }), true, false).exhaustion).toBe(1);
+      expect(applyLongRestToPc(casterPc({ exhaustion: 0 }), true, false).exhaustion).toBe(0);
+      expect(applyLongRestToPc(casterPc(), true, false).exhaustion).toBeUndefined();
+    });
+
+    it('applies a ready hero\'s prepared list', () => {
+      const pc = casterPc({
+        spells: [
+          { name: 'Bless', lvl: 1, prepared: true, school: 'Enchantment', time: '1 action' },
+          { name: 'Command', lvl: 1, prepared: false, school: 'Enchantment', time: '1 action' },
+        ],
+      });
+      const after = applyLongRestToPc(pc, true, false, { preparedSpells: ['Command'] });
+      expect(after.spells!.map(s => [s.name, s.prepared])).toEqual([['Bless', false], ['Command', true]]);
+      // Without choices the list is left alone.
+      expect(applyLongRestToPc(pc, true, false).spells).toBe(pc.spells);
+    });
+
+    it('moves a Death Knight\'s rune, and a Blood Rune leaves temporary Hit Points', () => {
+      const knight = basePC({
+        clazz: 'Paladin', subclass: 'Oath of the Ebon Blade', specialization: 'Blood', level: 5,
+        stats: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 16 },
+        hp: { cur: 20, max: 49, temp: 3 },
+        inventory: [{ name: 'Maul', category: 'weapon', qty: 1 }],
+      });
+      const after = applyLongRestToPc(knight, true, false, { runeWeapon: 'Maul' });
+      expect(after.runeWeapon).toBe('Maul');
+      expect(after.hp).toEqual({ cur: 49, max: 49, temp: 8 }); // +3 Charisma + level 5
+
+      // No weapon carries the rune: the old temporary Hit Points just fade.
+      expect(applyLongRestToPc(knight, true, false).hp!.temp).toBe(0);
+    });
+
+    it('gives nothing to a hero at 0 Hit Points', () => {
+      const down = casterPc({ hp: { cur: 0, max: 30, temp: 0 }, hitDiceUsed: 3, exhaustion: 2 });
+      expect(applyLongRestToPc(down, true, true)).toBe(down);
+    });
   });
 
   describe('survivalExhaustion', () => {

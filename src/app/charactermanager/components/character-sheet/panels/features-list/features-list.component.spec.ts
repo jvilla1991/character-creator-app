@@ -395,4 +395,30 @@ describe('FeaturesListComponent', () => {
       expect(el.querySelector('.locked-summary')).toBeNull();
     });
   });
+
+  // --- World of Warcraft feats (✦) ---
+
+  it('marks a World of Warcraft feat the character took with ✦, and nothing else', () => {
+    expect(component.isWowFeatFeature({ name: 'Fingers of Frost', source: 'Feat', desc: '' })).toBeTrue();
+    expect(component.isWowFeatFeature({ name: 'Hot Streak', source: 'feat (level 4)', desc: '' })).toBeTrue();
+    expect(component.isWowFeatFeature({ name: 'War Caster', source: 'Feat', desc: '' })).toBeFalse();
+    expect(component.isWowFeatFeature({ name: 'Clearcasting', source: 'DM Grant', desc: 'x' })).toBeFalse();
+    expect(component.isWowFeat('Clearcasting')).toBeTrue();
+    expect(component.isWowFeat('Alert')).toBeFalse();
+
+    const fixture = TestBed.createComponent(FeaturesListComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 3, name: 'Elandra', clazz: 'Wizard', level: 5, playerName: 'Q',
+      features: [
+        { name: 'Arcane Recovery', source: 'Wizard 1', desc: 'Recover slots.' },
+        { name: 'Fingers of Frost', source: 'Feat', desc: '' },
+      ],
+    } as PC);
+    fixture.detectChanges();
+    const names = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.feature-name')) as HTMLElement[];
+    const marked = names.filter(n => n.querySelector('.wow-mark')).map(n => n.textContent!.replace('✦', '').trim());
+    expect(marked).toEqual(['Fingers of Frost']);
+    expect(names.find(n => n.querySelector('.wow-mark'))!.querySelector('.wow-mark')!.getAttribute('title'))
+      .toBe('World of Warcraft feat');
+  });
 });

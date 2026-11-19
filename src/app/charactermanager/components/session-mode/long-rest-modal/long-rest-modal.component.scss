@@ -1,0 +1,160 @@
+// The summary can outgrow a phone once slice 2 adds choices, so the dialog
+// owns its scroll (The Panel Owns Its Scroll Rule).
+.long-rest-modal {
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.lr-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.lr-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+// ── Hit Points: now → max, with the gain called out ─────────────────────────
+.lr-hp {
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+}
+
+.lr-hp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lr-gain {
+  font-size: var(--text-md);
+  color: var(--emerald);
+}
+
+.lr-hp-nums {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--text-dim);
+
+  svg {
+    align-self: center;
+  }
+}
+
+.lr-hp-now {
+  font-size: var(--text-xl);
+  color: var(--text-2);
+}
+
+.lr-hp-max {
+  font-size: var(--text-2xl);
+  color: var(--text);
+}
+
+.lr-hp-of {
+  font-size: var(--text-sm);
+}
+
+// The track is what the rest fills in (emerald, the healing accent); the
+// segment on top is the Hit Points the hero already has.
+.lr-bar {
+  height: 6px;
+  margin-top: 10px;
+  border-radius: var(--radius-sharp);
+  background: color-mix(in oklch, var(--emerald) 45%, var(--bg-2));
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.lr-bar-now {
+  height: 100%;
+  background: linear-gradient(90deg, var(--crimson), var(--gold));
+}
+
+// ── The rest of what comes back: label · value · what changed ───────────────
+// One grid for the whole list, shared by every row through subgrid, so the
+// values and notes line up in columns whatever their width.
+.lr-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 12px;
+  margin: 0;
+}
+
+.lr-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-soft);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text);
+  }
+
+  .numeric {
+    font-size: var(--text-md);
+    text-align: right;
+  }
+
+  .lr-note {
+    font-family: 'Newsreader', serif;
+    font-size: var(--text-sm);
+    color: var(--text-dim);
+    text-align: right;
+  }
+}
+
+.lr-blocked {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-base);
+  line-height: 1.45;
+  color: var(--text);
+  border: 1px solid color-mix(in oklch, var(--crimson) 50%, transparent);
+  border-radius: var(--radius-sharp);
+  background: color-mix(in oklch, var(--crimson) 10%, transparent);
+}
+
+// ── Footer: the table's tally and this hero's Ready ─────────────────────────
+.lr-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.lr-tally {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.lr-waiting {
+  margin-top: 10px;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-md);
+  color: var(--text-dim);
+  text-align: right;
+}
