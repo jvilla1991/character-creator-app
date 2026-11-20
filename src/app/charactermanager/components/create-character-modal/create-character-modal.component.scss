@@ -28,8 +28,15 @@
 }
 
 .ruleset-toggle {
-  opacity: 0.3;
+  // The fade sits on the switch graphic only, not on the whole control. Fading
+  // the control put the "2014 5e" label at about 1.65:1 on the modal surface;
+  // --text-dim at full strength still reads as the quiet option and clears
+  // 4.5:1. The "Coming Soon" pill beside it says why the option is off.
   pointer-events: none;   // belt-and-suspenders on top of [disabled]
+
+  ::ng-deep .mdc-switch {
+    opacity: 0.3;
+  }
 
   // Override Material's label font to match the design system
   ::ng-deep .mdc-label {

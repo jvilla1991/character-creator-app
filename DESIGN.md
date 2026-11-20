@@ -202,7 +202,8 @@ numbers must align: hit points, ability scores, dice results, currency.
 - **Title** (Cinzel 500, 16–18px, 1.3, 0.05em): modal titles, section headings.
 - **Body** (Newsreader 400, 13–15px, 1.45): all prose, always upright. Flavour text, hints and
   sub-lines are the same face one step down the text ramp, not a slanted one.
-- **Label** (Cinzel 500, 11px, 0.18em, uppercase): buttons, panel titles, field labels, tabs.
+- **Label** (Cinzel 500, 11px, 0.18em, uppercase): buttons, panel titles, tabs. Field labels
+  are the one exception and run a step heavier (600, 12px, 0.14em) — see Inputs / Fields.
 - **Numeric** (JetBrains Mono 500, 13px, tabular): any figure that is compared or totalled.
 
 ### Named Rules
@@ -363,7 +364,12 @@ than a hairline to read, the tones on either side of it are wrong.
 ### Inputs / Fields
 
 - **Style:** `bg-2` inset ground, 1px `border`, 2px radius, Newsreader 15px, padding 9px 12px
-- **Label:** Cinzel 11px uppercase at 0.2em, `text-dim`, 6px below
+- **Label:** Cinzel 600, 12px uppercase at 0.14em, `text-2`, 6px below. One step above the
+  generic Label role on weight, size and ink, because a field label is read to use the form;
+  `text-dim` passed 4.5:1 here and was still hard to read on a phone
+- **Disabled:** value in `text-2` at `opacity: 1` (with `-webkit-text-fill-color`, which iOS
+  uses instead of `color`), hairline turns dashed, `cursor: not-allowed`. Never left to the
+  browser default, which dims the whole control
 - **Placeholder:** the dedicated `placeholder` token at `opacity: 1` — never the browser default,
   which fails contrast
 - **Focus:** gold border plus the gold glow
