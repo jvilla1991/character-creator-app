@@ -1,8 +1,8 @@
 <div class="ji">
   <div class="ji-bar">
     <span class="ji-bar-note">Checked as you paste and type.</span>
-    <button type="button" class="ji-link" [disabled]="!briefReady()" (click)="copyBrief()"
-      title="Copies the format rules and every valid item key — paste it into an AI chat before asking for items">
+    <button type="button" class="ji-link" (click)="copyBrief()"
+      title="Copies the format rules — paste them into an AI chat together with the items you want written out">
       {{ copied() ? 'Copied ✓' : 'Copy AI instructions' }}
     </button>
   </div>

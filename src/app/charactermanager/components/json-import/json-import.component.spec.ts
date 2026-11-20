@@ -49,7 +49,7 @@ describe('JsonImportComponent', () => {
   it('starts with the format hint and a confirm button that is off', () => {
     create('grant');
     expect(component.check().state).toBe('empty');
-    expect(text()).toContain('Each item is a catalog "key"');
+    expect(text()).toContain('Each item is written out');
     expect(button('Import')?.disabled).toBeTrue();
   });
 
@@ -191,7 +191,8 @@ describe('JsonImportComponent', () => {
     paste(GOOD);
     expect(component.checking()).toBeTrue();
     expect(text()).toContain('Checking…');
-    expect(button('Copy AI instructions')?.disabled).toBeTrue();
+    // The instructions do not depend on the catalog, so they never wait for it.
+    expect(button('Copy AI instructions')?.disabled).toBeFalse();
 
     loading.next(CATALOG);
     loading.complete();
@@ -227,13 +228,13 @@ describe('JsonImportComponent', () => {
         { writeText: (value: string) => { written.push(value); return Promise.resolve(); } } as Clipboard);
     });
 
-    it('copies the instructions for this box with every catalog key', fakeAsync(() => {
+    it('copies the instructions for this box and flashes Copied', fakeAsync(() => {
       create('shop');
       button('Copy AI instructions')?.click();
       fixture.detectChanges();
       expect(written.length).toBe(1);
-      expect(written[0]).toContain('You are writing a shop');
-      expect(written[0]).toContain('longsword — Longsword, 15 gp');
+      expect(written[0]).toContain('You are formatting a shop');
+      expect(written[0]).toContain('"priceGp" — required');
       expect(text()).toContain('Copied ✓');
 
       tick(1500);
@@ -241,18 +242,31 @@ describe('JsonImportComponent', () => {
       expect(text()).toContain('Copy AI instructions');
     }));
 
-    it('copies the loot instructions for a loot list', () => {
+    it('copies the loot and grant instructions for their boxes', () => {
       create('loot');
       component.copyBrief();
-      expect(written[0]).toContain('You are writing a loot list');
+      expect(written[0]).toContain('You are formatting a loot list');
       expect(written[0]).toContain('"coinGp"');
+
+      fixture.componentRef.setInput('kind', 'grant');
+      component.copyBrief();
+      expect(written[1]).toContain('handed to a character');
+      expect(written[1]).not.toContain('coinGp');
     });
 
-    it('is off for a shop when the catalog is empty — a shop cannot be written without keys', () => {
-      create('shop', of([]));
-      expect(button('Copy AI instructions')?.disabled).toBeTrue();
+    it('never offers the AI a catalog to choose from, whatever the catalog holds', () => {
+      create('grant');
       component.copyBrief();
-      expect(written.length).toBe(0);
+      expect(written[0]).toContain('Write out EVERY item I give you');
+      expect(written[0]).not.toContain('longsword —');
+      expect(written[0]).not.toContain('CATALOG');
+    });
+
+    it('works while the catalog is missing — the instructions do not need it', () => {
+      create('shop', throwError(() => new Error('network down')));
+      expect(button('Copy AI instructions')?.disabled).toBeFalse();
+      component.copyBrief();
+      expect(written.length).toBe(1);
     });
   });
 });

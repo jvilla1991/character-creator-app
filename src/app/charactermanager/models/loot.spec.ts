@@ -75,6 +75,19 @@ describe('parseLootImportPayload', () => {
     });
   });
 
+  it('takes a bulk on a custom line, and refuses a bad one or one on a catalog line', () => {
+    const { payload, error } = parseLootImportPayload(
+      '{"items": [{"name": "Ten-foot Pole", "weight": 7, "bulk": 6}, {"name": "Feather", "bulk": 0.2}]}');
+    expect(error).toBeUndefined();
+    expect(payload?.items[0]).toEqual({ key: null, name: 'Ten-foot Pole', notes: null, qty: null, weight: 7, bulk: 6 });
+    expect(payload?.items[1].bulk).toBe(0.2);
+
+    expect(parseLootImportPayload('{"items": [{"name": "Rock", "bulk": -1}]}').error).toContain('bulk');
+    expect(parseLootImportPayload('{"items": [{"name": "Rock", "bulk": "big"}]}').error).toContain('bulk');
+    expect(parseLootImportPayload('{"items": [{"key": "longsword", "bulk": 2}]}').error)
+      .toContain('custom items only');
+  });
+
   it('rejects attributes on a catalog (key) line', () => {
     expect(parseLootImportPayload('{"items": [{"key": "longsword", "valueGp": 10}]}').error)
       .toContain('custom items only');

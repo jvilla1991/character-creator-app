@@ -1,169 +1,160 @@
 /**
  * The "Copy AI instructions" text for each paste box: the exact format, the
- * rules the live check enforces, an example, and every valid catalog key. A DM
- * pastes it into an AI chat before asking for items, so the reply comes back
- * in a shape the box accepts first time. Kept next to the check on purpose —
- * a rule added there belongs in the wording here too.
+ * rules the live check enforces, and an example. A DM pastes it into an AI
+ * chat together with the items they want — usually lifted from the adventure
+ * they are running — so the reply comes back in a shape the box accepts.
+ *
+ * The AI is told to write every item out in full and never to look one up:
+ * an earlier version listed the catalog and let the AI prefer it, and it
+ * swapped the adventure's own items for look-alikes from the list. The
+ * standard catalog is still there for the DM (the Catalog tab, "Import a
+ * standard category", and a "key" line in a paste) — it is just not something
+ * the AI is asked to choose from.
+ *
+ * Kept next to the check on purpose — a rule added there belongs in the
+ * wording here too, and a test holds the example to the check.
  */
 
-import { CatalogItem, formatCp } from './shop';
 import { JsonImportKind } from './json-import-check';
-
-const CATEGORY_HEADINGS: ReadonlyArray<[string, string]> = [
-  ['WEAPON', 'Weapons'],
-  ['ARMOR', 'Armor'],
-  ['GEAR', 'Gear'],
-  ['MATERIAL_COMPONENT', 'Material components'],
-  ['TRANSPORT', 'Transport'],
-];
 
 const REPLY_RULES =
   'Reply with ONE JSON object in a code block and nothing else: no commentary, no comments inside '
   + 'the JSON, no trailing commas, straight double quotes only.';
 
-const CATALOG_ITEM_RULES = [
-  '   - "key" must be copied exactly from the CATALOG KEYS list at the end. Never invent a key.',
-  '   - "qty" is optional (default 1): a whole number, 1 or more.',
-  '   - No other fields. A catalog item takes its name, price and stats from the catalog.',
+const FAITHFUL_RULES = [
+  'I will give you the items — from the adventure I am running, or described in my own words.',
+  'Write out EVERY item I give you, in the order I give them, exactly as it is: keep its name, its',
+  'numbers and what it does. Do not swap an item for a similar or more standard one, do not rename',
+  'it, do not merge two items, do not leave one out, and do not add items I did not ask for.',
+  'If the source leaves out something a field needs (a weight, a price), use the usual D&D 5e value',
+  'for that kind of item and carry on — never drop the item.',
 ];
 
-const CUSTOM_ITEM_RULES = [
-  '   - "name" is required. Use a custom item for anything that is not in the catalog.',
-  '   - "qty" is optional (default 1): a whole number, 1 or more.',
-  '   - "category" is optional (default "gear"): one of "weapon", "armor", "material-component", '
-    + '"gear", "transport", "treasure".',
-  '   - "valueGp" is optional: the value of ONE item in gold, 0 or more. Fractions are fine (0.5 = 5 silver).',
-  '   - "weight" is optional: the weight of ONE item in pounds, 0 or more.',
-  '   - "damage" is optional text, allowed only when "category" is "weapon" (e.g. "1d8 slashing").',
-  '   - "armorClass" is optional text, allowed only when "category" is "armor" '
-    + '(e.g. "14 + Dex modifier (max 2)").',
-  '   - "notes" is optional text: what the item does, in a sentence or two.',
+/** The field rules shared by every box; `price` is the one field whose name differs. */
+function itemFields(price: 'valueGp' | 'priceGp', withQty: boolean): string[] {
+  const priceLine = price === 'valueGp'
+    ? '- "valueGp" — always include it: what ONE is worth in gold, 0 or more. Fractions are fine '
+      + '(0.5 = 5 silver, 0.01 = 1 copper).'
+    : '- "priceGp" — required: what this shop charges for ONE in gold, 0 or more. Fractions are fine '
+      + '(0.5 = 5 silver, 0.01 = 1 copper).';
+  return [
+    '- "name" — required: the item\'s name, exactly as given.',
+    '- "category" — required: one of "weapon", "armor", "material-component", "gear", "transport", '
+      + '"treasure". Shields are "armor". Potions, wondrous items, tools and anything that fits '
+      + 'nowhere else are "gear". Gems, art and valuables are "treasure".',
+    ...(withQty ? ['- "qty" — how many: a whole number, 1 or more. Leave it out for one.'] : []),
+    priceLine,
+    '- "weight" — always include it: the weight of ONE in pounds, 0 or more. Use 0 for something '
+      + 'with no real weight (a ring, a gem, a scroll).',
+    '- "bulk" — always include it: how much room ONE takes up in a pack. Use this scale, picking by '
+      + 'size and weight, and go one step up for something long or awkward to carry:',
+    '    0.2 = tiny, next to no weight (a ring, a coin, a gem, a scroll)',
+    '    1   = small, up to about 2 lb (a dagger, a potion, a wand)',
+    '    2   = medium, up to about 5 lb (a longsword, a shortbow, a spellbook)',
+    '    3   = large, up to about 10 lb (a greatsword, a shield, a longbow)',
+    '    6   = very large, up to about 35 lb (a suit of light or medium armor, a tent)',
+    '    9   = huge, heavier than that (a suit of heavy armor, a chest)',
+    '- "damage" — required when "category" is "weapon", and not allowed otherwise: the damage dice '
+      + 'AND the damage type, with any bonus, e.g. "1d8 slashing", "1d8 + 1 piercing", '
+      + '"1d8 slashing + 2d6 fire".',
+    '- "armorClass" — required when "category" is "armor", and not allowed otherwise. Write it in '
+      + 'exactly one of these four forms, with the item\'s own number: "11 + Dex modifier" (light '
+      + 'armor), "14 + Dex modifier (max 2)" (medium armor), "18" (heavy armor: a plain number), '
+      + '"+2" (a shield: a plus sign and its bonus). Include a magic bonus in the number '
+      + '(+1 chain mail is "17").',
+    '- "notes" — the description. If the item has any requirement to use it, START with it: '
+      + '"Requires: attunement by a paladin." or "Requires: Strength 15." Then say what the item '
+      + 'does in plain sentences: weapon properties (finesse, versatile 1d10, range), charges, '
+      + 'magical effects, anything a player needs at the table. Leave "notes" out only when there '
+      + 'is truly nothing to say.',
+  ];
+}
+
+const FIELD_NAME_RULE_ITEMS =
+  'Use only these field names, spelled exactly: "qty" (not "quantity"), "valueGp" (not "price" or '
+  + '"value"), "notes" (not "description"), "armorClass" (not "ac"). Any other field is rejected.';
+
+const FIELD_NAME_RULE_SHOP =
+  'Use only these field names, spelled exactly: "priceGp" (not "price", "cost" or "valueGp"), '
+  + '"notes" (not "description"), "armorClass" (not "ac"). Any other field is rejected. A shop has '
+  + 'unlimited stock, so an item has no quantity.';
+
+const EXAMPLE_ITEMS = [
+  { name: 'Flametongue Longsword', category: 'weapon', valueGp: 5000, weight: 3, bulk: 2,
+    damage: '1d8 slashing + 2d6 fire',
+    notes: 'Requires: attunement. Versatile (1d10). Speak the command word as a bonus action to set '
+      + 'the blade alight; it sheds bright light for 40 feet.' },
+  { name: 'Mithral Chain Shirt', category: 'armor', valueGp: 800, weight: 20, bulk: 6,
+    armorClass: '13 + Dex modifier (max 2)',
+    notes: 'No disadvantage on Stealth checks and no Strength requirement.' },
+  { name: 'Sentinel Shield', category: 'armor', valueGp: 500, weight: 6, bulk: 3,
+    armorClass: '+2',
+    notes: 'Advantage on initiative rolls and on Wisdom (Perception) checks while holding it.' },
+  { name: 'Potion of Greater Healing', category: 'gear', qty: 3, valueGp: 150, weight: 0.5, bulk: 1,
+    notes: 'Drink as a bonus action to regain 4d4 + 4 hit points.' },
+  { name: 'Uncut Ruby', category: 'treasure', valueGp: 250, weight: 0, bulk: 0.2 },
 ];
 
-const FIELD_NAME_RULE =
-  'Use only the field names above, spelled exactly: "qty" (not "quantity"), "valueGp" (not "price" '
-  + 'or "value"), "notes" (not "description"). Any other field is rejected.';
-
-/** Two keys for the example that really are in this catalog (the usual pair when present). */
-function exampleKeys(catalog: CatalogItem[]): [string, string] {
-  const pick = (preferred: string, category: string, fallback: string): string =>
-    catalog.some(i => i.itemKey === preferred)
-      ? preferred
-      : catalog.find(i => i.category === category && i.itemKey !== fallback)?.itemKey ?? fallback;
-  const first = pick('longsword', 'WEAPON', catalog[0]?.itemKey ?? 'longsword');
-  return [first, pick('rations', 'GEAR', first)];
+/** The example as a shop sells it: a price instead of a value, and no quantity. */
+function shopExampleItems(): object[] {
+  return EXAMPLE_ITEMS.map(item => {
+    const { valueGp, qty: _qty, ...rest } = item as typeof item & { qty?: number };
+    const { name, category, ...stats } = rest;
+    return { name, category, priceGp: valueGp, ...stats };
+  });
 }
 
-function catalogSection(catalog: CatalogItem[]): string[] {
-  const lines = ['CATALOG KEYS (key — name, catalog price)'];
-  for (const [category, heading] of CATEGORY_HEADINGS) {
-    const items = catalog.filter(i => i.category === category)
-      .sort((a, b) => a.itemKey.localeCompare(b.itemKey));
-    if (!items.length) continue;
-    lines.push('', `${heading}:`);
-    for (const item of items) lines.push(`  ${item.itemKey} — ${item.name}, ${formatCp(item.costCp)}`);
-  }
-  // Anything in a category this file does not know yet still gets listed.
-  const known = new Set(CATEGORY_HEADINGS.map(([category]) => category));
-  const other = catalog.filter(i => !known.has(i.category));
-  if (other.length) {
-    lines.push('', 'Other:');
-    for (const item of other) lines.push(`  ${item.itemKey} — ${item.name}, ${formatCp(item.costCp)}`);
-  }
-  return lines;
-}
-
-function itemListBrief(kind: 'grant' | 'loot', catalog: CatalogItem[]): string[] {
-  const hasCatalog = catalog.length > 0;
+function itemListBrief(kind: 'grant' | 'loot'): string[] {
   const loot = kind === 'loot';
-  const lines = [
+  return [
     loot
-      ? 'You are writing a loot list for Table Mimic, a D&D 5e campaign app.'
-      : 'You are writing a list of items to hand to a character in Table Mimic, a D&D 5e campaign app.',
+      ? 'You are formatting a loot list for Table Mimic, a D&D 5e campaign app.'
+      : 'You are formatting items for Table Mimic, a D&D 5e campaign app, so they can be handed to a character.',
+    ...FAITHFUL_RULES,
+    '',
     REPLY_RULES,
     '',
     'SHAPE',
     loot ? '{ "coinGp": 125.5, "items": [ <item>, <item>, … ] }' : '{ "items": [ <item>, <item>, … ] }',
+    ...(loot
+      ? ['"coinGp" is optional: loose coins found with the loot, in gold, 0 or more, fractions allowed. '
+          + 'Leave it out when there are none.']
+      : []),
+    '',
+    'EACH <item> HAS THESE FIELDS',
+    ...itemFields('valueGp', true),
+    '',
+    FIELD_NAME_RULE_ITEMS,
+    '',
+    'EXAMPLE',
+    JSON.stringify({ ...(loot ? { coinGp: 125.5 } : {}), items: EXAMPLE_ITEMS }, null, 2),
   ];
-  if (loot) {
-    lines.push('"coinGp" is optional: gold added to the coin pile, 0 or more, fractions allowed. '
-      + 'Leave it out when there are no coins.');
-  }
-  lines.push('');
-  if (hasCatalog) {
-    lines.push(
-      'Each <item> is exactly ONE of these two kinds:',
-      '',
-      '1. A catalog item — { "key": "longsword", "qty": 2 }',
-      ...CATALOG_ITEM_RULES,
-      '',
-      '2. A custom item — { "name": "Flametongue", "category": "weapon", "valueGp": 5000 }',
-      ...CUSTOM_ITEM_RULES,
-      '',
-      'Never give one item both "key" and "name". Prefer a catalog item whenever the list has it.',
-    );
-  } else {
-    lines.push(
-      'Each <item> is a custom item — { "name": "Flametongue", "category": "weapon", "valueGp": 5000 }',
-      ...CUSTOM_ITEM_RULES,
-      '',
-      'There is no item catalog here, so do not use a "key" field.',
-    );
-  }
-  lines.push(FIELD_NAME_RULE, '', 'EXAMPLE');
-  const [firstKey, secondKey] = exampleKeys(catalog);
-  const example = {
-    ...(loot ? { coinGp: 125.5 } : {}),
-    items: [
-      ...(hasCatalog ? [{ key: firstKey }, { key: secondKey, qty: 10 }] : []),
-      { name: 'Flametongue', category: 'weapon', valueGp: 5000, weight: 3,
-        damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' },
-      { name: 'Ruby', category: 'treasure', qty: 3, valueGp: 50 },
-    ],
-  };
-  lines.push(JSON.stringify(example, null, 2));
-  if (hasCatalog) lines.push('', ...catalogSection(catalog));
-  return lines;
 }
 
-function shopBrief(catalog: CatalogItem[]): string[] {
-  const [firstKey, secondKey] = exampleKeys(catalog);
+function shopBrief(): string[] {
   return [
-    'You are writing a shop for Table Mimic, a D&D 5e campaign app.',
+    'You are formatting a shop for Table Mimic, a D&D 5e campaign app.',
+    ...FAITHFUL_RULES,
+    '',
     REPLY_RULES,
     '',
     'SHAPE',
     '{ "name": "The Gilded Flask", "settlement": "Phandalin", "items": [ <item>, <item>, … ] }',
-    '   - "name" is required: the shop\'s name.',
-    '   - "settlement" is optional: where the shop is.',
+    '- "name" — required: the shop\'s name.',
+    '- "settlement" — optional: the town or place the shop is in.',
     '',
-    'Each <item> is a catalog item — { "key": "longsword", "priceGp": 12 }',
-    '   - "key" must be copied exactly from the CATALOG KEYS list at the end. Never invent a key. '
-      + 'A shop sells catalog items only: there are no custom items.',
-    '   - "priceGp" is optional: this shop\'s price for the item in gold, 0 or more, fractions allowed '
-      + '(0.5 = 5 silver). Leave it out to sell at the catalog price.',
-    '   - List each key once. A shop has unlimited stock, so there is no quantity.',
+    'EACH <item> HAS THESE FIELDS',
+    ...itemFields('priceGp', false),
     '',
-    'Use only the field names above, spelled exactly: "priceGp" (not "price" or "cost"). '
-      + 'Any other field is rejected.',
+    FIELD_NAME_RULE_SHOP,
     '',
     'EXAMPLE',
-    JSON.stringify({
-      name: 'The Gilded Flask', settlement: 'Phandalin',
-      items: [{ key: firstKey, priceGp: 12 }, { key: secondKey }],
-    }, null, 2),
-    '',
-    ...catalogSection(catalog),
+    JSON.stringify({ name: 'The Gilded Flask', settlement: 'Phandalin', items: shopExampleItems() }, null, 2),
   ];
 }
 
-/**
- * The instructions for one paste box. `catalog` is every catalog item; an
- * empty list (the demo) gives item-list instructions that use custom items
- * only. A shop cannot be written without the catalog — callers do not offer
- * the button there.
- */
-export function buildAiBrief(kind: JsonImportKind, catalog: CatalogItem[]): string {
-  const lines = kind === 'shop' ? shopBrief(catalog) : itemListBrief(kind, catalog);
+/** The instructions for one paste box. */
+export function buildAiBrief(kind: JsonImportKind): string {
+  const lines = kind === 'shop' ? shopBrief() : itemListBrief(kind);
   return lines.join('\n') + '\n';
 }

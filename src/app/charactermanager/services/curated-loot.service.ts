@@ -48,7 +48,7 @@ export class CuratedLootService {
   /**
    * Add a prepped line from the shared item composer's payload — a catalog
    * item (key + qty) or a custom item carrying the full attribute set the
-   * backend persists (category, valueGp, weight, damage, armorClass, notes).
+   * backend persists (category, valueGp, weight, bulk, damage, armorClass, notes).
    */
   addItem(lootId: number, item: AuthoredItem): Observable<CuratedLoot> {
     if (environment.demoMode) return this.demoUnsupported();
@@ -98,6 +98,7 @@ export function toAddLootItemRequest(item: AuthoredItem): {
   qty: number;
   category?: string;
   valueGp?: number;
+  bulk?: number;
   weight?: number;
   damage?: string;
   armorClass?: string;
@@ -112,6 +113,7 @@ export function toAddLootItemRequest(item: AuthoredItem): {
     qty: item.qty,
     category: item.category,
     ...(item.valueGp != null ? { valueGp: item.valueGp } : {}),
+    ...(item.bulk != null ? { bulk: item.bulk } : {}),
     ...(item.weight != null ? { weight: item.weight } : {}),
     ...(item.damage ? { damage: item.damage } : {}),
     ...(item.armorClass ? { armorClass: item.armorClass } : {}),

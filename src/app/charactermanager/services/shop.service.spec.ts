@@ -62,11 +62,23 @@ describe('ShopService', () => {
   });
 
   it('purchase POSTs pcId, itemKey and qty', () => {
-    service.purchase(1, 7, 'longsword', 2).subscribe();
+    service.purchase(1, 7, { itemKey: 'longsword' }, 2).subscribe();
     const req = httpMock.expectOne(`${base}/1/shop/purchase`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ pcId: 7, itemKey: 'longsword', qty: 2 });
     req.flush({ coins: {}, inventory: [], totalCostCp: 3000 });
+  });
+
+  it('purchase names a curated shop line by its id — the only handle a custom item has', () => {
+    service.purchase(1, 7, { itemKey: null, shopItemId: 22 }, 1).subscribe();
+    const custom = httpMock.expectOne(`${base}/1/shop/purchase`);
+    expect(custom.request.body).toEqual({ pcId: 7, itemKey: null, qty: 1, shopItemId: 22 });
+    custom.flush({ coins: {}, inventory: [], totalCostCp: 100 });
+
+    service.purchase(1, 7, { itemKey: 'longsword', shopItemId: 21 }, 1).subscribe();
+    const catalog = httpMock.expectOne(`${base}/1/shop/purchase`);
+    expect(catalog.request.body).toEqual({ pcId: 7, itemKey: 'longsword', qty: 1, shopItemId: 21 });
+    catalog.flush({ coins: {}, inventory: [], totalCostCp: 1500 });
   });
 
   describe('cost helpers', () => {

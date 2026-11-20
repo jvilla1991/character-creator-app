@@ -148,3 +148,10 @@
 .muted {
   color: var(--text-dim);
 }
+
+/* A custom item's description, under its stats. */
+.item-notes {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}

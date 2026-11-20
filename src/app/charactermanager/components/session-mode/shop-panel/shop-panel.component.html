@@ -87,6 +87,9 @@
                   <div class="item-main">
                     <span class="item-name">{{ item.name }}</span>
                     <span class="item-meta">{{ itemMeta(item) }}</span>
+                    @if (itemNotes(item); as notes) {
+                      <span class="item-notes">{{ notes }}</span>
+                    }
                   </div>
                   <span class="item-price">{{ formatCp(item.costCp) }}</span>
                 </li>
@@ -112,12 +115,15 @@
                   <div class="item-main">
                     <span class="item-name">{{ item.name }}</span>
                     <span class="item-meta">{{ itemMeta(item) }}</span>
+                    @if (itemNotes(item); as notes) {
+                      <span class="item-notes">{{ notes }}</span>
+                    }
                   </div>
                   <span class="item-price">{{ formatCp(item.costCp) }}</span>
                   <button class="btn buy"
-                    [disabled]="!canAfford(item) || busyItem === item.itemKey"
+                    [disabled]="!canAfford(item) || busyItem === rowKey(item)"
                     (click)="buy(item)">
-                    {{ busyItem === item.itemKey ? '…' : (canAfford(item) ? 'Buy' : 'Too costly') }}
+                    {{ busyItem === rowKey(item) ? '…' : (canAfford(item) ? 'Buy' : 'Too costly') }}
                   </button>
                 </li>
               }

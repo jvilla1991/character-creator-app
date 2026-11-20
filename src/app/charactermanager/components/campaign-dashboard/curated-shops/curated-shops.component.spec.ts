@@ -135,6 +135,60 @@ describe('CuratedShopsComponent', () => {
     expect(service.updateItem).not.toHaveBeenCalled();
   });
 
+  // --- custom (non-catalog) lines ---
+
+  const customLine: CuratedShop['items'][number] = {
+    id: 12, catalogItemKey: null, name: 'Flametongue', category: 'WEAPON', custom: true,
+    priceOverrideCp: 500000, effectiveCostCp: 500000, weight: 3, bulk: 2,
+    notes: 'Requires: attunement.', details: { damage: '1d8 slashing + 2d6 fire' },
+  };
+
+  it('onItemAuthored adds the composed line and shows the updated shop', () => {
+    component.selected = shop;
+    const after = { ...shop, items: [...shop.items, customLine] };
+    service.addItem.and.returnValue(of(after));
+    const authored = { kind: 'custom' as const, name: 'Flametongue', category: 'weapon' as const, qty: 1, valueGp: 5000 };
+
+    component.onItemAuthored(authored);
+
+    expect(service.addItem).toHaveBeenCalledWith(5, authored);
+    expect(component.selected).toBe(after);
+    expect(component.busy).toBeFalse();
+  });
+
+  it('onItemAuthored says so when a catalog item is already in the shop', () => {
+    component.selected = shop;
+    const error = { status: 409 };
+    service.addItem.and.returnValue(throwError(() => error));
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+
+    component.onItemAuthored({ kind: 'custom', name: 'X', category: 'gear', qty: 1 });
+
+    expect(notify).toHaveBeenCalledWith('That item is already in this shop.', error);
+    expect(component.busy).toBeFalse();
+  });
+
+  it('itemMeta shows a custom line by its own stats, a catalog line by its category', () => {
+    expect(component.itemMeta(customLine)).toBe('weapon · 1d8 slashing + 2d6 fire · 3 lb · 2 bulk · custom');
+    expect(component.itemMeta(shop.items[0])).toBe('weapon');
+  });
+
+  it('a custom line keeps a price: an emptied field is put back, not sent', () => {
+    component.selected = shop;
+    const notify = spyOn(TestBed.inject(NotificationService), 'notify');
+    const field = { value: '' } as HTMLInputElement;
+
+    component.setOverride(customLine, '', field);
+
+    expect(service.updateItem).not.toHaveBeenCalled();
+    expect(field.value).toBe('5000');
+    expect(notify).toHaveBeenCalled();
+
+    service.updateItem.and.returnValue(of(shop));
+    component.setOverride(customLine, '4500', field);
+    expect(service.updateItem).toHaveBeenCalledWith(5, 12, 450000);
+  });
+
   it('removeItem updates the selected shop', () => {
     component.selected = shop;
     const after = { ...shop, items: [] };

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CuratedShop, ShopImportPayload, ShopSummary } from '../models/curated-shop';
+import { AuthoredItem } from '../components/item-composer/authored-item';
 
 /**
  * DM-curated shop management client (Phase 2). Talks to the campaign-scoped
@@ -42,9 +43,14 @@ export class CuratedShopService {
     return this.http.delete<void>(`${this.base}/shops/${shopId}`);
   }
 
-  addItem(shopId: number, catalogItemKey: string, priceCp: number | null): Observable<CuratedShop> {
+  /**
+   * Add one line authored in the shared item composer: a catalog item (sold
+   * at the catalog price until the DM overrides it) or a custom item with its
+   * own stats, whose composer "value" is the shop's price.
+   */
+  addItem(shopId: number, item: AuthoredItem): Observable<CuratedShop> {
     if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<CuratedShop>(`${this.base}/shops/${shopId}/items`, { catalogItemKey, priceCp });
+    return this.http.post<CuratedShop>(`${this.base}/shops/${shopId}/items`, toAddShopItemRequest(item));
   }
 
   updateItem(shopId: number, itemId: number, priceCp: number | null): Observable<CuratedShop> {
@@ -75,4 +81,35 @@ export class CuratedShopService {
   private demoUnsupported<T>(): Observable<T> {
     return throwError(() => new Error('Curated shops are not available in demo mode'));
   }
+}
+
+/**
+ * Map the composer's AuthoredItem onto the backend AddShopItemRequest wire
+ * shape. A shop has no quantity, so the composer's qty is not sent; a custom
+ * item's value in gold becomes its price in copper.
+ */
+export function toAddShopItemRequest(item: AuthoredItem): {
+  catalogItemKey?: string;
+  priceCp: number | null;
+  customName?: string;
+  customNotes?: string;
+  category?: string;
+  weight?: number;
+  bulk?: number;
+  damage?: string;
+  armorClass?: string;
+} {
+  if (item.kind === 'catalog') {
+    return { catalogItemKey: item.item.itemKey, priceCp: null };
+  }
+  return {
+    customName: item.name,
+    priceCp: item.valueGp != null ? Math.round(item.valueGp * 100) : null,
+    category: item.category,
+    ...(item.notes ? { customNotes: item.notes } : {}),
+    ...(item.weight != null ? { weight: item.weight } : {}),
+    ...(item.bulk != null ? { bulk: item.bulk } : {}),
+    ...(item.damage ? { damage: item.damage } : {}),
+    ...(item.armorClass ? { armorClass: item.armorClass } : {}),
+  };
 }
