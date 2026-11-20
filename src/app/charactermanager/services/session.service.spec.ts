@@ -43,6 +43,18 @@ describe('SessionService rests', () => {
   afterEach(() => httpMock.verify());
 
   describe('over HTTP', () => {
+    it('awardXpToMany POSTs the amount with the ticked participant ids and mirrors the new totals', () => {
+      let result: unknown;
+      service.awardXpToMany(1, 300, [5, 9]).subscribe(r => (result = r));
+      const request = httpMock.expectOne(`${base}/1/xp`);
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ amount: 300, participantIds: [5, 9] });
+      const awarded = [{ pcId: 7, name: 'Gorath', xp: 1300, delta: 300 }];
+      request.flush({ awarded });
+      expect(result).toEqual({ awarded });
+      expect(pcService.patchLocalPC).toHaveBeenCalledOnceWith(7, { xp: 1300 });
+    });
+
     it('getCombatLog GETs one page of the log, the first ten rows unless told otherwise', () => {
       let page: unknown;
       service.getCombatLog(1).subscribe(p => (page = p));

@@ -8,6 +8,40 @@ export interface RenownFaction {
   score: number;
 }
 
+/** A campaign faction with no character's score attached: what the DM's
+ *  session reward bar lists in its faction picker. */
+export interface CampaignFaction {
+  id: number;
+  parentId: number | null;
+  name: string;
+}
+
+/** Result of the DM's session-wide renown reward (mirrors the backend's
+ *  RenownAwardResult): one entry per rewarded character. */
+export interface RenownAwardEntry {
+  pcId: number;
+  name: string;
+  score: number; // the character's score with the faction after the reward
+  delta: number; // actual change applied (smaller than asked when clamped at -100 / 100)
+}
+
+export interface RenownAwardResult {
+  awarded: RenownAwardEntry[];
+}
+
+/** Factions in picker order: each top-level faction followed by its
+ *  subfactions, both in the order the DM created them. `child` marks a
+ *  subfaction so the picker can indent it. A subfaction whose parent is
+ *  missing from the list is kept, as a top-level row, rather than dropped. */
+export function factionPickerRows<T extends CampaignFaction>(factions: T[]): { faction: T; child: boolean }[] {
+  const ids = new Set(factions.map(f => f.id));
+  const roots = factions.filter(f => f.parentId == null || !ids.has(f.parentId));
+  return roots.flatMap(root => [
+    { faction: root, child: false },
+    ...factions.filter(f => f.parentId === root.id && f !== root).map(faction => ({ faction, child: true })),
+  ]);
+}
+
 /** Colours are CSS custom properties defined on the renown panel's :host,
  *  built from theme tokens so each theme recolours the standings.
  *  `label` is the exact range (shown under each faction's meter);

@@ -1,0 +1,132 @@
+// DM reward bar, below the initiative board (it took over the divider the old
+// "Award XP to all" box drew). Controls keep the global themed-input baseline;
+// only sizes and layout are set here.
+:host { display: block; }
+
+.reward-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border);
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-md);
+}
+
+// The sentence wraps as a whole line of words and controls on a narrow panel.
+.reward-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--text-2);
+
+  select,
+  .reward-amount {
+    height: 36px;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  select { cursor: pointer; }
+
+  .reward-faction {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .reward-amount {
+    width: 84px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.reward-none {
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
+
+.reward-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-soft);
+}
+
+.reward-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  min-height: 40px;
+  padding: 0 var(--space-xs);
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex: none;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+
+  .reward-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .reward-detail {
+    flex: none;
+    font-size: var(--text-sm);
+    color: var(--text-dim);
+  }
+}
+
+.reward-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md) var(--space-3xl);
+
+  // Quiet text buttons: they change the ticks, they do not send anything.
+  .reward-link {
+    min-height: 36px;
+    padding: 0 var(--space-xs);
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+
+    &:hover { color: var(--gold); }
+  }
+
+  // .btn.primary stretches by default; here it sits at the end of the row.
+  .reward-give {
+    flex: none;
+    margin-left: auto;
+  }
+}
+
+// Touch screens: finger-sized rows and controls, and the send button gets
+// the full width under the tick shortcuts.
+@media (pointer: coarse) {
+  .reward-sentence select,
+  .reward-sentence .reward-amount,
+  .reward-actions .reward-link { height: 44px; min-height: 44px; }
+  .reward-row { min-height: 44px; }
+  .reward-row input[type='checkbox'] { width: 20px; height: 20px; }
+}
+
+@media (max-width: 520px) {
+  .reward-sentence .reward-faction { flex: 1 1 100%; }
+  .reward-actions .reward-give { flex: 1 1 100%; margin-left: 0; min-height: 44px; }
+}
