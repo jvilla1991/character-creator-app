@@ -64,6 +64,58 @@ jobs:
       - name: Run unit tests
         run: npm test -- --watch=false --browsers=ChromeHeadless
 
+  # Advisory design report. It scans the real signed-in screens (through the
+  # app's demo mode, so no backend and no credentials) with the impeccable
+  # detector and writes what it finds to the job summary and as annotations.
+  #
+  # It must never be able to fail a pull request: the script always exits 0,
+  # every step that could fail is continue-on-error, and so is the job. Do
+  # not make this job a required check. See docs/impeccable-adoption-plan.md,
+  # "Phase 4 results".
+  design-scan:
+    name: Impeccable design scan (advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    env:
+      DO_NOT_TRACK: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        continue-on-error: true
+        run: npm ci
+
+      - name: Build production application
+        continue-on-error: true
+        run: npm run build -- --configuration production
+
+      # Serves dist/, opens the runner's Chrome, enters demo mode and runs
+      # `npx impeccable@<pinned version> detect` on each screen. The version
+      # is pinned in the script.
+      - name: Scan the demo-mode screens
+        continue-on-error: true
+        run: node scripts/impeccable-scan.js --github --json impeccable-scan.json
+
+      - name: Upload the full findings
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: impeccable-scan
+          path: impeccable-scan.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   login-smoke:
     name: Login form smoke test
     runs-on: ubuntu-latest
