@@ -4,6 +4,25 @@
       "radial-spotlight-glow"
     ],
     "ignoreFiles": [],
-    "ignoreValues": []
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "cinzel",
+        "createdAt": "2026-11-20T18:33:08.768Z",
+        "reason": "Brand display and label face (DESIGN.md, Typography)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "newsreader",
+        "createdAt": "2026-11-20T18:33:11.877Z",
+        "reason": "Brand body face (DESIGN.md, Typography)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "jetbrains mono",
+        "createdAt": "2026-11-20T18:33:14.981Z",
+        "reason": "Brand numeric face (DESIGN.md, Typography)"
+      }
+    ]
   }
 }
