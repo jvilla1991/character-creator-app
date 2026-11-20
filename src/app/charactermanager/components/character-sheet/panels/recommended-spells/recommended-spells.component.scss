@@ -1,0 +1,11 @@
+@use '../prepared-spell-list';
+
+/* .panel rules live in global styles.css; the spell rows are shared with the hero-class panel. */
+
+:host {
+  display: block;
+}
+
+.subclass-spells-upcoming {
+  margin-top: 8px;
+}
