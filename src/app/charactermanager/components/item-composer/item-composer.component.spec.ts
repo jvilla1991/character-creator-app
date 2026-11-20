@@ -1,9 +1,10 @@
-import { Subject, of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 
 import { ItemComposerComponent } from './item-composer.component';
 import { AuthoredItem, pcItemFromAuthored } from './authored-item';
 import { CatalogItem } from '../../models/shop';
+import { LootImportPayload } from '../../models/loot';
 import { ShopService } from '../../services/shop.service';
 import { environment } from '../../../../environments/environment';
 
@@ -117,12 +118,17 @@ describe('ItemComposerComponent', () => {
   });
 
   // --- JSON tab ---
+  // The shared paste box (JsonImportComponent) checks the text and looks the
+  // keys up; the composer only turns its confirmed lines into one batch.
 
   describe('JSON tab', () => {
     const catalogRations: CatalogItem = {
       itemKey: 'rations', name: 'Rations', category: 'GEAR', costCp: 50, weight: 2, bulk: 1,
       details: {},
     };
+    const catalog = new Map<string, CatalogItem>([['longsword', catalogLongsword], ['rations', catalogRations]]);
+    const confirm = (items: LootImportPayload['items']) =>
+      component.onJsonConfirmed({ loot: { items }, shop: null, catalog });
     let batches: AuthoredItem[][];
 
     beforeEach(() => {
@@ -131,129 +137,43 @@ describe('ItemComposerComponent', () => {
       component.tab = 'json';
     });
 
-    it('rejects malformed JSON and keeps the draft', () => {
-      component.jsonDraft = '{oops';
-      component.confirmJson();
-      expect(component.jsonError()).toContain('Not valid JSON');
-      expect(component.jsonDraft).toBe('{oops');
-      expect(batches.length).toBe(0);
-    });
-
-    it('rejects an empty items array', () => {
-      component.jsonDraft = '{"items": []}';
-      component.confirmJson();
-      expect(component.jsonError()).toContain('empty');
-      expect(batches.length).toBe(0);
-    });
-
-    it('rejects coins — the grant is items only', () => {
-      component.jsonDraft = '{"coinGp": 10, "items": [{"name": "Rope"}]}';
-      component.confirmJson();
-      expect(component.jsonError()).toContain('coinGp');
-      expect(batches.length).toBe(0);
-    });
-
-    it('emits custom lines as one batch without touching the catalog', () => {
-      component.jsonDraft = JSON.stringify({ items: [
-        { name: ' Cracked Fang ' },
+    it('emits catalog and custom lines as one batch, in the order written', () => {
+      confirm([
+        { key: 'rations', qty: 10 },
+        { name: 'Cracked Fang' },
+        { key: 'longsword' },
         { name: 'Flametongue', category: 'weapon', qty: 2, valueGp: 5000, weight: 3,
           damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' },
         { name: 'Mithral Plate', category: 'armor', armorClass: '18' },
-      ] });
+      ]);
 
-      component.confirmJson();
-
-      expect(shopService.getCatalog).not.toHaveBeenCalled();
       expect(batches).toEqual([[
+        { kind: 'catalog', item: catalogRations, qty: 10 },
         { kind: 'custom', name: 'Cracked Fang', category: 'gear', qty: 1 },
+        { kind: 'catalog', item: catalogLongsword, qty: 1 },
         { kind: 'custom', name: 'Flametongue', category: 'weapon', qty: 2, valueGp: 5000, weight: 3,
           damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' },
         { kind: 'custom', name: 'Mithral Plate', category: 'armor', qty: 1, armorClass: '18' },
       ]]);
-      // Form reset after a successful paste.
-      expect(component.jsonDraft).toBe('');
-      expect(component.jsonError()).toBeNull();
+      expect(component.tab).toBe('catalog'); // form reset after a successful paste
     });
 
-    it('looks catalog keys up across every category and keeps the written order', () => {
-      shopService.getCatalog.and.callFake((category: string) =>
-        of(category === 'WEAPON' ? [catalogLongsword] : category === 'GEAR' ? [catalogRations] : []));
-      component.jsonDraft = JSON.stringify({ items: [
-        { key: 'rations', qty: 10 }, { name: 'Odd Coin' }, { key: 'longsword' },
-      ] });
-
-      component.confirmJson();
-
-      expect(shopService.getCatalog.calls.allArgs().map(a => a[0]))
-        .toEqual(['WEAPON', 'ARMOR', 'MATERIAL_COMPONENT', 'GEAR', 'TRANSPORT']);
-      expect(batches).toEqual([[
-        { kind: 'catalog', item: catalogRations, qty: 10 },
-        { kind: 'custom', name: 'Odd Coin', category: 'gear', qty: 1 },
-        { kind: 'catalog', item: catalogLongsword, qty: 1 },
-      ]]);
-      expect(component.jsonBusy()).toBeFalse();
-    });
-
-    it('names every unknown catalog key once and emits nothing', () => {
-      shopService.getCatalog.and.callFake((category: string) =>
-        of(category === 'WEAPON' ? [catalogLongsword] : []));
-      component.jsonDraft = JSON.stringify({ items: [
-        { key: 'longsword' }, { key: 'vorpal-blade' }, { key: 'vorpal-blade', qty: 2 }, { key: 'bag-of-holding' },
-      ] });
-
-      component.confirmJson();
-
-      expect(component.jsonError()).toBe('Unknown catalog keys: vorpal-blade, bag-of-holding');
-      expect(batches.length).toBe(0);
-      expect(component.jsonDraft).not.toBe(''); // kept so it can be fixed
-    });
-
-    it('reports a catalog lookup failure and can be retried', () => {
-      shopService.getCatalog.and.returnValue(throwError(() => new Error('network down')));
-      component.jsonDraft = '{"items": [{"key": "longsword"}]}';
-
-      component.confirmJson();
-
-      expect(component.jsonError()).toContain('Could not load the catalog');
-      expect(component.jsonBusy()).toBeFalse();
-      expect(batches.length).toBe(0);
-    });
-
-    it('a cancel while the catalog is loading emits nothing when it arrives', () => {
-      const pending = new Subject<CatalogItem[]>();
-      shopService.getCatalog.and.returnValue(pending);
-      component.jsonDraft = '{"items": [{"key": "longsword"}]}';
-      component.confirmJson();
-      expect(component.jsonBusy()).toBeTrue();
-
-      component.cancel();
-      pending.next([catalogLongsword]);
-      pending.complete();
-
-      expect(batches.length).toBe(0);
-      expect(component.jsonBusy()).toBeFalse();
-    });
-
-    it('floors a fractional quantity', () => {
-      component.jsonDraft = '{"items": [{"name": "Arrows", "qty": 2.9}]}';
-      component.confirmJson();
-      expect(batches[0][0].qty).toBe(2);
-    });
-
-    it('in demo mode accepts custom lines but refuses catalog keys', () => {
-      spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
-      const demoComponent = TestBed.runInInjectionContext(() => new ItemComposerComponent(shopService));
-      const demoBatches: AuthoredItem[][] = [];
-      demoComponent.itemsAuthored.subscribe(b => demoBatches.push(b));
-
-      demoComponent.jsonDraft = '{"items": [{"key": "longsword"}]}';
-      demoComponent.confirmJson();
-      expect(demoComponent.jsonError()).toContain('demo has no catalog');
+    it('never asks the shop service for the catalog itself, the paste box brings it', () => {
+      confirm([{ key: 'longsword' }]);
       expect(shopService.getCatalog).not.toHaveBeenCalled();
+    });
 
-      demoComponent.jsonDraft = '{"items": [{"name": "Rope"}]}';
-      demoComponent.confirmJson();
-      expect(demoBatches).toEqual([[{ kind: 'custom', name: 'Rope', category: 'gear', qty: 1 }]]);
+    it('leaves a stat off a line whose category does not carry it', () => {
+      confirm([{ name: 'Odd Rock', category: 'gear', damage: '1d4', armorClass: '12' }]);
+      expect(batches[0]).toEqual([{ kind: 'custom', name: 'Odd Rock', category: 'gear', qty: 1 }]);
+    });
+
+    it('emits nothing for a paste with no usable line', () => {
+      confirm([]);
+      component.onJsonConfirmed({ loot: null, shop: null, catalog });
+      confirm([{ key: 'not-in-the-catalog' }]);
+      expect(batches.length).toBe(0);
+      expect(component.tab).toBe('json'); // nothing granted, so the form stays put
     });
   });
 
