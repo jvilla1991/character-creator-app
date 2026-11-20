@@ -1276,12 +1276,14 @@ It cannot fail a pull request, in three layers:
 2. the install, build, scan and upload steps are each `continue-on-error`;
 3. the job is `continue-on-error`, so even a failed checkout cannot fail the workflow.
 
-**Unverified on GitHub.** The job has never run there, because that takes a pull request and
-none was opened. Everything above was measured on Windows. On the Linux runner two things run
-for the first time: Chrome starting from `/usr/bin/google-chrome` with the script's flags, and
-the detector's Linux engine binary. If either fails, the job reports "Impeccable scan did not
-run" as a warning and stays green; it does not block anything. Also untested: how GitHub draws
-the annotations and the job summary. Do not make this job a required check.
+**Verified on GitHub (2026-11-20).** The job first ran on pull request #281 (run 44817639574,
+commit `19f1971`). On the Linux runner Chrome started and the detector's Linux engine binary
+ran: 20 of 20 screens scanned, 80 found, 59 allow-listed, 21 reported, in 2 minutes 26 seconds,
+next to a 1 minute 46 second build-and-test job. The allow-listed count matches the Windows
+measurement exactly. The two missing findings are advisory `low-contrast` readings, which vary
+from run to run. GitHub recorded six annotations, one per rule (five warnings and one notice),
+and the `impeccable-scan` artifact was uploaded. The job summary page was not looked at in a
+browser. Do not make this job a required check.
 
 To run it locally:
 
@@ -1448,7 +1450,8 @@ succeeds. No file under `src/` changed on this branch.
 
 ### Not covered
 
-- **GitHub itself.** See "Unverified on GitHub" above.
+- **The failure path on GitHub.** The scan has run there once and worked (see "Verified on
+  GitHub" above). What a crashed scan looks like on GitHub was only proven locally.
 - **One theme, one width.** CI scans midnight at 375x812. The `--theme` and `--viewport`
   options work (a vellum sample and a 1280x800 sample were run on three screens each), but the
   job does not use them; all three themes at two widths would be about 20 minutes. The desktop
