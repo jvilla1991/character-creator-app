@@ -7,6 +7,7 @@ import { tintFor } from '../../../utils/character-math';
 import { SURVIVAL_KEYS, SURVIVAL_LABELS, clampStage } from '../../../utils/survival';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
+import { RewardBarComponent } from '../reward-bar/reward-bar.component';
 
 /**
  * Initiative order — one row per combatant in server-computed turn order, with
@@ -22,8 +23,9 @@ import { DecimalPipe } from '@angular/common';
  * freely in the lobby, and once the encounter is active only while theirs is
  * still unset (late joiner). The DM also gets an encounter bar: add enemy
  * (name + optional AC + optional HP), the enemy-visibility checkbox,
- * and the turn-sound picker. Everyone gets their own per-device cue controls:
- * a mute toggle, a volume slider, and an uploaded sound that stands in for the
+ * the turn-sound picker, and below the board the reward bar (XP or renown to
+ * the ticked characters, see RewardBarComponent). Everyone gets their own
+ * per-device cue controls: a mute toggle, a volume slider, and an uploaded sound that stands in for the
  * DM's preset on this device only.
  *
  * A PC's followers act on their owner's turn, so they have no place of their
@@ -35,11 +37,13 @@ import { DecimalPipe } from '@angular/common';
     selector: 'app-initiative-panel',
     templateUrl: './initiative-panel.component.html',
     styleUrls: ['./initiative-panel.component.scss'],
-    imports: [FormsModule, DecimalPipe]
+    imports: [FormsModule, DecimalPipe, RewardBarComponent]
 })
 export class InitiativePanelComponent implements OnChanges {
   @Input() participants: ParticipantView[] = [];
   @Input() sessionId!: number | string;
+  /** The session's campaign: the DM's reward bar reads its factions. */
+  @Input() campaignId!: number | string;
   @Input() dm = false;
   @Input() status: SessionStatus = 'LOBBY';
   @Input() activeParticipantId: number | null = null;
@@ -92,9 +96,6 @@ export class InitiativePanelComponent implements OnChanges {
 
   /** Per-row XP amount typed into the DM's award box, keyed by participant id. */
   xpAmounts: { [participantId: number]: number | null } = {};
-
-  /** Amount typed into the panel-level "award XP to all" box. */
-  xpAll: number | null = null;
 
   // Add-enemy form (DM encounter bar). AC is optional reference info.
   enemyName = '';
@@ -395,20 +396,6 @@ export class InitiativePanelComponent implements OnChanges {
         if (e) this.notifications.notify(`${e.name}: ${e.xp} XP (${this.signed(e.delta)})`);
       },
       error: err => this.notifications.error(`Could not award XP to ${p.name}. Try again.`, err),
-    });
-  }
-
-  /** Award the same XP amount to every seated PC, then toast the count. */
-  giveXpToAll(): void {
-    const amt = this.xpAll;
-    if (amt == null || amt === 0) return;
-    this.sessionService.awardXpToAll(this.sessionId, amt).subscribe({
-      next: result => {
-        this.xpAll = null;
-        const n = result.awarded.length;
-        this.notifications.notify(`Awarded ${this.signed(amt)} XP to ${n} character${n === 1 ? '' : 's'}`);
-      },
-      error: err => this.notifications.error('Could not award the XP. Try again.', err),
     });
   }
 

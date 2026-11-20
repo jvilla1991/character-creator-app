@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { RenownChange, RenownFaction } from '../models/renown';
+import { CampaignFaction, RenownAwardResult, RenownChange, RenownFaction } from '../models/renown';
 
 @Injectable({ providedIn: 'root' })
 export class RenownService {
@@ -39,5 +39,42 @@ export class RenownService {
       this.scores.set(key, Math.max(-100, Math.min(100, (this.scores.get(key) ?? 0) + change.delta)));
     }
     return this.list(pcId, campaignId);
+  }
+
+  private sessionUrl(sessionId: number | string): string {
+    return `${environment.characterApiUrl}/api/v1/session/${sessionId}`;
+  }
+
+  /** The campaign's factions with no scores, for the DM's session reward
+   *  picker. `campaignId` only feeds the demo store; the server reads the
+   *  campaign from the session. */
+  campaignFactions(sessionId: number | string, campaignId: string): Observable<CampaignFaction[]> {
+    if (!environment.demoMode) return this.http.get<CampaignFaction[]>(`${this.sessionUrl(sessionId)}/factions`);
+    return of((this.definitions.get(campaignId) ?? [])
+      .map(({ id, parentId, name }) => ({ id, parentId, name }))).pipe(delay(50));
+  }
+
+  /** DM moves the ticked seated characters' renown with one faction by the
+   *  same amount. The server takes the participant ids; `pcId` and `name`
+   *  only feed the demo store. */
+  awardInSession(
+    sessionId: number | string, campaignId: string, factionId: number, amount: number,
+    recipients: { participantId: number; pcId: number; name: string }[],
+  ): Observable<RenownAwardResult> {
+    if (!environment.demoMode) {
+      return this.http.post<RenownAwardResult>(`${this.sessionUrl(sessionId)}/renown`,
+        { factionId, amount, participantIds: recipients.map(r => r.participantId) });
+    }
+    if (!recipients.length || !(this.definitions.get(campaignId) ?? []).some(f => f.id === factionId)) {
+      return throwError(() => new Error('Invalid renown reward'));
+    }
+    const awarded = recipients.map(r => {
+      const key = `${r.pcId}:${factionId}`;
+      const previous = this.scores.get(key) ?? 0;
+      const score = Math.max(-100, Math.min(100, previous + amount));
+      this.scores.set(key, score);
+      return { pcId: r.pcId, name: r.name, score, delta: score - previous };
+    });
+    return of({ awarded }).pipe(delay(50));
   }
 }

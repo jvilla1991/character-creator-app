@@ -1,0 +1,56 @@
+<section class="reward-bar" aria-label="Reward characters" [attr.aria-busy]="busy()">
+  <div class="reward-sentence">
+    <span>Reward</span>
+    <select aria-label="Reward type" [ngModel]="type()" (ngModelChange)="setType($event)">
+      <option value="xp">XP</option>
+      <option value="renown">Renown</option>
+    </select>
+    @if (type() === 'renown') {
+      @if (factionRows().length) {
+        <select class="reward-faction" aria-label="Faction" [ngModel]="factionId()" (ngModelChange)="factionId.set($event)">
+          <option [ngValue]="null" disabled>Choose a faction</option>
+          @for (row of factionRows(); track row.id) {
+            <option [ngValue]="row.id">{{ row.label }}</option>
+          }
+        </select>
+      } @else if (factionsLoaded()) {
+        <span class="reward-none">No factions yet. Add one on a character's Renown tab.</span>
+      }
+    }
+    <input
+      type="number"
+      step="1"
+      class="reward-amount"
+      placeholder="0"
+      aria-label="Amount"
+      [ngModel]="amount()"
+      (ngModelChange)="amount.set($event)"
+      (keydown.enter)="give()"
+      />
+    <span>to the following characters:</span>
+  </div>
+
+  @if (characters().length) {
+    <div class="reward-list" role="group" aria-label="Characters">
+      @for (p of characters(); track p.participantId) {
+        <label class="reward-row">
+          <input type="checkbox" [checked]="!unticked().has(p.participantId)" (change)="toggle(p.participantId)" />
+          <span class="reward-name">{{ p.name }}</span>
+          @if (p.clazz) {
+            <span class="reward-detail">{{ p.clazz }} {{ p.level }}</span>
+          }
+        </label>
+      }
+    </div>
+  } @else {
+    <div class="reward-none">No characters in the session yet.</div>
+  }
+
+  <div class="reward-actions">
+    @if (characters().length > 1) {
+      <button type="button" class="reward-link" (click)="selectAll()">Select all</button>
+      <button type="button" class="reward-link" (click)="clear()">Clear</button>
+    }
+    <button type="button" class="btn primary reward-give" [disabled]="!ready()" (click)="give()">{{ buttonLabel() }}</button>
+  </div>
+</section>

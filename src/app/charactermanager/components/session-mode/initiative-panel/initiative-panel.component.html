@@ -339,16 +339,10 @@
             </div>
 
             @if (dm) {
-              <div class="xp-all-bar">
-                <span class="xp-all-label">Award XP to all</span>
-                <input
-                  type="number"
-                  class="dmg-input"
-                  placeholder="XP"
-                  [(ngModel)]="xpAll"
-                  aria-label="XP for all combatants"
-                  />
-                  <button class="btn-mini xp" (click)="giveXpToAll()" [disabled]="!participants.length">Give to all</button>
-                </div>
+              <app-reward-bar
+                [sessionId]="sessionId"
+                [campaignId]="campaignId"
+                [participants]="participants"
+              ></app-reward-bar>
               }
             </div>

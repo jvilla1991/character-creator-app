@@ -357,48 +357,6 @@
   }
 }
 
-// Panel-level "award XP to all" control, below the initiative board.
-.xp-all-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-
-  .xp-all-label {
-    font-family: 'Newsreader', serif;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-
-  .dmg-input {
-    width: 64px;
-    padding: 4px 6px;
-    text-align: center;
-    font: inherit;
-    color: var(--text);
-    background: color-mix(in oklch, var(--text) 4%, transparent);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sharp);
-  }
-
-  .btn-mini.xp {
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 12px;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: var(--radius-sharp);
-    border: 1px solid var(--border);
-    background: color-mix(in oklch, var(--text) 4%, transparent);
-    color: var(--text);
-    &:hover:not([disabled]) { border-color: var(--gold, #d9b25f); color: var(--gold, #d9b25f); }
-    &[disabled] { opacity: 0.45; cursor: not-allowed; }
-  }
-}
-
 // DM-only, PC-only cross-link into the full character sheet.
 .board-hero.linkable {
   cursor: pointer;
