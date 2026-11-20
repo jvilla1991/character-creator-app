@@ -43,6 +43,29 @@ describe('SessionService rests', () => {
   afterEach(() => httpMock.verify());
 
   describe('over HTTP', () => {
+    it('getCombatLog GETs one page of the log, the first ten rows unless told otherwise', () => {
+      let page: unknown;
+      service.getCombatLog(1).subscribe(p => (page = p));
+      const first = httpMock.expectOne(`${base}/1/combat-log?page=0&size=10`);
+      expect(first.request.method).toBe('GET');
+      const entries = [{
+        id: 9, type: 'DAMAGE', subject: 'Goblin', description: 'Took 4 damage. HP 9 → 5.',
+        round: 2, createdAt: '2026-11-20T19:42:00Z',
+      }];
+      first.flush({ entries, page: 0, size: 10, total: 23 });
+      expect(page).toEqual({ entries, page: 0, size: 10, total: 23 });
+
+      service.getCombatLog(1, 2, 5).subscribe();
+      httpMock.expectOne(`${base}/1/combat-log?page=2&size=5`).flush({ entries: [], page: 2, size: 5, total: 23 });
+    });
+
+    it('getCombatLog reads an empty answer as an empty page', () => {
+      let page: unknown;
+      service.getCombatLog(1, 1).subscribe(p => (page = p));
+      httpMock.expectOne(`${base}/1/combat-log?page=1&size=10`).flush(null);
+      expect(page).toEqual({ entries: [], page: 1, size: 10, total: 0 });
+    });
+
     it('initiateRestVote POSTs the rest type, SHORT unless told otherwise', () => {
       service.initiateRestVote(1).subscribe();
       const short = httpMock.expectOne(`${base}/1/rest-vote`);
@@ -431,6 +454,75 @@ describe('SessionService rests', () => {
     beforeEach(() => {
       spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
       campaignService.getLocalCampaign.and.returnValue(undefined);
+    });
+
+    describe('combat log', () => {
+      const log = (page = 0, size = 10) => {
+        let result!: { entries: { subject: string; description: string; type: string; round: number | null }[];
+                       page: number; size: number; total: number };
+        service.getCombatLog('demo-session', page, size).subscribe(p => (result = p));
+        return result;
+      };
+
+      it('records DM damage and healing, newest first, with the round during an encounter', () => {
+        seed([hero()], { status: 'ACTIVE', round: 3 });
+
+        service.applyDamage('demo-session', 7, 9).subscribe();  // 5 temp absorb, 4 off 18
+        service.applyDamage('demo-session', 7, -2).subscribe();
+
+        const page = log();
+        expect(page.total).toBe(2);
+        expect(page.entries.map(e => e.description)).toEqual([
+          'Healed 2. HP 14 → 16.',
+          'Took 9 damage, 5 absorbed by temporary HP. HP 18 → 14.',
+        ]);
+        expect(page.entries.map(e => e.type)).toEqual(['HEALING', 'DAMAGE']);
+        expect(page.entries[0].subject).toBe('Bex');
+        expect(page.entries[0].round).toBe(3);
+      });
+
+      it('leaves the round out outside an encounter, and skips a heal that changed nothing', () => {
+        seed([hero({ hp: { cur: 44, max: 44, temp: 0 } })]);
+
+        service.applyDamage('demo-session', 7, -5).subscribe(); // already at full
+        expect(log().total).toBe(0);
+
+        service.applyDamage('demo-session', 7, 44).subscribe();
+        expect(log().entries[0].description).toBe('Took 44 damage. HP 44 → 0. Down at 0 HP.');
+        expect(log().entries[0].round).toBeNull();
+      });
+
+      it('records a spent Hit Die', () => {
+        seed([hero({ hitDiceUsed: 0 })], { shortRestOpen: true });
+
+        service.spendHitDie('demo-session', 7).subscribe();
+
+        const [entry] = log().entries;
+        expect(entry.type).toBe('HEALING');
+        expect(entry.description).toMatch(/^Spent a Hit Die and healed \d+\. HP 18 → \d+\.$/);
+      });
+
+      it('hands the log out a page at a time', () => {
+        seed([hero({ hp: { cur: 40, max: 44, temp: 0 } })]);
+        for (let hit = 0; hit < 12; hit++) service.applyDamage('demo-session', 7, 1).subscribe();
+
+        expect(log(0).entries.length).toBe(10);
+        expect(log(0).total).toBe(12);
+        expect(log(0).entries[0].description).toBe('Took 1 damage. HP 29 → 28.');
+        expect(log(1).entries.map(e => e.description))
+          .toEqual(['Took 1 damage. HP 39 → 38.', 'Took 1 damage. HP 40 → 39.']);
+        expect(log(2).entries).toEqual([]);
+      });
+
+      it('is emptied when the session ends', () => {
+        seed([hero()]);
+        service.applyDamage('demo-session', 7, 3).subscribe();
+        expect(log().total).toBe(1);
+
+        service.end('demo-session').subscribe();
+
+        expect(log().total).toBe(0);
+      });
     });
 
     describe('casting', () => {

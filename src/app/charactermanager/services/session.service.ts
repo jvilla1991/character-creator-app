@@ -5,6 +5,8 @@ import { BehaviorSubject, Observable, Subscription, of, throwError, timer } from
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
+  CombatLogEntry,
+  CombatLogPage,
   LongRestChoices,
   LongRestResultView,
   LongRestView,
@@ -40,8 +42,12 @@ import {
   LastLongRest, longRestFinishedAt, longRestWaitFor, segmentsForward, tickLongRest,
 } from '../utils/long-rest-limit';
 import { hitDieFor, modFromScore } from '../utils/character-math';
+import { CombatLogWording, describeHitDie, describeHpDelta, followerSubject } from '../utils/combat-log';
 
 const POLL_INTERVAL_MS = 2000;
+
+/** Rows on one page of the DM's Combat Log panel. */
+export const COMBAT_LOG_PAGE_SIZE = 10;
 
 /** localStorage key for the per-device sound mute (player preference, not synced). */
 const SOUND_MUTE_KEY = 'tm-session-sound-muted';
@@ -111,6 +117,7 @@ export class SessionService {
   /** DM opens a lobby for a campaign; stores and returns the initial snapshot. */
   createSession(campaignId: string): Observable<SessionState> {
     if (environment.demoMode) {
+      this.demoCombatLog = []; // a new session starts with an empty combat log
       return this.campaignService.getMembers(campaignId).pipe(
         take(1),
         map(members => this.demoState(campaignId, members)),
@@ -423,6 +430,7 @@ export class SessionService {
   /** DM ends the session (HP/conditions are already persisted on the PCs). */
   end(sessionId: number | string): Observable<SessionState> {
     if (environment.demoMode) {
+      this.demoCombatLog = []; // the combat log never outlives its session
       const current = this.stateSubject.getValue();
       const ended: SessionState = current
         ? { ...current, status: 'ENDED' }
@@ -917,6 +925,7 @@ export class SessionService {
     });
     const participants = state.participants.map(p =>
       p.pcId === pcId ? { ...p, hpCurrent, hitDiceUsed } : p);
+    this.demoLogCombat(state, pc.name, describeHitDie(cur, hpCurrent));
     this.demoPatch({ participants });
     return of({ roll, healed, hpCurrent, hitDiceUsed });
   }
@@ -1057,6 +1066,58 @@ export class SessionService {
     };
     const rolls = [roll, ...state.rolls];
     return this.demoPatch({ rolls });
+  }
+
+  /**
+   * One page of the session's combat log: every health and condition change
+   * made this session, newest first. DM only (the server answers 403 to anyone
+   * else). `page` is zero-based. The log is not on the poll snapshot: the
+   * panel asks again whenever the snapshot's version moves, since any change
+   * worth a row bumps it. The server empties the log when the session ends.
+   *
+   * Demo mode keeps its own in-memory log, filled by the demo mirrors of DM
+   * damage and healing and of a spent Hit Die; sheet edits and long rests are
+   * recorded only by the real server.
+   */
+  getCombatLog(sessionId: number | string, page = 0, size = COMBAT_LOG_PAGE_SIZE): Observable<CombatLogPage> {
+    if (environment.demoMode) {
+      const start = page * size;
+      return of({
+        entries: this.demoCombatLog.slice(start, start + size),
+        page, size, total: this.demoCombatLog.length,
+      });
+    }
+    return this.http.get<Partial<CombatLogPage> | null>(
+      `${this.sessionBase}/${sessionId}/combat-log?page=${page}&size=${size}`,
+    ).pipe(
+      map(raw => ({
+        entries: raw?.entries ?? [],
+        page: raw?.page ?? page,
+        size: raw?.size ?? size,
+        total: raw?.total ?? 0,
+      })),
+    );
+  }
+
+  /** Demo: the session's combat log, newest first (the server keeps the real one). */
+  private demoCombatLog: CombatLogEntry[] = [];
+  private demoCombatLogSeq = 0;
+
+  /**
+   * Demo: add a row to the in-memory combat log. Call it BEFORE pushing the
+   * state that carries the change, so the panel's refetch (keyed on the
+   * version) already finds the row. A null wording — nothing moved — adds none.
+   */
+  private demoLogCombat(state: SessionState, subject: string, wording: CombatLogWording | null): void {
+    if (!wording) return;
+    this.demoCombatLog = [{
+      id: ++this.demoCombatLogSeq,
+      type: wording.type,
+      subject,
+      description: wording.description,
+      round: state.status === 'ACTIVE' ? state.round : null,
+      createdAt: new Date().toISOString(),
+    }, ...this.demoCombatLog];
   }
 
   /** Keep the campaign list's copy of the clock fresh after a session change. */
@@ -1230,6 +1291,8 @@ export class SessionService {
         cur += -amount;
         if (p.hpMax != null) cur = Math.min(cur, p.hpMax);
       }
+      this.demoLogCombat(state, p.name, describeHpDelta(amount,
+        { current: p.hpCurrent ?? 0, temp: p.hpTemp ?? 0 }, { current: cur, temp }));
       return { ...p, hpCurrent: cur, hpTemp: temp };
     });
     const next = { ...state, participants, version: state.version + 1 };
@@ -1255,6 +1318,8 @@ export class SessionService {
           cur += -amount;
           if (f.hpMax != null) cur = Math.min(cur, f.hpMax);
         }
+        this.demoLogCombat(state, followerSubject(f.name, p.name), describeHpDelta(amount,
+          { current: f.hpCurrent ?? 0, temp: f.hpTemp ?? 0 }, { current: cur, temp }));
         return { ...f, hpCurrent: cur, hpTemp: temp };
       });
       return { ...p, followers };
