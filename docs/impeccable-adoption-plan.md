@@ -185,6 +185,11 @@ commit → owner reviews and pushes.
 
 ### Phase 4 — Keep it (`chore/impeccable-ci-gate`)
 
+> Done on 2026-11-20, with three changes to the plan below: the scan drives the signed-in screens
+> through demo mode instead of pointing at one URL, the annotations are written by our script
+> because the detector's `--github` output cannot name a screen or an element, and the design
+> hook stays off. See §11, "Phase 4 results".
+
 - Add `npx impeccable detect --github` as a **non-blocking** annotation job at
   **pull-request** time (not deploy time), against a built-and-served app. This pairs with the
   existing need for a PR-time `npm ci` on `ubuntu-latest` — see the lockfile section of
@@ -1131,3 +1136,339 @@ banner's picker was forced open through its component. Only midnight was looked 
 page; the three themes were checked by computed contrast for the new text with transitions off
 (spell-slot count 8.5:1 or better, field hints 6.1:1 or better, empty-state sentences 5.8:1 or
 better), since every new style uses existing tokens.
+
+---
+
+## 11. Phase 4 results — the design scan in CI (2026-11-20)
+
+Branch `chore/impeccable-ci-gate`, cut from `develop` (`9af2ce7`). Phase 4 is the "keep it" phase:
+nothing in the app changes. It adds a report that runs on every pull request, so the problems
+Phases 1 to 3 removed are noticed if they come back.
+
+### What was built
+
+| Piece | File | What it does |
+|---|---|---|
+| The scan | `scripts/impeccable-scan.js` (`npm run scan:design`) | Serves the production build, opens a headless Chrome, clicks the real "Enter in Demo Mode" button, walks 20 screens and runs the impeccable detector on each one. |
+| The element allow-list | `scripts/impeccable-allowlist.json` | House patterns the detector reports and that are deliberate, each tied to one element and one reason. |
+| The font allow-list | `.impeccable/config.json` | Cinzel, Newsreader and JetBrains Mono added to the detector's own ignore list. |
+| The CI job | `.github/workflows/ci.yml`, job `design-scan` | Runs the scan on pull requests only. Advisory: it cannot fail a pull request. |
+
+The scan needs nothing installed beyond Node and Chrome. It talks to Chrome over the DevTools
+protocol with Node's built-in WebSocket, so there is no new dependency and `package-lock.json`
+is untouched. The only thing it downloads is the detector, pinned to an exact version:
+`npx impeccable@4.8.0` (the version the skill on the owner's machine was installed from), which
+in turn pins its engine binary to `0.1.18`. `4.10.0` was published on 2026-11-18 and was not
+adopted; to upgrade, change `IMPECCABLE_VERSION` in the script, run the scan and compare counts.
+
+**The 20 screens.** Signed out: login, register, reset-password. Player: the empty roster, all
+eight sheet tabs (Sheet, Spells, Inventory, Renown, Followers, Professions, Notes, Log), the
+settings panel, the dice roller, the wizard's first two steps. DM: the campaign list, the
+campaign dashboard, a session before combat, and a session with an encounter running (the
+screen with the whose-turn row). Each screen starts from a fresh page load, so one screen
+failing to open cannot break the next.
+
+### Three things that differ from the plan in §4
+
+1. **`detect <url>` cannot do this job; `detect --cdp` can.** Flags were read from
+   `npx impeccable@4.8.0 detect --help`, not from the plan. `detect <url>` opens its own clean
+   browser, so it only ever sees the login page. `--cdp <port>` attaches to a browser that is
+   already open and scans the page exactly as shown, which is what lets the script sign in
+   through demo mode first. Exit codes: 0 clean, 2 findings, 1 could not scan.
+2. **`--github` exists but its output is not usable here.** For a page scanned this way every
+   annotation reads `file=http://127.0.0.1:<port>/charactermanager`: the same address for every
+   signed-in screen, with no screen name and no element. GitHub also shows at most 10 warnings
+   per step. So the script reads the findings as `--json` and writes the annotations itself:
+   one per rule, naming the element and the screens, with the full table in the job summary and
+   the raw findings uploaded as the `impeccable-scan` artifact.
+3. **The detector's ignore list cannot allow-list an element.** `npx impeccable ignores
+   add-value dark-glow "#d4b06a"` answers "dark-glow has no extractable ignore value". The only
+   thing it offers for such a rule is a per-file ignore, and every signed-in screen is one URL,
+   so that would switch the rule off everywhere, including for the glows worth catching. That
+   is why the element allow-list lives in our script: after each scan it looks up the element a
+   finding points at, in the live page, and drops the finding only if that element is (or sits
+   inside) an allow-listed one.
+
+### Finding counts, before and after
+
+One build of `develop` (`9af2ce7`), 375x812, midnight theme, 20 of 20 screens scanned. "Raw" is
+the detector with `.impeccable/config.json` and the element allow-list both off. "With config"
+is what the detector reported before this branch (the config only ignored
+`radial-spotlight-glow`, since Phase 1). A count is one finding on one screen, so an element
+that is on eight sheet tabs counts eight times.
+
+| Rule | Raw | With config (before) | Allow-listed | Reported (after) |
+|---|---|---|---|---|
+| `nested-cards` | 32 | 32 | 29 | 3 |
+| `radial-spotlight-glow` | 21 | 0 | n/a | 0 |
+| `dark-glow` | 21 | 21 | 21 | 0 |
+| `kicker-above-heading` | 9 | 9 | 9 | 0 |
+| `low-contrast` | 9 | 5 | 0 | 5 |
+| `undersized-ui-text` | 6 | 6 | 0 | 6 |
+| `tiny-text` | 3 | 3 | 0 | 3 |
+| `straggler` (advisory) | 2 | 2 | 0 | 2 |
+| `wide-tracking` | 1 | 1 | 0 | 1 |
+| `low-contrast` (advisory) | 1 | 3 | 0 | 3 |
+| `overused-font` | 0 | 0 | 0 | 0 |
+| **Total** | **105** | **82** | **59** | **23** |
+
+**82 before, 23 after.** The 23 are 13 distinct elements, all on rules that were meant to stay
+on. The raw and with-config columns are two separate scans run side by side; `low-contrast`
+differs between them (10 against 8 in total) because the detector measures button text by
+pixel on a gradient and the reading moves from run to run (see "Not covered").
+
+`overused-font` is zero in every column. Version 4.8.0 does not flag Cinzel, Newsreader or
+JetBrains Mono on a rendered page even with all config off, so the three font entries change no
+number today. They are there because the plan asked for them and because they cost nothing if a
+later detector version starts flagging them.
+
+### What is allow-listed, and why
+
+In `scripts/impeccable-allowlist.json`, by element:
+
+| Rule | Element | Why it is deliberate |
+|---|---|---|
+| `dark-glow` | `.btn.primary` | The One Standing Glow: the primary button keeps its gold glow at rest (DESIGN.md, Elevation). |
+| `dark-glow` | `.board-row.current-turn`, `.board-row.on-deck` and what is inside them | Whose turn it is and who is next on the initiative board. A glow that shows state is what DESIGN.md allows. |
+| `dark-glow` | `.turn-vignette` | The edge-of-screen cue shown only while it is this viewer's turn. Not named in §10; added because it is the same turn signal. |
+| `kicker-above-heading`, `hero-eyebrow-chip` | `.eyebrow` | The house eyebrow label above a page title. The second rule is the same element as the detector names it at desktop width. |
+| `nested-cards` | `.ability`, `.coin`, `.note`, `.board-row`, `.board-num` inside a `.panel` | Stat tiles, coins, notes and board rows are bordered cells inside a panel: the house panel-in-panel layout. |
+
+In `.impeccable/config.json`, by rule or value: `radial-spotlight-glow` (the page background
+washes, since Phase 1) and `overused-font` for the three brand faces.
+
+No rule was switched off to do this. A glow on anything other than those elements, an eyebrow
+that is not `.eyebrow`, or a new card nested in a panel is still reported. That was checked by
+the scan itself: two cards added to `develop` since 2026-11-18 (`div.rc`, the class resource
+counters, and `section.sst`, the spell-slot strip) are nested cards that are not on the list,
+and both are in the report below. Whether they join the list or change is the owner's call.
+
+### What the scan reports today (not fixed here)
+
+| Rule | Element | Screens | Note |
+|---|---|---|---|
+| `undersized-ui-text` | `.spell-tag` "prepared", 10px (3 elements) | sheet | Below the 11px floor that `chore/type-floor` set. `_prepared-spell-list.scss:103`. |
+| `nested-cards` | `div.rc` | sheet | New since 2026-11-18. |
+| `nested-cards` | `section.sst` | sheet, Spells tab | New since 2026-11-18. |
+| `low-contrast` | `.btn.play` "Connect" | five sheet tabs | Read as 3.0 to 4.4:1 across runs; needs 4.5:1. Not checked by hand. |
+| `low-contrast` | `.btn.danger` "End Session" | session | Read as 3.1 to 3.9:1. Not checked by hand. |
+| `low-contrast` (advisory) | `.btn` "Manage Party" | campaign dashboard | 4.2:1. |
+| `tiny-text`, `wide-tracking` | `span.spell-dc`, 11px at 0.06em | sheet, Spells tab | |
+| `tiny-text` | `.note-time`, 11px (2 elements) | campaign dashboard | |
+| `straggler` (advisory) | `p.combat-log-note` | session | One word alone on the last line. |
+
+The same scan on `develop` two days earlier (`7310342`, 2026-11-18) found 73. The 82 commits
+since then added nine: the 10px tags, the two new nested cards and the straggler. That is the
+case for keeping the scan: none of those would have failed `check:tokens`, `check:contrast` or
+a unit test.
+
+### The CI job
+
+`design-scan` in `ci.yml` runs on `pull_request` only (not on pushes to `develop` or `main`,
+and not at deploy time). It installs with `npm ci`, builds the production bundle, and runs
+`node scripts/impeccable-scan.js --github --json impeccable-scan.json`. It runs beside the
+existing jobs, so it adds no time to them; the scan itself took about 3.5 minutes locally.
+
+It cannot fail a pull request, in three layers:
+
+1. the script always exits 0 (checked: findings, a screen that cannot be reached, and a
+   missing build all end in exit 0 with a warning);
+2. the install, build, scan and upload steps are each `continue-on-error`;
+3. the job is `continue-on-error`, so even a failed checkout cannot fail the workflow.
+
+**Verified on GitHub (2026-11-20).** The job first ran on pull request #281 (run 44817639574,
+commit `19f1971`). On the Linux runner Chrome started and the detector's Linux engine binary
+ran: 20 of 20 screens scanned, 80 found, 59 allow-listed, 21 reported, in 2 minutes 26 seconds,
+next to a 1 minute 46 second build-and-test job. The allow-listed count matches the Windows
+measurement exactly. The two missing findings are advisory `low-contrast` readings, which vary
+from run to run. GitHub recorded six annotations, one per rule (five warnings and one notice),
+and the `impeccable-scan` artifact was uploaded. The job summary page was not looked at in a
+browser. Do not make this job a required check.
+
+To run it locally:
+
+```powershell
+npm run build -- --configuration production
+```
+
+```powershell
+npm run scan:design
+```
+
+`npm run scan:design -- --no-allowlist` shows the house patterns too, `--theme vellum` and
+`--viewport 1280x800` change the pass, `--only sheet,session` limits it to named screens.
+
+### Recommendation 1: leave the design hook off
+
+The hook (`/impeccable hooks on`) runs the detector on each source file an agent edits and
+pushes the findings back into the session as a correction. The recommendation is to keep it
+off, for these measured reasons:
+
+- **It reads source files, and source files are where the detector is weakest in this app.**
+  `npx impeccable@4.8.0 detect src/` today returns 359 findings in 130 files: 183
+  `design-system-color`, 164 `design-system-font-size`, 8 `design-system-radius`, 3
+  `design-system-font`, 1 `side-tab`. 79 of the colour findings are "text color rgb(0, 0, 0)"
+  on an Angular template, which is the detector reading a template without its component
+  stylesheet: false positives. 67 of the size findings are `font-size: 12px`, a size DESIGN.md
+  now names for field labels. With the hook on, almost every UI edit would come back with a
+  correction prompt about something that was already there and is mostly not wrong.
+- **None of what the rendered scan finds shows up in a source scan.** The rules behind all 82
+  rendered findings (`nested-cards`, `dark-glow`, `kicker-above-heading`,
+  `undersized-ui-text`, `low-contrast`, `tiny-text`, `wide-tracking`, `straggler`) appear zero
+  times in the 359. The hook would not have caught the 10px tags or the new nested cards.
+- **It cannot use the element allow-list**, for the reason in "Three things that differ" above.
+- **It is on for everyone at once.** `hook.enabled` lives in the shared
+  `.impeccable/config.json`, and this repo routinely has several sessions working in parallel
+  worktrees. §4 also notes that a command hook runs even when the session denies the model's
+  own commands.
+
+Refreshing the design sidecar (below) did not change this: the source scan gave 359 before
+and 359 after.
+
+If the owner wants it anyway, the order is: first get the source scan quiet (a file-scoped
+ignore for templates, `npx impeccable ignores add-value design-system-color "*" --file
+"src/**/*.html"`, and a decision on the 164 size findings), then `/impeccable hooks on`. That
+clean-up is its own chore, not part of this branch.
+
+### Recommendation 2: make Build & Deploy wait for CI
+
+Today `deploy.yml` starts on every push to `main`, at the same moment as `ci.yml`, and does not
+look at its result. The recommendation is to make the deploy start only after CI has passed on
+that commit.
+
+The evidence, from `gh run list --branch main` (60 CI runs on `main` since 2026-11-17):
+
+| When (UTC) | Commit | CI | Build & Deploy |
+|---|---|---|---|
+| 2026-11-18 04:44 | `ecb8032` | cancelled | success |
+| 2026-11-18 16:09 | `1a120f8` | cancelled | success |
+| 2026-11-18 16:45 | `dc63f65` | **failure** | success |
+| 2026-11-18 21:32 | `1da6b26` | **failure** | success |
+| 2026-11-19 02:54 | `9625b98` | **failure** | success |
+| 2026-11-19 13:17 | `b23013e` | cancelled | success |
+
+Six commits in four days reached production without a green CI run: three with CI red, three
+whose CI run was cancelled by the next push before it finished. `1da6b26` is the release named
+in the hand-over notes (two unit specs broken by crossed feature branches). Merges into
+`develop` and `main` are made directly, without pull requests, so nothing else stands between
+a red commit and the live site.
+
+The cost is small: over the last 20 runs on `main`, CI took 1.5 to 3.0 minutes and the deploy
+about 1 minute, so a release would land roughly 2 to 3 minutes later than it does now.
+
+The shape of the change, for `deploy.yml` (not applied; this is the owner's decision):
+
+```yaml
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+```
+
+What to know before choosing it:
+
+- `workflow_dispatch` stays as the manual override, for the day a flaky test blocks an urgent
+  release. The Cypress job has been broken before (it was repaired on 2026-11-14), so the override matters.
+- When two pushes land close together, CI cancels the older run (`cancel-in-progress`). The
+  older commit is then not deployed by itself; the newer one, which contains it, is. That is
+  the right outcome, and it also ends the "cancelled but deployed" rows above.
+- The `design-scan` job cannot hold a deploy back: it runs on pull requests only and never
+  fails.
+- The deploy role trusts the `production` environment, not the trigger, so the AWS side does
+  not change.
+- It cannot be tried without merging to `main`. The first release after the change is the test;
+  watch that one.
+
+### The stale design sidecar
+
+`/impeccable doctor` was run first, on 2026-11-18, and reported three findings, none of them
+ones it repairs by itself:
+
+| Finding | Kind | What it said |
+|---|---|---|
+| `design-sidecar-stale` | mention | `DESIGN.md` was edited after `.impeccable/design.json` was generated (2026-11-10). Fix: `/impeccable document`. |
+| `design-md-drift` | route | 35 commits had touched `src` since `DESIGN.md` was last edited. A count of commits, not a list of contradictions. |
+| `config-build-path-unset` | mention | No `buildPath` recorded. It only matters for landing pages built from a generated image, which this app does not have. Nothing to do. |
+
+The sidecar is the machine-readable companion to `DESIGN.md`: colour ramps, shadows, motion and
+breakpoints, and small HTML/CSS samples of the components. The `document` playbook has a
+sidecar-only path ("preserve `DESIGN.md` and write only `.impeccable/design.json`"), so it was
+refreshed here, on its own commit. `DESIGN.md` is byte-identical. What changed in the sidecar:
+all 20 colour tokens described, per-theme shadow and glow values, body text recorded as always
+upright, the field-label exception, the one standing glow, motion entries from 3 to 7,
+component samples from 7 to 11 (danger button, dialog, sheet tabs and the context-help button
+added; none uses italic). It grew from 15 kB to 28 kB.
+
+`doctor` after the refresh: `design-sidecar-stale` is gone. `design-md-drift` is gone too, but
+only because `DESIGN.md` was edited on 2026-11-20 by another change, which reset the commit
+count. `config-build-path-unset` remains and needs nothing.
+
+Rebuilding the sidecar meant reading `DESIGN.md` against `src/styles.css`, and that turned up
+places where the two disagree. These are listed, not fixed; the first one was re-checked by
+grep and matches what the scan reported:
+
+- **The type floor has slipped.** `DESIGN.md` says no font size below 11px remains in `src/`.
+  Seven declarations are below it: `features-list.component.scss:141`,
+  `hero-class-panel.component.scss:100` (9.5px) and `:171`, `_prepared-spell-list.scss:75` and
+  `:108`, `class-step.component.scss:132`, `level-up-modal.component.scss:417` (0.68rem).
+  `check:tokens` has no rule for this, which is how it came back.
+- `.modal` and `.login-card` use a literal `0 30px 80px` shadow, not the `--shadow` token
+  `DESIGN.md` documents (`src/styles.css:1338`, `:1665`).
+- `--glow` (the celestial "live" glow) is defined but nothing in `src/` uses it, although
+  `DESIGN.md` describes it as in use.
+- `DESIGN.md` says radii are still raw px; component styles now use `var(--radius-*)`, while
+  `.btn`, `.panel` and `.field input` in `styles.css` do not.
+- Reported by the refresh and not re-checked here: drop shadows on `.vitals`, the dice button,
+  the spell carousel and toasts; a crimson glow on an active condition chip and on a ready XP
+  bar; `.btn` rendering at weight 400, `.panel-title` at 600 / 12px / 0.22em and `.modal-title`
+  at 600 / 0.12em against the Label and Title roles; HP in Cinzel, not JetBrains Mono; extra
+  breakpoints (1100, 720, 600, 520, 360) beyond the four documented; the 260px rail that the
+  820px drawer breakpoint never lets appear.
+
+None of these is a detector finding, so the CI scan will not track them. They are the input
+for the next `/impeccable document` conversation, where the owner decides, line by line,
+whether the document or the code is right.
+
+### Gates
+
+`npm run check:tokens` OK (1897 `var()` uses, no white-alpha literals, no italics),
+`npm run check:contrast` all combinations pass, `ng test` 2879 of 2879, production build
+succeeds. No file under `src/` changed on this branch.
+
+### Not covered
+
+- **The failure path on GitHub.** The scan has run there once and worked (see "Verified on
+  GitHub" above). What a crashed scan looks like on GitHub was only proven locally.
+- **One theme, one width.** CI scans midnight at 375x812. The `--theme` and `--viewport`
+  options work (a vellum sample and a 1280x800 sample were run on three screens each), but the
+  job does not use them; all three themes at two widths would be about 20 minutes. The desktop
+  sample found rules the phone pass does not: `gray-on-color` on the active roster and
+  campaign rows, `line-length` on sheet prose. Token contrast across themes is still
+  `check:contrast`'s job.
+- **Screens the walk does not open:** the level-up dialog, item composer, spell picker and DM
+  edit dialogs, wizard steps 3 to 9, the player's view of a session, the rest vote, the loot
+  split, the survival and supplies panels, the session-live banner and toasts. Demo mode
+  cannot reach some of these at all (§10, Slice 4, "Not covered"); the rest need more click
+  paths in `SURFACES`.
+- **Pixel contrast readings move.** The same button read 3.0:1 on one tab and 4.4:1 on another
+  in one run, which is the difference between a finding and an advisory. Treat a
+  `low-contrast` finding on a gradient button as a prompt to measure, not as a measurement.
+- **The scan's click paths are selectors into the app** (`.roster-item`, `.sheet-tab`,
+  `.role-seg.dm` and so on). A rename makes that screen show as "not scanned" in the report;
+  it does not fail anything, but someone has to notice and update `SURFACES`.
+- **The findings in "What the scan reports today"** and the `DESIGN.md` disagreements under
+  "The stale design sidecar" are listed, not fixed. The seven sub-11px declarations are the one
+  worth a small branch soon, with a `check:tokens` rule so the floor cannot slip a third time.
