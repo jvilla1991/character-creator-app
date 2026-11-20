@@ -1,0 +1,40 @@
+{
+  "about": [
+    "House patterns the impeccable detector reports and that are deliberate. Read by scripts/impeccable-scan.js.",
+    "A finding is dropped only when every element it points at matches `selector` or sits inside an element that does.",
+    "Keep entries narrow: name the element, never switch a whole rule off here. Each one needs a reason that points at DESIGN.md or an owner decision.",
+    "Rules the detector can ignore by itself (a whole rule, a font name) go in .impeccable/config.json instead."
+  ],
+  "allow": [
+    {
+      "rule": "dark-glow",
+      "selector": ".btn.primary",
+      "reason": "The One Standing Glow: the primary button keeps its gold glow at rest (DESIGN.md, Elevation)."
+    },
+    {
+      "rule": "dark-glow",
+      "selector": ".board-row.current-turn, .board-row.on-deck",
+      "reason": "Whose-turn and on-deck rows on the initiative board: a state glow, which DESIGN.md allows (The Glow Is State Rule)."
+    },
+    {
+      "rule": "dark-glow",
+      "selector": ".turn-vignette",
+      "reason": "The screen-edge cue shown only while it is this viewer's turn: state, not decoration."
+    },
+    {
+      "rule": "kicker-above-heading",
+      "selector": ".eyebrow",
+      "reason": "The house eyebrow label above a page title (DESIGN.md, Typography)."
+    },
+    {
+      "rule": "hero-eyebrow-chip",
+      "selector": ".eyebrow",
+      "reason": "The same house eyebrow, as the detector names it at desktop width."
+    },
+    {
+      "rule": "nested-cards",
+      "selector": ".panel .ability, .panel .coin, .panel .note, .panel .board-row, .panel .board-num",
+      "reason": "Stat tiles, coins, notes and board rows are bordered cells inside a panel: the house panel-in-panel layout."
+    }
+  ]
+}

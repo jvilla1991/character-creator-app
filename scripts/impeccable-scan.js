@@ -13,8 +13,14 @@
  *   4. at each screen runs `impeccable detect --cdp <port>`, which scans the
  *      page exactly as it is shown.
  *
- * The CLI, unlike an in-page detector run, applies .impeccable/config.json,
- * so the allow-list there is honoured.
+ * The CLI, unlike an in-page detector run, applies .impeccable/config.json.
+ * House patterns that file cannot express (it has no per-element ignore) are
+ * dropped afterwards using scripts/impeccable-allowlist.json.
+ *
+ * Why not `detect --github`: for a page scanned this way its annotations name
+ * only the localhost URL, the same for every signed-in screen, with no element
+ * and no screen. So the findings are read as --json and the annotations are
+ * written here, with both.
  *
  * It needs nothing installed beyond Node 22+ and Chrome: the DevTools
  * protocol is spoken over Node's built-in WebSocket, and the detector comes
@@ -29,11 +35,11 @@
  *   npm run build -- --configuration production
  *   node scripts/impeccable-scan.js [options]
  *
- *   --github          print GitHub Actions annotations (the detector's own
- *                     --github output) and write a job summary
+ *   --github          also print GitHub Actions annotations (one per rule)
+ *                     and append a table to the job summary
  *   --json <file>     write every finding, per screen, to <file>
- *   --no-config       ignore .impeccable/config.json (shows what the
- *                     allow-list is hiding)
+ *   --no-allowlist    report house patterns too (scripts/impeccable-allowlist.json)
+ *   --no-config       ignore .impeccable/config.json as well
  *   --only <a,b>      scan only the named screens
  *   --viewport <WxH>  viewport, default 375x812 (players hold phones)
  *   --theme <name>    midnight (default), candlelit or vellum
@@ -149,6 +155,7 @@ function parseArgs(argv) {
     github: false,
     json: null,
     config: true,
+    allowlist: true,
     only: null,
     viewport: { width: 375, height: 812 },
     theme: 'midnight',
@@ -158,6 +165,7 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === '--github') opts.github = true;
     else if (a === '--no-config') opts.config = false;
+    else if (a === '--no-allowlist') opts.allowlist = false;
     else if (a === '--json') opts.json = path.resolve(argv[++i]);
     else if (a === '--only') opts.only = argv[++i].split(',').map(s => s.trim());
     else if (a === '--theme') opts.theme = argv[++i];
@@ -415,10 +423,122 @@ function detect(port, opts, extra) {
   return spawnSync(`npx ${args.join(' ')}`, { cwd: ROOT, encoding: 'utf8', shell: true, maxBuffer: 64 * 1024 * 1024 });
 }
 
+// ── The element allow-list ───────────────────────────────────────────────────
+// The detector's own ignore list (.impeccable/config.json) works per rule, per
+// file or per value. Rules like dark-glow have no value to key on, and every
+// signed-in screen is one URL, so the only thing it could do is switch such a
+// rule off everywhere. That would also hide the cases worth catching (a glow
+// on something that is not the primary button). So house patterns are
+// allow-listed here instead, by element: a finding is dropped only when every
+// element its selector points at is, or sits inside, an allow-listed element.
+const ALLOWLIST = path.join(__dirname, 'impeccable-allowlist.json');
+
+async function markAllowed(page, findings, allow) {
+  if (!findings.length || !allow.length) return;
+  const asked = findings.map(f => ({ rule: f.rule, selector: f.selector }));
+  const verdicts = await page.eval(`(${COVERED})(${JSON.stringify(asked)}, ${JSON.stringify(allow)})`);
+  findings.forEach((f, i) => { f.allowed = verdicts[i]; });
+}
+
+// Runs inside the page. For each finding: the reason of the first allow-list
+// entry that covers every element the finding's selector matches, else null.
+const COVERED = `function (findings, allow) {
+  return findings.map(f => {
+    let els;
+    try { els = [...document.querySelectorAll(f.selector)]; } catch { return null; }
+    if (!els.length) return null;
+    const entry = allow.find(a => a.rule === f.rule && els.every(el => el.closest(a.selector)));
+    return entry ? entry.reason : null;
+  });
+}`;
+
+// ── Reporting ────────────────────────────────────────────────────────────────
+function summarise(report, opts) {
+  const all = report.flatMap(s => s.findings.map(f => ({ ...f, surface: s.surface })));
+  const failed = report.filter(s => s.error);
+
+  // Per rule: what the detector found, what the allow-list dropped, what is left.
+  const rules = new Map();
+  for (const f of all) {
+    const key = f.rule + (f.advisory ? ' (advisory)' : '');
+    const row = rules.get(key) || { found: 0, allowed: 0 };
+    row.found++;
+    if (f.allowed) row.allowed++;
+    rules.set(key, row);
+  }
+  const ruleRows = [...rules.entries()].sort((a, b) => b[1].found - a[1].found);
+
+  // The same element shows up on every screen it appears on (the sheet header
+  // is on all eight tabs), so reported findings are grouped by rule + element.
+  const groups = new Map();
+  for (const f of all.filter(x => !x.allowed)) {
+    const key = `${f.rule}\n${f.selector}`;
+    const g = groups.get(key) || { ...f, surfaces: [] };
+    if (!g.surfaces.includes(f.surface)) g.surfaces.push(f.surface);
+    groups.set(key, g);
+  }
+  const reported = [...groups.values()];
+
+  const totals = ruleRows.reduce((t, [, r]) => ({ found: t.found + r.found, allowed: t.allowed + r.allowed }), { found: 0, allowed: 0 });
+  const header = `Impeccable ${IMPECCABLE_VERSION}, ${opts.viewport.width}x${opts.viewport.height}, ${opts.theme} theme, ` +
+    `${report.length - failed.length} of ${report.length} screens scanned` +
+    (opts.config ? '' : ', .impeccable/config.json ignored') + (opts.allowlist ? '' : ', element allow-list off');
+
+  const pad = (v, n) => String(v).padEnd(n);
+  const text = [
+    '', header, '',
+    `${pad('Rule', 34)}${pad('Found', 8)}${pad('Allow-listed', 14)}Reported`,
+    ...ruleRows.map(([k, r]) => `${pad(k, 34)}${pad(r.found, 8)}${pad(r.allowed, 14)}${r.found - r.allowed}`),
+    `${pad('Total', 34)}${pad(totals.found, 8)}${pad(totals.allowed, 14)}${totals.found - totals.allowed}`,
+    '',
+    ...(reported.length ? ['Reported (grouped by element):'] : ['Nothing to report.']),
+    ...reported.map(g => `  [${g.rule}${g.advisory ? ', advisory' : ''}] ${g.selector}: ${g.detail}  (${g.surfaces.join(', ')})`),
+    ...failed.map(s => `  ! ${s.surface} was not scanned: ${s.error}`),
+    '',
+  ].join('\n');
+
+  const cell = v => String(v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  const markdown = [
+    '## Impeccable design scan', '',
+    'Advisory only: this job never fails a pull request. What each rule means, and what is',
+    'allow-listed and why: `docs/impeccable-adoption-plan.md`, "Phase 4 results".', '',
+    header, '',
+    '| Rule | Found | Allow-listed | Reported |', '|---|---|---|---|',
+    ...ruleRows.map(([k, r]) => `| \`${k}\` | ${r.found} | ${r.allowed} | ${r.found - r.allowed} |`),
+    `| **Total** | ${totals.found} | ${totals.allowed} | ${totals.found - totals.allowed} |`, '',
+    ...(reported.length
+      ? ['### Reported', '', '| Rule | Element | Detail | Screens |', '|---|---|---|---|',
+        ...reported.map(g => `| \`${g.rule}\`${g.advisory ? ' (advisory)' : ''} | \`${cell(g.selector)}\` | ${cell(g.detail)} | ${g.surfaces.join(', ')} |`), '']
+      : ['Nothing to report.', '']),
+    ...(failed.length
+      ? ['### Screens not scanned', '', ...failed.map(s => `- \`${s.surface}\`: ${cell(s.error)}`), '']
+      : []),
+  ].join('\n');
+
+  // GitHub shows at most 10 warnings per step, so: one per rule, not one per
+  // finding. The job summary carries the full list.
+  const esc = v => String(v).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  const escProp = v => esc(v).replace(/:/g, '%3A').replace(/,/g, '%2C');
+  const byRule = new Map();
+  for (const g of reported) byRule.set(g.rule, [...(byRule.get(g.rule) || []), g]);
+  const annotations = [...byRule.entries()].map(([rule, gs]) => {
+    const level = gs.every(g => g.advisory) ? 'notice' : 'warning';
+    const lines = gs.map(g => `${g.selector}: ${g.detail} (${g.surfaces.join(', ')})`);
+    const title = `Impeccable: ${rule}, ${gs.length} element${gs.length === 1 ? '' : 's'}`;
+    return `::${level} title=${escProp(title)}::${esc(`${gs[0].title}\n${lines.join('\n')}`)}`;
+  });
+  for (const s of failed) {
+    annotations.push(`::warning title=${escProp(`Impeccable: ${s.surface} not scanned`)}::${esc(s.error)}`);
+  }
+
+  return { text, markdown, annotations };
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const surfaces = SURFACES.filter(s => !opts.only || opts.only.includes(s.name));
+  const allow = opts.allowlist ? JSON.parse(fs.readFileSync(ALLOWLIST, 'utf8')).allow : [];
   const report = [];
   let server, chrome, page;
 
@@ -451,12 +571,20 @@ async function main() {
         if (result.status !== 0 && result.status !== 2) {
           throw new Error(`detector exited ${result.status}: ${(result.stderr || '').trim().slice(0, 300)}`);
         }
-        entry.findings = JSON.parse(result.stdout || '[]');
+        entry.findings = JSON.parse(result.stdout || '[]').map(f => ({
+          rule: f.antipattern, title: f.name, advisory: f.severity === 'advisory',
+          selector: f.selector, detail: f.snippet, allowed: null,
+        }));
+        // Decided now, while the screen is still exactly what the detector saw.
+        if (opts.allowlist) await markAllowed(page, entry.findings, allow);
       } catch (err) {
         entry.error = err.message;
       }
       const n = entry.findings.length;
-      console.error(entry.error ? `  ! ${surface.name}: not scanned (${entry.error})` : `  ${surface.name}: ${n} finding${n === 1 ? '' : 's'}`);
+      const kept = entry.findings.filter(f => !f.allowed).length;
+      console.error(entry.error
+        ? `  ! ${surface.name}: not scanned (${entry.error})`
+        : `  ${surface.name}: ${n} found, ${n - kept} allow-listed, ${kept} reported`);
     }
   } finally {
     if (page) page.close();
@@ -469,6 +597,12 @@ async function main() {
   }
 
   if (opts.json) fs.writeFileSync(opts.json, JSON.stringify(report, null, 2));
+  const summary = summarise(report, opts);
+  console.log(summary.text);
+  if (opts.github) {
+    for (const line of summary.annotations) console.log(line);
+    if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.markdown);
+  }
   return report;
 }
 
@@ -480,4 +614,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { SURFACES, parseArgs, serve, launchChrome, Page, detect, sleep, IMPECCABLE_VERSION, ROOT };
+module.exports = { main, SURFACES, parseArgs, serve, launchChrome, Page, detect, sleep, IMPECCABLE_VERSION, ROOT };
