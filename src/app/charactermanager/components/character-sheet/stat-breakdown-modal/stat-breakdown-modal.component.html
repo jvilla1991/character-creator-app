@@ -1,6 +1,7 @@
 <app-modal [title]="definition.title" [tone]="editable ? 'celestial' : 'gold'" (dismiss)="cancel()">
 
   <!-- The lines the app works out. The first is the starting value; the rest add to it.
+  A modifier (a skill) shows every line and the total with a sign.
   A line the DM took out stays listed, struck through and marked in words, and
   is left out of the total. -->
   <h3 class="breakdown-heading">Calculated</h3>
@@ -14,7 +15,7 @@
             <span class="line-note">{{ line.note }}</span>
           }
         </span>
-        <span class="line-value numeric">{{ $first ? line.value : signed(line.value) }}</span>
+        <span class="line-value numeric">{{ $first && !definition.modifier ? line.value : signed(line.value) }}</span>
         @if (canRemoveLines) {
           @if (line.removed) {
             <button type="button" class="btn sm line-action" (click)="restoreAutoLine($index)"
@@ -105,7 +106,7 @@
 
   <div class="breakdown-line breakdown-total" data-testid="total">
     <span class="line-label">Total</span>
-    <span class="line-value numeric">{{ total }}</span>
+    <span class="line-value numeric">{{ definition.modifier ? signed(total) : total }}</span>
   </div>
 
   <div class="modal-actions">

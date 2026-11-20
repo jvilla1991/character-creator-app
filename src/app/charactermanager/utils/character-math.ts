@@ -1,4 +1,5 @@
 import { PC } from '../models/pc';
+import { BreakdownLine, adjustmentSum, adjustmentsFor, countedSum, skillStat } from '../models/stat-adjustment';
 
 // ── Ability score math ──────────────────────────────────────────────────────
 
@@ -50,9 +51,10 @@ export const CASTING_ABILITY: Record<string, 'INT' | 'WIS' | 'CHA'> = {
   Wizard: 'INT',
 };
 
-/** Proficiency bonus to use in spell math: the sheet's own value, else derived
- *  from level ((level−1)/4 + 2) so a sheet that never stored prof still works. */
-function profForSpellMath(pc: PC): number {
+/** Proficiency bonus to use in spell and skill math: the sheet's own value,
+ *  else derived from level ((level−1)/4 + 2) so a sheet that never stored prof
+ *  still works. */
+export function proficiencyBonus(pc: Pick<PC, 'prof' | 'level'>): number {
   return pc.prof ?? Math.floor(((pc.level ?? 1) - 1) / 4) + 2;
 }
 
@@ -61,14 +63,14 @@ function profForSpellMath(pc: PC): number {
 export function spellSaveDc(pc: PC): number | null {
   const ability = CASTING_ABILITY[pc.clazz];
   if (!ability) return null;
-  return 8 + profForSpellMath(pc) + modFromScore(pc.stats?.[ability] ?? 10);
+  return 8 + proficiencyBonus(pc) + modFromScore(pc.stats?.[ability] ?? 10);
 }
 
 /** Spell attack bonus = proficiency + casting-ability modifier; null for non-casters. */
 export function spellAttackBonus(pc: PC): number | null {
   const ability = CASTING_ABILITY[pc.clazz];
   if (!ability) return null;
-  return profForSpellMath(pc) + modFromScore(pc.stats?.[ability] ?? 10);
+  return proficiencyBonus(pc) + modFromScore(pc.stats?.[ability] ?? 10);
 }
 
 // ── Skill / condition constants ─────────────────────────────────────────────
@@ -91,11 +93,23 @@ export const CONDITIONS_LIST: string[] = [
   'raging', 'concentration', 'inspired',
 ];
 
-// ── Passive stats (DM dashboard) ────────────────────────────────────────────
-// passive = 10 + abilityMod + (expert ? 2×prof : prof ? prof : 0)
-// Perception and Insight both key off WIS. Mirrors prototype/data.js.
+// ── Skill modifiers ─────────────────────────────────────────────────────────
+// A skill modifier = the governing ability's modifier + the proficiency bonus
+// (twice it with expertise) + any lines the DM added to that skill. Nothing
+// but the DM's lines is saved: the rest is worked out whenever it is shown, so
+// the sheet's "+x", its breakdown and the passive scores always agree.
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+
+const ABILITY_NAMES: Record<Ability, string> = {
+  STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution',
+  INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma',
+};
+
+/** A skill's full name: SKILL_DEFS lists Sleight of Hand as "Sleight". */
+export function skillFullName(name: string): string {
+  return name === 'Sleight' ? 'Sleight of Hand' : name;
+}
 
 /** Proficiency level for a skill, tolerating "Animal Handling" → "Animal". */
 export function skillLevel(pc: PC, name: string): 'prof' | 'expert' | null {
@@ -103,13 +117,35 @@ export function skillLevel(pc: PC, name: string): 'prof' | 'expert' | null {
   return skills[name] ?? skills[name.split(' ')[0]] ?? null;
 }
 
-export function passiveScore(pc: PC, skill: string, ability: Ability): number {
+/**
+ * The lines the app works out for a skill, in order: the ability modifier,
+ * then the proficiency bonus (doubled for expertise, +0 without proficiency).
+ */
+export function skillAutoLines(pc: PC, name: string, ability: Ability): BreakdownLine[] {
   const score = pc.stats?.[ability] ?? 10;
-  const prof = pc.prof ?? 0;
-  const mod = modFromScore(score);
-  const lvl = skillLevel(pc, skill);
-  const bonus = lvl === 'expert' ? prof * 2 : lvl === 'prof' ? prof : 0;
-  return 10 + mod + bonus;
+  const prof = proficiencyBonus(pc);
+  const level = skillLevel(pc, name);
+  const proficiency: BreakdownLine = level === 'expert'
+    ? { label: 'Expertise', value: prof * 2, note: `twice the proficiency bonus of ${fmtMod(prof)}` }
+    : level === 'prof'
+      ? { label: 'Proficiency', value: prof }
+      : { label: 'Proficiency', value: 0, note: `not proficient in ${skillFullName(name)}` };
+  return [
+    { label: ABILITY_NAMES[ability], value: modFromScore(score), note: `score ${score}` },
+    proficiency,
+  ];
+}
+
+/** A skill's modifier as the sheet shows it: the worked-out lines plus the DM's lines. */
+export function skillModifier(pc: PC, name: string, ability: Ability): number {
+  return countedSum(skillAutoLines(pc, name, ability)) + adjustmentSum(adjustmentsFor(pc, skillStat(name)));
+}
+
+// ── Passive stats (DM dashboard) ────────────────────────────────────────────
+// passive = 10 + the skill modifier. Perception and Insight both key off WIS.
+
+export function passiveScore(pc: PC, skill: string, ability: Ability): number {
+  return 10 + skillModifier(pc, skill, ability);
 }
 
 // ── Coin value ──────────────────────────────────────────────────────────────

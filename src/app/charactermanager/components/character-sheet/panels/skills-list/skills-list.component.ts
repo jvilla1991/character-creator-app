@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PC } from '../../../../models/pc';
-import { modFromScore, SKILL_DEFS } from '../../../../utils/character-math';
+import { AdjustableStat, signed, skillStat } from '../../../../models/stat-adjustment';
+import { SKILL_DEFS, skillFullName, skillLevel, skillModifier } from '../../../../utils/character-math';
 import { ModifierPipe } from '../../../../pipes/modifier.pipe';
+
+type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
 interface SkillRow {
   name: string;
@@ -28,24 +31,39 @@ export class SkillsListComponent {
   readonly pc = input.required<PC>();
   /** DM cross-link: makes each proficiency dot click-to-cycle (none → prof → expertise). */
   readonly editable = input(false);
+  /** Each skill's modifier opens its breakdown. Off for a follower, whose
+   *  skills are typed stat-block values with no lines. */
+  readonly breakdownEnabled = input(false);
+  /** The viewer may change the lines in that breakdown (the DM, or the owner of a
+   *  character that is in no campaign). Only changes the affordance here; the
+   *  parent decides what the dialog allows. */
+  readonly canAdjust = input(false);
   readonly skillChanged = output<SkillProfChange>();
+  /** Anyone clicked a skill's modifier — the parent opens the breakdown dialog. */
+  readonly breakdownRequested = output<AdjustableStat>();
 
-  /** Derived skill rows — recompute whenever the PC input changes. */
+  /** Derived skill rows — recompute whenever the PC input changes. The
+   *  modifier includes any lines the DM added to the skill. */
   readonly skillRows = computed<SkillRow[]>(() => {
     const pc = this.pc();
-    const prof = pc.prof ?? 2;
-    return SKILL_DEFS.map(([name, abil]) => {
-      const lvl     = this.levelFor(name);
-      const baseMod = modFromScore(pc.stats?.[abil as keyof typeof pc.stats] ?? 10);
-      const bonus   = lvl === 'expert' ? prof * 2 : lvl === 'prof' ? prof : 0;
-      return {
-        name,
-        abil,
-        profLevel: lvl,
-        mod:       baseMod + bonus,
-      };
-    });
+    return SKILL_DEFS.map(([name, abil]) => ({
+      name,
+      abil,
+      profLevel: skillLevel(pc, name),
+      mod:       skillModifier(pc, name, abil as Ability),
+    }));
   });
+
+  /** Spoken name of a modifier's button: the skill and value, then what activating it does. */
+  modButtonLabel(row: SkillRow): string {
+    const what = `${skillFullName(row.name)} ${signed(row.mod)}. Show how it is worked out`;
+    return this.canAdjust() ? `${what} and adjust it` : what;
+  }
+
+  openBreakdown(row: SkillRow): void {
+    if (!this.breakdownEnabled()) return;
+    this.breakdownRequested.emit(skillStat(row.name));
+  }
 
   /**
    * Cycle one skill's proficiency: none → prof → expert → none. Emits an
@@ -57,7 +75,7 @@ export class SkillsListComponent {
   cycleSkill(name: string): void {
     if (!this.editable()) return;
     const pc = this.pc();
-    const current = this.levelFor(name);
+    const current = skillLevel(pc, name);
     const next: 'prof' | 'expert' | null =
       current === null ? 'prof' : current === 'prof' ? 'expert' : null;
 
@@ -73,12 +91,5 @@ export class SkillsListComponent {
       pc: { ...pc, skills },
       description: `Skill proficiency changed: ${name} (${label})`,
     });
-  }
-
-  /** Look up by first word then full name to match prototype data key conventions. */
-  private levelFor(name: string): 'prof' | 'expert' | null {
-    const skills = this.pc().skills;
-    const shortKey = name.split(' ')[0];
-    return skills?.[shortKey] ?? skills?.[name] ?? null;
   }
 }

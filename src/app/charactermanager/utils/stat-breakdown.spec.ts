@@ -1,10 +1,11 @@
 import { PC, PcItem } from '../models/pc';
-import { SLOT_STATS, StatAdjustment, slotLevelOf, slotStat } from '../models/stat-adjustment';
+import { SKILL_STATS, SLOT_STATS, StatAdjustment, skillStat, slotLevelOf, slotStat } from '../models/stat-adjustment';
 import { withRecomputedAc } from './armor-math';
 import {
   STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, cleanRemoved, creationAbilityLines,
-  describeAdjustment, describeAdjustmentChange, describeStatSave, isValidAdjustment,
+  describeAdjustment, describeAdjustmentChange, describeStatSave, formatTotal, isValidAdjustment,
 } from './stat-breakdown';
+import { SKILL_DEFS } from './character-math';
 
 const armor = (name: string, armorClass: string, equipped = true): PcItem =>
   ({ name, category: 'armor', qty: 1, armorClass, equipped });
@@ -682,5 +683,99 @@ describe('stat-breakdown (spell slot maximums)', () => {
     expect(STAT_DEFINITIONS.ac.adjustHint).toContain('armor');
     expect(STAT_DEFINITIONS.slot1.adjustHint).toContain('levels up');
     expect(STAT_DEFINITIONS.slot1.adjustHint).not.toContain('armor');
+  });
+});
+
+describe('stat-breakdown (skills)', () => {
+  /** WIS 14 (+2) and proficient in Perception at +2: Perception +4. */
+  const scout = (overrides: Partial<PC> = {}): PC =>
+    ({ id: 1, name: 'Wren', clazz: 'Ranger', level: 3, playerName: 'P', prof: 2,
+       stats: { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 14, CHA: 10 },
+       skills: { Perception: 'prof' }, ac: 12, ...overrides } as PC);
+  const observant: StatAdjustment = { value: 1, label: 'Observant' };
+
+  it('stores each skill under its own key, one per skill on the sheet', () => {
+    expect(skillStat('Perception')).toBe('skillPerception');
+    expect(skillStat('Animal Handling')).toBe('skillAnimalHandling');
+    expect(skillStat('Sleight')).toBe('skillSleight');
+    expect(SKILL_DEFS.map(([name]) => skillStat(name))).toEqual([...SKILL_STATS]);
+    expect(() => skillStat('Basket Weaving')).toThrowError(/Basket Weaving/);
+  });
+
+  it('every key fits what the server accepts as a number name', () => {
+    for (const stat of SKILL_STATS) expect(stat).toMatch(/^[A-Za-z][A-Za-z0-9]{0,23}$/);
+    for (const stat of SKILL_STATS) expect(stat.endsWith('Removed')).toBeFalse();
+  });
+
+  it('breaks a skill into its ability and proficiency lines, adding up exactly', () => {
+    const b = breakdownOf(scout(), 'skillPerception');
+    expect(b.auto.map(l => `${l.label} ${l.value}`)).toEqual(['Wisdom 2', 'Proficiency 2']);
+    expect(b.adjustments).toEqual([]);
+    expect(b.unlabelled).toBe(0);
+    expect(b.total).toBe(4);
+  });
+
+  it('counts the DM lines in the total and never shows an unlabelled rest', () => {
+    const b = breakdownOf(scout({ statAdjustments: { skillPerception: [observant] } }), 'skillPerception');
+    expect(b.adjustments).toEqual([observant]);
+    expect(b.unlabelled).toBe(0);
+    expect(b.total).toBe(5);
+  });
+
+  it('follows an ability or proficiency change without leaving anything behind', () => {
+    const pc = scout({ statAdjustments: { skillPerception: [observant] } });
+    const wiser: PC = { ...pc, stats: { ...pc.stats!, WIS: 18 }, skills: { Perception: 'expert' } };
+    const b = breakdownOf(wiser, 'skillPerception');
+    expect(b.auto.map(l => `${l.label} ${l.value}`)).toEqual(['Wisdom 4', 'Expertise 4']);
+    expect(b.total).toBe(9);
+    expect(b.unlabelled).toBe(0);
+  });
+
+  it('saves only the lines: no other number on the character moves', () => {
+    const pc = scout({ statAdjustments: { ac: [{ value: 1, label: 'Taunka' }] } });
+    const next = applyAdjustments(pc, 'skillPerception', [observant], true);
+    expect(next.statAdjustments).toEqual({ ac: [{ value: 1, label: 'Taunka' }], skillPerception: [observant] });
+    expect(next.ac).toBe(12);
+    expect(next.stats).toEqual(pc.stats);
+    expect(next.skills).toEqual(pc.skills);
+    expect(breakdownOf(next, 'skillPerception').total).toBe(5);
+    expect(pc.statAdjustments).toEqual({ ac: [{ value: 1, label: 'Taunka' }] }); // input untouched
+  });
+
+  it('clears a skill whose last line is removed', () => {
+    const pc = scout({ statAdjustments: { skillPerception: [observant] } });
+    const next = applyAdjustments(pc, 'skillPerception', [], true);
+    expect(next.statAdjustments?.skillPerception).toEqual([]);
+    expect(breakdownOf(next, 'skillPerception').total).toBe(4);
+  });
+
+  it('writes the log line with signed totals', () => {
+    const before = scout();
+    const after = applyAdjustments(before, 'skillPerception', [observant], true);
+    expect(describeStatSave('skillPerception', before, after))
+      .toBe('DM added +1 Observant to Perception (Perception +4 → +5)');
+  });
+
+  it('names Sleight of Hand in full in the dialog and the log', () => {
+    expect(STAT_DEFINITIONS.skillSleight.title).toBe('Sleight of Hand');
+    const before = scout({ skills: {} });
+    const after = applyAdjustments(before, 'skillSleight', [{ value: -1, label: 'Clumsy gloves' }], true);
+    expect(describeStatSave('skillSleight', before, after))
+      .toBe('DM added -1 Clumsy gloves to Sleight of Hand (Sleight of Hand +2 → +1)');
+  });
+
+  it('formats a skill total with a sign and every other number without', () => {
+    expect(formatTotal('skillPerception', 4)).toBe('+4');
+    expect(formatTotal('skillPerception', -1)).toBe('-1');
+    expect(formatTotal('skillPerception', 0)).toBe('+0');
+    expect(formatTotal('ac', 17)).toBe('17');
+    expect(formatTotal('STR', 15)).toBe('15');
+  });
+
+  it('marks skills as modifiers, and does not let their calculated lines be removed', () => {
+    expect(STAT_DEFINITIONS.skillPerception.modifier).toBeTrue();
+    expect(STAT_DEFINITIONS.skillPerception.removable).toBeFalsy();
+    expect(STAT_DEFINITIONS.ac.modifier).toBeFalsy();
+    expect(STAT_DEFINITIONS.skillPerception.adjustHint).toContain('proficiency');
   });
 });
