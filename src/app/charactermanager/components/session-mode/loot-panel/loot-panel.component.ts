@@ -11,6 +11,7 @@ import { PCService } from '../../../services/pc.service';
 import { NotificationService } from '../../../services/notification.service';
 import { FormsModule } from '@angular/forms';
 import { ItemComposerComponent } from '../../item-composer/item-composer.component';
+import { JsonImportComponent, JsonImportConfirmed } from '../../json-import/json-import.component';
 import { ModalComponent } from '../../modal/modal.component';
 import {
   LootBallotCast, LootCoinChange, LootMove, LootSplitModalComponent,
@@ -31,7 +32,7 @@ const STALE_RESULT_MS = 2 * 60 * 1000;
 
 /**
  * Session Mode post-combat loot. The DM prepares a pool — seeded from one of
- * the campaign's curated loot lists or built from scratch — edits it as an
+ * the campaign's curated loot lists, pasted as JSON, or built from scratch — edits it as an
  * invisible draft, then drops it. The party then splits it: players divide
  * the pile between their characters in {@link LootSplitModalComponent} and
  * vote on the split (majority ✓ distributes it; any ✗ + PvP cancels it back
@@ -48,7 +49,7 @@ const STALE_RESULT_MS = 2 * 60 * 1000;
   selector: 'app-loot-panel',
   templateUrl: './loot-panel.component.html',
   styleUrls: ['./loot-panel.component.scss'],
-  imports: [FormsModule, ItemComposerComponent, LootSplitModalComponent, ModalComponent]
+  imports: [FormsModule, ItemComposerComponent, JsonImportComponent, LootSplitModalComponent, ModalComponent]
 })
 export class LootPanelComponent implements OnChanges {
   @Input() state!: SessionState;
@@ -59,7 +60,11 @@ export class LootPanelComponent implements OnChanges {
   busy = false;
 
   // DM prepare form
-  source: 'list' | 'scratch' = 'list';
+  source: 'list' | 'scratch' | 'json' = 'list';
+  /** A From JSON prepare is in flight — its box waits. */
+  preparing = false;
+  /** Why the server refused the last pasted loot; shown in its box until the text changes. */
+  jsonError: string | null = null;
   lootListId: number | null = null;
   lootLists: CuratedLootSummary[] = [];
   nameDraft = '';
@@ -137,7 +142,7 @@ export class LootPanelComponent implements OnChanges {
   // --- DM actions ------------------------------------------------------------
 
   get canPrepare(): boolean {
-    return this.source === 'scratch' || this.lootListId != null;
+    return this.source === 'scratch' || (this.source === 'list' && this.lootListId != null);
   }
 
   prepare(): void {
@@ -145,6 +150,28 @@ export class LootPanelComponent implements OnChanges {
     this.lootService.open(this.state.sessionId, lootId, this.nameDraft.trim() || null).subscribe({
       next: view => this.setLoot(view),
       error: err => this.notifications.notify(this.errMsg(err, 'Could not prepare the loot. Try again.')),
+    });
+  }
+
+  /**
+   * The From JSON box's paste passed its check: prepare the pool from it in
+   * one request. The server checks it again in full before replacing
+   * anything, so a refusal leaves the box (and any existing pool) as it was.
+   */
+  prepareFromJson(confirmed: JsonImportConfirmed): void {
+    const contents = confirmed.loot;
+    if (!contents || this.preparing) return;
+    this.preparing = true;
+    this.jsonError = null;
+    this.lootService.open(this.state.sessionId, null, this.nameDraft.trim() || null, contents).subscribe({
+      next: view => {
+        this.preparing = false;
+        this.setLoot(view);
+      },
+      error: err => {
+        this.preparing = false;
+        this.jsonError = this.errMsg(err, 'Could not prepare the loot. Try again.');
+      },
     });
   }
 

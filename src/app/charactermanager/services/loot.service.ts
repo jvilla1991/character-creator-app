@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LootView } from '../models/loot';
+import { LootImportPayload, LootView } from '../models/loot';
 import { AuthoredItem } from '../components/item-composer/authored-item';
 import { toAddLootItemRequest } from './curated-loot.service';
 
@@ -22,10 +22,17 @@ export class LootService {
 
   constructor(private http: HttpClient) {}
 
-  /** DM opens a loot pool as a draft (replaces any existing). lootId seeds it from a curated loot list. */
-  open(sessionId: number | string, lootId: number | null, name: string | null): Observable<LootView> {
+  /**
+   * DM opens a loot pool as a draft (replaces any existing). `lootId` seeds it
+   * from a curated loot list; `contents` seeds it from pasted JSON instead
+   * (lines and coins, checked in full by the server before anything is
+   * replaced); neither starts it empty.
+   */
+  open(sessionId: number | string, lootId: number | null, name: string | null,
+       contents?: LootImportPayload): Observable<LootView> {
     if (environment.demoMode) return this.demoUnsupported();
-    return this.http.post<LootView>(`${this.base}/${sessionId}/loot`, { lootId, name });
+    return this.http.post<LootView>(`${this.base}/${sessionId}/loot`,
+      { lootId, name, ...(contents ? { contents } : {}) });
   }
 
   /** DM drops the loot — the party can now see and split it. */

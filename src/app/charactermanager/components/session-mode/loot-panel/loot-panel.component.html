@@ -14,6 +14,8 @@
               (click)="source = 'list'">From loot list</button>
             <button type="button" class="seg-btn" [class.active]="source === 'scratch'"
               (click)="source = 'scratch'">From scratch</button>
+            <button type="button" class="seg-btn" [class.active]="source === 'json'"
+              (click)="source = 'json'">From JSON</button>
           </div>
           @if (source === 'list') {
             <div class="field-label" id="loot-list-label">Which loot list?</div>
@@ -33,7 +35,16 @@
             <input class="text-input" type="text" [(ngModel)]="nameDraft"
               placeholder="e.g. Goblin Ambush spoils" />
           </label>
-          <button class="btn primary" [disabled]="!canPrepare" (click)="prepare()">Prepare Loot</button>
+          @if (source === 'json') {
+            <!-- Paste the loot (items and coins). The box checks it as it is
+                 pasted and prepares the pool itself once it is clean. -->
+            <app-json-import class="loot-json" kind="loot" confirmLabel="Prepare Loot" [busy]="preparing"
+              [serverError]="jsonError"
+              purpose="A catalog &quot;key&quot; works too. The loot is prepared as a hidden draft — nobody sees it until you drop it."
+              (confirmed)="prepareFromJson($event)"></app-json-import>
+          } @else {
+            <button class="btn primary" [disabled]="!canPrepare" (click)="prepare()">Prepare Loot</button>
+          }
         </div>
       }
       <!-- Pool exists: draft (invisible) or dropped (the party is splitting it) -->
