@@ -68,6 +68,22 @@
   border-radius: 4px;
 }
 
+/* JSON tab: a roomy paste box, monospace like the curated-loot import box. */
+.composer-json {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 220px;
+  font-family: monospace;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.composer-error {
+  color: var(--crimson);
+  font-size: 12px;
+  margin: 0;
+}
+
 .composer-list {
   display: flex;
   flex-direction: column;

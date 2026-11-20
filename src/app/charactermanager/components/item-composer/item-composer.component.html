@@ -6,8 +6,12 @@
     }
     <button type="button" class="composer-tab" [class.on]="tab === 'custom'"
     (click)="setTab('custom')">Custom</button>
+    @if (jsonTab()) {
+      <button type="button" class="composer-tab" [class.on]="tab === 'json'"
+      (click)="setTab('json')">JSON</button>
+    }
   </div>
-  @if (demoMode) {
+  @if (demoMode && tab === 'custom') {
     <p class="composer-hint">The demo has no catalog — author a custom item below.</p>
   }
 
@@ -82,6 +86,29 @@
       <div class="composer-actions">
         <button type="button" class="composer-btn primary" [disabled]="!customName.trim()"
         (click)="confirmCustom()">{{ confirmLabel() }}</button>
+        @if (cancellable()) {
+          <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- JSON tab: paste many item lines at once (the curated-loot import format) -->
+  @if (tab === 'json' && jsonTab()) {
+    <div class="composer-body">
+      <textarea [(ngModel)]="jsonDraft" rows="12" class="composer-text composer-json"
+        [placeholder]="jsonExample" aria-label="Items JSON" spellcheck="false"></textarea>
+      <p class="composer-hint">
+        Each item has either a "key" (an SRD slug like "longsword") or a "name" (a custom item, with
+        optional "notes", "category", "valueGp", "weight", and "damage"/"armorClass" for weapons/armor);
+        "qty" defaults to 1. A loot list's Copy JSON pastes straight in.
+      </p>
+      @if (jsonError(); as error) {
+        <p class="composer-error" role="alert">{{ error }}</p>
+      }
+      <div class="composer-actions">
+        <button type="button" class="composer-btn primary" [disabled]="!jsonDraft.trim() || jsonBusy()"
+        (click)="confirmJson()">{{ jsonBusy() ? 'Checking…' : confirmLabel() + ' items' }}</button>
         @if (cancellable()) {
           <button type="button" class="composer-btn" (click)="cancel()">Cancel</button>
         }
