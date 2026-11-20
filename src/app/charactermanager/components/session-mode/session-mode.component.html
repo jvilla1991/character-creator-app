@@ -290,6 +290,11 @@
     <app-shop-panel [state]="state"></app-shop-panel>
     <!-- Post-combat loot: DM drafts/drops a pool; players claim from it. -->
     <app-loot-panel [state]="state"></app-loot-panel>
+    <!-- DM-only: this session's health and condition changes, a page at a time.
+    Read again on every version change; gone when the session ends. -->
+    @if (state.dm) {
+      <app-combat-log-panel [sessionId]="state.sessionId" [version]="state.version"></app-combat-log-panel>
+    }
     <!-- DM-only: capture a note to the campaign log without leaving the table -->
     @if (state.dm) {
       <div class="panel session-note">
@@ -308,9 +313,6 @@
           <div class="note-saved">Saved to the campaign log.</div>
         }
       </div>
-      <!-- DM-only, last on the page: this session's health and condition changes,
-      a page at a time. Read again on every version change; gone when the session ends. -->
-      <app-combat-log-panel [sessionId]="state.sessionId" [version]="state.version"></app-combat-log-panel>
     }
     <!-- Player: their own character sheet (read-only) for reference at the table -->
     @if (!state.dm && myPc(state); as pc) {
