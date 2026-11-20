@@ -4,6 +4,7 @@ import {
   isEncumbered,
   itemBulk,
   slotCapacity,
+  capacityLines,
   usedSlots,
 } from './slot-inventory';
 import { PC, PcItem } from '../models/pc';
@@ -143,6 +144,19 @@ describe('slot-inventory util', () => {
 
     it('defaults unknown species and missing stats to Medium', () => {
       expect(slotCapacity(basePC({ race: undefined, stats: undefined }))).toBe(18);
+    });
+
+    it('adds the lines a DM put on the capacity', () => {
+      const pc = basePC({ statAdjustments: { capacity: [{ value: 4, label: 'Bag of Holding' }, { value: -1, label: 'Injured' }] } });
+      expect(slotCapacity(pc)).toBe(23); // 18 + 2 + 4 - 1
+    });
+
+    it('lists what the capacity is made of', () => {
+      expect(capacityLines(basePC()).map(l => `${l.label} ${l.value}`)).toEqual(['Medium size 18', 'Strength 2']);
+      expect(capacityLines(basePC({ race: 'Goblin', size: 'Small' })).map(l => `${l.label} ${l.value}`))
+        .toEqual(['Small size 14', 'Strength 2']);
+      expect(capacityLines(basePC({ race: 'Goliath' })).map(l => `${l.label} ${l.value}`))
+        .toEqual(['Powerful Build 22', 'Strength 4']);
     });
   });
 

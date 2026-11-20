@@ -4,7 +4,9 @@ import { withRecomputedAc } from './armor-math';
 import {
   STAT_DEFINITIONS, applyAdjustments, breakdownOf, cleanAdjustments, cleanRemoved, creationAbilityLines,
   describeAdjustment, describeAdjustmentChange, describeStatSave, formatTotal, isValidAdjustment,
+  withInitiativeFollowingDex,
 } from './stat-breakdown';
+import { slotCapacity } from './slot-inventory';
 import { SKILL_DEFS } from './character-math';
 
 const armor = (name: string, armorClass: string, equipped = true): PcItem =>
@@ -678,12 +680,6 @@ describe('stat-breakdown (spell slot maximums)', () => {
     expect(describeAdjustmentChange('slot3', breakdownOf(after, 'slot3'), breakdownOf(before, 'slot3')))
       .toBe('DM removed +1 Pearl of Power from 3rd-level slots (3rd-level slots 3 → 2)');
   });
-
-  it('gives each number its own words above the lines the DM can add', () => {
-    expect(STAT_DEFINITIONS.ac.adjustHint).toContain('armor');
-    expect(STAT_DEFINITIONS.slot1.adjustHint).toContain('levels up');
-    expect(STAT_DEFINITIONS.slot1.adjustHint).not.toContain('armor');
-  });
 });
 
 describe('stat-breakdown (skills)', () => {
@@ -776,6 +772,118 @@ describe('stat-breakdown (skills)', () => {
     expect(STAT_DEFINITIONS.skillPerception.modifier).toBeTrue();
     expect(STAT_DEFINITIONS.skillPerception.removable).toBeFalsy();
     expect(STAT_DEFINITIONS.ac.modifier).toBeFalsy();
-    expect(STAT_DEFINITIONS.skillPerception.adjustHint).toContain('proficiency');
+  });
+});
+
+describe('stat-breakdown (initiative, speed, proficiency, slot capacity)', () => {
+  /** DEX 14 (+2), STR 14 (+2), level 5 (+3), initiative +2, speed 30. */
+  const hero = (overrides: Partial<PC> = {}): PC =>
+    ({ id: 1, name: 'Ash', clazz: 'Fighter', level: 5, playerName: 'P', race: 'Human',
+       stats: { STR: 14, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+       ac: 12, init: 2, speed: 30, prof: 3, ...overrides } as PC);
+  const alert: StatAdjustment = { value: 3, label: 'Alert' };
+  const auto = (pc: PC, stat: Parameters<typeof breakdownOf>[1]) =>
+    breakdownOf(pc, stat).auto.map(l => `${l.label} ${l.value}`);
+
+  describe('initiative', () => {
+    it('is the Dexterity modifier when nothing else was added', () => {
+      const b = breakdownOf(hero(), 'init');
+      expect(auto(hero(), 'init')).toEqual(['Dexterity 2']);
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(2);
+    });
+
+    it('keeps a hand-typed initiative as an unlabelled rest', () => {
+      const b = breakdownOf(hero({ init: 5 }), 'init');
+      expect(b.unlabelled).toBe(3);
+      expect(b.total).toBe(5);
+    });
+
+    it('a DM line raises the saved initiative, and the log names it signed', () => {
+      const before = hero();
+      const after = applyAdjustments(before, 'init', [alert], true);
+      expect(after.init).toBe(5);
+      expect(after.statAdjustments?.init).toEqual([alert]);
+      expect(describeStatSave('init', before, after)).toBe('DM added +3 Alert to Initiative (Initiative +2 → +5)');
+    });
+
+    it('follows a Dexterity line on the ability breakdown, keeping its own lines', () => {
+      const before = hero({ init: 5, statAdjustments: { init: [alert] } });
+      const after = applyAdjustments(before, 'DEX', [{ value: 2, label: 'Gloves of Dexterity' }], true);
+      expect(after.stats?.DEX).toBe(16);
+      expect(after.init).toBe(6);
+      expect(breakdownOf(after, 'init').unlabelled).toBe(0);
+      expect(describeStatSave('DEX', before, after))
+        .toBe('DM added +2 Gloves of Dexterity to DEX (DEX 14 → 16); AC 12 → 13; Initiative +5 → +6');
+    });
+
+    it('leaves an initiative that was never saved alone', () => {
+      expect(withInitiativeFollowingDex(hero({ init: undefined }), hero({ init: undefined, stats: { STR: 14, DEX: 18, CON: 10, INT: 10, WIS: 10, CHA: 10 } })).init)
+        .toBeUndefined();
+    });
+  });
+
+  describe('speed', () => {
+    it('is a base speed plus the DM lines, never unlabelled', () => {
+      const pc = hero({ speed: 40, statAdjustments: { speed: [{ value: 10, label: 'Unarmored Movement' }] } });
+      const b = breakdownOf(pc, 'speed');
+      expect(auto(pc, 'speed')).toEqual(['Base speed 30']);
+      expect(b.unlabelled).toBe(0);
+      expect(b.total).toBe(40);
+    });
+
+    it('can label part of the base without moving the total', () => {
+      const after = applyAdjustments(hero({ speed: 35 }), 'speed', [{ value: 5, label: 'Wood Elf' }], true, { fromBase: 5 });
+      expect(after.speed).toBe(35);
+      expect(auto(after, 'speed')).toEqual(['Base speed 30']);
+    });
+
+    it('never goes below 0', () => {
+      expect(applyAdjustments(hero(), 'speed', [{ value: -40, label: 'Grappled' }], true).speed).toBe(0);
+    });
+  });
+
+  describe('proficiency bonus', () => {
+    it('starts from the table for the level', () => {
+      expect(auto(hero(), 'prof')).toEqual(['Level 5 3']);
+      expect(auto(hero({ level: 1, prof: 2 }), 'prof')).toEqual(['Level 1 2']);
+      expect(auto(hero({ level: 17, prof: 6 }), 'prof')).toEqual(['Level 17 6']);
+      expect(breakdownOf(hero(), 'prof').unlabelled).toBe(0);
+    });
+
+    it('a DM line raises the saved bonus that skills and spells read', () => {
+      const after = applyAdjustments(hero(), 'prof', [{ value: 1, label: 'Blessing' }], true);
+      expect(after.prof).toBe(4);
+      expect(formatTotal('prof', after.prof!)).toBe('+4');
+    });
+
+    it('shows a saved bonus the table does not explain as unlabelled', () => {
+      expect(breakdownOf(hero({ prof: 2 }), 'prof').unlabelled).toBe(-1);
+    });
+  });
+
+  describe('slot capacity', () => {
+    it('is the frame plus Strength, worked out each time', () => {
+      expect(auto(hero(), 'capacity')).toEqual(['Medium size 18', 'Strength 2']);
+      expect(breakdownOf(hero(), 'capacity').total).toBe(20);
+      expect(auto(hero({ race: 'Halfling' }), 'capacity')).toEqual(['Small size 14', 'Strength 2']);
+      expect(auto(hero({ race: 'Goliath' }), 'capacity')).toEqual(['Powerful Build 22', 'Strength 4']);
+    });
+
+    it('a DM line raises the capacity the inventory checks against, and saves nothing else', () => {
+      const before = hero({ statAdjustments: {} });
+      const after = applyAdjustments(before, 'capacity', [{ value: 3, label: 'Bag of Holding' }], true);
+      expect(after.statAdjustments?.capacity).toEqual([{ value: 3, label: 'Bag of Holding' }]);
+      expect(slotCapacity(after)).toBe(23);
+      expect({ ...after, statAdjustments: before.statAdjustments } as PC).toEqual(before);
+      expect(describeStatSave('capacity', before, after))
+        .toBe('DM added +3 Bag of Holding to Slot capacity (Slot capacity 20 → 23)');
+    });
+  });
+
+  it('has no explaining sentence on any number', () => {
+    for (const def of Object.values(STAT_DEFINITIONS)) {
+      expect((def as unknown as Record<string, unknown>)['adjustHint']).toBeUndefined();
+    }
   });
 });

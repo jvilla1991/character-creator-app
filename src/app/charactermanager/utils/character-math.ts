@@ -51,11 +51,16 @@ export const CASTING_ABILITY: Record<string, 'INT' | 'WIS' | 'CHA'> = {
   Wizard: 'INT',
 };
 
-/** Proficiency bonus to use in spell and skill math: the sheet's own value,
- *  else derived from level ((level−1)/4 + 2) so a sheet that never stored prof
- *  still works. */
+/** The proficiency bonus the 2024 table gives a character level: +2 at 1st, +6 at 17th. */
+export function proficiencyForLevel(level: number): number {
+  return Math.floor((Math.max(1, level) - 1) / 4) + 2;
+}
+
+/** Proficiency bonus to use in spell and skill math: the sheet's own value
+ *  (the table plus any DM lines), else the table for the character's level so a
+ *  sheet that never stored prof still works. */
 export function proficiencyBonus(pc: Pick<PC, 'prof' | 'level'>): number {
-  return pc.prof ?? Math.floor(((pc.level ?? 1) - 1) / 4) + 2;
+  return pc.prof ?? proficiencyForLevel(pc.level ?? 1);
 }
 
 /** Spell save DC = 8 + proficiency + casting-ability modifier; null for a

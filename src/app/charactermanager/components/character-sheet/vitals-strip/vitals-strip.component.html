@@ -49,36 +49,64 @@
   }
 </div>
 
+<!-- Initiative, Speed and Proficiency open their breakdowns the same way as
+Armor Class. A follower's stay plain numbers the DM types. -->
 <!-- Initiative -->
 <div class="vital">
   <span class="eyebrow">Initiative</span>
-  <div class="vital-value numeric"><app-editable-number
-    [value]="pc.init" [editable]="editable" [min]="null"
-    [intercept]="true" (editRequested)="requestVital('init')"
-    label="initiative" (committed)="setVital('init', $event)"
-  >{{ pc.init != null ? (pc.init | modifier) : '—' }}</app-editable-number></div>
+  @if (breakdownEnabled) {
+    <div class="vital-value numeric"><button type="button" class="breakdown-btn"
+      [class.adjustable]="canAdjust"
+      [attr.aria-label]="breakdownButtonLabel('Initiative', pc.init != null ? (pc.init | modifier) : null)"
+      (click)="breakdownRequested.emit('init')"
+    >{{ pc.init != null ? (pc.init | modifier) : '—' }}</button></div>
+  } @else {
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.init" [editable]="editable" [min]="null"
+      [intercept]="true" (editRequested)="requestVital('init')"
+      label="initiative" (committed)="setVital('init', $event)"
+    >{{ pc.init != null ? (pc.init | modifier) : '—' }}</app-editable-number></div>
+  }
 </div>
 
 <!-- Speed -->
 <div class="vital">
   <span class="eyebrow">Speed</span>
-  <div class="vital-value numeric"><app-editable-number
-    [value]="pc.speed" [editable]="editable" [min]="0"
-    [intercept]="true" (editRequested)="requestVital('speed')"
-    label="speed" (committed)="setVital('speed', $event)"
-  >{{ pc.speed ?? '—' }}</app-editable-number>@if (pc.speed) {
-  <span class="sub">ft</span>
-}</div>
+  @if (breakdownEnabled) {
+    <div class="vital-value numeric"><button type="button" class="breakdown-btn"
+      [class.adjustable]="canAdjust"
+      [attr.aria-label]="breakdownButtonLabel('Speed', pc.speed != null ? pc.speed + ' feet' : null)"
+      (click)="breakdownRequested.emit('speed')"
+    >{{ pc.speed ?? '—' }}</button>@if (pc.speed) {
+    <span class="sub">ft</span>
+  }</div>
+  } @else {
+    <div class="vital-value numeric"><app-editable-number
+      [value]="pc.speed" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('speed')"
+      label="speed" (committed)="setVital('speed', $event)"
+    >{{ pc.speed ?? '—' }}</app-editable-number>@if (pc.speed) {
+    <span class="sub">ft</span>
+  }</div>
+  }
 </div>
 
 <!-- Proficiency -->
 <div class="vital">
   <span class="eyebrow">Proficiency</span>
-  <div class="vital-value numeric">+<app-editable-number
-    [value]="pc.prof" [editable]="editable" [min]="0"
-    [intercept]="true" (editRequested)="requestVital('prof')"
-    label="proficiency bonus" (committed)="setVital('prof', $event)"
-  >{{ pc.prof ?? '—' }}</app-editable-number></div>
+  @if (breakdownEnabled) {
+    <div class="vital-value numeric"><button type="button" class="breakdown-btn"
+      [class.adjustable]="canAdjust"
+      [attr.aria-label]="breakdownButtonLabel('Proficiency bonus', pc.prof != null ? (pc.prof | modifier) : null)"
+      (click)="breakdownRequested.emit('prof')"
+    >{{ pc.prof != null ? (pc.prof | modifier) : '—' }}</button></div>
+  } @else {
+    <div class="vital-value numeric">+<app-editable-number
+      [value]="pc.prof" [editable]="editable" [min]="0"
+      [intercept]="true" (editRequested)="requestVital('prof')"
+      label="proficiency bonus" (committed)="setVital('prof', $event)"
+    >{{ pc.prof ?? '—' }}</app-editable-number></div>
+  }
 </div>
 
 <!-- Hit Dice: remaining of the level-sized pool. Spends happen in a live
