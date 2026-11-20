@@ -1,11 +1,12 @@
 import { PC } from '../models/pc';
 import {
   ABILITY_STATS, ADJUSTMENT_LABEL_MAX, ADJUSTMENT_LINES_MAX, ADJUSTMENT_VALUE_MAX,
-  AbilityStat, AdjustableStat, BreakdownLine, SLOT_STATS, SlotStat, StatAdjustment, StatAdjustments,
+  AbilityStat, AdjustableStat, BreakdownLine, SLOT_STATS, SkillStat, SlotStat, StatAdjustment, StatAdjustments,
   adjustmentSum, adjustmentsFor, countedSum, markRemoved, removalLabel, removedEntries, removedKey,
-  removedLabelsFor, signed, slotStat,
+  removedLabelsFor, signed, skillStat, slotStat,
 } from '../models/stat-adjustment';
 import { acAutoLines, withAcFollowingDex } from './armor-math';
+import { SKILL_DEFS, skillAutoLines, skillFullName } from './character-math';
 import { ordinal, slotMaxOf, withSlotMax } from './spell-slots';
 
 // ── How a calculated number is put together ─────────────────────────────────
@@ -46,6 +47,11 @@ export interface StatDefinition {
   /** The range the total has to stay in, when the rules set one. */
   min?: number;
   max?: number;
+  /**
+   * The number is a modifier (a skill's "+3"): its total and every line,
+   * the first included, are shown with a sign.
+   */
+  modifier?: boolean;
   read: (pc: PC) => number | undefined;
   write: (pc: PC, total: number) => PC;
 }
@@ -111,6 +117,28 @@ function abilityDefinition(ability: AbilityStat): StatDefinition {
   };
 }
 
+/**
+ * A skill's modifier. Nothing of it is saved but the DM's lines: the ability
+ * modifier and the proficiency bonus are worked out from the sheet each time,
+ * so the total is always exactly the lines and never shows an unlabelled rest.
+ * Saving changes the lines and nothing else.
+ */
+function skillDefinition(name: string, ability: AbilityStat): StatDefinition {
+  const title = skillFullName(name);
+  const stat = skillStat(name);
+  const autoLines = (pc: PC) => skillAutoLines(pc, name, ability);
+  return {
+    title,
+    label: title,
+    adjustHint: 'Add what the sheet does not work out, such as a feat, a class feature or a magic item. '
+      + 'These lines stay when the ability score or proficiency changes.',
+    autoLines,
+    modifier: true,
+    read: pc => countedSum(autoLines(pc)) + adjustmentSum(adjustmentsFor(pc, stat)),
+    write: pc => pc,
+  };
+}
+
 export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
   ac: {
     title: 'Armor Class',
@@ -129,7 +157,14 @@ export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
   WIS: abilityDefinition('WIS'),
   CHA: abilityDefinition('CHA'),
   ...(Object.fromEntries(SLOT_STATS.map((stat, i) => [stat, slotDefinition(i + 1)])) as Record<SlotStat, StatDefinition>),
+  ...(Object.fromEntries(SKILL_DEFS.map(([name, ability]) =>
+    [skillStat(name), skillDefinition(name, ability as AbilityStat)])) as Record<SkillStat, StatDefinition>),
 };
+
+/** How a number's total is written: "16" for Armor Class, "+3" for a skill. */
+export function formatTotal(stat: AdjustableStat, total: number): string {
+  return STAT_DEFINITIONS[stat].modifier ? signed(total) : String(total);
+}
 
 export interface StatBreakdown {
   stat: AdjustableStat;
@@ -338,7 +373,8 @@ export function describeAdjustmentChange(
     parts.push(`cleared an unlabelled ${signed(before.unlabelled)} on ${label}`);
   }
   const what = parts.length ? parts.join('; ') : `updated the ${label} adjustments`;
-  const totals = before.total !== after.total ? ` (${label} ${before.total} → ${after.total})` : '';
+  const totals = before.total !== after.total
+    ? ` (${label} ${formatTotal(stat, before.total)} → ${formatTotal(stat, after.total)})` : '';
   return `DM ${what}${totals}`;
 }
 

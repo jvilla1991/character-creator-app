@@ -266,7 +266,10 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         <app-skills-list
           [pc]="pc"
           [editable]="editable"
-          (skillChanged)="onSkillProfChange($event)">
+          [breakdownEnabled]="!followerMode"
+          [canAdjust]="canAdjustStats"
+          (skillChanged)="onSkillProfChange($event)"
+          (breakdownRequested)="onBreakdownRequested($event)">
         </app-skills-list>
       </div>
       <div class="col-right">
@@ -426,8 +429,8 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
 }
 
 <!-- Number breakdown overlay — opened by clicking a calculated number (Armor
-Class in the vitals strip, an ability score, "Slot maximum" on the spell slot
-strip). Read-only unless the viewer may adjust the character. -->
+Class in the vitals strip, an ability score, a skill's modifier, "Slot maximum"
+on the spell slot strip). Read-only unless the viewer may adjust the character. -->
 @if (statBreakdown) {
   <div class="modal-backdrop" (click)="closeStatBreakdown()">
     <app-stat-breakdown-modal

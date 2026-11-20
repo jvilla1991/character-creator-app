@@ -1,6 +1,7 @@
 import {
   modFromScore, fmtMod, hitDieFor, tintFor, SKILL_DEFS, CLASS_HIT_DICE,
   CASTING_ABILITY, spellSaveDc, spellAttackBonus,
+  passiveScore, proficiencyBonus, skillAutoLines, skillFullName, skillModifier,
 } from './character-math';
 import { PC } from '../models/pc';
 
@@ -184,6 +185,63 @@ describe('character-math', () => {
       expect(spellSaveDc(caster('Fighter', { INT: 20 }, 3))).toBeNull();
       expect(spellAttackBonus(caster('Barbarian', {}, 3))).toBeNull();
       expect(spellSaveDc(caster('Artificer', {}, 3))).toBeNull();
+    });
+  });
+
+  // ── Skill modifiers ─────────────────────────────────────────────────────────
+
+  describe('skill modifiers', () => {
+    /** WIS 14 (+2), DEX 16 (+3), proficiency +2. */
+    const rogue = (overrides: Partial<PC> = {}): PC => ({
+      id: 1, name: 'Test', clazz: 'Rogue', level: 4, playerName: 'p', prof: 2,
+      stats: { STR: 10, DEX: 16, CON: 10, INT: 10, WIS: 14, CHA: 10 },
+      skills: { Perception: 'prof', Stealth: 'expert' },
+      ...overrides,
+    });
+    const lines = (pc: PC, name: string, ability: 'DEX' | 'WIS' | 'STR') =>
+      skillAutoLines(pc, name, ability).map(l => `${l.label} ${l.value}${l.note ? ` (${l.note})` : ''}`);
+
+    it('lists the ability modifier, then the proficiency bonus', () => {
+      expect(lines(rogue(), 'Perception', 'WIS')).toEqual(['Wisdom 2 (score 14)', 'Proficiency 2']);
+    });
+
+    it('doubles the bonus for expertise and says so', () => {
+      expect(lines(rogue(), 'Stealth', 'DEX'))
+        .toEqual(['Dexterity 3 (score 16)', 'Expertise 4 (twice the proficiency bonus of +2)']);
+    });
+
+    it('shows a +0 proficiency line, explained, for a skill the character is not proficient in', () => {
+      expect(lines(rogue(), 'Athletics', 'STR'))
+        .toEqual(['Strength 0 (score 10)', 'Proficiency 0 (not proficient in Athletics)']);
+    });
+
+    it('reads a short-form proficiency key ("Animal" for Animal Handling)', () => {
+      const pc = rogue({ skills: { Animal: 'prof' } });
+      expect(skillModifier(pc, 'Animal Handling', 'WIS')).toBe(4);
+    });
+
+    it('adds the DM lines saved on the skill', () => {
+      const pc = rogue({ statAdjustments: { skillPerception: [{ value: 1, label: 'Observant' }] } });
+      expect(skillModifier(pc, 'Perception', 'WIS')).toBe(5);
+      // Lines on another skill do not leak in.
+      expect(skillModifier(pc, 'Insight', 'WIS')).toBe(2);
+    });
+
+    it('derives the proficiency bonus from level when the sheet has none stored', () => {
+      expect(proficiencyBonus({ level: 5 })).toBe(3);
+      expect(proficiencyBonus({ level: 5, prof: 2 })).toBe(2);
+      expect(skillModifier(rogue({ prof: undefined, level: 9 }), 'Perception', 'WIS')).toBe(6); // +2 WIS, +4 prof
+    });
+
+    it('names Sleight of Hand in full', () => {
+      expect(skillFullName('Sleight')).toBe('Sleight of Hand');
+      expect(skillFullName('Perception')).toBe('Perception');
+    });
+
+    it('works passive scores out from the same modifier, DM lines included', () => {
+      const pc = rogue({ statAdjustments: { skillPerception: [{ value: 5, label: 'Observant' }] } });
+      expect(passiveScore(pc, 'Perception', 'WIS')).toBe(19); // 10 + 2 + 2 + 5
+      expect(passiveScore(pc, 'Insight', 'WIS')).toBe(12);
     });
   });
 });
