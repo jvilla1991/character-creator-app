@@ -5,6 +5,8 @@ import { CuratedLootComponent } from './curated-loot.component';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootSummary } from '../../../models/curated-loot';
 import { AuthoredItem } from '../../item-composer/authored-item';
+import { JsonImportConfirmed } from '../../json-import/json-import.component';
+import { LootImportPayload } from '../../../models/loot';
 import { NotificationService } from '../../../services/notification.service';
 
 /** Tests the component class directly (no TestBed/DOM), per the app convention. */
@@ -110,33 +112,37 @@ describe('CuratedLootComponent', () => {
     expect(component.itemMeta(loot.items[0])).toBe('Catalog item');
   });
 
-  it('importLoot rejects malformed JSON client-side', () => {
+  // The import box checks the paste and hands over a normalized payload; this
+  // component only sends it and reports what the server says.
+  const confirmedLoot = (payload: LootImportPayload | null): JsonImportConfirmed =>
+    ({ loot: payload, shop: null, catalog: new Map() });
+
+  it('importLoot sends nothing without a checked payload', () => {
     component.selected = loot;
-    component.lootImportDraft = '{not json';
-    component.importLoot();
+    component.importLoot(confirmedLoot(null));
     expect(service.importLoot).not.toHaveBeenCalled();
-    expect(component.lootImportError).toContain('Not valid JSON');
   });
 
-  it('importLoot posts a parsed payload and closes the import box', () => {
+  it('importLoot posts the checked payload and closes the import box', () => {
     component.selected = loot;
     component.lootImportOpen = true;
-    component.lootImportDraft = JSON.stringify({ coinGp: 10, items: [{ key: 'longsword' }] });
+    const payload: LootImportPayload = {
+      coinGp: 10, items: [{ key: 'longsword', name: null, notes: null, qty: null }] };
     service.importLoot.and.returnValue(of(loot));
-    component.importLoot();
-    expect(service.importLoot).toHaveBeenCalledWith(5, {
-      coinGp: 10, items: [{ key: 'longsword', name: null, notes: null, qty: null }] });
+    component.importLoot(confirmedLoot(payload));
+    expect(service.importLoot).toHaveBeenCalledWith(5, payload);
     expect(component.lootImportOpen).toBeFalse();
-    expect(component.lootImportDraft).toBe('');
   });
 
-  it('importLoot surfaces the server message on failure', () => {
+  it('importLoot surfaces the server message on failure and keeps the box open', () => {
     component.selected = loot;
-    component.lootImportDraft = JSON.stringify({ items: [{ key: 'vorpal-blade' }] });
+    component.lootImportOpen = true;
     service.importLoot.and.returnValue(
       throwError(() => ({ error: { message: 'Unknown catalog keys: vorpal-blade' } })));
-    component.importLoot();
+    component.importLoot(confirmedLoot({ items: [{ key: 'vorpal-blade' }] }));
     expect(component.lootImportError).toBe('Unknown catalog keys: vorpal-blade');
+    expect(component.lootImportOpen).toBeTrue();
+    expect(component.busy).toBeFalse();
   });
 
   it('deleteList clears selection and reloads', () => {

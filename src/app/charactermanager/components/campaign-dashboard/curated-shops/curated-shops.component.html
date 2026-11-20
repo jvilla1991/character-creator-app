@@ -12,19 +12,8 @@
         <button class="btn" (click)="toggleImport()">{{ importOpen ? 'Cancel import' : 'Import JSON' }}</button>
       </div>
       @if (importOpen) {
-        <div style="margin: 10px 0;">
-          <textarea [(ngModel)]="importDraft" rows="7" style="width: 100%; font-family: monospace;"
-          [placeholder]="importExample" aria-label="Shop JSON"></textarea>
-          <div class="muted" style="margin-top: 4px;">
-            Item keys are SRD catalog slugs (e.g. "longsword", "rations"); priceGp overrides the catalog
-            price. Use “Copy JSON” on an existing shop to see the format.
-          </div>
-          @if (importError) {
-            <div style="color: var(--crimson); margin-top: 4px;">{{ importError }}</div>
-          }
-          <button class="btn primary" style="margin-top: 6px;"
-          [disabled]="!importDraft.trim() || busy" (click)="importShop()">Import shop</button>
-        </div>
+        <app-json-import class="shop-import" kind="shop" confirmLabel="Import shop" [busy]="busy"
+          [serverError]="importError" (confirmed)="importShop($event)"></app-json-import>
       }
       @if (shops.length) {
         <ul class="shop-list">

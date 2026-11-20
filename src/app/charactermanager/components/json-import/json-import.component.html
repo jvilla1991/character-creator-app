@@ -1,0 +1,79 @@
+<div class="ji">
+  <div class="ji-bar">
+    <span class="ji-bar-note">Checked as you paste and type.</span>
+    <button type="button" class="ji-link" [disabled]="!briefReady()" (click)="copyBrief()"
+      title="Copies the format rules and every valid item key — paste it into an AI chat before asking for items">
+      {{ copied() ? 'Copied ✓' : 'Copy AI instructions' }}
+    </button>
+  </div>
+
+  <textarea #box class="ji-text" rows="12" spellcheck="false" aria-label="JSON"
+    [placeholder]="placeholder()" [value]="draft()"
+    (paste)="onPaste()" (input)="onInput(box.value)"></textarea>
+
+  @if (catalogState() === 'failed') {
+    <p class="ji-note">
+      Could not load the item catalog, so keys cannot be checked here.
+      <button type="button" class="ji-link" (click)="loadCatalog()">Try again</button>
+    </p>
+  }
+
+  <div class="ji-check" aria-live="polite">
+    @if (verdict(); as v) {
+      <p class="ji-verdict" [class.good]="v.tone === 'good'" [class.bad]="v.tone === 'bad'">
+        @if (v.tone === 'good') { <span aria-hidden="true">✓ </span> }
+        {{ v.text }}
+      </p>
+    }
+
+    @if (!checking() && check().state === 'checked') {
+      @for (problem of check().problems; track problem) {
+        <p class="ji-problem">{{ problem }}</p>
+      }
+      @if (check().header; as header) {
+        <p class="ji-header">{{ header }}</p>
+      }
+      @if (check().lines.length) {
+        <ul class="ji-lines">
+          <!-- Lines that need fixing come first, so they are never below the fold. -->
+          @for (line of badLines(); track line.n) {
+            <li class="ji-line bad">
+              <span class="ji-n">{{ line.n }}</span>
+              <span class="ji-what">
+                <span class="ji-label">{{ line.label }}</span>
+                <span class="ji-detail">{{ line.problem }}</span>
+                @if (line.suggestion; as s) {
+                  <button type="button" class="ji-link" (click)="useSuggestion(line)"
+                    [attr.aria-label]="'Use ' + s.key + ' on line ' + line.n">
+                    Use "{{ s.key }}" ({{ s.name }})
+                  </button>
+                }
+              </span>
+            </li>
+          }
+          @for (line of goodLines(); track line.n) {
+            <li class="ji-line">
+              <span class="ji-n">{{ line.n }}</span>
+              <span class="ji-what">
+                <span class="ji-label">{{ line.label }}</span>
+                <span class="ji-detail">{{ line.detail }}</span>
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+
+  @if (shownServerError(); as error) {
+    <p class="ji-problem" role="alert">{{ error }}</p>
+  }
+
+  <div class="ji-actions">
+    <button type="button" class="ji-btn primary" (click)="confirm()"
+      [disabled]="busy() || checking() || !check().ok">{{ confirmLabel() }}</button>
+    @if (cancellable()) {
+      <button type="button" class="ji-btn" (click)="cancel()">Cancel</button>
+    }
+  </div>
+</div>

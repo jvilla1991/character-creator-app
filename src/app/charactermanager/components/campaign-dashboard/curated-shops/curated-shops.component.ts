@@ -1,12 +1,13 @@
 import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
-import { CuratedShop, ShopSummary, parseImportPayload, toImportPayload } from '../../../models/curated-shop';
+import { CuratedShop, ShopSummary, toImportPayload } from '../../../models/curated-shop';
 import { formatCp } from '../../../models/shop';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { LowerCasePipe } from '@angular/common';
+import { JsonImportComponent, JsonImportConfirmed } from '../../json-import/json-import.component';
 
 /**
  * DM-curated shops panel on the campaign dashboard. The DM creates reusable
@@ -18,7 +19,7 @@ import { LowerCasePipe } from '@angular/common';
     selector: 'app-curated-shops',
     templateUrl: './curated-shops.component.html',
     styleUrls: ['./curated-shops.component.scss'],
-    imports: [FormsModule, LowerCasePipe]
+    imports: [FormsModule, LowerCasePipe, JsonImportComponent]
 })
 export class CuratedShopsComponent implements OnChanges {
   @Input() campaign!: Campaign;
@@ -30,16 +31,12 @@ export class CuratedShopsComponent implements OnChanges {
   /** The list request failed — say so instead of showing an empty list. */
   loadFailed = false;
 
-  // Paste-a-shop import (whole shop as JSON; keys validated server-side).
+  // Paste-a-shop import (whole shop as JSON). The import box owns the text and
+  // checks it; the server still has the final say on catalog keys.
   importOpen = false;
-  importDraft = '';
   importError: string | null = null;
   /** Shop id whose JSON was just copied (drives the "Copied" flash). */
   copiedShopId: number | null = null;
-
-  readonly importExample = JSON.stringify(
-    { name: 'The Gilded Flask', settlement: 'Phandalin',
-      items: [{ key: 'longsword', priceGp: 12 }, { key: 'rations' }] }, null, 2);
 
   readonly importCategories: ReadonlyArray<{ value: string; label: string }> = [
     { value: 'WEAPON', label: 'Weapons' },
@@ -111,20 +108,16 @@ export class CuratedShopsComponent implements OnChanges {
     this.importError = null;
   }
 
-  importShop(): void {
-    if (this.busy) return;
-    const { payload, error } = parseImportPayload(this.importDraft);
-    if (error || !payload) {
-      this.importError = error ?? 'Could not read that JSON.';
-      return;
-    }
+  /** The import box's paste passed its check — send it. */
+  importShop(confirmed: JsonImportConfirmed): void {
+    const payload = confirmed.shop;
+    if (this.busy || !payload) return;
     this.busy = true;
     this.importError = null;
     this.curatedShops.importShop(this.campaign.id, payload).subscribe({
       next: shop => {
         this.busy = false;
         this.importOpen = false;
-        this.importDraft = '';
         this.selected = shop;
         this.loadShops();
       },
