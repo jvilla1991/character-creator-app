@@ -536,4 +536,48 @@ describe('StatBreakdownModalComponent', () => {
       expect(component.canSave).toBeTrue();
     });
   });
+
+  describe('skill modifier', () => {
+    /** Perception +5: Wisdom +2, Proficiency +2, and the DM's Observant +1. */
+    const perception = (overrides: Partial<StatBreakdown> = {}): StatBreakdown => ({
+      stat: 'skillPerception',
+      auto: [{ label: 'Wisdom', value: 2, note: 'score 14' }, { label: 'Proficiency', value: 2 }],
+      adjustments: [{ value: 1, label: 'Observant' }],
+      removed: [],
+      unlabelled: 0,
+      total: 5,
+      ...overrides,
+    });
+
+    it('shows every line and the total with a sign, the first line included', () => {
+      open(perception({ auto: [{ label: 'Wisdom', value: -1 }, { label: 'Proficiency', value: 0 }],
+                        adjustments: [], total: -1 }), false);
+      expect(text('auto-lines')).toBe('Wisdom -1 Proficiency +0');
+      expect(text('total')).toBe('Total -1');
+    });
+
+    it('shows a player the lines and the DM lines, read-only, under the skill name', () => {
+      open(perception(), false);
+      expect(fixture.nativeElement.textContent).toContain('Perception');
+      expect(text('auto-lines')).toBe('Wisdom +2 Proficiency +2');
+      expect(text('adjust-lines')).toBe('Observant +1');
+      expect(text('total')).toBe('Total +5');
+      expect(fixture.nativeElement.querySelector('input')).toBeNull();
+    });
+
+    it('lets the DM add a line, with no Remove on the calculated lines', () => {
+      open(perception({ adjustments: [], total: 4 }), true);
+      expect(Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('[data-testid="auto-lines"] button')))
+        .toEqual([]);
+      const saved: StatBreakdownSave[] = [];
+      component.save.subscribe(s => saved.push(s));
+      click('Add a line');
+      const label: HTMLInputElement = fixture.nativeElement.querySelector('.adjust-label');
+      label.value = 'Observant'; label.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(text('total')).toBe('Total +5');
+      click('Save');
+      expect(saved).toEqual([{ lines: [{ value: 1, label: 'Observant' }], keepUnlabelled: true, removed: [], fromBase: 0 }]);
+    });
+  });
 });

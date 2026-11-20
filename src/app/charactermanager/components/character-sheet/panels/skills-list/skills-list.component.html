@@ -1,25 +1,41 @@
-﻿<div class="panel">
+<div class="panel">
   <div class="panel-header">
     <span class="panel-title">Skills</span>
   </div>
   <div class="skills-list">
-    @for (row of skillRows(); track row) {
+    @for (row of skillRows(); track row.name) {
       <div
         class="skill"
         [class.prof]="row.profLevel === 'prof' || row.profLevel === 'expert'"
         [class.expert]="row.profLevel === 'expert'"
         [class.togglable]="editable()"
-        [attr.role]="editable() ? 'button' : null"
-        [attr.tabindex]="editable() ? 0 : null"
-        [attr.aria-label]="editable() ? 'Cycle ' + row.name + ' proficiency' : null"
-        (click)="cycleSkill(row.name)"
-        (keydown.enter)="cycleSkill(row.name)"
-        (keydown.space)="cycleSkill(row.name); $event.preventDefault()"
         >
-        <span class="skill-dot"></span>
-        <span class="skill-name">{{ row.name }}</span>
-        <span class="skill-ability">{{ row.abil }}</span>
-        <span class="skill-mod numeric">{{ row.mod | modifier }}</span>
+        <!-- The DM cycles proficiency with the dot, name and ability; the
+        modifier is its own button, so the two never share a click. -->
+        @if (editable()) {
+          <button type="button" class="skill-toggle"
+            [attr.aria-label]="'Cycle ' + row.name + ' proficiency'"
+            (click)="cycleSkill(row.name)">
+            <span class="skill-dot"></span>
+            <span class="skill-name">{{ row.name }}</span>
+            <span class="skill-ability">{{ row.abil }}</span>
+          </button>
+        } @else {
+          <span class="skill-dot"></span>
+          <span class="skill-name">{{ row.name }}</span>
+          <span class="skill-ability">{{ row.abil }}</span>
+        }
+        <!-- A character's modifier opens its breakdown for every viewer (the DM
+        can add lines there). A follower's stays plain text. -->
+        @if (breakdownEnabled()) {
+          <span class="skill-mod numeric"><button type="button" class="breakdown-btn"
+            [class.adjustable]="canAdjust()"
+            [attr.aria-label]="modButtonLabel(row)"
+            (click)="openBreakdown(row)"
+          >{{ row.mod | modifier }}</button></span>
+        } @else {
+          <span class="skill-mod numeric">{{ row.mod | modifier }}</span>
+        }
       </div>
     }
   </div>

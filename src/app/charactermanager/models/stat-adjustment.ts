@@ -43,12 +43,35 @@ export function slotLevelOf(stat: AdjustableStat): number | null {
 }
 
 /**
- * The numbers that can carry adjustment lines: Armor Class, the six ability
- * scores, and the slot maximum of each spell level. A new entry here plus a
- * definition in `utils/stat-breakdown.ts` is all another number needs (the
- * stored JSON is keyed by this name, so no schema change).
+ * The eighteen skills, by the key their lines are stored under: the skill's
+ * name as the sheet lists it (SKILL_DEFS), spaces dropped, after "skill"
+ * (`skillPerception`, `skillAnimalHandling`, `skillSleight`). A skill's
+ * modifier is worked out when the sheet is drawn, so these lines are the only
+ * part of it that is saved.
  */
-export type AdjustableStat = 'ac' | AbilityStat | SlotStat;
+export const SKILL_STATS = [
+  'skillAcrobatics', 'skillAnimalHandling', 'skillArcana', 'skillAthletics',
+  'skillDeception', 'skillHistory', 'skillInsight', 'skillIntimidation',
+  'skillInvestigation', 'skillMedicine', 'skillNature', 'skillPerception',
+  'skillPerformance', 'skillPersuasion', 'skillReligion', 'skillSleight',
+  'skillStealth', 'skillSurvival',
+] as const;
+export type SkillStat = typeof SKILL_STATS[number];
+
+/** The key holding a skill's lines, from its name on the sheet: 'Animal Handling' → `skillAnimalHandling`. */
+export function skillStat(skill: string): SkillStat {
+  const stat = `skill${(skill ?? '').replace(/\s+/g, '')}` as SkillStat;
+  if (!SKILL_STATS.includes(stat)) throw new Error(`No skill named ${skill}`);
+  return stat;
+}
+
+/**
+ * The numbers that can carry adjustment lines: Armor Class, the six ability
+ * scores, the slot maximum of each spell level, and the eighteen skills. A new
+ * entry here plus a definition in `utils/stat-breakdown.ts` is all another
+ * number needs (the stored JSON is keyed by this name, so no schema change).
+ */
+export type AdjustableStat = 'ac' | AbilityStat | SlotStat | SkillStat;
 
 /** Where a number's removed calculated lines are stored: `acRemoved` for `ac`. */
 export type RemovedLinesKey = `${AdjustableStat}Removed`;
