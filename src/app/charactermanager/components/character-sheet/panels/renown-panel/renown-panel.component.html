@@ -31,13 +31,6 @@
       </form>
     }
     @if (error()) { <div class="error" role="alert">{{ error() }} <button type="button" class="btn sm" (click)="load()" [disabled]="loading() || saving()">Reload</button></div> }
-    @if (canManage && dirty) {
-      <div class="unsaved-bar" role="status">
-        <span>Unsaved renown changes</span>
-        <button type="button" class="btn primary sm" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
-        <button type="button" class="btn sm" (click)="discard()" [disabled]="saving()">Discard</button>
-      </div>
-    }
     @if (loading()) { <p class="renown-empty" role="status">Loading reputations…</p> }
     @else if (!factions().length && !error()) {
       <p class="renown-empty">No factions yet.{{ canManage ? '' : ' Your DM can add factions for this campaign.' }}</p>
@@ -70,6 +63,13 @@
             }
           </div>
         }
+      </div>
+    }
+    @if (canManage && dirty) {
+      <div class="unsaved-bar" role="status">
+        <span>Unsaved renown changes</span>
+        <button type="button" class="btn primary sm" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        <button type="button" class="btn sm" (click)="discard()" [disabled]="saving()">Discard</button>
       </div>
     }
   }
