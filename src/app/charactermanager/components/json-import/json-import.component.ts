@@ -45,14 +45,21 @@ const PLACEHOLDERS: Record<JsonImportKind, string> = {
               { key: 'rations' }] }, null, 2),
 };
 
-const HINTS: Record<JsonImportKind, string> = {
+/** What a paste for each box looks like — the first half of the empty-box hint. */
+const FORMAT_HINTS: Record<JsonImportKind, string> = {
   grant: 'Each item is written out: a "name", a "category" and its stats ("damage" for a weapon, '
-    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes"). A catalog "key" like "longsword" works too.',
+    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes").',
   loot: 'Each item is written out: a "name", a "category" and its stats ("damage" for a weapon, '
-    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes"). A catalog "key" works too; '
-    + '"coinGp" adds to the coin pile. Importing adds to the loot below.',
+    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes"); "coinGp" is the coin pile.',
   shop: 'A shop has a "name" and its items. Each item is written out with a "name", a "category", '
-    + 'a "priceGp" and its stats; a catalog "key" works too. Copy JSON on an existing shop shows the format.',
+    + 'a "priceGp" and its stats.',
+};
+
+/** What the paste does where the box usually lives — the second half, unless the host says otherwise. */
+const USUAL_PURPOSE: Record<JsonImportKind, string> = {
+  grant: 'A catalog "key" like "longsword" works too.',
+  loot: 'A catalog "key" works too. Importing adds to the loot below.',
+  shop: 'A catalog "key" works too. Copy JSON on an existing shop shows the format.',
 };
 
 /**
@@ -88,6 +95,12 @@ export class JsonImportComponent implements OnInit, OnDestroy {
   readonly serverError = input<string | null>(null);
   /** Whether a Cancel button renders. */
   readonly cancellable = input(false);
+  /**
+   * A sentence for the empty box about what THIS paste does, in place of the
+   * kind's usual closing words ("Importing adds to the loot below" is wrong
+   * where the paste starts a new pool).
+   */
+  readonly purpose = input<string | null>(null);
 
   readonly confirmed = output<JsonImportConfirmed>();
   readonly cancelled = output<void>();
@@ -114,7 +127,8 @@ export class JsonImportComponent implements OnInit, OnDestroy {
   private pasted = false;
 
   readonly placeholder = computed(() => PLACEHOLDERS[this.kind()]);
-  readonly hint = computed(() => HINTS[this.kind()]);
+  readonly hint = computed(() =>
+    `${FORMAT_HINTS[this.kind()]} ${this.purpose() ?? USUAL_PURPOSE[this.kind()]}`);
   readonly badLines = computed(() => this.check().lines.filter(l => l.problem));
   readonly goodLines = computed(() => this.check().lines.filter(l => !l.problem));
   readonly shownServerError = computed(() =>
