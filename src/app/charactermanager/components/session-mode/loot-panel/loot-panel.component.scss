@@ -242,3 +242,6 @@
     color: var(--text);
   }
 }
+
+/* The shared JSON paste box, on the Prepare form's "From JSON" tab. */
+.loot-json { display: block; margin-top: 10px; }

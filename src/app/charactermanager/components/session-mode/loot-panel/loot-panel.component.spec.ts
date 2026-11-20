@@ -123,6 +123,47 @@ describe('LootPanelComponent', () => {
     expect(lootService.open).toHaveBeenCalledWith(1, null, 'Bandit spoils');
   });
 
+  // The From JSON box checks the paste; the panel prepares the pool from it in one request.
+  const pasted = { coinGp: 40, items: [{ key: null, name: 'Ruby', notes: null, qty: 3 }] };
+  const confirmedLoot = (loot: typeof pasted | null) => ({ loot, shop: null, catalog: new Map() });
+
+  it('prepareFromJson opens the pool from the pasted contents, with the label', () => {
+    const draft = pool({ dropped: false });
+    lootService.open.and.returnValue(of(draft));
+    component.state = state({ dm: true });
+    component.source = 'json';
+    component.nameDraft = ' Vault spoils ';
+
+    component.prepareFromJson(confirmedLoot(pasted));
+
+    expect(lootService.open).toHaveBeenCalledWith(1, null, 'Vault spoils', pasted);
+    expect(component.loot).toBe(draft);
+    expect(component.preparing).toBeFalse();
+    expect(component.jsonError).toBeNull();
+  });
+
+  it('prepareFromJson shows the server refusal in the box and prepares nothing', () => {
+    lootService.open.and.returnValue(
+      throwError(() => ({ status: 400, error: { message: 'Unknown catalog keys: vorpal-blade' } })));
+    component.state = state({ dm: true });
+
+    component.prepareFromJson(confirmedLoot(pasted));
+
+    expect(component.jsonError).toBe('Unknown catalog keys: vorpal-blade');
+    expect(component.loot).toBeNull();
+    expect(component.preparing).toBeFalse();
+  });
+
+  it('prepareFromJson sends nothing without checked contents, and the plain button is not for JSON', () => {
+    component.state = state({ dm: true });
+    component.prepareFromJson(confirmedLoot(null));
+    expect(lootService.open).not.toHaveBeenCalled();
+
+    component.source = 'json';
+    component.lootListId = 5;
+    expect(component.canPrepare).toBeFalse();
+  });
+
   it('onItemAuthored forwards the composer payload to the pool add endpoint', () => {
     const updated = pool();
     lootService.addItem.and.returnValue(of(updated));
