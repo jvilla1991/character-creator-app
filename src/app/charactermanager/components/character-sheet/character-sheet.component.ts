@@ -906,24 +906,34 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   onItemGrant(item: PcItem): void {
+    this.onItemsGrant([item]);
+  }
+
+  /** One refetch-merge-save for the whole batch (a JSON paste grants many
+   *  lines): a save per item would race and the last one would win. */
+  onItemsGrant(items: PcItem[]): void {
+    if (!items.length) return;
     this.grant(fresh => {
       // Stack onto an existing catalog line (mirrors the backend purchase path);
       // ad-hoc items have no catalogKey and always append. Granted items arrive
       // unequipped, so there's no AC to recompute.
       const inventory = (fresh.inventory ?? []).map(i => ({ ...i }));
-      const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
-      if (line) {
-        line.qty = (line.qty ?? 0) + (item.qty ?? 1);
-        // Backfill the catalog bulk/weight onto a pre-slot-variant line that
-        // never got stamped — otherwise the stack keeps deriving its bulk
-        // from a weight band that can disagree with the official rating.
-        // Never overwrites an existing value (same rule as the conversion).
-        if (line.bulk == null && item.bulk != null) line.bulk = item.bulk;
-        if (line.weight == null && item.weight != null) line.weight = item.weight;
-      } else {
-        inventory.push(item);
+      for (const item of items) {
+        const line = item.catalogKey ? inventory.find(i => i.catalogKey === item.catalogKey) : undefined;
+        if (line) {
+          line.qty = (line.qty ?? 0) + (item.qty ?? 1);
+          // Backfill the catalog bulk/weight onto a pre-slot-variant line that
+          // never got stamped — otherwise the stack keeps deriving its bulk
+          // from a weight band that can disagree with the official rating.
+          // Never overwrites an existing value (same rule as the conversion).
+          if (line.bulk == null && item.bulk != null) line.bulk = item.bulk;
+          if (line.weight == null && item.weight != null) line.weight = item.weight;
+        } else {
+          // A copy: a later line in the same batch may stack onto this one.
+          inventory.push({ ...item });
+        }
       }
       return { ...fresh, inventory };
-    }, 'item');
+    }, items.length === 1 ? 'item' : 'items');
   }
 }

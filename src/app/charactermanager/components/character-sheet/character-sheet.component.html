@@ -370,6 +370,7 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         [slotInventory]="slotInventory"
         (pcChange)="onPcChange($event)"
         (itemGranted)="onItemGrant($event)"
+        (itemsGranted)="onItemsGrant($event)"
         (sellRequested)="sellRequested.emit($event)">
       </app-inventory-panel>
     </div>

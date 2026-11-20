@@ -127,6 +127,10 @@ export class InventoryPanelComponent {
    *  host can route it through GrantService's refetch-merge-save rather than
    *  PUTting this panel's possibly-stale PC copy. */
   readonly itemGranted = output<PcItem>();
+  /** DM grants several items at once (a JSON paste). One event for the whole
+   *  batch so the host does a single refetch-merge-save — one save per item
+   *  would race, and the last save would wipe out the others. */
+  readonly itemsGranted = output<PcItem[]>();
 
   readonly formatCp = formatCp;
 
@@ -331,6 +335,12 @@ export class InventoryPanelComponent {
 
   onAuthored(item: AuthoredItem): void {
     this.itemGranted.emit(pcItemFromAuthored(item));
+    this.grantFormOpen = false;
+  }
+
+  /** The composer's JSON tab: a whole paste, granted as one batch. */
+  onAuthoredMany(items: AuthoredItem[]): void {
+    if (items.length) this.itemsGranted.emit(items.map(pcItemFromAuthored));
     this.grantFormOpen = false;
   }
 

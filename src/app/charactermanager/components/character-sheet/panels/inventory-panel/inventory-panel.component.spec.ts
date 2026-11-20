@@ -547,6 +547,26 @@ describe('InventoryPanelComponent', () => {
       expect(emitted[0]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1, bulk: 1 });
     });
 
+    it('emits a JSON paste as one batch of denormalized PcItems and closes the form', () => {
+      const batches: PcItem[][] = [];
+      const singles: PcItem[] = [];
+      component.itemsGranted.subscribe(b => batches.push(b));
+      component.itemGranted.subscribe(i => singles.push(i));
+      component.grantFormOpen = true;
+
+      component.onAuthoredMany([
+        { kind: 'catalog', item: catalogLongsword, qty: 2 },
+        { kind: 'custom', name: 'Cracked Dragon Fang', category: 'gear', qty: 1 },
+      ]);
+
+      expect(batches.length).toBe(1);
+      expect(batches[0].map(i => i.name)).toEqual(['Longsword', 'Cracked Dragon Fang']);
+      expect(batches[0][0].catalogKey).toBe('longsword');
+      expect(batches[0][1]).toEqual({ name: 'Cracked Dragon Fang', category: 'gear', qty: 1, bulk: 1 });
+      expect(singles.length).toBe(0); // never one save per item
+      expect(component.grantFormOpen).toBeFalse();
+    });
+
     it('cancel closes the form without emitting', () => {
       const emitted: PcItem[] = [];
       component.itemGranted.subscribe(i => emitted.push(i));

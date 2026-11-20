@@ -9,7 +9,7 @@ import { SessionService } from '../../services/session.service';
 import { FollowerService } from '../../services/follower.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { NotificationService } from '../../services/notification.service';
-import { PC } from '../../models/pc';
+import { PC, PcItem } from '../../models/pc';
 import { Follower } from '../../models/follower';
 
 function makePC(overrides: Partial<PC> = {}): PC {
@@ -971,6 +971,47 @@ describe('CharacterSheetComponent', () => {
     const result = mutate(makePC({ inventory: [{ name: 'Cracked Fang', category: 'gear', qty: 1 }] }));
 
     expect(result.inventory?.length).toBe(2);
+  });
+
+  it('grants a batch in one save — stacking onto owned lines and onto earlier lines of the same batch', () => {
+    grantService.grantToPc.and.returnValue(of(makePC()));
+    const batch: PcItem[] = [
+      { catalogKey: 'rations', name: 'Rations', category: 'gear', qty: 5 },
+      { name: 'Cracked Fang', category: 'gear', qty: 1 },
+      { catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1 },
+      { catalogKey: 'rations', name: 'Rations', category: 'gear', qty: 2 },
+    ];
+    component.onItemsGrant(batch);
+
+    expect(grantService.grantToPc).toHaveBeenCalledTimes(1);
+    const mutate = grantService.grantToPc.calls.mostRecent().args[1];
+    const fresh: PC = makePC({ inventory: [{ catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 1 }] });
+
+    expect(mutate(fresh).inventory).toEqual([
+      { catalogKey: 'longsword', name: 'Longsword', category: 'weapon', qty: 2 },
+      { catalogKey: 'rations', name: 'Rations', category: 'gear', qty: 7 },
+      { name: 'Cracked Fang', category: 'gear', qty: 1 },
+    ]);
+    // Purity: neither the fresh PC nor the emitted batch is mutated.
+    expect(fresh.inventory![0].qty).toBe(1);
+    expect(batch[0].qty).toBe(5);
+  });
+
+  it('an empty batch saves nothing', () => {
+    component.onItemsGrant([]);
+    expect(grantService.grantToPc).not.toHaveBeenCalled();
+  });
+
+  it('tells the user if a batch grant fails', () => {
+    const error = new Error('network down');
+    grantService.grantToPc.and.returnValue(throwError(() => error));
+    const notify = spyOn(TestBed.inject(NotificationService), 'error');
+
+    component.onItemsGrant([
+      { name: 'Rope', category: 'gear', qty: 1 }, { name: 'Torch', category: 'gear', qty: 3 },
+    ]);
+
+    expect(notify).toHaveBeenCalledWith('Could not grant the items. Try again.', error);
   });
 
   it('tells the user if the item grant fails', () => {
