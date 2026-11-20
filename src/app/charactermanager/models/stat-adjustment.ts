@@ -66,12 +66,20 @@ export function skillStat(skill: string): SkillStat {
 }
 
 /**
- * The numbers that can carry adjustment lines: Armor Class, the six ability
- * scores, the slot maximum of each spell level, and the eighteen skills. A new
- * entry here plus a definition in `utils/stat-breakdown.ts` is all another
- * number needs (the stored JSON is keyed by this name, so no schema change).
+ * The single numbers in the sheet's vitals and inventory that carry lines:
+ * initiative, speed, proficiency bonus, and inventory capacity (the Darker
+ * Dungeons slot count).
  */
-export type AdjustableStat = 'ac' | AbilityStat | SlotStat | SkillStat;
+export type VitalStat = 'init' | 'speed' | 'prof' | 'capacity';
+
+/**
+ * The numbers that can carry adjustment lines: Armor Class, the six ability
+ * scores, the slot maximum of each spell level, the eighteen skills, and the
+ * vitals above. A new entry here plus a definition in `utils/stat-breakdown.ts`
+ * is all another number needs (the stored JSON is keyed by this name, so no
+ * schema change).
+ */
+export type AdjustableStat = 'ac' | AbilityStat | SlotStat | SkillStat | VitalStat;
 
 /** Where a number's removed calculated lines are stored: `acRemoved` for `ac`. */
 export type RemovedLinesKey = `${AdjustableStat}Removed`;

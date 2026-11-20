@@ -116,17 +116,26 @@ describe('StatBreakdownModalComponent', () => {
     expect(text('auto-lines')).toBe('Class table 2');
     expect(text('adjust-lines')).toBe('Pearl of Power +1');
     expect(text('total')).toBe('Total 3');
-    expect(fixture.nativeElement.querySelector('.breakdown-hint')).toBeNull(); // a player gets no editing words
-
-    open(slots, true);
-    const hint: string = fixture.nativeElement.querySelector('.breakdown-hint').textContent;
-    expect(hint).toContain('class table');
-    expect(hint).not.toContain('armor');
   });
 
-  it('keeps the Armor Class words for Armor Class', () => {
-    open(breakdown(), true);
-    expect(fixture.nativeElement.querySelector('.breakdown-hint').textContent).toContain('These lines stay when armor changes.');
+  it('shows no explaining sentence, column heads or Calculated heading, for the DM or anyone', () => {
+    for (const editable of [false, true]) {
+      open(breakdown({ adjustments: [{ value: 1, label: 'Taunka' }], total: 18 }), editable);
+      const words: string = fixture.nativeElement.textContent;
+      expect(words).not.toContain('Calculated');
+      expect(words).not.toContain('Add what the sheet does not work out');
+      expect(words).not.toContain('These lines stay');
+      expect(words).not.toContain('Amount');
+      expect(fixture.nativeElement.querySelector('.field-hint')).toBeNull();
+      const headings = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('h3')).map(h => h.textContent?.trim());
+      expect(headings).toEqual(['Adjustments']);
+    }
+  });
+
+  it('still names each typed line\'s fields for a screen reader', () => {
+    open(breakdown({ adjustments: [{ value: 1, label: 'Taunka' }], total: 18 }), true);
+    expect(fixture.nativeElement.querySelector('.adjust-amount').getAttribute('aria-label')).toBe('Amount for line 1');
+    expect(fixture.nativeElement.querySelector('.adjust-label').getAttribute('aria-label')).toBe('Label for line 1');
   });
 
   // --- what the DM can do ---
@@ -405,13 +414,6 @@ describe('StatBreakdownModalComponent', () => {
       expect(component.removed).toEqual([]);
     });
 
-    it('explains the lines in ability-score words, not armor words', () => {
-      open(strength(), true);
-      const hint: string = fixture.nativeElement.querySelector('.breakdown-hint').textContent;
-      expect(hint).toContain('base score');
-      expect(hint).not.toContain('armor');
-    });
-
     it('a new line raises the score', () => {
       open(strength(), true);
       component.addLine(2);
@@ -578,6 +580,42 @@ describe('StatBreakdownModalComponent', () => {
       expect(text('total')).toBe('Total +5');
       click('Save');
       expect(saved).toEqual([{ lines: [{ value: 1, label: 'Observant' }], keepUnlabelled: true, removed: [], fromBase: 0 }]);
+    });
+  });
+
+  describe('initiative, speed, proficiency and slot capacity', () => {
+    it('shows initiative signed: Dexterity, the DM lines and the total', () => {
+      open({ stat: 'init', auto: [{ label: 'Dexterity', value: 2 }],
+             adjustments: [{ value: 2, label: 'Alert' }], removed: [], unlabelled: 0, total: 4 }, false);
+      expect(fixture.nativeElement.querySelector('h2').textContent).toContain('Initiative');
+      expect(text('auto-lines')).toBe('Dexterity +2');
+      expect(text('adjust-lines')).toBe('Alert +2');
+      expect(text('total')).toBe('Total +4');
+    });
+
+    it('shows proficiency signed, starting from the level', () => {
+      open({ stat: 'prof', auto: [{ label: 'Level 5', value: 3 }],
+             adjustments: [], removed: [], unlabelled: 0, total: 3 }, false);
+      expect(fixture.nativeElement.querySelector('h2').textContent).toContain('Proficiency Bonus');
+      expect(text('auto-lines')).toBe('Level 5 +3');
+      expect(text('total')).toBe('Total +3');
+    });
+
+    it('lets the DM label part of the base speed', () => {
+      open({ stat: 'speed', auto: [{ label: 'Base speed', value: 35 }],
+             adjustments: [], removed: [], unlabelled: 0, total: 35 }, true);
+      expect(text('auto-lines')).toBe('Base speed 35');
+      expect(Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
+        .some(b => b.textContent?.trim() === 'Label part of the base speed')).toBeTrue();
+    });
+
+    it('shows slot capacity as a plain count', () => {
+      open({ stat: 'capacity', auto: [{ label: 'Medium size', value: 18 }, { label: 'Strength', value: 2 }],
+             adjustments: [{ value: 3, label: 'Bag of Holding' }], removed: [], unlabelled: 0, total: 23 }, false);
+      expect(fixture.nativeElement.querySelector('h2').textContent).toContain('Slot Capacity');
+      expect(text('auto-lines')).toBe('Medium size 18 Strength +2');
+      expect(text('adjust-lines')).toBe('Bag of Holding +3');
+      expect(text('total')).toBe('Total 23');
     });
   });
 });

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core';
+import { AdjustableStat } from '../../../../models/stat-adjustment';
 import { PC, PcItem } from '../../../../models/pc';
 import { formatCp, SellRequest } from '../../../../models/shop';
 import { AuthoredItem, pcItemFromAuthored } from '../../../item-composer/authored-item';
@@ -114,6 +115,14 @@ export class InventoryPanelComponent {
    *  of raw weight, and each line shows its bulk. Display-only: the encumbered
    *  state is computed live and never written into pc.conditions. */
   @Input() slotInventory = false;
+  /** The slot capacity opens its breakdown. Off for a follower, which has no
+   *  stored lines. */
+  @Input() breakdownEnabled = false;
+  /** The viewer may change the lines in that breakdown (the DM, or the owner of
+   *  a character that is in no campaign). Only changes the affordance here. */
+  @Input() canAdjust = false;
+  /** Anyone clicked the slot capacity — the parent opens the breakdown dialog. */
+  readonly breakdownRequested = output<AdjustableStat>();
   /** DM cross-link: reveals the "Grant item" control. Distinct from `editable`
    *  (which also drives the in-session sell/equip embed). */
   @Input() addAllowed = false;
@@ -177,6 +186,12 @@ export class InventoryPanelComponent {
 
   get slotCapacity(): number {
     return slotCapacity(this.pc);
+  }
+
+  /** Spoken name of the capacity button: the value, then what activating it does. */
+  get capacityButtonLabel(): string {
+    const what = `Slot capacity ${this.slotCapacity}. Show how it is worked out`;
+    return this.canAdjust ? `${what} and adjust it` : what;
   }
 
   get encumbered(): boolean {

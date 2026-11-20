@@ -620,8 +620,8 @@ export class PCService {
       conModifier: conMod,
       hpGained,
       newHpMax: (pc.hp?.max ?? 0) + hpGained,
-      currentProfBonus: demoProfBonus(current),
-      newProfBonus: demoProfBonus(newLevel),
+      currentProfBonus: demoProfBonus(current) + adjustmentSum(adjustmentsFor(pc, 'prof')),
+      newProfBonus: demoProfBonus(newLevel) + adjustmentSum(adjustmentsFor(pc, 'prof')),
       currentSpellSlots: demoCurrentMaxSlots(pc),
       newSpellSlots: this.demoSlotMaxes(pc, newLevel),
       subclassDue: newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass,
@@ -667,6 +667,7 @@ export class PCService {
       STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...(existing.stats ?? {}),
     };
     const oldConMod = modFromScore(stats['CON']);
+    const oldDexMod = modFromScore(stats['DEX']);
     // Each raised score gets a "Level N Increase" line (mirrors the server), so
     // the ability breakdown says where the points came from.
     let statAdjustments = existing.statAdjustments;
@@ -724,7 +725,10 @@ export class PCService {
     const updated: PC = {
       ...existing,
       level: newLevel,
-      prof: demoProfBonus(newLevel),
+      // The table for the new level plus the DM's proficiency lines (mirrors the server).
+      prof: demoProfBonus(newLevel) + adjustmentSum(adjustmentsFor(existing, 'prof')),
+      // A saved initiative moves with the Dexterity modifier (mirrors the server).
+      init: existing.init == null ? existing.init : existing.init + modFromScore(stats['DEX']) - oldDexMod,
       stats: stats as PC['stats'],
       statAdjustments,
       hp: existing.hp

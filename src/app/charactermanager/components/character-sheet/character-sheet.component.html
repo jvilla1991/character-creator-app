@@ -372,6 +372,9 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         (inventoryTransferred)="onInventoryTransferred($event)"
         [shopOpenForMe]="shopOpenForMe"
         [slotInventory]="slotInventory"
+        [breakdownEnabled]="!followerMode"
+        [canAdjust]="canAdjustStats"
+        (breakdownRequested)="onBreakdownRequested($event)"
         (pcChange)="onPcChange($event)"
         (itemGranted)="onItemGrant($event)"
         (itemsGranted)="onItemsGrant($event)"
@@ -434,8 +437,9 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
 }
 
 <!-- Number breakdown overlay — opened by clicking a calculated number (Armor
-Class in the vitals strip, an ability score, a skill's modifier, "Slot maximum"
-on the spell slot strip). Read-only unless the viewer may adjust the character. -->
+Class, initiative, speed or proficiency in the vitals strip, an ability score,
+a skill's modifier, the inventory's slot capacity, "Slot maximum" on the spell
+slot strip). Read-only unless the viewer may adjust the character. -->
 @if (statBreakdown) {
   <div class="modal-backdrop" (click)="closeStatBreakdown()">
     <app-stat-breakdown-modal
