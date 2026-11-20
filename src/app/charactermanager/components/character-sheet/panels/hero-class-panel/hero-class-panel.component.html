@@ -201,6 +201,9 @@
       </div>
     }
 
+    <!-- Recommended starting spells, and a base-game subclass's always-prepared list (renders nothing when neither applies) -->
+    <app-recommended-spells [pc]="pc" [embedded]="true"></app-recommended-spells>
+
     <!-- WoW variant: suggested spells (NOT always prepared) -->
     @if (suggestedSpells.length) {
       <h3 class="hero-spells-title">Suggested {{ pc.specialization }} Spells</h3>

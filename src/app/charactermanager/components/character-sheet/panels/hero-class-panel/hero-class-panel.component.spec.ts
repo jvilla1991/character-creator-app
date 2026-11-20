@@ -2,8 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { HeroClassPanelComponent, isHeroClass } from './hero-class-panel.component';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
+import { ClassFeatureService } from '../../../../services/class-feature.service';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { PC } from '../../../../models/pc';
+
+/** The embedded recommended-spells panel reads the class-feature roadmap; these specs give it an empty one. */
+const classFeatures = { progression: () => of([]) };
 
 function makeDeathKnight(overrides: Partial<PC> = {}): PC {
   return {
@@ -26,7 +30,10 @@ describe('HeroClassPanelComponent', () => {
   beforeEach(() => {
     dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
     dndResources.getSpells.and.returnValue(of([deathGrip]));
-    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: DndResourcesService, useValue: dndResources },
+      { provide: ClassFeatureService, useValue: classFeatures },
+    ] });
     component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
   });
 
@@ -304,6 +311,30 @@ describe('HeroClassPanelComponent', () => {
       component.pc = makeDeathKnight({ specialization: 'Blood' });
       expect(component.hero?.name).toBe('Death Knight');
       expect(component.guidance).toBeNull();
+    });
+
+    it('keeps the recommended starting spells in the same panel, beside the suggested spells', () => {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', makePaladin());
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const titles = Array.from(el.querySelectorAll('.hero-spells-title')).map(n => n.textContent!.trim());
+      expect(titles).toEqual(['Starting spells', 'Suggested Protection Spells']);
+      // Embedded: one panel frame, not a second one inside it.
+      expect(el.querySelectorAll('.panel').length).toBe(1);
+      const starting = el.querySelector('app-recommended-spells')!.textContent!.replace(/\s+/g, ' ');
+      expect(starting).toContain('The World of Warcraft book recommends these for a new Protection Paladin.');
+      expect(starting).toContain('Compelled Duel, Searing Smite');
+    });
+
+    it("gives a Death Knight the Paladin's starting spells in its own panel", () => {
+      const fixture = TestBed.createComponent(HeroClassPanelComponent);
+      fixture.componentRef.setInput('pc', makeDeathKnight());
+      fixture.detectChanges();
+      const starting = (fixture.nativeElement as HTMLElement).querySelector('app-recommended-spells')!
+        .textContent!.replace(/\s+/g, ' ');
+      expect(starting).toContain("The Player's Handbook recommends these for a new Paladin.");
+      expect(starting).toContain('Heroism, Searing Smite');
     });
 
     it('titles the panel and shows the spec description', () => {
@@ -1020,7 +1051,10 @@ describe('HeroClassPanelComponent — World of Warcraft Evoker (Sorcerer)', () =
     dndResources.getSpells.and.returnValue(of([
       stub('Azure Strike', 1), stub('Living Flame', 1), stub('Chromatic Orb', 1, false), stub('Fireball', 3, false),
     ]));
-    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: DndResourcesService, useValue: dndResources },
+      { provide: ClassFeatureService, useValue: classFeatures },
+    ] });
     component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
   });
 
@@ -1124,7 +1158,10 @@ describe('HeroClassPanelComponent — World of Warcraft Hunter (Ranger) pet', ()
   beforeEach(() => {
     dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
     dndResources.getSpells.and.returnValue(of([]));
-    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: DndResourcesService, useValue: dndResources },
+      { provide: ClassFeatureService, useValue: classFeatures },
+    ] });
     component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
   });
 
@@ -1292,7 +1329,10 @@ describe('HeroClassPanelComponent — World of Warcraft Mage (Wizard)', () => {
       spell('Create Food and Water', 3, ['cleric', 'paladin']), spell('Sleet Storm', 3, ['sorcerer', 'wizard']),
       spell('Arcane Hand', 5, ['wizard']),
     ]));
-    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: DndResourcesService, useValue: dndResources },
+      { provide: ClassFeatureService, useValue: classFeatures },
+    ] });
     component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
   });
 
@@ -1371,7 +1411,10 @@ describe('HeroClassPanelComponent — World of Warcraft Monk', () => {
   beforeEach(() => {
     dndResources = jasmine.createSpyObj<DndResourcesService>('DndResourcesService', ['getSpells']);
     dndResources.getSpells.and.returnValue(of([]));
-    TestBed.configureTestingModule({ providers: [{ provide: DndResourcesService, useValue: dndResources }] });
+    TestBed.configureTestingModule({ providers: [
+      { provide: DndResourcesService, useValue: dndResources },
+      { provide: ClassFeatureService, useValue: classFeatures },
+    ] });
     component = TestBed.runInInjectionContext(() => new HeroClassPanelComponent());
   });
 

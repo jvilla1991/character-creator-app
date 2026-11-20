@@ -300,6 +300,10 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           or a Death Knight's rune weapon -->
           <app-hero-class-panel [pc]="pc" [canEdit]="ownSheet || editable" (pcChange)="onPcChange($event)"
             (petFamilyChange)="onPetFamilyChange($event)"></app-hero-class-panel>
+        } @else {
+          <!-- Recommended starting spells and subclass spells for a base-game spellcaster; renders nothing
+          otherwise. A World of Warcraft character has them inside the hero-class panel above. -->
+          <app-recommended-spells [pc]="pc"></app-recommended-spells>
         }
         <!-- Cantrips and always-prepared spells from a World of Warcraft species; renders nothing otherwise -->
         <app-species-spells [pc]="pc"></app-species-spells>

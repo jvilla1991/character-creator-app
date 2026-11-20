@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output, signal } from '@angular/core';
 import { RuneWeaponFieldComponent } from './rune-weapon-field.component';
+import { RecommendedSpellsComponent } from '../recommended-spells/recommended-spells.component';
 import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
 import {
   ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
@@ -66,6 +67,8 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
  * the Evoker Spells table, Metamagic, spells to prepare, Elemental Affinity and suggested spells; for a WoW Hunter
  * Beast Master, the Pet card (family selector — saved through `petFamilyChange`, which the sheet sends to the pet endpoint —
  * plus the family's stat block, specialization, mastery and, for Beast Mastery at Ranger 6+, Pet Specialization).
+ * Every spellcaster also gets the recommended starting spells and, with a base-game subclass, that subclass's
+ * always-prepared list (the embedded recommended-spells panel).
  * Derived from the PC's
  * class/subclass/level/specialization/stats, so nothing is persisted and an
  * existing character picks up new rows as it levels. Spell text is looked up by
@@ -76,7 +79,7 @@ export type SubclassMatch = 'match' | 'different' | 'pending';
   templateUrl: './hero-class-panel.component.html',
   styleUrls: ['./hero-class-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RuneWeaponFieldComponent, ResourceCounterComponent],
+  imports: [RuneWeaponFieldComponent, ResourceCounterComponent, RecommendedSpellsComponent],
 })
 export class HeroClassPanelComponent {
   private readonly dndResources = inject(DndResourcesService);

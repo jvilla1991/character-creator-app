@@ -22,7 +22,11 @@
   </p>
 }
 @if (recommendedSpells().length && recommendedFor()) {
-  <p class="spell-recommend-note">Spells marked <em>Recommended</em> suit the {{ recommendedFor() }} specialization — pick whatever you like.</p>
+  @if (recommendedSource() === 'handbook') {
+    <p class="spell-recommend-note">Spells marked <em>Recommended</em> are the Player's Handbook's picks for a new {{ recommendedFor() }} — pick whatever you like.</p>
+  } @else {
+    <p class="spell-recommend-note">Spells marked <em>Recommended</em> suit the {{ recommendedFor() }} specialization — pick whatever you like.</p>
+  }
 }
 
 <!-- Filter bar -->
@@ -69,7 +73,7 @@
               {{ s.name }}
               @if (recommended) {
                 <span class="spell-recommended-badge"
-                  [attr.title]="recommendedFor() ? 'Recommended for ' + recommendedFor() : null">Recommended</span>
+                  [attr.title]="recommendedTitle()">Recommended</span>
               }
               @if (selected) {
                 <span class="spell-selected-badge">Selected</span>
