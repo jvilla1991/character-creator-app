@@ -31,6 +31,7 @@ import {
   ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
   recommendedStartingSpells, recommendedSubclassFor,
 } from '../../models/hero-class';
+import { handbookClassPicks, handbookStartingSpells } from '../../models/recommended-spells';
 import {
   CatalogSpecies, SPECIES_ABILITY_NAMES, SpeciesOption, SpeciesSelections, buildSpeciesOptions, catalogSpeciesByKey,
   chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
@@ -474,9 +475,26 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return name && this.availableSubclasses.some(s => s.name === name) ? name : '';
   }
 
+  /**
+   * True when the recommended spells are the chosen specialization's (a World of
+   * Warcraft class with guidance); false when they are the Player's Handbook's
+   * picks for the base class — every base-game class, and a hero class without
+   * guidance of its own (a Death Knight is a Paladin, a Demon Hunter a Ranger).
+   */
+  get recommendsBySpecialization(): boolean {
+    return !!this.heroClass?.guidance;
+  }
+
   /** Spells the spells step highlights as "Recommended" (stable array — never auto-selected). */
   get recommendedSpells(): readonly string[] {
-    return recommendedStartingSpells(this.heroClass, this.specialization);
+    return this.recommendsBySpecialization
+      ? recommendedStartingSpells(this.heroClass, this.specialization)
+      : handbookStartingSpells(this.clazz);
+  }
+
+  /** Who the recommended spells are for: the specialization ('Holy'), or the base class ('Bard'). */
+  get recommendedFor(): string {
+    return this.recommendsBySpecialization ? this.specialization : handbookClassPicks(this.clazz)?.for ?? '';
   }
 
   /** The chosen hero class's specialization options; empty for a base class. */

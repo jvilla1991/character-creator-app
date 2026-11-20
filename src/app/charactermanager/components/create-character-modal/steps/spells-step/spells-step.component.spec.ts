@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { SpellsStepComponent } from './spells-step.component';
 import { DndSpell } from '../../../../models/dnd-api.types';
 import { heroClassByKey, recommendedStartingSpells } from '../../../../models/hero-class';
+import { handbookStartingSpells } from '../../../../models/recommended-spells';
 
 describe('spell creation level groups', () => {
   it('collapses levels independently and preserves selection through filtering', () => {
@@ -173,6 +174,31 @@ describe('spell creation level groups', () => {
       'Mending', 'Resistance', 'Thaumaturgy', 'Toll the Dead', 'Bane', 'Command', 'Healing Word', 'Shadow Word: Pain',
     ]);
     expect(el.querySelector('.spell-recommended-badge')!.getAttribute('title')).toBe('Recommended for Shadow');
+    expect(el.querySelectorAll('.spell-selected-badge').length).toBe(0);
+  });
+
+  it("words the Player's Handbook's picks for a base-game class as the handbook's, not a specialization's", () => {
+    const fixture = TestBed.createComponent(SpellsStepComponent);
+    const spell = (name: string, level: number): DndSpell => ({ name, level, school: 'enchantment',
+      classes: ['bard'], actionType: 'action', concentration: false, ritual: false,
+      range: '60 feet', components: ['v'], duration: 'Instantaneous', description: `${name}.` });
+    fixture.componentRef.setInput('filteredSpellList', [
+      spell('Dancing Lights', 0), spell('Vicious Mockery', 0), spell('Mending', 0),
+      spell('Charm Person', 1), spell('Healing Word', 1), spell('Sleep', 1),
+    ]);
+    fixture.componentRef.setInput('recommendedSpells', handbookStartingSpells('Bard'));
+    fixture.componentRef.setInput('recommendedFor', 'Bard');
+    fixture.componentRef.setInput('recommendedSource', 'handbook');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const badged = (Array.from(el.querySelectorAll('.spell-row.recommended .spell-pick-name')) as HTMLElement[])
+      .map(n => n.textContent!.replace('Recommended', '').trim());
+    expect(badged).toEqual(['Dancing Lights', 'Vicious Mockery', 'Charm Person', 'Healing Word']);
+    expect(el.querySelector('.spell-recommended-badge')!.getAttribute('title'))
+      .toBe("Recommended by the Player's Handbook for a new Bard");
+    expect(el.querySelector('.spell-recommend-note')!.textContent)
+      .toContain("are the Player's Handbook's picks for a new Bard");
+    expect(el.textContent).not.toContain('specialization');
     expect(el.querySelectorAll('.spell-selected-badge').length).toBe(0);
   });
 

@@ -39,12 +39,26 @@ export class SpellsStepComponent {
   readonly selectedSpells = input<DndSpell[]>([]);
   readonly expandedSpellName = input<string | null>(null);
   /**
-   * Spell names to badge "Recommended" (e.g. a WoW Druid specialization's
-   * starting picks). Highlight only — nothing is auto-selected.
+   * Spell names to badge "Recommended" (a WoW Druid specialization's starting
+   * picks, or the Player's Handbook's for a base-game class). Highlight only —
+   * nothing is auto-selected.
    */
   readonly recommendedSpells = input<readonly string[]>([]);
-  /** What the recommendation is for (the specialization), shown in the badge tooltip. */
+  /** Who the recommendation is for — the specialization ('Holy') or the class ('Bard'). */
   readonly recommendedFor = input('');
+  /**
+   * Where the recommendation comes from: a World of Warcraft specialization's
+   * guidance, or the Player's Handbook's picks for the class. Sets the wording
+   * of the note and the badge tooltip.
+   */
+  readonly recommendedSource = input<'specialization' | 'handbook'>('specialization');
+  /** The badge tooltip; null when there is nobody to name. */
+  readonly recommendedTitle = computed(() => {
+    if (!this.recommendedFor()) return null;
+    return this.recommendedSource() === 'handbook'
+      ? `Recommended by the Player's Handbook for a new ${this.recommendedFor()}`
+      : `Recommended for ${this.recommendedFor()}`;
+  });
   private readonly recommendedSet = computed(
     () => new Set(this.recommendedSpells().map(spellKey)),
   );

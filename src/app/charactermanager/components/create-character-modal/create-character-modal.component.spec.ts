@@ -925,6 +925,29 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.submit();
     });
 
+    it("badges the Player's Handbook's picks for a base-game class, and for a hero class without its own", () => {
+      // A Death Knight is a Paladin with no specialization guidance: the Paladin's handbook picks apply.
+      component.selectSpecialization('Frost');
+      expect(component.recommendsBySpecialization).toBeFalse();
+      expect(component.recommendedFor).toBe('Paladin');
+      expect(component.recommendedSpells).toEqual(['Heroism', 'Searing Smite']);
+
+      component.toggleClass('Wizard');
+      expect(component.recommendsBySpecialization).toBeFalse();
+      expect(component.recommendedFor).toBe('Wizard');
+      expect(component.recommendedSpells).toEqual([
+        'Light', 'Mage Hand', 'Ray of Frost',
+        'Detect Magic', 'Feather Fall', 'Mage Armor', 'Magic Missile', 'Sleep', 'Thunderwave',
+      ]);
+      expect(component.recommendedSpells).toBe(component.recommendedSpells);   // stable reference
+      expect(component.selectedSpells).toEqual([]);
+
+      // A class that casts no spells has nothing to badge.
+      component.toggleClass('Barbarian');
+      expect(component.recommendedFor).toBe('');
+      expect(component.recommendedSpells).toEqual([]);
+    });
+
     it('sends a null specialization for a base class', (done) => {
       component.toggleClass('Wizard');
       component.name = 'Aelindra';
@@ -1091,6 +1114,8 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.specializationGuidance).toBeNull();
       expect(component.recommendedSpells).toEqual([]);
       component.selectSpecialization('Balance');
+      expect(component.recommendsBySpecialization).toBeTrue();
+      expect(component.recommendedFor).toBe('Balance');
       expect(component.specializationGuidance?.subclass.name).toBe('Circle of the Stars');
       expect(component.specializationGuidance?.featureChoice).toEqual({ feature: 'Primal Order', option: 'Magician' });
       expect(component.recommendedSpells)
@@ -1610,7 +1635,11 @@ describe('CreateCharacterModalComponent — logic', () => {
       component.toggleClass('Cleric');
       expect(component.selectedClassKey).toBe('Cleric');
       expect(component.specializationGuidance).toBeNull();
-      expect(component.recommendedSpells).toEqual([]);
+      // Back on the base class, the badges are the Player's Handbook's picks for a Cleric.
+      expect(component.recommendsBySpecialization).toBeFalse();
+      expect(component.recommendedFor).toBe('Cleric');
+      expect(component.recommendedSpells)
+        .toEqual(['Guidance', 'Sacred Flame', 'Thaumaturgy', 'Bless', 'Cure Wounds', 'Guiding Bolt', 'Shield of Faith']);
     });
   });
 
@@ -1915,9 +1944,11 @@ describe('CreateCharacterModalComponent — logic', () => {
       expect(component.isSpellcastingClass).toBeTrue();
       expect(component.maxCantrips).toBe(0);
       expect(component.maxKnownSpells).toBe(2);
-      // No specialization guidance for a Demon Hunter, so nothing is badged.
+      // No specialization guidance for a Demon Hunter, so the badges are the Player's Handbook's Ranger picks.
       component.selectSpecialization('Havoc');
-      expect(component.recommendedSpells).toEqual([]);
+      expect(component.recommendsBySpecialization).toBeFalse();
+      expect(component.recommendedFor).toBe('Ranger');
+      expect(component.recommendedSpells).toEqual(['Cure Wounds', 'Ensnaring Strike']);
     });
 
     it('keeps the Demon Hunter separate: its subclass stays locked and its specs differ', () => {

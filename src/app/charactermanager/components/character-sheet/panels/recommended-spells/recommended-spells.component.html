@@ -1,0 +1,71 @@
+@if (view()) {
+  @if (embedded()) {
+    <ng-container [ngTemplateOutlet]="body"></ng-container>
+  } @else {
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Recommended Spells</span>
+      </div>
+      <ng-container [ngTemplateOutlet]="body"></ng-container>
+    </div>
+  }
+}
+
+<ng-template #body>
+  @if (view(); as v) {
+    <!-- Starting cantrips and level-1 spells the book recommends (never granted or selected) -->
+    @for (p of v.picks; track p.title) {
+      <h3 class="hero-spells-title">{{ p.title }}</h3>
+      <p class="hero-spells-note">{{ p.note }}</p>
+      <dl class="suggested-spells">
+        @for (row of p.rows; track row.label) {
+          <dt>{{ row.label }}</dt>
+          <dd>
+            @for (s of row.spells; track s.name; let last = $last) {
+              <span class="suggested-spell" [class.known]="s.known">
+                {{ s.name }}@if (isWowSpell(s.name)) {<span class="wow-mark" title="World of Warcraft spell" aria-label="World of Warcraft spell">✦</span>}
+                @if (s.prepared) {
+                  <span class="spell-tag">prepared</span>
+                } @else if (s.known) {
+                  <span class="spell-tag">known</span>
+                }
+              </span>@if (!last) {<span class="sep">, </span>}
+            }
+          </dd>
+        }
+      </dl>
+    }
+
+    <!-- The subclass's always-prepared list, from the class-feature roadmap -->
+    @if (v.list; as list) {
+      <h3 class="hero-spells-title">{{ list.title }}</h3>
+      <p class="hero-spells-note">Always prepared; they don't count against your prepared spells.</p>
+      @if (list.known.length) {
+        <ul class="hero-spells">
+          @for (entry of list.known; track entry.name) {
+            @let spell = spellFor(entry.name);
+            <li>
+              <details class="hero-spell">
+                <summary>
+                  <span class="hero-spell-name">{{ entry.name }}</span>@if (spell?.source === 'World of Warcraft') {<span class="wow-mark" title="World of Warcraft spell" aria-label="World of Warcraft spell">✦</span>}
+                  <span class="hero-spell-meta">
+                    {{ list.baseClass }} {{ entry.classLevel }}
+                    @if (spell) {
+                      · {{ spell.level === 0 ? 'Cantrip' : 'Level ' + spell.level }} {{ spell.school }}
+                    }
+                  </span>
+                </summary>
+                <p class="hero-spell-desc">
+                  {{ spell?.description || (spellIndex() ? 'No description available.' : 'Loading spell text…') }}
+                </p>
+              </details>
+            </li>
+          }
+        </ul>
+      }
+      @if (list.upcoming) {
+        <p class="hero-spells-note subclass-spells-upcoming">Still to come: {{ list.upcoming }}.</p>
+      }
+    }
+  }
+</ng-template>
