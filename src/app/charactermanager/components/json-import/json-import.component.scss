@@ -1,0 +1,168 @@
+/* The shared "paste JSON" box: a roomy monospace text box, a live verdict
+   under it, and the checked lines. Buttons match the item composer's so the
+   box sits naturally inside the grant form as well as on the dashboard. */
+
+:host { display: block; }
+
+.ji {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ji-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ji-bar-note,
+.ji-note {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 0;
+}
+
+.ji-link {
+  font: inherit;
+  font-size: 12px;
+  padding: 0;
+  color: var(--celestial);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { opacity: 0.45; cursor: default; }
+}
+
+.ji-text {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 220px;
+  padding: 8px 10px;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.ji-check {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ji-verdict {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+
+  &.good { color: var(--emerald); font-weight: 600; }
+  &.bad { color: var(--crimson); font-weight: 600; }
+}
+
+.ji-problem {
+  margin: 0;
+  font-size: 12px;
+  color: var(--crimson);
+  overflow-wrap: anywhere;
+}
+
+.ji-header {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ji-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+}
+
+.ji-line {
+  display: flex;
+  gap: 10px;
+  padding: 6px 8px;
+  font-size: 13px;
+  border-bottom: 1px dotted var(--border-soft);
+
+  &:last-child { border-bottom: none; }
+}
+
+/* The line's position in "items" — what the DM counts to find it in the box. */
+.ji-n {
+  flex: 0 0 22px;
+  text-align: right;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ji-what {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ji-label {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ji-detail {
+  font-size: 12px;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.ji-line.bad {
+  .ji-label { color: var(--crimson); }
+  .ji-detail { color: var(--text); }
+}
+
+.ji-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ji-btn {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 5px 9px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+
+  &.primary {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}

@@ -1,7 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CuratedLoot, CuratedLootItem, CuratedLootSummary } from '../../../models/curated-loot';
-import { parseLootImportPayload, toLootImportPayload } from '../../../models/loot';
+import { toLootImportPayload } from '../../../models/loot';
 import { formatCp } from '../../../models/shop';
 import { AuthoredItem } from '../../item-composer/authored-item';
 import { CuratedLootService } from '../../../services/curated-loot.service';
@@ -9,6 +9,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
 import { ItemComposerComponent } from '../../item-composer/item-composer.component';
+import { JsonImportComponent, JsonImportConfirmed } from '../../json-import/json-import.component';
 
 /**
  * DM-curated loot panel on the campaign dashboard — the standalone home for
@@ -16,14 +17,15 @@ import { ItemComposerComponent } from '../../item-composer/item-composer.compone
  * mirroring the curated-shops/encounters panels. Lines are authored through
  * the shared ItemComposerComponent (the same form the DM grant flow uses), so
  * custom items carry the full attribute set; the JSON import/export speaks the
- * extended loot contract. A list is dropped into a live session's claim pool
+ * extended loot contract, and the import box (the shared JsonImportComponent)
+ * checks a paste line by line before it can be sent. A list is dropped into a live session's claim pool
  * from Session Mode (copy semantics — dropping never mutates the list).
  */
 @Component({
     selector: 'app-curated-loot',
     templateUrl: './curated-loot.component.html',
     styleUrls: ['./curated-loot.component.scss'],
-    imports: [FormsModule, ItemComposerComponent]
+    imports: [FormsModule, ItemComposerComponent, JsonImportComponent]
 })
 export class CuratedLootComponent implements OnChanges {
   @Input() campaign!: Campaign;
@@ -39,18 +41,12 @@ export class CuratedLootComponent implements OnChanges {
   /** The coin pile input, in gp (persisted as copper). */
   coinGpDraft: number | null = null;
 
-  // Paste-loot import (lines as JSON, appended; keys validated server-side).
+  // Paste-loot import (lines as JSON, appended). The import box owns the text
+  // and checks it; the server still has the final say on catalog keys.
   lootImportOpen = false;
-  lootImportDraft = '';
   lootImportError: string | null = null;
   /** True briefly after "Copy JSON" (drives the "Copied" flash). */
   lootCopied = false;
-
-  readonly lootImportExample = JSON.stringify(
-    { coinGp: 125.5,
-      items: [{ key: 'longsword' }, { key: 'rations', qty: 10 },
-              { name: 'Flametongue', category: 'weapon', valueGp: 5000, weight: 3,
-                damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' }] }, null, 2);
 
   readonly formatCp = formatCp;
 
@@ -203,20 +199,16 @@ export class CuratedLootComponent implements OnChanges {
     this.lootImportError = null;
   }
 
-  importLoot(): void {
-    if (!this.selected || this.busy) return;
-    const { payload, error } = parseLootImportPayload(this.lootImportDraft);
-    if (error || !payload) {
-      this.lootImportError = error ?? 'Could not read that JSON.';
-      return;
-    }
+  /** The import box's paste passed its check — send it. */
+  importLoot(confirmed: JsonImportConfirmed): void {
+    const payload = confirmed.loot;
+    if (!this.selected || this.busy || !payload) return;
     this.busy = true;
     this.lootImportError = null;
     this.curatedLoot.importLoot(this.selected.id, payload).subscribe({
       next: loot => {
         this.busy = false;
         this.lootImportOpen = false;
-        this.lootImportDraft = '';
         this.select(loot);
       },
       error: err => {

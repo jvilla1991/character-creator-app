@@ -58,20 +58,8 @@
       </span>
     </div>
     @if (lootImportOpen) {
-      <div style="margin: 10px 0;">
-        <textarea [(ngModel)]="lootImportDraft" rows="7" style="width: 100%; font-family: monospace;"
-        [placeholder]="lootImportExample" aria-label="Loot JSON"></textarea>
-        <div class="muted" style="margin-top: 4px;">
-          Each item has either a "key" (an SRD slug like "longsword") or a "name" (a custom item, with
-          optional "notes", "category", "valueGp", "weight", and "damage"/"armorClass" for weapons/armor);
-          "coinGp" adds to the coin pile. Importing appends to the loot below.
-        </div>
-        @if (lootImportError) {
-          <div style="color: var(--crimson); margin-top: 4px;">{{ lootImportError }}</div>
-        }
-        <button class="btn primary" style="margin-top: 6px;"
-        [disabled]="!lootImportDraft.trim() || busy" (click)="importLoot()">Import loot</button>
-      </div>
+      <app-json-import class="loot-import" kind="loot" confirmLabel="Import loot" [busy]="busy"
+        [serverError]="lootImportError" (confirmed)="importLoot($event)"></app-json-import>
     }
     <div class="creature-form coin-form">
       <span class="item-meta">Coin pile</span>

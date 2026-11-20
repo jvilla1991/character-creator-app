@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { ConfirmService } from '../../modal/confirm.service';
 import { CuratedShopsComponent } from './curated-shops.component';
 import { Campaign } from '../../../models/campaign';
-import { CuratedShop, ShopSummary } from '../../../models/curated-shop';
+import { CuratedShop, ShopImportPayload, ShopSummary } from '../../../models/curated-shop';
+import { JsonImportConfirmed } from '../../json-import/json-import.component';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 import { NotificationService } from '../../../services/notification.service';
 
@@ -25,7 +26,8 @@ describe('CuratedShopsComponent', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj('CuratedShopService',
-      ['list', 'create', 'get', 'update', 'delete', 'addItem', 'updateItem', 'removeItem', 'importCategory']);
+      ['list', 'create', 'get', 'update', 'delete', 'addItem', 'updateItem', 'removeItem', 'importCategory',
+       'importShop']);
     service.list.and.returnValue(of([] as ShopSummary[]));
     component = TestBed.runInInjectionContext(() => new CuratedShopsComponent(service));
     component.campaign = campaign;
@@ -61,6 +63,37 @@ describe('CuratedShopsComponent', () => {
     component.open({ id: 5 } as ShopSummary);
     expect(service.get).toHaveBeenCalledWith(5);
     expect(component.selected).toBe(shop);
+  });
+
+  // The import box checks the paste and hands over a normalized payload; this
+  // component only sends it and reports what the server says.
+  const confirmedShop = (payload: ShopImportPayload | null): JsonImportConfirmed =>
+    ({ loot: null, shop: payload, catalog: new Map() });
+
+  it('importShop sends nothing without a checked payload', () => {
+    component.importShop(confirmedShop(null));
+    expect(service.importShop).not.toHaveBeenCalled();
+  });
+
+  it('importShop posts the checked payload, opens the new shop and closes the import box', () => {
+    component.importOpen = true;
+    const payload: ShopImportPayload = {
+      name: 'Smithy', settlement: 'Phandalin', items: [{ key: 'longsword', priceGp: 12 }] };
+    service.importShop.and.returnValue(of(shop));
+    component.importShop(confirmedShop(payload));
+    expect(service.importShop).toHaveBeenCalledWith('1', payload);
+    expect(component.selected).toBe(shop);
+    expect(component.importOpen).toBeFalse();
+  });
+
+  it('importShop surfaces the server message on failure and keeps the box open', () => {
+    component.importOpen = true;
+    service.importShop.and.returnValue(
+      throwError(() => ({ error: { message: 'Unknown catalog keys: vorpal-blade' } })));
+    component.importShop(confirmedShop({ name: 'Smithy', items: [{ key: 'vorpal-blade' }] }));
+    expect(component.importError).toBe('Unknown catalog keys: vorpal-blade');
+    expect(component.importOpen).toBeTrue();
+    expect(component.busy).toBeFalse();
   });
 
   it('importCategory updates the selected shop', () => {

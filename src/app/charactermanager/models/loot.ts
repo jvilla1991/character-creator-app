@@ -148,6 +148,53 @@ export function toLootImportPayload(loot: CuratedLoot): LootImportPayload {
 }
 
 /**
+ * The first field rule one pasted loot line breaks, as a bare sentence (no
+ * item name in front), or null when the line is fine. The line must already
+ * have exactly one of "key" / "name" — the caller checks that. Shared by
+ * {@link parseLootImportPayload} and the live paste check, so both judge a
+ * line by the same rules.
+ */
+export function lootImportItemProblem(item: LootImportPayload['items'][number]): string | null {
+  const hasKey = typeof item.key === 'string' && !!item.key.trim();
+  if (item.qty != null && (typeof item.qty !== 'number' || item.qty < 1)) {
+    return 'qty must be a positive number when present.';
+  }
+  if (item.notes != null && typeof item.notes !== 'string') {
+    return 'notes must be a string when present.';
+  }
+  const hasAttributes = item.category != null || item.valueGp != null
+    || item.weight != null || item.damage != null || item.armorClass != null;
+  if (hasKey && hasAttributes) {
+    return 'category/valueGp/weight/damage/armorClass apply to custom items only — catalog items take their stats from the catalog.';
+  }
+  if (item.category != null
+      && !(LOOT_ITEM_CATEGORIES as readonly string[]).includes(item.category)) {
+    return 'category must be one of weapon, armor, material-component, gear, transport, treasure.';
+  }
+  if (item.valueGp != null && (typeof item.valueGp !== 'number' || item.valueGp < 0)) {
+    return 'valueGp must be a non-negative number when present.';
+  }
+  if (item.weight != null && (typeof item.weight !== 'number' || item.weight < 0)) {
+    return 'weight must be a non-negative number when present.';
+  }
+  if (item.damage != null && typeof item.damage !== 'string') {
+    return 'damage must be a string when present.';
+  }
+  if (item.armorClass != null && typeof item.armorClass !== 'string') {
+    return 'armorClass must be a string when present.';
+  }
+  // The category stat belongs to its category (no category defaults to gear).
+  const effectiveCategory = item.category ?? 'gear';
+  if (item.damage != null && item.damage.trim() && effectiveCategory !== 'weapon') {
+    return 'damage applies to weapon items only — set "category": "weapon".';
+  }
+  if (item.armorClass != null && item.armorClass.trim() && effectiveCategory !== 'armor') {
+    return 'armorClass applies to armor items only — set "category": "armor".';
+  }
+  return null;
+}
+
+/**
  * Parse + shape-check pasted loot JSON before it goes anywhere. Returns the
  * payload or a human-readable error (catalog keys are validated server-side,
  * which rejects the whole import naming any unknown ones). The attribute
@@ -175,41 +222,8 @@ export function parseLootImportPayload(raw: string): { payload?: LootImportPaylo
       return { error: 'Every item needs either a "key" (an SRD slug like "longsword") or a "name" (a custom item) — not both.' };
     }
     const label = (item.key || item.name || '').trim();
-    if (item.qty != null && (typeof item.qty !== 'number' || item.qty < 1)) {
-      return { error: `"${label}": qty must be a positive number when present.` };
-    }
-    if (item.notes != null && typeof item.notes !== 'string') {
-      return { error: `"${label}": notes must be a string when present.` };
-    }
-    const hasAttributes = item.category != null || item.valueGp != null
-      || item.weight != null || item.damage != null || item.armorClass != null;
-    if (hasKey && hasAttributes) {
-      return { error: `"${label}": category/valueGp/weight/damage/armorClass apply to custom items only — catalog items take their stats from the catalog.` };
-    }
-    if (item.category != null
-        && !(LOOT_ITEM_CATEGORIES as readonly string[]).includes(item.category)) {
-      return { error: `"${label}": category must be one of weapon, armor, material-component, gear, transport, treasure.` };
-    }
-    if (item.valueGp != null && (typeof item.valueGp !== 'number' || item.valueGp < 0)) {
-      return { error: `"${label}": valueGp must be a non-negative number when present.` };
-    }
-    if (item.weight != null && (typeof item.weight !== 'number' || item.weight < 0)) {
-      return { error: `"${label}": weight must be a non-negative number when present.` };
-    }
-    if (item.damage != null && typeof item.damage !== 'string') {
-      return { error: `"${label}": damage must be a string when present.` };
-    }
-    if (item.armorClass != null && typeof item.armorClass !== 'string') {
-      return { error: `"${label}": armorClass must be a string when present.` };
-    }
-    // The category stat belongs to its category (no category defaults to gear).
-    const effectiveCategory = item.category ?? 'gear';
-    if (item.damage != null && item.damage.trim() && effectiveCategory !== 'weapon') {
-      return { error: `"${label}": damage applies to weapon items only — set "category": "weapon".` };
-    }
-    if (item.armorClass != null && item.armorClass.trim() && effectiveCategory !== 'armor') {
-      return { error: `"${label}": armorClass applies to armor items only — set "category": "armor".` };
-    }
+    const problem = lootImportItemProblem(item);
+    if (problem) return { error: `"${label}": ${problem}` };
   }
   return {
     payload: {
