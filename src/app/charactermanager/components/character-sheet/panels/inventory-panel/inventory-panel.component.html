@@ -25,7 +25,8 @@
        maps the payload onto the unchanged itemGranted contract. -->
   @if (grantFormOpen) {
     <div class="grant-form">
-      <app-item-composer (itemAuthored)="onAuthored($event)" (cancelled)="onGrantCancelled()">
+      <app-item-composer [jsonTab]="true" (itemAuthored)="onAuthored($event)"
+        (itemsAuthored)="onAuthoredMany($event)" (cancelled)="onGrantCancelled()">
       </app-item-composer>
     </div>
   }
