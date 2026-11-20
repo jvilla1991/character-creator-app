@@ -308,6 +308,9 @@
           <div class="note-saved">Saved to the campaign log.</div>
         }
       </div>
+      <!-- DM-only, last on the page: this session's health and condition changes,
+      a page at a time. Read again on every version change; gone when the session ends. -->
+      <app-combat-log-panel [sessionId]="state.sessionId" [version]="state.version"></app-combat-log-panel>
     }
     <!-- Player: their own character sheet (read-only) for reference at the table -->
     @if (!state.dm && myPc(state); as pc) {

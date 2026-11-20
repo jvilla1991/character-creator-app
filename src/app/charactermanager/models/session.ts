@@ -308,3 +308,37 @@ export interface SessionState {
   longRestAvailable: boolean;
   longRestWait: LongRestWaitView | null;
 }
+
+/**
+ * What kind of change a combat log row records (mirrors the backend
+ * CombatLogType); the panel colours the row by it. A row that carries several
+ * changes takes the most important one: hit points lost or regained first,
+ * then a condition, then any other hit point number (temporary or maximum).
+ */
+export type CombatLogType = 'DAMAGE' | 'HEALING' | 'CONDITION' | 'HIT_POINTS';
+
+/**
+ * One row of the DM's Combat Log panel: who changed, and what happened, in
+ * words the server already wrote. `round` is the encounter round the change
+ * happened in, or null when it happened outside an encounter.
+ */
+export interface CombatLogEntry {
+  id: number;
+  type: CombatLogType;
+  subject: string;
+  description: string;
+  round: number | null;
+  createdAt: string; // ISO instant
+}
+
+/**
+ * One page of a session's combat log, newest first. `page` is zero-based;
+ * `total` counts every row in the log. The log lives only as long as its
+ * session: the server empties it when the session ends.
+ */
+export interface CombatLogPage {
+  entries: CombatLogEntry[];
+  page: number;
+  size: number;
+  total: number;
+}

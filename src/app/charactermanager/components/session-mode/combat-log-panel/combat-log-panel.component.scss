@@ -1,0 +1,142 @@
+// Combat Log panel — the DM's page-at-a-time list of health and condition
+// changes. .panel / .panel-header / .btn chrome and .visually-hidden come from
+// the global stylesheet; only the rows and the pager are styled here.
+
+.combat-log {
+  margin-top: 10px;
+}
+
+.combat-log-sub {
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.combat-log-note {
+  font-family: 'Newsreader', serif;
+  color: var(--text-dim);
+  margin: 4px 0;
+}
+
+.combat-log-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: 0 10px 6px;
+    font-family: 'Cinzel', serif;
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--text-dim);
+  }
+
+  td {
+    padding: 7px 10px;
+    border-top: 1px solid var(--border-soft);
+    vertical-align: baseline;
+  }
+}
+
+// The kind of change is marked on the row's leading edge; the sentence itself
+// always says what happened, so the colour is never the only carrier.
+.combat-log-row {
+  td:first-child {
+    border-left: 3px solid var(--border);
+  }
+
+  &[data-type='DAMAGE'] td:first-child { border-left-color: var(--crimson); }
+  &[data-type='HEALING'] td:first-child { border-left-color: var(--emerald); }
+  &[data-type='CONDITION'] td:first-child { border-left-color: var(--violet); }
+  &[data-type='HIT_POINTS'] td:first-child { border-left-color: var(--celestial); }
+}
+
+.combat-log-time,
+.combat-log-round {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.combat-log-who {
+  font-family: 'Cinzel', serif;
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--celestial);
+  white-space: nowrap;
+}
+
+.combat-log-what {
+  width: 100%;
+}
+
+.combat-log-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.combat-log-page {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-2xs);
+  color: var(--text-dim);
+}
+
+// On a phone four columns do not fit: each row becomes a small block, with
+// the time and round on one line above who and what.
+@media (max-width: 640px) {
+  .combat-log-sub {
+    display: none;
+  }
+
+  .combat-log-table {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: block;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 10px;
+      padding: 7px 0 7px 10px;
+      border-top: 1px solid var(--border-soft);
+      border-left: 3px solid var(--border);
+    }
+
+    td {
+      padding: 0;
+      border: 0;
+    }
+
+    td:first-child {
+      border-left: 0;
+    }
+  }
+
+  // Under .combat-log-table so these outrank the `tr` rule above, which sets
+  // the neutral edge.
+  .combat-log-table .combat-log-row {
+    &[data-type='DAMAGE'] { border-left-color: var(--crimson); }
+    &[data-type='HEALING'] { border-left-color: var(--emerald); }
+    &[data-type='CONDITION'] { border-left-color: var(--violet); }
+    &[data-type='HIT_POINTS'] { border-left-color: var(--celestial); }
+  }
+
+  .combat-log-who,
+  .combat-log-what {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+}

@@ -1,0 +1,51 @@
+<div class="panel combat-log">
+  <div class="panel-header">
+    <span class="panel-title">Combat Log</span>
+    <span class="combat-log-sub">Health and condition changes. Cleared when the session ends.</span>
+  </div>
+
+  @if (failed()) {
+    <p class="combat-log-note" role="status">Could not load the combat log. It will try again on the next change.</p>
+  }
+
+  @if (entries().length) {
+    <table class="combat-log-table">
+      <thead>
+        <tr>
+          <th scope="col">Time</th>
+          <th scope="col">Round</th>
+          <th scope="col">Who</th>
+          <th scope="col">What happened</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of entries(); track entry.id) {
+          <tr class="combat-log-row" [attr.data-type]="entry.type">
+            <td class="combat-log-time">{{ entry.createdAt | date:'shortTime' }}</td>
+            <td class="combat-log-round">
+              @if (entry.round != null) {
+                <span aria-hidden="true">R{{ entry.round }}</span>
+                <span class="visually-hidden">Round {{ entry.round }}</span>
+              } @else {
+                <span aria-hidden="true">–</span>
+                <span class="visually-hidden">Outside an encounter</span>
+              }
+            </td>
+            <td class="combat-log-who">{{ entry.subject }}</td>
+            <td class="combat-log-what">{{ entry.description }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (log() && !failed()) {
+    <p class="combat-log-note">No health or condition changes yet this session.</p>
+  }
+
+  @if (pageCount() > 1) {
+    <nav class="combat-log-pager" aria-label="Combat log pages">
+      <button type="button" class="btn sm" data-newer (click)="newer()" [disabled]="page() === 0">Newer</button>
+      <span class="combat-log-page" aria-live="polite">Page {{ page() + 1 }} of {{ pageCount() }}</span>
+      <button type="button" class="btn sm" data-older (click)="older()" [disabled]="page() >= pageCount() - 1">Older</button>
+    </nav>
+  }
+</div>

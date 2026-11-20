@@ -21,6 +21,7 @@ import { SpellCarouselComponent } from './spell-carousel/spell-carousel.componen
 import { FormsModule } from '@angular/forms';
 import { InitiativePanelComponent } from './initiative-panel/initiative-panel.component';
 import { RollLogPanelComponent } from './roll-log-panel/roll-log-panel.component';
+import { CombatLogPanelComponent } from './combat-log-panel/combat-log-panel.component';
 import { EncounterLoaderComponent } from './encounter-loader/encounter-loader.component';
 import { ShopPanelComponent } from './shop-panel/shop-panel.component';
 import { LootPanelComponent } from './loot-panel/loot-panel.component';
@@ -49,7 +50,7 @@ import { ContextHelpComponent } from '../context-help/context-help.component';
     selector: 'app-session-mode',
     templateUrl: './session-mode.component.html',
     styleUrls: ['./session-mode.component.scss'],
-    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, RestChooserComponent, LongRestModalComponent, LongRestPanelComponent, LongRestChoicesComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
+    imports: [SpellCarouselComponent, FormsModule, InitiativePanelComponent, RollLogPanelComponent, CombatLogPanelComponent, EncounterLoaderComponent, ShopPanelComponent, LootPanelComponent, CharacterSheetComponent, RestVoteModalComponent, RestChooserComponent, LongRestModalComponent, LongRestPanelComponent, LongRestChoicesComponent, AsyncPipe, TitleCasePipe, ContextHelpComponent]
 })
 export class SessionModeComponent implements OnInit, OnDestroy {
   readonly sessionId = input.required<string>();
