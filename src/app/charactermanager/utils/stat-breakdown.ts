@@ -6,7 +6,8 @@ import {
   removedLabelsFor, signed, skillStat, slotStat,
 } from '../models/stat-adjustment';
 import { acAutoLines, withAcFollowingDex } from './armor-math';
-import { SKILL_DEFS, skillAutoLines, skillFullName } from './character-math';
+import { SKILL_DEFS, modFromScore, proficiencyForLevel, skillAutoLines, skillFullName } from './character-math';
+import { capacityLines } from './slot-inventory';
 import { ordinal, slotMaxOf, withSlotMax } from './spell-slots';
 
 // ── How a calculated number is put together ─────────────────────────────────
@@ -32,8 +33,6 @@ export interface StatDefinition {
   title: string;
   /** Short name used in log lines: "AC", "3rd-level slots". */
   label: string;
-  /** What the DM reads above the lines they can add: what belongs there, and what the lines survive. */
-  adjustHint: string;
   /** The lines the app works out. Leave out for a number with no formula and give `baseLabel`. */
   autoLines?: (pc: PC) => BreakdownLine[];
   /**
@@ -71,8 +70,6 @@ function slotDefinition(spellLevel: number): StatDefinition {
   return {
     title: `${ordinal(spellLevel)}-level spell slots`,
     label: `${ordinal(spellLevel)}-level slots`,
-    adjustHint: 'Add slots the class table does not give, such as a magic item or a boon. '
-      + 'These lines stay when the character levels up.',
     autoLines: pc => [{
       label: 'Class table',
       value: slotMaxOf(pc.spellSlots, spellLevel) - adjustmentSum(adjustmentsFor(pc, stat)),
@@ -95,16 +92,15 @@ const DEFAULT_ABILITY_SCORE = 10;
 /**
  * An ability score: no formula, so a base plus the DM's lines. Modifiers,
  * saves, skills and spell numbers are worked out from the score when the sheet
- * is drawn, so they follow by themselves. Saved numbers do not, and only one
- * is moved here: Armor Class follows a change to Dexterity. Hit points are left
- * alone when Constitution changes, as they are for every other sheet edit.
+ * is drawn, so they follow by themselves. Saved numbers do not, and two are
+ * moved here: Armor Class and initiative follow a change to Dexterity. Hit
+ * points are left alone when Constitution changes, as they are for every other
+ * sheet edit.
  */
 function abilityDefinition(ability: AbilityStat): StatDefinition {
   return {
     title: ABILITY_TITLES[ability],
     label: ability,
-    adjustHint: 'Each line adds to the base score, such as a level increase or a magic item. '
-      + 'To name an increase the score already includes, label part of the base score.',
     baseLabel: 'Base score',
     min: 1,
     max: 30,
@@ -112,7 +108,7 @@ function abilityDefinition(ability: AbilityStat): StatDefinition {
     write: (pc, total) => {
       const scores = Object.fromEntries(ABILITY_STATS.map(key => [key, DEFAULT_ABILITY_SCORE])) as NonNullable<PC['stats']>;
       const next: PC = { ...pc, stats: { ...scores, ...(pc.stats ?? {}), [ability]: total } };
-      return ability === 'DEX' ? withAcFollowingDex(pc, next) : next;
+      return ability === 'DEX' ? withInitiativeFollowingDex(pc, withAcFollowingDex(pc, next)) : next;
     },
   };
 }
@@ -130,8 +126,6 @@ function skillDefinition(name: string, ability: AbilityStat): StatDefinition {
   return {
     title,
     label: title,
-    adjustHint: 'Add what the sheet does not work out, such as a feat, a class feature or a magic item. '
-      + 'These lines stay when the ability score or proficiency changes.',
     autoLines,
     modifier: true,
     read: pc => countedSum(autoLines(pc)) + adjustmentSum(adjustmentsFor(pc, stat)),
@@ -139,17 +133,83 @@ function skillDefinition(name: string, ability: AbilityStat): StatDefinition {
   };
 }
 
+/**
+ * Move a saved initiative by however far the Dexterity modifier moved between
+ * `before` and `after`, so the DM's lines and any unlabelled rest stay as they
+ * were. Left alone when no initiative was ever saved.
+ */
+export function withInitiativeFollowingDex(before: PC, after: PC): PC {
+  if (after.init == null) return after;
+  const delta = modFromScore(after.stats?.DEX ?? 10) - modFromScore(before.stats?.DEX ?? 10);
+  return delta === 0 ? after : { ...after, init: after.init + delta };
+}
+
+/** Initiative: the Dexterity modifier plus the DM's lines (an Alert feat, a magic item). */
+const initiativeDefinition: StatDefinition = {
+  title: 'Initiative',
+  label: 'Initiative',
+  autoLines: pc => [{ label: 'Dexterity', value: modFromScore(pc.stats?.DEX ?? 10) }],
+  modifier: true,
+  read: pc => pc.init,
+  write: (pc, total) => ({ ...pc, init: total }),
+};
+
+/**
+ * Speed, in feet. The sheet does not work it out (the wizard starts everyone
+ * at 30), so it is a base plus the DM's lines, like an ability score: a Wood
+ * Elf's extra 5 feet or a monk's Unarmored Movement is a line, or a labelled
+ * part of the base.
+ */
+const speedDefinition: StatDefinition = {
+  title: 'Speed',
+  label: 'Speed',
+  baseLabel: 'Base speed',
+  min: 0,
+  read: pc => pc.speed,
+  write: (pc, total) => ({ ...pc, speed: total }),
+};
+
+/**
+ * The proficiency bonus: the table for the character's level plus the DM's
+ * lines. A level-up sets the saved bonus to the new table value plus the same
+ * lines (the server and demo mode both do), so lines survive levelling.
+ */
+const proficiencyDefinition: StatDefinition = {
+  title: 'Proficiency Bonus',
+  label: 'Proficiency',
+  autoLines: pc => [{ label: `Level ${pc.level ?? 1}`, value: proficiencyForLevel(pc.level ?? 1) }],
+  modifier: true,
+  min: 0,
+  read: pc => pc.prof,
+  write: (pc, total) => ({ ...pc, prof: total }),
+};
+
+/**
+ * Inventory capacity under the Darker Dungeons slot rules. Worked out from
+ * size and Strength whenever it is shown (see slotCapacity), so only the DM's
+ * lines are saved and nothing is ever left unlabelled.
+ */
+const capacityDefinition: StatDefinition = {
+  title: 'Slot Capacity',
+  label: 'Slot capacity',
+  autoLines: capacityLines,
+  read: pc => countedSum(capacityLines(pc)) + adjustmentSum(adjustmentsFor(pc, 'capacity')),
+  write: pc => pc,
+};
+
 export const STAT_DEFINITIONS: Record<AdjustableStat, StatDefinition> = {
   ac: {
     title: 'Armor Class',
     label: 'AC',
-    adjustHint: 'Add what the sheet does not work out, such as a species trait or a class feature. '
-      + 'These lines stay when armor changes.',
     autoLines: acAutoLines,
     removable: true,
     read: pc => pc.ac,
     write: (pc, total) => ({ ...pc, ac: total }),
   },
+  init: initiativeDefinition,
+  speed: speedDefinition,
+  prof: proficiencyDefinition,
+  capacity: capacityDefinition,
   STR: abilityDefinition('STR'),
   DEX: abilityDefinition('DEX'),
   CON: abilityDefinition('CON'),
@@ -381,13 +441,19 @@ export function describeAdjustmentChange(
 /**
  * The activity-log line for a save from the breakdown dialog: what happened to
  * the number's lines, then any other saved number that moved with it (Armor
- * Class follows Dexterity), e.g.
- * "DM added +2 Belt of Dexterity to DEX (DEX 14 → 16); AC 15 → 16".
+ * Class and initiative follow Dexterity), e.g.
+ * "DM added +2 Belt of Dexterity to DEX (DEX 14 → 16); AC 15 → 16; Initiative +2 → +3".
  */
 export function describeStatSave(stat: AdjustableStat, before: PC, after: PC): string {
   const line = describeAdjustmentChange(stat, breakdownOf(before, stat), breakdownOf(after, stat));
-  const followed = stat !== 'ac' && before.ac != null && after.ac != null && before.ac !== after.ac;
-  return followed ? `${line}; AC ${before.ac} → ${after.ac}` : line;
+  const followed: string[] = [];
+  if (stat !== 'ac' && before.ac != null && after.ac != null && before.ac !== after.ac) {
+    followed.push(`AC ${before.ac} → ${after.ac}`);
+  }
+  if (stat !== 'init' && before.init != null && after.init != null && before.init !== after.init) {
+    followed.push(`Initiative ${formatTotal('init', before.init)} → ${formatTotal('init', after.init)}`);
+  }
+  return [line, ...followed].join('; ');
 }
 
 /**

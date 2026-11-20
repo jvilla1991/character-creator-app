@@ -1,4 +1,5 @@
 import { PC, PcItem } from '../models/pc';
+import { BreakdownLine, adjustmentSum, adjustmentsFor, countedSum } from '../models/stat-adjustment';
 import { modFromScore } from './character-math';
 import { consolidateLegacyEquipment } from './legacy-equipment';
 import { isSupplyItem, suppliesSlots } from './survival';
@@ -45,22 +46,35 @@ export function usedSlots(items: PcItem[] | undefined): number {
 }
 
 /**
- * Inventory capacity = size-based slots + STR modifier (DD p. 55):
- * Small species 14 + STR, Medium 18 + STR; goliaths count as Large-framed
- * via Powerful Build (22 + 2×STR). Unknown species default to Medium.
+ * The lines inventory capacity is worked out from (DD p. 55): the frame's
+ * slots, then the Strength modifier. Small species 14 + STR, Medium 18 + STR;
+ * goliaths count as Large-framed via Powerful Build (22 + 2×STR). Unknown
+ * species default to Medium.
  *
  * A character that records its size (`pc.size`, set for World of Warcraft
  * species — a Goblin is Small, a Forsaken may be either) uses that. Everyone
  * else is sized by species name, as before.
  */
-export function slotCapacity(pc: PC): number {
+export function capacityLines(pc: PC): BreakdownLine[] {
   const str = modFromScore(pc.stats?.STR ?? 10);
   const species = (pc.race ?? '').toLowerCase();
-  if (species.includes('goliath')) return 22 + 2 * str;
-  if (pc.size === 'Small') return 14 + str;
-  if (pc.size === 'Medium') return 18 + str;
-  if (species.includes('halfling') || species.includes('gnome')) return 14 + str;
-  return 18 + str;
+  if (species.includes('goliath')) {
+    return [
+      { label: 'Powerful Build', value: 22, note: 'a goliath carries like a Large creature' },
+      { label: 'Strength', value: 2 * str, note: 'twice the modifier, for Powerful Build' },
+    ];
+  }
+  const small = pc.size === 'Small'
+    || (pc.size !== 'Medium' && (species.includes('halfling') || species.includes('gnome')));
+  return [
+    small ? { label: 'Small size', value: 14 } : { label: 'Medium size', value: 18 },
+    { label: 'Strength', value: str },
+  ];
+}
+
+/** Inventory capacity: the lines above plus any the DM added to it. */
+export function slotCapacity(pc: PC): number {
+  return countedSum(capacityLines(pc)) + adjustmentSum(adjustmentsFor(pc, 'capacity'));
 }
 
 export function isEncumbered(pc: PC): boolean {

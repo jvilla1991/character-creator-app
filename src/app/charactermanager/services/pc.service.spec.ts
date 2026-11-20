@@ -965,6 +965,21 @@ describe('PCService (demo mode)', () => {
       });
     });
 
+    it('keeps the DM\'s proficiency lines and moves initiative with Dexterity, like the server', (done) => {
+      const store = service as unknown as { pcs: PC[] };
+      store.pcs = store.pcs.map(p => p.id === 1
+        ? { ...p, level: 7, prof: 4, init: 7, stats: { ...p.stats!, DEX: 18 },
+            statAdjustments: { prof: [{ value: 1, label: 'Blessing' }], init: [{ value: 3, label: 'Alert' }] } }
+        : p);
+      service.levelUp(1, { abilityIncreases: { DEX: 2 } }).subscribe(updated => {
+        expect(updated.level).toBe(8);
+        expect(updated.prof).toBe(4);   // table +3, Blessing +1
+        expect(updated.stats?.DEX).toBe(20);
+        expect(updated.init).toBe(8);   // Dexterity +4 → +5, Alert +3 kept
+        done();
+      });
+    });
+
     it('caps the demo log at 10 entries', (done) => {
       // Level up repeatedly past the cap and confirm the log never exceeds 10.
       const levelUpsNeeded = 12;

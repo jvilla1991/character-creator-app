@@ -382,6 +382,32 @@ describe('InventoryPanelComponent', () => {
       expect(component.bulkFor({ name: 'Rope', category: 'gear', qty: 1, weight: 5 })).toBe(2);
       expect(component.bulkFor({ name: 'Note', category: 'gear', qty: 1 })).toBe(1);
     });
+
+    it('counts the DM lines on the capacity, encumbrance included', () => {
+      component.pc = { ...withStats([{ name: 'Crate', category: 'gear', qty: 1, bulk: 22 }]),
+        statAdjustments: { capacity: [{ value: 3, label: 'Bag of Holding' }] } };
+      expect(component.slotCapacity).toBe(23);
+      expect(component.encumbered).toBe(false);
+    });
+
+    it('makes the capacity a button that asks for its breakdown, except for a follower', () => {
+      const fixture = TestBed.createComponent(InventoryPanelComponent);
+      Object.assign(fixture.componentInstance, { pc: withStats([]), slotInventory: true, breakdownEnabled: true, canAdjust: true });
+      fixture.detectChanges();
+      let requested: string | undefined;
+      fixture.componentInstance.breakdownRequested.subscribe(stat => (requested = stat));
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.inv-slots .breakdown-btn');
+      expect(button.textContent?.trim()).toBe('20');
+      expect(button.getAttribute('aria-label')).toBe('Slot capacity 20. Show how it is worked out and adjust it');
+      button.click();
+      expect(requested).toBe('capacity');
+
+      const follower = TestBed.createComponent(InventoryPanelComponent);
+      Object.assign(follower.componentInstance, { pc: withStats([]), slotInventory: true, breakdownEnabled: false });
+      follower.detectChanges();
+      expect(follower.nativeElement.querySelector('.inv-slots .breakdown-btn')).toBeNull();
+      expect(follower.nativeElement.querySelector('.inv-slots').textContent).toContain('Slots 0 / 20');
+    });
   });
 
   it('sums total weight across quantities', () => {

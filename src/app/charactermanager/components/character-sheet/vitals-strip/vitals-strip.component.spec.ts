@@ -114,6 +114,52 @@ describe('VitalsStripComponent', () => {
     });
   });
 
+  describe('initiative, speed and proficiency breakdowns', () => {
+    const render = (inputs: Partial<VitalsStripComponent>, pc: Partial<PC> = {}) => {
+      const fixture = TestBed.createComponent(VitalsStripComponent);
+      Object.assign(fixture.componentInstance,
+        { pc: { ...basePc(), ac: 16, init: 2, speed: 30, prof: 2, ...pc }, ...inputs });
+      fixture.detectChanges();
+      return fixture;
+    };
+    const buttons = (fixture: ReturnType<typeof render>): HTMLButtonElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll('.breakdown-btn'));
+
+    it('makes each of the four numbers a button that asks for its own breakdown', () => {
+      const fixture = render({ breakdownEnabled: true });
+      const requested: string[] = [];
+      fixture.componentInstance.breakdownRequested.subscribe(stat => requested.push(stat));
+
+      expect(buttons(fixture).map(b => b.textContent?.trim())).toEqual(['16', '+2', '30', '+2']);
+      buttons(fixture).forEach(b => b.click());
+      expect(requested).toEqual(['ac', 'init', 'speed', 'prof']);
+    });
+
+    it('names each number and its value for a screen reader', () => {
+      const fixture = render({ breakdownEnabled: true, canAdjust: true }, { init: -1 });
+      expect(buttons(fixture).map(b => b.getAttribute('aria-label'))).toEqual([
+        'Armor class 16. Show how it is worked out and adjust it',
+        'Initiative -1. Show how it is worked out and adjust it',
+        'Speed 30 feet. Show how it is worked out and adjust it',
+        'Proficiency bonus +2. Show how it is worked out and adjust it',
+      ]);
+    });
+
+    it('a DM clicking one opens the breakdown, not the type-a-number editor', () => {
+      const fixture = render({ breakdownEnabled: true, canAdjust: true, editable: true });
+      let edit: unknown;
+      fixture.componentInstance.editRequested.subscribe(r => (edit = r));
+      buttons(fixture).forEach(b => b.click());
+      expect(edit).toBeUndefined();
+    });
+
+    it('keeps plain typed numbers for a follower', () => {
+      const fixture = render({ breakdownEnabled: false, editable: true });
+      expect(buttons(fixture)).toEqual([]);
+      expect(fixture.nativeElement.querySelectorAll('app-editable-number').length).toBeGreaterThanOrEqual(6);
+    });
+  });
+
   // --- DM edit modal requests ---
 
   describe('requestHp', () => {

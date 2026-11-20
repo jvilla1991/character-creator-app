@@ -785,9 +785,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   // ── Number breakdown ─────────────────────────────────────────────────────
-  // Clicking a calculated number (Armor Class, an ability score, a skill's
-  // modifier, or a spell level's slot maximum from the strip on the Spells tab)
-  // shows the lines that make it up. Everyone may look; whoever may adjust the
+  // Clicking a calculated number (Armor Class, initiative, speed, proficiency
+  // bonus, an ability score, a skill's modifier, the inventory's slot capacity,
+  // or a spell level's slot maximum from the strip on the Spells tab) shows the
+  // lines that make it up. Everyone may look; whoever may adjust the
   // character can add labelled lines under the automatic ones ("+1 Taunka",
   // "+1 Level 4 Increase", "+1 Observant") and, for Armor Class, take an
   // automatic line out.

@@ -8,7 +8,10 @@
           <span class="inv-encumbered" [title]="encumberedPenalty"
           style="color: var(--crimson); font-weight: 600; margin-right: 8px;">Encumbered</span>
         }
-        Slots {{ usedSlots }} / {{ slotCapacity }}
+        Slots {{ usedSlots }} / @if (breakdownEnabled) {<button type="button" class="breakdown-btn"
+          [class.adjustable]="canAdjust"
+          [attr.aria-label]="capacityButtonLabel"
+          (click)="breakdownRequested.emit('capacity')">{{ slotCapacity }}</button>} @else {{{ slotCapacity }}}
       </span>
     }
     @if (!slotInventory && items.length) {

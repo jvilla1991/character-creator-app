@@ -4,7 +4,6 @@
   A modifier (a skill) shows every line and the total with a sign.
   A line the DM took out stays listed, struck through and marked in words, and
   is left out of the total. -->
-  <h3 class="breakdown-heading">Calculated</h3>
   <ul class="breakdown-lines" data-testid="auto-lines">
     @for (line of autoLines; track $index) {
       <li class="breakdown-line" [class.not-counted]="line.removed" [class.has-action]="canRemoveLines">
@@ -31,13 +30,9 @@
 
   @if (editable) {
     <h3 class="breakdown-heading">Adjustments</h3>
-    <p class="field-hint breakdown-hint">{{ definition.adjustHint }}</p>
 
     @if (drafts.length) {
       <div class="adjust-rows" data-testid="adjust-rows">
-        <div class="adjust-row adjust-head" aria-hidden="true">
-          <span>Amount</span><span>Label</span><span></span>
-        </div>
         @for (line of drafts; track $index) {
           <div class="adjust-row">
             <input type="number" class="adjust-amount numeric"

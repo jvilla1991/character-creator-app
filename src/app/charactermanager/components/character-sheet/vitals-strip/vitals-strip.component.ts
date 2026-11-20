@@ -31,8 +31,9 @@ export class VitalsStripComponent {
   /** True while the DM's short-rest window is open on the player's own live
    *  session sheet — reveals the Spend Hit Die button under the Hit Dice tile. */
   @Input() canSpendHitDie = false;
-  /** Armor Class opens its breakdown instead of the plain number editor. Off for
-   *  a follower, whose AC is a typed stat-block value with nothing to break down. */
+  /** Armor Class, initiative, speed and proficiency bonus open their breakdowns
+   *  instead of the plain number editor. Off for a follower, whose vitals are
+   *  typed stat-block values with no lines. */
   @Input() breakdownEnabled = false;
   /** The viewer may change the adjustment lines in that breakdown (the DM, or the
    *  owner of a character that is in no campaign). Only changes the affordance
@@ -86,10 +87,13 @@ export class VitalsStripComponent {
 
   /** Spoken name of the AC button: the value, then what activating it does. */
   get acButtonLabel(): string {
-    const value = this.pc.ac ?? 'not set';
-    return this.canAdjust
-      ? `Armor class ${value}. Show how it is worked out and adjust it`
-      : `Armor class ${value}. Show how it is worked out`;
+    return this.breakdownButtonLabel('Armor class', this.pc.ac != null ? String(this.pc.ac) : null);
+  }
+
+  /** Spoken name of a breakdown button: the number and its value, then what activating it does. */
+  breakdownButtonLabel(name: string, value: string | null): string {
+    const what = `${name} ${value ?? 'not set'}. Show how it is worked out`;
+    return this.canAdjust ? `${what} and adjust it` : what;
   }
 
   /** Pure builder: apply one HP field, keeping current within [0, max]. */
