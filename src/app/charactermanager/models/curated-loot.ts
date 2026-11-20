@@ -33,6 +33,7 @@ export interface CuratedLootItem {
   category?: PcItem['category'] | null;
   unitCostCp?: number | null;    // value in copper
   weight?: number | null;        // pounds
+  bulk?: number | null;          // explicit bulk; null = worked out from the weight
   damage?: string | null;        // custom weapons
   armorClass?: string | null;    // custom armor
   qty: number;

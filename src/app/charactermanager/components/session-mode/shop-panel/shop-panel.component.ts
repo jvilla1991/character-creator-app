@@ -31,7 +31,7 @@ export class ShopPanelComponent implements OnChanges {
 
   shop: ShopView | null = null;
   loading = false;
-  busyItem: string | null = null; // itemKey mid-purchase
+  busyItem: string | null = null; // rowKey of the line mid-purchase
 
   // DM open-shop form
   settlement = '';
@@ -122,7 +122,12 @@ export class ShopPanelComponent implements OnChanges {
   itemMeta(item: ShopItem): string {
     const cat = (item.category || '').toUpperCase();
     let fields: string[];
-    if (cat === 'ARMOR') {
+    if (item.custom) {
+      // An item the DM wrote out: its own stat, whatever its category.
+      const armorClass = this.detail(item, 'armorClass');
+      fields = [this.detail(item, 'damage'), armorClass ? `AC ${armorClass}` : '',
+        item.weight != null ? `${item.weight} lb` : ''];
+    } else if (cat === 'ARMOR') {
       fields = [this.detail(item, 'armorClass'), this.detail(item, 'armorCategory')];
     } else if (cat === 'MATERIAL_COMPONENT') {
       const consumed = item.details?.['consumedOnCast'] ? 'consumed on cast' : 'reusable';
@@ -133,6 +138,16 @@ export class ShopPanelComponent implements OnChanges {
       fields = [this.detail(item, 'damage'), this.detail(item, 'properties')];
     }
     return fields.filter(f => f).join(' · ');
+  }
+
+  /** A custom item's description (its requirement and what it does); catalog lines have none here. */
+  itemNotes(item: ShopItem): string {
+    return item.custom ? this.detail(item, 'notes') : '';
+  }
+
+  /** A stable id for a row: the shop line when there is one (custom items have no key). */
+  rowKey(item: ShopItem): string {
+    return item.shopItemId != null ? `line:${item.shopItemId}` : `key:${item.itemKey}`;
   }
 
   /** Singular label for a category, used in shop headers. */
@@ -203,8 +218,8 @@ export class ShopPanelComponent implements OnChanges {
   buy(item: ShopItem): void {
     const pcId = this.myParticipant?.pcId;
     if (pcId == null || this.busyItem) return;
-    this.busyItem = item.itemKey;
-    this.shopService.purchase(this.state.sessionId, pcId, item.itemKey, 1).subscribe({
+    this.busyItem = this.rowKey(item);
+    this.shopService.purchase(this.state.sessionId, pcId, item, 1).subscribe({
       next: res => {
         this.pcService.patchLocalPC(pcId, { coins: res.coins, inventory: res.inventory });
         this.notifications.notify(`Bought ${item.name} for ${this.formatCp(item.costCp)}.`);
@@ -242,6 +257,6 @@ export class ShopPanelComponent implements OnChanges {
   }
 
   trackByKey(_: number, item: ShopItem): string {
-    return item.itemKey;
+    return this.rowKey(item);
   }
 }

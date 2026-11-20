@@ -55,18 +55,26 @@
           [disabled]="busy" (click)="importCategory(c.value)">+ {{ c.label }}</button>
         }
       </div>
+      <!-- One line at a time: a catalog pick, or a custom item with its own
+           stats (the composer's gold field is the shop's price here). -->
+      <div class="field-label">Add an item</div>
+      <app-item-composer class="shop-composer" [cancellable]="false" [showQty]="false" valueLabel="Price (gp)"
+        (itemAuthored)="onItemAuthored($event)"></app-item-composer>
       @if (shop.items.length) {
         <ul class="catalog">
           @for (item of shop.items; track trackById($index, item)) {
             <li class="catalog-row">
               <div class="item-main">
                 <span class="item-name">{{ item.name }}</span>
-                <span class="item-meta">{{ item.category | lowercase }}</span>
+                <span class="item-meta">{{ itemMeta(item) }}</span>
+                @if (item.custom && item.notes) {
+                  <span class="item-notes">{{ item.notes }}</span>
+                }
               </div>
-              <span class="item-price" [class.overridden]="item.priceOverrideCp != null">
+              <span class="item-price" [class.overridden]="!item.custom && item.priceOverrideCp != null">
                 {{ formatCp(item.effectiveCostCp) }}
               </span>
-              <input [attr.aria-label]="'Price override for ' + item.name + ', in gold'" class="price-input" type="number" min="0" step="0.01"
+              <input [attr.aria-label]="(item.custom ? 'Price for ' : 'Price override for ') + item.name + ', in gold'" class="price-input" type="number" min="0" step="0.01"
                 [value]="item.priceOverrideCp != null ? (item.priceOverrideCp / 100) : ''"
                 [placeholder]="'gp'"
                 (change)="setOverride(item, $any($event.target).value, $any($event.target))" />
@@ -75,7 +83,7 @@
             }
           </ul>
         } @else {
-          <div class="muted">Empty shop. Import a category above to stock it from the catalog.</div>
+          <div class="muted">Empty shop. Add items above, or import a category to stock it from the catalog.</div>
         }
       }
     </section>

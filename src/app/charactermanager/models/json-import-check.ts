@@ -57,8 +57,10 @@ export const EMPTY_IMPORT_CHECK: ImportCheck = {
   state: 'empty', problems: [], header: null, lines: [], ok: false, loot: null, shop: null,
 };
 
-const ITEM_FIELDS = ['key', 'name', 'qty', 'category', 'valueGp', 'weight', 'damage', 'armorClass', 'notes'];
+const ITEM_FIELDS = ['key', 'name', 'qty', 'category', 'valueGp', 'weight', 'bulk', 'damage', 'armorClass', 'notes'];
+/** A shop's catalog line, and a shop's custom line (a shop has a price, not a value, and no quantity). */
 const SHOP_ITEM_FIELDS = ['key', 'priceGp'];
+const SHOP_CUSTOM_FIELDS = ['name', 'category', 'priceGp', 'weight', 'bulk', 'damage', 'armorClass', 'notes'];
 
 /** What an AI tends to write instead of the real field name (lowercase, no separators). */
 const ITEM_ALIASES: Record<string, string> = {
@@ -73,7 +75,12 @@ const ITEM_ALIASES: Record<string, string> = {
 };
 const SHOP_ALIASES: Record<string, string> = {
   id: 'key', itemkey: 'key', catalogkey: 'key', slug: 'key', item: 'key',
+  title: 'name', itemname: 'name',
+  description: 'notes', desc: 'notes', note: 'notes', effect: 'notes',
+  type: 'category',
   price: 'priceGp', cost: 'priceGp', value: 'priceGp', valuegp: 'priceGp', costgp: 'priceGp', gp: 'priceGp',
+  weightlb: 'weight', lb: 'weight', lbs: 'weight',
+  dmg: 'damage', ac: 'armorClass',
 };
 
 type Json = Record<string, unknown>;
@@ -231,6 +238,33 @@ function line(n: number, label: string, rest: Partial<CheckedLine> = {}): Checke
   return { n, label, detail: '', problem: null, suggestion: null, unverified: false, ...rest };
 }
 
+/**
+ * A custom weapon without its damage, or custom armor without its armor
+ * class, is not usable at the table (armor with no class cannot feed the AC
+ * breakdown at all) — so a paste must spell them out. Stricter than the
+ * parser, which lets a DM leave them blank in the form.
+ */
+function missingStat(category: string, damage: unknown, armorClass: unknown): string | null {
+  if (category === 'weapon' && !filled(damage)) {
+    return 'A weapon needs "damage" — the dice and the damage type, like "1d8 slashing".';
+  }
+  if (category === 'armor' && !filled(armorClass)) {
+    return 'Armor needs an "armorClass", like "14 + Dex modifier (max 2)" — or "+2" for a shield.';
+  }
+  return null;
+}
+
+/** The stats of a good custom line, ready to show: "Custom weapon · 1d8 slashing · 3 lb · 2 bulk". */
+function customStats(item: LootImportPayload['items'][number]): Array<string | null> {
+  return [
+    `Custom ${categoryName(item.category ?? 'gear').toLowerCase()}`,
+    item.damage?.trim() || null,
+    item.armorClass?.trim() ? `AC ${item.armorClass.trim()}` : null,
+    item.weight != null ? `${item.weight} lb` : null,
+    item.bulk != null ? `${item.bulk} bulk` : null,
+  ];
+}
+
 /** A grant or loot line: a catalog "key" or a custom "name". */
 function checkItemLine(kind: 'grant' | 'loot', item: unknown, n: number,
                        catalog: CatalogItem[] | null, byKey: Map<string, CatalogItem>): CheckedLine {
@@ -277,16 +311,11 @@ function checkItemLine(kind: 'grant' | 'loot', item: unknown, n: number,
   const count = qty > 1 ? `×${qty}` : null;
 
   if (!hasKey) {
-    const category = typed.category ?? 'gear';
+    const missing = missingStat(typed.category ?? 'gear', typed.damage, typed.armorClass);
+    if (missing) return line(n, label, { problem: missing });
     return line(n, label, {
-      detail: [
-        count,
-        `Custom ${categoryName(category).toLowerCase()}`,
-        typed.damage?.trim() || null,
-        typed.armorClass?.trim() ? `AC ${typed.armorClass.trim()}` : null,
-        typed.weight != null ? `${typed.weight} lb` : null,
-        typed.valueGp != null ? gp(typed.valueGp) : null,
-      ].filter(Boolean).join(' · '),
+      detail: [count, ...customStats(typed), typed.valueGp != null ? gp(typed.valueGp) : null]
+        .filter(Boolean).join(' · '),
     });
   }
 
@@ -302,7 +331,10 @@ function checkItemLine(kind: 'grant' | 'loot', item: unknown, n: number,
   });
 }
 
-/** A shop line: a catalog "key", with an optional price override. */
+/**
+ * A shop line: a custom item written out in full ("name", a "priceGp" and its
+ * stats), or a catalog "key" with an optional price override.
+ */
 function checkShopLine(item: unknown, n: number, catalog: CatalogItem[] | null,
                        byKey: Map<string, CatalogItem>, firstSeen: Map<string, number>): CheckedLine {
   if (!isRecord(item)) {
@@ -310,25 +342,47 @@ function checkShopLine(item: unknown, n: number, catalog: CatalogItem[] | null,
       ? line(n, item.trim(), { problem: BARE_VALUE, suggestion: suggest(item, catalog) })
       : line(n, '(not an item)', { problem: BARE_VALUE });
   }
-  if (!filled(item['key'])) {
-    return filled(item['name'])
-      ? line(n, item['name'].trim(), {
-          problem: 'A shop sells catalog items only — use a "key" instead of "name".',
-          suggestion: suggest(item['name'], catalog),
-        })
-      : line(n, '(no key)', { problem: 'Needs a "key" (a catalog key like "longsword").' });
+  const hasKey = filled(item['key']);
+  const hasName = filled(item['name']);
+  if (hasKey && hasName) {
+    return line(n, String(item['name']).trim(),
+      { problem: 'Has both "key" and "name" — keep "name" for a custom item or "key" for a catalog one.' });
   }
-  const label = item['key'].trim();
+  if (!hasKey && !hasName) {
+    return line(n, '(no name or key)',
+      { problem: 'Needs a "name" (a custom item) or a "key" (a catalog item).' });
+  }
+  const label = String(hasKey ? item['key'] : item['name']).trim();
   const fields = Object.keys(item).filter(f => item[f] != null);
   if (fields.some(f => ['qty', 'quantity', 'stock', 'count'].includes(f.toLowerCase()))) {
     return line(n, label, { problem: 'A shop has unlimited stock — remove the quantity.' });
   }
-  const unknown = fields.find(f => !SHOP_ITEM_FIELDS.includes(f));
-  if (unknown) return line(n, label, { problem: unknownFieldProblem(unknown, SHOP_ITEM_FIELDS, SHOP_ALIASES) });
+  const allowed = hasKey ? SHOP_ITEM_FIELDS : SHOP_CUSTOM_FIELDS;
+  const unknown = fields.find(f => !allowed.includes(f));
+  if (unknown) {
+    return line(n, label, {
+      problem: hasKey && SHOP_CUSTOM_FIELDS.includes(unknown)
+        ? `A catalog item takes only "key" and "priceGp" — remove "${unknown}". Its stats come from the catalog.`
+        : unknownFieldProblem(unknown, allowed, SHOP_ALIASES),
+    });
+  }
   const priceGp = item['priceGp'];
   if (priceGp != null && (typeof priceGp !== 'number' || priceGp < 0)) {
     return line(n, label, { problem: 'priceGp must be a non-negative number when present.' });
   }
+
+  if (hasName) {
+    if (priceGp == null) {
+      return line(n, label, { problem: 'A custom item needs a "priceGp" — what this shop charges for it.' });
+    }
+    // One definition of a custom item: the same stat rules as a loot line.
+    const typed = item as LootImportPayload['items'][number];
+    const ruleBroken = lootImportItemProblem(typed)
+      ?? missingStat(typed.category ?? 'gear', typed.damage, typed.armorClass);
+    if (ruleBroken) return line(n, label, { problem: ruleBroken });
+    return line(n, label, { detail: [...customStats(typed), gp(priceGp as number)].filter(Boolean).join(' · ') });
+  }
+
   const earlier = firstSeen.get(label);
   if (earlier != null) {
     return line(n, label, { problem: `Same item as line ${earlier} — a shop lists each item once.` });

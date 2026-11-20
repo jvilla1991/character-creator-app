@@ -182,6 +182,41 @@ describe('checkImportJson', () => {
         .toContain('armorClass applies to armor items only');
     });
 
+    it('requires damage on a weapon and an armor class on armor', () => {
+      const problem = (line: object) =>
+        checkImportJson('grant', json({ items: [line] }), CATALOG).lines[0].problem;
+      expect(problem({ name: 'Blade', category: 'weapon' }))
+        .toBe('A weapon needs "damage" — the dice and the damage type, like "1d8 slashing".');
+      expect(problem({ name: 'Blade', category: 'weapon', damage: '  ' })).toContain('A weapon needs "damage"');
+      expect(problem({ name: 'Vest', category: 'armor' })).toContain('Armor needs an "armorClass"');
+      expect(problem({ name: 'Blade', category: 'weapon', damage: '1d8 slashing' })).toBeNull();
+      expect(problem({ name: 'Shield', category: 'armor', armorClass: '+2' })).toBeNull();
+      // Anything else needs neither.
+      expect(problem({ name: 'Rope' })).toBeNull();
+      expect(problem({ name: 'Ruby', category: 'treasure' })).toBeNull();
+    });
+
+    it('takes an explicit bulk on a custom item and shows it', () => {
+      const check = checkImportJson('grant', json({ items: [
+        { name: 'Ten-foot Pole', weight: 7, bulk: 6, valueGp: 0.05 },
+        { name: 'Feather', weight: 0, bulk: 0.2 },
+      ] }), CATALOG);
+      expect(check.ok).toBeTrue();
+      expect(check.lines.map(l => l.detail)).toEqual([
+        'Custom gear · 7 lb · 6 bulk · 5 cp',
+        'Custom gear · 0 lb · 0.2 bulk',
+      ]);
+      expect(check.loot?.items[0]).toEqual(jasmine.objectContaining({ name: 'Ten-foot Pole', weight: 7, bulk: 6 }));
+    });
+
+    it('refuses a bad bulk, and any bulk on a catalog item', () => {
+      const problem = (line: object) =>
+        checkImportJson('grant', json({ items: [line] }), CATALOG).lines[0].problem;
+      expect(problem({ name: 'Rock', bulk: -1 })).toContain('bulk must be a non-negative number');
+      expect(problem({ name: 'Rock', bulk: 'small' })).toContain('bulk must be a non-negative number');
+      expect(problem({ key: 'longsword', bulk: 2 })).toContain('remove "bulk"');
+    });
+
     it('refuses a fractional quantity, which the server cannot store', () => {
       const check = checkImportJson('loot', json({ items: [{ key: 'rations', qty: 2.5 }] }), CATALOG);
       expect(check.lines[0].problem).toBe('qty must be a whole number.');
@@ -285,10 +320,73 @@ describe('checkImportJson', () => {
       expect(checkImportJson('shop', json({ name: 'Smithy', items: [] }), CATALOG).ok).toBeTrue();
     });
 
-    it('sells catalog items only — a custom "name" line is pointed at a key', () => {
-      const check = checkImportJson('shop', json({ name: 'Smithy', items: [{ name: 'Chain Mail' }] }), CATALOG);
-      expect(check.lines[0].problem).toContain('catalog items only');
-      expect(check.lines[0].suggestion?.key).toBe('chain-mail');
+    it('sells a custom item written out in full, next to catalog items', () => {
+      const check = checkImportJson('shop', json({
+        name: 'Curios',
+        items: [
+          { name: ' Flametongue ', category: 'weapon', priceGp: 5000, weight: 3, bulk: 2,
+            damage: '1d8 slashing + 2d6 fire', notes: 'Requires: attunement. Ignites on command.' },
+          { name: 'Mithral Shirt', category: 'armor', priceGp: 800, weight: 20, bulk: 6,
+            armorClass: '13 + Dex modifier (max 2)' },
+          { name: 'Lucky Coin', priceGp: 0.5 },
+          { key: 'rations' },
+        ],
+      }), CATALOG);
+
+      expect(check.problems).toEqual([]);
+      expect(check.ok).toBeTrue();
+      expect(check.lines.map(l => [l.label, l.detail])).toEqual([
+        ['Flametongue', 'Custom weapon · 1d8 slashing + 2d6 fire · 3 lb · 2 bulk · 5000 gp'],
+        ['Mithral Shirt', 'Custom armor · AC 13 + Dex modifier (max 2) · 20 lb · 6 bulk · 800 gp'],
+        ['Lucky Coin', 'Custom gear · 5 sp'],
+        ['Rations (1 day)', 'Gear · 5 sp'],
+      ]);
+      expect(check.shop?.items).toEqual([
+        { name: 'Flametongue', priceGp: 5000, category: 'weapon', weight: 3, bulk: 2,
+          damage: '1d8 slashing + 2d6 fire', notes: 'Requires: attunement. Ignites on command.' },
+        { name: 'Mithral Shirt', priceGp: 800, category: 'armor', weight: 20, bulk: 6,
+          armorClass: '13 + Dex modifier (max 2)' },
+        { name: 'Lucky Coin', priceGp: 0.5 },
+        { key: 'rations', priceGp: null },
+      ]);
+    });
+
+    it('needs a price on a custom item, and a name or a key on every line', () => {
+      const problem = (line: object) =>
+        checkImportJson('shop', json({ name: 'Smithy', items: [line] }), CATALOG).lines[0].problem;
+      expect(problem({ name: 'Lucky Coin' })).toContain('needs a "priceGp"');
+      expect(problem({ name: 'Lucky Coin', valueGp: 5 })).toBe('Unknown field "valueGp" — use "priceGp".');
+      expect(problem({ name: 'Lucky Coin', priceGp: 1, description: 'Shiny' }))
+        .toBe('Unknown field "description" — use "notes".');
+      expect(problem({})).toContain('Needs a "name"');
+      expect(problem({ key: 'longsword', name: 'Longsword', priceGp: 1 })).toContain('both "key" and "name"');
+      expect(problem({ name: 'Lucky Coin', priceGp: 1, qty: 3 })).toContain('unlimited stock');
+    });
+
+    it('holds a custom shop item to the same stat rules as any custom item', () => {
+      const problem = (line: object) =>
+        checkImportJson('shop', json({ name: 'Smithy', items: [line] }), CATALOG).lines[0].problem;
+      expect(problem({ name: 'Blade', category: 'weapon', priceGp: 10 })).toContain('A weapon needs "damage"');
+      expect(problem({ name: 'Vest', category: 'armor', priceGp: 10 })).toContain('Armor needs an "armorClass"');
+      expect(problem({ name: 'Rock', category: 'gear', priceGp: 1, damage: '1d4' }))
+        .toContain('damage applies to weapon items only');
+      expect(problem({ name: 'Rock', category: 'relic', priceGp: 1 })).toContain('category must be one of');
+      expect(problem({ name: 'Rock', priceGp: 1, bulk: -1 })).toContain('bulk must be a non-negative number');
+    });
+
+    it('lets a catalog line carry only its key and a price', () => {
+      const check = checkImportJson('shop', json({
+        name: 'Smithy', items: [{ key: 'longsword', priceGp: 12, weight: 3 }],
+      }), CATALOG);
+      expect(check.lines[0].problem).toContain('remove "weight"');
+    });
+
+    it('lets two custom lines share a name — only catalog items are listed once', () => {
+      const check = checkImportJson('shop', json({
+        name: 'Apothecary',
+        items: [{ name: 'Healing Draught', priceGp: 50 }, { name: 'Healing Draught', priceGp: 75 }],
+      }), CATALOG);
+      expect(check.ok).toBeTrue();
     });
 
     it('refuses a quantity, a misnamed price and a bad price', () => {

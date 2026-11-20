@@ -1,12 +1,13 @@
 import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Campaign } from '../../../models/campaign';
 import { CuratedShop, ShopSummary, toImportPayload } from '../../../models/curated-shop';
-import { formatCp } from '../../../models/shop';
+import { categoryLabelFor, formatCp } from '../../../models/shop';
+import { AuthoredItem } from '../../item-composer/authored-item';
+import { ItemComposerComponent } from '../../item-composer/item-composer.component';
 import { CuratedShopService } from '../../../services/curated-shop.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ConfirmService } from '../../modal/confirm.service';
 import { FormsModule } from '@angular/forms';
-import { LowerCasePipe } from '@angular/common';
 import { JsonImportComponent, JsonImportConfirmed } from '../../json-import/json-import.component';
 
 /**
@@ -19,7 +20,7 @@ import { JsonImportComponent, JsonImportConfirmed } from '../../json-import/json
     selector: 'app-curated-shops',
     templateUrl: './curated-shops.component.html',
     styleUrls: ['./curated-shops.component.scss'],
-    imports: [FormsModule, LowerCasePipe, JsonImportComponent]
+    imports: [FormsModule, ItemComposerComponent, JsonImportComponent]
 })
 export class CuratedShopsComponent implements OnChanges {
   @Input() campaign!: Campaign;
@@ -153,6 +154,36 @@ export class CuratedShopsComponent implements OnChanges {
     });
   }
 
+  /** The shared composer authored a line — a catalog pick or a custom item. */
+  onItemAuthored(item: AuthoredItem): void {
+    if (!this.selected || this.busy) return;
+    this.busy = true;
+    this.curatedShops.addItem(this.selected.id, item).subscribe({
+      next: shop => { this.selected = shop; this.busy = false; },
+      error: err => {
+        this.busy = false;
+        const taken = (err as { status?: number } | null)?.status === 409;
+        this.notifications.error(
+          taken ? 'That item is already in this shop.' : 'Could not add the item. Try again.', err);
+      },
+    });
+  }
+
+  /** The line under an item's name: its category, plus a custom item's own stats. */
+  itemMeta(item: CuratedShop['items'][number]): string {
+    const parts: string[] = [categoryLabelFor(item.category)];
+    if (item.custom) {
+      const damage = item.details?.['damage'];
+      const armorClass = item.details?.['armorClass'];
+      if (typeof damage === 'string' && damage) parts.push(damage);
+      if (typeof armorClass === 'string' && armorClass) parts.push(`AC ${armorClass}`);
+      if (item.weight != null) parts.push(`${item.weight} lb`);
+      if (item.bulk != null) parts.push(`${item.bulk} bulk`);
+      parts.push('custom');
+    }
+    return parts.join(' · ');
+  }
+
   removeItem(item: CuratedShop['items'][number]): void {
     if (!this.selected) return;
     this.curatedShops.removeItem(this.selected.id, item.id).subscribe({
@@ -162,15 +193,21 @@ export class CuratedShopsComponent implements OnChanges {
   }
 
   /**
-   * Save a price override typed in gp; empty clears it back to the catalog
-   * price. `field`, when given, is the input it was typed into: a failed save
-   * puts it back to the saved override, so the shop never shows a price it
-   * does not charge.
+   * Save a price typed in gp. On a catalog line it is an override, and empty
+   * clears it back to the catalog price; a custom line has no catalog price,
+   * so an emptied field is put back. `field`, when given, is the input it was
+   * typed into: a failed save puts it back to the saved price, so the shop
+   * never shows a price it does not charge.
    */
   setOverride(item: CuratedShop['items'][number], gpValue: string, field?: HTMLInputElement): void {
     if (!this.selected) return;
     const trimmed = (gpValue ?? '').trim();
     let priceCp: number | null;
+    if (trimmed === '' && item.custom) {
+      if (field) field.value = String(item.effectiveCostCp / 100);
+      this.notifications.notify(`${item.name} is a custom item, so it needs a price. Enter 0 to give it away.`);
+      return;
+    }
     if (trimmed === '') {
       priceCp = null;
     } else {

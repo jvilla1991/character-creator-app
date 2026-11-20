@@ -102,4 +102,11 @@ describe('toAddLootItemRequest', () => {
       category: 'armor', armorClass: '18',
     });
   });
+
+  it('sends an explicit bulk with a custom item, and nothing when there is none', () => {
+    expect(toAddLootItemRequest({ kind: 'custom', name: 'Ten-foot Pole', category: 'gear', qty: 1,
+      weight: 7, bulk: 6 })).toEqual(jasmine.objectContaining({ customName: 'Ten-foot Pole', weight: 7, bulk: 6 }));
+    expect('bulk' in toAddLootItemRequest({ kind: 'custom', name: 'Rope', category: 'gear', qty: 1 }))
+      .toBeFalse();
+  });
 });

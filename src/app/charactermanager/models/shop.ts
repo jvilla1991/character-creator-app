@@ -67,14 +67,22 @@ export function pcItemFromCatalog(item: CatalogItem, qty: number): PcItem {
   return entry;
 }
 
+/**
+ * One line a shop sells. A curated shop's line carries `shopItemId` — the
+ * handle a purchase sends back. A custom line (`custom` true) is an item the DM
+ * wrote out: it has no `itemKey`, and its damage / armor class / description sit
+ * in `details` the way a catalog entry's do.
+ */
 export interface ShopItem {
-  itemKey: string;
+  itemKey: string | null;
   name: string;
   category: string;
   costCp: number;
   weight?: number | null;
   details: { [key: string]: unknown };
   stock: number | null; // null = unlimited (standard shops, Phase 1)
+  shopItemId?: number | null;
+  custom?: boolean;
 }
 
 export interface ShopView {
