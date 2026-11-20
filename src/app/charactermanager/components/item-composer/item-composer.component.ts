@@ -13,7 +13,7 @@ import { JsonImportComponent, JsonImportConfirmed } from '../json-import/json-im
  * granting into an inventory, prepping a curated loot list, or adding to a
  * live session pool. The catalog tab picks a real SRD item by category/search;
  * the custom tab is free-hand homebrew with the full attribute set (category,
- * value in gold, weight, the category stat — weapon damage or armor class —
+ * value in gold, weight, bulk, the category stat — weapon damage or armor class —
  * and notes). Emits a neutral {@link AuthoredItem}; each host maps it onto its
  * own wire call, so this component owns no persistence. Demo mode has no
  * catalog, so the catalog tab is not offered there.
@@ -35,6 +35,10 @@ export class ItemComposerComponent implements OnInit {
   readonly confirmLabel = input('Add');
   /** Whether a Cancel button renders (embedded always-open hosts hide it). */
   readonly cancellable = input(true);
+  /** Whether a quantity is asked for. A shop has unlimited stock, so its editor hides it. */
+  readonly showQty = input(true);
+  /** What the gold field means to the host: an item's value, or a shop's price. */
+  readonly valueLabel = input('Value (gp)');
 
   /** Whether the JSON tab is offered (paste many item lines at once). A host
    *  that turns it on must listen to `itemsAuthored`. */
@@ -72,6 +76,7 @@ export class ItemComposerComponent implements OnInit {
   customQty = 1;
   customValueGp: number | null = null;   // value in gold (host converts to copper)
   customWeight: number | null = null;    // pounds (feeds bulk in slot campaigns)
+  customBulk: number | null = null;      // explicit bulk; blank = worked out from the weight
   customDamage = '';                     // weapons, e.g. "1d8 slashing"
   customArmorClass = '';                 // armor, e.g. "14 + Dex modifier (max 2)"
   customNotes = '';
@@ -141,6 +146,7 @@ export class ItemComposerComponent implements OnInit {
     };
     if (this.customValueGp != null && this.customValueGp >= 0) authored.valueGp = this.customValueGp;
     if (this.customWeight != null && this.customWeight >= 0) authored.weight = this.customWeight;
+    if (this.customBulk != null && this.customBulk >= 0) authored.bulk = this.customBulk;
     const damage = this.customDamage.trim();
     if (this.customCategory === 'weapon' && damage) authored.damage = damage;
     const armorClass = this.customArmorClass.trim();
@@ -170,6 +176,7 @@ export class ItemComposerComponent implements OnInit {
       const custom: AuthoredItem = { kind: 'custom', name: line.name ?? '', category, qty };
       if (line.valueGp != null) custom.valueGp = line.valueGp;
       if (line.weight != null) custom.weight = line.weight;
+      if (line.bulk != null) custom.bulk = line.bulk;
       if (category === 'weapon' && line.damage) custom.damage = line.damage;
       if (category === 'armor' && line.armorClass) custom.armorClass = line.armorClass;
       if (line.notes) custom.notes = line.notes;
@@ -195,6 +202,7 @@ export class ItemComposerComponent implements OnInit {
     this.customQty = 1;
     this.customValueGp = null;
     this.customWeight = null;
+    this.customBulk = null;
     this.customDamage = '';
     this.customArmorClass = '';
     this.customNotes = '';

@@ -19,6 +19,8 @@ export type AuthoredItem =
       qty: number;
       valueGp?: number;
       weight?: number;
+      /** Explicit bulk; absent = worked out from the weight. */
+      bulk?: number;
       damage?: string;      // weapons only
       armorClass?: string;  // armor only
       notes?: string;
@@ -28,7 +30,8 @@ export type AuthoredItem =
  * Denormalize an authored item into an owned inventory line — the client twin
  * of the backend's InventoryEntries (catalog snapshot via pcItemFromCatalog;
  * custom lines get value → unitCostCp, weight, the category stat, notes, and a
- * bulk stamped from the canonical weight bands so the line never drifts).
+ * bulk — the DM's own when given, else stamped from the canonical weight bands
+ * so the line never drifts).
  */
 export function pcItemFromAuthored(authored: AuthoredItem): PcItem {
   if (authored.kind === 'catalog') {
@@ -45,7 +48,7 @@ export function pcItemFromAuthored(authored: AuthoredItem): PcItem {
   if (authored.weight != null && authored.weight >= 0) {
     entry.weight = authored.weight;
   }
-  entry.bulk = bulkFromWeight(entry.weight);
+  entry.bulk = authored.bulk != null && authored.bulk >= 0 ? authored.bulk : bulkFromWeight(entry.weight);
   if (authored.category === 'weapon' && authored.damage) entry.damage = authored.damage;
   if (authored.category === 'armor' && authored.armorClass) entry.armorClass = authored.armorClass;
   if (authored.notes) entry.notes = authored.notes;

@@ -25,28 +25,34 @@ export interface JsonImportConfirmed {
 /** How long typing must pause before the check runs. A paste checks at once. */
 export const CHECK_DELAY_MS = 400;
 
+const EXAMPLE_ITEM = {
+  name: 'Flametongue Longsword', category: 'weapon', valueGp: 5000, weight: 3, bulk: 2,
+  damage: '1d8 slashing + 2d6 fire', notes: 'Requires: attunement. Ignites on command.',
+};
+
 const PLACEHOLDERS: Record<JsonImportKind, string> = {
   grant: JSON.stringify(
-    { items: [{ key: 'longsword' }, { key: 'rations', qty: 10 },
-              { name: 'Flametongue', category: 'weapon', valueGp: 5000, weight: 3,
-                damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' }] }, null, 2),
+    { items: [EXAMPLE_ITEM, { name: 'Potion of Greater Healing', category: 'gear', qty: 3,
+                              valueGp: 150, weight: 0.5, bulk: 1 }] }, null, 2),
   loot: JSON.stringify(
     { coinGp: 125.5,
-      items: [{ key: 'longsword' }, { key: 'rations', qty: 10 },
-              { name: 'Flametongue', category: 'weapon', valueGp: 5000, weight: 3,
-                damage: '1d8 slashing + 2d6 fire', notes: 'Ignites on command.' }] }, null, 2),
+      items: [EXAMPLE_ITEM, { name: 'Potion of Greater Healing', category: 'gear', qty: 3,
+                              valueGp: 150, weight: 0.5, bulk: 1 }] }, null, 2),
   shop: JSON.stringify(
     { name: 'The Gilded Flask', settlement: 'Phandalin',
-      items: [{ key: 'longsword', priceGp: 12 }, { key: 'rations' }] }, null, 2),
+      items: [{ name: 'Flametongue Longsword', category: 'weapon', priceGp: 5000, weight: 3, bulk: 2,
+                damage: '1d8 slashing + 2d6 fire', notes: 'Requires: attunement. Ignites on command.' },
+              { key: 'rations' }] }, null, 2),
 };
 
 const HINTS: Record<JsonImportKind, string> = {
-  grant: 'Each item is a catalog "key" (like "longsword") or a custom "name" with optional stats. '
-    + 'A loot list\'s Copy JSON pastes straight in.',
-  loot: 'Each item is a catalog "key" (like "longsword") or a custom "name" with optional stats; '
+  grant: 'Each item is written out: a "name", a "category" and its stats ("damage" for a weapon, '
+    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes"). A catalog "key" like "longsword" works too.',
+  loot: 'Each item is written out: a "name", a "category" and its stats ("damage" for a weapon, '
+    + '"armorClass" for armor, "weight", "bulk", "valueGp", "notes"). A catalog "key" works too; '
     + '"coinGp" adds to the coin pile. Importing adds to the loot below.',
-  shop: 'A shop has a "name" and a list of catalog keys; "priceGp" sets this shop\'s own price. '
-    + 'Copy JSON on an existing shop shows the format.',
+  shop: 'A shop has a "name" and its items. Each item is written out with a "name", a "category", '
+    + 'a "priceGp" and its stats; a catalog "key" works too. Copy JSON on an existing shop shows the format.',
 };
 
 /**
@@ -58,8 +64,10 @@ const HINTS: Record<JsonImportKind, string> = {
  *    stop typing — and lists every line as it will land plus every problem,
  *    with the closest real item offered for a key the catalog does not have.
  *    The confirm button stays off until the paste is clean.
- *  - "Copy AI instructions" puts the format rules and every valid catalog key
- *    on the clipboard, ready to paste into an AI chat before asking for items.
+ *  - "Copy AI instructions" puts the format rules on the clipboard, ready to
+ *    paste into an AI chat along with the items to format. They tell the AI to
+ *    write each item out in full — name, stats, weight, bulk, description —
+ *    and never to swap one for something else.
  *
  * The box owns the text and the check; the host owns the save. It emits the
  * normalized payload on confirm and shows whatever error the host hands back.
@@ -109,9 +117,6 @@ export class JsonImportComponent implements OnInit, OnDestroy {
   readonly hint = computed(() => HINTS[this.kind()]);
   readonly badLines = computed(() => this.check().lines.filter(l => l.problem));
   readonly goodLines = computed(() => this.check().lines.filter(l => !l.problem));
-  /** A shop cannot be written without the catalog, so its instructions wait for it. */
-  readonly briefReady = computed(() =>
-    this.catalogState() === 'ready' && (this.kind() !== 'shop' || this.catalog().length > 0));
   readonly shownServerError = computed(() =>
     this.confirmedDraft() === this.draft() ? this.serverError() : null);
 
@@ -214,10 +219,9 @@ export class JsonImportComponent implements OnInit, OnDestroy {
     this.cancelled.emit();
   }
 
-  /** Put the format rules and every valid key on the clipboard for an AI chat. */
+  /** Put the format rules on the clipboard, ready to paste into an AI chat with the items. */
   copyBrief(): void {
-    if (!this.briefReady()) return;
-    navigator.clipboard?.writeText(buildAiBrief(this.kind(), this.demoMode ? [] : this.catalog()));
+    navigator.clipboard?.writeText(buildAiBrief(this.kind()));
     this.copied.set(true);
     if (this.copiedTimer) clearTimeout(this.copiedTimer);
     this.copiedTimer = setTimeout(() => this.copied.set(false), 1500);

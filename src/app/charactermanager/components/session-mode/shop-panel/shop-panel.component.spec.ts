@@ -185,11 +185,56 @@ describe('ShopPanelComponent', () => {
 
     component.buy(longsword);
 
-    expect(shopService.purchase).toHaveBeenCalledWith(1, 7, 'longsword', 1);
+    expect(shopService.purchase).toHaveBeenCalledWith(1, 7, longsword, 1);
     expect(pcService.patchLocalPC).toHaveBeenCalledWith(7, jasmine.objectContaining({
       coins: jasmine.objectContaining({ gp: 5 }),
     }));
     expect(notifications.notify).toHaveBeenCalled();
+    expect(component.busyItem).toBeNull();
+  });
+
+  // --- custom (non-catalog) lines in a curated shop ---
+
+  const flametongue: ShopItem = {
+    itemKey: null, name: 'Flametongue', category: 'WEAPON', costCp: 500000, weight: 3, stock: null,
+    shopItemId: 22, custom: true,
+    details: { damage: '1d8 slashing + 2d6 fire', notes: 'Requires: attunement. Ignites on command.' },
+  };
+
+  it('shows a custom item by its own stats and description', () => {
+    expect(component.itemMeta(flametongue)).toBe('1d8 slashing + 2d6 fire · 3 lb');
+    expect(component.itemNotes(flametongue)).toBe('Requires: attunement. Ignites on command.');
+
+    const shirt: ShopItem = {
+      itemKey: null, name: 'Mithral Shirt', category: 'ARMOR', costCp: 80000, stock: null,
+      shopItemId: 23, custom: true, details: { armorClass: '13 + Dex modifier (max 2)' },
+    };
+    expect(component.itemMeta(shirt)).toBe('AC 13 + Dex modifier (max 2)');
+    expect(component.itemNotes(shirt)).toBe('');
+    // A catalog line keeps its catalog-style line and shows no description here.
+    expect(component.itemNotes(longsword)).toBe('');
+  });
+
+  it('gives every row its own key, with or without a catalog key', () => {
+    expect(component.rowKey(flametongue)).toBe('line:22');
+    expect(component.rowKey({ ...longsword, shopItemId: 21 })).toBe('line:21');
+    expect(component.rowKey(longsword)).toBe('key:longsword');
+    expect(component.trackByKey(0, flametongue)).toBe('line:22');
+  });
+
+  it('buys a custom item by its shop line', () => {
+    pcService.getPCById.and.returnValue({ id: 7, coins: { gp: 6000 } } as PC);
+    shopService.purchase.and.returnValue(of({
+      coins: { cp: 0, sp: 0, gp: 1000 },
+      inventory: [{ name: 'Flametongue', category: 'weapon', qty: 1 }],
+      totalCostCp: 500000,
+    }));
+    component.state = state({ participants: [participant({ ownedByMe: true, pcId: 7 })] });
+
+    component.buy(flametongue);
+
+    expect(shopService.purchase).toHaveBeenCalledWith(1, 7, flametongue, 1);
+    expect(notifications.notify).toHaveBeenCalledWith('Bought Flametongue for 5000 gp.');
     expect(component.busyItem).toBeNull();
   });
 

@@ -24,7 +24,9 @@
             <option [ngValue]="c">{{ categoryLabel(categoryLabelFor(c)) }}</option>
           }
         </select>
-        <input type="number" min="1" [(ngModel)]="catalogQty" class="composer-qty" aria-label="Quantity">
+        @if (showQty()) {
+          <input type="number" min="1" [(ngModel)]="catalogQty" class="composer-qty" aria-label="Quantity">
+        }
       </div>
       <input aria-label="Search items" type="text" [(ngModel)]="catalogSearch" class="composer-text" placeholder="Search items…">
       @if (loadingCatalog()) {
@@ -67,11 +69,14 @@
           <option value="transport">Transport</option>
           <option value="treasure">Treasure</option>
         </select>
-        <input type="number" min="1" [(ngModel)]="customQty" class="composer-qty" aria-label="Quantity">
+        @if (showQty()) {
+          <input type="number" min="1" [(ngModel)]="customQty" class="composer-qty" aria-label="Quantity">
+        }
       </div>
       <div class="composer-row">
-        <input type="number" min="0" [(ngModel)]="customValueGp" class="composer-qty" placeholder="Value (gp)" aria-label="Value in gold">
+        <input type="number" min="0" [(ngModel)]="customValueGp" class="composer-qty" [placeholder]="valueLabel()" [attr.aria-label]="valueLabel()">
         <input type="number" min="0" [(ngModel)]="customWeight" class="composer-qty" placeholder="Weight (lb, 0 = tiny)" aria-label="Weight in pounds (0 means negligible — 0.2 bulk)">
+        <input type="number" min="0" step="0.1" [(ngModel)]="customBulk" class="composer-qty" placeholder="Bulk (blank = by weight)" aria-label="Bulk (leave blank to work it out from the weight)">
       </div>
       @if (customCategory === 'weapon') {
         <input aria-label="Damage" type="text" [(ngModel)]="customDamage" class="composer-text"
@@ -82,7 +87,7 @@
           placeholder="Armor Class (e.g. 14 + Dex modifier (max 2))">
       }
       <input type="text" [(ngModel)]="customNotes" class="composer-text"
-        placeholder="Notes (optional)" aria-label="Notes">
+        placeholder="Description, starting with any requirement (optional)" aria-label="Description">
       <div class="composer-actions">
         <button type="button" class="composer-btn primary" [disabled]="!customName.trim()"
         (click)="confirmCustom()">{{ confirmLabel() }}</button>

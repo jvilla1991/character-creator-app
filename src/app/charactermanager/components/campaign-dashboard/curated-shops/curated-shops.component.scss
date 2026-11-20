@@ -159,3 +159,13 @@
 
 /* The shared JSON paste box, opened by "Import JSON". */
 .shop-import { margin: 10px 0; }
+
+/* A custom item's description, under its stats. */
+.item-notes {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+/* The shared item composer, hosted by "Add an item". */
+.shop-composer { display: block; margin-bottom: 12px; }

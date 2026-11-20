@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CatalogItem, PurchaseResult, SellResult, ShopView } from '../models/shop';
+import { CatalogItem, PurchaseResult, SellResult, ShopView, ShopItem } from '../models/shop';
 
 /**
  * Shop client for Session Mode. Real mode talks to character-manager-service;
@@ -67,12 +67,16 @@ export class ShopService {
     return this.http.get<ShopView>(`${this.base}/${sessionId}/shop`).pipe();
   }
 
-  /** Buy an item for one of the player's characters at the shop. */
-  purchase(sessionId: number | string, pcId: number, itemKey: string,
+  /**
+   * Buy an item for one of the player's characters at the shop. The line's
+   * `shopItemId` rides along when it has one (a curated shop): it is the only
+   * way to name a custom item, which has no catalog key.
+   */
+  purchase(sessionId: number | string, pcId: number, item: Pick<ShopItem, 'itemKey' | 'shopItemId'>,
            qty: number): Observable<PurchaseResult> {
     if (environment.demoMode) return this.demoUnsupported();
     return this.http.post<PurchaseResult>(`${this.base}/${sessionId}/shop/purchase`,
-      { pcId, itemKey, qty });
+      { pcId, itemKey: item.itemKey, qty, ...(item.shopItemId != null ? { shopItemId: item.shopItemId } : {}) });
   }
 
   /** Sell `qty` units of the stack at inventory position `index` back to the shop. */

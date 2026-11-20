@@ -100,6 +100,21 @@ describe('ItemComposerComponent', () => {
     }]);
   });
 
+  it('carries an explicit bulk from the custom form, and none when the field is blank', () => {
+    const emitted: AuthoredItem[] = [];
+    component.itemAuthored.subscribe(i => emitted.push(i));
+    component.customName = 'Ten-foot Pole';
+    component.customWeight = 7;
+    component.customBulk = 6;
+    component.confirmCustom();
+    expect(emitted[0]).toEqual({ kind: 'custom', name: 'Ten-foot Pole', category: 'gear', qty: 1, weight: 7, bulk: 6 });
+    expect(component.customBulk).toBeNull(); // form reset
+
+    component.customName = 'Rope';
+    component.confirmCustom();
+    expect('bulk' in emitted[1]).toBeFalse();
+  });
+
   it('blocks a custom confirm with a blank name', () => {
     const emitted: AuthoredItem[] = [];
     component.itemAuthored.subscribe(i => emitted.push(i));
@@ -163,6 +178,14 @@ describe('ItemComposerComponent', () => {
       expect(shopService.getCatalog).not.toHaveBeenCalled();
     });
 
+    it('carries an explicit bulk from a pasted line', () => {
+      confirm([{ name: 'Ten-foot Pole', weight: 7, bulk: 6 }, { name: 'Rope', weight: 10 }]);
+      expect(batches[0]).toEqual([
+        { kind: 'custom', name: 'Ten-foot Pole', category: 'gear', qty: 1, weight: 7, bulk: 6 },
+        { kind: 'custom', name: 'Rope', category: 'gear', qty: 1, weight: 10 },
+      ]);
+    });
+
     it('leaves a stat off a line whose category does not carry it', () => {
       confirm([{ name: 'Odd Rock', category: 'gear', damage: '1d4', armorClass: '12' }]);
       expect(batches[0]).toEqual([{ kind: 'custom', name: 'Odd Rock', category: 'gear', qty: 1 }]);
@@ -223,6 +246,13 @@ describe('pcItemFromAuthored', () => {
       unitCostCp: 5000, weight: 3, bulk: 2, // 3 lb → the ≤5 lb band
       damage: '1d8 slashing + 2d6 fire', notes: 'Ignites.',
     });
+  });
+
+  it('keeps the DM\'s own bulk over the weight band', () => {
+    // 7 lb would band to 3; a ten-foot pole is far more awkward than that.
+    expect(pcItemFromAuthored({ kind: 'custom', name: 'Ten-foot Pole', category: 'gear', qty: 1, weight: 7, bulk: 6 }))
+      .toEqual({ name: 'Ten-foot Pole', category: 'gear', qty: 1, weight: 7, bulk: 6 });
+    expect(pcItemFromAuthored({ kind: 'custom', name: 'Feather', category: 'gear', qty: 1, bulk: 0 }).bulk).toBe(0);
   });
 
   it('maps custom armor with its armor class', () => {

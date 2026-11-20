@@ -22,6 +22,7 @@ export interface LootItem {
   category?: PcItem['category'] | null;
   unitCostCp?: number | null;
   weight?: number | null;
+  bulk?: number | null;           // explicit bulk; null = worked out from the weight
   damage?: string | null;
   armorClass?: string | null;
   qty: number;
@@ -106,7 +107,8 @@ export interface LootResultView {
  * "notes") — exactly one of the two; qty defaults to 1. Custom items may also
  * carry the attributes a DM grant stamps: "category" (weapon | armor |
  * material-component | gear | transport | treasure), "valueGp" (≥ 0, fractions
- * ok), "weight" (≥ 0, pounds), "damage" (weapons) and "armorClass" (armor).
+ * ok), "weight" (≥ 0, pounds), "bulk" (≥ 0; absent = worked out from the
+ * weight), "damage" (weapons) and "armorClass" (armor).
  * Legacy payloads
  * (key/name/notes/qty + coinGp only) stay valid. coinGp adds to the list's
  * coin pile. Import APPENDS to the existing loot.
@@ -121,6 +123,7 @@ export interface LootImportPayload {
     category?: PcItem['category'] | null;
     valueGp?: number | null;
     weight?: number | null;
+    bulk?: number | null;
     damage?: string | null;
     armorClass?: string | null;
   }>;
@@ -138,6 +141,7 @@ export function toLootImportPayload(loot: CuratedLoot): LootImportPayload {
             ...(i.category ? { category: i.category } : {}),
             ...(i.unitCostCp != null ? { valueGp: i.unitCostCp / 100 } : {}),
             ...(i.weight != null ? { weight: i.weight } : {}),
+            ...(i.bulk != null ? { bulk: i.bulk } : {}),
             ...(i.damage ? { damage: i.damage } : {}),
             ...(i.armorClass ? { armorClass: i.armorClass } : {}),
           }
@@ -162,10 +166,10 @@ export function lootImportItemProblem(item: LootImportPayload['items'][number]):
   if (item.notes != null && typeof item.notes !== 'string') {
     return 'notes must be a string when present.';
   }
-  const hasAttributes = item.category != null || item.valueGp != null
-    || item.weight != null || item.damage != null || item.armorClass != null;
+  const hasAttributes = item.category != null || item.valueGp != null || item.weight != null
+    || item.bulk != null || item.damage != null || item.armorClass != null;
   if (hasKey && hasAttributes) {
-    return 'category/valueGp/weight/damage/armorClass apply to custom items only — catalog items take their stats from the catalog.';
+    return 'category/valueGp/weight/bulk/damage/armorClass apply to custom items only — catalog items take their stats from the catalog.';
   }
   if (item.category != null
       && !(LOOT_ITEM_CATEGORIES as readonly string[]).includes(item.category)) {
@@ -176,6 +180,9 @@ export function lootImportItemProblem(item: LootImportPayload['items'][number]):
   }
   if (item.weight != null && (typeof item.weight !== 'number' || item.weight < 0)) {
     return 'weight must be a non-negative number when present.';
+  }
+  if (item.bulk != null && (typeof item.bulk !== 'number' || item.bulk < 0)) {
+    return 'bulk must be a non-negative number when present.';
   }
   if (item.damage != null && typeof item.damage !== 'string') {
     return 'damage must be a string when present.';
@@ -238,6 +245,7 @@ export function parseLootImportPayload(raw: string): { payload?: LootImportPaylo
         ...(i.category != null ? { category: i.category } : {}),
         ...(i.valueGp != null ? { valueGp: i.valueGp } : {}),
         ...(i.weight != null ? { weight: i.weight } : {}),
+        ...(i.bulk != null ? { bulk: i.bulk } : {}),
         ...(typeof i.damage === 'string' && i.damage.trim() ? { damage: i.damage.trim() } : {}),
         ...(typeof i.armorClass === 'string' && i.armorClass.trim() ? { armorClass: i.armorClass.trim() } : {}),
       })),
