@@ -1,4 +1,4 @@
-import { RENOWN_MILESTONES, RENOWN_THRESHOLDS, renownFillsFromRight, renownProgress, renownSpan, renownStanding } from './renown';
+import { RENOWN_MILESTONES, RENOWN_THRESHOLDS, factionPickerRows, renownFillsFromRight, renownProgress, renownSpan, renownStanding } from './renown';
 
 describe('renown milestones', () => {
   const ranges: [number, number, string][] = [
@@ -57,5 +57,24 @@ describe('renown milestones', () => {
     expect(at(3)).toBeCloseTo(63 / 121 * 100, 6);
     expect(at(-25)).toBeCloseTo(36 / 121 * 100, 6);
     expect(at(50)).toBeCloseTo(110 / 121 * 100, 6);
+  });
+});
+
+describe('factionPickerRows', () => {
+  const faction = (id: number, parentId: number | null) => ({ id, parentId, name: `Guild ${id}` });
+
+  it('puts each subfaction straight after its parent, in creation order', () => {
+    const rows = factionPickerRows([faction(1, null), faction(2, null), faction(3, 1), faction(4, 2), faction(5, 1)]);
+    expect(rows.map(r => [r.faction.id, r.child])).toEqual([
+      [1, false], [3, true], [5, true], [2, false], [4, true],
+    ]);
+  });
+
+  it('keeps a subfaction whose parent is missing, as a top-level row', () => {
+    expect(factionPickerRows([faction(3, 99)]).map(r => [r.faction.id, r.child])).toEqual([[3, false]]);
+  });
+
+  it('is empty for a campaign with no factions', () => {
+    expect(factionPickerRows([])).toEqual([]);
   });
 });

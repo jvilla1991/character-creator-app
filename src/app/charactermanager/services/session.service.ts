@@ -1215,11 +1215,13 @@ export class SessionService {
     ).pipe(tap(result => this.patchXp(result)));
   }
 
-  /** DM awards the same XP amount to every seated PC in the session. */
-  awardXpToAll(sessionId: number | string, amount: number): Observable<XpAwardResult> {
-    if (environment.demoMode) return of(this.demoAwardXpToAll(amount));
+  /** DM awards the same XP amount to the seated PCs ticked in the reward bar
+   *  (`participantIds`). The server refuses an empty list or a participant who
+   *  is no longer seated, rather than rewarding fewer characters than chosen. */
+  awardXpToMany(sessionId: number | string, amount: number, participantIds: number[]): Observable<XpAwardResult> {
+    if (environment.demoMode) return of(this.demoAwardXpToMany(amount, participantIds));
     return this.http.post<XpAwardResult>(
-      `${this.sessionBase}/${sessionId}/xp`, { amount },
+      `${this.sessionBase}/${sessionId}/xp`, { amount, participantIds },
     ).pipe(tap(result => this.patchXp(result)));
   }
 
@@ -1432,13 +1434,15 @@ export class SessionService {
     return { awarded };
   }
 
-  /** Demo: award the same XP to every seated PC (NPCs skipped). */
-  private demoAwardXpToAll(amount: number): XpAwardResult {
+  /** Demo: award the same XP to the ticked seated PCs (NPCs skipped). */
+  private demoAwardXpToMany(amount: number, participantIds: number[]): XpAwardResult {
     const state = this.stateSubject.getValue();
     const awarded: XpAwardEntry[] = [];
     if (state) {
       state.participants.forEach(p => {
-        if (p.pcId != null && !p.npc) awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
+        if (p.pcId != null && !p.npc && participantIds.includes(p.participantId)) {
+          awarded.push(this.demoApplyXp(p.pcId, p.name, amount));
+        }
       });
       this.pushState({ ...state, version: state.version + 1 });
     }
