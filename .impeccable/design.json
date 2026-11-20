@@ -1,101 +1,59 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-10T00:00:00Z",
+  "generatedAt": "2026-11-20T00:00:00Z",
   "title": "Design System: Table Mimic",
   "extensions": {
     "colorMeta": {
-      "gold": {
-        "role": "primary",
-        "displayName": "Arcane Gold",
-        "canonical": "#d4b06a",
-        "tonalRamp": ["#2a1f0e", "#4a3718", "#6b4f24", "#8a6a3a", "#a98850", "#d4b06a", "#e8c98a", "#f5e4c2"]
-      },
-      "celestial": {
-        "role": "secondary",
-        "displayName": "Starlight",
-        "canonical": "#8fb4ff",
-        "tonalRamp": ["#0f1a33", "#1b2c55", "#2a4379", "#3a5aa0", "#5d84cd", "#8fb4ff", "#c0d4ff", "#e4edff"]
-      },
-      "crimson": {
-        "role": "tertiary",
-        "displayName": "Rose Crimson",
-        "canonical": "#d67c7b",
-        "tonalRamp": ["#2e1313", "#4d1f1e", "#6f2e2d", "#93403f", "#b55a59", "#d67c7b", "#e8a7a6", "#f6d6d5"]
-      },
-      "emerald": {
-        "role": "tertiary",
-        "displayName": "Moss Emerald",
-        "canonical": "#6fa872",
-        "tonalRamp": ["#101f12", "#1b331e", "#28492c", "#38613c", "#53854f", "#6fa872", "#9ac89c", "#d2e8d3"]
-      },
-      "violet": {
-        "role": "tertiary",
-        "displayName": "Thistle Violet",
-        "canonical": "#a189d5",
-        "tonalRamp": ["#1a1430", "#2b2150", "#3f3173", "#564497", "#7a64b8", "#a189d5", "#c4b4e6", "#e6def5"]
-      },
-      "bg": {
-        "role": "neutral",
-        "displayName": "Void",
-        "canonical": "#080b18",
-        "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"]
-      },
-      "surface": {
-        "role": "neutral",
-        "displayName": "Astral Surface",
-        "canonical": "#131934",
-        "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"]
-      },
-      "border": {
-        "role": "neutral",
-        "displayName": "Constellation Line",
-        "canonical": "#2a3464"
-      },
-      "text": {
-        "role": "neutral",
-        "displayName": "Parchment Ink",
-        "canonical": "#ece3cc"
-      },
-      "text-2": {
-        "role": "neutral",
-        "displayName": "Muted Ink",
-        "canonical": "#b8b2a0"
-      },
-      "text-dim": {
-        "role": "neutral",
-        "displayName": "Dim Ink",
-        "canonical": "#9195af"
-      },
-      "placeholder": {
-        "role": "neutral",
-        "displayName": "Placeholder Ink",
-        "canonical": "#9195af"
-      }
+      "gold": { "role": "primary", "displayName": "Arcane Gold", "canonical": "#d4b06a", "tonalRamp": ["#2a1f0e", "#4a3718", "#6b4f24", "#8a6a3a", "#a98850", "#d4b06a", "#e8c98a", "#f5e4c2"] },
+      "gold-2": { "role": "primary", "displayName": "Gilt", "canonical": "#e8c98a" },
+      "gold-deep": { "role": "primary", "displayName": "Deep Gilt", "canonical": "#8a6a3a" },
+      "celestial": { "role": "secondary", "displayName": "Starlight", "canonical": "#8fb4ff", "tonalRamp": ["#0f1a33", "#1b2c55", "#2a4379", "#3a5aa0", "#5d84cd", "#8fb4ff", "#c0d4ff", "#e4edff"] },
+      "celestial-2": { "role": "secondary", "displayName": "Pale Starlight", "canonical": "#c0d4ff" },
+      "celestial-deep": { "role": "secondary", "displayName": "Deep Starlight", "canonical": "#3a5aa0" },
+      "crimson": { "role": "tertiary", "displayName": "Rose Crimson", "canonical": "#d67c7b", "tonalRamp": ["#2e1313", "#4d1f1e", "#6f2e2d", "#93403f", "#b55a59", "#d67c7b", "#e8a7a6", "#f6d6d5"] },
+      "emerald": { "role": "tertiary", "displayName": "Moss Emerald", "canonical": "#6fa872", "tonalRamp": ["#101f12", "#1b331e", "#28492c", "#38613c", "#53854f", "#6fa872", "#9ac89c", "#d2e8d3"] },
+      "violet": { "role": "tertiary", "displayName": "Thistle Violet", "canonical": "#a189d5", "tonalRamp": ["#1a1430", "#2b2150", "#3f3173", "#564497", "#7a64b8", "#a189d5", "#c4b4e6", "#e6def5"] },
+      "bg": { "role": "neutral", "displayName": "Void", "canonical": "#080b18", "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"] },
+      "bg-2": { "role": "neutral", "displayName": "Deep Void", "canonical": "#0d1224" },
+      "surface": { "role": "neutral", "displayName": "Astral Surface", "canonical": "#131934", "tonalRamp": ["#080b18", "#0d1224", "#131934", "#1a2148", "#232b58", "#9195af", "#b8b2a0", "#ece3cc"] },
+      "surface-2": { "role": "neutral", "displayName": "Raised", "canonical": "#1a2148" },
+      "surface-3": { "role": "neutral", "displayName": "Highest", "canonical": "#232b58" },
+      "border": { "role": "neutral", "displayName": "Constellation Line", "canonical": "#2a3464" },
+      "border-soft": { "role": "neutral", "displayName": "Faint Line", "canonical": "#1f2548" },
+      "text": { "role": "neutral", "displayName": "Parchment Ink", "canonical": "#ece3cc" },
+      "text-2": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#b8b2a0" },
+      "text-dim": { "role": "neutral", "displayName": "Dim Ink", "canonical": "#9195af" },
+      "placeholder": { "role": "neutral", "displayName": "Placeholder Ink", "canonical": "#9195af" }
     },
     "typographyMeta": {
       "display": { "displayName": "Display", "purpose": "Drop capital and the largest dice result. Rare." },
-      "headline": { "displayName": "Headline", "purpose": "Page and empty-state titles." },
-      "title": { "displayName": "Title", "purpose": "Modal titles and section headings." },
-      "body": { "displayName": "Body", "purpose": "All prose; italic carries flavour text." },
-      "label": { "displayName": "Label", "purpose": "Buttons, panel titles, field labels, tabs. Uppercase Cinzel." },
-      "numeric": { "displayName": "Numeric", "purpose": "Any figure compared or totalled: HP, ability scores, dice, currency." }
+      "headline": { "displayName": "Headline", "purpose": "Page and empty-state titles, 24 to 36px." },
+      "title": { "displayName": "Title", "purpose": "Modal titles and section headings, 16 to 18px." },
+      "body": { "displayName": "Body", "purpose": "All prose, 13 to 15px, always upright. Flavour text, hints and sub-lines are the same face one step down the text ramp." },
+      "label": { "displayName": "Label", "purpose": "Buttons, panel titles, tabs. Uppercase Cinzel at the 11px floor. Field labels run a step heavier: Cinzel 600, 12px, 0.14em, text-2." },
+      "numeric": { "displayName": "Numeric", "purpose": "Any figure compared or totalled: HP, ability scores, dice, currency. Tabular." }
     },
     "themes": [
-      { "name": "midnight", "selector": ":root, [data-theme=\"midnight\"]", "note": "Default. Values in DESIGN.md frontmatter are this theme." },
-      { "name": "vellum", "selector": "[data-theme=\"vellum\"]", "note": "Light parchment. Same token names, inverted ramp." },
-      { "name": "candlelit", "selector": "[data-theme=\"candlelit\"]", "note": "Warm sepia." }
+      { "name": "midnight", "selector": ":root, [data-theme=\"midnight\"]", "note": "Default. Values in DESIGN.md frontmatter are this theme.", "shadow": "0 8px 32px rgba(0, 0, 0, 0.5)", "glowGold": "0 0 18px rgba(212, 176, 106, 0.22)", "glow": "0 0 20px rgba(143, 180, 255, 0.25)" },
+      { "name": "vellum", "selector": "[data-theme=\"vellum\"]", "note": "Light parchment. Same token names, inverted ramp; the primary button label switches to gold-deep.", "shadow": "0 4px 16px rgba(74, 50, 16, 0.18)", "glowGold": "0 0 12px rgba(113, 77, 28, 0.18)", "glow": "0 0 12px rgba(42, 74, 138, 0.15)" },
+      { "name": "candlelit", "selector": "[data-theme=\"candlelit\"]", "note": "Warm sepia. Starlight turns amber here.", "shadow": "0 8px 28px rgba(0, 0, 0, 0.55)", "glowGold": "0 0 18px rgba(232, 184, 96, 0.30)", "glow": "0 0 20px rgba(232, 184, 96, 0.30)" }
     ],
     "shadows": [
-      { "name": "ambient-page", "value": "0 8px 32px rgba(0, 0, 0, 0.5)", "purpose": "Modals and drawers only — the one place something sits above the page." },
-      { "name": "focus-glow-gold", "value": "0 0 18px rgba(212, 176, 106, 0.22)", "purpose": "Input focus and the primary button. State, never decoration." },
-      { "name": "live-glow-celestial", "value": "0 0 20px rgba(143, 180, 255, 0.25)", "purpose": "Active or live session state." }
+      { "name": "ambient-page", "value": "0 8px 32px rgba(0, 0, 0, 0.5)", "purpose": "var(--shadow). Modals and drawers only, the one place something sits above the page. Never used to separate elements." },
+      { "name": "focus-glow-gold", "value": "0 0 18px rgba(212, 176, 106, 0.22)", "purpose": "var(--glow-gold). Input focus (state), plus the one standing glow in the system: the primary button at rest. A second standing glow is a bug." },
+      { "name": "live-glow-celestial", "value": "0 0 20px rgba(143, 180, 255, 0.25)", "purpose": "var(--glow). Active or live session state only. A celestial glow at rest is always a bug." }
     ],
     "motion": [
-      { "name": "state-transition", "value": "all .15s", "purpose": "Default for button and control state changes." },
+      { "name": "state-transition", "value": "all .15s", "purpose": "Default for button, chip and control state changes. 0.15s is the house duration." },
+      { "name": "row-hover", "value": "background .12s, border-color .12s", "purpose": "Roster rows and other dense list rows." },
       { "name": "meter-fill", "value": "width .25s ease-out", "purpose": "Vitals bar and other meters changing value." },
-      { "name": "reduced-motion", "value": "@media (prefers-reduced-motion: reduce)", "purpose": "Honoured; motion is CSS-only. @angular/animations is deliberately absent." }
+      { "name": "drawer-slide", "value": "transform 0.25s ease", "purpose": "The phone drawer; its scrim fades over the same 0.25s." },
+      { "name": "overlay-in", "value": "fadein .15s ease-out", "purpose": "Modal backdrop arriving. Toasts use 0.2s ease-out with a 10px rise." },
+      { "name": "slideover-in", "value": "slidein .28s cubic-bezier(.2, .8, .2, 1)", "purpose": "Left slide-over; starts only 34px off so a frozen timeline still shows it." },
+      { "name": "reduced-motion", "value": "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }", "purpose": "One global rule. Every animation and transition becomes an instant change and infinite animations run once and stop, so any state an animation shows must also live on the element. Motion is CSS-only; @angular/animations is deliberately absent." }
     ],
     "breakpoints": [
+      { "name": "sheet-stack", "value": "1100px" },
       { "name": "shell-collapse", "value": "820px" },
       { "name": "md", "value": "640px" },
       { "name": "sm", "value": "560px" },
@@ -107,57 +65,89 @@
       "name": "Button",
       "kind": "button",
       "refersTo": "button",
-      "description": "The base control: hairline border, uppercase Cinzel label, near-sharp corner.",
-      "html": "<button class=\"ds-btn\">Open Chronicle</button>",
-      "css": ".ds-btn { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; padding: 9px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-2); border-radius: 2px; cursor: pointer; transition: all .15s; } .ds-btn:hover { color: var(--gold); border-color: var(--gold); } .ds-btn:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }"
+      "description": "The base control: hairline border, uppercase Cinzel label, near-sharp corner. Disabled turns the hairline dashed and drops border and label to text-dim, never opacity.",
+      "html": "<button class=\"ds-btn\">Open Chronicle</button> <button class=\"ds-btn\" disabled>Level Up</button>",
+      "css": ".ds-btn { font-family: 'Cinzel', serif; font-size: var(--text-2xs); letter-spacing: var(--track-label); text-transform: uppercase; padding: 9px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-2); border-radius: var(--radius-sharp); cursor: pointer; transition: all .15s; } .ds-btn:hover { color: var(--gold); border-color: var(--gold); } .ds-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; } .ds-btn:disabled, .ds-btn:disabled:hover { background: transparent; border-color: var(--text-dim); border-style: dashed; color: var(--text-dim); box-shadow: none; cursor: not-allowed; }"
     },
     {
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The committing action. Gradient fill mixed from gold into the raised surface, gold border and glow.",
+      "description": "The committing action. Gradient fill mixed from gold into the raised surface, gold border, and the only standing glow in the system.",
       "html": "<button class=\"ds-btn-primary\">Forge a Hero</button>",
-      "css": ".ds-btn-primary { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; padding: 9px 14px; border: 1px solid var(--gold); color: var(--gold-2); border-radius: 2px; cursor: pointer; background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 30%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 25%, var(--surface-2))); box-shadow: var(--glow-gold); transition: all .15s; } .ds-btn-primary:hover { color: var(--text); background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 40%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 30%, var(--surface-2))); }"
+      "css": ".ds-btn-primary { font-family: 'Cinzel', serif; font-size: var(--text-2xs); letter-spacing: var(--track-label); text-transform: uppercase; padding: 9px 14px; border: 1px solid var(--gold); color: var(--gold-2); border-radius: var(--radius-sharp); cursor: pointer; background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 30%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 25%, var(--surface-2))); box-shadow: var(--glow-gold); transition: all .15s; } :host-context([data-theme=\"vellum\"]) .ds-btn-primary { color: var(--gold-deep); } .ds-btn-primary:hover { color: var(--text); background: linear-gradient(180deg, color-mix(in oklch, var(--gold) 40%, var(--surface-2)), color-mix(in oklch, var(--gold-deep) 30%, var(--surface-2))); } .ds-btn-primary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "The base button with a crimson label and a 50% crimson hairline; hover fills with crimson at 20%. The play variant is the same in emerald (55% border, 22% fill).",
+      "html": "<button class=\"ds-btn-danger\">Delete Campaign</button>",
+      "css": ".ds-btn-danger { font-family: 'Cinzel', serif; font-size: var(--text-2xs); letter-spacing: var(--track-label); text-transform: uppercase; padding: 9px 14px; background: transparent; border: 1px solid color-mix(in oklch, var(--crimson) 50%, transparent); color: var(--crimson); border-radius: var(--radius-sharp); cursor: pointer; transition: all .15s; } .ds-btn-danger:hover { background: color-mix(in oklch, var(--crimson) 20%, transparent); border-color: var(--crimson); } .ds-btn-danger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Inset ground, hairline border, gold focus glow. Label is a tracked Cinzel micro-cap.",
-      "html": "<label class=\"ds-field\"><span>Username</span><input class=\"ds-input\" placeholder=\"Enter your username\"></label>",
-      "css": ".ds-field { display: block; } .ds-field span { display: block; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; } .ds-input { width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; font-family: 'Newsreader', Georgia, serif; font-size: 15px; border-radius: 2px; outline: none; } .ds-input::placeholder { color: var(--placeholder); opacity: 1; } .ds-input:focus { border-color: var(--gold); box-shadow: var(--glow-gold); }"
+      "description": "Inset ground, hairline border, gold focus border and glow. Label is Cinzel 600 12px at 0.14em in text-2; a rule the field enforces sits under it as a 12px text-dim hint. Disabled keeps readable ink and turns the hairline dashed.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-field-name\">Hero Name</label><input id=\"ds-field-name\" type=\"text\" placeholder=\"Lyra Moonwhisper\" aria-describedby=\"ds-field-hint\"><div class=\"ds-field-hint\" id=\"ds-field-hint\">At least 2 characters.</div></div><div class=\"ds-field\"><label for=\"ds-field-user\">Username</label><input id=\"ds-field-user\" type=\"text\" value=\"dungeon_cartographer\" disabled></div>",
+      "css": ".ds-field { margin-bottom: 14px; } .ds-field label { display: block; font-family: 'Cinzel', serif; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); margin-bottom: 6px; } .ds-field input { box-sizing: border-box; width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; font-family: 'Newsreader', Georgia, serif; font-size: var(--text-base); border-radius: var(--radius-sharp); outline: none; } .ds-field input::placeholder { color: var(--placeholder); opacity: 1; } .ds-field input:focus { border-color: var(--gold); box-shadow: var(--glow-gold); } .ds-field input:disabled { color: var(--text-2); -webkit-text-fill-color: var(--text-2); opacity: 1; border-style: dashed; cursor: not-allowed; } .ds-field-hint { margin-top: 6px; font-family: 'Newsreader', Georgia, serif; font-size: var(--text-xs); line-height: 1.4; color: var(--text-dim); }"
     },
     {
       "name": "Panel",
       "kind": "card",
       "refersTo": "panel",
-      "description": "The repeating container: translucent surface over a blurred backdrop, hairline border, 3px corner. No shadow.",
-      "html": "<section class=\"ds-panel\"><h3 class=\"ds-panel-title\">Ability Scores</h3><p class=\"ds-panel-body\">Strength, Dexterity, Constitution.</p></section>",
-      "css": ".ds-panel { background: color-mix(in oklch, var(--surface) 75%, transparent); border: 1px solid var(--border); border-radius: 3px; padding: 18px 20px; backdrop-filter: blur(4px); } .ds-panel-title { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; } .ds-panel-body { font-family: 'Newsreader', Georgia, serif; font-size: 14px; line-height: 1.45; color: var(--text); margin: 0; }"
+      "description": "The repeating container: translucent surface over a blurred backdrop, hairline border with a fainter inner hairline, 3px corner. No shadow.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-panel-header\"><h3 class=\"ds-panel-title\">Ability Scores</h3></div><p class=\"ds-panel-body\">Strength, Dexterity, Constitution.</p></section>",
+      "css": ".ds-panel { position: relative; background: color-mix(in oklch, var(--surface) 75%, transparent); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 18px 20px; backdrop-filter: blur(4px); } .ds-panel::before { content: ''; position: absolute; inset: 6px; border: 1px solid var(--border-soft); border-radius: var(--radius-sharp); pointer-events: none; opacity: 0.5; } .ds-panel > * { position: relative; } .ds-panel-header { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-soft); } .ds-panel-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: var(--text-xs); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--gold); margin: 0; } .ds-panel-body { font-family: 'Newsreader', Georgia, serif; font-size: var(--text-md); line-height: 1.45; color: var(--text); margin: 0; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "The app-modal shell: surface box, accent hairline (gold, or celestial / crimson by tone), a title that names the dialog and a close button top-right. Ambient shadow, no glow.",
+      "html": "<div class=\"ds-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"ds-modal-title\"><h2 class=\"ds-modal-title\" id=\"ds-modal-title\">Long Rest</h2><button type=\"button\" class=\"ds-modal-close\" aria-label=\"Close\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M4 4l8 8M12 4l-8 8\"/></svg></button><p class=\"ds-modal-sub\">The party rests for eight hours.</p></div>",
+      "css": ".ds-modal { position: relative; box-sizing: border-box; width: min(520px, 92vw); background: var(--surface); border: 1px solid var(--gold); border-radius: var(--radius-sm); padding: 28px 32px 24px; box-shadow: var(--shadow); } .ds-modal::before { content: ''; position: absolute; inset: 6px; border: 1px solid var(--border); border-radius: var(--radius-panel); pointer-events: none; } .ds-modal > * { position: relative; } .ds-modal-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: var(--text-xl); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 0 40px 4px 0; } .ds-modal-close { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sharp); color: var(--text-dim); cursor: pointer; transition: color .15s, border-color .15s; } .ds-modal-close:hover { color: var(--gold); border-color: var(--border); } .ds-modal-sub { font-family: 'Newsreader', Georgia, serif; font-size: var(--text-md); color: var(--text-2); margin: 0; }"
     },
     {
       "name": "Condition Chip",
       "kind": "chip",
       "refersTo": "chip",
-      "description": "Accent text on a faint mix of the same accent. Used for conditions, tags and counts.",
-      "html": "<span class=\"ds-chip\">Poisoned</span>",
-      "css": ".ds-chip { display: inline-flex; align-items: center; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--crimson); background: color-mix(in oklch, var(--crimson) 16%, transparent); border: 1px solid color-mix(in oklch, var(--crimson) 45%, transparent); border-radius: 999px; padding: 3px 10px; }"
+      "description": "A pill toggle for conditions and tags. At rest a quiet hairline pill; selected, accent text on an 18% mix of the same accent. The fill carries the selection.",
+      "html": "<button type=\"button\" class=\"ds-chip\" aria-pressed=\"true\">Poisoned</button> <button type=\"button\" class=\"ds-chip\" aria-pressed=\"false\">Prone</button>",
+      "css": ".ds-chip { font-family: 'Cinzel', serif; font-size: var(--text-2xs); letter-spacing: var(--track-label); text-transform: uppercase; padding: 5px 9px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-2); background: var(--bg-2); cursor: pointer; transition: all .15s; } .ds-chip:hover { color: var(--gold); border-color: var(--gold); } .ds-chip[aria-pressed=\"true\"] { background: color-mix(in oklch, var(--crimson) 18%, var(--bg-2)); border-color: var(--crimson); color: var(--crimson); }"
     },
     {
       "name": "Roster Row",
       "kind": "nav",
       "refersTo": "nav-row",
-      "description": "A navigation row in the 320px rail. Active rows take a gold left marker.",
+      "description": "A navigation row in the 320px rail: Cinzel name, upright Newsreader sub-line in text-dim. The active row takes a celestial tint and a gold left marker, with aria-current set.",
       "html": "<a class=\"ds-nav-row ds-nav-row--active\" aria-current=\"true\"><span class=\"ds-nav-name\">Lyra Moonwhisper</span><span class=\"ds-nav-meta\">Half-Elf Bard</span></a>",
-      "css": ".ds-nav-row { position: relative; display: block; padding: 10px 12px; border: 1px solid transparent; border-radius: 2px; cursor: pointer; text-decoration: none; transition: all .15s; } .ds-nav-row:hover { background: color-mix(in oklch, var(--celestial) 10%, transparent); } .ds-nav-row--active { background: color-mix(in oklch, var(--celestial) 14%, transparent); border-color: color-mix(in oklch, var(--celestial) 35%, transparent); } .ds-nav-row--active::before { content: ''; position: absolute; left: -8px; top: 4px; bottom: 4px; width: 2px; background: var(--gold); } .ds-nav-name { display: block; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: .04em; color: var(--text); } .ds-nav-meta { display: block; font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 2px; }"
+      "css": ".ds-nav-row { position: relative; display: block; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--radius-sharp); cursor: pointer; text-decoration: none; transition: background .12s, border-color .12s; } .ds-nav-row:hover { background: color-mix(in oklch, var(--surface-2) 80%, transparent); } .ds-nav-row--active { background: color-mix(in oklch, var(--celestial) 14%, transparent); border-color: color-mix(in oklch, var(--celestial) 35%, transparent); } .ds-nav-row--active::before { content: ''; position: absolute; left: -8px; top: 4px; bottom: 4px; width: 2px; background: var(--gold); } .ds-nav-name { display: block; font-family: 'Cinzel', serif; font-weight: 500; font-size: var(--text-sm); letter-spacing: 0.03em; color: var(--text); } .ds-nav-meta { display: block; font-family: 'Newsreader', Georgia, serif; font-size: var(--text-xs); color: var(--text-dim); }"
+    },
+    {
+      "name": "Sheet Tabs",
+      "kind": "nav",
+      "refersTo": "sheet-tabs",
+      "description": "The character sheet's section tabs. The active tab takes pale starlight ink and a 2px underline. Below 820px the row pins to the bottom edge as a 52px bar.",
+      "html": "<nav class=\"ds-tabs\" role=\"tablist\"><button type=\"button\" class=\"ds-tab ds-tab--active\" role=\"tab\" aria-selected=\"true\">Sheet</button><button type=\"button\" class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Spells</button><button type=\"button\" class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Inventory</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-soft); } .ds-tab { appearance: none; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); font-family: 'Newsreader', Georgia, serif; font-size: var(--text-sm); letter-spacing: 0.04em; text-transform: uppercase; padding: 8px 14px; cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease; } .ds-tab:hover { color: var(--text); } .ds-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; } .ds-tab--active { color: var(--celestial-2); border-bottom-color: var(--celestial-2); }"
+    },
+    {
+      "name": "Context Help Button",
+      "kind": "custom",
+      "refersTo": "context-help",
+      "description": "The \"?\" in a panel header or beside a disabled button: a tooltip on hover and focus, a small dialog on tap. A 28px circle with an invisible 44px tap halo on touch.",
+      "html": "<button type=\"button\" class=\"ds-help\" aria-label=\"Help: Spell slots\" aria-haspopup=\"dialog\">?</button>",
+      "css": ".ds-help { position: relative; width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--text); font: 500 var(--text-sm)/1 'Newsreader', Georgia, serif; cursor: help; } .ds-help:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; } @media (pointer: coarse) { .ds-help::after { content: ''; position: absolute; inset: -8px; } }"
     },
     {
       "name": "Vitals Bar",
       "kind": "custom",
       "refersTo": "vitals-bar",
-      "description": "Signature component. A hairline-bounded meter whose fill runs crimson to gold, flattening to crimson when bloodied.",
-      "html": "<div class=\"ds-vitals\"><span style=\"width:62%\"></span></div>",
-      "css": ".ds-vitals { height: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; } .ds-vitals > span { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--crimson), var(--gold)); transition: width .25s ease-out; }"
+      "description": "Signature component. A thin meter under an eyebrow label and a large value; the fill runs crimson to gold and drops to flat crimson when bloodied.",
+      "html": "<div class=\"ds-vital\"><span class=\"ds-eyebrow\">Hit Points</span><div class=\"ds-vital-value\">27<span class=\"ds-vital-sub\"> / 43</span></div><div class=\"ds-vital-bar\"><span style=\"width:62%\"></span></div></div>",
+      "css": ".ds-vital { padding: 18px 16px; text-align: center; } .ds-eyebrow { display: block; margin-bottom: 6px; font-family: 'Cinzel', serif; font-weight: 500; font-size: var(--text-2xs); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--text-dim); } .ds-vital-value { font-family: 'Cinzel', serif; font-weight: 600; font-size: 30px; letter-spacing: 0.02em; line-height: 1; color: var(--text); } .ds-vital-sub { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: var(--text-md); color: var(--text-dim); } .ds-vital-bar { margin-top: 10px; height: 3px; background: var(--bg-2); border-radius: var(--radius-sharp); overflow: hidden; } .ds-vital-bar > span { display: block; height: 100%; border-radius: var(--radius-sharp); background: linear-gradient(90deg, var(--crimson), var(--gold)); transition: width .25s ease-out; } .ds-vital--bloodied .ds-vital-bar > span { background: var(--crimson); }"
     }
   ],
   "narrative": {
@@ -172,30 +162,36 @@
       "Dense by nature — built for glanceable reading on a phone at a table"
     ],
     "rules": [
-      { "name": "The Three Themes Rule", "body": "midnight (default), vellum (light parchment) and candlelit (sepia) redefine every token under a [data-theme] selector. Never write a literal colour in a component — the token is the only interface. A change verified in one theme is unverified.", "section": "colors" },
+      { "name": "The Three Themes Rule", "body": "midnight (default), vellum (light parchment) and candlelit (sepia) redefine every token above under a [data-theme] selector. Never write a literal colour in a component — the token is the only interface. A change verified in one theme is unverified.", "section": "colors" },
       { "name": "The AA Floor Rule", "body": "Every text token clears 4.5:1 against every surface token, in every theme — 135 combinations, enforced by npm run check:contrast in CI. Adding or darkening a token without re-running it is how this breaks.", "section": "colors" },
       { "name": "The Scarce Accent Rule", "body": "Gold marks what is active, valuable, or focused. When most of a screen is gold, none of it is.", "section": "colors" },
-      { "name": "The Ramp Separation Rule", "body": "The three text steps sit roughly 1.4x apart in contrast. Fixing a contrast failure by sliding one step toward another collapses the ramp; move its neighbour too.", "section": "colors" },
+      { "name": "The Ramp Separation Rule", "body": "The three text steps sit roughly 1.4× apart in contrast. Fixing a contrast failure by sliding one step toward another collapses the ramp; move its neighbour too.", "section": "colors" },
       { "name": "The 11px Floor Rule", "body": "No functional text ships below 11px. Letterspaced micro-labels are functional text and are not exempt; being on the scale does not launder a legibility failure.", "section": "typography" },
       { "name": "The Tracking Ladder Rule", "body": "Tracking rises as size falls: 0.04em on display, 0.05em on titles, 0.18em on buttons, 0.22em on the smallest eyebrow labels. Uppercase Cinzel below 12px without tracking is illegible.", "section": "typography" },
+      { "name": "The No Italics Rule", "body": "Nothing is set in italic or oblique, in any theme (owner decision, 2026-11-18). No stylesheet or template declares font-style: italic, no italic font face is loaded, and the elements a browser slants by default (em, i, cite, dfn, address, var) are reset to upright once, globally, in src/styles.css. Secondary text (hints, sub-lines, empty states, notes, flavour) is told apart from the line above it by, in order of preference: 1. one step down the text ramp (text → text-2 → text-dim); 2. one step down the --text-* scale, never below the 11px floor; 3. weight (Newsreader 400 against 500 or 600); 4. an accent token, only where the text carries that meaning (crimson for an error, celestial for a magic item, gold for a title).\n\nTwo lines that share family, size, weight and colour are one line to the eye; when a note sits under a meta line, the note (someone wrote it) takes text-2 and the meta (generated) keeps text-dim. Emphasis inside a sentence stays an <em> and steps up the ramp to text; a run-in label (\"At higher levels.\") also takes weight 600. npm run check:tokens fails on any italic declaration under src/.", "section": "typography" },
       { "name": "The Panel Owns Its Scroll Rule", "body": "The shell never scrolls. A new surface that needs to scroll scrolls inside its panel, not by growing the page.", "section": "layout" },
       { "name": "The Phone Is The Table Rule", "body": "Players hold phones during play. Any session surface must stay workable at 375px — dense is acceptable, cramped and clipped are not.", "section": "layout" },
       { "name": "The Glow Is State Rule", "body": "Glow signals focus, activity, or liveness. Never apply it to make something look richer at rest.", "section": "elevation" },
+      { "name": "The One Standing Glow", "body": "Exactly one element breaks the rule above by design: the primary button carries the gold glow at rest, because on a dark ground it is how the committing action announces itself. It is the only standing glow in the system. A second standing glow is a bug, and a celestial glow at rest is always a bug.", "section": "elevation" },
       { "name": "The Hairline Rule", "body": "Structure is drawn with 1px borders and tone. If a boundary needs more than a hairline to read, the tones on either side of it are wrong.", "section": "shapes" }
     ],
     "dos": [
       "Do write every colour as a token. The three themes are the product.",
       "Do run npm run check:contrast after touching any colour token.",
       "Do keep functional text at 11px or above, and raise tracking as size falls.",
+      "Do tell secondary text apart with the text ramp, a size step, weight or an accent token.",
       "Do use tone and hairlines for structure; let surface → surface-2 → surface-3 carry depth.",
       "Do keep the accent scarce — gold marks active, valuable, or focused.",
-      "Do verify at 375px before calling a session surface done."
+      "Do verify at 375px before calling a session surface done.",
+      "Do write a failure as what did not happen and what to do next (\"Could not save the note. Your text is still here — try again.\"), and an empty state as what is true plus the next step that exists at that width: the sidebar is a list on desktop and a drawer behind the menu button on a phone (.wide-only / .narrow-only).",
+      "Do put any state an animation shows on the element itself too. Under reduced motion the animation stops at rest, so a cue that lives only in keyframes disappears. The my-turn vignette holds its green frame statically for this reason."
     ],
     "donts": [
       "Don't introduce a drop shadow to separate elements. Change the tone step instead.",
       "Don't leave a glow on an element at rest.",
       "Don't soften the corner language; 2–3px is the house voice, pills are for status only.",
       "Don't reach for a literal hex, #757575-style browser defaults included.",
+      "Don't set anything in italic: not a hint, not flavour text, not a placeholder, not an <em>. check:tokens fails the build on it.",
       "Don't add @angular/animations. Motion here is CSS-only and deliberately so — the package was removed for 433 kB and should stay out.",
       "Don't let a fix for one theme regress another; all three ship together."
     ]
