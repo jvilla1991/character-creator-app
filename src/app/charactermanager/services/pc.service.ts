@@ -464,11 +464,26 @@ export class PCService {
    * not in the viewer's own roster: the member a DM has open.
    */
   private patchSpellSlots(pcId: number, spellSlots: SpellSlots): void {
-    this.pcs = this.pcs.map(p => p.id === pcId ? { ...p, spellSlots } : p);
+    this.patchShownPC(pcId, { spellSlots });
+  }
+
+  /**
+   * The portrait endpoints answered with the character's new portrait version
+   * (null once it is removed). Put it on the character wherever it is showing —
+   * the roster and the open sheet, including a member a DM has open — so the
+   * header and the roster change at once. PortraitService calls this.
+   */
+  applyPortraitVersion(pcId: number, portraitVersion: number | null): void {
+    this.patchShownPC(pcId, { portraitVersion });
+  }
+
+  /** Patch a character in the roster and, when it is the one on screen, the active PC. */
+  private patchShownPC(pcId: number, patch: Partial<PC>): void {
+    this.pcs = this.pcs.map(p => p.id === pcId ? { ...p, ...patch } : p);
     this.pcsSubject.next(this.pcs);
     const active = this.activePCSubject.getValue();
     if (active && active.id === pcId) {
-      this.activePCSubject.next({ ...active, spellSlots });
+      this.activePCSubject.next({ ...active, ...patch });
     }
   }
 

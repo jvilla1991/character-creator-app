@@ -1,0 +1,94 @@
+// "More actions" in the sheet header: a 36px icon button (44px on touch and on
+// a phone) with a small panel anchored under its right edge. The panel is the
+// one raised surface in the header, so it takes the ambient modal shadow
+// (DESIGN.md, Elevation) on the --surface-2 step.
+
+:host {
+  position: relative;
+  display: inline-flex;
+}
+
+.btn.icon.sheet-menu-trigger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+
+  &[aria-expanded='true'] {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+}
+
+.sheet-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: 240px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.sheet-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sharp);
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: var(--text-base);
+  line-height: 1.2;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+
+  svg {
+    flex: none;
+    color: var(--text-2);
+  }
+
+  &:hover,
+  &:focus {
+    background: color-mix(in oklch, var(--gold) 12%, transparent);
+    outline: none;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -2px;
+  }
+
+  &.danger,
+  &.danger svg {
+    color: var(--crimson);
+  }
+  &.danger:hover,
+  &.danger:focus {
+    background: color-mix(in oklch, var(--crimson) 14%, transparent);
+  }
+}
+
+.sheet-menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--border);
+}
+
+@media (max-width: 820px), (pointer: coarse) {
+  .btn.icon.sheet-menu-trigger {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .sheet-menu-item {
+    min-height: 44px;
+  }
+}

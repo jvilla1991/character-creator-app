@@ -1,55 +1,109 @@
 /* Most rules come from global styles.css. */
 
-// XP total in the hero subtitle — quieter than the level, sits beside it.
-.sheet-xp {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-dim);
-  // "0 / 34000 XP" is one reading; on a phone the bar beside it shrinks
-  // instead of the figure breaking across two lines.
-  white-space: nowrap;
+/* ── Sheet header: portrait · identity · the table ───────────────────────────
+   The global .sheet-header grid (styles.css) is shared with the campaign
+   dashboard and Session Mode; .pc-header is the character sheet's own take on
+   it. Desktop: three columns, bottom-aligned. Up to 1100px: the table drops to
+   its own row, right-aligned. Up to 720px (a phone): one grid of rows — the
+   portrait, eyebrow and menu, then the name and the species/class line at full
+   width, the progress line, the location, and full-width buttons. The identity
+   and table groups dissolve into it (display: contents)
+   so their parts can be placed on their own. */
+.pc-header {
+  grid-template-columns: 124px minmax(0, 1fr) auto;
 }
 
-// "Ready to level up" badge — appears once XP crosses the next 2024 PHB
-// threshold. Purely a hint; leveling is still the explicit Level Up action.
-.level-ready-badge {
-  margin-left: 8px;
-  padding: 2px 8px;
-  font-family: 'Newsreader', serif;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  color: var(--gold, #d9b25f);
-  border: 1px solid var(--gold, #d9b25f);
-  border-radius: 999px;
-  background: rgba(217, 178, 95, 0.10);
+.pc-header-portrait {
+  position: relative;
+  width: 124px;
+  height: 124px;
+
+  > .portrait.xl {
+    width: 100%;
+    height: 100%;
+  }
 }
 
-// Emphasize the Level Up button when the character is ready to advance.
-.btn.ready {
-  color: var(--gold, #d9b25f);
-  border-color: var(--gold, #d9b25f);
+// The silhouette's own ground fills the circle; the uploaded picture covers it.
+.sheet-portrait {
+  background: var(--surface);
 }
 
-// XP bar on one line beneath the subtitle (party location now lives in .sheet-subtitle itself).
-.xp-row {
+// Upload / change, on the portrait's lower-right edge.
+.portrait-camera {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 10px;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+
+  &:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
 }
-// The party location, shown as "Name(Type)" beside the XP bar; matches the
-// Level/class/species subtitle style (inherited — it lives inside .sheet-subtitle).
-.sheet-location-tag {
+
+// Species ✦ class (subclass) — one line that wraps as a whole.
+.sheet-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  line-height: 1.3;
+}
+.sheet-star {
+  flex: none;
+  fill: var(--gold);
+}
+.sheet-subclass {
+  color: var(--text-dim);
+}
+
+// Level, the XP bar and the XP total, on one line under the subtitle.
+.sheet-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  min-width: 0;
+}
+.sheet-level {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   white-space: nowrap;
+}
+.sheet-level-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.sheet-level-value {
+  font-weight: 500;
+  font-size: var(--text-xl);
+  color: var(--text);
 }
 
 // XP progress bar — fills through the current level toward the next. Basis keeps
-// its width inside the flex row (it may shrink on narrow sheets); the location
-// tag sits to its right.
+// its width inside the row; it shrinks first on a narrow sheet.
 .xp-track {
   position: relative;
   height: 6px;
   flex: 0 1 280px;
+  min-width: 40px;
   max-width: 280px;
   background: color-mix(in oklch, var(--text) 6%, transparent);
   border: 1px solid var(--border);
@@ -60,14 +114,244 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--gold, #d9b25f);
+  background: var(--gold);
   transition: width 0.3s ease;
 }
-// Once ready (or at max level), let the full bar glow a touch brighter.
+// Ready to level (or at max level): the full bar glows — a state, not decoration.
 .xp-track.ready .xp-fill,
 .xp-track.max .xp-fill {
-  background: var(--gold, #d9b25f);
-  box-shadow: 0 0 8px rgba(217, 178, 95, 0.5);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--gold) 50%, transparent);
+}
+
+// "8,000 / 225,000 XP" — quieter than the level; gold once it is enough to level.
+.sheet-xp {
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  // One reading: the bar beside it shrinks instead of the figure breaking.
+  white-space: nowrap;
+
+  &.ready { color: var(--gold); }
+}
+
+// The right-hand group: where the party is, then the action row.
+.sheet-table {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sheet-location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: var(--text-base);
+  color: var(--text-2);
+}
+.sheet-location-pin {
+  flex: none;
+  color: var(--text-dim);
+}
+.sheet-location-type {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.pc-header .sheet-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+
+  > .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 36px;
+  }
+}
+
+// Why Connect is disabled, in plain text beside it (DESIGN.md, Help).
+.session-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.session-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--text-dim);
+  border-radius: 50%;
+}
+
+// The Level Up button, shown only when the character may advance.
+.btn.ready {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+@media (max-width: 1100px) {
+  .pc-header {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+  .pc-header-portrait {
+    grid-area: portrait;
+    width: 120px;
+    height: 120px;
+  }
+  .sheet-table {
+    grid-area: actions;
+  }
+}
+
+@media (max-width: 720px) {
+  .pc-header {
+    grid-template-columns: 80px minmax(0, 1fr);
+    grid-template-areas: none;
+    align-items: start;
+    gap: 16px 14px;
+
+    &.has-menu {
+      grid-template-columns: 80px minmax(0, 1fr) 44px;
+    }
+
+    .sheet-id,
+    .sheet-table,
+    .sheet-actions {
+      display: contents;
+    }
+
+    // Beats the global phone size (24px !important) for this header only.
+    .sheet-name {
+      font-size: var(--text-3xl) !important;
+      margin-bottom: 6px;
+    }
+    .sheet-id-main .eyebrow {
+      margin-bottom: 0;
+    }
+
+    // The global phone rule hides button icons to fit one row; these buttons
+    // have a row each, so the icon stays.
+    .sheet-actions .btn svg {
+      display: inline-block;
+    }
+  }
+
+  .pc-header-portrait {
+    grid-area: auto;
+    grid-row: 1;
+    grid-column: 1;
+    width: 80px;
+    height: 80px;
+
+    > .portrait.xl {
+      font-size: var(--text-2xl);
+    }
+  }
+
+  .portrait-camera {
+    width: 32px;
+    height: 32px;
+
+    // A 44px target around the 32px circle.
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+    }
+  }
+
+  // The identity block dissolves too: the eyebrow sits beside the portrait,
+  // and the name takes a full-width row of its own. Beside the portrait the
+  // name had ~183px, and even the whole row right of it (226px at 360px) cannot
+  // hold a 13-letter word like "Shadowstalker" at the 26px minimum, so Cinzel
+  // split it mid-word. Full width (320px at 360px) keeps it whole at 32px.
+  .sheet-id-main {
+    display: contents;
+    // The name's size, for the rename input to inherit: on a touch screen the
+    // global no-zoom rule (styles.css) sets inputs to max(16px, 1em), where 1em
+    // is this parent's size. The eyebrow and subtitle set their own sizes.
+    font-size: var(--text-3xl);
+  }
+  // The rename input wears the h1's face (its global `font: inherit` would
+  // otherwise give it the body's Newsreader).
+  .pc-header .sheet-name-edit {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .sheet-id-main .eyebrow {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: end;
+    min-width: 0;
+  }
+  // The h1 and the rename input alike: same row, same size, same width.
+  .pc-header .sheet-name {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .sheet-subtitle {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    gap: 2px 8px;
+    // Sits under the name as one block: the name's 6px, not the 16px row gap.
+    margin-top: -10px;
+  }
+
+  .sheet-progress,
+  .sheet-location,
+  .session-status,
+  .pc-header .sheet-actions > .btn {
+    grid-column: 1 / -1;
+  }
+
+  .sheet-progress {
+    margin-top: 0;
+    gap: 12px;
+  }
+  .xp-track {
+    flex: 1 1 0;
+    max-width: none;
+  }
+
+  .session-status {
+    margin: 0 0 -6px;
+  }
+
+  .pc-header .sheet-actions > .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  // Connect (or Join) first, then Level Up.
+  .sheet-level-up {
+    order: 1;
+  }
+
+  app-sheet-actions-menu {
+    grid-row: 1;
+    grid-column: 3;
+    justify-self: end;
+  }
 }
 
 /* ── Section tabs (Sheet / Spells / Inventory / Notes) ───────────────────── */

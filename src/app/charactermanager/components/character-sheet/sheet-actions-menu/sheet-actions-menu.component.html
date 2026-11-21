@@ -1,0 +1,66 @@
+<button #trigger type="button" class="btn icon sheet-menu-trigger"
+  aria-label="More actions" aria-haspopup="menu"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="open() ? menuId : null"
+  (click)="toggle()"
+  (keydown)="onTriggerKey($event)"
+  (keydown.escape)="onTriggerEscape($event)">
+  <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+    <circle cx="3" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="13" cy="8" r="1.3"/>
+  </svg>
+</button>
+
+@if (open()) {
+  <div class="sheet-menu-panel" role="menu" [id]="menuId" aria-label="More actions"
+    (keydown)="onMenuKey($event)">
+    <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item"
+      (click)="choose('portrait')">
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+        <path d="M2 5.5A1.5 1.5 0 013.5 4h1.2l1-1.5h4.6l1 1.5h1.2A1.5 1.5 0 0114 5.5v6a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 11.5z"/>
+        <circle cx="8" cy="8.5" r="2.4"/>
+      </svg>
+      {{ hasPortrait() ? 'Change portrait' : 'Upload portrait' }}
+    </button>
+    <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item"
+      (click)="choose('rename')">
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+        <path d="M3 13l.6-2.8L11 2.8a1.2 1.2 0 011.7 0l.5.5a1.2 1.2 0 010 1.7L5.8 12.4z"/>
+      </svg>
+      Rename character
+    </button>
+    @if (dm()) {
+      <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item"
+        (click)="choose('toggleGrant')">
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+          @if (granted()) {
+            <path d="M3 8h10"/>
+          } @else {
+            <path d="M8 3v10M3 8h10"/>
+          }
+        </svg>
+        {{ granted() ? 'Revoke level-up' : 'Grant level-up' }}
+      </button>
+      @if (levelUpItem()) {
+        <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item"
+          (click)="choose('levelUp')">
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
+          </svg>
+          Level up
+        </button>
+      }
+    }
+    <!-- Only the owner may delete a character (the server refuses the DM), so
+    a DM cross-viewing a member gets neither the item nor its divider. -->
+    @if (!dm()) {
+      <div class="sheet-menu-divider" role="separator"></div>
+      <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item danger"
+        (click)="choose('delete')">
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
+        </svg>
+        Delete character
+      </button>
+    }
+  </div>
+}

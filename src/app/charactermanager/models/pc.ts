@@ -127,6 +127,10 @@ export interface PC {
   alignment?: string;
   portraitInitials?: string;
   portraitTint?: 'celestial' | 'gold' | 'crimson' | 'violet' | 'emerald';
+  // The uploaded portrait's version, or null/absent when the character has
+  // none. Server-owned: it moves only through the portrait endpoints
+  // (PortraitService), and it is the cache key for the image.
+  portraitVersion?: number | null;
 
   // Combat
   hp?: { cur: number; max: number; temp: number };

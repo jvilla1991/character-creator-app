@@ -881,4 +881,50 @@ describe('SessionService rests', () => {
       expect(pcService.patchLocalPC).not.toHaveBeenCalled();
     });
   });
+
+  describe("isSessionRunning (the sheet's Connect button)", () => {
+    const url = `${environment.characterApiUrl}/api/v1/campaign/2/session`;
+
+    it('is true while the campaign has a session that has not ended', () => {
+      let running: boolean | undefined;
+      service.isSessionRunning('2').subscribe(r => (running = r));
+      httpMock.expectOne(url).flush(snapshot());
+      expect(running).toBeTrue();
+    });
+
+    it('is false when the server answers 204, no session', () => {
+      let running: boolean | undefined;
+      service.isSessionRunning('2').subscribe(r => (running = r));
+      httpMock.expectOne(url).flush(null, { status: 204, statusText: 'No Content' });
+      expect(running).toBeFalse();
+    });
+
+    it('reports a failed check as an error, never as "no session"', () => {
+      let running: boolean | undefined;
+      let failed = false;
+      service.isSessionRunning('2').subscribe({ next: r => (running = r), error: () => (failed = true) });
+      httpMock.expectOne(url).error(new ProgressEvent('offline'));
+      expect(failed).toBeTrue();
+      expect(running).toBeUndefined();
+    });
+
+    it('in demo mode asks nothing and reads the in-memory session for that campaign', () => {
+      spyOnProperty(environment, 'demoMode', 'get').and.returnValue(true);
+      const answer = (campaignId: string) => {
+        let running: boolean | undefined;
+        service.isSessionRunning(campaignId).subscribe(r => (running = r));
+        return running;
+      };
+      const push = (state: SessionState | null) =>
+        (service as unknown as { pushState(s: SessionState | null): void }).pushState(state);
+
+      expect(answer('c1')).toBeFalse();
+      push({ ...snapshot({ sessionId: 'demo-session', campaignId: 'c1' }), participants: [] } as unknown as SessionState);
+      expect(answer('c1')).toBeTrue();
+      expect(answer('c2')).toBeFalse();
+      push({ ...snapshot({ sessionId: 'demo-session', campaignId: 'c1', status: 'ENDED' }), participants: [] } as unknown as SessionState);
+      expect(answer('c1')).toBeFalse();
+      httpMock.expectNone(() => true);
+    });
+  });
 });

@@ -1,0 +1,118 @@
+<div class="modal-backdrop" (click)="dismiss()">
+  <app-modal class="portrait-dialog" title="Character Portrait" tone="celestial" (dismiss)="dismiss()">
+
+    <div class="portrait-dialog-body">
+      <div class="portrait-dialog-crop">
+        <div class="portrait-stage"
+          [class.has-image]="staged()"
+          [style.width.px]="stageSize" [style.height.px]="stageSize"
+          [attr.tabindex]="staged() ? 0 : null"
+          [attr.role]="staged() ? 'group' : null"
+          [attr.aria-label]="staged() ? 'Picture position. Drag it, or use the arrow keys to move it.' : null"
+          (pointerdown)="onPointerDown($event)"
+          (pointermove)="onPointerMove($event)"
+          (pointerup)="onPointerUp($event)"
+          (pointercancel)="onPointerUp($event)"
+          (keydown)="onStageKey($event)">
+          @if (staged(); as image) {
+            @if (stageBox(); as box) {
+              <img class="crop-img" [src]="image.url" alt="" draggable="false"
+                [style.left.px]="box.left" [style.top.px]="box.top"
+                [style.width.px]="box.width" [style.height.px]="box.height">
+            }
+          } @else {
+            <div class="stage-empty-art" [style.left.px]="ringInset" [style.top.px]="ringInset"
+              [style.width.px]="ringSize" [style.height.px]="ringSize">
+              <app-portrait-silhouette></app-portrait-silhouette>
+            </div>
+            <p class="stage-empty-text">Choose an image to start.</p>
+          }
+          <div class="crop-ring" aria-hidden="true"
+            [style.left.px]="ringInset" [style.top.px]="ringInset"
+            [style.width.px]="ringSize" [style.height.px]="ringSize"></div>
+        </div>
+
+        <div class="portrait-zoom">
+          <label for="portrait-zoom">Zoom</label>
+          <input id="portrait-zoom" type="range" step="1"
+            [min]="zoomMin" [max]="zoomMax" [value]="zoomPercent()"
+            [disabled]="!staged() || busy() !== null"
+            [attr.aria-valuetext]="zoomPercent() + '%'"
+            (input)="onZoom($event)">
+        </div>
+      </div>
+
+      <div class="portrait-dialog-side">
+        <div class="preview">
+          <div class="eyebrow">On the sheet</div>
+          <div class="preview-circle sheet">
+            @if (staged(); as image) {
+              @if (sheetBox(); as box) {
+                <img [src]="image.url" alt="" draggable="false"
+                  [style.left.px]="box.left" [style.top.px]="box.top"
+                  [style.width.px]="box.width" [style.height.px]="box.height">
+              }
+            } @else {
+              <app-portrait-silhouette></app-portrait-silhouette>
+            }
+          </div>
+        </div>
+        <div class="preview">
+          <div class="eyebrow">In the roster</div>
+          <div class="preview-roster">
+            <div class="preview-circle roster">
+              @if (staged(); as image) {
+                @if (rosterBox(); as box) {
+                  <img [src]="image.url" alt="" draggable="false"
+                    [style.left.px]="box.left" [style.top.px]="box.top"
+                    [style.width.px]="box.width" [style.height.px]="box.height">
+                }
+              } @else {
+                <app-portrait-silhouette></app-portrait-silhouette>
+              }
+            </div>
+            <span class="roster-name">{{ pc().name }}</span>
+          </div>
+        </div>
+
+        <div class="portrait-dialog-buttons">
+          <!-- The real file picker, hidden and out of the Tab order; Choose Image opens it. -->
+
+          <input #file id="portrait-file" class="visually-hidden-file" type="file" tabindex="-1"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label="Portrait image file" aria-describedby="portrait-hint"
+            [disabled]="busy() !== null"
+            (change)="onFileChosen($event)">
+          <button type="button" class="btn" aria-describedby="portrait-hint"
+            [disabled]="busy() !== null" (click)="file.click()">
+            Choose Image
+          </button>
+          @if (hasSaved()) {
+            <button type="button" class="btn danger" [disabled]="busy() !== null" (click)="remove()">
+              {{ busy() === 'remove' ? 'Removing…' : 'Remove Portrait' }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <p class="field-hint portrait-hint" id="portrait-hint">
+      Drag the picture to place it inside the circle. JPG, PNG or WebP, up to 2 MB.
+    </p>
+    @if (fileError(); as message) {
+      <p class="portrait-error" role="alert">{{ message }}</p>
+    }
+    @if (actionError(); as message) {
+      <p class="portrait-error" role="alert">{{ message }}</p>
+    }
+
+    <div class="modal-actions">
+      <button type="button" class="btn" [disabled]="busy() !== null" (click)="dismiss()">Cancel</button>
+      <button type="button" class="btn primary" [disabled]="!canSave()"
+        [attr.aria-busy]="busy() === 'save' ? 'true' : null" (click)="save()">
+        {{ busy() === 'save' ? 'Saving…' : 'Save Portrait' }}
+      </button>
+    </div>
+
+  </app-modal>
+</div>
