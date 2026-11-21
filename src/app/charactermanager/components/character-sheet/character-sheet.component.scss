@@ -5,8 +5,9 @@
    dashboard and Session Mode; .pc-header is the character sheet's own take on
    it. Desktop: three columns, bottom-aligned. Up to 1100px: the table drops to
    its own row, right-aligned. Up to 720px (a phone): one grid of rows — the
-   portrait, name and menu, then the progress line, the location, and full-width
-   buttons. The identity and table groups dissolve into it (display: contents)
+   portrait, eyebrow and menu, then the name and the species/class line at full
+   width, the progress line, the location, and full-width buttons. The identity
+   and table groups dissolve into it (display: contents)
    so their parts can be placed on their own. */
 .pc-header {
   grid-template-columns: 124px minmax(0, 1fr) auto;
@@ -242,7 +243,7 @@
       margin-bottom: 6px;
     }
     .sheet-id-main .eyebrow {
-      margin-bottom: 4px;
+      margin-bottom: 0;
     }
 
     // The global phone rule hides button icons to fit one row; these buttons
@@ -276,14 +277,45 @@
     }
   }
 
+  // The identity block dissolves too: the eyebrow sits beside the portrait,
+  // and the name takes a full-width row of its own. Beside the portrait the
+  // name had ~183px, and even the whole row right of it (226px at 360px) cannot
+  // hold a 13-letter word like "Shadowstalker" at the 26px minimum, so Cinzel
+  // split it mid-word. Full width (320px at 360px) keeps it whole at 32px.
   .sheet-id-main {
+    display: contents;
+    // The name's size, for the rename input to inherit: on a touch screen the
+    // global no-zoom rule (styles.css) sets inputs to max(16px, 1em), where 1em
+    // is this parent's size. The eyebrow and subtitle set their own sizes.
+    font-size: var(--text-3xl);
+  }
+  // The rename input wears the h1's face (its global `font: inherit` would
+  // otherwise give it the body's Newsreader).
+  .pc-header .sheet-name-edit {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .sheet-id-main .eyebrow {
     grid-row: 1;
     grid-column: 2;
+    align-self: end;
+    min-width: 0;
+  }
+  // The h1 and the rename input alike: same row, same size, same width.
+  .pc-header .sheet-name {
+    grid-row: 2;
+    grid-column: 1 / -1;
     min-width: 0;
   }
 
   .sheet-subtitle {
+    grid-row: 3;
+    grid-column: 1 / -1;
     gap: 2px 8px;
+    // Sits under the name as one block: the name's 6px, not the 16px row gap.
+    margin-top: -10px;
   }
 
   .sheet-progress,
