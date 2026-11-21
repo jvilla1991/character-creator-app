@@ -1,6 +1,6 @@
-import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, timer } from 'rxjs';
+import { EMPTY, Subject, merge, timer } from 'rxjs';
 import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import { PC } from '../../models/pc';
 import { CampaignLocation } from '../../models/campaign';
@@ -20,6 +20,9 @@ import { DeleteConfirmationModalComponent } from './delete-confirmation-modal/de
 
 /** How often the sheet checks the server for a level-up made from another client. */
 export const LEVEL_WATCH_MS = 3000;
+
+/** How often the sheet asks whether the character's campaign has a session running. */
+export const SESSION_WATCH_MS = 5000;
 
 /** Which character the level watch checks, and through which endpoint. */
 interface LevelWatchTarget {
@@ -46,6 +49,8 @@ export class MainContentComponent implements OnInit, OnDestroy {
   /** The active PC's campaign's current party location (null when none). */
   location: CampaignLocation | null = null;
   isDeleteModalOpen = false;
+  /** Whether the active character's campaign has a session running (enables Connect). */
+  readonly sessionRunning = signal(false);
 
   private readonly levelUpPrompt = inject(LevelUpPromptService);
 
@@ -88,12 +93,15 @@ export class MainContentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // First, so the activation check the first character asks for is heard.
+    this.watchSession();
     this.pcService.getActivePC()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(pc => {
         this.pc = pc;
         this.resolveVariants(pc);
         this.refetchOnActivation(pc);
+        this.checkSessionOnActivation(pc);
         this.promptIfReady(pc);
       });
     document.addEventListener('visibilitychange', this.onVisible);
@@ -147,6 +155,7 @@ export class MainContentComponent implements OnInit, OnDestroy {
 
   private readonly onVisible = () => {
     if (document.visibilityState !== 'visible') return;
+    this.sessionChecks.next();
     if (!this.pc || this.editable()) return;
     this.pcService.refreshPC(this.pc.id);
   };
@@ -191,6 +200,56 @@ export class MainContentComponent implements OnInit, OnDestroy {
     }
     if (pc.campaignId == null || !this.pcService.getPCById(pc.id)) return null;
     return { pcId: pc.id, asDm: false };
+  }
+
+  // ── Is the session running? ────────────────────────────────────────────────
+  // Connect is enabled only while the character's campaign has a session
+  // running, so the sheet asks: at once when a campaign character lands on it
+  // (and when the tab is shown again), then every few seconds while the tab is
+  // visible. A character in no campaign has nothing to ask about (it offers
+  // Join Campaign), and while a session view is open the sheet is not the
+  // screen being played. A failed check keeps what was last known: one lost
+  // request must not flicker the button. connectToSession still checks again
+  // on the click itself.
+
+  /** Asks for a check now, outside the poll's cadence. */
+  private readonly sessionChecks = new Subject<void>();
+  /** The character and campaign the running flag was last checked for. */
+  private sessionWatchKey: string | null = null;
+
+  private checkSessionOnActivation(pc: PC | null): void {
+    const key = pc && pc.campaignId != null ? `${pc.id}:${pc.campaignId}` : null;
+    if (key === this.sessionWatchKey) return;
+    this.sessionWatchKey = key;
+    // What was known belongs to the last character's campaign.
+    this.sessionRunning.set(false);
+    if (key) this.sessionChecks.next();
+  }
+
+  private watchSession(): void {
+    merge(
+      this.sessionChecks,
+      timer(SESSION_WATCH_MS, SESSION_WATCH_MS).pipe(filter(() => !document.hidden)),
+    ).pipe(
+      map(() => this.sessionWatchCampaign()),
+      filter((campaignId): campaignId is string => campaignId !== null),
+      switchMap(campaignId => this.sessionService.isSessionRunning(campaignId).pipe(
+        map(running => ({ campaignId, running })),
+        catchError(() => EMPTY), // offline or refused: keep what we knew, ask again next tick
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(({ campaignId, running }) => {
+      // A character switch while the answer was on its way: not about this one.
+      if (this.sessionWatchCampaign() === campaignId) this.sessionRunning.set(running);
+    });
+  }
+
+  /** The campaign to ask about on this tick, or null to skip it. */
+  private sessionWatchCampaign(): string | null {
+    const pc = this.pc;
+    if (!pc || pc.campaignId == null) return null;
+    if (this.uiState.activeSessionId() !== null) return null;
+    return String(pc.campaignId);
   }
 
   /** Look up the PC's campaign variant rules (all false when unknown). */
