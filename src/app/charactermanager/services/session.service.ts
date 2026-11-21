@@ -1601,6 +1601,7 @@ export class SessionService {
       hpTemp: pc.hp?.temp ?? null,
       ac: pc.ac ?? null,
       conditions: pc.conditions ?? [],
+      conditionImmunities: pc.conditionImmunities ?? [],
       survival: pc.survival ?? null,
       spellSlots: pc.spellSlots ?? null,
       deathSaveSuccesses: 0,
@@ -1754,6 +1755,7 @@ export class SessionService {
       hpTemp: p.hpTemp ?? null,
       ac: p.ac ?? null,
       conditions: this.parseConditions(p.conditions),
+      conditionImmunities: this.parseConditions(p.conditionImmunities),
       survival: this.parseJsonObject<PcSurvival>(p.survival),
       spellSlots: this.parseJsonObject<PC['spellSlots']>(p.spellSlots),
       deathSaveSuccesses: p.deathSaveSuccesses ?? 0,
@@ -1901,6 +1903,7 @@ interface ParticipantDto {
   hpTemp?: number | null;
   ac?: number | null;
   conditions?: unknown;
+  conditionImmunities?: unknown;
   survival?: unknown;
   spellSlots?: unknown;
   deathSaveSuccesses?: number | null;

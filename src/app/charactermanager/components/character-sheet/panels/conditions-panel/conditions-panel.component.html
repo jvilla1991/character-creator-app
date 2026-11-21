@@ -1,19 +1,27 @@
 <div class="panel">
   <div class="panel-header">
     <span class="panel-title">Conditions</span>
-    <!-- The exhaustion and inspiration rules used to live in hover tooltips,
-    which a phone never shows. One "?" for the panel keeps both tracker rows on
-    a single line at 375px. -->
-    <app-context-help label="Exhaustion and Inspiration" [text]="trackerHelp"></app-context-help>
+    <!-- The chip, exhaustion and inspiration rules used to live in hover
+    tooltips, which a phone never shows. One "?" for the panel keeps both
+    tracker rows on a single line at 375px. -->
+    <app-context-help label="Conditions, Exhaustion and Inspiration" [text]="trackerHelp"></app-context-help>
   </div>
+  <!-- Red = the character has it, green = immune to it. The DM (or the owner of
+  a character with no DM) cycles none, red, green; a player only toggles green,
+  and a red chip their DM set stays put. -->
   <div class="conditions">
     @for (c of conditions; track c) {
       <button
+        type="button"
         class="condition"
         [class.active]="isActive(c)"
+        [class.immune]="isImmune(c)"
+        [class.locked]="isLocked(c)"
         [class.exhaustion]="c === 'exhaustion'"
-        (click)="conditionToggled.emit(c)"
-      >{{ c }}</button>
+        [attr.aria-disabled]="isLocked(c) ? 'true' : null"
+        [attr.title]="isLocked(c) ? 'Set by your DM' : null"
+        (click)="tapCondition(c)"
+      >{{ c }}<span class="visually-hidden">{{ conditionStateLabel(c) }}</span></button>
     }
   </div>
 

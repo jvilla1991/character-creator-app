@@ -23,6 +23,76 @@ describe('ConditionsPanelComponent', () => {
     expect(component.isActive('prone')).toBeFalse();
   });
 
+  // --- Immunity (green) vs has it (red) ---
+
+  /** Tap `condition` and return the lists the panel emitted (or undefined). */
+  const tap = (condition: string) => {
+    let change: { conditions: string[]; conditionImmunities: string[] } | undefined;
+    const sub = component.conditionsChanged.subscribe(c => (change = c));
+    component.tapCondition(condition);
+    sub.unsubscribe();
+    return change;
+  };
+
+  it('reads immunities as green, and an active condition wins over an immunity', () => {
+    component.pc = { ...component.pc, conditions: ['prone'], conditionImmunities: ['prone', 'charmed'] };
+
+    expect(component.conditionState('charmed')).toBe('immune');
+    expect(component.conditionState('prone')).toBe('active');
+    expect(component.conditionState('stunned')).toBe('none');
+  });
+
+  it('the DM cycles a chip none, red, green, none', () => {
+    component.editable = true;
+    component.pc = { ...component.pc, campaignId: '7' };
+
+    let change = tap('poisoned');
+    expect(change).toEqual({ conditions: ['poisoned'], conditionImmunities: [] });
+
+    component.pc = { ...component.pc, ...change! };
+    change = tap('poisoned');
+    expect(change).toEqual({ conditions: [], conditionImmunities: ['poisoned'] });
+
+    component.pc = { ...component.pc, ...change! };
+    change = tap('poisoned');
+    expect(change).toEqual({ conditions: [], conditionImmunities: [] });
+  });
+
+  it('the owner of a character with no DM gets the same cycle', () => {
+    expect(component.canSetConditions).toBeTrue();
+    expect(tap('prone')).toEqual({ conditions: ['prone'], conditionImmunities: [] });
+  });
+
+  it('a campaign player only toggles green, leaving the other chips alone', () => {
+    component.pc = { ...component.pc, campaignId: '7', conditions: ['prone'], conditionImmunities: ['deafened'] };
+    expect(component.canSetConditions).toBeFalse();
+
+    expect(tap('charmed')).toEqual({ conditions: ['prone'], conditionImmunities: ['deafened', 'charmed'] });
+    expect(tap('deafened')).toEqual({ conditions: ['prone'], conditionImmunities: [] });
+  });
+
+  it('a campaign player cannot change a red chip their DM set', () => {
+    component.pc = { ...component.pc, campaignId: '7', conditions: ['prone'] };
+
+    expect(component.isLocked('prone')).toBeTrue();
+    expect(tap('prone')).toBeUndefined();
+  });
+
+  it('a hasDm input overrides the campaign check (a follower of a campaign character)', () => {
+    component.hasDm = true; // the follower's own pc carries no campaignId
+    expect(component.canSetConditions).toBeFalse();
+    expect(tap('raging')).toEqual({ conditions: [], conditionImmunities: ['raging'] });
+  });
+
+  it('explains the chip colours, and what a tap does for this viewer', () => {
+    component.pc = { ...component.pc, campaignId: '7' };
+    expect(component.trackerHelp).toContain('green means it is immune');
+    expect(component.trackerHelp).toContain('Only your DM adds or removes the red ones');
+
+    component.editable = true;
+    expect(component.trackerHelp).toContain('from none to red to green');
+  });
+
   // --- Exhaustion tracker (2024 PHB) ---
 
   it('reads level 0 for a pc saved before the field existed', () => {
@@ -228,6 +298,37 @@ describe('ConditionsPanelComponent (rendered)', () => {
     expect(blocks.length).toBe(2);
     expect(blocks[0].nativeElement.classList).toContain('exhaustion-tracker');
     expect(blocks[1].nativeElement.classList).toContain('inspiration-tracker');
+  });
+
+  // --- Condition chips ---
+
+  const chip = (name: string): HTMLButtonElement =>
+    fixture.debugElement.queryAll(By.css('.conditions .condition'))
+      .map(d => d.nativeElement as HTMLButtonElement)
+      .find(b => b.textContent!.trim().startsWith(name))!;
+
+  it('renders red, green and locked chips for a campaign player', () => {
+    component.pc = { ...basePc, campaignId: '7', conditions: ['prone'], conditionImmunities: ['charmed'] };
+    fixture.detectChanges();
+
+    expect(chip('prone').classList).toContain('active');
+    expect(chip('prone').classList).toContain('locked');
+    expect(chip('prone').getAttribute('aria-disabled')).toBe('true');
+    expect(chip('charmed').classList).toContain('immune');
+    expect(chip('charmed').classList).not.toContain('active');
+    expect(chip('charmed').textContent).toContain(', immune');
+    expect(chip('stunned').getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('clicking a rendered chip emits the new lists', () => {
+    component.pc = { ...basePc, campaignId: '7' };
+    fixture.detectChanges();
+    const emitted = jasmine.createSpy('emitted');
+    component.conditionsChanged.subscribe(emitted);
+
+    chip('poisoned').click();
+
+    expect(emitted).toHaveBeenCalledWith({ conditions: [], conditionImmunities: ['poisoned'] });
   });
 
   // --- Tap-reachable rules (the "?" in the panel header) ---

@@ -150,6 +150,37 @@ describe('CharacterSheetComponent', () => {
     expect(component.canLevelUp).toBeTrue();
   });
 
+  // --- Condition chips (red = has it, green = immune) ---
+
+  it('saves both condition lists from a chip tap via the owner path', () => {
+    pcService.updatePC.and.returnValue(of(makePC()));
+
+    component.onConditionsChange({ conditions: ['prone'], conditionImmunities: ['charmed'] });
+
+    expect(pcService.updatePC).toHaveBeenCalledWith(jasmine.objectContaining(
+      { id: 7, conditions: ['prone'], conditionImmunities: ['charmed'] }));
+  });
+
+  it('saves a chip tap via the DM-authorized path in cross-link mode', () => {
+    pcService.updatePCAsDm.and.returnValue(of(makePC()));
+    component.editable = true;
+
+    component.onConditionsChange({ conditions: [], conditionImmunities: ['poisoned'] });
+
+    expect(pcService.updatePCAsDm).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 7, conditions: [], conditionImmunities: ['poisoned'] }), null);
+  });
+
+  it('hasDm follows the campaign, and for a follower its owner\'s campaign', () => {
+    expect(component.hasDm).toBeFalse();
+    component.pc = makePC({ campaignId: '3' });
+    expect(component.hasDm).toBeTrue();
+
+    component.followerMode = true;
+    component.followerOwnerInCampaign = false;
+    expect(component.hasDm).toBeFalse();
+  });
+
   // --- Exhaustion (conditions panel tracker) ---
 
   it('persists a new exhaustion level via the owner path on the player\'s own sheet', () => {

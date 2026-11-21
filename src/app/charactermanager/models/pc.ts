@@ -146,6 +146,10 @@ export interface PC {
   saves?: Array<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'>;
   skills?: { [skillName: string]: 'prof' | 'expert' };
   conditions?: string[];
+  // Conditions the character is immune to (green chips; `conditions` are the
+  // red ones). Never both: an active condition wins. Absent = none. In a
+  // campaign the player changes only this list; the DM changes both.
+  conditionImmunities?: string[];
   // 2024 PHB Exhaustion level, 0–6: each level is −2 to all d20 Tests and
   // −5 ft Speed; level 6 kills the character. Absent/null = 0 (never tracked).
   // Kept nullable end-to-end — the backend preserves the stored value when an
