@@ -94,11 +94,21 @@
   margin-bottom: 6px;
   text-align: center;
 
+  // Each stat is a label row over a value row shared across the grid, so a label that wraps
+  // on a phone (STAT BLOCK) rises instead of pushing its value below its neighbours'.
+  > div {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
   .k {
     display: block;
+    align-self: end;
     font-family: 'Cinzel', serif;
-    font-size: 9.5px;
-    letter-spacing: 0.1em;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
     text-transform: uppercase;
     color: var(--text-dim);
   }
@@ -168,8 +178,8 @@
   margin: 8px 0 2px;
   font-family: 'Cinzel', serif;
   font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-2);
 }
