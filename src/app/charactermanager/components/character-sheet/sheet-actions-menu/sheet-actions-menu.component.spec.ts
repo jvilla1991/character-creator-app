@@ -53,7 +53,7 @@ describe('SheetActionsMenuComponent', () => {
     expect(panel()).toBeNull();
   });
 
-  it("a player gets the portrait, rename and delete — delete is not the DM's alone", () => {
+  it('the owner gets the portrait, rename and, below a divider, delete', () => {
     open();
     expect(labels()).toEqual(['Upload portrait', 'Rename character', 'Delete character']);
     expect(items()[2].classList).toContain('danger');
@@ -69,26 +69,30 @@ describe('SheetActionsMenuComponent', () => {
     fixture.componentRef.setInput('dm', true);
     fixture.componentRef.setInput('levelUpItem', true);
     open();
-    expect(labels()).toEqual(['Upload portrait', 'Rename character', 'Grant level-up', 'Level up', 'Delete character']);
+    expect(labels()).toEqual(['Upload portrait', 'Rename character', 'Grant level-up', 'Level up']);
+    // Delete is owner-only: the DM gets neither it nor a dangling divider.
+    expect(el().querySelector('.sheet-menu-divider')).toBeNull();
 
     open(); // close
     fixture.componentRef.setInput('granted', true);
     fixture.componentRef.setInput('levelUpItem', false);
     open();
-    expect(labels()).toEqual(['Upload portrait', 'Rename character', 'Revoke level-up', 'Delete character']);
+    expect(labels()).toEqual(['Upload portrait', 'Rename character', 'Revoke level-up']);
   });
 
   it('each item reports its action, closes the menu and hands focus back to the button', () => {
-    fixture.componentRef.setInput('dm', true);
-    fixture.componentRef.setInput('levelUpItem', true);
-    const expected: SheetMenuAction[] = ['portrait', 'rename', 'toggleGrant', 'levelUp', 'delete'];
-    expected.forEach((_, i) => {
+    const pick = (i: number) => {
       open();
       items()[i].click();
       fixture.detectChanges();
       expect(panel()).toBeNull();
       expect(document.activeElement).toBe(trigger());
-    });
+    };
+    [0, 1, 2].forEach(pick); // the owner: portrait, rename, delete
+    fixture.componentRef.setInput('dm', true);
+    fixture.componentRef.setInput('levelUpItem', true);
+    [2, 3].forEach(pick);    // the DM: grant, level up
+    const expected: SheetMenuAction[] = ['portrait', 'rename', 'delete', 'toggleGrant', 'levelUp'];
     expect(chosen).toEqual(expected);
   });
 

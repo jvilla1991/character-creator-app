@@ -205,6 +205,7 @@ describe('CharacterSheetComponent header', () => {
       render(hero());
       openMenu();
       expect(menuItems()).toEqual(['Upload portrait', 'Rename character', 'Delete character']);
+      expect(header().querySelector('.sheet-menu-divider')).not.toBeNull();
     });
 
     it('Delete character in the menu asks the host to confirm the delete', () => {
@@ -233,7 +234,9 @@ describe('CharacterSheetComponent header', () => {
       render(hero(), { editable: true });
       expect(button('Level Up')).toBeUndefined();
       openMenu();
-      expect(menuItems()).toEqual(['Upload portrait', 'Rename character', 'Grant level-up', 'Level up', 'Delete character']);
+      expect(menuItems()).toEqual(['Upload portrait', 'Rename character', 'Grant level-up', 'Level up']);
+      // Owner-only on the server: no Delete, and no divider left dangling.
+      expect(header().querySelector('.sheet-menu-divider')).toBeNull();
     });
 
     it('Grant level-up calls the grant endpoint', () => {
@@ -247,7 +250,7 @@ describe('CharacterSheetComponent header', () => {
       render(hero({ pendingLevelGrant: true }), { editable: true });
       expect(button('Level Up')).toBeDefined();
       openMenu();
-      expect(menuItems()).toEqual(['Upload portrait', 'Rename character', 'Revoke level-up', 'Delete character']);
+      expect(menuItems()).toEqual(['Upload portrait', 'Rename character', 'Revoke level-up']);
     });
   });
 

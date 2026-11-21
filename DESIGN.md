@@ -361,7 +361,9 @@ than a hairline to read, the tones on either side of it are wrong.
   something still on the page. Built once, for the character sheet's "More actions"
   (`app-sheet-actions-menu`).
 - **What goes in one:** what is done to a character rather than with it (portrait, rename,
-  the DM's level-up grant, delete). Everyday play actions stay buttons in the row.
+  the DM's level-up grant, delete). An item shows only to whoever the server lets do it:
+  delete is the owner's alone, so a DM viewing a member's sheet gets no delete and no
+  divider. Everyday play actions stay buttons in the row.
 
 ### Chips
 

@@ -33,7 +33,8 @@ let nextId = 0;
 export class SheetActionsMenuComponent {
   /** The character has a saved portrait: "Change portrait" rather than "Upload portrait". */
   readonly hasPortrait = input(false);
-  /** A DM cross-viewing the sheet: reveals the level-up grant (and, below, Level up). */
+  /** A DM cross-viewing the sheet: reveals the level-up grant (and, below, Level up)
+   *  and drops Delete character, which only the character's owner may do. */
   readonly dm = input(false);
   /** The DM has granted a level-up that is not spent yet: the grant item revokes it. */
   readonly granted = input(false);

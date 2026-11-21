@@ -698,7 +698,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
       case 'rename': this.startNameEdit(); break;
       case 'toggleGrant': if (this.editable) this.toggleLevelGrant(); break;
       case 'levelUp': if (this.editable) this.levelUpRequested.emit(); break;
-      case 'delete': this.deleteRequested.emit(); break;
+      // Owner-only on the server (a campaign's DM gets 403); the menu hides it from the DM too.
+      case 'delete': if (!this.editable) this.deleteRequested.emit(); break;
     }
   }
 

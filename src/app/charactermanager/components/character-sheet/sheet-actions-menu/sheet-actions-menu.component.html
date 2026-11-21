@@ -50,13 +50,17 @@
         </button>
       }
     }
-    <div class="sheet-menu-divider" role="separator"></div>
-    <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item danger"
-      (click)="choose('delete')">
-      <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
-        <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
-      </svg>
-      Delete character
-    </button>
+    <!-- Only the owner may delete a character (the server refuses the DM), so
+    a DM cross-viewing a member gets neither the item nor its divider. -->
+    @if (!dm()) {
+      <div class="sheet-menu-divider" role="separator"></div>
+      <button #item type="button" role="menuitem" tabindex="-1" class="sheet-menu-item danger"
+        (click)="choose('delete')">
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
+        </svg>
+        Delete character
+      </button>
+    }
   </div>
 }

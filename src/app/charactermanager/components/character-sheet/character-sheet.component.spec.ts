@@ -162,12 +162,13 @@ describe('CharacterSheetComponent', () => {
   // --- More actions menu ---
 
   describe('More actions menu', () => {
-    it('Delete character asks the host to confirm, for a player as for a DM', () => {
+    it('Delete character asks the host to confirm for the owner, never for a DM', () => {
       const asked = spyOn(component.deleteRequested, 'emit');
       component.onMenuAction('delete');
+      expect(asked).toHaveBeenCalledTimes(1);
       component.editable = true;
       component.onMenuAction('delete');
-      expect(asked).toHaveBeenCalledTimes(2);
+      expect(asked).toHaveBeenCalledTimes(1);
     });
 
     it('Rename character starts the name edit', () => {
