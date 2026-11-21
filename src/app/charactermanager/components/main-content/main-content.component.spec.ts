@@ -1,7 +1,7 @@
 import { NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { LEVEL_WATCH_MS, MainContentComponent } from './main-content.component';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { LEVEL_WATCH_MS, MainContentComponent, SESSION_WATCH_MS } from './main-content.component';
 import { PC } from '../../models/pc';
 import { PCService } from '../../services/pc.service';
 import { CharacterModalService } from '../../services/character-modal.service';
@@ -32,7 +32,9 @@ describe('MainContentComponent level-up', () => {
   let fixture: ComponentFixture<MainContentComponent>;
   let pcs: PcServiceStub;
   let prompt: LevelUpPromptService;
+  let sessions: { isSessionRunning: jasmine.Spy; getActiveForCampaign: jasmine.Spy };
   const dmReturn = signal(false);
+  const activeSessionId = signal<string | null>(null);
 
   const hero = (over: Partial<PC> = {}): PC =>
     ({ id: 7, name: 'Aria', level: 3, xp: 0, pendingLevelGrant: false, ...over } as PC);
@@ -40,14 +42,19 @@ describe('MainContentComponent level-up', () => {
   beforeEach(() => {
     localStorage.removeItem(LEVEL_UP_ANSWERED_KEY);
     dmReturn.set(false);
+    activeSessionId.set(null);
     pcs = new PcServiceStub();
+    sessions = {
+      isSessionRunning: jasmine.createSpy('isSessionRunning').and.returnValue(of(false)),
+      getActiveForCampaign: jasmine.createSpy('getActiveForCampaign').and.returnValue(of(null)),
+    };
     TestBed.configureTestingModule({
       imports: [MainContentComponent],
       providers: [
         { provide: PCService, useValue: pcs },
-        { provide: UiStateService, useValue: { dmReturn } },
+        { provide: UiStateService, useValue: { dmReturn, activeSessionId } },
         { provide: CharacterModalService, useValue: {} },
-        { provide: SessionService, useValue: {} },
+        { provide: SessionService, useValue: sessions },
         { provide: NotificationService, useValue: { notify: () => undefined } },
         { provide: CampaignService, useValue: { getSummary: () => of({}) } },
         { provide: JoinModalService, useValue: {} },
@@ -253,5 +260,141 @@ describe('MainContentComponent level-up', () => {
       expect(pcs.syncLevelState).toHaveBeenCalledTimes(2);
       fixture.destroy();
     }));
+  });
+
+  // ── Is the session running? (Connect) ──────────────────────────────────────
+
+  describe('session watch', () => {
+    const member = (over: Partial<PC> = {}): PC => hero({ campaignId: 1, ...over });
+    const running = () => fixture.componentInstance.sessionRunning();
+
+    function remount(): void {
+      fixture.destroy();
+      fixture = TestBed.createComponent(MainContentComponent);
+      fixture.detectChanges();
+    }
+
+    it('asks at once when a campaign character lands on the sheet, then every few seconds', fakeAsync(() => {
+      remount();
+      sessions.isSessionRunning.and.returnValue(of(true));
+      show(member());
+
+      expect(sessions.isSessionRunning).toHaveBeenCalledOnceWith('1');
+      expect(running()).toBeTrue();
+      tick(SESSION_WATCH_MS);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(2);
+      tick(SESSION_WATCH_MS);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(3);
+      fixture.destroy();
+    }));
+
+    it('passes what it knows to the sheet, which turns Connect on and off', fakeAsync(() => {
+      remount();
+      show(member());
+      const sheet = () => fixture.nativeElement.querySelector('app-character-sheet');
+      expect(running()).toBeFalse();
+
+      sessions.isSessionRunning.and.returnValue(of(true));
+      tick(SESSION_WATCH_MS);
+      fixture.detectChanges();
+      expect(running()).toBeTrue();
+      expect(sheet()).not.toBeNull();
+
+      sessions.isSessionRunning.and.returnValue(of(false)); // the DM ended it
+      tick(SESSION_WATCH_MS);
+      expect(running()).toBeFalse();
+      fixture.destroy();
+    }));
+
+    it('keeps what it knew through a failed check, quietly', fakeAsync(() => {
+      remount();
+      sessions.isSessionRunning.and.returnValue(of(true));
+      show(member());
+      sessions.isSessionRunning.and.returnValue(throwError(() => new Error('offline')));
+
+      tick(SESSION_WATCH_MS);
+      expect(running()).toBeTrue();
+      sessions.isSessionRunning.and.returnValue(of(false));
+      tick(SESSION_WATCH_MS);
+      expect(running()).toBeFalse();
+      fixture.destroy();
+    }));
+
+    it('never asks about a character in no campaign', fakeAsync(() => {
+      remount();
+      show(hero());
+
+      tick(SESSION_WATCH_MS * 2);
+      expect(sessions.isSessionRunning).not.toHaveBeenCalled();
+      expect(running()).toBeFalse();
+      fixture.destroy();
+    }));
+
+    it('does not ask again for every save of the same character', fakeAsync(() => {
+      remount();
+      show(member());
+      pcs.active.next(member({ xp: 10 }));
+      pcs.active.next(member({ xp: 20 }));
+
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(1);
+      fixture.destroy();
+    }));
+
+    it("forgets the last campaign's answer when another character takes over", fakeAsync(() => {
+      remount();
+      sessions.isSessionRunning.and.returnValue(of(true));
+      show(member());
+      expect(running()).toBeTrue();
+
+      sessions.isSessionRunning.and.returnValue(of(false));
+      show(hero({ id: 8, campaignId: 2 }));
+      expect(sessions.isSessionRunning).toHaveBeenCalledWith('2');
+      expect(running()).toBeFalse();
+      fixture.destroy();
+    }));
+
+    it('pauses while the tab is hidden and asks at once when it is shown again', fakeAsync(() => {
+      remount();
+      show(member());
+      const hidden = spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+      tick(SESSION_WATCH_MS * 2);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(1);
+
+      hidden.and.returnValue(false);
+      spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(2);
+      fixture.destroy();
+    }));
+
+    it('stops asking while a session view is open, and once the sheet is gone', fakeAsync(() => {
+      remount();
+      show(member());
+      activeSessionId.set('42');
+      tick(SESSION_WATCH_MS * 2);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(1);
+
+      activeSessionId.set(null);
+      tick(SESSION_WATCH_MS);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(2);
+
+      fixture.destroy();
+      tick(SESSION_WATCH_MS * 2);
+      expect(sessions.isSessionRunning).toHaveBeenCalledTimes(2);
+    }));
+  });
+
+  // ── Delete from the sheet's menu ───────────────────────────────────────────
+
+  it("a player's delete opens the confirmation, which needs no DM state", () => {
+    show(hero());
+    expect(dmReturn()).toBeFalse();
+
+    fixture.nativeElement.querySelector('app-character-sheet')
+      .dispatchEvent(new CustomEvent('deleteRequested'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isDeleteModalOpen).toBeTrue();
+    expect(fixture.nativeElement.querySelector('app-delete-confirmation-modal')).not.toBeNull();
   });
 });

@@ -82,9 +82,10 @@
                 (keydown.enter)="setActivePC(pc)"
                 (keydown.space)="$event.preventDefault(); setActivePC(pc)"
                 >
-                <!-- Portrait circle -->
+                <!-- Portrait circle: the uploaded portrait, else initials on the tint.
+                Decorative: the name is right beside it. -->
                 <div class="portrait" [style.background]="tintFor(pc)">
-                  {{ initialsFor(pc) }}
+                  <app-pc-portrait [pc]="pc">{{ initialsFor(pc) }}</app-pc-portrait>
                 </div>
                 <!-- Name + meta -->
                 <div style="min-width: 0;">

@@ -132,22 +132,88 @@ describe('CharacterSheetComponent', () => {
   });
 
   // --- Level Up gating ---
+  // The gold Level Up button shows only when the character may advance; a DM
+  // levels a member at any other time from the More actions menu.
 
-  it('canLevelUp is false without XP, a grant, or DM cross-link mode', () => {
+  it('shows no Level Up button without enough XP or a grant — for a DM either', () => {
     component.pc = makePC({ level: 4, xp: 0 });
-    expect(component.canLevelUp).toBeFalse();
-  });
-
-  it('canLevelUp is always true in DM cross-link (editable) mode', () => {
-    component.pc = makePC({ level: 4, xp: 0 });
+    expect(component.levelUpShown).toBeFalse();
     component.editable = true;
-    expect(component.canLevelUp).toBeTrue();
-    expect(component.levelUpHint).toContain('no XP threshold');
+    expect(component.levelUpShown).toBeFalse();
   });
 
-  it('canLevelUp is true when the DM granted a pending level-up', () => {
+  it('shows Level Up once the XP crosses the next threshold', () => {
+    component.pc = makePC({ level: 4, xp: 6_500 });
+    expect(component.levelUpShown).toBeTrue();
+    expect(component.levelUpHint).toBe('Enough XP to advance a level');
+  });
+
+  it('shows Level Up when the DM granted a pending level-up', () => {
     component.pc = makePC({ level: 4, xp: 0, pendingLevelGrant: true });
-    expect(component.canLevelUp).toBeTrue();
+    expect(component.levelUpShown).toBeTrue();
+    expect(component.levelUpHint).toBe('Your DM granted a level-up');
+  });
+
+  it('formats XP with thousands separators', () => {
+    expect(component.formatXp(225000)).toBe('225,000');
+    expect(component.formatXp(undefined)).toBe('0');
+  });
+
+  // --- More actions menu ---
+
+  describe('More actions menu', () => {
+    it('Delete character asks the host to confirm for the owner, never for a DM', () => {
+      const asked = spyOn(component.deleteRequested, 'emit');
+      component.onMenuAction('delete');
+      expect(asked).toHaveBeenCalledTimes(1);
+      component.editable = true;
+      component.onMenuAction('delete');
+      expect(asked).toHaveBeenCalledTimes(1);
+    });
+
+    it('Rename character starts the name edit', () => {
+      component.onMenuAction('rename');
+      expect(component.editingName).toBeTrue();
+      expect(component.nameDraft).toBe('Throk');
+    });
+
+    it('the portrait item opens the dialog, but never on a read-only embed or a follower', () => {
+      component.onMenuAction('portrait');
+      expect(component.portraitDialogOpen).toBeTrue();
+      component.closePortraitDialog();
+
+      component.showActions = false;
+      component.onMenuAction('portrait');
+      expect(component.portraitDialogOpen).toBeFalse();
+
+      component.showActions = true;
+      component.followerMode = true;
+      component.onMenuAction('portrait');
+      expect(component.portraitDialogOpen).toBeFalse();
+    });
+
+    it('the grant and Level up items act only for the DM', () => {
+      pcService.grantLevelUp = jasmine.createSpy('grantLevelUp').and.returnValue(of(makePC()));
+      const levelUp = spyOn(component.levelUpRequested, 'emit');
+      component.onMenuAction('toggleGrant');
+      component.onMenuAction('levelUp');
+      expect(pcService.grantLevelUp).not.toHaveBeenCalled();
+      expect(levelUp).not.toHaveBeenCalled();
+
+      component.editable = true;
+      component.onMenuAction('toggleGrant');
+      component.onMenuAction('levelUp');
+      expect(pcService.grantLevelUp).toHaveBeenCalledOnceWith(7, true);
+      expect(levelUp).toHaveBeenCalled();
+    });
+
+    it('a different character taking over the sheet closes the portrait dialog', () => {
+      component.openPortraitDialog();
+      const previous = component.pc;
+      component.pc = makePC({ id: 8 });
+      component.ngOnChanges({ pc: new SimpleChange(previous, component.pc, false) });
+      expect(component.portraitDialogOpen).toBeFalse();
+    });
   });
 
   // --- Condition chips (red = has it, green = immune) ---

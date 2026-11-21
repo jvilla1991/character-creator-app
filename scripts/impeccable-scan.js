@@ -88,6 +88,22 @@ const SURFACES = [
     },
   },
   {
+    name: 'sheet-menu',
+    go: async p => {
+      await openSheet(p, 'Sheet');
+      await p.click('.sheet-menu-trigger');
+      await p.waitForSelector('.sheet-menu-panel');
+    },
+  },
+  {
+    name: 'portrait-dialog',
+    go: async p => {
+      await openSheet(p, 'Sheet');
+      await p.click('.portrait-camera');
+      await p.waitForSelector('.portrait-dialog.dialog-active');
+    },
+  },
+  {
     name: 'dice-roller',
     go: async p => {
       await openSheet(p, 'Sheet');

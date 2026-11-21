@@ -407,6 +407,23 @@ export class SessionService {
     );
   }
 
+  /**
+   * Whether the campaign has a session running, for the sheet's Connect button.
+   * Unlike getActiveForCampaign a failed check is an error, not "no session":
+   * the caller keeps what it last knew rather than flicker on one lost request.
+   * The server answers 204 when none is running. Demo mode makes no request: a
+   * session runs when the in-memory one belongs to this campaign and is open.
+   */
+  isSessionRunning(campaignId: string): Observable<boolean> {
+    if (environment.demoMode) {
+      const state = this.stateSubject.getValue();
+      return of(state != null && String(state.campaignId) === campaignId && state.status !== 'ENDED');
+    }
+    return this.http.get<{ status?: string } | null>(`${this.campaignBase}/${campaignId}/session`).pipe(
+      map(raw => raw != null && raw.status !== 'ENDED'),
+    );
+  }
+
   /** Seat one of the player's PCs in a live session; stores the resulting state. */
   joinSession(sessionId: number | string, pcId: number): Observable<SessionState> {
     if (environment.demoMode) return this.getState(sessionId).pipe(take(1));
