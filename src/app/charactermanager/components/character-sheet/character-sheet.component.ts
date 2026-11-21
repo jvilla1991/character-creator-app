@@ -1,5 +1,5 @@
 import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, computed, effect, inject, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, computed, effect, inject, output, signal, untracked } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
 import { SellRequest } from '../../models/shop';
 import { CampaignLocation } from '../../models/campaign';
@@ -22,7 +22,6 @@ import { SpellbookPanelComponent } from './panels/spellbook-panel/spellbook-pane
 import { SkillProfChange, SkillsListComponent } from './panels/skills-list/skills-list.component';
 import { isReadyToLevel, xpForNextLevel, xpProgressPct } from '../../models/xp-thresholds';
 import { DmEditRequest } from './dm-edit-modal/dm-edit-request';
-import { ContextHelpComponent } from '../context-help/context-help.component';
 import { DmEditConfirm, DmEditModalComponent } from './dm-edit-modal/dm-edit-modal.component';
 import { FormsModule } from '@angular/forms';
 import { EditableNumberComponent } from './editable-number/editable-number.component';
@@ -54,13 +53,21 @@ import {
 } from '../../utils/spell-slots';
 import { StatBreakdown, applyAdjustments, breakdownOf, describeStatSave } from '../../utils/stat-breakdown';
 import { StatBreakdownModalComponent, StatBreakdownSave } from './stat-breakdown-modal/stat-breakdown-modal.component';
+import { SheetActionsMenuComponent, SheetMenuAction } from './sheet-actions-menu/sheet-actions-menu.component';
+// Referenced only from the template's @defer block, so the dialog (and its
+// crop code) loads the first time a portrait is changed.
+import { PortraitDialogComponent } from './portrait-dialog/portrait-dialog.component';
+import { PcPortraitComponent } from '../pc-portrait/pc-portrait.component';
+import { PortraitSilhouetteComponent } from '../pc-portrait/portrait-silhouette.component';
+
+let nextSheetId = 0;
 
 @Component({
     selector: 'app-character-sheet',
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, ContextHelpComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -74,9 +81,13 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * of their campaign members (cross-linked from the dashboard).
    */
   @Input() editable = false;
-  /** Hide the header action buttons (Connect/Roll/Long Rest/Level Up/Delete) when
-   *  the sheet is embedded read-only, e.g. inside Session Mode. */
+  /** Hide the header actions (Connect/Join, Level Up, the More actions menu and
+   *  the portrait camera) when the sheet is embedded read-only, e.g. inside
+   *  Session Mode. */
   @Input() showActions = true;
+  /** True while this character's campaign has a session running — the only
+   *  time Connect is enabled. Kept current by the host (MainContent polls). */
+  @Input() sessionRunning = false;
   /** Keep the inventory panel interactive even when showActions is false — used by
    *  Session Mode, where the header actions stay hidden but players still need to
    *  manage their inventory mid-session. */
@@ -151,8 +162,8 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   // ── XP (display only) ────────────────────────────────────────────────────
   // XP accumulates via DM awards in Session Mode; leveling stays the explicit
-  // flow below. These getters drive the header's XP total and a "ready to level
-  // up" badge — they never advance a level on their own.
+  // flow below. These getters drive the header's XP bar and total and whether
+  // the Level Up button shows — they never advance a level on their own.
 
   /** Total XP required to reach the next level, or null at max level. */
   get xpForNextLevel(): number | null {
@@ -169,23 +180,35 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return this.pc?.pendingLevelGrant === true;
   }
 
-  /** Leveling is gated: enough XP for the next level OR a DM grant. In DM
-   *  cross-link mode the DM may always level the character (the DM-authorized
-   *  path has no XP gate — acting is the authorization). The backend enforces
-   *  the same rules (409 / as-dm); this only drives the button. */
-  get canLevelUp(): boolean {
-    return this.editable || this.readyToLevel || this.dmGrantedLevel;
+  /**
+   * The gold Level Up button shows only when the character may advance: enough
+   * XP for the next level, or a DM grant. The backend enforces the same rules
+   * (409 / as-dm). A DM, who may level a member at any time, finds "Level up"
+   * in the More actions menu while the button is not shown.
+   */
+  get levelUpShown(): boolean {
+    return this.readyToLevel || this.dmGrantedLevel;
   }
 
-  /** Why Level Up is (un)available: the button's tooltip, and when it is
-   *  disabled the text behind the "?" beside it. */
+  /** The Level Up button's tooltip: why it is there. */
   get levelUpHint(): string {
-    if (this.editable) return 'Level up this character (no XP threshold required)';
-    if (this.canLevelUp) return 'Advance a level';
-    return this.xpForNextLevel == null
-      ? 'This character is at the maximum level.'
-      : 'Not enough XP yet. Reach ' + this.xpForNextLevel + ' XP, or ask your DM to grant a level.';
+    return this.readyToLevel ? 'Enough XP to advance a level' : 'Your DM granted a level-up';
   }
+
+  /** The XP bar's and total's tooltip. */
+  get xpTitle(): string {
+    return this.xpForNextLevel != null
+      ? this.formatXp(this.pc?.xp) + ' / ' + this.formatXp(this.xpForNextLevel) + ' XP to next level'
+      : 'Maximum level reached';
+  }
+
+  /** An XP figure with thousands separators: 225000 → "225,000". */
+  formatXp(xp: number | null | undefined): string {
+    return (xp ?? 0).toLocaleString('en-US');
+  }
+
+  /** Ties the "No session running" line to the disabled Connect button. */
+  readonly sessionStatusId = `sheet-session-status-${++nextSheetId}`;
 
   /** DM cross-link: toggle the pending level-up grant for this character. */
   toggleLevelGrant(): void {
@@ -322,7 +345,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
         this.closeFollower();
       }
       // What was said about the last character's slots is not about this one.
-      if (previous && previous.id !== this.pc?.id) this.slotNotice.set(null);
+      if (previous && previous.id !== this.pc?.id) {
+        this.slotNotice.set(null);
+        this.portraitDialogOpen = false;
+      }
       this.openRequestedFollower();
     }
   }
@@ -641,7 +667,49 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return (pc.portraitInitials || pc.name.slice(0, 2)).toUpperCase();
   }
 
+  // ── Portrait ─────────────────────────────────────────────────────────────────
+  // Whoever sees the header actions may change it: the player on their own
+  // sheet, and a DM cross-viewing a campaign member. A follower is not a PC row
+  // and has no portrait.
+
+  get canChangePortrait(): boolean {
+    return this.showActions && !this.followerMode;
+  }
+
+  get hasPortrait(): boolean {
+    return this.pc?.portraitVersion != null;
+  }
+
+  portraitDialogOpen = false;
+
+  openPortraitDialog(): void {
+    if (this.canChangePortrait) this.portraitDialogOpen = true;
+  }
+
+  closePortraitDialog(): void {
+    this.portraitDialogOpen = false;
+  }
+
+  // ── More actions menu ────────────────────────────────────────────────────────
+
+  onMenuAction(action: SheetMenuAction): void {
+    switch (action) {
+      case 'portrait': this.openPortraitDialog(); break;
+      case 'rename': this.startNameEdit(); break;
+      case 'toggleGrant': if (this.editable) this.toggleLevelGrant(); break;
+      case 'levelUp': if (this.editable) this.levelUpRequested.emit(); break;
+      case 'delete': this.deleteRequested.emit(); break;
+    }
+  }
+
   // ── Name editing ─────────────────────────────────────────────────────────────
+
+  /** The rename field takes focus as it appears (double-click or the menu). */
+  @ViewChild('nameInput') set nameInput(input: ElementRef<HTMLInputElement> | undefined) {
+    if (!input) return;
+    input.nativeElement.focus();
+    input.nativeElement.select();
+  }
 
   startNameEdit(): void {
     this.nameDraft = this.pc.name;

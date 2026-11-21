@@ -348,11 +348,34 @@ than a hairline to read, the tones on either side of it are wrong.
   stays inside. A blocking dialog (the players' rest vote) drops the close button and ignores
   Escape.
 
+### Menus
+
+- **Shape:** a 36px `.btn.icon` menu button (44px on touch and on a phone) opens a small panel
+  anchored under its right edge: `surface-2` ground, a `border` hairline, 3px corners and the
+  ambient modal shadow, the one raised surface in its row. Items are Newsreader 15px in `text`
+  with a 16px stroke icon in `text-2`, 40px tall (44px on touch); a destructive item sits last,
+  below a hairline divider, in `crimson`.
+- **Behaviour:** a click toggles it; a click outside, Escape, Tab or choosing an item closes it.
+  Opening focuses the first item, the arrow keys, Home and End move between items, and Escape
+  or a choice returns focus to the button, so a dialog an item opens hands focus back to
+  something still on the page. Built once, for the character sheet's "More actions"
+  (`app-sheet-actions-menu`).
+- **What goes in one:** what is done to a character rather than with it (portrait, rename,
+  the DM's level-up grant, delete). Everyday play actions stay buttons in the row.
+
 ### Chips
 
 - **Style:** pill (`999px`) or 2px, accent text on an 8–18% `color-mix` of the same accent, with
   a 35–50% accent border. Used for conditions, tags, and counts.
 - **State:** selected chips raise the fill, not the border.
+
+### Portraits
+
+- **Style:** a `50%` `.portrait` circle (the sheet's 124px with the 2px gold ring, the
+  roster's 36px) filled by `app-pc-portrait` with the uploaded picture; without one the sheet
+  shows the unknown silhouette in the surface tokens and the roster keeps the initials on the
+  tint. The camera button on the sheet portrait opens the Character Portrait dialog, which
+  saves a 512px JPEG of a round crop.
 
 ### Cards / Containers
 

@@ -19,194 +19,198 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
   <!-- ═══════════════════════════════════════════════
   SHEET HEADER: portrait · identity · actions
   ═══════════════════════════════════════════════ -->
-  <header class="sheet-header">
+  <header class="sheet-header pc-header" [class.has-menu]="showActions && !followerMode">
 
-    <!-- XL portrait circle -->
-    <div class="portrait xl" [style.background]="tintFor(pc)">
-      {{ initialsFor(pc) }}
+    <!-- Portrait: the uploaded picture, else the unknown silhouette. A follower
+    has no portrait of its own and keeps its initials. -->
+    <div class="pc-header-portrait">
+      @if (followerMode) {
+        <div class="portrait xl" [style.background]="tintFor(pc)">
+          {{ initialsFor(pc) }}
+        </div>
+      } @else {
+        <div class="portrait xl sheet-portrait">
+          <app-pc-portrait [pc]="pc" [alt]="'Portrait of ' + pc.name">
+            <app-portrait-silhouette label="No portrait yet"></app-portrait-silhouette>
+          </app-pc-portrait>
+        </div>
+        @if (canChangePortrait) {
+          <button type="button" class="portrait-camera"
+            [attr.aria-label]="hasPortrait ? 'Change portrait' : 'Upload portrait'"
+            (click)="openPortraitDialog()">
+            <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M2 5.5A1.5 1.5 0 013.5 4h1.2l1-1.5h4.6l1 1.5h1.2A1.5 1.5 0 0114 5.5v6a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 11.5z"/>
+              <circle cx="8" cy="8.5" r="2.4"/>
+            </svg>
+          </button>
+        }
+      }
     </div>
 
-    <!-- Identity column -->
+    <!-- Identity: who plays it, its name, what it is, how far along it is -->
     <div class="sheet-id">
-      @if (followerMode) {
-        <div class="eyebrow">follower of {{ followerOwnerName }}</div>
-      } @else {
-        <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
-      }
+      <div class="sheet-id-main">
+        @if (followerMode) {
+          <div class="eyebrow">follower of {{ followerOwnerName }}</div>
+        } @else {
+          <div class="eyebrow">played by {{ pc.player || pc.playerName }}</div>
+        }
 
-      <!-- Editable hero name -->
-      @if (editingName) {
-        <input aria-label="Character name"
-          class="sheet-name sheet-name-edit"
-          [(ngModel)]="nameDraft"
-          (blur)="commitName()"
-          (keydown.enter)="commitName()"
-          (keydown.escape)="cancelNameEdit()"
-          autofocus
-          >
-      }
-      @if (!editingName) {
-        <h1
-          class="sheet-name"
-          (dblclick)="startNameEdit()"
-          title="Double-click to rename"
-        >{{ pc.name }}</h1>
-      }
+        <!-- Editable hero name -->
+        @if (editingName) {
+          <input #nameInput aria-label="Character name"
+            class="sheet-name sheet-name-edit"
+            [(ngModel)]="nameDraft"
+            (blur)="commitName()"
+            (keydown.enter)="commitName()"
+            (keydown.escape)="cancelNameEdit()"
+            >
+        } @else {
+          <h1
+            class="sheet-name"
+            (dblclick)="startNameEdit()"
+            title="Double-click to rename"
+          >{{ pc.name }}</h1>
+        }
 
-      <div class="sheet-subtitle">
-        @if (pc.race) {
-          {{ pc | speciesDisplay }}
-          <span class="dot">✦</span>
-        }
-        {{ pc | classDisplay }}
-        @if (subtitleSuffix || !followerMode) {
-          <em style="color: var(--text-dim)">({{ subtitleSuffix }})</em>
-        }
-        <span class="dot">✦</span>
-        Level
-        <app-editable-number
-          [value]="pc.level"
-          [editable]="editable"
-          [min]="1" [max]="20"
-          [intercept]="true" (editRequested)="requestLevel()"
-          label="level"
-          (committed)="onLevelCommit($event)"
-        >{{ pc.level }}</app-editable-number>
-        @if (location) {
-          <span class="dot">✦</span>
-          <span class="sheet-location-tag"
-          title="Party location">📍 {{ location.name }}({{ location.type }})</span>
-        }
-        @if (readyToLevel) {
-          <span class="level-ready-badge" title="Enough XP to advance — use Level Up">
-            Ready to level up
-          </span>
-        }
-        @if (!readyToLevel && dmGrantedLevel) {
-          <span class="level-ready-badge"
-            title="Your DM granted a level-up — use Level Up">
-            Level-up granted
-          </span>
-        }
-      </div>
-
-      <!-- XP progress through the current level, with the XP total beside it.
-      Followers don't earn XP, so their sheet has no bar. -->
-      @if (!followerMode) {
-      <div class="xp-row">
-        <div
-          class="xp-track"
-          [class.max]="xpForNextLevel == null"
-          [class.ready]="readyToLevel"
-          [title]="xpForNextLevel != null
-            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
-            : 'Maximum level reached'"
-          >
-          <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
+        <div class="sheet-subtitle">
+          @if (pc.race) {
+            <span>{{ pc | speciesDisplay }}</span>
+            <svg class="sheet-star" aria-hidden="true" viewBox="0 0 10 10" width="10" height="10">
+              <path d="M5 0l1.2 3.8L10 5 6.2 6.2 5 10 3.8 6.2 0 5l3.8-1.2z"/>
+            </svg>
+          }
+          <span>{{ pc | classDisplay }}</span>
+          @if (subtitleSuffix) {
+            <span class="sheet-subclass">({{ subtitleSuffix }})</span>
+          }
         </div>
-        <span
-          class="sheet-xp"
-          [title]="xpForNextLevel != null
-            ? (pc.xp || 0) + ' / ' + xpForNextLevel + ' XP to next level'
-            : 'Maximum level reached'"
-          ><app-editable-number
-            [value]="pc.xp ?? 0"
-            [editable]="editable"
-            [min]="0"
-            [intercept]="true" (editRequested)="requestXp()"
-            label="XP"
-            (committed)="onXpCommit($event)"
-          >{{ pc.xp || 0 }}</app-editable-number>@if (xpForNextLevel != null) {
-          / {{ xpForNextLevel }}
-        } XP</span>
       </div>
-      }
+
+      <!-- Level, and for a character the XP bar and total. Followers do not
+      earn XP, so their sheet has no bar. -->
+      <div class="sheet-progress">
+        <div class="sheet-level">
+          <span class="sheet-level-label">Level</span>
+          <span class="sheet-level-value numeric"><app-editable-number
+            [value]="pc.level"
+            [editable]="editable"
+            [min]="1" [max]="20"
+            [intercept]="true" (editRequested)="requestLevel()"
+            label="level"
+            (committed)="onLevelCommit($event)"
+          >{{ pc.level }}</app-editable-number></span>
+        </div>
+        @if (!followerMode) {
+          <div
+            class="xp-track"
+            role="progressbar"
+            aria-label="XP toward the next level"
+            aria-valuemin="0" aria-valuemax="100"
+            [attr.aria-valuenow]="xpProgressPct"
+            [class.max]="xpForNextLevel == null"
+            [class.ready]="readyToLevel"
+            [title]="xpTitle"
+            >
+            <span class="xp-fill" [style.width.%]="xpProgressPct"></span>
+          </div>
+          <span class="sheet-xp numeric" [class.ready]="readyToLevel" [title]="xpTitle"
+            ><app-editable-number
+              [value]="pc.xp ?? 0"
+              [editable]="editable"
+              [min]="0"
+              [intercept]="true" (editRequested)="requestXp()"
+              label="XP"
+              (committed)="onXpCommit($event)"
+            >{{ formatXp(pc.xp) }}</app-editable-number>@if (xpForNextLevel != null) {
+            / {{ formatXp(xpForNextLevel) }}
+          } XP</span>
+        }
+      </div>
 
       <!-- Heroic Inspiration lives with Exhaustion in the Conditions panel — both
       are DM-driven pip trackers, so they share one place and one gesture. -->
     </div>
 
-    <!-- Follower sheet: the one action is the way back to its character. -->
-    @if (followerMode) {
-      <div class="sheet-actions">
-        <button class="btn" (click)="backRequested.emit()">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
-            style="margin-right: 6px; vertical-align: -2px;" aria-hidden="true">
-            <path d="M10 3L5 8l5 5"/>
+    <!-- The table: where the party is, and what to do next -->
+    <div class="sheet-table">
+      @if (location) {
+        <div class="sheet-location" title="Party location">
+          <svg class="sheet-location-pin" aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"
+            fill="none" stroke="currentColor" stroke-width="1.3">
+            <path d="M8 14.5s4.5-4.2 4.5-8A4.5 4.5 0 008 2a4.5 4.5 0 00-4.5 4.5c0 3.8 4.5 8 4.5 8z"/>
+            <circle cx="8" cy="6.5" r="1.6"/>
           </svg>
-          Back to Character
-        </button>
-      </div>
-    }
+          <span class="sheet-location-name">{{ location.name }}</span>
+          <span class="sheet-location-type">{{ location.type }}</span>
+        </div>
+      }
 
-    <!-- Action buttons -->
-    @if (showActions) {
-      <div class="sheet-actions">
-        <!-- Campaign members connect to the live session; unbound characters
-        get a Join Campaign button instead (opens the join modal). -->
-        @if (inCampaign) {
-          <button
-            class="btn play"
-            title="Connect to your campaign session"
-            (click)="onConnectClick()"
-            >
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-              style="margin-right: 6px; vertical-align: -2px;">
-              <path d="M4 2.5v11l9-5.5z"/>
+      <!-- Follower sheet: the one action is the way back to its character. -->
+      @if (followerMode) {
+        <div class="sheet-actions">
+          <button class="btn" (click)="backRequested.emit()">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"
+              style="margin-right: 6px; vertical-align: -2px;" aria-hidden="true">
+              <path d="M10 3L5 8l5 5"/>
             </svg>
-            Connect
+            Back to Character
           </button>
-        }
-        @if (!inCampaign) {
-          <button
-            class="btn play"
-            title="This character is not part of a campaign yet — join one"
-            (click)="joinCampaignRequested.emit()"
-            >
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"
-              style="margin-right: 6px; vertical-align: -2px;">
-              <path d="M4 2.5v11l9-5.5z"/>
-            </svg>
-            Join Campaign
-          </button>
-        }
-        <button class="btn" [class.ready]="canLevelUp" [disabled]="!canLevelUp"
-          [title]="levelUpHint" (click)="levelUpRequested.emit()">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
-            style="margin-right: 6px; vertical-align: -2px;">
-            <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
-          </svg>
-          Level Up
-        </button>
-        <!-- A disabled button cannot explain itself on a phone (no hover), so
-        the reason gets a tap target of its own. -->
-        @if (!canLevelUp) {
-          <app-context-help label="Level Up" [text]="levelUpHint"></app-context-help>
-        }
-        <!-- DM cross-link: grant (or revoke) a level-up the player may spend
-        without meeting the XP threshold. -->
-        @if (editable) {
-          <button class="btn" [class.on]="dmGrantedLevel"
-            (click)="toggleLevelGrant()"
-              [title]="dmGrantedLevel
-                ? 'Revoke the granted level-up'
-                : 'Let this character level up without the XP threshold'">
-            {{ dmGrantedLevel ? 'Revoke Level-Up' : 'Grant Level-Up' }}
-          </button>
-        }
-        <!-- Deleting a character is a DM action. A player viewing their own
-        sheet never sees the trash icon — it sat next to the everyday buttons
-        and had nothing to do with playing the character. -->
-        @if (editable) {
-          <button class="btn danger icon" (click)="deleteRequested.emit()" title="Delete character"
-            aria-label="Delete character">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4">
-              <path d="M3 4h10M6 4V2.5A.5.5 0 016.5 2h3a.5.5 0 01.5.5V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9"/>
-            </svg>
-          </button>
-        }
-      </div>
-    }
+        </div>
+      }
+
+      @if (showActions && !followerMode) {
+        <div class="sheet-actions">
+          <!-- A disabled button cannot explain itself (DESIGN.md, Help), so
+          the reason sits beside it in plain text. -->
+          @if (inCampaign && !sessionRunning) {
+            <span class="session-status" [id]="sessionStatusId">
+              <span class="session-status-dot" aria-hidden="true"></span>
+              No session running
+            </span>
+          }
+          @if (levelUpShown) {
+            <button type="button" class="btn ready sheet-level-up" [title]="levelUpHint"
+              (click)="levelUpRequested.emit()">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"
+                aria-hidden="true">
+                <path d="M8 13V3M8 3L4 7M8 3l4 4M3 14h10"/>
+              </svg>
+              Level Up
+            </button>
+          }
+          <!-- Campaign members connect to the live session; unbound characters
+          get a Join Campaign button instead (opens the join modal). -->
+          @if (inCampaign) {
+            <button type="button" class="btn play sheet-connect"
+              [disabled]="!sessionRunning"
+              [attr.aria-describedby]="sessionRunning ? null : sessionStatusId"
+              (click)="onConnectClick()">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M4 2.5v11l9-5.5z"/>
+              </svg>
+              Connect
+            </button>
+          } @else {
+            <button type="button" class="btn play sheet-connect"
+              title="This character is not part of a campaign yet — join one"
+              (click)="joinCampaignRequested.emit()">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M4 2.5v11l9-5.5z"/>
+              </svg>
+              Join Campaign
+            </button>
+          }
+          <app-sheet-actions-menu
+            [hasPortrait]="hasPortrait"
+            [dm]="editable"
+            [granted]="dmGrantedLevel"
+            [levelUpItem]="editable && !levelUpShown"
+            (chosen)="onMenuAction($event)">
+          </app-sheet-actions-menu>
+        </div>
+      }
+    </div>
 
   </header>
 
@@ -435,6 +439,14 @@ this sheet (level here, or bubbled up from vitals-strip/coin-purse/ability-score
       (close)="closeDmEdit()">
     </app-dm-edit-modal>
   </div>
+}
+
+<!-- Portrait upload, opened from the camera button or the More actions menu.
+The dialog brings its own backdrop, so a click outside waits out a save. -->
+@if (portraitDialogOpen) {
+  @defer (on immediate) {
+    <app-portrait-dialog [pc]="pc" (closed)="closePortraitDialog()"></app-portrait-dialog>
+  }
 }
 
 <!-- Number breakdown overlay — opened by clicking a calculated number (Armor
