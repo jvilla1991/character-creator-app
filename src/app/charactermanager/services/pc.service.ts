@@ -821,6 +821,9 @@ export class PCService {
       saves: JSON.stringify(pc.saves ?? []),
       skills: JSON.stringify(pc.skills ?? {}),
       conditions: JSON.stringify(pc.conditions ?? []),
+      // null when the character never carried the field — the backend keeps the
+      // stored list on a null, so a payload built without it can't wipe it.
+      conditionImmunities: pc.conditionImmunities ? JSON.stringify(pc.conditionImmunities) : null,
       // null (not a stringified default) when never tracked — the backend
       // preserves the stored value on a null, so a sheet edit can't wipe
       // survival changes made server-side during a session.
@@ -887,6 +890,9 @@ export class PCService {
       saves: this.parseJsonField(pc['saves'], []),
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),
+      // undefined (not []) when the row carries none, so a PC rebuilt from a
+      // projection without the field saves null and keeps the stored list.
+      conditionImmunities: this.parseJsonField(pc['conditionImmunities'], undefined),
       survival: this.parseJsonField(pc['survival'], undefined),
       coins: this.parseJsonField(pc['coins'], { cp: 0, sp: 0, gp: 0 }),
       weapons: this.parseJsonField(pc['weapons'], []),

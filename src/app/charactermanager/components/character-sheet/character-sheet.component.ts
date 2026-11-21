@@ -28,7 +28,7 @@ import { FormsModule } from '@angular/forms';
 import { EditableNumberComponent } from './editable-number/editable-number.component';
 import { VitalsStripComponent } from './vitals-strip/vitals-strip.component';
 import { AbilityScoresComponent } from './panels/ability-scores/ability-scores.component';
-import { ConditionsPanelComponent } from './panels/conditions-panel/conditions-panel.component';
+import { ConditionsChange, ConditionsPanelComponent } from './panels/conditions-panel/conditions-panel.component';
 import { SurvivalPanelComponent } from './panels/survival-panel/survival-panel.component';
 import { FeaturesListComponent } from './panels/features-list/features-list.component';
 import { OtherFeaturesComponent } from './panels/other-features/other-features.component';
@@ -487,8 +487,9 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** A spend or restore is on its way to the server. */
   readonly slotsBusy = signal(false);
 
-  /** Whether a DM stands over these slots: the character's campaign, or for a follower its owner's. */
-  private get slotsHaveDm(): boolean {
+  /** Whether a DM stands over this character: its campaign, or for a follower its owner's.
+   *  Decides who sets spell slots and conditions by hand. */
+  get hasDm(): boolean {
     return this.followerMode ? this.followerOwnerInCampaign : this.pc?.campaignId != null;
   }
 
@@ -500,7 +501,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * by hand, so no spell is used outside a session.
    */
   get canSpendSlots(): boolean {
-    return this.editable || (this.ownSheet && !this.slotsHaveDm);
+    return this.editable || (this.ownSheet && !this.hasDm);
   }
 
   /**
@@ -508,7 +509,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
    * only while the character is in no campaign, where there is no DM to ask.
    */
   get canRestoreSlots(): boolean {
-    return this.editable || (this.ownSheet && !this.slotsHaveDm);
+    return this.editable || (this.ownSheet && !this.hasDm);
   }
 
   /**
@@ -523,7 +524,7 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   get slotMaximumAccess(): 'hidden' | 'view' | 'edit' {
     if (this.followerMode) return this.editable ? 'edit' : 'hidden';
     if (this.canAdjustStats) return 'edit';
-    return this.ownSheet && this.slotsHaveDm ? 'hidden' : 'view';
+    return this.ownSheet && this.hasDm ? 'hidden' : 'view';
   }
 
   onSlotSpend(level: number): void {
@@ -838,12 +839,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   // ── Conditions (wired fully in Phase 5) ─────────────────────────────────────
 
-  onConditionToggle(condition: string): void {
-    const conditions = this.pc.conditions ?? [];
-    const next = conditions.includes(condition)
-      ? conditions.filter(c => c !== condition)
-      : [...conditions, condition];
-    this.persist({ ...this.pc, conditions: next });
+  /** A condition chip tap: the panel worked out both lists (red = has it,
+   *  green = immune); save them together through the owner or DM path. */
+  onConditionsChange(change: ConditionsChange): void {
+    this.persist({ ...this.pc, ...change });
   }
 
   /** Exhaustion tracker (conditions panel, 2024 PHB levels 0–6). Clamped here

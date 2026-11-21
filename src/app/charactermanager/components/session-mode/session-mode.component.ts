@@ -717,6 +717,7 @@ export class SessionModeComponent implements OnInit, OnDestroy {
       // snapshot froze AC at the join-time value until the next poll.
       ac: pc.ac ?? mine.ac ?? undefined,
       conditions: mine.conditions ?? pc.conditions,
+      conditionImmunities: mine.conditionImmunities ?? pc.conditionImmunities,
       survival: mine.survival ?? pc.survival,
       spellSlots: mine.spellSlots ?? pc.spellSlots,
       xp: state.myXp ?? pc.xp,

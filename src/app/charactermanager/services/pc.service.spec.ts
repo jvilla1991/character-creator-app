@@ -248,6 +248,20 @@ describe('PCService', () => {
       expect((req.request.body as Record<string, unknown>)['statAdjustments']).toBeNull();
       req.flush(pc);
     });
+
+    it('sends condition immunities as a JSON string, an empty list as "[]", and none as null', () => {
+      const body = (pc: PC) => {
+        service.updatePC(pc).subscribe();
+        const req = httpMock.expectOne(service.pcUrl + '42');
+        const sent = (req.request.body as Record<string, unknown>)['conditionImmunities'];
+        req.flush(pc);
+        return sent;
+      };
+
+      expect(body(makePC({ id: 42, conditionImmunities: ['charmed'] }))).toBe('["charmed"]');
+      expect(body(makePC({ id: 42, conditionImmunities: [] }))).toBe('[]');
+      expect(body(makePC({ id: 42 }))).toBeNull();
+    });
   });
 
   describe('setPetFamily', () => {
@@ -880,6 +894,28 @@ describe('PCService', () => {
       httpMock.expectOne(service.pcUrl + 'find/12').flush({ ...flat, id: 12, statAdjustments: null });
       service.PCById(params('13')).subscribe(collect);
       httpMock.expectOne(service.pcUrl + 'find/13').flush({ ...flat, id: 13, statAdjustments: 'not json' });
+    });
+
+    it('parses condition immunities, and reads a missing column as none', (done) => {
+      const flat = {
+        name: 'Test', clazz: 'Fighter', level: 1,
+        saves: '[]', skills: '{}', spells: '[]', spellSlots: '{}', conditions: '[]', coins: '{}',
+        weapons: '[]', gear: '[]', features: '[]', languages: '[]', toolProfs: '[]',
+      };
+      const results: PC[] = [];
+      const params = (id: string) => new (require('@angular/common/http').HttpParams)().set('id', id);
+      const collect = (result: PC) => {
+        results.push(result);
+        if (results.length < 2) return;
+        expect(results[0].conditionImmunities).toEqual(['poisoned']);
+        expect(results[1].conditionImmunities).toBeUndefined();
+        done();
+      };
+
+      service.PCById(params('21')).subscribe(collect);
+      httpMock.expectOne(service.pcUrl + 'find/21').flush({ ...flat, id: 21, conditionImmunities: '["poisoned"]' });
+      service.PCById(params('22')).subscribe(collect);
+      httpMock.expectOne(service.pcUrl + 'find/22').flush({ ...flat, id: 22, conditionImmunities: null });
     });
 
     it('survives malformed JSON in TEXT fields by using default values', (done) => {

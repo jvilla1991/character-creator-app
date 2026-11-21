@@ -278,7 +278,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           [editable]="editable"
           [ownSheet]="ownSheet"
           [inspirationBusy]="inspirationBusy()"
-          (conditionToggled)="onConditionToggle($event)"
+          [hasDm]="hasDm"
+          (conditionsChanged)="onConditionsChange($event)"
           (exhaustionChanged)="onExhaustionChange($event)"
           (inspirationChanged)="onInspirationChange($event)"
           (inspirationUsed)="useInspiration()">

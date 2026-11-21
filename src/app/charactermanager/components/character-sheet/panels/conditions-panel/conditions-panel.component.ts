@@ -3,6 +3,16 @@ import { PC } from '../../../../models/pc';
 import { CONDITIONS_LIST } from '../../../../utils/character-math';
 import { ContextHelpComponent } from '../../../context-help/context-help.component';
 
+/** How the sheet shows one condition chip: the character has it (red), is immune to it
+ *  (green), or neither. Having it wins if a character somehow carries both. */
+export type ConditionState = 'active' | 'immune' | 'none';
+
+/** Both condition lists after a chip tap, for the host to save in one go. */
+export interface ConditionsChange {
+  conditions: string[];
+  conditionImmunities: string[];
+}
+
 @Component({
     selector: 'app-conditions-panel',
     templateUrl: './conditions-panel.component.html',
@@ -18,7 +28,12 @@ export class ConditionsPanelComponent {
   @Input() ownSheet = false;
   /** An inspiration write is in flight (host-owned); disables the meter. */
   @Input() inspirationBusy = false;
-  readonly conditionToggled = output<string>();
+  /** Whether a DM stands over this character (its campaign, or a follower's owner's).
+   *  Left unset, the character's own campaign decides. */
+  @Input() hasDm?: boolean;
+  /** A chip tap resolved to new condition lists; the host persists both through
+   *  the owner or DM path. The server applies the same who-may-change-what rule. */
+  readonly conditionsChanged = output<ConditionsChange>();
   /** New exhaustion level (0–6) picked on the tracker; the host clamps and
    *  persists it through the same owner/DM path as a condition toggle. */
   readonly exhaustionChanged = output<number>();
@@ -38,6 +53,57 @@ export class ConditionsPanelComponent {
 
   isActive(condition: string): boolean {
     return this.pc.conditions?.includes(condition) ?? false;
+  }
+
+  isImmune(condition: string): boolean {
+    return !this.isActive(condition) && (this.pc.conditionImmunities?.includes(condition) ?? false);
+  }
+
+  conditionState(condition: string): ConditionState {
+    if (this.isActive(condition)) return 'active';
+    return this.isImmune(condition) ? 'immune' : 'none';
+  }
+
+  private get underDm(): boolean {
+    return this.hasDm ?? this.pc.campaignId != null;
+  }
+
+  /** Who puts conditions on and takes them off (the red chips): the DM (the
+   *  cross-link view), or the owner of a character no DM stands over. Everyone
+   *  else only marks what the character is immune to (the green chips). */
+  get canSetConditions(): boolean {
+    return this.editable || !this.underDm;
+  }
+
+  /** A red chip the viewer may not change: the DM put it there. */
+  isLocked(condition: string): boolean {
+    return !this.canSetConditions && this.isActive(condition);
+  }
+
+  /**
+   * One tap on a chip. Whoever sets conditions cycles it: none, then has it
+   * (red), then immune (green), then none again. A player whose DM sets the
+   * conditions toggles only immune and none, and a red chip stays as the DM
+   * left it.
+   */
+  tapCondition(condition: string): void {
+    if (this.isLocked(condition)) return;
+    const state = this.conditionState(condition);
+    const next: ConditionState = !this.canSetConditions
+      ? (state === 'immune' ? 'none' : 'immune')
+      : state === 'none' ? 'active' : state === 'active' ? 'immune' : 'none';
+    const without = (list: string[] | undefined) => (list ?? []).filter(c => c !== condition);
+    const conditions = without(this.pc.conditions);
+    const conditionImmunities = without(this.pc.conditionImmunities);
+    if (next === 'active') conditions.push(condition);
+    if (next === 'immune') conditionImmunities.push(condition);
+    this.conditionsChanged.emit({ conditions, conditionImmunities });
+  }
+
+  /** Read after the chip's name by a screen reader, since the colour carries the state. */
+  conditionStateLabel(condition: string): string {
+    const state = this.conditionState(condition);
+    return state === 'active' ? ', has it' : state === 'immune' ? ', immune' : '';
   }
 
   // ── Exhaustion (2024 PHB: 6 levels; −2 d20 Tests / −5 ft Speed per level;
@@ -102,11 +168,17 @@ export class ConditionsPanelComponent {
       : this.inspirationPips + ' / 5 pips. ' + rule;
   }
 
-  /** The tap-reachable rules behind the "?" in the panel header (two
-   *  paragraphs): what an exhaustion level costs and how the tracker is set,
-   *  then where inspiration pips come from. Only the DM reads how to set the
-   *  meter; a player cannot. */
+  /** The tap-reachable rules behind the "?" in the panel header (three
+   *  paragraphs): what the chip colours mean and what a tap does for this
+   *  viewer, what an exhaustion level costs and how the tracker is set, then
+   *  where inspiration pips come from. Only the DM reads how to set the meter;
+   *  a player cannot. */
   get trackerHelp(): string {
+    const conditions = 'Conditions: red means the character has the condition, green means '
+      + 'it is immune to it. '
+      + (this.canSetConditions
+        ? 'Tap a condition to step it from none to red to green and back to none.'
+        : 'Tap a condition to mark it green or clear the green. Only your DM adds or removes the red ones.');
     const exhaustion = 'Exhaustion: each level gives −2 to all d20 Tests and −5 ft Speed, '
       + 'and at level 6 the character dies. Tap a number to set the level; tap the '
       + 'current level again to step back down.';
@@ -115,7 +187,7 @@ export class ConditionsPanelComponent {
       + (this.canAwardInspiration
         ? ' Tap a pip to set the meter; tap the last filled pip again to lower it.'
         : '');
-    return exhaustion + '\n\n' + inspiration;
+    return conditions + '\n\n' + exhaustion + '\n\n' + inspiration;
   }
 
   /** Same gesture as the exhaustion tracker: clicking pip N sets the meter to N,
