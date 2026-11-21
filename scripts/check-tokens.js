@@ -17,6 +17,13 @@
  *      stylesheets, templates and inline `styles:` alike. The system sets
  *      nothing in italic (owner decision 2026-11-18; DESIGN.md, Typography).
  *      There is no allow-comment for this one.
+ *   4. Text below the 11px floor: a `font-size` (or the size in a `font:`
+ *      shorthand, or `fontSize` set from code) under 11px, or under
+ *      0.6875rem (11px at the 16px root), anywhere under src/. DESIGN.md's
+ *      11px Floor Rule exempts nothing, micro-labels and glyphs included, so
+ *      there is no allow-comment for this one either. Use `var(--text-2xs)`.
+ *      `em` and `%` sizes are relative to the parent and are not checked;
+ *      neither is a size inside `max()`, which can only grow.
  *
  * Why this exists: check-contrast.js only compares token *pairs*, so it
  * stayed green (0/135 failures) while vellum was broken on five screens
@@ -51,6 +58,39 @@ const declared = new Set();
 const uses = [];
 const whites = [];
 const italics = [];
+const smalls = [];
+
+const FLOOR_PX = 11;
+const ROOT_PX = 16;
+// The value of a size declaration, up to the end of the declaration.
+const SIZE_RES = [
+  /font-size\s*:\s*([^;{}"'`]+)/gi,
+  /fontSize['"]?\s*[:=]\s*['"`]([^'"`]+)/g,
+];
+// The `font:` shorthand: its size is the first length, before any `/line-height`.
+const SHORTHAND_RE = /\bfont\s*:\s*[^;{}]*?(-?[0-9]*\.?[0-9]+)(px|rem)\b/gi;
+
+function belowFloor(n, unit) {
+  const px = unit.toLowerCase() === 'rem' ? n * ROOT_PX : n;
+  return px < FLOOR_PX - 1e-9;
+}
+
+function smallSizes(line) {
+  const found = [];
+  for (const re of SIZE_RES) {
+    for (const m of line.matchAll(re)) {
+      const value = m[1].trim();
+      if (/^max\(/i.test(value)) continue;
+      for (const n of value.matchAll(/(-?[0-9]*\.?[0-9]+)(px|rem)\b/gi)) {
+        if (belowFloor(parseFloat(n[1]), n[2])) found.push(n[0]);
+      }
+    }
+  }
+  for (const m of line.matchAll(SHORTHAND_RE)) {
+    if (belowFloor(parseFloat(m[1]), m[2])) found.push(m[1] + m[2]);
+  }
+  return found;
+}
 
 // Declarations only, so the word "italic" in a comment or in copy is fine.
 const ITALIC_RES = [
@@ -86,6 +126,9 @@ for (const file of files) {
     if (ITALIC_RES.some((re) => re.test(line))) {
       italics.push({ file, line: i + 1, text: line.trim().slice(0, 120) });
     }
+    if (smallSizes(line).length) {
+      smalls.push({ file, line: i + 1, text: line.trim().slice(0, 120) });
+    }
   });
 }
 
@@ -109,8 +152,15 @@ if (italics.length) {
   console.log('  size, weight or an accent token instead (DESIGN.md, Typography).');
 }
 
-if (undeclared.length || whites.length || italics.length) {
+if (smalls.length) {
+  console.log(`Text below the 11px floor (${smalls.length}):`);
+  for (const t of smalls) console.log(`  ${rel(t.file)}:${t.line}  ${t.text}`);
+  console.log('  No text ships below 11px. Use var(--text-2xs), and raise tracking with');
+  console.log('  var(--track-label) on uppercase labels (DESIGN.md, The 11px Floor Rule).');
+}
+
+if (undeclared.length || whites.length || italics.length || smalls.length) {
   console.log('\nFAIL: styles bypass the design system.');
   process.exit(1);
 }
-console.log(`OK: ${uses.length} var() uses all declared; no white-alpha literals in stylesheets; no italics.`);
+console.log(`OK: ${uses.length} var() uses all declared; no white-alpha literals in stylesheets; no italics; no text below 11px.`);

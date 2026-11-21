@@ -138,7 +138,7 @@
 // ✦ after a World of Warcraft feat (list entry or grant typeahead option).
 .wow-mark {
   margin-left: 2px;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--gold-2);
   cursor: help;
 }
