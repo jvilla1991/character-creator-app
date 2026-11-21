@@ -1187,6 +1187,15 @@ em, i, cite, dfn, address, var { font-style: normal; }
   border-color: var(--violet);
   color: var(--violet);
 }
+/* Immune to the condition: the same chip as .active, in green. */
+.condition.immune {
+  background: color-mix(in oklch, var(--emerald) 18%, var(--bg-2));
+  border-color: var(--emerald);
+  color: var(--emerald);
+  box-shadow: 0 0 10px color-mix(in oklch, var(--emerald) 30%, transparent);
+}
+/* A red chip the player's DM set: shown, but not theirs to change. */
+.condition.locked { cursor: default; }
 
 /* === CURRENCY === */
 .currency {

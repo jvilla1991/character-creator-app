@@ -53,6 +53,9 @@ export interface ParticipantView {
   // (reference info only — initiative ties resolve by insertion order).
   ac: number | null;
   conditions: string[];
+  // Conditions the PC is immune to (the sheet's green chips), parsed like
+  // conditions; empty for NPCs and for a PC with none.
+  conditionImmunities?: string[];
   // Darker Dungeons survival stages from the canonical PC row (parsed from the
   // backend's JSON string like conditions); null for NPCs / never-tracked PCs.
   survival: PcSurvival | null;
