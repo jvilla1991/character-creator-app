@@ -250,7 +250,8 @@ They were extracted from values the implementation already used, so defining the
 nothing visually; most existing declarations still carry raw px and migrating them is a separate
 pass. The type scale deliberately has **no step below 11px** — naming a smaller size would
 launder the floor. No font size below 11px remains in `src/` (Phase 3 type-floor slice): every
-former 7–10px label is `var(--text-2xs)` with `--track-label` or `--track-micro`, and new or
+former 7–10px label is `var(--text-2xs)` with `--track-label` or `--track-micro`, and
+`npm run check:tokens` (run in CI) fails on any px or rem size below 11px. New or
 touched font sizes should consume `--text-*` rather than raw px. Spacing and radii are still raw
 px.
 
