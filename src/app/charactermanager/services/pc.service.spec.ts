@@ -59,6 +59,39 @@ describe('PCService', () => {
     expect(service).toBeTruthy();
   });
 
+  // ── portrait version, set by PortraitService ───────────────────────────────
+
+  describe('applyPortraitVersion', () => {
+    it('puts the new version on the roster copy and the open sheet at once, with no request', () => {
+      const pc = makePC({ id: 3 });
+      service.setPCs([pc]);
+      service.setActivePC(pc);
+      let roster: PC[] = [];
+      let active: PC | null = null;
+      service.pcs$.subscribe(p => (roster = p));
+      service.activePC$.subscribe(p => (active = p));
+
+      service.applyPortraitVersion(3, 5);
+      expect(roster[0].portraitVersion).toBe(5);
+      expect(active!.portraitVersion).toBe(5);
+
+      service.applyPortraitVersion(3, null);
+      expect(roster[0].portraitVersion).toBeNull();
+      expect(active!.portraitVersion).toBeNull();
+    });
+
+    it("reaches a member a DM has open, who is not in the DM's roster", () => {
+      service.setPCs([]);
+      service.setActivePC(makePC({ id: 42 }));
+      let active: PC | null = null;
+      service.activePC$.subscribe(p => (active = p));
+
+      service.applyPortraitVersion(42, 2);
+
+      expect(active!.portraitVersion).toBe(2);
+    });
+  });
+
   // ── roster load failure is remembered, so "empty" and "failed" differ ─────
 
   describe('refreshPCs', () => {
