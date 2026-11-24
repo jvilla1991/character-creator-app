@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, Input, output } from '@angular/core
 import { DndSpell } from '../../models/dnd-api.types';
 import { FormsModule } from '@angular/forms';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
-import { ContentSource, ContentSourceSelection, allContentSources, isSourceEnabled, spellSource } from '../../models/content-source';
+import {
+  ContentSource, ContentSourceSelection, allContentSources, anySourceEnabled, isSourceEnabled, spellSource,
+} from '../../models/content-source';
 
 /**
  * Reusable spell search-and-select list — extracted from the level-up modal so
@@ -44,7 +46,7 @@ export class SpellPickerComponent {
 
   /** True when every content source is unchecked (the list is empty by choice). */
   get noSourcesEnabled(): boolean {
-    return !Object.values(this.sources).some(Boolean);
+    return !anySourceEnabled(this.sources);
   }
 
   /** Candidates filtered by source and search, limited to the kinds the caller allows. */

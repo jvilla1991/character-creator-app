@@ -181,7 +181,7 @@
     @if (step === 7 && isSpellcastingClass) {
       <app-spells-step
         [filteredSpellList]="filteredSpellList"
-        [noSourcesEnabled]="!contentSources['Base Game'] && !contentSources['World of Warcraft']"
+        [noSourcesEnabled]="noContentSourcesEnabled"
         [loadingSpells]="loadingSpells"
         [maxCantrips]="maxCantrips"
         [maxKnownSpells]="maxKnownSpells"

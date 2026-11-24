@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { isExtraListSpell } from './hero-class';
 import { spellKey } from './spell-names';
 import {
@@ -56,8 +56,8 @@ describe('World of Warcraft priest spells (wow-spells.json)', () => {
 
   it('hides them when the World of Warcraft source is off', () => {
     const cleric = wow.filter(s => s.classes.includes('cleric'));
-    expect(filterBySource(cleric, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
-    expect(filterBySource(cleric, { 'Base Game': true, 'World of Warcraft': true }).map(s => s.name))
+    expect(filterBySource(cleric, onlyContentSources('Base Game'))).toEqual([]);
+    expect(filterBySource(cleric, onlyContentSources('Base Game', 'World of Warcraft')).map(s => s.name))
       .toEqual(NEW_SPELLS.map(([name]) => name));
   });
 

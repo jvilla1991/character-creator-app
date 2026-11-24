@@ -26,7 +26,9 @@ import { SpellsStepComponent } from './steps/spells-step/spells-step.component';
 import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.component';
 import { ReviewStepComponent } from './steps/review-step/review-step.component';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
-import { ContentSource, ContentSourceSelection, allContentSources, filterBySource } from '../../models/content-source';
+import {
+  ContentSource, ContentSourceSelection, allContentSources, anySourceEnabled, filterBySource,
+} from '../../models/content-source';
 import {
   ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
   recommendedStartingSpells, recommendedSubclassFor,
@@ -79,7 +81,7 @@ interface WizardDraft {
   specialization?: string;
   /** Pre-specialization name of the same field — read from older drafts only. */
   rune?: string;
-  /** Content-source filter (Base Game / World of Warcraft). */
+  /** Content-source filter (Base Game / World of Warcraft / Arcana Unleashed). */
   contentSources?: ContentSourceSelection;
   selectedSubclass: string;
   background: string;
@@ -419,6 +421,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     // A selected species, class or spells hidden by the filter stay selected: the
     // filter narrows what's offered, it never discards a choice the player made.
     // The species and class steps say so when the chosen row is hidden.
+  }
+
+  /** True when every source checkbox is off, so the lists are empty by choice. */
+  get noContentSourcesEnabled(): boolean {
+    return !anySourceEnabled(this.contentSources);
   }
 
   // ── Step 3: Class ────────────────────────────────────────────────────────

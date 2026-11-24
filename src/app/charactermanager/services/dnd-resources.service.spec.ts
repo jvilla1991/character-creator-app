@@ -6,6 +6,7 @@ import {
   ORIGIN_FEAT_OPTIONS, TOOL_NAMES, languageNames, originFeatsFor,
 } from './dnd-resources.service';
 import { DndSpell } from '../models/dnd-api.types';
+import { onlyContentSources } from '../models/content-source';
 import { startingSlots } from '../utils/spell-slots';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -132,14 +133,14 @@ describe('DndResourcesService', () => {
     });
 
     it('filters language names by content source', () => {
-      const all = languageNames({ 'Base Game': true, 'World of Warcraft': true });
+      const all = languageNames(onlyContentSources('Base Game', 'World of Warcraft'));
       expect(all).toContain('Eredun');
       expect(all).toContain('Elvish');
-      const baseOnly = languageNames({ 'Base Game': true, 'World of Warcraft': false });
+      const baseOnly = languageNames(onlyContentSources('Base Game'));
       expect(baseOnly).not.toContain('Eredun');
       expect(baseOnly).not.toContain('Nathrezim');
       expect(baseOnly).toContain('Elvish');
-      expect(languageNames({ 'Base Game': false, 'World of Warcraft': true })).toEqual(['Eredun', 'Nathrezim']);
+      expect(languageNames(onlyContentSources('World of Warcraft'))).toEqual(['Eredun', 'Nathrezim']);
       // The DM's grant list starts with the pickable languages, then adds the rest of the WoW module's.
       expect(ALL_LANGUAGE_NAMES.slice(0, all.length)).toEqual(all);
     });
@@ -327,27 +328,32 @@ describe('DndResourcesService', () => {
       { name: 'Death Grip', level: 1, school: 'necromancy', actionType: 'action', classes: [], subclasses: ['Oath of the Ebon Blade'], source: 'World of Warcraft', concentration: false, ritual: false, range: 'TBD', components: ['v','s'], duration: 'TBD', description: 'TBD' },
     ];
 
-    /** Flushes the three spell files getSpells() fetches (SRD + 2024 PHB supplement + WoW). */
-    function flushSpellFiles(supplement: DndSpell[] = mockSupplement, wow: DndSpell[] = mockWow): void {
+    const mockArcana: DndSpell[] = [
+      { name: 'Catnap', level: 3, school: 'enchantment', actionType: 'action', classes: ['bard', 'sorcerer', 'wizard'], source: 'Arcana Unleashed', concentration: false, ritual: false, range: '30 feet', components: ['s','m'], duration: '10 minutes', description: '', material: 'a pinch of sand' },
+    ];
+
+    /** Flushes the four spell files getSpells() fetches (SRD + 2024 PHB supplement + WoW + Arcana Unleashed). */
+    function flushSpellFiles(supplement: DndSpell[] = mockSupplement, wow: DndSpell[] = mockWow,
+                             arcana: DndSpell[] = mockArcana): void {
       httpMock.expectOne('/assets/data/spells/srd-5.2-spells.json').flush(mockSpells);
       httpMock.expectOne('/assets/data/spells/phb-2024-supplement.json').flush(supplement);
       httpMock.expectOne('/assets/data/spells/wow-spells.json').flush(wow);
+      httpMock.expectOne('/assets/data/spells/arcana-unleashed-spells.json').flush(arcana);
     }
 
     it('returns only spells for the given class', (done) => {
       service.getSpellsForClass('wizard').subscribe(spells => {
-        expect(spells.length).toBe(2);
-        expect(spells[0].name).toBe('Fireball');
+        expect(spells.map(s => s.name)).toEqual(['Fireball', 'Witch Bolt', 'Catnap']);
         done();
       });
 
       flushSpellFiles();
     });
 
-    it('merges the PHB supplement after the SRD spells', (done) => {
+    it('merges the PHB supplement, World of Warcraft and Arcana Unleashed files after the SRD spells', (done) => {
       service.getSpells().subscribe(spells => {
         expect(spells.map(s => s.name))
-          .toEqual(['Fireball', 'Healing Word', 'Eldritch Blast', 'Witch Bolt', 'Death Grip']);
+          .toEqual(['Fireball', 'Healing Word', 'Eldritch Blast', 'Witch Bolt', 'Death Grip', 'Catnap']);
         done();
       });
 
@@ -366,7 +372,7 @@ describe('DndResourcesService', () => {
     it('reports a spell source, defaulting to Base Game', (done) => {
       service.getSpells().subscribe(spells => {
         expect(spells.map(s => service.spellSource(s)))
-          .toEqual(['Base Game', 'Base Game', 'Base Game', 'Base Game', 'World of Warcraft']);
+          .toEqual(['Base Game', 'Base Game', 'Base Game', 'Base Game', 'World of Warcraft', 'Arcana Unleashed']);
         done();
       });
 

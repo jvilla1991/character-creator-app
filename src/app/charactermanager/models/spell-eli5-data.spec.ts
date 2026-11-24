@@ -6,7 +6,7 @@ import { DndSpell } from './dnd-api.types';
  * to the house rules for them. Add a spell without one and this fails.
  */
 describe('ELI5 spell summaries (spell JSON assets)', () => {
-  const FILES = ['srd-5.2-spells.json', 'phb-2024-supplement.json', 'wow-spells.json'];
+  const FILES = ['srd-5.2-spells.json', 'phb-2024-supplement.json', 'wow-spells.json', 'arcana-unleashed-spells.json'];
   let spells: DndSpell[];
 
   beforeAll(async () => {
