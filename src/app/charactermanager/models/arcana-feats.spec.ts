@@ -122,7 +122,7 @@ describe('arcana-feats', () => {
       'Arcane Undertaker': ['Necromancy cantrip', 'Cleric or Wizard', 'History', 'Medicine', 'Heroic Inspiration'],
       'Familiar Friend': ['Find Familiar is always prepared', 'twice your level', 'Advantage', 'Proficiency Bonus per Long Rest'],
       'Portal Jumper': ['Necrotic, Psychic, or Radiant', '15 feet', 'Proficiency Bonus per Long Rest'],
-      'Transmuted Anatomy': ['Speed increases by 5 feet', 'shape-shift', 'Constitution saving throw', '1d4'],
+      'Transmuted Anatomy': ['5 feet of Speed', 'shape-shift', 'Constitution saving throw', '1d4'],
       'Elemental Familiar': ['Acid, Cold, Fire, Lightning, or Thunder', '5-foot Emanation', '2d4', 'Prone'],
       'Otherworldly Familiar': ['Necrotic, Poison, Psychic, Radiant, or Thunder', 'Difficult Terrain'],
       'Soothing Familiar': ['120 feet', '5-foot Emanation', '1 or 2', 'as a 3'],
@@ -150,7 +150,7 @@ describe('arcana-feats', () => {
       Evocation Adept => Chromatic Orb, Shatter, Fireball, Vitriolic Sphere, Wall of Force | Hit Point Dice
       Illusion Adept => Silent Image, Phantasmal Force, Major Image, Hallucinatory Terrain, Seeming | Investigation
       Necromancy Adept => Inflict Wounds, Ray of Enfeeblement, Vampiric Touch, Blight, Raise Dead | regain Hit Points
-      Transmutation Adept => Jump, Spider Climb, Slow, Polymorph, Animate Objects | Speed increases by 5 feet
+      Transmutation Adept => Jump, Spider Climb, Slow, Polymorph, Animate Objects | 5 feet to your Speed
     `.trim().split('\n').map(line => line.trim());
     expect(TABLES.length).toBe(8);
     for (const line of TABLES) {
