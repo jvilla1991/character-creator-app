@@ -6,6 +6,7 @@ import { BackgroundGroup, ClassEquipment, DndBackground, DndClass, DndListRespon
 import { ContentSource, ContentSourceSelection, filterBySource, spellSource } from '../models/content-source';
 import { WOW_LANGUAGE_NAMES } from '../models/wow-languages';
 import { spellKey } from '../models/spell-names';
+import { SCHOOLS_OF_MAGIC, SCHOOL_MASTERY, baseFeatName, schoolMasteryFeat } from '../models/arcana-feats';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -160,7 +161,8 @@ export const CLASS_SKILL_CHOICES: Record<string, { choose: number; from: string[
 /**
  * Short descriptions for the 2024 PHB feats, grouped by category
  * (Origin, General, Fighting Style, Epic Boon), plus the World of Warcraft
- * module's General feats (paraphrased; tagged via models/wow-feats).
+ * module's General feats (paraphrased; tagged via models/wow-feats) and the
+ * Arcana Unleashed book's 29 feats (paraphrased; tagged via models/arcana-feats).
  * Other expansion feats are not listed here and will render without a description.
  */
 export const FEAT_DESCRIPTIONS: Record<string, string> = {
@@ -195,6 +197,28 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Human only. You can hold your breath for a number of minutes equal to 2 plus your Constitution modifier (at least 1 minute), and you have a Swim Speed equal to your Speed.',
   'Will to Survive':
     'Human only. While you have the Incapacitated condition but not the Unconscious condition, you can ignore Incapacitated on your turn. If you do, you gain 1 Exhaustion level.',
+  // ── Arcana Unleashed Origin feats (each the feat of one of the book's backgrounds).
+  //    The cantrip or spell is saved on the character; the counted uses show on the sheet. ──
+  'Arcane Artist':
+    'You learn the Minor Illusion cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Inspiring Magic: when you cast an Illusion spell, one ally within 30 feet who can see you gains Heroic Inspiration. Once per Long Rest.',
+  'Arcane Eloquence':
+    'You learn the Vicious Mockery cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Smooth Talker: add 1d4 to every Charisma (Deception, Intimidation, or Persuasion) check you make.',
+  'Arcane Infiltrator':
+    'You learn the Friends cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Cunning Diversion: you can take the Dodge action as a Bonus Action, a number of times equal to your Proficiency Bonus per Long Rest.',
+  'Arcane Omens':
+    'You learn the Guidance cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Helpful Premonition: when you or a creature you can see within 30 feet fails a saving throw, you can use your Reaction to add 1d4 to the roll, which can turn it into a success. Uses equal to your Proficiency Bonus per Long Rest.',
+  'Arcane Overload':
+    'You learn the Fire Bolt cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Power Surge: when an Evocation spell you cast deals damage, add your Proficiency Bonus to one of its damage rolls. Once per Long Rest.',
+  'Arcane Safeguard':
+    'You learn the Resistance cantrip; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. You can cast it as a Bonus Action a number of times equal to your Proficiency Bonus per Long Rest. Sheltering Aid: when you take the Help action for an ally\'s ability check, that ally gains Temporary Hit Points equal to your Proficiency Bonus.',
+  'Arcane Undertaker':
+    'You learn one Necromancy cantrip from the Cleric or Wizard spell list; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Knowledge from the Dead: add 1d4 to Intelligence (History) and Wisdom (Medicine) checks. Understanding of Death: when you take the Help action to stabilize a creature at 0 Hit Points, you gain Heroic Inspiration. Once per Long Rest.',
+  'Familiar Friend':
+    'Faithful Companion: Find Familiar is always prepared for you; choose Intelligence, Wisdom, or Charisma as its spellcasting ability when you take the feat. Once per Long Rest you can cast it with no spell slot and no Material components, and you can cast it with your spell slots. Fortified Familiar: a familiar you summon with it has extra Hit Points equal to twice your level. Helpful Friend: while your familiar is within 5 feet of you, you can take Advantage on an ability check that uses a skill you are proficient in, a number of times equal to your Proficiency Bonus per Long Rest.',
+  'Portal Jumper':
+    'Otherworldly Resilience: you have Resistance to Necrotic, Psychic, or Radiant damage, chosen when you take the feat. Portal Step: once per turn you can spend 15 feet of movement to teleport to an unoccupied space you can see within 15 feet. Uses equal to your Proficiency Bonus per Long Rest.',
+  'Transmuted Anatomy':
+    'Lengthened Stride: your Speed increases by 5 feet. Resilient Anatomy: you have Advantage on saving throws against effects that would force you to shape-shift. When you fail a Constitution saving throw, you can use your Reaction to add 1d4 to the roll, which can turn it into a success. Uses equal to your Proficiency Bonus per Long Rest.',
   // ── General feats (level 4+; the alternative to an ASI). Names are validated
   //    server-side; these descriptions are for display only. ───────────────────
   'Great Weapon Master':
@@ -297,6 +321,38 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Windwalker\'s storm of rapid strikes, driving your fists into foes faster than they can follow. See the World of Warcraft module for the full rules.',
   'Stagger and Sway':
     'Prerequisite: Dexterity 13+ and Wisdom 13+. Increase your Dexterity or Wisdom by 1 (max 20). A Brewmaster\'s trick of soaking up punishment and letting it drain away over time instead of all at once. See the World of Warcraft module for the full rules.',
+  // ── Arcana Unleashed General feats (level 4+; tagged ✦ via models/arcana-feats).
+  //    A School Adept's spells are saved on the character as its spell slots reach each row. ──
+  'Abjuration Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Shield; 2nd Lesser Restoration; 3rd Protection from Energy; 4th Banishment; 5th Mass Cure Wounds. Protective Ward: when you cast an Abjuration spell with a spell slot, you or one creature you can see within 30 feet gains Temporary Hit Points equal to twice the slot\'s level.',
+  'Conjuration Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Entangle; 2nd Misty Step; 3rd Conjure Animals; 4th Dimension Door; 5th Conjure Elemental. Persistent Conjuration: while you concentrate on a Conjuration spell, add the modifier of the ability this feat increased to Constitution saving throws made to keep that Concentration.',
+  'Divination Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Detect Evil and Good; 2nd Mind Spike; 3rd Clairvoyance; 4th Divination; 5th Scrying. Prescient Intervention: when a creature you can see within 60 feet makes a D20 Test, you can use your Reaction to give that roll Advantage or Disadvantage. Once per Long Rest; casting a Divination spell with a spell slot also gives the use back.',
+  'Elemental Familiar':
+    'Prerequisite: Familiar Friend feat. Increase one ability score by 1 (max 20). Elemental Energy: when you cast Find Familiar, choose Acid, Cold, Fire, Lightning, or Thunder; until you cast it again, your familiar has Resistance to that damage type. Energy Pulse: as a Bonus Action, you can have your familiar (within 120 feet of you) use its Reaction to release a burst: each creature in a 5-foot Emanation around it makes a Dexterity saving throw (DC 8 + your Find Familiar spellcasting modifier + your Proficiency Bonus) or takes 2d4 damage of the chosen type and, if it is Medium or smaller, has the Prone condition.',
+  'Enchantment Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Dissonant Whispers; 2nd Enthrall; 3rd Hold Person; 4th Dominate Beast; 5th Modify Memory. Subtle Enchantments: an Enchantment spell you cast with a spell slot needs no Verbal, Somatic, or Material components, except Material components the spell consumes or that have a listed cost.',
+  'Evocation Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Chromatic Orb; 2nd Shatter; 3rd Fireball; 4th Vitriolic Sphere; 5th Wall of Force. Fueled Evocation: once per turn when an Evocation spell you cast deals damage, you can spend up to two Hit Point Dice, roll them, and add the total to one of the spell\'s damage rolls.',
+  'Illusion Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Silent Image; 2nd Phantasmal Force; 3rd Major Image; 4th Hallucinatory Terrain; 5th Seeming. Masterful Illusions: an Illusion spell you cast with a spell slot needs no Verbal, Somatic, or Material components, except Material components the spell consumes or that have a listed cost. Creatures have Disadvantage on Intelligence (Investigation) checks to see through illusions your spells create.',
+  'Magic Connoisseur':
+    'Prerequisite: a Magic Initiate feat. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). Choose one level 1 spell and one level 2 spell from the class list of your Magic Initiate feat. Both are always prepared and use that feat\'s spellcasting ability. You can cast each once per Long Rest without a spell slot, and with your spell slots. Whenever you gain a level, you can swap one of them for another spell of the same level from that list.',
+  'Necromancy Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Inflict Wounds; 2nd Ray of Enfeeblement; 3rd Vampiric Touch; 4th Blight; 5th Raise Dead. Life Manipulation: when you cast a Necromancy spell with a spell slot, you can spend up to two Hit Point Dice, roll them, and regain Hit Points equal to the total plus the slot\'s level.',
+  'Otherworldly Familiar':
+    'Prerequisite: Familiar Friend feat. Increase one ability score by 1 (max 20). Otherworldly Power: when you cast Find Familiar, you can empower your familiar until you cast the spell again. Energy Resistance: it has Resistance to Necrotic, Poison, Psychic, Radiant, or Thunder damage (your choice). Phase Walk: it can move through creatures and objects as if they were Difficult Terrain; if it ends its turn inside an object, it is moved back to the last unoccupied space it was in.',
+  'Soothing Familiar':
+    'Prerequisite: Familiar Friend feat. Increase one ability score by 1 (max 20). Healing Beacon: while your familiar is within 120 feet of you, an ally inside a 5-foot Emanation around it who rolls dice to restore Hit Points treats any 1 or 2 on those dice as a 3.',
+  'Spell Resistant':
+    'Increase Dexterity or Constitution by 1 (max 20). Magical Resilience: you have Resistance to Necrotic, Psychic, Radiant, or Thunder damage, chosen when you take the feat. Magic Resistant: when you would fail a saving throw against a spell or magical effect, you can add 1d6 to the roll, which can turn it into a success. Uses equal to your Proficiency Bonus per Long Rest.',
+  'Spell Subterfuge':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). Shrouding Spells: after you cast a spell with a casting time of an action using a spell slot, you can take the Dash and Hide actions together as a Bonus Action. Uses per Long Rest equal the modifier of the ability this feat increased; the sheet counts your highest Intelligence, Wisdom, or Charisma modifier (at least 1). Sneaky Casting: while you are Invisible from the Hide action, casting a spell with a Verbal component or making a spell attack does not end the condition if you end the turn behind Three-Quarters Cover or Total Cover.',
+  'Transmutation Adept':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 20). You always have these spells prepared once you have spell slots of the listed level: 1st Jump; 2nd Spider Climb; 3rd Slow; 4th Polymorph; 5th Animate Objects. Magical Augmentation: on your turn, when you cast a Transmutation spell with a spell slot, your Speed increases by 5 feet per level of the slot until the end of the turn.',
+  'Warlike Familiar':
+    'Prerequisite: Familiar Friend feat. Increase one ability score by 1 (max 20). Battle Familiar is always prepared for you and uses the spellcasting ability you chose for Familiar Friend. Once per Long Rest you can cast it without a spell slot, and you can cast it with your spell slots. Intercept Attack: when a creature within 5 feet of your familiar is hit by an attack roll, the familiar can use its Reaction to add your Proficiency Bonus to that creature\'s Armor Class against the attack, which can make it miss.',
   // ── Fighting Style feats (gained through the Fighting Style class feature of
   //    Fighters, Paladins, and Rangers; also selectable at their ASI levels). ──
   'Archery':
@@ -327,6 +383,9 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
   // ── World of Warcraft fighting style (Demon Hunter rangers only, at Ranger 2). ──
   'Void Warrior':
     'You learn two Warlock cantrips of your choice. They count as Ranger spells for you, and Wisdom is your spellcasting ability for them. Whenever you gain a Ranger level, you can replace one of them with another Warlock cantrip.',
+  // ── Arcana Unleashed fighting style: a Fighting Style feat, so it is also offered at ASI levels. ──
+  'Arcane Warrior':
+    'You learn two Wizard cantrips of your choice (Mage Hand and Ray of Frost are a good pair). Intelligence, Wisdom, or Charisma is your spellcasting ability for them, chosen when you take the feat. Whenever you gain a level, you can swap one of them for another Wizard cantrip.',
   // ── Epic Boon feats (level 19+; ability increases can exceed 20, up to 30). ──
   'Boon of Combat Prowess':
     'Increase an ability score by 1 (max 30). Once on each of your turns when you miss with an attack roll, you can hit instead.',
@@ -352,6 +411,13 @@ export const FEAT_DESCRIPTIONS: Record<string, string> = {
     'Increase an ability score by 1 (max 30). While within Dim Light or Darkness, you can become Invisible as a Bonus Action, and you have Resistance to all damage except Psychic and Radiant.',
   'Boon of Truesight':
     'Increase an ability score by 1 (max 30). You have Truesight with a range of 60 feet.',
+  // ── Arcana Unleashed Epic Boons. Magic School Mastery is taken (and stored) once per school. ──
+  'Boon of Erupting Spellpower':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 30). Spell Overload: when you cast a damaging spell with a spell slot, you can treat every 1 or 2 on its damage dice as a 3, and each creature it damages also has the Prone condition. Usable again after you roll Initiative or finish a Short or Long Rest.',
+  'Boon of Magic School Mastery':
+    'Prerequisite: Spellcasting or Pact Magic feature. Increase Intelligence, Wisdom, or Charisma by 1 (max 30). Choose a school of magic. Rote Casting: one level 1 spell of that school from your class\'s spell list is always prepared, and you can cast it without a spell slot or components. Signature Arcanum: one spell of that school of level 7 or lower is always prepared, and you can cast it once per Long Rest without a spell slot. You can also cast both with your spell slots. You can take this boon again for a different school.',
+  'Boon of the Iron Mind':
+    'Increase an ability score by 1 (max 30). Unshakable Focus: you lose Concentration only when you cast another spell or use another effect that needs Concentration, when you have the Petrified or Unconscious condition, or when you die.',
 };
 
 /** An Origin feat a character may pick for itself (a Human's Versatile trait). */
@@ -366,7 +432,8 @@ export interface OriginFeatOption {
 
 /**
  * The Origin feats with a description in {@link FEAT_DESCRIPTIONS}: the 2024
- * PHB's, then the World of Warcraft module's Human-only three.
+ * PHB's, then the World of Warcraft module's Human-only three, then the Arcana
+ * Unleashed book's ten (open to every species).
  */
 export const ORIGIN_FEAT_OPTIONS: readonly OriginFeatOption[] = [
   { name: 'Alert' }, { name: 'Crafter' }, { name: 'Healer' }, { name: 'Lucky' },
@@ -376,6 +443,11 @@ export const ORIGIN_FEAT_OPTIONS: readonly OriginFeatOption[] = [
   { name: 'Arathi Heritage', source: 'World of Warcraft', species: 'Human' },
   { name: 'Child of the Sea', source: 'World of Warcraft', species: 'Human' },
   { name: 'Will to Survive', source: 'World of Warcraft', species: 'Human' },
+  { name: 'Arcane Artist', source: 'Arcana Unleashed' }, { name: 'Arcane Eloquence', source: 'Arcana Unleashed' },
+  { name: 'Arcane Infiltrator', source: 'Arcana Unleashed' }, { name: 'Arcane Omens', source: 'Arcana Unleashed' },
+  { name: 'Arcane Overload', source: 'Arcana Unleashed' }, { name: 'Arcane Safeguard', source: 'Arcana Unleashed' },
+  { name: 'Arcane Undertaker', source: 'Arcana Unleashed' }, { name: 'Familiar Friend', source: 'Arcana Unleashed' },
+  { name: 'Portal Jumper', source: 'Arcana Unleashed' }, { name: 'Transmuted Anatomy', source: 'Arcana Unleashed' },
 ];
 
 /** The Origin feats a character of `species` may pick, in list order. */
@@ -658,14 +730,22 @@ export class DndResourcesService {
     return spellSource(spell);
   }
 
-  /** Short description for an Origin feat, or empty string if unknown. */
+  /**
+   * Short description for a feat, or empty string if unknown. A Boon of Magic
+   * School Mastery is described once, whichever school it is stored with.
+   */
   getFeatDescription(featName: string): string {
-    return FEAT_DESCRIPTIONS[featName] ?? '';
+    return FEAT_DESCRIPTIONS[featName] ?? FEAT_DESCRIPTIONS[baseFeatName(featName)] ?? '';
   }
 
-  /** All known Origin feat names, alphabetized — backs the grant-form typeahead. */
+  /**
+   * All known feat names, alphabetized — backs the grant-form typeahead. Boon
+   * of Magic School Mastery is listed once per school, the way it is stored.
+   */
   getFeatNames(): string[] {
-    return Object.keys(FEAT_DESCRIPTIONS).sort((a, b) => a.localeCompare(b));
+    return Object.keys(FEAT_DESCRIPTIONS)
+      .flatMap(name => name === SCHOOL_MASTERY ? SCHOOLS_OF_MAGIC.map(schoolMasteryFeat) : [name])
+      .sort((a, b) => a.localeCompare(b));
   }
 
   /** Class skill proficiency choices for step 5 of the wizard. */

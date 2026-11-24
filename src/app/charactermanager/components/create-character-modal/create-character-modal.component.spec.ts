@@ -2270,6 +2270,22 @@ describe('CreateCharacterModalComponent — logic', () => {
         expect(component.canAdvance).toBeTrue();
       });
 
+      it('offers the Arcana Unleashed Origin feats too, unless that book is filtered out', () => {
+        expect(component.speciesOriginFeats.map(f => f.name)).toContain('Familiar Friend');
+        component.toggleContentSource('Arcana Unleashed');
+        const names = component.speciesOriginFeats.map(f => f.name);
+        expect(names).not.toContain('Familiar Friend');
+        expect(names).toContain('Alert');
+        expect(names).toContain('Child of the Sea');
+        expect(component.speciesOriginFeats).toBe(component.speciesOriginFeats);   // stable for the template
+        // A feat already chosen stays on offer: the filter never discards a choice.
+        component.toggleContentSource('Arcana Unleashed');
+        component.patchSpeciesSelections({ originFeat: 'Portal Jumper' });
+        component.toggleContentSource('Arcana Unleashed');
+        expect(component.speciesOriginFeats.filter(f => f.source === 'Arcana Unleashed').map(f => f.name))
+          .toEqual(['Portal Jumper']);
+      });
+
       it('blocks the background step when the background grants the same feat', () => {
         component.step = 4;
         component.background = 'Sage';

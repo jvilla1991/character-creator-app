@@ -21,6 +21,7 @@ import {
   WOW_CLASS_VARIANTS,
 } from '../models/wow-class-variants';
 import { WOW_MAGE_FEATS, WOW_MONK_FEATS } from '../models/wow-feats';
+import { arcanaFeatOptions } from '../models/arcana-feats';
 import { WARRIOR_OF_MYSTIC_BREWS } from '../models/wow-monk';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
@@ -1148,10 +1149,16 @@ export const DEMO_EPIC_BOONS = [
 // DEMO-ONLY mirror of FeatCatalog.featOptions: General feats (incl. the World of
 // Warcraft mage feats, open to every class, and the WoW monk feats for anyone with
 // DEX 13+ and WIS 13+) always, Fighting Style feats for classes with the Fighting
-// Style feature, Epic Boons at 19+.
-export function demoFeatOptions(clazz: string, newLevel: number, stats?: Partial<NonNullable<PC['stats']>>): string[] {
+// Style feature, Epic Boons at 19+. The Arcana Unleashed feats come with their own
+// gating (models/arcana-feats): `feats` is what the character already has
+// (featNamesOn), which three of their prerequisites read.
+export function demoFeatOptions(
+  clazz: string, newLevel: number, stats?: Partial<NonNullable<PC['stats']>>, feats: readonly string[] = [],
+): string[] {
   const key = (clazz ?? '').trim().toLowerCase();
-  const options = [...DEMO_GENERAL_FEATS, ...WOW_MAGE_FEATS.map(f => f.name)];
+  const options = [
+    ...DEMO_GENERAL_FEATS, ...WOW_MAGE_FEATS.map(f => f.name), ...arcanaFeatOptions({ clazz, newLevel, feats }),
+  ];
   if ((stats?.DEX ?? 0) >= 13 && (stats?.WIS ?? 0) >= 13) {
     options.push(...WOW_MONK_FEATS.map(f => f.name));
   }

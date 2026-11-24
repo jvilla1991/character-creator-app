@@ -1367,8 +1367,8 @@ describe('LevelUpModalComponent', () => {
         currentLevel: 3, newLevel: 4, subclassDue: false, subclassOptions: [], asiDue: true,
         featOptions: ['Alert', 'Clearcasting', 'Fingers of Frost', 'Hot Streak', 'War Caster'],
       });
-      expect(component.isWowFeat('Clearcasting')).toBeTrue();
-      expect(component.isWowFeat('War Caster')).toBeFalse();
+      expect(component.featSourceTag('Clearcasting')).toBe('World of Warcraft');
+      expect(component.featSourceTag('War Caster')).toBeUndefined();
       expect(component.featPrerequisite('Hot Streak')).toBeUndefined();
       const el = renderModal(true);
       const tagged = Array.from(el.querySelectorAll('.subclass-option'))
@@ -1377,6 +1377,31 @@ describe('LevelUpModalComponent', () => {
       expect(tagged).toEqual(['Clearcasting', 'Fingers of Frost', 'Hot Streak']);
       expect(el.querySelector('.feat-source-tag')?.textContent).toContain('World of Warcraft');
       expect(el.querySelectorAll('.feat-prereq').length).toBe(0);
+    });
+
+    it('tags the Arcana Unleashed feats with their book and shows what each one needs', () => {
+      open({ level: 3 }, {
+        currentLevel: 3, newLevel: 4, subclassDue: false, subclassOptions: [], asiDue: true,
+        featOptions: ['Alert', 'Clearcasting', 'Evocation Adept', 'Magic Connoisseur', 'Spell Resistant', 'Warlike Familiar'],
+      });
+      expect(component.featSourceTag('Evocation Adept')).toBe('Arcana Unleashed');
+      expect(component.featSourceTag('Boon of Magic School Mastery (Evocation)')).toBe('Arcana Unleashed');
+      expect(component.featPrerequisite('Evocation Adept')).toBe('Spellcasting or Pact Magic feature');
+      expect(component.featPrerequisite('Boon of Magic School Mastery (Evocation)'))
+        .toBe('Spellcasting or Pact Magic feature');
+      expect(component.featPrerequisite('Spell Resistant')).toBeUndefined();
+      const el = renderModal(true);
+      const options = Array.from(el.querySelectorAll('.subclass-option')) as HTMLElement[];
+      const row = (name: string) => options.find(n => n.querySelector('.feat-name')!.textContent!.trim() === name)!;
+      const tagOf = (name: string) => row(name).querySelector('.feat-source-tag')?.textContent?.trim();
+      const prereqOf = (name: string) => row(name).querySelector('.feat-prereq')?.textContent?.trim();
+      expect(['Alert', 'Clearcasting', 'Evocation Adept', 'Magic Connoisseur', 'Spell Resistant', 'Warlike Familiar']
+        .map(tagOf)).toEqual([undefined, 'World of Warcraft', 'Arcana Unleashed', 'Arcana Unleashed',
+        'Arcana Unleashed', 'Arcana Unleashed']);
+      expect(prereqOf('Evocation Adept')).toBe('Prerequisite: Spellcasting or Pact Magic feature');
+      expect(prereqOf('Magic Connoisseur')).toBe('Prerequisite: Magic Initiate feat');
+      expect(prereqOf('Warlike Familiar')).toBe('Prerequisite: Familiar Friend feat');
+      expect(prereqOf('Spell Resistant')).toBeUndefined();
     });
 
     it('loads the wizard list plus its three added spells when a WoW mage learns spells, and the plain list otherwise', () => {

@@ -27,7 +27,7 @@ import { EquipmentStepComponent } from './steps/equipment-step/equipment-step.co
 import { ReviewStepComponent } from './steps/review-step/review-step.component';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
 import {
-  ContentSource, ContentSourceSelection, allContentSources, anySourceEnabled, filterBySource,
+  ContentSource, ContentSourceSelection, allContentSources, anySourceEnabled, filterBySource, isSourceEnabled,
 } from '../../models/content-source';
 import {
   ClassOption, HeroClassOption, SpecializationGuidance, SpecializationOption, buildClassOptions, heroClassByKey,
@@ -255,11 +255,19 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return !catalog || speciesChoicesComplete(catalog, this.speciesSelections);
   }
 
-  /** Origin feats a Human may pick for Versatile; empty when the species has no such choice. */
+  /**
+   * Origin feats a Human may pick for Versatile; empty when the species has no
+   * such choice. A feat from a book the content-source filter hides is left out,
+   * except the one already chosen: the filter never discards a choice.
+   */
   get speciesOriginFeats(): readonly OriginFeatOption[] {
     const catalog = this.catalogSpecies;
     if (!catalog?.choices?.originFeat) return NO_FEATS;
-    return this.originFeatsCache[catalog.name] ??= originFeatsFor(catalog.name);
+    const chosen = this.speciesSelections.originFeat;
+    // Memoized on its inputs so the template sees a stable array.
+    const key = `${catalog.name}|${JSON.stringify(this.contentSources)}|${chosen}`;
+    return this.originFeatsCache[key] ??= originFeatsFor(catalog.name)
+      .filter(f => f.name === chosen || isSourceEnabled(this.contentSources, f.source));
   }
   private originFeatsCache: Record<string, OriginFeatOption[]> = {};
 

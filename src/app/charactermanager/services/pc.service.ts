@@ -5,6 +5,7 @@ import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
+import { featNamesOn } from '../models/character-feats';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -643,7 +644,8 @@ export class PCService {
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
-      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel, pc.stats) : [],
+      featOptions: demoIsAsiLevel(pc.clazz, newLevel)
+        ? demoFeatOptions(pc.clazz, newLevel, pc.stats, featNamesOn(pc)) : [],
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),

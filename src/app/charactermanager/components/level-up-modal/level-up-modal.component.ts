@@ -18,7 +18,7 @@ import {
   subclassSource,
 } from '../../models/hero-class';
 import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
-import { featPrerequisite, isWowFeat } from '../../models/wow-feats';
+import { featPrerequisite, featSourceTag } from '../../models/wow-feats';
 
 const NO_GRANTS: readonly SpellGrant[] = [];
 
@@ -455,12 +455,18 @@ export class LevelUpModalComponent implements OnInit {
     return this.dndResources.getFeatDescription(name);
   }
 
-  /** True for a World of Warcraft feat on offer (Clearcasting, …) — tagged in the picker. */
-  isWowFeat(name: string): boolean {
-    return isWowFeat(name);
+  /**
+   * The book a feat on offer comes from ('World of Warcraft', 'Arcana Unleashed')
+   * — tagged in the picker; undefined for a base-game feat.
+   */
+  featSourceTag(name: string): string | undefined {
+    return featSourceTag(name);
   }
 
-  /** A WoW feat's prerequisite beyond level 4 (e.g. 'DEX 13+, WIS 13+'); undefined otherwise. */
+  /**
+   * What a feat needs beyond its level (a WoW monk feat's 'DEX 13+, WIS 13+', an
+   * Arcana Unleashed feat's 'Familiar Friend feat'); undefined otherwise.
+   */
   featPrerequisite(name: string): string | undefined {
     return featPrerequisite(name);
   }

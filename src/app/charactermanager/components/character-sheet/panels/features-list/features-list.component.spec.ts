@@ -461,12 +461,12 @@ describe('FeaturesListComponent', () => {
   // --- World of Warcraft feats (✦) ---
 
   it('marks a World of Warcraft feat the character took with ✦, and nothing else', () => {
-    expect(component.isWowFeatFeature({ name: 'Fingers of Frost', source: 'Feat', desc: '' })).toBeTrue();
-    expect(component.isWowFeatFeature({ name: 'Hot Streak', source: 'feat (level 4)', desc: '' })).toBeTrue();
-    expect(component.isWowFeatFeature({ name: 'War Caster', source: 'Feat', desc: '' })).toBeFalse();
-    expect(component.isWowFeatFeature({ name: 'Clearcasting', source: 'DM Grant', desc: 'x' })).toBeFalse();
-    expect(component.isWowFeat('Clearcasting')).toBeTrue();
-    expect(component.isWowFeat('Alert')).toBeFalse();
+    expect(component.featNoteFor({ name: 'Fingers of Frost', source: 'Feat', desc: '' })).toBe('World of Warcraft feat');
+    expect(component.featNoteFor({ name: 'Hot Streak', source: 'feat (level 4)', desc: '' })).toBe('World of Warcraft feat');
+    expect(component.featNoteFor({ name: 'War Caster', source: 'Feat', desc: '' })).toBeUndefined();
+    expect(component.featNoteFor({ name: 'Clearcasting', source: 'DM Grant', desc: 'x' })).toBeUndefined();
+    expect(component.featNote('Clearcasting')).toBe('World of Warcraft feat');
+    expect(component.featNote('Alert')).toBeUndefined();
 
     const fixture = TestBed.createComponent(FeaturesListComponent);
     fixture.componentRef.setInput('pc', {
@@ -482,5 +482,38 @@ describe('FeaturesListComponent', () => {
     expect(marked).toEqual(['Fingers of Frost']);
     expect(names.find(n => n.querySelector('.wow-mark'))!.querySelector('.wow-mark')!.getAttribute('title'))
       .toBe('World of Warcraft feat');
+  });
+
+  // --- Arcana Unleashed feats (✦) ---
+
+  it('marks an Arcana Unleashed feat the same way, wherever the character got it', () => {
+    expect(component.featNote('Evocation Adept')).toBe('Arcana Unleashed feat');
+    expect(component.featNote('Boon of Magic School Mastery (Illusion)')).toBe('Arcana Unleashed feat');
+    expect(component.featNoteFor({ name: 'Familiar Friend', source: 'Familiar Trainer · Origin Feat', desc: 'x' }))
+      .toBe('Arcana Unleashed feat');
+    expect(component.featNoteFor({ name: 'Arcane Warrior', source: 'Fighting Style (Level 2)', desc: 'x' }))
+      .toBe('Arcana Unleashed feat');
+    expect(component.featNoteFor({ name: 'Spell Resistant', source: 'Feat (Level 4)', desc: '' }))
+      .toBe('Arcana Unleashed feat');
+    // A feature that only shares a feat's name is not a feat.
+    expect(component.featNoteFor({ name: 'Spell Resistant', source: 'Paladin 6', desc: 'x' })).toBeUndefined();
+
+    const fixture = TestBed.createComponent(FeaturesListComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 4, name: 'Mirel', clazz: 'Wizard', level: 4, playerName: 'Q', feat: 'Familiar Friend',
+      features: [
+        { name: 'Familiar Friend', source: 'Familiar Trainer · Origin Feat', desc: 'A familiar.' },
+        { name: 'Arcane Recovery', source: 'Wizard 1', desc: 'Recover slots.' },
+        { name: 'Evocation Adept', source: 'Feat (Level 4)', desc: '' },
+      ],
+    } as PC);
+    fixture.detectChanges();
+    const names = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.feature-name')) as HTMLElement[];
+    const marked = names.filter(n => n.querySelector('.wow-mark'));
+    expect(marked.map(n => n.textContent!.replace('✦', '').trim())).toEqual(['Familiar Friend', 'Evocation Adept']);
+    for (const name of marked) {
+      expect(name.querySelector('.wow-mark')!.getAttribute('title')).toBe('Arcana Unleashed feat');
+      expect(name.querySelector('.wow-mark')!.getAttribute('aria-label')).toBe('Arcana Unleashed feat');
+    }
   });
 });

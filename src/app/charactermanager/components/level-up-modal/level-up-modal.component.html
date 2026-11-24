@@ -142,8 +142,8 @@
                   }
                   <span class="feat-desc">{{ featDescription(option) }}</span>
                 </span>
-                @if (isWowFeat(option)) {
-                  <span class="source-tag feat-source-tag">World of Warcraft</span>
+                @if (featSourceTag(option); as source) {
+                  <span class="source-tag feat-source-tag">{{ source }}</span>
                 }
               </label>
             }

@@ -133,6 +133,13 @@ describe('DndResourcesService', () => {
       }
     });
 
+    it('each origin feat is described and on offer as an Origin feat', () => {
+      for (const [name, , feat] of ROWS) {
+        expect(service.getFeatDescription(feat)).withContext(name).not.toBe('');
+        expect(ORIGIN_FEAT_OPTIONS.find(f => f.name === feat)?.source).withContext(feat).toBe('Arcana Unleashed');
+      }
+    });
+
     it('start with the default background gold, like every background outside the Player\'s Handbook', () => {
       for (const [name] of ROWS) expect(service.getBackgroundGold(name)).withContext(name).toBe(15);
       expect(service.getBackgroundGold('Harper')).toBe(15);
@@ -152,6 +159,13 @@ describe('DndResourcesService', () => {
 
     it('returns empty string for unknown feat', () => {
       expect(service.getFeatDescription('Super Punch')).toBe('');
+    });
+
+    it('describes a Boon of Magic School Mastery whichever school it is stored with', () => {
+      const desc = service.getFeatDescription('Boon of Magic School Mastery');
+      expect(desc).toContain('Signature Arcanum');
+      expect(service.getFeatDescription('Boon of Magic School Mastery (Evocation)')).toBe(desc);
+      expect(service.getFeatDescription('Boon of Magic School Mastery (Chronurgy)')).toBe('');
     });
   });
 
@@ -230,8 +244,22 @@ describe('DndResourcesService', () => {
       expect(names).toContain('Boon of Fate');     // Epic Boon
     });
 
-    it('length matches the number of known feats', () => {
-      expect(service.getFeatNames().length).toBe(Object.keys(FEAT_DESCRIPTIONS).length);
+    it('lists every known feat, Boon of Magic School Mastery once per school', () => {
+      const names = service.getFeatNames();
+      // The one description stands for eight names: seven more than the table has entries.
+      expect(names.length).toBe(Object.keys(FEAT_DESCRIPTIONS).length + 7);
+      expect(names).not.toContain('Boon of Magic School Mastery');
+      expect(names.filter(n => n.startsWith('Boon of Magic School Mastery (')).length).toBe(8);
+      expect(names).toContain('Boon of Magic School Mastery (Transmutation)');
+      for (const name of names) expect(service.getFeatDescription(name)).withContext(name).not.toBe('');
+    });
+
+    it('covers the Arcana Unleashed categories too', () => {
+      const names = service.getFeatNames();
+      expect(names).toContain('Familiar Friend');               // Origin
+      expect(names).toContain('Evocation Adept');               // General
+      expect(names).toContain('Arcane Warrior');                // Fighting Style
+      expect(names).toContain('Boon of the Iron Mind');         // Epic Boon
     });
   });
 
@@ -249,17 +277,22 @@ describe('DndResourcesService', () => {
       expect(new Set(names).size).toBe(names.length);
     });
 
-    it('offers a Human the twelve PHB feats plus the three World of Warcraft Human feats', () => {
+    it('offers a Human the twelve PHB feats, the three World of Warcraft Human feats, then the ten of Arcana Unleashed', () => {
       const names = originFeatsFor('Human').map(f => f.name);
-      expect(names.length).toBe(15);
+      expect(names.length).toBe(25);
       expect(names).toContain('Alert');
-      expect(names.slice(-3)).toEqual(['Arathi Heritage', 'Child of the Sea', 'Will to Survive']);
+      expect(names.slice(12, 15)).toEqual(['Arathi Heritage', 'Child of the Sea', 'Will to Survive']);
+      expect(names.slice(15)).toEqual([
+        'Arcane Artist', 'Arcane Eloquence', 'Arcane Infiltrator', 'Arcane Omens', 'Arcane Overload',
+        'Arcane Safeguard', 'Arcane Undertaker', 'Familiar Friend', 'Portal Jumper', 'Transmuted Anatomy',
+      ]);
     });
 
     it('keeps the Human-only feats from any other species', () => {
       const names = originFeatsFor('Orc').map(f => f.name);
-      expect(names.length).toBe(12);
+      expect(names.length).toBe(22);
       expect(names).not.toContain('Arathi Heritage');
+      expect(names).toContain('Familiar Friend');
     });
 
     it('marks only Skilled as repeatable', () => {

@@ -6,7 +6,8 @@ import { ClassFeatureService } from '../../../../services/class-feature.service'
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { PreferencesService } from '../../../../services/preferences.service';
 import { FormsModule } from '@angular/forms';
-import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
+import { featSourceNote } from '../../../../models/wow-feats';
+import { isFeatEntry } from '../../../../models/character-feats';
 import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
 import {
   ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
@@ -188,17 +189,22 @@ export class FeaturesListComponent {
    * (the backend doesn't own feat descriptions — they live in the frontend), so for those we
    * fall back to the local feat-description lookup. Class features carry their own desc.
    */
-  /** Hover text for the ✦ on a World of Warcraft feat. */
-  readonly wowFeatNote = WOW_FEAT_NOTE;
-
-  /** True for a World of Warcraft feat name (Clearcasting, …) — marked ✦ in the grant typeahead. */
-  isWowFeat(name: string): boolean {
-    return isWowFeat(name);
+  /**
+   * Hover text for the ✦ on a feat from a book other than the base game
+   * ('World of Warcraft feat', 'Arcana Unleashed feat') — marked in the grant
+   * typeahead; undefined for a base-game feat.
+   */
+  featNote(name: string): string | undefined {
+    return featSourceNote(name);
   }
 
-  /** True when a listed entry is a World of Warcraft feat the character took (source 'Feat …'). */
-  isWowFeatFeature(feature: Feature): boolean {
-    return !!feature.source?.toLowerCase().startsWith('feat') && isWowFeat(feature.name);
+  /**
+   * The same for a listed entry, when it is a feat the character has (an Origin
+   * feat, a feat taken at a level-up or granted by the DM, a Fighting Style) and
+   * not some other feature of that name.
+   */
+  featNoteFor(feature: Feature): string | undefined {
+    return isFeatEntry(feature) ? featSourceNote(feature.name) : undefined;
   }
 
   descFor(feature: Feature): string {

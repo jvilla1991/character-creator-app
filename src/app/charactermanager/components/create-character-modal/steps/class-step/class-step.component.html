@@ -160,7 +160,7 @@
                       <dt>Feats</dt>
                       <dd class="feat-list">
                         @for (name of g.feats; track name; let last = $last) {
-                          <span class="feat">{{ name }}@if (isWowFeat(name)) {<span class="wow-mark" [attr.title]="wowFeatNote" [attr.aria-label]="wowFeatNote">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
+                          <span class="feat">{{ name }}@if (featNote(name); as note) {<span class="wow-mark" [attr.title]="note" [attr.aria-label]="note">✦</span>}</span>@if (!last) {<span class="sep">, </span>}
                         }
                       </dd>
                     }
