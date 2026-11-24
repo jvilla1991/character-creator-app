@@ -1,6 +1,6 @@
 import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CreateCharacterModalComponent } from './create-character-modal.component';
 import { DndResourcesService, LEVEL1_SUBCLASSES } from '../../services/dnd-resources.service';
 import { AuthService } from '../../services/auth.service';
@@ -51,6 +51,7 @@ function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
     'getBackgroundGold',
     'getClassEquipment',
     'getSpellsForClass',
+    'getSpells',
     'getSpeciesDetail',
     'getTraitDescription',
   ]);
@@ -76,6 +77,7 @@ function makeMockDndResources(): jasmine.SpyObj<DndResourcesService> {
   } as any));
   spy.getSpeciesDetail.and.returnValue(of(null as any));
   spy.getTraitDescription.and.returnValue('');
+  spy.getSpells.and.returnValue(of([]));
 
   return spy;
 }
@@ -1240,10 +1242,11 @@ describe('CreateCharacterModalComponent — logic', () => {
         expect(component.totalSteps).toBe(8);
 
         component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;   // Magic Initiate (Wizard)
-        expect(component.magicInitiateFeats).toEqual([
-          { feat: 'Magic Initiate (Wizard)', spellList: 'wizard', className: 'Wizard' },
+        expect(component.featSpellChoices.map(c => [c.feat, c.spellLists, c.cantrips, c.spells])).toEqual([
+          ['Magic Initiate (Wizard)', ['wizard'], 2, 1],
         ]);
-        expect(component.magicInitiateFeats).toBe(component.magicInitiateFeats);   // stable for the template
+        expect(component.featSpellChoices).toBe(component.featSpellChoices);   // stable for the template
+        expect(component.originFeatGrants).toEqual([]);
         expect(component.isSpellcastingClass).toBeFalse();
         expect(component.hasSpellsStep).toBeTrue();
         expect([component.totalSteps, component.equipmentStep, component.reviewStep]).toEqual([9, 8, 9]);
@@ -1253,12 +1256,16 @@ describe('CreateCharacterModalComponent — logic', () => {
         component.classList = ['Fighter'];
         component.toggleClass('Fighter');
         component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
-        const feat = component.magicInitiateFeats[0];
+        const feat = component.featSpellChoices[0];
+        expect(component.featSpellsLoading(feat)).toBeTrue();
         component.step = 7;
         (component as any).ensureStepData();
         (component as any).ensureStepData();
         expect(dndResources.getSpellsForClass).toHaveBeenCalledOnceWith('wizard');
+        expect(dndResources.getSpells).not.toHaveBeenCalled();   // no feat names a spell to look up
+        expect(component.featSpellsLoading(feat)).toBeFalse();
         expect(component.featSpellOptions(feat).map(s => s.name)).toEqual(['Light', 'Mage Hand', 'Fire Bolt', 'Shield']);
+        expect(component.featSpellOptions(feat)).toBe(component.featSpellOptions(feat));   // stable for the picker
 
         component.setFeatPicks(feat, [light, mageHand, shield]);
         expect([component.featPickCount(feat, true), component.featPickCount(feat, false)]).toEqual([2, 1]);
@@ -1281,7 +1288,7 @@ describe('CreateCharacterModalComponent — logic', () => {
       it('adds the feat spells after a caster\'s own picks, without saving a spell twice', (done) => {
         component.toggleClass('Wizard');
         component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
-        const feat = component.magicInitiateFeats[0];
+        const feat = component.featSpellChoices[0];
         component.selectedSpells = [light, shield];
         component.setFeatPicks(feat, [light, fireBolt, shield]);
 
@@ -1299,16 +1306,170 @@ describe('CreateCharacterModalComponent — logic', () => {
       it('has no feat spells for a background without Magic Initiate, and keeps picks in the draft', () => {
         component.toggleClass('Wizard');
         component.backgroundDetail = { ...SAGE_BACKGROUND_DETAIL, feat: { index: 'alert', name: 'Alert', url: '' } } as any;
-        expect(component.magicInitiateFeats).toEqual([]);
+        expect(component.featSpellChoices).toEqual([]);
 
         component.backgroundDetail = SAGE_BACKGROUND_DETAIL as any;
         component.name = 'Aelindra';
-        component.setFeatPicks(component.magicInitiateFeats[0], [light]);
+        component.setFeatPicks(component.featSpellChoices[0], [light]);
         component.ngOnDestroy();   // saves the draft
         const restored = TestBed.runInInjectionContext(
           () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
         restored.ngOnInit();
         expect(restored.featSpellPicks['Magic Initiate (Wizard)'].map(s => s.name)).toEqual(['Light']);
+      });
+    });
+
+    describe('Arcana Unleashed Origin feats', () => {
+      const originFeat = (name: string) =>
+        ({ ...SAGE_BACKGROUND_DETAIL, name: 'Arcana Background', feat: { index: 'x', name, url: '' } }) as any;
+      const school = (s: any, value: string) => ({ ...s, school: value });
+      const tollTheDead = school(spell('Toll the Dead', 0, 'cleric'), 'necromancy');
+      const spareTheDying = school(spell('Spare the Dying', 0, 'cleric'), 'necromancy');
+      const guidance = school(spell('Guidance', 0, 'cleric'), 'divination');
+      const inflictWounds = school(spell('Inflict Wounds', 1, 'cleric'), 'necromancy');
+      const chillTouch = school(spell('Chill Touch', 0, 'wizard'), 'necromancy');
+      const fireBolt = school(spell('Fire Bolt', 0, 'wizard'), 'evocation');
+      const minorIllusion = school(spell('Minor Illusion', 0, 'wizard'), 'illusion');
+      const findFamiliar = school(spell('Find Familiar', 1, 'wizard'), 'conjuration');
+
+      beforeEach(() => {
+        dndResources.getSpellsForClass.and.callFake((list: string) => of(list === 'cleric'
+          ? [guidance, tollTheDead, spareTheDying, inflictWounds]
+          : [fireBolt, chillTouch, { ...tollTheDead, classes: ['wizard'] }, findFamiliar]));
+        dndResources.getSpells.and.returnValue(of([guidance, minorIllusion, findFamiliar, fireBolt]));
+        component.classEquipmentData = {};
+        component.classList = ['Fighter'];
+        component.toggleClass('Fighter');
+      });
+
+      it('lets Arcane Undertaker pick one Necromancy cantrip from the Cleric and Wizard lists', (done) => {
+        component.backgroundDetail = originFeat('Arcane Undertaker');
+        expect(component.hasSpellsStep).toBeTrue();
+        const choice = component.featSpellChoices[0];
+        expect([choice.feat, choice.cantrips, choice.spells]).toEqual(['Arcane Undertaker', 1, 0]);
+        expect(component.originFeatGrants).toEqual([]);
+
+        component.step = 7;
+        (component as any).ensureStepData();
+        expect(dndResources.getSpellsForClass.calls.allArgs()).toEqual([['cleric'], ['wizard']]);
+        // Necromancy cantrips only, the Cleric list first, a spell on both lists once.
+        expect(component.featSpellOptions(choice).map(s => s.name))
+          .toEqual(['Toll the Dead', 'Spare the Dying', 'Chill Touch']);
+        expect(component.featSpellOptions(choice)).toBe(component.featSpellOptions(choice));
+
+        component.setFeatPicks(choice, [chillTouch]);
+        expect([component.featPickCount(choice, true), component.featPickCount(choice, false)]).toEqual([1, 0]);
+        expect(component.reviewFeatSpellNames).toBe('Chill Touch (Arcane Undertaker)');
+
+        component.name = 'Morwen';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.feat).toBe('Arcane Undertaker');
+          expect(draft.spells.map((s: any) => [s.name, s.lvl, !!s.alwaysPrepared, s.grantedBy]))
+            .toEqual([['Chill Touch', 0, false, 'Arcane Undertaker']]);
+          done();
+        });
+        component.submit();
+      });
+
+      it('saves the cantrip a feat names with the new character, and gives a non-caster a spells step for it', (done) => {
+        component.backgroundDetail = originFeat('Arcane Artist');
+        expect(component.featSpellChoices).toEqual([]);
+        expect(component.originFeatGrants).toEqual([{ name: 'Minor Illusion', grantedBy: 'Arcane Artist' }]);
+        expect(component.originFeatGrants).toBe(component.originFeatGrants);   // stable for the template
+        expect(component.hasSpellsStep).toBeTrue();
+        expect([component.totalSteps, component.equipmentStep, component.reviewStep]).toEqual([9, 8, 9]);
+        expect(component.reviewFeatSpellNames).toBe('Minor Illusion (Arcane Artist)');
+
+        component.step = 5;
+        (component as any).ensureStepData();   // any step: the spell data is needed to save the spell
+        (component as any).ensureStepData();
+        expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+
+        component.name = 'Pip';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.lvl, !!s.alwaysPrepared, s.grantedBy]))
+            .toEqual([['Minor Illusion', 0, false, 'Arcane Artist']]);
+          expect(draft.features[0]).toEqual(jasmine.objectContaining({ name: 'Arcane Artist' }));
+          done();
+        });
+        component.submit();
+      });
+
+      it('saves Find Familiar always prepared for Familiar Friend', (done) => {
+        component.backgroundDetail = originFeat('Familiar Friend');
+        (component as any).ensureStepData();
+        component.name = 'Tam';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.lvl, s.prepared, s.alwaysPrepared, s.grantedBy]))
+            .toEqual([['Find Familiar', 1, true, true, 'Familiar Friend']]);
+          expect(draft.spells[0].description).toBe('Find Familiar text.');
+          done();
+        });
+        component.submit();
+      });
+
+      it('makes a Wizard\'s own pick of the same spell the feat\'s, instead of saving it twice', (done) => {
+        dndResources.getSpellsForClass.and.returnValue(of([fireBolt, findFamiliar]));
+        component.toggleClass('Wizard');
+        component.backgroundDetail = originFeat('Familiar Friend');
+        component.selectedSpells = [fireBolt, findFamiliar];
+        (component as any).ensureStepData();
+        component.name = 'Aelindra';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, !!s.alwaysPrepared, s.grantedBy ?? '']))
+            .toEqual([['Fire Bolt', false, ''], ['Find Familiar', true, 'Familiar Friend']]);
+          done();
+        });
+        component.submit();
+      });
+
+      it('gives a Human the spell of the Origin feat picked for Versatile, beside the background\'s', (done) => {
+        component.toggleSpecies('Human (World of Warcraft)');
+        component.patchSpeciesSelections({ size: 'Medium', originFeat: 'Arcane Omens' });
+        component.backgroundDetail = originFeat('Arcane Artist');
+        expect(component.originFeatGrants).toEqual([
+          { name: 'Minor Illusion', grantedBy: 'Arcane Artist' }, { name: 'Guidance', grantedBy: 'Arcane Omens' },
+        ]);
+        expect(component.reviewFeatSpellNames).toBe('Minor Illusion (Arcane Artist); Guidance (Arcane Omens)');
+        (component as any).ensureStepData();
+        component.name = 'Jon';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells.map((s: any) => [s.name, s.grantedBy]))
+            .toEqual([['Minor Illusion', 'Arcane Artist'], ['Guidance', 'Arcane Omens']]);
+          expect(draft.features.map((f: any) => f.name)).toEqual(jasmine.arrayContaining(['Arcane Artist', 'Arcane Omens']));
+          done();
+        });
+        component.submit();
+      });
+
+      it('creates the character without the spell when the spell data is missing, and tries again next step', (done) => {
+        dndResources.getSpells.and.returnValue(throwError(() => new Error('offline')));
+        component.backgroundDetail = originFeat('Familiar Friend');
+        (component as any).ensureStepData();
+        (component as any).ensureStepData();
+        expect(dndResources.getSpells).toHaveBeenCalledTimes(2);
+        component.name = 'Tam';
+        component.step = component.reviewStep;
+        component.confirm.subscribe((draft: any) => {
+          expect(draft.spells).toEqual([]);   // the first level-up offers it (the server lists what is owed)
+          expect(draft.feat).toBe('Familiar Friend');
+          done();
+        });
+        component.submit();
+      });
+
+      it('has nothing to add for the Origin feats without spells', () => {
+        for (const feat of ['Portal Jumper', 'Transmuted Anatomy']) {
+          component.backgroundDetail = originFeat(feat);
+          expect(component.featSpellChoices).withContext(feat).toEqual([]);
+          expect(component.originFeatGrants).withContext(feat).toEqual([]);
+          expect(component.hasSpellsStep).withContext(feat).toBeFalse();
+        }
       });
     });
 
@@ -2268,6 +2429,22 @@ describe('CreateCharacterModalComponent — logic', () => {
         expect(component.speciesOriginFeats).toBe(component.speciesOriginFeats);
         component.patchSpeciesSelections({ originFeat: 'Child of the Sea' });
         expect(component.canAdvance).toBeTrue();
+      });
+
+      it('offers the Arcana Unleashed Origin feats too, unless that book is filtered out', () => {
+        expect(component.speciesOriginFeats.map(f => f.name)).toContain('Familiar Friend');
+        component.toggleContentSource('Arcana Unleashed');
+        const names = component.speciesOriginFeats.map(f => f.name);
+        expect(names).not.toContain('Familiar Friend');
+        expect(names).toContain('Alert');
+        expect(names).toContain('Child of the Sea');
+        expect(component.speciesOriginFeats).toBe(component.speciesOriginFeats);   // stable for the template
+        // A feat already chosen stays on offer: the filter never discards a choice.
+        component.toggleContentSource('Arcana Unleashed');
+        component.patchSpeciesSelections({ originFeat: 'Portal Jumper' });
+        component.toggleContentSource('Arcana Unleashed');
+        expect(component.speciesOriginFeats.filter(f => f.source === 'Arcana Unleashed').map(f => f.name))
+          .toEqual(['Portal Jumper']);
       });
 
       it('blocks the background step when the background grants the same feat', () => {

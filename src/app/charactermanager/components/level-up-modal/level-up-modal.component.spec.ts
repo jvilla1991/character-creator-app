@@ -44,6 +44,7 @@ describe('LevelUpModalComponent', () => {
       ['getFeatDescription', 'getSpellsForClass', 'getSpells']);
     dndResources.getFeatDescription.and.returnValue('A mighty feat.');
     dndResources.getSpellsForClass.and.returnValue(of([]));
+    dndResources.getSpells.and.returnValue(of([]));
     component = TestBed.runInInjectionContext(() => new LevelUpModalComponent(pcService, dndResources));
     component.pc = makePC();
   });
@@ -1367,8 +1368,8 @@ describe('LevelUpModalComponent', () => {
         currentLevel: 3, newLevel: 4, subclassDue: false, subclassOptions: [], asiDue: true,
         featOptions: ['Alert', 'Clearcasting', 'Fingers of Frost', 'Hot Streak', 'War Caster'],
       });
-      expect(component.isWowFeat('Clearcasting')).toBeTrue();
-      expect(component.isWowFeat('War Caster')).toBeFalse();
+      expect(component.featSourceTag('Clearcasting')).toBe('World of Warcraft');
+      expect(component.featSourceTag('War Caster')).toBeUndefined();
       expect(component.featPrerequisite('Hot Streak')).toBeUndefined();
       const el = renderModal(true);
       const tagged = Array.from(el.querySelectorAll('.subclass-option'))
@@ -1377,6 +1378,31 @@ describe('LevelUpModalComponent', () => {
       expect(tagged).toEqual(['Clearcasting', 'Fingers of Frost', 'Hot Streak']);
       expect(el.querySelector('.feat-source-tag')?.textContent).toContain('World of Warcraft');
       expect(el.querySelectorAll('.feat-prereq').length).toBe(0);
+    });
+
+    it('tags the Arcana Unleashed feats with their book and shows what each one needs', () => {
+      open({ level: 3 }, {
+        currentLevel: 3, newLevel: 4, subclassDue: false, subclassOptions: [], asiDue: true,
+        featOptions: ['Alert', 'Clearcasting', 'Evocation Adept', 'Magic Connoisseur', 'Spell Resistant', 'Warlike Familiar'],
+      });
+      expect(component.featSourceTag('Evocation Adept')).toBe('Arcana Unleashed');
+      expect(component.featSourceTag('Boon of Magic School Mastery (Evocation)')).toBe('Arcana Unleashed');
+      expect(component.featPrerequisite('Evocation Adept')).toBe('Spellcasting or Pact Magic feature');
+      expect(component.featPrerequisite('Boon of Magic School Mastery (Evocation)'))
+        .toBe('Spellcasting or Pact Magic feature');
+      expect(component.featPrerequisite('Spell Resistant')).toBeUndefined();
+      const el = renderModal(true);
+      const options = Array.from(el.querySelectorAll('.subclass-option')) as HTMLElement[];
+      const row = (name: string) => options.find(n => n.querySelector('.feat-name')!.textContent!.trim() === name)!;
+      const tagOf = (name: string) => row(name).querySelector('.feat-source-tag')?.textContent?.trim();
+      const prereqOf = (name: string) => row(name).querySelector('.feat-prereq')?.textContent?.trim();
+      expect(['Alert', 'Clearcasting', 'Evocation Adept', 'Magic Connoisseur', 'Spell Resistant', 'Warlike Familiar']
+        .map(tagOf)).toEqual([undefined, 'World of Warcraft', 'Arcana Unleashed', 'Arcana Unleashed',
+        'Arcana Unleashed', 'Arcana Unleashed']);
+      expect(prereqOf('Evocation Adept')).toBe('Prerequisite: Spellcasting or Pact Magic feature');
+      expect(prereqOf('Magic Connoisseur')).toBe('Prerequisite: Magic Initiate feat');
+      expect(prereqOf('Warlike Familiar')).toBe('Prerequisite: Familiar Friend feat');
+      expect(prereqOf('Spell Resistant')).toBeUndefined();
     });
 
     it('loads the wizard list plus its three added spells when a WoW mage learns spells, and the plain list otherwise', () => {
@@ -1463,6 +1489,326 @@ describe('LevelUpModalComponent', () => {
       const prereqs = options.filter(n => n.querySelector('.feat-prereq'));
       expect(prereqs.map(nameOf)).toEqual(['Elusive Brawler', 'Enveloping Mist', 'Fists of Fury', 'Stagger and Sway']);
       expect(prereqs[0].querySelector('.feat-prereq')!.textContent).toContain('Prerequisite: DEX 13+, WIS 13+');
+    });
+  });
+
+  describe('Arcana Unleashed feats: spells a feat gives, and spells picked for a feat', () => {
+    const spell = (name: string, level: number, school: string, classes: string[]) => ({
+      name, level, school, classes, actionType: 'action', concentration: false, ritual: false, range: 'Self',
+      components: ['v'], duration: 'Instantaneous', description: `${name} text.`,
+    }) as any;
+
+    const mageHand = spell('Mage Hand', 0, 'conjuration', ['bard', 'wizard']);
+    const rayOfFrost = spell('Ray of Frost', 0, 'evocation', ['sorcerer', 'wizard']);
+    const fireBolt = spell('Fire Bolt', 0, 'evocation', ['sorcerer', 'wizard']);
+    const guidance = spell('Guidance', 0, 'divination', ['cleric', 'druid']);
+    const bless = spell('Bless', 1, 'enchantment', ['cleric', 'paladin']);
+    const cureWounds = spell('Cure Wounds', 1, 'abjuration', ['cleric', 'druid']);
+    const aid = spell('Aid', 2, 'abjuration', ['cleric', 'paladin']);
+    const entangle = spell('Entangle', 1, 'conjuration', ['druid']);
+    const moonbeam = spell('Moonbeam', 2, 'evocation', ['druid']);
+    const magicMissile = spell('Magic Missile', 1, 'evocation', ['sorcerer', 'wizard']);
+    const chromaticOrb = spell('Chromatic Orb', 1, 'evocation', ['sorcerer', 'wizard']);
+    const guidingBolt = spell('Guiding Bolt', 1, 'evocation', ['cleric']);
+    const shatter = spell('Shatter', 2, 'evocation', ['bard', 'sorcerer', 'wizard']);
+    const fireball = spell('Fireball', 3, 'evocation', ['sorcerer', 'wizard']);
+    const delayedBlast = spell('Delayed Blast Fireball', 7, 'evocation', ['sorcerer', 'wizard']);
+    const sunburst = spell('Sunburst', 8, 'evocation', ['cleric', 'druid', 'sorcerer', 'wizard']);
+    const shield = spell('Shield', 1, 'abjuration', ['sorcerer', 'wizard']);
+    const battleFamiliar = spell('Battle Familiar', 2, 'transmutation', ['wizard']);
+    const ALL = [mageHand, rayOfFrost, fireBolt, guidance, bless, cureWounds, aid, entangle, moonbeam, magicMissile,
+      chromaticOrb, guidingBolt, shatter, fireball, delayedBlast, sunburst, shield, battleFamiliar];
+
+    const namesOf = (spells: readonly { name: string }[]): string[] => spells.map(s => s.name);
+
+    function renderModal(feat: string): { el: HTMLElement; modal: LevelUpModalComponent } {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      fixture.detectChanges();
+      fixture.componentInstance.milestoneMode = 'feat';
+      fixture.componentInstance.selectedFeat = feat;
+      fixture.detectChanges();
+      return { el: fixture.nativeElement as HTMLElement, modal: fixture.componentInstance };
+    }
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Wizard', level: 3, spells: [], ...pc });
+      pcService.levelUpPreview.and.returnValue(of(makePreview({
+        currentLevel: 3, newLevel: 4, asiDue: true, newSpellSlots: { 1: 4, 2: 3 }, ...preview,
+      })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: 4 })));
+      dndResources.getSpells.and.returnValue(of(ALL));
+      dndResources.getSpells.calls.reset();
+      component.ngOnInit();
+    }
+
+    function takeFeat(feat: string): void {
+      component.milestoneMode = 'feat';
+      component.selectedFeat = feat;
+    }
+
+    // ── Spells a feat gives ───────────────────────────────────────────────────
+
+    it('adds the spells of the feat being taken to what the level hands over', () => {
+      const adept = [{ name: 'Chromatic Orb', grantedBy: 'Evocation Adept' }, { name: 'Shatter', grantedBy: 'Evocation Adept' }];
+      open({ feat: 'Familiar Friend' }, {
+        featOptions: ['Alert', 'Evocation Adept', 'Warlike Familiar'],
+        alwaysPreparedSpells: [{ name: 'Shield', grantedBy: 'Some Feature' }],
+        alwaysPreparedSpellsByFeat: {
+          'Evocation Adept': adept,
+          'Warlike Familiar': [{ name: 'Battle Familiar', grantedBy: 'Warlike Familiar' }],
+        },
+      });
+      expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+      // Nothing of a feat's until it is the feat being taken.
+      expect(namesOf(component.alwaysPreparedGrants)).toEqual(['Shield']);
+      component.selectedFeat = 'Evocation Adept';
+      expect(namesOf(component.alwaysPreparedGrants)).toEqual(['Shield']);   // still on Ability Scores
+      takeFeat('Evocation Adept');
+      expect(component.alwaysPreparedGrants).toEqual([{ name: 'Shield', grantedBy: 'Some Feature' }, ...adept]);
+      expect(component.alwaysPreparedGrants).toBe(component.alwaysPreparedGrants);   // stable for the template
+      expect(namesOf(component.grantedSpells.map(g => g.spell))).toEqual(['Shield', 'Chromatic Orb', 'Shatter']);
+      expect(component.featChoices).toEqual([]);   // nothing to pick
+      expect(component.canConfirm).toBeTrue();
+      takeFeat('Warlike Familiar');
+      expect(namesOf(component.alwaysPreparedGrants)).toEqual(['Shield', 'Battle Familiar']);
+      takeFeat('Alert');
+      expect(namesOf(component.alwaysPreparedGrants)).toEqual(['Shield']);
+
+      takeFeat('Evocation Adept');
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        feat: 'Evocation Adept',
+        newSpells: [
+          jasmine.objectContaining({ name: 'Shield', alwaysPrepared: true, grantedBy: 'Some Feature' }),
+          jasmine.objectContaining({ name: 'Chromatic Orb', lvl: 1, alwaysPrepared: true, grantedBy: 'Evocation Adept' }),
+          jasmine.objectContaining({ name: 'Shatter', lvl: 2, alwaysPrepared: true, grantedBy: 'Evocation Adept' }),
+        ],
+      });
+    });
+
+    it('loads the spell data for a feat\'s spells even when nothing else is owed, and shows them', () => {
+      open({}, {
+        featOptions: ['Alert', 'Evocation Adept'],
+        alwaysPreparedSpellsByFeat: { 'Evocation Adept': [{ name: 'Chromatic Orb', grantedBy: 'Evocation Adept' }] },
+      });
+      expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+      const { el } = renderModal('Evocation Adept');
+      expect(el.querySelector('.always-prepared-gained .feature-name')?.textContent).toContain('Chromatic Orb');
+      expect(el.querySelector('.always-prepared-gained .feature-desc')?.textContent).toContain('From Evocation Adept.');
+      expect(el.querySelectorAll('.feat-spell-pick').length).toBe(0);
+    });
+
+    it('does not send a spell twice when the player also picked it as a class spell', () => {
+      open({}, {
+        featOptions: ['Evocation Adept'], currentSpellsKnown: 6, newSpellsKnown: 7,
+        alwaysPreparedSpellsByFeat: { 'Evocation Adept': [{ name: 'Chromatic Orb', grantedBy: 'Evocation Adept' }] },
+      });
+      component.selectedSpells = [chromaticOrb];   // picked before the feat was chosen
+      takeFeat('Evocation Adept');
+      component.confirm();
+      const sent = pcService.levelUp.calls.mostRecent().args[1]!.newSpells!;
+      expect(sent.map(s => [s.name, s.grantedBy])).toEqual([['Chromatic Orb', 'Evocation Adept']]);
+    });
+
+    // ── Arcane Warrior ────────────────────────────────────────────────────────
+
+    it('makes Arcane Warrior pick two Wizard cantrips the character does not know', () => {
+      open({ clazz: 'Fighter', spells: [{ lvl: 0, name: 'Fire Bolt', school: 'evocation', time: 'action', prepared: true }] },
+        { featOptions: ['Alert', 'Arcane Warrior'], newSpellSlots: {} });
+      expect(dndResources.getSpells).toHaveBeenCalledTimes(1);   // a feat on offer has spells to pick
+      expect(component.featChoices).toEqual([]);                 // not taking it yet
+      takeFeat('Arcane Warrior');
+      const [choice] = component.featChoices;
+      expect(component.featChoices).toBe(component.featChoices);
+      expect([choice.label, choice.cantrips, choice.spells]).toEqual(['Arcane Warrior Cantrips', 2, 0]);
+      expect(namesOf(component.featChoiceOptions(choice))).toEqual(['Mage Hand', 'Ray of Frost']);   // Fire Bolt is known
+      expect(component.featChoiceOptions(choice)).toBe(component.featChoiceOptions(choice));           // stable for the picker
+      expect(component.canConfirm).toBeFalse();
+      component.setFeatPicks(choice, [mageHand]);
+      expect(component.canConfirm).toBeFalse();
+      component.setFeatPicks(choice, [mageHand, rayOfFrost]);
+      expect(component.featChoicesSatisfied).toBeTrue();
+      expect(component.canConfirm).toBeTrue();
+
+      component.confirm();
+      const [, choices] = pcService.levelUp.calls.mostRecent().args;
+      expect(choices!.feat).toBe('Arcane Warrior');
+      expect(choices!.newSpells!.map(s => [s.name, s.lvl, s.grantedBy, !!s.alwaysPrepared])).toEqual([
+        ['Mage Hand', 0, 'Arcane Warrior', false], ['Ray of Frost', 0, 'Arcane Warrior', false],
+      ]);
+    });
+
+    it('drops the picks from the commit when the player goes back to Ability Scores or another feat', () => {
+      open({ clazz: 'Fighter' }, { featOptions: ['Alert', 'Arcane Warrior'], newSpellSlots: {} });
+      takeFeat('Arcane Warrior');
+      component.setFeatPicks(component.featChoices[0], [mageHand, rayOfFrost]);
+      takeFeat('Alert');
+      expect(component.featChoices).toEqual([]);
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, { feat: 'Alert' });
+    });
+
+    it('renders the picker for the feat being taken, with its count and hint', () => {
+      open({ clazz: 'Fighter' }, { featOptions: ['Alert', 'Arcane Warrior'], newSpellSlots: {} });
+      const { el, modal } = renderModal('Arcane Warrior');
+      const picks = Array.from(el.querySelectorAll('.feat-spell-pick')) as HTMLElement[];
+      expect(picks.length).toBe(1);
+      expect(picks[0].querySelector('.spell-label')!.textContent).toContain('Arcane Warrior Cantrips');
+      expect(picks[0].querySelector('.spell-counts')!.textContent).toContain('0/2');
+      expect(picks[0].querySelector('.style-cantrip-hint')!.textContent).toContain('Pick two Wizard cantrips.');
+      expect(Array.from(picks[0].querySelectorAll('.spell-name')).map(n => n.textContent!.trim()))
+        .toEqual(['Mage Hand', 'Ray of Frost', 'Fire Bolt']);
+      expect(modal.canConfirm).toBeFalse();
+      expect(renderModal('Alert').el.querySelectorAll('.feat-spell-pick').length).toBe(0);
+    });
+
+    it('teaches Arcane Warrior\'s cantrips through the Fighting Style choice too', () => {
+      open({ clazz: 'Paladin', level: 1 }, {
+        currentLevel: 1, newLevel: 2, asiDue: false, fightingStyleDue: true,
+        fightingStyleOptions: ['Arcane Warrior', 'Archery', 'Blessed Warrior'], newSpellSlots: { 1: 2 },
+      });
+      dndResources.getSpellsForClass.and.returnValue(of([mageHand, rayOfFrost, fireBolt, shield]));
+      component.selectFightingStyle('Arcane Warrior');
+      expect(dndResources.getSpellsForClass).toHaveBeenCalledWith('wizard');
+      expect(component.cantripStyle?.count).toBe(2);
+      expect(namesOf(component.styleCantripOptions)).toEqual(['Mage Hand', 'Ray of Frost', 'Fire Bolt']);
+      expect(component.canConfirm).toBeFalse();
+      component.styleCantrips = [mageHand, rayOfFrost];
+      expect(component.canConfirm).toBeTrue();
+      component.confirm();
+      expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+        fightingStyle: 'Arcane Warrior',
+        newSpells: [jasmine.objectContaining({ lvl: 0, name: 'Mage Hand' }), jasmine.objectContaining({ lvl: 0, name: 'Ray of Frost' })],
+      });
+    });
+
+    // ── Magic Connoisseur ─────────────────────────────────────────────────────
+
+    it('makes Magic Connoisseur pick a level 1 and a level 2 spell from the Magic Initiate class list', () => {
+      open({ clazz: 'Fighter', feat: 'Magic Initiate (Cleric)' }, { featOptions: ['Magic Connoisseur'], newSpellSlots: {} });
+      takeFeat('Magic Connoisseur');
+      expect(component.needsConnoisseurList).toBeFalse();
+      expect(component.connoisseurSpellList).toBe('cleric');
+      const [first, second] = component.featChoices;
+      expect(namesOf(component.featChoiceOptions(first))).toEqual(['Bless', 'Cure Wounds', 'Guiding Bolt']);
+      expect(namesOf(component.featChoiceOptions(second))).toEqual(['Aid']);
+      component.setFeatPicks(first, [bless]);
+      expect(component.canConfirm).toBeFalse();
+      component.setFeatPicks(second, [aid]);
+      expect(component.canConfirm).toBeTrue();
+
+      component.confirm();
+      const sent = pcService.levelUp.calls.mostRecent().args[1]!;
+      expect(sent.feat).toBe('Magic Connoisseur');
+      expect(sent.newSpells!.map(s => [s.name, s.lvl, s.alwaysPrepared, s.grantedBy])).toEqual([
+        ['Bless', 1, true, 'Magic Connoisseur'], ['Aid', 2, true, 'Magic Connoisseur'],
+      ]);
+    });
+
+    it('asks which class list when the character has two Magic Initiate feats', () => {
+      open({
+        clazz: 'Fighter', feat: 'Magic Initiate (Cleric)',
+        features: [{ name: 'Magic Initiate (Druid)', source: 'Human (World of Warcraft) · Origin Feat', desc: '' }],
+      }, { featOptions: ['Alert', 'Magic Connoisseur'], newSpellSlots: {} });
+      takeFeat('Alert');
+      expect(component.needsConnoisseurList).toBeFalse();
+      takeFeat('Magic Connoisseur');
+      expect(component.needsConnoisseurList).toBeTrue();
+      expect(component.magicInitiateOptions.map(o => o.className)).toEqual(['Cleric', 'Druid']);
+      expect(component.magicInitiateOptions).toBe(component.magicInitiateOptions);
+      component.setFeatPicks(component.featChoices[0], [bless]);
+
+      component.connoisseurList = 'druid';
+      const [first, second] = component.featChoices;
+      expect(namesOf(component.featChoiceOptions(first))).toEqual(['Cure Wounds', 'Entangle']);
+      expect(namesOf(component.featChoiceOptions(second))).toEqual(['Moonbeam']);
+      expect(component.featPicksFor(first)).toEqual([]);   // the Cleric pick does not carry over
+      expect(component.canConfirm).toBeFalse();
+
+      const { el } = renderModal('Magic Connoisseur');
+      expect(Array.from(el.querySelectorAll('#level-up-connoisseur-list option')).map(o => o.textContent!.trim()))
+        .toEqual(['Cleric', 'Druid']);
+      expect(el.querySelectorAll('.feat-spell-pick').length).toBe(2);
+    });
+
+    // ── Boon of Magic School Mastery ──────────────────────────────────────────
+
+    it('makes a Boon of Magic School Mastery pick a level 1 class spell and a spell of level 7 or lower, of its school', () => {
+      const boon = 'Boon of Magic School Mastery (Evocation)';
+      open({
+        level: 18,
+        spells: [
+          { lvl: 1, name: 'Magic Missile', school: 'evocation', time: 'action', prepared: true },
+          { lvl: 3, name: 'Fireball', school: 'evocation', time: 'action', prepared: true, alwaysPrepared: true, grantedBy: 'Evocation Adept' },
+        ],
+      }, { currentLevel: 18, newLevel: 19, featOptions: [boon, 'Boon of Fate'] });
+      takeFeat(boon);
+      const [rote, signature] = component.featChoices;
+      expect([rote.label, signature.label]).toEqual(['Rote Casting', 'Signature Arcanum']);
+      // Level 1 Evocation spells on the Wizard list; one the wizard merely knows stays on offer.
+      expect(namesOf(component.featChoiceOptions(rote))).toEqual(['Magic Missile', 'Chromatic Orb']);
+      // Any list, level 1 to 7; a spell already always prepared is left out.
+      expect(namesOf(component.featChoiceOptions(signature)))
+        .toEqual(['Moonbeam', 'Magic Missile', 'Chromatic Orb', 'Guiding Bolt', 'Shatter', 'Delayed Blast Fireball']);
+      component.setFeatPicks(rote, [magicMissile]);
+      // A spell picked for one choice is not offered for the other.
+      expect(namesOf(component.featChoiceOptions(signature)))
+        .toEqual(['Moonbeam', 'Chromatic Orb', 'Guiding Bolt', 'Shatter', 'Delayed Blast Fireball']);
+      expect(component.canConfirm).toBeFalse();
+      component.setFeatPicks(signature, [delayedBlast]);
+      expect(component.canConfirm).toBeTrue();
+
+      component.confirm();
+      const sent = pcService.levelUp.calls.mostRecent().args[1]!;
+      expect(sent.feat).toBe(boon);
+      expect(sent.newSpells!.map(s => [s.name, s.lvl, s.school, s.alwaysPrepared, s.grantedBy])).toEqual([
+        ['Magic Missile', 1, 'evocation', true, boon], ['Delayed Blast Fireball', 7, 'evocation', true, boon],
+      ]);
+    });
+
+    it('says so when a choice has no spell to offer, and keeps the level-up blocked', () => {
+      const boon = 'Boon of Magic School Mastery (Transmutation)';
+      open({ level: 18 }, { currentLevel: 18, newLevel: 19, featOptions: [boon] });
+      takeFeat(boon);
+      const [rote, signature] = component.featChoices;
+      expect(component.featChoiceOptions(rote)).toEqual([]);          // no level 1 Transmutation spell in this data
+      expect(component.featChoiceEmpty(rote)).toBeTrue();
+      expect(namesOf(component.featChoiceOptions(signature))).toEqual(['Battle Familiar']);
+      expect(component.featChoiceEmpty(signature)).toBeFalse();
+      expect(component.canConfirm).toBeFalse();
+      const { el } = renderModal(boon);
+      expect(el.querySelector('.feat-spell-pick [role="status"]')?.textContent)
+        .toContain('No spell fits this pick. Choose a different feat.');
+    });
+
+    it('says so when the spell data did not load', () => {
+      open({ clazz: 'Fighter' }, { featOptions: ['Arcane Warrior'], newSpellSlots: {} });
+      dndResources.getSpells.and.returnValue(throwError(() => new Error('offline')));
+      component.ngOnInit();
+      takeFeat('Arcane Warrior');
+      expect(component.spellDataFailed).toBeTrue();
+      expect(component.featChoiceOptions(component.featChoices[0])).toEqual([]);
+      expect(component.featChoiceEmpty(component.featChoices[0])).toBeFalse();   // unknown, not empty
+      expect(component.canConfirm).toBeFalse();
+      const { el } = renderModal('Arcane Warrior');
+      expect(el.querySelector('.feat-spell-pick [role="status"]')?.textContent).toContain('The spell list did not load.');
+    });
+
+    it('does not load the spell data when no feat on offer has spells', () => {
+      open({ clazz: 'Fighter' }, { featOptions: ['Alert', 'Spell Resistant'], newSpellSlots: {} });
+      expect(dndResources.getSpells).not.toHaveBeenCalled();
+      takeFeat('Spell Resistant');
+      expect(component.featChoices).toEqual([]);
+      expect(component.canConfirm).toBeTrue();
     });
   });
 });

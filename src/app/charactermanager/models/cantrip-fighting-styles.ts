@@ -4,7 +4,8 @@
  * cantrips from that list the character doesn't already know; they ride along
  * in `newSpells` with the commit. The server decides who is offered which style
  * (Blessed Warrior: every paladin; Druidic Warrior: every ranger; Void Warrior:
- * Demon Hunter rangers) — this table only says what each one teaches.
+ * Demon Hunter rangers; Arcane Warrior, the Arcana Unleashed Fighting Style
+ * feat: everyone with the choice) — this table only says what each one teaches.
  */
 export interface CantripFightingStyle {
   /** The style name as offered by the server ('Blessed Warrior'). */
@@ -22,6 +23,7 @@ export interface CantripFightingStyle {
 export const BLESSED_WARRIOR = 'Blessed Warrior';
 export const DRUIDIC_WARRIOR = 'Druidic Warrior';
 export const VOID_WARRIOR = 'Void Warrior';
+export const ARCANE_WARRIOR_STYLE = 'Arcane Warrior';
 
 export const CANTRIP_FIGHTING_STYLES: readonly CantripFightingStyle[] = [
   {
@@ -32,6 +34,10 @@ export const CANTRIP_FIGHTING_STYLES: readonly CantripFightingStyle[] = [
   {
     style: VOID_WARRIOR, spellList: 'warlock', className: 'Warlock', count: 2,
     hint: 'Pick two Warlock cantrips — Chill Touch and Mind Sliver are a strong pair.',
+  },
+  {
+    style: ARCANE_WARRIOR_STYLE, spellList: 'wizard', className: 'Wizard', count: 2,
+    hint: 'Pick two Wizard cantrips — Mage Hand and Ray of Frost are a good pair.',
   },
 ];
 

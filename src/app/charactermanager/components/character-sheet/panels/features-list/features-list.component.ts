@@ -6,7 +6,8 @@ import { ClassFeatureService } from '../../../../services/class-feature.service'
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { PreferencesService } from '../../../../services/preferences.service';
 import { FormsModule } from '@angular/forms';
-import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
+import { featSourceNote } from '../../../../models/wow-feats';
+import { isFeatEntry } from '../../../../models/character-feats';
 import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
 import {
   ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
@@ -18,6 +19,9 @@ type Feature = { name: string; source: string; desc: string; category?: 'class' 
 type LockedFeature = { name: string; desc: string; level: number; source: string };
 
 const nameKey = (name: string): string => name.trim().toLowerCase();
+
+/** Stable empty list for a feature without a counter. */
+const NO_RESOURCES: readonly ClassResourceState[] = [];
 
 @Component({
     selector: 'app-features-list',
@@ -138,27 +142,39 @@ export class FeaturesListComponent {
 
   /**
    * Where each counter goes. A resource sits under the listed feature it
-   * belongs to (Sorcery Points under Font of Magic). One whose feature is not
-   * in the list — the level 1 features, which the roadmap does not carry —
-   * gets a row of its own, named after that feature. Death Coil and Soul
-   * Fragments are left to the hero-class panel, beside the hero feature.
+   * belongs to (Sorcery Points under Font of Magic; a feat's counters under the
+   * feat, two of them for Familiar Friend). One whose feature is not in the
+   * list — the level 1 features, which the roadmap does not carry — gets a row
+   * of its own, named after that feature. Death Coil and Soul Fragments are
+   * left to the hero-class panel, beside the hero feature.
    */
   private readonly resourcePlacement = computed(() => {
-    const byFeature = new Map<Feature, ClassResourceState>();
+    const byFeature = new Map<Feature, ClassResourceState[]>();
     const unlisted: ClassResourceState[] = [];
     const features = this.unlocked();
     for (const resource of classResourceStates(this.pcSignal())) {
       if (HERO_PANEL_RESOURCES.includes(resource.key)) continue;
-      const home = features.find(f => nameKey(f.name) === nameKey(resource.feature) && !byFeature.has(f));
-      if (home) byFeature.set(home, resource);
-      else unlisted.push(resource);
+      const home = features.find(f => nameKey(f.name) === nameKey(resource.feature));
+      if (!home) unlisted.push(resource);
+      else if (byFeature.has(home)) byFeature.get(home)!.push(resource);
+      else byFeature.set(home, [resource]);
     }
     return { byFeature, unlisted };
   });
 
-  /** The counter that belongs under a listed feature, if any. */
+  /** The counters that belong under a listed feature; empty for most. */
+  resourcesFor(feature: Feature): readonly ClassResourceState[] {
+    return this.resourcePlacement().byFeature.get(feature) ?? NO_RESOURCES;
+  }
+
+  /** The (first) counter that belongs under a listed feature, if any. */
   resourceFor(feature: Feature): ClassResourceState | undefined {
-    return this.resourcePlacement().byFeature.get(feature);
+    return this.resourcesFor(feature)[0];
+  }
+
+  /** What an unlisted counter's row says it comes from: the class, or 'Feat' for a feat's counter. */
+  unlistedSource(resource: ClassResourceState): string {
+    return resource.fromFeat ? 'Feat' : this.pc.clazz;
   }
 
   /** Resources whose feature is not listed above; each is shown as a feature row of its own. */
@@ -188,17 +204,22 @@ export class FeaturesListComponent {
    * (the backend doesn't own feat descriptions — they live in the frontend), so for those we
    * fall back to the local feat-description lookup. Class features carry their own desc.
    */
-  /** Hover text for the ✦ on a World of Warcraft feat. */
-  readonly wowFeatNote = WOW_FEAT_NOTE;
-
-  /** True for a World of Warcraft feat name (Clearcasting, …) — marked ✦ in the grant typeahead. */
-  isWowFeat(name: string): boolean {
-    return isWowFeat(name);
+  /**
+   * Hover text for the ✦ on a feat from a book other than the base game
+   * ('World of Warcraft feat', 'Arcana Unleashed feat') — marked in the grant
+   * typeahead; undefined for a base-game feat.
+   */
+  featNote(name: string): string | undefined {
+    return featSourceNote(name);
   }
 
-  /** True when a listed entry is a World of Warcraft feat the character took (source 'Feat …'). */
-  isWowFeatFeature(feature: Feature): boolean {
-    return !!feature.source?.toLowerCase().startsWith('feat') && isWowFeat(feature.name);
+  /**
+   * The same for a listed entry, when it is a feat the character has (an Origin
+   * feat, a feat taken at a level-up or granted by the DM, a Fighting Style) and
+   * not some other feature of that name.
+   */
+  featNoteFor(feature: Feature): string | undefined {
+    return isFeatEntry(feature) ? featSourceNote(feature.name) : undefined;
   }
 
   descFor(feature: Feature): string {

@@ -1,4 +1,5 @@
 import type { ContentSource } from './content-source';
+import { ARCANA_FEAT_NOTE, arcanaFeatPrerequisite, isArcanaFeat } from './arcana-feats';
 
 /**
  * Feats added by the World of Warcraft tabletop module. They are ordinary
@@ -51,12 +52,39 @@ export function isWowFeat(name: string | null | undefined): boolean {
   return !!wowFeat(name);
 }
 
-/** A feat's content source: 'World of Warcraft' for the module's feats, else the base game. */
+/**
+ * A feat's content source: 'World of Warcraft' for the module's feats,
+ * 'Arcana Unleashed' for that book's (models/arcana-feats), else the base game.
+ */
 export function featSource(name: string | null | undefined): ContentSource {
-  return isWowFeat(name) ? 'World of Warcraft' : 'Base Game';
+  if (isWowFeat(name)) return 'World of Warcraft';
+  return isArcanaFeat(name) ? 'Arcana Unleashed' : 'Base Game';
 }
 
-/** A WoW feat's prerequisite beyond level 4 ('DEX 13+, WIS 13+'); undefined when it has none. */
+/**
+ * Hover text for the ✦ beside a feat that is not from the base game ('World of
+ * Warcraft feat', 'Arcana Unleashed feat'); undefined for a base-game feat, which
+ * carries no mark.
+ */
+export function featSourceNote(name: string | null | undefined): string | undefined {
+  switch (featSource(name)) {
+    case 'World of Warcraft': return WOW_FEAT_NOTE;
+    case 'Arcana Unleashed': return ARCANA_FEAT_NOTE;
+    default: return undefined;
+  }
+}
+
+/** The book to tag a feat with in a list of options; undefined for a base-game feat. */
+export function featSourceTag(name: string | null | undefined): ContentSource | undefined {
+  const source = featSource(name);
+  return source === 'Base Game' ? undefined : source;
+}
+
+/**
+ * What a feat needs beyond its level, as shown to people: a WoW monk feat's
+ * 'DEX 13+, WIS 13+', an Arcana Unleashed feat's 'Familiar Friend feat';
+ * undefined when it needs nothing more.
+ */
 export function featPrerequisite(name: string | null | undefined): string | undefined {
-  return wowFeat(name)?.prerequisite;
+  return wowFeat(name)?.prerequisite ?? arcanaFeatPrerequisite(name);
 }

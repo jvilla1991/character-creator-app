@@ -70,6 +70,14 @@ export interface LevelUpPreview {
    * for the subclass the player picks; an option without an entry adds nothing.
    */
   alwaysPreparedSpellsBySubclass?: { [subclass: string]: { name: string; grantedBy: string }[] };
+  /**
+   * When a feat choice is due: for each feat on offer that gives spells of its
+   * own (Warlike Familiar's Battle Familiar, a School Adept's rows), the ones the
+   * character would be owed on top of `alwaysPreparedSpells`, keyed by feat name.
+   * The modal adds the entry for the feat the player picks. The spells of feats
+   * the character already has are part of `alwaysPreparedSpells` itself.
+   */
+  alwaysPreparedSpellsByFeat?: { [feat: string]: { name: string; grantedBy: string }[] };
 }
 
 /**
@@ -86,6 +94,12 @@ export interface LevelUpChoices {
   subclass?: string;
   abilityIncreases?: { [ability: string]: number };
   feat?: string;
+  /**
+   * Spells learned this level. A spell picked for the feat taken in the same
+   * request (Arcane Warrior's cantrips, Magic Connoisseur's and Boon of Magic
+   * School Mastery's spells) carries that feat's name as its `grantedBy`: that is
+   * how the server tells it from the class's own picks.
+   */
   newSpells?: PcSpell[];
   hpMode?: HpMode;
   /**
