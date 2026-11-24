@@ -5,6 +5,9 @@ import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
+import { featNamesOn } from '../models/character-feats';
+import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
+import { spellKey } from '../models/spell-names';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -628,6 +631,8 @@ export class PCService {
   private computeDemoPreview(id: number): LevelUpPreview {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = demoLevelUpFields(pc);
+    const featOptions = demoIsAsiLevel(pc.clazz, newLevel)
+      ? demoFeatOptions(pc.clazz, newLevel, pc.stats, featNamesOn(pc)) : [];
     return {
       currentLevel: current,
       newLevel,
@@ -643,7 +648,10 @@ export class PCService {
       subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
         ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
-      featOptions: demoIsAsiLevel(pc.clazz, newLevel) ? demoFeatOptions(pc.clazz, newLevel, pc.stats) : [],
+      featOptions,
+      // The class and subclass grants are server-owned; the demo shim mirrors the feats' only.
+      alwaysPreparedSpells: featSpellsOwed(pc, newLevel),
+      alwaysPreparedSpellsByFeat: featSpellsOwedByFeat(pc, featOptions, newLevel),
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),
@@ -733,9 +741,12 @@ export class PCService {
       features = [...(features ?? []),
         { name: choices.fightingStyle, source: `Fighting Style (Level ${newLevel})`, desc: '' }];
     }
-    // Newly-learned spells are appended to the character's spell list.
+    // Newly-learned spells are appended to the character's spell list. A spell a feature or
+    // feat grants takes the place of an entry the character already had (the server marks
+    // the entry it finds instead).
+    const granted = new Set((choices?.newSpells ?? []).filter(s => !!s.grantedBy).map(s => spellKey(s.name)));
     const spells = choices?.newSpells?.length
-      ? [...(existing.spells ?? []), ...choices.newSpells]
+      ? [...(existing.spells ?? []).filter(s => !granted.has(spellKey(s.name))), ...choices.newSpells]
       : existing.spells;
     const updated: PC = {
       ...existing,

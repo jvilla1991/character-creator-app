@@ -1069,6 +1069,46 @@ describe('PCService (demo mode)', () => {
       doNext();
     });
 
+    it('previews and saves the spells of Arcana Unleashed feats, mirroring the server', (done) => {
+      // Demo PC 6 is a level 5 Paladin. Taken back to level 3 it reaches an ASI level next.
+      const paladin = service.getPCById(6)!;
+      service.updatePC({
+        ...paladin, level: 3, feat: 'Familiar Friend',
+        features: [...(paladin.features ?? []), { name: 'Arcane Omens', source: 'Feat', desc: '' }],
+      }).subscribe(() => {
+        service.levelUpPreview(6).subscribe(preview => {
+          expect(preview.newLevel).toBe(4);
+          // Owed for the feats it has: a leveled spell and a cantrip it does not know.
+          expect(preview.alwaysPreparedSpells).toEqual([
+            { name: 'Find Familiar', grantedBy: 'Familiar Friend' }, { name: 'Guidance', grantedBy: 'Arcane Omens' },
+          ]);
+          // On offer: the familiar feats (it has Familiar Friend), the School Adepts (a Paladin casts spells).
+          expect(preview.featOptions).toEqual(jasmine.arrayContaining(['Warlike Familiar', 'Abjuration Adept', 'Arcane Warrior']));
+          expect(preview.featOptions).not.toContain('Magic Connoisseur');
+          expect(preview.alwaysPreparedSpellsByFeat?.['Warlike Familiar'])
+            .toEqual([{ name: 'Battle Familiar', grantedBy: 'Warlike Familiar' }]);
+          expect(preview.alwaysPreparedSpellsByFeat?.['Abjuration Adept'])
+            .toEqual([{ name: 'Shield', grantedBy: 'Abjuration Adept' }]);   // level 1 slots only at Paladin 4
+          expect(preview.alwaysPreparedSpellsByFeat?.['Arcane Warrior']).toBeUndefined();
+
+          const shield = {
+            lvl: 1, name: 'Shield', school: 'abjuration', time: 'reaction', prepared: true,
+            alwaysPrepared: true, grantedBy: 'Abjuration Adept',
+          };
+          service.levelUp(6, { feat: 'Abjuration Adept', newSpells: [shield] }).subscribe(updated => {
+            expect(updated.features?.some(f => f.name === 'Abjuration Adept' && f.source === 'Feat (Level 4)')).toBeTrue();
+            expect(updated.spells?.filter(s => s.name === 'Shield')).toEqual([shield]);
+            service.levelUpPreview(6).subscribe(next => {
+              // Level 5 brings level 2 slots, and with them the table's second row.
+              expect(next.alwaysPreparedSpells?.map(g => g.name)).toEqual(['Find Familiar', 'Guidance', 'Lesser Restoration']);
+              expect(next.alwaysPreparedSpellsByFeat).toEqual({});   // 5 is not a feat level
+              done();
+            });
+          });
+        });
+      });
+    });
+
     it('previews half-caster slots and prepared spells for a demo Paladin and Ranger', (done) => {
       // Demo PC 6 is a level 5 Paladin (Death Knight); 16 is a level 6 Ranger (Hunter).
       service.levelUpPreview(6).subscribe(paladin => {

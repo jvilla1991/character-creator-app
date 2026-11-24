@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { WOW_HUNTER_GUIDANCE, WOW_HUNTER_SPELLS, WOW_HUNTER_SUGGESTED_SPELLS } from './wow-class-variants';
 
 /**
@@ -74,7 +74,7 @@ describe('World of Warcraft hunter spells (wow-spells.json)', () => {
   it('hides them when the World of Warcraft source is off', () => {
     const ranger = wow.filter(s => s.classes.includes('ranger'));
     expect(ranger.map(s => s.name)).toEqual([...WOW_HUNTER_SPELLS]);
-    expect(filterBySource(ranger, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
+    expect(filterBySource(ranger, onlyContentSources('Base Game'))).toEqual([]);
   });
 
   it('has every guidance and suggested spell on the ranger list at its level', () => {

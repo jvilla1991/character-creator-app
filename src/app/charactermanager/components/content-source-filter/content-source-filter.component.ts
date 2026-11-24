@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { CONTENT_SOURCES, ContentSource, ContentSourceSelection, allContentSources } from '../../models/content-source';
 
 /**
- * The "Base Game / World of Warcraft" checkbox pair. Presentational: the parent
+ * The content-source checkboxes: one per entry of CONTENT_SOURCES (Base Game,
+ * World of Warcraft, Arcana Unleashed), in that order. Presentational: the parent
  * owns the selection and applies it to its own list; this only renders real
  * checkboxes inside a labelled fieldset and reports which source was toggled.
  * Shared by the create-character wizard and the spell picker.

@@ -5,7 +5,7 @@ import {
   isWowInvocation, isWowManeuver, orList, specializationHeading, subclassGuidanceLabel, subclassGuidanceName,
   weaponMasteryLead,
 } from '../../../../models/hero-class';
-import { WOW_FEAT_NOTE, isWowFeat } from '../../../../models/wow-feats';
+import { featSourceNote, isWowFeat } from '../../../../models/wow-feats';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
@@ -80,8 +80,8 @@ export class ClassStepComponent {
   readonly wowManeuverNote = WOW_MANEUVER_NOTE;
   readonly fightingStyleLevelOf = fightingStyleLevelOf;
   readonly subclassGuidanceName = subclassGuidanceName;
-  readonly isWowFeat = isWowFeat;
-  readonly wowFeatNote = WOW_FEAT_NOTE;
+  /** Hover text for the ✦ on a feat from another book; undefined for a base-game feat. */
+  readonly featNote = featSourceNote;
 
   /** True when a guidance recommends a ✦ World of Warcraft feat (footnoted under the box). */
   hasWowFeat(g: SpecializationGuidance): boolean {

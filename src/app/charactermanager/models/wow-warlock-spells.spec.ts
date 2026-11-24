@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { WOW_WARLOCK_GUIDANCE, WOW_WARLOCK_SUGGESTED_SPELLS } from './wow-class-variants';
 
 /**
@@ -61,8 +61,8 @@ describe('World of Warcraft warlock spells (wow-spells.json)', () => {
 
   it('hides them when the World of Warcraft source is off', () => {
     const warlock = wow.filter(s => s.classes.includes('warlock'));
-    expect(filterBySource(warlock, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
-    expect(filterBySource(warlock, { 'Base Game': true, 'World of Warcraft': true }).map(s => s.name)).toEqual(NEW_SPELLS);
+    expect(filterBySource(warlock, onlyContentSources('Base Game'))).toEqual([]);
+    expect(filterBySource(warlock, onlyContentSources('Base Game', 'World of Warcraft')).map(s => s.name)).toEqual(NEW_SPELLS);
   });
 
   it('has every spell the warlock guidance and suggestions name, each on the warlock list', () => {

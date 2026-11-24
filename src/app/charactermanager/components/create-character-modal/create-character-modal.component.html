@@ -181,7 +181,7 @@
     @if (step === 7 && isSpellcastingClass) {
       <app-spells-step
         [filteredSpellList]="filteredSpellList"
-        [noSourcesEnabled]="!contentSources['Base Game'] && !contentSources['World of Warcraft']"
+        [noSourcesEnabled]="noContentSourcesEnabled"
         [loadingSpells]="loadingSpells"
         [maxCantrips]="maxCantrips"
         [maxKnownSpells]="maxKnownSpells"
@@ -200,29 +200,46 @@
         (toggleSpell)="toggleSpell($event)">
       </app-spells-step>
     }
-    <!-- Magic Initiate: two cantrips and one always-prepared level 1 spell per feat -->
+    <!-- Origin feat spells: the ones the player picks (Magic Initiate's two cantrips and
+         always-prepared level 1 spell, Arcane Undertaker's cantrip), then the ones a feat names -->
     @if (step === 7) {
-      @for (feat of magicInitiateFeats; track feat.feat) {
+      @for (choice of featSpellChoices; track choice.feat) {
         <div class="feat-spells">
           <div class="feat-spells-head">
-            <span class="feat-spells-title">{{ feat.feat }}</span>
+            <span class="feat-spells-title">{{ choice.label }}</span>
             <span class="feat-spells-count">
-              Cantrips {{ featPickCount(feat, true) }}/{{ magicInitiateCantrips }}
-              · Spell {{ featPickCount(feat, false) }}/{{ magicInitiateSpells }}
+              @if (choice.cantrips) {
+                {{ choice.cantrips === 1 ? 'Cantrip' : 'Cantrips' }} {{ featPickCount(choice, true) }}/{{ choice.cantrips }}
+              }
+              @if (choice.cantrips && choice.spells) {
+                ·
+              }
+              @if (choice.spells) {
+                Spell {{ featPickCount(choice, false) }}/{{ choice.spells }}
+              }
             </span>
           </div>
-          <div class="field-hint feat-spells-hint">
-            Pick two {{ feat.className }} cantrips and one level 1 {{ feat.className }} spell.
-            The spell is always prepared and does not count against your prepared spells.
-          </div>
+          <div class="field-hint feat-spells-hint">{{ choice.hint }}</div>
           <app-spell-picker
-            [spells]="featSpellOptions(feat)"
-            [selected]="featPicks(feat)"
-            [cantripLimit]="magicInitiateCantrips"
-            [spellLimit]="magicInitiateSpells"
-            [loading]="!featSpellLists[feat.spellList]"
-            (selectedChange)="setFeatPicks(feat, $event)">
+            [spells]="featSpellOptions(choice)"
+            [selected]="featPicks(choice)"
+            [cantripLimit]="choice.cantrips"
+            [spellLimit]="choice.spells"
+            [loading]="featSpellsLoading(choice)"
+            (selectedChange)="setFeatPicks(choice, $event)">
           </app-spell-picker>
+        </div>
+      }
+      @if (originFeatGrants.length) {
+        <div class="feat-spells">
+          <div class="feat-spells-head">
+            <span class="feat-spells-title">From Your Feats</span>
+          </div>
+          @for (grant of originFeatGrants; track grant.name) {
+            <div class="field-hint feat-spells-hint">
+              {{ grant.name }}, from {{ grant.grantedBy }}. Added to your spells.
+            </div>
+          }
         </div>
       }
     }

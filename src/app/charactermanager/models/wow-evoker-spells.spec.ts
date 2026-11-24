@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { spellKey } from './spell-names';
 import { WOW_EVOKER_GUIDANCE, WOW_EVOKER_SPELL_TABLE, WOW_EVOKER_SUGGESTED_SPELLS } from './wow-class-variants';
 import { spellNames } from './hero-class';
@@ -59,8 +59,8 @@ describe('World of Warcraft evoker spells (wow-spells.json)', () => {
   it('hides them when the World of Warcraft source is off', () => {
     const sorcerer = wow.filter(s => s.classes.includes('sorcerer'));
     expect(sorcerer.map(s => s.name)).toEqual(Object.keys(NEW_SPELLS));
-    expect(filterBySource(sorcerer, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
-    expect(filterBySource(sorcerer, { 'Base Game': true, 'World of Warcraft': true }).length).toBe(16);
+    expect(filterBySource(sorcerer, onlyContentSources('Base Game'))).toEqual([]);
+    expect(filterBySource(sorcerer, onlyContentSources('Base Game', 'World of Warcraft')).length).toBe(16);
   });
 
   it('resolves every Evoker Spells table entry (Sorcerer 3/5/7/9)', () => {

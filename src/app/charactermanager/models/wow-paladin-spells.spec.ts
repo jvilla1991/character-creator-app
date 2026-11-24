@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { WOW_PALADIN_SUGGESTED_SPELLS } from './wow-class-variants';
 
 /**
@@ -53,8 +53,8 @@ describe('World of Warcraft paladin spells (wow-spells.json)', () => {
 
   it('hides them when the World of Warcraft source is off', () => {
     const paladin = wow.filter(s => s.classes.includes('paladin'));
-    expect(filterBySource(paladin, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
-    expect(filterBySource(paladin, { 'Base Game': true, 'World of Warcraft': true }).map(s => s.name))
+    expect(filterBySource(paladin, onlyContentSources('Base Game'))).toEqual([]);
+    expect(filterBySource(paladin, onlyContentSources('Base Game', 'World of Warcraft')).map(s => s.name))
       .toEqual(['Consecration', 'Guided Prayer', 'Divine Shield']);
   });
 

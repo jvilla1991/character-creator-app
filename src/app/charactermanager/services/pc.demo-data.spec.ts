@@ -29,6 +29,15 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoFightingStyleOptions('Paladin', undefined, 3)).toEqual([]);
   });
 
+  it('offers Arcane Warrior with the other Fighting Styles at Paladin 2 and Ranger 2', () => {
+    for (const clazz of ['Paladin', 'Ranger']) {
+      const options = demoFightingStyleOptions(clazz, undefined, 2);
+      expect(options).withContext(clazz).toContain('Arcane Warrior');
+      expect(options).withContext(clazz).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    }
+    expect(demoFightingStyleOptions('Fighter', undefined, 2)).toEqual([]);
+  });
+
   it('offers Oath of the Holy only to WoW paladins', () => {
     expect(demoSubclassOptions('Paladin', 'Holy')).toContain('Oath of the Holy');
     expect(demoSubclassOptions('Paladin', 'Retribution')).toContain('Oath of the Holy');
@@ -269,6 +278,50 @@ describe('pc.demo-data (WoW mirrors)', () => {
     }
     const options = demoFeatOptions('Monk', 4, { DEX: 16, WIS: 16 });
     expect(options).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe('pc.demo-data (Arcana Unleashed feats)', () => {
+  const adepts = ['Abjuration Adept', 'Conjuration Adept', 'Divination Adept', 'Enchantment Adept', 'Evocation Adept',
+    'Illusion Adept', 'Necromancy Adept', 'Transmutation Adept'];
+  const familiar = ['Elemental Familiar', 'Otherworldly Familiar', 'Soothing Familiar', 'Warlike Familiar'];
+
+  it('offers the School Adepts to casters only, mirroring the server', () => {
+    for (const clazz of ['Wizard', 'Cleric', 'Warlock', 'Paladin', 'Ranger']) {
+      expect(demoFeatOptions(clazz, 4)).withContext(clazz).toEqual(jasmine.arrayContaining([...adepts, 'Spell Subterfuge']));
+    }
+    for (const clazz of ['Fighter', 'Barbarian', 'Monk', 'Rogue']) {
+      const options = demoFeatOptions(clazz, 4);
+      for (const feat of [...adepts, 'Spell Subterfuge']) expect(options).withContext(clazz).not.toContain(feat);
+      expect(options).withContext(clazz).toContain('Spell Resistant');
+    }
+  });
+
+  it('reads the character\'s feats for the familiar feats and Magic Connoisseur', () => {
+    const bare = demoFeatOptions('Wizard', 4, undefined, []);
+    for (const feat of [...familiar, 'Magic Connoisseur']) expect(bare).not.toContain(feat);
+    expect(demoFeatOptions('Fighter', 4, undefined, ['Familiar Friend'])).toEqual(jasmine.arrayContaining(familiar));
+    expect(demoFeatOptions('Fighter', 4, undefined, ['Magic Initiate (Druid)'])).toContain('Magic Connoisseur');
+  });
+
+  it('offers Arcane Warrior with the Fighting Style feats and the boons at 19, a mastery per school', () => {
+    expect(demoFeatOptions('Paladin', 4)).toContain('Arcane Warrior');
+    expect(demoFeatOptions('Wizard', 4)).not.toContain('Arcane Warrior');
+    const wizard = demoFeatOptions('Wizard', 19, undefined, ['Boon of Magic School Mastery (Evocation)']);
+    expect(wizard).toEqual(jasmine.arrayContaining(['Boon of Erupting Spellpower', 'Boon of the Iron Mind',
+      'Boon of Magic School Mastery (Abjuration)', 'Boon of Fate']));
+    expect(wizard).not.toContain('Boon of Magic School Mastery (Evocation)');
+    expect(wizard).not.toContain('Boon of Magic School Mastery');
+    expect(demoFeatOptions('Fighter', 19)).not.toContain('Boon of Erupting Spellpower');
+    expect(demoFeatOptions('Wizard', 16)).not.toContain('Boon of the Iron Mind');
+    expect(wizard).toEqual([...wizard].sort((a, b) => a.localeCompare(b)));
+    expect(new Set(wizard).size).toBe(wizard.length);
+  });
+
+  it('does not offer an Arcana Unleashed feat the character already has', () => {
+    const options = demoFeatOptions('Wizard', 8, undefined, ['Evocation Adept', 'War Caster']);
+    expect(options).not.toContain('Evocation Adept');
+    expect(options).toContain('War Caster');   // the other books' feats are as they were
   });
 });
 

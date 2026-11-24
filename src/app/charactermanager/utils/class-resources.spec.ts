@@ -1,6 +1,6 @@
 import { PC } from '../models/pc';
 import {
-  ClassResource, applyShortRestToPc, classResourceStates, classResourcesFor, recoveryLabel,
+  ClassResource, applyShortRestToPc, classResourceStates, classResourcesFor, featResourcesFor, recoveryLabel,
   regainsSpellSlotsOnShortRest, restoreClassResources, withResourceUsed,
 } from './class-resources';
 
@@ -59,6 +59,46 @@ describe('class resources', () => {
     Rogue||5|10|10 => -
   `;
 
+  /**
+   * The feat counters, case by case — the second block the backend's
+   * ClassResourcesTest carries word for word (FEAT_CASES).
+   */
+  // level | INT | WIS | CHA | feats ("; " between)  =>  key:max:shortRest, ...   ("-" = none)
+  const FEAT_CASES = `
+    1|10|10|10|Arcane Artist => inspiringMagic:1:NONE
+    1|10|10|10|Arcane Eloquence => -
+    1|10|10|10|Arcane Infiltrator => cunningDiversion:2:NONE
+    5|10|10|10|Arcane Infiltrator => cunningDiversion:3:NONE
+    9|10|10|10|Arcane Omens => helpfulPremonition:4:NONE
+    1|10|10|10|Arcane Overload => powerSurge:1:NONE
+    13|10|10|10|Arcane Safeguard => bonusActionResistance:5:NONE
+    1|10|10|10|Arcane Undertaker => understandingOfDeath:1:NONE
+    1|10|10|10|Familiar Friend => findFamiliarFreeCast:1:NONE,helpfulFriend:2:NONE
+    17|10|10|10|Familiar Friend => findFamiliarFreeCast:1:NONE,helpfulFriend:6:NONE
+    4|10|10|10|Portal Jumper => portalStep:2:NONE
+    8|10|10|10|Transmuted Anatomy => resilientAnatomy:3:NONE
+    4|10|10|10|Divination Adept => prescientIntervention:1:NONE
+    4|10|10|10|Abjuration Adept; Conjuration Adept; Enchantment Adept; Evocation Adept => -
+    4|10|10|10|Illusion Adept; Necromancy Adept; Transmutation Adept => -
+    4|10|10|10|Magic Initiate (Wizard); Magic Connoisseur => connoisseurLevel1Spell:1:NONE,connoisseurLevel2Spell:1:NONE
+    4|10|10|10|Spell Resistant => magicResistant:2:NONE
+    20|10|10|10|Spell Resistant => magicResistant:6:NONE
+    4|8|8|8|Spell Subterfuge => shroudingSpells:1:NONE
+    4|16|12|10|Spell Subterfuge => shroudingSpells:3:NONE
+    8|10|20|14|Spell Subterfuge => shroudingSpells:5:NONE
+    8|10|12|18|Spell Subterfuge => shroudingSpells:4:NONE
+    4|10|10|10|Familiar Friend; Warlike Familiar => findFamiliarFreeCast:1:NONE,helpfulFriend:2:NONE,battleFamiliarFreeCast:1:NONE
+    4|10|10|10|Elemental Familiar; Otherworldly Familiar; Soothing Familiar => -
+    19|10|10|10|Arcane Warrior; Boon of the Iron Mind => -
+    19|10|10|10|Boon of Erupting Spellpower => spellOverload:1:ALL
+    19|10|10|10|Boon of Magic School Mastery (Evocation) => signatureArcanumEvocation:1:NONE
+    20|10|10|10|Boon of Magic School Mastery (Illusion); Boon of Magic School Mastery (Abjuration) => signatureArcanumIllusion:1:NONE,signatureArcanumAbjuration:1:NONE
+    19|10|10|10|Boon of Magic School Mastery => -
+    5|10|10|10|arcane artist;  PORTAL JUMPER ; Arcane Artist => inspiringMagic:1:NONE,portalStep:3:NONE
+    5|10|10|10|Alert; Lucky; Second Wind; Magic Initiate (Cleric) => -
+    5|10|10|10| => -
+  `;
+
   const describeResources = (resources: ClassResource[]): string =>
     resources.length ? resources.map(r => `${r.key}:${r.max}:${r.shortRest}`).join(',') : '-';
 
@@ -77,6 +117,44 @@ describe('class resources', () => {
       });
       expect(describeResources(actual)).withContext(input).toBe(expected);
     }
+  });
+
+  it('every feat case gives exactly the counters the rules say', () => {
+    const lines = FEAT_CASES.trim().split('\n').map(l => l.trim());
+    expect(lines.length).toBe(32);
+    for (const line of lines) {
+      const [input, expected] = line.split(' => ');
+      const [level, int, wis, cha, feats] = input.split('|');
+      const actual = featResourcesFor(feats.trim() ? feats.split(';') : [], Number(level),
+        { INT: Number(int), WIS: Number(wis), CHA: Number(cha) });
+      expect(describeResources(actual)).withContext(input).toBe(expected);
+    }
+  });
+
+  it('lists a character\'s feat counters after its class resources, each belonging to its feat', () => {
+    const wizard = classResourcesFor({
+      clazz: 'Wizard', level: 4, stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
+      feat: 'Familiar Friend',
+      features: [
+        { name: 'Familiar Friend', source: 'Familiar Trainer · Origin Feat', desc: '' },
+        { name: 'Arcane Recovery', source: 'Wizard 1', desc: '' },
+        { name: 'Spell Subterfuge', source: 'Feat (Level 4)', desc: '' },
+      ],
+    });
+    expect(describeResources(wizard)).toBe('findFamiliarFreeCast:1:NONE,helpfulFriend:2:NONE,shroudingSpells:3:NONE');
+    expect(wizard.map(r => r.feature)).toEqual(['Familiar Friend', 'Familiar Friend', 'Spell Subterfuge']);
+    expect(wizard.map(r => r.name)).toEqual(['Find Familiar (free cast)', 'Helpful Friend', 'Shrouding Spells']);
+    expect(wizard.every(r => r.fromFeat && !r.pool && r.unit === 'uses')).toBeTrue();
+
+    const fighter = classResourcesFor(pc({ features: [{ name: 'Portal Jumper', source: 'Feat', desc: '' }] }));
+    expect(describeResources(fighter)).toBe('secondWind:3:ONE,actionSurge:1:ALL,portalStep:3:NONE');
+    expect(fighter.map(r => !!r.fromFeat)).toEqual([false, false, true]);
+
+    const [arcanum] = featResourcesFor(['boon of magic school mastery (necromancy)'], 19);
+    expect([arcanum.name, arcanum.feature]).toEqual(['Signature Arcanum (Necromancy)', 'Boon of Magic School Mastery (Necromancy)']);
+    // No level, no scores: level 1 and scores of 10.
+    expect(describeResources(featResourcesFor(['Spell Subterfuge', 'Spell Resistant'], undefined)))
+      .toBe('shroudingSpells:1:NONE,magicResistant:2:NONE');
   });
 
   it('tells pools from uses, and names them for the sheet', () => {
@@ -150,6 +228,30 @@ describe('class resources', () => {
       const slots = { 3: { max: 2, used: 2 } };
       expect(applyShortRestToPc(pc({ clazz: 'Warlock', spellSlots: slots })).spellSlots).toEqual({ 3: { max: 2, used: 0 } });
       expect(applyShortRestToPc(pc({ clazz: 'Wizard', spellSlots: slots })).spellSlots).toBe(slots);
+    });
+
+    it('rests restore feat counters like any other: all on a Long Rest, Spell Overload on a Short Rest too', () => {
+      const wizard = pc({
+        clazz: 'Wizard', level: 19, feat: 'Familiar Friend',
+        features: [
+          { name: 'Boon of Erupting Spellpower', source: 'Feat (Level 19)', desc: '' },
+          { name: 'Boon of Magic School Mastery (Evocation)', source: 'Feat', desc: '' },
+        ],
+        classResources: { helpfulFriend: 2, spellOverload: 1, signatureArcanumEvocation: 1, rage: 1 },
+      });
+      expect(classResourceStates(wizard).map(s => [s.key, s.used, s.remaining])).toEqual([
+        ['findFamiliarFreeCast', 0, 1], ['helpfulFriend', 2, 4], ['spellOverload', 1, 0], ['signatureArcanumEvocation', 1, 0],
+      ]);
+      expect(applyShortRestToPc(wizard).classResources).toEqual({ helpfulFriend: 2, signatureArcanumEvocation: 1 });
+      expect(restoreClassResources(wizard).classResources).toEqual({});
+      expect(withResourceUsed(wizard, 'findFamiliarFreeCast', 5))
+        .toEqual({ findFamiliarFreeCast: 1, helpfulFriend: 2, spellOverload: 1, signatureArcanumEvocation: 1 });
+      const [, , overload, arcanum] = classResourcesFor(wizard);
+      expect(recoveryLabel(overload)).toBe('All back on a Short or Long Rest.');
+      expect(recoveryLabel(arcanum)).toBe('All back on a Long Rest.');
+      // A character with a feat counter and no class resource still has something to restore.
+      const rogue = pc({ clazz: 'Rogue', feat: 'Portal Jumper' });
+      expect(restoreClassResources(rogue).classResources).toEqual({});
     });
 
     it('a Short Rest leaves a hero at 0 Hit Points alone', () => {

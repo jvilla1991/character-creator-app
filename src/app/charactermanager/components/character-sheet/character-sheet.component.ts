@@ -39,6 +39,7 @@ import { PcNotesComponent } from './panels/pc-notes/pc-notes.component';
 import { PcLogComponent } from './panels/pc-log/pc-log.component';
 import { ProfessionsPanelComponent } from './panels/professions-panel/professions-panel.component';
 import { FollowersPanelComponent } from './panels/followers-panel/followers-panel.component';
+import { SpellFollowerDialogComponent } from './spell-follower-dialog/spell-follower-dialog.component';
 import { ClassDisplayPipe } from '../../pipes/class-display.pipe';
 import { SpeciesDisplayPipe } from '../../pipes/species-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
@@ -67,7 +68,7 @@ let nextSheetId = 0;
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -681,6 +682,18 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   }
 
   portraitDialogOpen = false;
+
+  /** The spell whose "Add as follower" dialog is open; null while it is closed. */
+  spellFollowerFor: string | null = null;
+
+  /**
+   * Who gets "Add as follower" on a spell that makes a creature: the owner on
+   * their own sheet. Not the DM looking at a member's character, and not a
+   * follower's own sheet (a follower has no followers).
+   */
+  get canAddSpellFollowers(): boolean {
+    return this.ownSheet && !this.followerMode;
+  }
 
   openPortraitDialog(): void {
     if (this.canChangePortrait) this.portraitDialogOpen = true;

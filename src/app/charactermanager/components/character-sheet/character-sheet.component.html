@@ -338,6 +338,8 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           [addAllowed]="editable"
           [preparable]="canPrepareSpells"
           [showPreparedCount]="ownSheet"
+          [followerSpells]="canAddSpellFollowers"
+          (followerRequested)="spellFollowerFor = $event"
           [slotsSpendable]="canSpendSlots"
           [slotsRestorable]="canRestoreSlots"
           [slotMaximum]="slotMaximumAccess"
@@ -399,6 +401,7 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
       <app-followers-panel
         [pc]="pc"
         [canGrant]="editable"
+        [ownSheet]="ownSheet"
         (followerOpened)="onFollowerOpened($event)">
       </app-followers-panel>
     </div>
@@ -446,6 +449,15 @@ The dialog brings its own backdrop, so a click outside waits out a save. -->
 @if (portraitDialogOpen) {
   @defer (on immediate) {
     <app-portrait-dialog [pc]="pc" (closed)="closePortraitDialog()"></app-portrait-dialog>
+  }
+}
+
+<!-- "Add as follower" on a spell that makes a creature (Find Familiar, the
+summons), opened from the spellbook. The dialog brings its own backdrop. -->
+@if (spellFollowerFor; as spellName) {
+  @defer (on immediate) {
+    <app-spell-follower-dialog [pc]="pc" [spellName]="spellName" (closed)="spellFollowerFor = null">
+    </app-spell-follower-dialog>
   }
 }
 
