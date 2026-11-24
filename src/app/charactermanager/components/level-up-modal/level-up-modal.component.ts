@@ -6,7 +6,12 @@ import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
 import { toGrantedSpell, toPcSpell } from '../../utils/spell-mapping';
 import { spellKey } from '../../models/spell-names';
-import { SpellGrant } from '../../models/granted-spells';
+import {
+  FeatSpellChoice, MagicInitiateFeat, SpellGrant, featChoiceAllows, featChoiceSatisfied, hasLevelUpFeatSpellChoices,
+  levelUpFeatSpellChoices, magicInitiateFeats,
+} from '../../models/granted-spells';
+import { featNamesOn } from '../../models/character-feats';
+import { MAGIC_CONNOISSEUR } from '../../models/arcana-feats';
 import { ModalComponent } from '../modal/modal.component';
 import { FormsModule } from '@angular/forms';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
@@ -21,6 +26,11 @@ import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip
 import { featPrerequisite, featSourceTag } from '../../models/wow-feats';
 
 const NO_GRANTS: readonly SpellGrant[] = [];
+const NO_CHOICES: readonly FeatSpellChoice[] = [];
+const NO_SPELLS: DndSpell[] = [];
+
+/** Where the picks made for one of a feat's choices are kept; a different class list is a different pick. */
+const pickKey = (choice: FeatSpellChoice): string => `${choice.feat}|${choice.key}|${choice.spellLists.join(',')}`;
 
 /**
  * Focused, single-level "Level Up" modal — mirrors the create wizard's pattern of applying
@@ -91,6 +101,19 @@ export class LevelUpModalComponent implements OnInit {
 
   /** Spell data by lookup key, loaded once when the level has always-prepared spells to hand over. */
   private grantSpellIndex: ReadonlyMap<string, DndSpell> | null = null;
+  /** The same spell data as a list: what a feat's spell picks are offered from. */
+  private allSpells: DndSpell[] | null = null;
+  /** True while that spell data is loading; `spellDataFailed` once a load has failed. */
+  loadingSpellData = false;
+  spellDataFailed = false;
+
+  /** Spells picked for the choices of a feat, by {@link pickKey}. */
+  private featPickState: Record<string, DndSpell[]> = {};
+  /**
+   * The Magic Initiate class list Magic Connoisseur draws on, for a character
+   * with more than one such feat; '' means the first one it has.
+   */
+  connoisseurList = '';
 
   /** Player's ELI5 switch: when active, the spell pickers show one-sentence summaries. */
   readonly eli5 = inject(SpellEli5Service);
@@ -107,7 +130,8 @@ export class LevelUpModalComponent implements OnInit {
         this.preview = preview;
         this.loading = false;
         this.grantSpellIndex = null;
-        if (this.anyGrantsOnOffer) this.loadGrantedSpells();
+        this.allSpells = null;
+        if (this.anyGrantsOnOffer || this.featOptions.some(hasLevelUpFeatSpellChoices)) this.loadGrantedSpells();
         if (this.cantripDelta > 0 || this.spellDelta > 0) this.loadSpells();
       },
       error: err => {
@@ -124,18 +148,34 @@ export class LevelUpModalComponent implements OnInit {
    * hands over (a Paladin's Find Steed at 5, the spells of the oath being chosen)
    * — named by the server, shown read-only, and sent with the picks. They are not
    * picks: they sit outside both counts. With a subclass picked this level, the
-   * server's list for that subclass is used.
+   * server's list for that subclass is used. With a feat picked that gives spells
+   * of its own (Warlike Familiar's Battle Familiar, a School Adept's rows), the
+   * server's list for that feat is added.
    */
   get alwaysPreparedGrants(): readonly SpellGrant[] {
     const bySubclass = this.preview?.alwaysPreparedSpellsBySubclass;
     const forChoice = this.selectedSubclass ? bySubclass?.[this.selectedSubclass] : undefined;
-    return forChoice ?? this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
+    const base = forChoice ?? this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
+    const forFeat = this.takingFeat ? this.preview?.alwaysPreparedSpellsByFeat?.[this.selectedFeat!] : undefined;
+    if (!forFeat?.length) return base;
+    // Memoized on its two parts, so the template and the pick list see a stable array.
+    if (this.grantsBase !== base || this.grantsForFeat !== forFeat) {
+      this.grantsBase = base;
+      this.grantsForFeat = forFeat;
+      const named = base.map(g => spellKey(g.name));
+      this.grantsCache = [...base, ...forFeat.filter(g => !named.includes(spellKey(g.name)))];
+    }
+    return this.grantsCache;
   }
+  private grantsBase: readonly SpellGrant[] | null = null;
+  private grantsForFeat: readonly SpellGrant[] | null = null;
+  private grantsCache: readonly SpellGrant[] = NO_GRANTS;
 
-  /** True when this level-up may hand over always-prepared spells, whichever subclass is picked. */
+  /** True when this level-up may hand over always-prepared spells, whichever subclass or feat is picked. */
   private get anyGrantsOnOffer(): boolean {
     return (this.preview?.alwaysPreparedSpells?.length ?? 0) > 0
-      || Object.keys(this.preview?.alwaysPreparedSpellsBySubclass ?? {}).length > 0;
+      || Object.keys(this.preview?.alwaysPreparedSpellsBySubclass ?? {}).length > 0
+      || Object.keys(this.preview?.alwaysPreparedSpellsByFeat ?? {}).length > 0;
   }
 
   /**
@@ -151,12 +191,27 @@ export class LevelUpModalComponent implements OnInit {
     });
   }
 
-  /** Load the spell data the granted spells are looked up in (the server only knows their names). */
+  /**
+   * Load the spell data the granted spells are looked up in (the server only
+   * knows their names) and a feat's spell picks are offered from.
+   */
   private loadGrantedSpells(): void {
+    this.loadingSpellData = true;
+    this.spellDataFailed = false;
     this.dndResources.getSpells().subscribe({
-      next: spells => { this.grantSpellIndex = new Map(spells.map(s => [spellKey(s.name), s])); },
-      // Without the spell data the level-up still goes through; the spell can be granted later.
-      error: () => { this.grantSpellIndex = null; },
+      next: spells => {
+        this.grantSpellIndex = new Map(spells.map(s => [spellKey(s.name), s]));
+        this.allSpells = spells;
+        this.loadingSpellData = false;
+      },
+      // Without the spell data the level-up still goes through; a granted spell is offered again
+      // at the next level-up. A feat that needs picks cannot be taken until the data loads.
+      error: () => {
+        this.grantSpellIndex = null;
+        this.allSpells = null;
+        this.loadingSpellData = false;
+        this.spellDataFailed = true;
+      },
     });
   }
 
@@ -471,6 +526,101 @@ export class LevelUpModalComponent implements OnInit {
     return featPrerequisite(name);
   }
 
+  // ── Spells picked for the feat being taken ──────────────────────────────────
+
+  /** True when the player is taking a feat this level and has picked one. */
+  get takingFeat(): boolean {
+    return this.needsAsi && this.milestoneMode === 'feat' && !!this.selectedFeat;
+  }
+
+  /** The Magic Initiate feats the character has: the class lists Magic Connoisseur may draw on. */
+  get magicInitiateOptions(): readonly MagicInitiateFeat[] {
+    if (this.initiatesOf !== this.pc) {
+      this.initiatesOf = this.pc;
+      this.initiatesCache = magicInitiateFeats(featNamesOn(this.pc));
+    }
+    return this.initiatesCache;
+  }
+  private initiatesOf: PC | null = null;
+  private initiatesCache: MagicInitiateFeat[] = [];
+
+  /** The class list Magic Connoisseur's spells come from ('cleric'); '' without a Magic Initiate feat. */
+  get connoisseurSpellList(): string {
+    const options = this.magicInitiateOptions;
+    return options.find(o => o.spellList === this.connoisseurList)?.spellList ?? options[0]?.spellList ?? '';
+  }
+
+  /** True when Magic Connoisseur is being taken by a character with more than one Magic Initiate feat. */
+  get needsConnoisseurList(): boolean {
+    return this.takingFeat && this.selectedFeat === MAGIC_CONNOISSEUR && this.magicInitiateOptions.length > 1;
+  }
+
+  /**
+   * The spells the feat being taken lets the player pick (Arcane Warrior's two
+   * Wizard cantrips, Magic Connoisseur's level 1 and level 2 spell, Boon of
+   * Magic School Mastery's two spells of its school); empty for any other feat.
+   */
+  get featChoices(): readonly FeatSpellChoice[] {
+    if (!this.takingFeat) return NO_CHOICES;
+    const key = `${this.selectedFeat}|${this.pc.clazz}|${this.connoisseurSpellList}`;
+    if (key !== this.featChoicesKey) {
+      this.featChoicesKey = key;
+      const choices = levelUpFeatSpellChoices(this.selectedFeat, this.pc.clazz, this.connoisseurSpellList);
+      this.featChoicesCache = choices.length ? choices : NO_CHOICES;
+    }
+    return this.featChoicesCache;
+  }
+  private featChoicesKey = '\u0000';
+  private featChoicesCache: readonly FeatSpellChoice[] = NO_CHOICES;
+
+  featPicksFor(choice: FeatSpellChoice): DndSpell[] {
+    return this.featPickState[pickKey(choice)] ?? NO_SPELLS;
+  }
+
+  setFeatPicks(choice: FeatSpellChoice, spells: DndSpell[]): void {
+    this.featPickState = { ...this.featPickState, [pickKey(choice)]: spells };
+  }
+
+  /**
+   * The spells on offer for one of the feat's choices: every spell that fits it,
+   * less a cantrip the character knows, a spell it already has always prepared,
+   * a spell this level hands over anyway, and a spell picked for the feat's
+   * other choice. A leveled spell the character merely knows stays on offer: the
+   * feat makes it always prepared. Memoized so the picker sees a stable array.
+   */
+  featChoiceOptions(choice: FeatSpellChoice): DndSpell[] {
+    const all = this.allSpells;
+    if (!all) return NO_SPELLS;
+    const taken = [
+      ...this.featChoices.filter(c => c !== choice).flatMap(c => this.featPicksFor(c)).map(s => spellKey(s.name)),
+      ...this.alwaysPreparedGrants.map(g => spellKey(g.name)),
+    ];
+    const key = taken.join('|');
+    const id = pickKey(choice);
+    const cached = this.featOptionsCache[id];
+    if (cached && cached.source === all && cached.key === key) return cached.options;
+    const held = new Map((this.pc.spells ?? []).map(s => [spellKey(s.name), s]));
+    const options = all.filter(spell => {
+      const name = spellKey(spell.name);
+      if (!featChoiceAllows(choice, spell) || taken.includes(name)) return false;
+      const mine = held.get(name);
+      return !mine || (spell.level > 0 && !mine.alwaysPrepared);
+    });
+    this.featOptionsCache[id] = { source: all, key, options: options.length ? options : NO_SPELLS };
+    return this.featOptionsCache[id].options;
+  }
+  private featOptionsCache: Record<string, { source: DndSpell[]; key: string; options: DndSpell[] }> = {};
+
+  /** True when a choice has nothing to pick from although the spell data is loaded. */
+  featChoiceEmpty(choice: FeatSpellChoice): boolean {
+    return !!this.allSpells && this.featChoiceOptions(choice).length === 0 && this.featPicksFor(choice).length === 0;
+  }
+
+  /** The feat's picks are complete once every choice has exactly what it asks for. */
+  get featChoicesSatisfied(): boolean {
+    return this.featChoices.every(choice => featChoiceSatisfied(choice, this.featPicksFor(choice)));
+  }
+
   /** Whether the milestone choice (ASI or feat) is satisfied. */
   get milestoneSatisfied(): boolean {
     if (!this.needsAsi) return true;
@@ -479,11 +629,11 @@ export class LevelUpModalComponent implements OnInit {
 
   /**
    * Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made,
-   * and — when a cantrip-teaching style is picked — exactly its cantrips.
+   * and — when a cantrip-teaching style or a feat with spells to pick is chosen — exactly its picks.
    */
   get canConfirm(): boolean {
     return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied
-      && this.styleCantripsSatisfied;
+      && this.styleCantripsSatisfied && this.featChoicesSatisfied;
   }
 
   confirm(): void {
@@ -508,16 +658,27 @@ export class LevelUpModalComponent implements OnInit {
     if (this.needsFightingStyle && this.selectedFightingStyle) {
       choices.fightingStyle = this.selectedFightingStyle;
     }
-    // A cantrip style's cantrips (Blessed / Druidic / Void Warrior) ride along with any spells learned this level.
+    // A cantrip style's cantrips (Blessed / Druidic / Void / Arcane Warrior) ride along with any spells learned this level.
     // A pick made before the subclass that grants the same spell was chosen is not sent twice.
+    // The spells picked for the feat being taken go with the feat's name as their `grantedBy`:
+    // that is how the server tells them from the class's own picks. A spell picked both ways is the feat's.
+    const featPicks = this.featChoices.flatMap(choice => this.featPicksFor(choice));
+    const featPickKeys = featPicks.map(s => spellKey(s.name));
     const grantedKeys = this.grantedSpells.map(g => spellKey(g.spell.name));
     const learned = [
-      ...this.selectedSpells.filter(s => !grantedKeys.includes(spellKey(s.name))),
+      ...this.selectedSpells.filter(s => !grantedKeys.includes(spellKey(s.name))
+        && !featPickKeys.includes(spellKey(s.name))),
       ...(this.cantripStyle ? this.styleCantrips : []),
     ];
-    const granted = this.grantedSpells.map(g => toGrantedSpell(g.spell, g.grantedBy));
-    if (learned.length || granted.length) {
-      choices.newSpells = [...learned.map(toPcSpell), ...granted];
+    const granted = this.grantedSpells
+      .filter(g => !featPickKeys.includes(spellKey(g.spell.name)))
+      .map(g => toGrantedSpell(g.spell, g.grantedBy));
+    if (learned.length || featPicks.length || granted.length) {
+      choices.newSpells = [
+        ...learned.map(toPcSpell),
+        ...featPicks.map(s => toGrantedSpell(s, this.selectedFeat!)),
+        ...granted,
+      ];
     }
 
     const commit$ = this.asDm

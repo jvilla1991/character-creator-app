@@ -27,7 +27,7 @@ import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
 import { BATTLE_MASTER } from '../models/wow-warrior';
 import { BEAST_MASTER } from '../models/wow-hunter';
-import { BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
+import { ARCANE_WARRIOR_STYLE, BLESSED_WARRIOR, DRUIDIC_WARRIOR, VOID_WARRIOR } from '../models/cantrip-fighting-styles';
 
 // ---------------------------------------------------------------------------
 // Demo seed data — 3 fully-detailed PCs bound across both demo campaigns, plus an
@@ -1119,8 +1119,8 @@ export const DEMO_FIGHTING_STYLE_FEATS = [
 ];
 
 // DEMO-ONLY mirror of the server level-2 Fighting Style choice: due at Paladin 2 and
-// Ranger 2; the 10 PHB styles, plus Blessed Warrior for every paladin, Druidic Warrior
-// for every ranger, and Void Warrior for a Demon Hunter ranger.
+// Ranger 2; the 10 PHB styles and Arcana Unleashed's Arcane Warrior, plus Blessed Warrior
+// for every paladin, Druidic Warrior for every ranger, and Void Warrior for a Demon Hunter ranger.
 export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
   const key = (clazz ?? '').trim().toLowerCase();
   return newLevel === 2 && (key === 'paladin' || key === 'ranger');
@@ -1129,7 +1129,7 @@ export function demoFightingStyleDue(clazz: string, newLevel: number): boolean {
 export function demoFightingStyleOptions(clazz: string, subclass: string | undefined, newLevel: number): string[] {
   if (!demoFightingStyleDue(clazz, newLevel)) return [];
   const key = (clazz ?? '').trim().toLowerCase();
-  const options = [...DEMO_FIGHTING_STYLE_FEATS];
+  const options = [...DEMO_FIGHTING_STYLE_FEATS, ARCANE_WARRIOR_STYLE];
   if (key === 'paladin') options.push(BLESSED_WARRIOR);
   if (key === 'ranger') options.push(DRUIDIC_WARRIOR);
   if (key === 'ranger' && subclass === DEMON_HUNTER_SUBCLASS) {

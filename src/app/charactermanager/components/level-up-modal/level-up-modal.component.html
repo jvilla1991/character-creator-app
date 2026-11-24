@@ -150,6 +150,45 @@
           }
         </div>
       }
+      <!-- Spells picked for the feat being taken (Arcane Warrior, Magic Connoisseur, Boon of Magic School Mastery) -->
+      @if (needsConnoisseurList) {
+        <div class="subclass-pick">
+          <label class="subclass-label" for="level-up-connoisseur-list">Magic Connoisseur spell list</label>
+          <select id="level-up-connoisseur-list" class="specialization-select"
+            [ngModel]="connoisseurSpellList" (ngModelChange)="connoisseurList = $event">
+            @for (o of magicInitiateOptions; track o.feat) {
+              <option [ngValue]="o.spellList">{{ o.className }}</option>
+            }
+          </select>
+        </div>
+      }
+      @for (choice of featChoices; track choice.key) {
+        <div class="spell-pick feat-spell-pick">
+          <div class="spell-label">
+            {{ choice.label }}
+            <span class="spell-label-end">
+              <span class="spell-counts">{{ featPicksFor(choice).length }}/{{ choice.cantrips + choice.spells }}</span>
+              <app-eli5-toggle></app-eli5-toggle>
+            </span>
+          </div>
+          <div class="style-cantrip-hint">{{ choice.hint }}</div>
+          @if (spellDataFailed) {
+            <div class="style-cantrip-hint" role="status">The spell list did not load. Close this and try again.</div>
+          }
+          @if (featChoiceEmpty(choice)) {
+            <div class="style-cantrip-hint" role="status">No spell fits this pick. Choose a different feat.</div>
+          }
+          <app-spell-picker
+            [spells]="featChoiceOptions(choice)"
+            [selected]="featPicksFor(choice)"
+            [cantripLimit]="choice.cantrips"
+            [spellLimit]="choice.spells"
+            [loading]="loadingSpellData"
+            [showEli5]="eli5.active()"
+            (selectedChange)="setFeatPicks(choice, $event)">
+          </app-spell-picker>
+        </div>
+      }
       <!-- Subclass selection (shown only when a choice is due and options exist) -->
       @if (needsSubclass) {
         <div class="subclass-pick">
@@ -173,7 +212,7 @@
           }
         </div>
       }
-      <!-- Level-2 Fighting Style (optional); Blessed / Druidic / Void Warrior also teach two cantrips -->
+      <!-- Level-2 Fighting Style (optional); Blessed / Druidic / Void / Arcane Warrior also teach two cantrips -->
       @if (needsFightingStyle) {
         <div class="subclass-pick">
           <div class="subclass-label">Choose a Fighting Style <span class="optional-note">(optional)</span></div>

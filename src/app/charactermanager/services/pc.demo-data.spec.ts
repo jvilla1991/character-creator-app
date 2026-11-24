@@ -29,6 +29,15 @@ describe('pc.demo-data (WoW mirrors)', () => {
     expect(demoFightingStyleOptions('Paladin', undefined, 3)).toEqual([]);
   });
 
+  it('offers Arcane Warrior with the other Fighting Styles at Paladin 2 and Ranger 2', () => {
+    for (const clazz of ['Paladin', 'Ranger']) {
+      const options = demoFightingStyleOptions(clazz, undefined, 2);
+      expect(options).withContext(clazz).toContain('Arcane Warrior');
+      expect(options).withContext(clazz).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    }
+    expect(demoFightingStyleOptions('Fighter', undefined, 2)).toEqual([]);
+  });
+
   it('offers Oath of the Holy only to WoW paladins', () => {
     expect(demoSubclassOptions('Paladin', 'Holy')).toContain('Oath of the Holy');
     expect(demoSubclassOptions('Paladin', 'Retribution')).toContain('Oath of the Holy');

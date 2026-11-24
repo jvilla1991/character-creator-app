@@ -40,8 +40,7 @@ import {
   speciesTools, speciesTraitFeatures, toSpeciesDetail,
 } from '../../models/species';
 import {
-  MAGIC_INITIATE_CANTRIPS, MAGIC_INITIATE_SPELLS, MagicInitiateFeat, SpellGrant, level1ClassSpellGrants,
-  magicInitiateFeat,
+  FeatSpellChoice, SpellGrant, featChoiceFits, featSpellGrants, level1ClassSpellGrants, originFeatSpellChoice,
 } from '../../models/granted-spells';
 import { SpellPickerComponent } from '../spell-picker/spell-picker.component';
 import { spellKey } from '../../models/spell-names';
@@ -100,7 +99,7 @@ interface WizardDraft {
   bonusPlus1: Ability | '';
   equipmentChoice: 'A' | 'B' | '';
   selectedSpells: DndSpell[];
-  /** Magic Initiate picks, by feat name. */
+  /** Spells picked for an Origin feat (Magic Initiate, Arcane Undertaker), by feat name. */
   featSpellPicks?: Record<string, DndSpell[]>;
 }
 
@@ -109,6 +108,16 @@ const NO_SPELLS: DndSpell[] = [];
 
 /** Stable empty list for species without an Origin feat choice. */
 const NO_FEATS: readonly OriginFeatOption[] = [];
+
+/** Stable empty list for a character whose Origin feats name no spell. */
+const NO_GRANTS: readonly SpellGrant[] = [];
+
+/** The character's Origin feats and the spells they bring: picked by the player, or named by the feat. */
+interface OriginFeatSpells {
+  names: readonly string[];
+  choices: readonly FeatSpellChoice[];
+  grants: readonly SpellGrant[];
+}
 
 @Component({
     selector: 'app-create-character-modal',
@@ -127,10 +136,11 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
   /**
    * True when the wizard has a spells step: the class picks spells, or an Origin
-   * feat does (Magic Initiate, from the background or a Human's Versatile trait).
+   * feat (from the background or a Human's Versatile trait) brings some — picked
+   * (Magic Initiate, Arcane Undertaker) or named by the feat (Familiar Friend).
    */
   get hasSpellsStep(): boolean {
-    return this.isSpellcastingClass || this.magicInitiateFeats.length > 0;
+    return this.isSpellcastingClass || this.featSpellChoices.length > 0 || this.originFeatGrants.length > 0;
   }
 
   get totalSteps(): number {
@@ -791,68 +801,133 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return cap != null && cap < this.maxKnownSpells ? cap : null;
   }
 
-  // ── Step 7: Magic Initiate (Origin feat spells) ──────────────────────────
-  readonly magicInitiateCantrips = MAGIC_INITIATE_CANTRIPS;
-  readonly magicInitiateSpells = MAGIC_INITIATE_SPELLS;
+  // ── Step 7: Origin feat spells ───────────────────────────────────────────
 
   /**
-   * The Magic Initiate feats the character has: the background's Origin feat
-   * and, for a Human, the one picked for Versatile. Each brings two cantrips and
-   * one always-prepared level-1 spell, picked in the spells step.
+   * The Origin feats the character has — the background's and, for a Human, the
+   * one picked for Versatile, each once — with the spells they bring. Memoized
+   * on the two feat names so the template sees stable arrays.
    */
-  get magicInitiateFeats(): readonly MagicInitiateFeat[] {
+  private originFeats(): OriginFeatSpells {
     const speciesFeat = this.catalogSpecies?.choices?.originFeat ? this.speciesSelections.originFeat : '';
     const key = `${this.backgroundFeatName}|${speciesFeat}`;
-    if (key !== this.magicInitiateKey) {
-      this.magicInitiateKey = key;
-      this.magicInitiateCache = [...new Set([this.backgroundFeatName, speciesFeat])].flatMap(name => {
-        const feat = magicInitiateFeat(name);
-        return feat ? [feat] : [];
-      });
+    if (key !== this.originFeatsKey) {
+      this.originFeatsKey = key;
+      const names = [...new Set([this.backgroundFeatName, speciesFeat])].filter(name => !!name);
+      const grants = names.flatMap(name => featSpellGrants(name));
+      this.originFeatSpells = {
+        names,
+        choices: names.flatMap(name => {
+          const choice = originFeatSpellChoice(name);
+          return choice ? [choice] : [];
+        }),
+        grants: grants.length ? grants : NO_GRANTS,
+      };
     }
-    return this.magicInitiateCache;
+    return this.originFeatSpells;
   }
-  private magicInitiateKey = '\u0000';
-  private magicInitiateCache: MagicInitiateFeat[] = [];
+  private originFeatsKey = '\u0000';
+  private originFeatSpells: OriginFeatSpells = { names: [], choices: [], grants: NO_GRANTS };
+
+  /**
+   * What the character's Origin feats let the player pick in the spells step:
+   * Magic Initiate's two cantrips and one always-prepared level 1 spell, Arcane
+   * Undertaker's Necromancy cantrip.
+   */
+  get featSpellChoices(): readonly FeatSpellChoice[] {
+    return this.originFeats().choices;
+  }
+
+  /**
+   * Spells the character's Origin feats name outright (Arcane Artist's Minor
+   * Illusion, Familiar Friend's Find Familiar) — no pick; saved with the character.
+   */
+  get originFeatGrants(): readonly SpellGrant[] {
+    return this.originFeats().grants;
+  }
 
   /** Cantrips and level-1 spells of each class list a feat draws from, once loaded ('cleric' → spells). */
   featSpellLists: Record<string, DndSpell[]> = {};
   private featSpellListsRequested = new Set<string>();
-  /** What the player picked for each Magic Initiate feat, by feat name. */
+  /** What the player picked for each Origin feat, by feat name. */
   featSpellPicks: Record<string, DndSpell[]> = {};
 
-  featSpellOptions(feat: MagicInitiateFeat): DndSpell[] {
-    return this.featSpellLists[feat.spellList] ?? NO_SPELLS;
+  /**
+   * The spells on offer for a feat's picks: its class lists, one after the
+   * other and each spell once, narrowed to what the feat allows. Memoized on the
+   * loaded lists so the picker sees a stable array.
+   */
+  featSpellOptions(choice: FeatSpellChoice): DndSpell[] {
+    const lists = choice.spellLists.map(list => this.featSpellLists[list]);
+    const cached = this.featOptionsCache[choice.feat];
+    if (cached && cached.lists.length === lists.length && cached.lists.every((list, i) => list === lists[i])) {
+      return cached.options;
+    }
+    const seen = new Set<string>();
+    const options = lists.flatMap(list => list ?? []).filter(spell => {
+      if (seen.has(spell.name) || !featChoiceFits(choice, spell)) return false;
+      seen.add(spell.name);
+      return true;
+    });
+    this.featOptionsCache[choice.feat] = { lists, options: options.length ? options : NO_SPELLS };
+    return this.featOptionsCache[choice.feat].options;
+  }
+  private featOptionsCache: Record<string, { lists: (DndSpell[] | undefined)[]; options: DndSpell[] }> = {};
+
+  /** True until every class list a feat draws from has loaded. */
+  featSpellsLoading(choice: FeatSpellChoice): boolean {
+    return choice.spellLists.some(list => !this.featSpellLists[list]);
   }
 
-  featPicks(feat: MagicInitiateFeat): DndSpell[] {
-    return this.featSpellPicks[feat.feat] ?? NO_SPELLS;
+  featPicks(choice: { feat: string }): DndSpell[] {
+    return this.featSpellPicks[choice.feat] ?? NO_SPELLS;
   }
 
-  setFeatPicks(feat: MagicInitiateFeat, spells: DndSpell[]): void {
-    this.featSpellPicks = { ...this.featSpellPicks, [feat.feat]: spells };
+  setFeatPicks(choice: { feat: string }, spells: DndSpell[]): void {
+    this.featSpellPicks = { ...this.featSpellPicks, [choice.feat]: spells };
   }
 
   /** How many cantrips (or level-1 spells) are picked for a feat. */
-  featPickCount(feat: MagicInitiateFeat, cantrips: boolean): number {
-    return this.featPicks(feat).filter(s => (s.level === 0) === cantrips).length;
+  featPickCount(choice: { feat: string }, cantrips: boolean): number {
+    return this.featPicks(choice).filter(s => (s.level === 0) === cantrips).length;
   }
 
-  /** Fetch the class list behind each Magic Initiate feat, once each. */
+  /** Fetch each class list an Origin feat's picks draw from, once each. */
   private loadFeatSpellLists(): void {
-    for (const feat of this.magicInitiateFeats) {
-      if (this.featSpellListsRequested.has(feat.spellList)) continue;
-      this.featSpellListsRequested.add(feat.spellList);
-      this.dndResources.getSpellsForClass(feat.spellList)
+    for (const spellList of this.featSpellChoices.flatMap(choice => choice.spellLists)) {
+      if (this.featSpellListsRequested.has(spellList)) continue;
+      this.featSpellListsRequested.add(spellList);
+      this.dndResources.getSpellsForClass(spellList)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: spells => {
-            this.featSpellLists = { ...this.featSpellLists, [feat.spellList]: spells.filter(s => s.level <= 1) };
+            this.featSpellLists = { ...this.featSpellLists, [spellList]: spells.filter(s => s.level <= 1) };
           },
           // Forget the request so coming back to the step tries again.
-          error: () => { this.featSpellListsRequested.delete(feat.spellList); },
+          error: () => { this.featSpellListsRequested.delete(spellList); },
         });
     }
+  }
+
+  /** Spell data by lookup key, loaded once when an Origin feat names a spell to save. */
+  private allSpells: ReadonlyMap<string, DndSpell> | null = null;
+  private allSpellsRequested = false;
+
+  /**
+   * Load the spell data the spells an Origin feat names are looked up in. Not
+   * tied to the spells step: a draft restored on a later step still needs it.
+   */
+  private loadOriginFeatGrantSpells(): void {
+    if (!this.originFeatGrants.length || this.allSpellsRequested) return;
+    this.allSpellsRequested = true;
+    this.dndResources.getSpells()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: spells => { this.allSpells = new Map(spells.map(s => [spellKey(s.name), s])); },
+        // Forget the request so the next step tries again. A character created without
+        // the spell is offered it at its first level-up: the server lists what is owed.
+        error: () => { this.allSpellsRequested = false; },
+      });
   }
 
   get selectedCantrips(): number  { return this.selectedSpells.filter(s => s.level === 0).length; }
@@ -1081,6 +1156,7 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
         });
     }
     if (this.step >= 7) this.loadFeatSpellLists();
+    this.loadOriginFeatGrantSpells();
     // Load equipment data when entering (or restoring past) the equipment step
     if (this.step >= this.equipmentStep && !this.classEquipmentData && !this.loadingEquipment) {
       this.loadingEquipment = true;
@@ -1135,21 +1211,31 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return this.alwaysPreparedGrants.map(g => `${g.name} (${g.grantedBy})`).join(', ');
   }
 
-  /** 'Guidance, Light, Bless (Magic Initiate (Cleric))' — the spells picked for each Origin feat. */
+  /**
+   * 'Guidance, Light, Bless (Magic Initiate (Cleric)); Find Familiar (Familiar Friend)'
+   * — the spells each Origin feat brings: the ones picked for it, then the ones it names.
+   */
   get reviewFeatSpellNames(): string {
-    return this.magicInitiateFeats
-      .filter(feat => this.featPicks(feat).length > 0)
-      .map(feat => `${this.featPicks(feat).map(s => s.name).join(', ')} (${feat.feat})`)
+    return this.originFeats().names
+      .map(feat => ({
+        feat,
+        spells: [...this.featPicks({ feat }).map(s => s.name), ...featSpellGrants(feat).map(g => g.name)],
+      }))
+      .filter(entry => entry.spells.length > 0)
+      .map(entry => `${entry.spells.join(', ')} (${entry.feat})`)
       .join('; ');
   }
 
   /**
    * The spells a new character is saved with: the class picks, with no more of
    * them prepared than the class prepares at level 1; then the spells its
-   * level-1 features always keep prepared; then each Magic Initiate feat's two
-   * cantrips and its level-1 spell. Feature and feat spells are marked always
+   * level-1 features always keep prepared; then the spells picked for each
+   * Origin feat (Magic Initiate's two cantrips and level-1 spell, Arcane
+   * Undertaker's cantrip); then the spells an Origin feat names (Familiar
+   * Friend's Find Familiar). Feature and feat spells are marked always
    * prepared, so they never count against that cap. A spell is saved once: one
-   * already on the list is skipped.
+   * already on the list is skipped, except that a class pick a feat also names
+   * becomes the feat's always-prepared spell.
    */
   private buildStartingSpells(): PcSpell[] {
     const grants = this.isSpellcastingClass ? this.alwaysPreparedGrants : [];
@@ -1163,12 +1249,25 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     });
     const spells = [...withPreparedCap(picks, preparedSpellCap(this.clazz, 1)), ...granted];
     const taken = new Set(spells.map(s => spellKey(s.name)));
-    for (const feat of this.magicInitiateFeats) {
-      for (const spell of this.featPicks(feat)) {
+    for (const choice of this.featSpellChoices) {
+      for (const spell of this.featPicks(choice)) {
         if (taken.has(spellKey(spell.name))) continue;
         taken.add(spellKey(spell.name));
-        spells.push(toGrantedSpell(spell, feat.feat));
+        spells.push(toGrantedSpell(spell, choice.feat));
       }
+    }
+    for (const grant of this.originFeatGrants) {
+      const key = spellKey(grant.name);
+      const held = spells.find(s => spellKey(s.name) === key);
+      if (held) {
+        if (held.lvl > 0 && !held.alwaysPrepared) {
+          Object.assign(held, { prepared: true, alwaysPrepared: true, grantedBy: grant.grantedBy });
+        }
+        continue;
+      }
+      // Without the spell data the character is created without the spell; its first level-up offers it.
+      const spell = this.allSpells?.get(key);
+      if (spell) spells.push(toGrantedSpell(spell, grant.grantedBy));
     }
     return spells;
   }

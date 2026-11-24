@@ -6,7 +6,15 @@ describe('cantrip-fighting-styles', () => {
       ['Blessed Warrior', 'cleric', 2],
       ['Druidic Warrior', 'druid', 2],
       ['Void Warrior', 'warlock', 2],
+      ['Arcane Warrior', 'wizard', 2],
     ]);
+  });
+
+  it('teaches two Wizard cantrips for Arcane Warrior, the Arcana Unleashed Fighting Style feat', () => {
+    expect(cantripFightingStyle('Arcane Warrior')).toEqual(jasmine.objectContaining({
+      style: 'Arcane Warrior', spellList: 'wizard', className: 'Wizard', count: 2,
+    }));
+    expect(cantripFightingStyle('Arcane Warrior')?.hint).toContain('Mage Hand and Ray of Frost');
   });
 
   it('hints Sacred Flame / Spare the Dying and Chill Touch / Mind Sliver; Druidic Warrior has no hint', () => {
