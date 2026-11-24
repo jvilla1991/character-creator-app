@@ -5,7 +5,7 @@ import {
   DndResourcesService, SPELL_COUNTS, SPELLCASTING_CLASSES, FEAT_DESCRIPTIONS, ALL_LANGUAGE_NAMES, LANGUAGE_OPTIONS,
   ORIGIN_FEAT_OPTIONS, TOOL_NAMES, languageNames, originFeatsFor,
 } from './dnd-resources.service';
-import { DndSpell } from '../models/dnd-api.types';
+import { DndBackground, DndSpell } from '../models/dnd-api.types';
 import { onlyContentSources } from '../models/content-source';
 import { startingSlots } from '../utils/spell-slots';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
@@ -28,9 +28,29 @@ describe('DndResourcesService', () => {
   // ── Background groups ───────────────────────────────────────────────────────
 
   describe('getBackgroundGroups', () => {
-    it('returns exactly 3 source groups', (done) => {
+    it('returns the four source groups, Arcana Unleashed last', (done) => {
       service.getBackgroundGroups().subscribe(groups => {
-        expect(groups.length).toBe(3);
+        expect(groups.map(g => g.source))
+          .toEqual(["Player's Handbook", 'Heroes of Faerun', 'Forge of the Artificer', 'Arcana Unleashed']);
+        done();
+      });
+    });
+
+    it('Arcana Unleashed group has its ten backgrounds, in book order', (done) => {
+      service.getBackgroundGroups().subscribe(groups => {
+        expect(groups.find(g => g.source === 'Arcana Unleashed')!.backgrounds).toEqual([
+          'Agent of the Ninth Quill', 'Bejeweled Conclave Spy', 'Cosmic Dawn Experiment',
+          'Covenant of the Grave Recruit', 'Crucible Storm Chaser', 'Familiar Trainer', 'Horizon Weaver Initiate',
+          'Phantasmic Circus Trouper', 'Seer Apprentice', 'Ward of the Sheltering Hands',
+        ]);
+        done();
+      });
+    });
+
+    it('lists every background once across the groups', (done) => {
+      service.getBackgroundList().subscribe(names => {
+        expect(new Set(names).size).toBe(names.length);
+        expect(names.length).toBe(47);
         done();
       });
     });
@@ -80,6 +100,42 @@ describe('DndResourcesService', () => {
         expect(bg.feat?.name).toBe('Magic Initiate (Cleric)');
         done();
       });
+    });
+  });
+
+  // ── Arcana Unleashed backgrounds ────────────────────────────────────────────
+
+  describe('Arcana Unleashed backgrounds', () => {
+    // background | ability scores | origin feat | skills | tool
+    const ROWS = `
+      Agent of the Ninth Quill | DEX,INT,CHA | Arcane Infiltrator | Arcana,Sleight of Hand | Thieves' Tools
+      Bejeweled Conclave Spy | DEX,WIS,CHA | Arcane Eloquence | Deception,Perception | Disguise Kit
+      Cosmic Dawn Experiment | STR,DEX,CON | Transmuted Anatomy | Athletics,Survival | Artisan's Tools (one kind)
+      Covenant of the Grave Recruit | STR,INT,WIS | Arcane Undertaker | History,Medicine | Herbalism Kit
+      Crucible Storm Chaser | STR,CON,INT | Arcane Overload | Athletics,Nature | Glassblower's Tools
+      Familiar Trainer | CON,INT,WIS | Familiar Friend | Animal Handling,Arcana | Gaming Set (one kind)
+      Horizon Weaver Initiate | DEX,CON,WIS | Portal Jumper | Acrobatics,Survival | Weaver's Tools
+      Phantasmic Circus Trouper | DEX,CON,CHA | Arcane Artist | Deception,Performance | Disguise Kit
+      Seer Apprentice | INT,WIS,CHA | Arcane Omens | History,Insight | Navigator's Tools
+      Ward of the Sheltering Hands | CON,WIS,CHA | Arcane Safeguard | Insight,Medicine | Cook's Utensils
+    `.trim().split('\n').map(row => row.split('|').map(cell => cell.trim()));
+
+    it('each grants its abilities, origin feat, two skills and tool, tagged with the book', () => {
+      expect(ROWS.length).toBe(10);
+      for (const [name, abilities, feat, skills, tool] of ROWS) {
+        let detail: DndBackground | undefined;
+        service.getBackgroundDetail(name).subscribe(bg => detail = bg);
+        expect(detail?.source).withContext(name).toBe('Arcana Unleashed');
+        expect(detail?.index).withContext(name).toBe(name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+        expect(detail?.ability_scores.map(a => a.name)).withContext(name).toEqual(abilities.split(','));
+        expect(detail?.feat?.name).withContext(name).toBe(feat);
+        expect(detail?.proficiencies.map(p => p.name)).withContext(name).toEqual([...skills.split(','), tool]);
+      }
+    });
+
+    it('start with the default background gold, like every background outside the Player\'s Handbook', () => {
+      for (const [name] of ROWS) expect(service.getBackgroundGold(name)).withContext(name).toBe(15);
+      expect(service.getBackgroundGold('Harper')).toBe(15);
     });
   });
 

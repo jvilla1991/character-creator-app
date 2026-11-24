@@ -15,7 +15,7 @@ function ref(name: string): DndResource {
 function abilities(...names: string[]): DndResource[] { return names.map(ref); }
 function profs(...names: string[]):    DndResource[] { return names.map(ref); }
 
-// ── Complete background dataset (PHB + Heroes of Faerun + Forge) ───────────
+// ── Complete background dataset (PHB + Heroes of Faerun + Forge + Arcana Unleashed) ──
 
 const BACKGROUNDS: Record<string, DndBackground> = {
   // ── Player's Handbook ────────────────────────────────────────────────────
@@ -60,6 +60,18 @@ const BACKGROUNDS: Record<string, DndBackground> = {
   'Aberrant Heir':  { index: 'aberrant-heir',  name: 'Aberrant Heir',  source: 'Forge of the Artificer', ability_scores: abilities('STR','CON','CHA'), feat: ref('Aberrant Dragonmark'), proficiencies: profs('History','Intimidation','Disguise Kit') },
   'Archaeologist':  { index: 'archaeologist',  name: 'Archaeologist',  source: 'Forge of the Artificer', ability_scores: abilities('DEX','INT','WIS'), feat: ref('Skilled'),             proficiencies: profs('History','Survival',"Cartographer's Tools") },
   'Inquisitive':    { index: 'inquisitive',    name: 'Inquisitive',    source: 'Forge of the Artificer', ability_scores: abilities('CON','INT','CHA'), feat: ref('Alert'),               proficiencies: profs('Insight','Investigation',"Thieves' Tools") },
+
+  // ── Arcana Unleashed ──────────────────────────────────────────────────────
+  'Agent of the Ninth Quill':     { index: 'agent-of-the-ninth-quill', name: 'Agent of the Ninth Quill', source: 'Arcana Unleashed', ability_scores: abilities('DEX','INT','CHA'), feat: ref('Arcane Infiltrator'), proficiencies: profs('Arcana','Sleight of Hand',"Thieves' Tools") },
+  'Bejeweled Conclave Spy':       { index: 'bejeweled-conclave-spy', name: 'Bejeweled Conclave Spy', source: 'Arcana Unleashed', ability_scores: abilities('DEX','WIS','CHA'), feat: ref('Arcane Eloquence'), proficiencies: profs('Deception','Perception','Disguise Kit') },
+  'Cosmic Dawn Experiment':       { index: 'cosmic-dawn-experiment', name: 'Cosmic Dawn Experiment', source: 'Arcana Unleashed', ability_scores: abilities('STR','DEX','CON'), feat: ref('Transmuted Anatomy'), proficiencies: profs('Athletics','Survival',"Artisan's Tools (one kind)") },
+  'Covenant of the Grave Recruit': { index: 'covenant-of-the-grave-recruit', name: 'Covenant of the Grave Recruit', source: 'Arcana Unleashed', ability_scores: abilities('STR','INT','WIS'), feat: ref('Arcane Undertaker'), proficiencies: profs('History','Medicine','Herbalism Kit') },
+  'Crucible Storm Chaser':        { index: 'crucible-storm-chaser', name: 'Crucible Storm Chaser', source: 'Arcana Unleashed', ability_scores: abilities('STR','CON','INT'), feat: ref('Arcane Overload'), proficiencies: profs('Athletics','Nature',"Glassblower's Tools") },
+  'Familiar Trainer':             { index: 'familiar-trainer', name: 'Familiar Trainer', source: 'Arcana Unleashed', ability_scores: abilities('CON','INT','WIS'), feat: ref('Familiar Friend'), proficiencies: profs('Animal Handling','Arcana','Gaming Set (one kind)') },
+  'Horizon Weaver Initiate':      { index: 'horizon-weaver-initiate', name: 'Horizon Weaver Initiate', source: 'Arcana Unleashed', ability_scores: abilities('DEX','CON','WIS'), feat: ref('Portal Jumper'), proficiencies: profs('Acrobatics','Survival',"Weaver's Tools") },
+  'Phantasmic Circus Trouper':    { index: 'phantasmic-circus-trouper', name: 'Phantasmic Circus Trouper', source: 'Arcana Unleashed', ability_scores: abilities('DEX','CON','CHA'), feat: ref('Arcane Artist'), proficiencies: profs('Deception','Performance','Disguise Kit') },
+  'Seer Apprentice':              { index: 'seer-apprentice', name: 'Seer Apprentice', source: 'Arcana Unleashed', ability_scores: abilities('INT','WIS','CHA'), feat: ref('Arcane Omens'), proficiencies: profs('History','Insight',"Navigator's Tools") },
+  'Ward of the Sheltering Hands': { index: 'ward-of-the-sheltering-hands', name: 'Ward of the Sheltering Hands', source: 'Arcana Unleashed', ability_scores: abilities('CON','WIS','CHA'), feat: ref('Arcane Safeguard'), proficiencies: profs('Insight','Medicine',"Cook's Utensils") },
 };
 
 /** Backgrounds grouped by source for the wizard tile picker */
@@ -67,6 +79,7 @@ export const BACKGROUND_GROUPS: BackgroundGroup[] = [
   { source: "Player's Handbook",    backgrounds: Object.values(BACKGROUNDS).filter(b => b.source === "Player's Handbook").map(b => b.name) },
   { source: 'Heroes of Faerun',     backgrounds: Object.values(BACKGROUNDS).filter(b => b.source === 'Heroes of Faerun').map(b => b.name) },
   { source: 'Forge of the Artificer', backgrounds: Object.values(BACKGROUNDS).filter(b => b.source === 'Forge of the Artificer').map(b => b.name) },
+  { source: 'Arcana Unleashed',     backgrounds: Object.values(BACKGROUNDS).filter(b => b.source === 'Arcana Unleashed').map(b => b.name) },
 ];
 
 // ── Demo/static class data ─────────────────────────────────────────────────
@@ -587,7 +600,7 @@ export class DndResourcesService {
 
   // ── Background methods — always from static data ──────────────────────────
 
-  /** Flat list of all background names, ordered PHB → Faerun → Artificer */
+  /** Flat list of all background names, ordered PHB → Faerun → Artificer → Arcana Unleashed */
   getBackgroundList(): Observable<string[]> {
     return of(BACKGROUND_GROUPS.flatMap(g => g.backgrounds));
   }
