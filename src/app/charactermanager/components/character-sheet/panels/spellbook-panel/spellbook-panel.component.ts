@@ -15,6 +15,7 @@ import { SpellRefreshService } from '../../../../services/spell-refresh.service'
 import { SpellSlotTrackerComponent } from '../../spell-slot-tracker/spell-slot-tracker.component';
 import { SlotNotice, ordinal, slotLevels, slotsLeftText } from '../../../../utils/spell-slots';
 import { SLOT_STATS, adjustmentsFor } from '../../../../models/stat-adjustment';
+import { followerSpellFor } from '../../../../models/spell-followers';
 
 export interface SpellLevel {
   lvl: number;
@@ -83,6 +84,12 @@ export class SpellbookPanelComponent implements OnChanges {
   /** Show the "Prepared n / cap" count to a viewer who may not change it: the
    *  owner of a campaign character, whose prepared spells change at a long rest. */
   readonly showPreparedCount = input(false);
+  /** The viewer owns this character: a spell that makes a creature (Find
+   *  Familiar, the summons) offers "Add as follower". Off for the DM's view of
+   *  someone else's character and on a follower's own sheet. */
+  readonly followerSpells = input(false);
+  /** "Add as follower" was pressed on a spell; carries the spell's name. The sheet opens the dialog. */
+  readonly followerRequested = output<string>();
   // ── Spell slot strip ─────────────────────────────────────────────────────
   // Who may do what is the sheet's call; the panel only passes it through to
   // the strip and the requests back up. The server enforces the same rules.
@@ -253,6 +260,16 @@ export class SpellbookPanelComponent implements OnChanges {
   }
 
   trackByLvl(_: number, row: SpellLevel): number { return row.lvl; }
+
+  /** Whether this spell's card carries "Add as follower" for this viewer. */
+  offersFollower(spell: PcSpell): boolean {
+    return this.followerSpells() && !!followerSpellFor(spell.name);
+  }
+
+  requestFollower(spell: PcSpell, event: Event): void {
+    event.stopPropagation();
+    this.followerRequested.emit(spell.name);
+  }
 
   /** "2 of 4 left" / "None left" beside a spell level's heading. */
   readonly slotsLeft = slotsLeftText;

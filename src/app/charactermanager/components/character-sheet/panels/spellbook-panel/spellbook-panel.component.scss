@@ -103,6 +103,12 @@
   margin-bottom: 8px;
 }
 
+// "Add as follower" on a spell that makes a creature: a button on its own line.
+.spell-follower-btn {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .grant-always-hint {
   margin: -6px 0 10px;
 }

@@ -1,0 +1,31 @@
+/* The modal shell, .field, .btn and .modal-actions come from global styles.css. */
+
+// "Empower <familiar>": a plain checkbox line, like the spellbook's grant toggles.
+.follower-dialog-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+// What the choices come to ("AC 17 · HP 70").
+.follower-dialog-summary {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.follower-dialog-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.follower-dialog-error {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--crimson);
+}

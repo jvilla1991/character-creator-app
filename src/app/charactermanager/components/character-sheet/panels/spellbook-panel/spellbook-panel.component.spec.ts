@@ -1122,3 +1122,62 @@ describe('SpellbookPanelComponent (always-prepared spells)', () => {
     expect(emitted[1].spells![0].prepared).toBeTrue();
   });
 });
+
+describe('SpellbookPanelComponent (Add as follower)', () => {
+  const SPELLS = [
+    spell({ name: 'Find Familiar', lvl: 1 }),
+    spell({ name: 'Battle Familiar', lvl: 2 }),
+    spell({ name: 'Summon Beast', lvl: 2 }),
+    spell({ name: 'Summon Plant', lvl: 5 }),
+    spell({ name: 'Summon Dinosaur', lvl: 6 }),
+    spell({ name: 'Summon Fey', lvl: 3 }),
+    spell({ name: 'Fire Bolt', lvl: 0 }),
+  ];
+
+  function render(inputs: Record<string, unknown>): { fixture: ComponentFixture<SpellbookPanelComponent>; labels: string[] } {
+    const fixture = TestBed.createComponent(SpellbookPanelComponent);
+    fixture.componentRef.setInput('pc', {
+      id: 1, name: 'Elaria', clazz: 'Wizard', level: 11, playerName: 'Sam', spellSlots: {}, spells: SPELLS,
+    } as PC);
+    for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
+    fixture.detectChanges();
+    const buttons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button.spell-follower-btn'));
+    return { fixture, labels: buttons.map(b => b.getAttribute('aria-label') ?? '') };
+  }
+
+  it('the owner gets the button on Find Familiar and the three Arcana Unleashed spells, and on no other spell', () => {
+    expect(render({ followerSpells: true }).labels).toEqual([
+      'Add Find Familiar as follower', 'Add Battle Familiar as follower',
+      'Add Summon Plant as follower', 'Add Summon Dinosaur as follower',
+    ]);
+  });
+
+  it('nobody else gets it: off by default, and off for the DM\'s view', () => {
+    expect(render({}).labels).toEqual([]);
+    expect(render({ followerSpells: false, editable: true, addAllowed: true }).labels).toEqual([]);
+  });
+
+  it('pressing it asks the sheet for that spell\'s dialog and leaves the card open', () => {
+    const { fixture } = render({ followerSpells: true });
+    const panel = fixture.componentInstance;
+    const asked: string[] = [];
+    panel.followerRequested.subscribe(name => asked.push(name));
+
+    const button = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button.spell-follower-btn')[2];
+    expect(button.textContent!.trim()).toBe('Add as follower');
+    button.click();
+    fixture.detectChanges();
+
+    expect(asked).toEqual(['Summon Plant']);
+    expect(panel.isExpanded('Summon Plant')).toBeTrue();
+  });
+
+  it('matches the name on the spell entry whatever its case, for the owner only', () => {
+    const owner = render({ followerSpells: true }).fixture.componentInstance;
+    expect(owner.offersFollower(spell({ name: 'find familiar' }))).toBeTrue();
+    expect(owner.offersFollower(spell({ name: 'Find Steed' }))).toBeFalse();
+
+    const other = makePanel({ spells: [] });
+    expect(other.offersFollower(spell({ name: 'Find Familiar' }))).toBeFalse();
+  });
+});

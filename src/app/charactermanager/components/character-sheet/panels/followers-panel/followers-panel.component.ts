@@ -2,18 +2,29 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, in
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { PC } from '../../../../models/pc';
-import { Follower, STAT_BLOCK_EXAMPLE, parseStatBlock } from '../../../../models/follower';
+import {
+  Follower, FollowerKind, STAT_BLOCK_EXAMPLE, followerKind, parseStatBlock, playerMayDismiss,
+} from '../../../../models/follower';
 import { FollowerService } from '../../../../services/follower.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { tintFor } from '../../../../utils/character-math';
 
+/** What each kind of follower is called on its row. */
+const KIND_LABELS: Record<FollowerKind, string> = {
+  DM_GRANT: 'Granted',
+  SUMMON: 'Summon',
+  FAMILIAR: 'Familiar',
+  COMPANION: 'Companion',
+};
+
 /**
- * The Followers tab: the companions a DM has granted this character. Everyone
- * who can see the sheet sees the list and can open a follower's own sheet; only
- * the DM's cross-link view (`canGrant`) gets the grant form and Dismiss — the
- * server enforces the same rule. Self-serviced via FollowerService, like the
- * notes panel; opening a follower is bubbled to the sheet, which swaps itself
- * for the follower's sheet.
+ * The Followers tab: the companions a DM has granted this character and the
+ * creatures its own spells made. Everyone who can see the sheet sees the list
+ * and can open a follower's own sheet. The DM's cross-link view (`canGrant`)
+ * gets the grant form and may dismiss any follower; the owner (`ownSheet`) may
+ * dismiss their own summons and familiar — the server enforces the same rules.
+ * Self-serviced via FollowerService, like the notes panel; opening a follower
+ * is bubbled to the sheet, which swaps itself for the follower's sheet.
  */
 @Component({
     selector: 'app-followers-panel',
@@ -26,6 +37,8 @@ export class FollowersPanelComponent implements OnChanges {
   @Input() pc!: PC;
   /** DM cross-link view — reveals Grant Follower and Dismiss. */
   @Input() canGrant = false;
+  /** The viewer owns this character — reveals Dismiss on their own summons and familiar. */
+  @Input() ownSheet = false;
   /** The player (or DM) clicked a follower — the sheet opens its sheet. */
   readonly followerOpened = output<Follower>();
 
@@ -63,6 +76,14 @@ export class FollowersPanelComponent implements OnChanges {
   // ── List ───────────────────────────────────────────────────────────────────
 
   tintFor(follower: Follower): string { return tintFor(follower.statBlock); }
+
+  /** "Granted", "Summon", "Familiar" or "Companion": what the follower is. */
+  kindLabel(follower: Follower): string { return KIND_LABELS[followerKind(follower)]; }
+
+  /** Whether this viewer may dismiss the follower: the DM any, the owner their own summon or familiar. */
+  canDismiss(follower: Follower): boolean {
+    return this.canGrant || (this.ownSheet && playerMayDismiss(follower));
+  }
 
   initialsFor(follower: Follower): string {
     return (follower.statBlock.portraitInitials || follower.name.slice(0, 2)).toUpperCase();
@@ -148,16 +169,16 @@ export class FollowersPanelComponent implements OnChanges {
     });
   }
 
-  // ── Dismiss (DM) ───────────────────────────────────────────────────────────
+  // ── Dismiss (DM, or the owner for a summon or familiar) ────────────────────
   // Two clicks: the first arms the row, the second removes the follower for good.
 
   askDismiss(follower: Follower): void { this.confirmingDismissId.set(follower.id); }
   cancelDismiss(): void { this.confirmingDismissId.set(null); }
 
   confirmDismiss(follower: Follower): void {
-    if (this.saving()) return;
+    if (this.saving() || !this.canDismiss(follower)) return;
     this.saving.set(true);
-    this.followerService.dismiss(this.pc.id, follower.id).subscribe({
+    this.followerService.dismiss(this.pc.id, follower.id, this.canGrant).subscribe({
       next: () => {
         this.followers.update(list => list.filter(f => f.id !== follower.id));
         this.confirmingDismissId.set(null);

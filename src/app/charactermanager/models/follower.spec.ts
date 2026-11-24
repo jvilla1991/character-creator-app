@@ -1,7 +1,25 @@
-import { Follower, STAT_BLOCK_EXAMPLE, followerToPc, parseStatBlock, pcToStatBlock } from './follower';
+import {
+  Follower, STAT_BLOCK_EXAMPLE, followerKind, followerToPc, parseStatBlock, pcToStatBlock, playerMayDismiss,
+} from './follower';
 import { PC } from './pc';
 
 describe('follower model', () => {
+  describe('kind', () => {
+    it('a follower that carries none is a DM grant', () => {
+      expect(followerKind({})).toBe('DM_GRANT');
+      expect(followerKind({ kind: undefined })).toBe('DM_GRANT');
+      expect(followerKind({ kind: 'FAMILIAR' })).toBe('FAMILIAR');
+    });
+
+    it('the owning player may dismiss only their own summon or familiar', () => {
+      expect(playerMayDismiss({ kind: 'SUMMON' })).toBeTrue();
+      expect(playerMayDismiss({ kind: 'FAMILIAR' })).toBeTrue();
+      expect(playerMayDismiss({ kind: 'DM_GRANT' })).toBeFalse();
+      expect(playerMayDismiss({ kind: 'COMPANION' })).toBeFalse();
+      expect(playerMayDismiss({})).toBeFalse();
+    });
+  });
+
   describe('parseStatBlock', () => {
     it('fills every missing field with a rules-derived default', () => {
       const { statBlock, error } = parseStatBlock('{}');

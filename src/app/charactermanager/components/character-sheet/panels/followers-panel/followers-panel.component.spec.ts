@@ -4,7 +4,7 @@ import { SimpleChange } from '@angular/core';
 import { FollowersPanelComponent } from './followers-panel.component';
 import { FollowerService } from '../../../../services/follower.service';
 import { PC } from '../../../../models/pc';
-import { Follower } from '../../../../models/follower';
+import { Follower, FollowerKind } from '../../../../models/follower';
 
 describe('FollowersPanelComponent', () => {
   let followerService: jasmine.SpyObj<FollowerService>;
@@ -175,10 +175,70 @@ describe('FollowersPanelComponent', () => {
     });
   });
 
+  describe('kinds', () => {
+    const ofKind = (id: number, kind?: FollowerKind): Follower => ({ ...follower(id, 'F' + id), kind });
+
+    it('names each follower\'s kind, and reads one with no kind as granted', () => {
+      expect(component.kindLabel(ofKind(1))).toBe('Granted');
+      expect(component.kindLabel(ofKind(2, 'DM_GRANT'))).toBe('Granted');
+      expect(component.kindLabel(ofKind(3, 'SUMMON'))).toBe('Summon');
+      expect(component.kindLabel(ofKind(4, 'FAMILIAR'))).toBe('Familiar');
+      expect(component.kindLabel(ofKind(5, 'COMPANION'))).toBe('Companion');
+    });
+
+    it('the DM may dismiss every kind', () => {
+      component.canGrant = true;
+      for (const kind of [undefined, 'DM_GRANT', 'SUMMON', 'FAMILIAR', 'COMPANION'] as const) {
+        expect(component.canDismiss(ofKind(1, kind))).withContext(String(kind)).toBeTrue();
+      }
+    });
+
+    it('the owner may dismiss only their own summon and familiar', () => {
+      component.ownSheet = true;
+      expect(component.canDismiss(ofKind(1, 'SUMMON'))).toBeTrue();
+      expect(component.canDismiss(ofKind(1, 'FAMILIAR'))).toBeTrue();
+      expect(component.canDismiss(ofKind(1, 'DM_GRANT'))).toBeFalse();
+      expect(component.canDismiss(ofKind(1, 'COMPANION'))).toBeFalse();
+      expect(component.canDismiss(ofKind(1))).toBeFalse();
+    });
+
+    it('anyone else may dismiss nothing', () => {
+      for (const kind of [undefined, 'DM_GRANT', 'SUMMON', 'FAMILIAR', 'COMPANION'] as const) {
+        expect(component.canDismiss(ofKind(1, kind))).withContext(String(kind)).toBeFalse();
+      }
+    });
+
+    it('the owner dismisses their familiar in the same two steps, as a player', () => {
+      const pip = ofKind(4, 'FAMILIAR');
+      followerService.list.and.returnValue(of([follower(1, 'Brannoc'), pip]));
+      followerService.dismiss.and.returnValue(of(undefined));
+      bind(pc(7));
+      component.ownSheet = true;
+
+      component.askDismiss(pip);
+      component.confirmDismiss(pip);
+
+      expect(followerService.dismiss).toHaveBeenCalledWith(7, 4, false);
+      expect(component.followers().map(f => f.name)).toEqual(['Brannoc']);
+    });
+
+    it('never sends a dismissal the viewer may not make', () => {
+      followerService.list.and.returnValue(of([follower(1, 'Brannoc')]));
+      bind(pc(7));
+      component.ownSheet = true;
+
+      component.confirmDismiss(component.followers()[0]); // a DM grant
+
+      expect(followerService.dismiss).not.toHaveBeenCalled();
+      expect(component.followers().length).toBe(1);
+    });
+  });
+
   describe('dismissing', () => {
     beforeEach(() => {
       followerService.list.and.returnValue(of([follower(1, 'Brannoc'), follower(2, 'Wisp')]));
       bind(pc(7));
+      component.canGrant = true; // the DM: these are grants
     });
 
     it('takes two steps: arm the row, then confirm', () => {
@@ -190,7 +250,7 @@ describe('FollowersPanelComponent', () => {
       expect(followerService.dismiss).not.toHaveBeenCalled();
 
       component.confirmDismiss(brannoc);
-      expect(followerService.dismiss).toHaveBeenCalledWith(7, 1);
+      expect(followerService.dismiss).toHaveBeenCalledWith(7, 1, true);
       expect(component.followers().map(f => f.name)).toEqual(['Wisp']);
       expect(component.confirmingDismissId()).toBeNull();
     });
@@ -212,5 +272,45 @@ describe('FollowersPanelComponent', () => {
       expect(component.followers().length).toBe(2);
       expect(component.saving()).toBeFalse();
     });
+  });
+});
+
+describe('FollowersPanelComponent as rendered', () => {
+  const follower = (id: number, name: string, kind?: FollowerKind): Follower =>
+    ({ id, pcId: 7, name, kind, statBlock: { race: 'Human', clazz: 'Guard', level: 2 } });
+
+  function render(inputs: { canGrant?: boolean; ownSheet?: boolean }): Array<{ kind: string; dismiss: boolean }> {
+    const followerService = jasmine.createSpyObj<FollowerService>('FollowerService', ['list', 'grant', 'dismiss'],
+      { changes$: new Subject<{ pcId: number }>() });
+    followerService.list.and.returnValue(of([
+      follower(1, 'Brannoc'), follower(2, 'Thorn', 'SUMMON'), follower(3, 'Pip', 'FAMILIAR'),
+    ]));
+    TestBed.configureTestingModule({ providers: [{ provide: FollowerService, useValue: followerService }] });
+    const fixture = TestBed.createComponent(FollowersPanelComponent);
+    fixture.componentRef.setInput('pc', { id: 7, name: 'Throk', clazz: 'Barbarian', level: 4, playerName: 'Ben' } as PC);
+    fixture.componentRef.setInput('canGrant', !!inputs.canGrant);
+    fixture.componentRef.setInput('ownSheet', !!inputs.ownSheet);
+    fixture.detectChanges();
+    const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.follower-row'));
+    return rows.map(row => ({
+      kind: row.querySelector('.follower-kind')!.textContent!.trim(),
+      dismiss: Array.from(row.querySelectorAll('button')).some(b => b.textContent!.trim() === 'Dismiss'),
+    }));
+  }
+
+  it('shows each row\'s kind, and the owner a Dismiss on their summon and familiar only', () => {
+    expect(render({ ownSheet: true })).toEqual([
+      { kind: 'Granted', dismiss: false },
+      { kind: 'Summon', dismiss: true },
+      { kind: 'Familiar', dismiss: true },
+    ]);
+  });
+
+  it('shows the DM a Dismiss on every row', () => {
+    expect(render({ canGrant: true }).map(r => r.dismiss)).toEqual([true, true, true]);
+  });
+
+  it('shows a viewer who is neither no Dismiss at all', () => {
+    expect(render({}).map(r => r.dismiss)).toEqual([false, false, false]);
   });
 });

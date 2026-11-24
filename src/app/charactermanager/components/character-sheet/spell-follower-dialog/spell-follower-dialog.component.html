@@ -1,0 +1,87 @@
+<div class="modal-backdrop" (click)="dismiss()">
+  @if (spell(); as info) {
+    <app-modal [title]="info.name" (dismiss)="dismiss()">
+
+      <div class="field">
+        <label [attr.for]="uid + '-name'">Name</label>
+        <input [id]="uid + '-name'" type="text" maxlength="100" autofocus
+          [value]="name()" (input)="onName($any($event.target).value)" (keydown.enter)="add()">
+      </div>
+
+      @if (slotLevels().length) {
+        <div class="field">
+          <label [attr.for]="uid + '-slot'">Slot level</label>
+          <select [id]="uid + '-slot'" (change)="onSlotLevel($any($event.target).value)">
+            @for (option of slotLevels(); track option.level) {
+              <option [value]="option.level" [selected]="option.level === slotLevel()">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="field">
+        <label [attr.for]="uid + '-form'">Form</label>
+        <select [id]="uid + '-form'" (change)="form.set($any($event.target).value)">
+          @for (option of info.forms; track option) {
+            <option [value]="option" [selected]="option === form()">{{ option }}</option>
+          }
+        </select>
+      </div>
+
+      @if (empowerable(); as familiar) {
+        <label class="follower-dialog-check">
+          <input type="checkbox" [checked]="empower()" (change)="empower.set($any($event.target).checked)">
+          Empower {{ familiar.name }}
+        </label>
+      }
+
+      @if (asksCreatureType()) {
+        <div class="field">
+          <label [attr.for]="uid + '-type'">Creature type</label>
+          <select [id]="uid + '-type'" (change)="creatureType.set($any($event.target).value)">
+            @for (option of info.creatureTypes; track option) {
+              <option [value]="option" [selected]="option === creatureType()">{{ option }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (asksElemental()) {
+        <div class="field">
+          <label [attr.for]="uid + '-elemental'">Elemental Familiar damage</label>
+          <select [id]="uid + '-elemental'" (change)="elementalDamage.set($any($event.target).value)">
+            @for (option of elementalTypes; track option) {
+              <option [value]="option" [selected]="option === elementalDamage()">{{ option }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (asksOtherworldly()) {
+        <div class="field">
+          <label [attr.for]="uid + '-otherworldly'">Otherworldly Familiar resistance</label>
+          <select [id]="uid + '-otherworldly'" (change)="otherworldlyDamage.set($any($event.target).value)">
+            @for (option of otherworldlyTypes; track option) {
+              <option [value]="option" [selected]="option === otherworldlyDamage()">{{ option }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (summary()) {
+        <p class="follower-dialog-summary numeric">{{ summary() }}</p>
+      }
+      @if (replaces(); as familiar) {
+        <p class="follower-dialog-note">Replaces your current familiar, {{ familiar.name }}.</p>
+      }
+      @if (error(); as message) {
+        <p class="follower-dialog-error" role="alert">{{ message }}</p>
+      }
+
+      <div class="modal-actions">
+        <button class="btn" type="button" (click)="dismiss()">Cancel</button>
+        <button class="btn primary" type="button" [disabled]="!canAdd()" (click)="add()">Add follower</button>
+      </div>
+    </app-modal>
+  }
+</div>

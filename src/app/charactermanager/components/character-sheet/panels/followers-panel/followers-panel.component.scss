@@ -128,6 +128,11 @@
   white-space: nowrap;
 }
 
+// What the follower is ("Familiar"), leading its summary line.
+.follower-kind {
+  color: var(--text-2);
+}
+
 .follower-empty {
   margin: 0;
   padding: 8px 0;
