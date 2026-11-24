@@ -160,33 +160,48 @@ describe('SpellPickerComponent', () => {
     expect(component.isSelected(spells[1])).toBeFalse();
   });
 
-  // --- content-source filter (Base Game / World of Warcraft) ---
+  // --- content-source filter (Base Game / World of Warcraft / Arcana Unleashed) ---
 
   describe('source filter', () => {
     const wow = (name: string): DndSpell => ({ ...dndSpell(1, name), classes: [], source: 'World of Warcraft' });
 
+    const arcana = (name: string): DndSpell => ({ ...dndSpell(1, name), source: 'Arcana Unleashed' });
+
     beforeEach(() => {
-      component.spells = [dndSpell(1, 'Bless'), wow('Death Grip')];
+      component.spells = [dndSpell(1, 'Bless'), wow('Death Grip'), arcana('Battle Familiar')];
     });
 
-    it('shows both sources by default', () => {
-      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless', 'Death Grip']);
+    it('shows every source by default', () => {
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless', 'Death Grip', 'Battle Familiar']);
       expect(component.noSourcesEnabled).toBeFalse();
     });
 
     it('hides World of Warcraft spells when that source is unchecked', () => {
       component.toggleSource('World of Warcraft');
-      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless']);
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless', 'Battle Familiar']);
+    });
+
+    it('hides Arcana Unleashed spells when that source is unchecked', () => {
+      component.toggleSource('Arcana Unleashed');
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Bless', 'Death Grip']);
     });
 
     it('hides base spells (no source = Base Game) when Base Game is unchecked', () => {
       component.toggleSource('Base Game');
-      expect(component.filteredSpells.map(s => s.name)).toEqual(['Death Grip']);
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Death Grip', 'Battle Familiar']);
     });
 
-    it('shows nothing — and flags it — with both sources unchecked', () => {
+    it('still shows one book with the other two unchecked, and does not call the list empty by choice', () => {
       component.toggleSource('Base Game');
       component.toggleSource('World of Warcraft');
+      expect(component.filteredSpells.map(s => s.name)).toEqual(['Battle Familiar']);
+      expect(component.noSourcesEnabled).toBeFalse();
+    });
+
+    it('shows nothing — and flags it — with every source unchecked', () => {
+      component.toggleSource('Base Game');
+      component.toggleSource('World of Warcraft');
+      component.toggleSource('Arcana Unleashed');
       expect(component.filteredSpells).toEqual([]);
       expect(component.noSourcesEnabled).toBeTrue();
     });
@@ -194,7 +209,7 @@ describe('SpellPickerComponent', () => {
     it('re-enables a source when toggled back on', () => {
       component.toggleSource('World of Warcraft');
       component.toggleSource('World of Warcraft');
-      expect(component.filteredSpells.length).toBe(2);
+      expect(component.filteredSpells.length).toBe(3);
     });
   });
 });

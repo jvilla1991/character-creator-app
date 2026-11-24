@@ -609,8 +609,10 @@ export class DndResourcesService {
 
   /**
    * The full spell list: 339 SRD 5.2 spells, the 52 remaining 2024 PHB spells
-   * from the supplement file, then the World of Warcraft module's spells (in that
-   * order). WoW entries carry `source: 'World of Warcraft'`. Hero-class spells
+   * from the supplement file, the World of Warcraft module's spells, then the
+   * Arcana Unleashed book's 33 spells (in that order). WoW entries carry
+   * `source: 'World of Warcraft'`, Arcana ones `source: 'Arcana Unleashed'`; both
+   * are hidden by unchecking their source in a filter. Hero-class spells
    * have `classes: []` (they ride on a subclass), so class-filtered pickers never
    * offer them; the WoW Druid's, WoW Paladin's and WoW Hunter's general spells
    * (Wrath, Moonfire, Consecration, Divine Shield, Freezing Trap, …) have
@@ -624,8 +626,9 @@ export class DndResourcesService {
         this.http.get<DndSpell[]>('/assets/data/spells/srd-5.2-spells.json'),
         this.http.get<DndSpell[]>('/assets/data/spells/phb-2024-supplement.json'),
         this.http.get<DndSpell[]>('/assets/data/spells/wow-spells.json'),
+        this.http.get<DndSpell[]>('/assets/data/spells/arcana-unleashed-spells.json'),
       ]).pipe(
-        map(([srd, supplement, wow]) => [...srd, ...supplement, ...wow]),
+        map(([srd, supplement, wow, arcana]) => [...srd, ...supplement, ...wow, ...arcana]),
         retry(1),
         // Don't let a transient failure (e.g. a dev-server blip) poison the
         // cache — drop it so the next request re-fetches instead of replaying

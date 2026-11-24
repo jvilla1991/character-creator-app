@@ -1,5 +1,5 @@
 import { DndSpell } from './dnd-api.types';
-import { filterBySource, spellSource } from './content-source';
+import { filterBySource, onlyContentSources, spellSource } from './content-source';
 import { spellKey } from './spell-names';
 import {
   WOW_MAGE_EXTRA_SPELLS, WOW_MAGE_GUIDANCE, WOW_MAGE_SPELLS, WOW_MAGE_SUGGESTED_SPELLS,
@@ -95,8 +95,8 @@ describe('World of Warcraft mage spells (wow-spells.json)', () => {
   it('hides them when the World of Warcraft source is off', () => {
     const wizard = wow.filter(s => s.classes.includes('wizard'));
     expect(wizard.map(s => s.name)).toEqual([...WOW_MAGE_SPELLS]);
-    expect(filterBySource(wizard, { 'Base Game': true, 'World of Warcraft': false })).toEqual([]);
-    expect(filterBySource(wizard, { 'Base Game': false, 'World of Warcraft': true }).length).toBe(4);
+    expect(filterBySource(wizard, onlyContentSources('Base Game'))).toEqual([]);
+    expect(filterBySource(wizard, onlyContentSources('World of Warcraft')).length).toBe(4);
   });
 
   it('has the three added spells as existing base spells that are not on the Wizard list', () => {

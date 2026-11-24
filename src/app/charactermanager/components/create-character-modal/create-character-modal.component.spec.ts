@@ -791,16 +791,17 @@ describe('CreateCharacterModalComponent — logic', () => {
   // ── Content sources + Death Knight (Paladin) hero class ────────────────────
 
   describe('content-source filter', () => {
-    function spell(name: string, source?: 'Base Game' | 'World of Warcraft') {
+    function spell(name: string, source?: 'Base Game' | 'World of Warcraft' | 'Arcana Unleashed') {
       return { level: 1, name, school: 'necromancy' as const, actionType: 'action', classes: [], concentration: false,
         ritual: false, range: '', components: [], duration: '', description: '', ...(source ? { source } : {}) };
     }
 
-    it('starts with both sources enabled', () => {
-      expect(component.contentSources).toEqual({ 'Base Game': true, 'World of Warcraft': true });
+    it('starts with every source enabled', () => {
+      expect(component.contentSources)
+        .toEqual({ 'Base Game': true, 'World of Warcraft': true, 'Arcana Unleashed': true });
     });
 
-    it('shows the base classes then the WoW hero classes with both sources on', () => {
+    it('shows the base classes then the WoW hero classes with every source on', () => {
       expect(component.visibleClassOptions.map(o => o.label))
         .toEqual(['Barbarian', 'Bard', 'Wizard', 'Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Mage (Wizard)', 'Monk', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
@@ -816,19 +817,32 @@ describe('CreateCharacterModalComponent — logic', () => {
         .toEqual(['Death Knight (Paladin)', 'Demon Hunter (Ranger)', 'Druid', 'Evoker (Sorcerer)', 'Hunter (Ranger)', 'Mage (Wizard)', 'Monk', 'Paladin', 'Priest (Cleric)', 'Rogue', 'Shaman (Barbarian)', 'Warlock', 'Warrior (Fighter)']);
     });
 
-    it('shows no classes (without throwing) with both sources off', () => {
+    it('shows no classes (without throwing) with Base Game and World of Warcraft off', () => {
       component.toggleContentSource('Base Game');
       component.toggleContentSource('World of Warcraft');
       expect(component.visibleClassOptions).toEqual([]);
     });
 
-    it('filters the spell step list by source (both on / one off / both off)', () => {
-      component.spellList = [spell('Bless'), spell('Death Grip', 'World of Warcraft')];
-      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless', 'Death Grip']);
+    it('filters the spell step list by source (all on / one off / all off)', () => {
+      component.spellList = [spell('Bless'), spell('Death Grip', 'World of Warcraft'), spell('Catnap', 'Arcana Unleashed')];
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless', 'Death Grip', 'Catnap']);
       component.toggleContentSource('World of Warcraft');
+      expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless', 'Catnap']);
+      component.toggleContentSource('Arcana Unleashed');
       expect(component.filteredSpellList.map(s => s.name)).toEqual(['Bless']);
+      expect(component.noContentSourcesEnabled).toBeFalse();
       component.toggleContentSource('Base Game');
       expect(component.filteredSpellList).toEqual([]);
+      expect(component.noContentSourcesEnabled).toBeTrue();
+    });
+
+    it('turns Arcana Unleashed on for a draft saved before that source existed', () => {
+      localStorage.setItem('tm_pc_draft:tester', JSON.stringify({ v: 1, contentSources: { 'Base Game': true, 'World of Warcraft': false } }));
+      const restored = TestBed.runInInjectionContext(
+        () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+      restored.ngOnInit();
+      expect(restored.contentSources)
+        .toEqual({ 'Base Game': true, 'World of Warcraft': false, 'Arcana Unleashed': true });
     });
 
     it('keeps a chosen class selected when the filter hides it, and flags it', () => {
