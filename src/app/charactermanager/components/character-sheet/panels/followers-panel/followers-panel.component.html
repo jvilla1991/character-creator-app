@@ -51,13 +51,13 @@
             <span class="portrait" [style.background]="tintFor(f)" aria-hidden="true">{{ initialsFor(f) }}</span>
             <span class="follower-id">
               <span class="follower-name">{{ f.name }}</span>
-              <span class="follower-summary">{{ summaryFor(f) }}</span>
+              <span class="follower-summary"><span class="follower-kind">{{ kindLabel(f) }}</span> · {{ summaryFor(f) }}</span>
             </span>
             <span class="follower-stats numeric">
               HP {{ f.statBlock.hp?.cur ?? '—' }}/{{ f.statBlock.hp?.max ?? '—' }} · AC {{ f.statBlock.ac ?? '—' }}
             </span>
           </button>
-          @if (canGrant) {
+          @if (canDismiss(f)) {
             @if (confirmingDismissId() === f.id) {
               <button class="btn danger sm" [disabled]="saving()" (click)="confirmDismiss(f)">Dismiss for good</button>
               <button class="btn sm" (click)="cancelDismiss()">Keep</button>

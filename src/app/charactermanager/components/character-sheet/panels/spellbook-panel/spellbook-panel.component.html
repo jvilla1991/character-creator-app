@@ -232,6 +232,12 @@
                     {{ isAlwaysPrepared(s) ? 'Count against prepared spells' : 'Mark always prepared' }}
                   </button>
                 }
+                <!-- A spell that makes a creature: its owner adds that creature to the Followers tab. -->
+                @if (offersFollower(s)) {
+                  <button type="button" class="btn sm spell-follower-btn" aria-haspopup="dialog"
+                    [attr.aria-label]="'Add ' + s.name + ' as follower'"
+                    (click)="requestFollower(s, $event)">Add as follower</button>
+                }
                 <!-- ELI5 on: the one-sentence summary stands in for the full text.
                 Spells without one (homebrew, placeholders) keep their description. -->
                 @let summary = eli5.summaryFor(s.name);

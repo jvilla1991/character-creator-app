@@ -10,6 +10,7 @@ export interface PcActivityLogEntry {
   pcId: number;
   // 'LEVEL_UP' | 'PURCHASE' | 'SALE' | 'LOOT' | 'XP_AWARD' | 'LONG_REST' | 'SHORT_REST'
   // | 'INSPIRATION' | 'DM_EDIT' | 'SPELL_SLOT' (a slot spent or restored by hand)
+  // | 'FOLLOWER' (the player summoned or dismissed a summon or a familiar of their own)
   actionType: string;
   description: string;
   actorUserId?: string;

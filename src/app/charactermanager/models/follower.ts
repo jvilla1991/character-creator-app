@@ -9,7 +9,19 @@ import { modFromScore } from '../utils/character-math';
  */
 export type FollowerStatBlock = Partial<Omit<PC, 'id' | 'name'>>;
 
-/** A companion the campaign's DM granted to a character. */
+/**
+ * What a follower is, which decides who may create and dismiss it:
+ * `DM_GRANT` a companion the campaign's DM grants (the DM alone);
+ * `SUMMON` a creature the player's own spell conjures and `FAMILIAR` the
+ * character's familiar, one per character (the owning player, or the DM);
+ * `COMPANION` reserved for server-owned companions.
+ */
+export type FollowerKind = 'DM_GRANT' | 'SUMMON' | 'FAMILIAR' | 'COMPANION';
+
+/** The most followers one character can have, of every kind together. */
+export const MAX_FOLLOWERS = 20;
+
+/** A character's companion: granted by the DM, or made by the player's own spell. */
 export interface Follower {
   id: number;
   /** The character this follower belongs to. */
@@ -17,6 +29,19 @@ export interface Follower {
   name: string;
   statBlock: FollowerStatBlock;
   createdAt?: string;
+  /** Absent on a follower from before kinds existed: read it through followerKind(). */
+  kind?: FollowerKind;
+}
+
+/** A follower's kind; one that carries none is a DM grant. */
+export function followerKind(follower: Pick<Follower, 'kind'>): FollowerKind {
+  return follower.kind ?? 'DM_GRANT';
+}
+
+/** Whether the owning player may dismiss the follower themselves: their own summon or familiar. */
+export function playerMayDismiss(follower: Pick<Follower, 'kind'>): boolean {
+  const kind = followerKind(follower);
+  return kind === 'SUMMON' || kind === 'FAMILIAR';
 }
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';

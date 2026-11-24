@@ -66,6 +66,32 @@ describe('CharacterSheetComponent', () => {
     expect(component.inCampaign).toBeFalse();
   });
 
+  // --- "Add as follower" on a spell that makes a creature ---
+
+  describe('canAddSpellFollowers', () => {
+    it('is the owner\'s: on their own sheet, and on the sheet embedded in a live session', () => {
+      expect(component.canAddSpellFollowers).toBeTrue(); // showActions defaults to true
+
+      component.showActions = false;
+      component.inventoryEditable = true; // the session embed
+      expect(component.canAddSpellFollowers).toBeTrue();
+    });
+
+    it('is not the DM\'s on a member\'s character', () => {
+      component.editable = true;
+      expect(component.canAddSpellFollowers).toBeFalse();
+    });
+
+    it('is off on a read-only embed and on a follower\'s own sheet', () => {
+      component.showActions = false;
+      expect(component.canAddSpellFollowers).toBeFalse();
+
+      component.inventoryEditable = true; // the owner's interactive follower sheet
+      component.followerMode = true;
+      expect(component.canAddSpellFollowers).toBeFalse();
+    });
+  });
+
   // --- Header class suffix (hero classes) ---
 
   it('builds the header suffix from subclass and specialization', () => {
