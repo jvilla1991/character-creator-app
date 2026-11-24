@@ -46,7 +46,7 @@ describe('spell-names', () => {
     let index: Map<string, DndSpell>;
 
     beforeAll(async () => {
-      const files = ['srd-5.2-spells.json', 'phb-2024-supplement.json', 'wow-spells.json'];
+      const files = ['srd-5.2-spells.json', 'phb-2024-supplement.json', 'wow-spells.json', 'arcana-unleashed-spells.json'];
       const lists = await Promise.all(files.map(f => fetch(`/assets/data/spells/${f}`).then(r => r.json() as Promise<DndSpell[]>)));
       index = new Map(lists.flat().map(s => [s.name.toLowerCase(), s]));
     });
