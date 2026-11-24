@@ -20,6 +20,9 @@ type LockedFeature = { name: string; desc: string; level: number; source: string
 
 const nameKey = (name: string): string => name.trim().toLowerCase();
 
+/** Stable empty list for a feature without a counter. */
+const NO_RESOURCES: readonly ClassResourceState[] = [];
+
 @Component({
     selector: 'app-features-list',
     templateUrl: './features-list.component.html',
@@ -139,27 +142,39 @@ export class FeaturesListComponent {
 
   /**
    * Where each counter goes. A resource sits under the listed feature it
-   * belongs to (Sorcery Points under Font of Magic). One whose feature is not
-   * in the list — the level 1 features, which the roadmap does not carry —
-   * gets a row of its own, named after that feature. Death Coil and Soul
-   * Fragments are left to the hero-class panel, beside the hero feature.
+   * belongs to (Sorcery Points under Font of Magic; a feat's counters under the
+   * feat, two of them for Familiar Friend). One whose feature is not in the
+   * list — the level 1 features, which the roadmap does not carry — gets a row
+   * of its own, named after that feature. Death Coil and Soul Fragments are
+   * left to the hero-class panel, beside the hero feature.
    */
   private readonly resourcePlacement = computed(() => {
-    const byFeature = new Map<Feature, ClassResourceState>();
+    const byFeature = new Map<Feature, ClassResourceState[]>();
     const unlisted: ClassResourceState[] = [];
     const features = this.unlocked();
     for (const resource of classResourceStates(this.pcSignal())) {
       if (HERO_PANEL_RESOURCES.includes(resource.key)) continue;
-      const home = features.find(f => nameKey(f.name) === nameKey(resource.feature) && !byFeature.has(f));
-      if (home) byFeature.set(home, resource);
-      else unlisted.push(resource);
+      const home = features.find(f => nameKey(f.name) === nameKey(resource.feature));
+      if (!home) unlisted.push(resource);
+      else if (byFeature.has(home)) byFeature.get(home)!.push(resource);
+      else byFeature.set(home, [resource]);
     }
     return { byFeature, unlisted };
   });
 
-  /** The counter that belongs under a listed feature, if any. */
+  /** The counters that belong under a listed feature; empty for most. */
+  resourcesFor(feature: Feature): readonly ClassResourceState[] {
+    return this.resourcePlacement().byFeature.get(feature) ?? NO_RESOURCES;
+  }
+
+  /** The (first) counter that belongs under a listed feature, if any. */
   resourceFor(feature: Feature): ClassResourceState | undefined {
-    return this.resourcePlacement().byFeature.get(feature);
+    return this.resourcesFor(feature)[0];
+  }
+
+  /** What an unlisted counter's row says it comes from: the class, or 'Feat' for a feat's counter. */
+  unlistedSource(resource: ClassResourceState): string {
+    return resource.fromFeat ? 'Feat' : this.pc.clazz;
   }
 
   /** Resources whose feature is not listed above; each is shown as a feature row of its own. */

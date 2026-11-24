@@ -97,6 +97,56 @@ describe('FeaturesListComponent', () => {
       expect(component.unlistedResources).toEqual([]);
     });
 
+    it('puts a feat\'s counters under the feat, both of them when it has two', () => {
+      const friend = { name: 'Familiar Friend', source: 'Familiar Trainer · Origin Feat', desc: 'A familiar.' };
+      const resistant = { name: 'Spell Resistant', source: 'Feat (Level 4)', desc: '' };
+      component.pc = {
+        ...component.pc, feat: 'Familiar Friend', features: [friend, resistant],
+        classResources: { helpfulFriend: 1, magicResistant: 2 },
+      };
+
+      expect(component.resourcesFor(friend).map(r => [r.key, r.used, r.remaining]))
+        .toEqual([['findFamiliarFreeCast', 0, 1], ['helpfulFriend', 1, 1]]);
+      expect(component.resourcesFor(friend)).toBe(component.resourcesFor(friend));   // stable for the template
+      expect(component.resourceFor(friend)?.key).toBe('findFamiliarFreeCast');
+      expect(component.resourcesFor(resistant).map(r => [r.key, r.used, r.remaining])).toEqual([['magicResistant', 2, 0]]);
+      // The Fighter's own level 1 and 2 features are not saved here: they keep their rows.
+      expect(component.unlistedResources.map(r => r.key)).toEqual(['secondWind', 'actionSurge']);
+      expect(component.unlistedResources.map(r => component.unlistedSource(r))).toEqual(['Fighter', 'Fighter']);
+    });
+
+    it('gives a feat counter a row of its own, marked Feat, when the feat is not in the list', () => {
+      component.pc = { ...component.pc, clazz: 'Wizard', feat: 'Portal Jumper', features: [] };
+
+      expect(component.unlistedResources.map(r => [r.feature, r.name, r.max])).toEqual([['Portal Jumper', 'Portal Step', 2]]);
+      expect(component.unlistedSource(component.unlistedResources[0])).toBe('Feat');
+    });
+
+    it('renders the counters under the feat and saves a use spent on one', () => {
+      const fixture = TestBed.createComponent(FeaturesListComponent);
+      fixture.componentRef.setInput('pc', {
+        id: 9, name: 'Tam', clazz: 'Rogue', level: 5, playerName: 'P', feat: 'Familiar Friend',
+        features: [{ name: 'Familiar Friend', source: 'Familiar Trainer · Origin Feat', desc: 'A familiar.' }],
+        classResources: { helpfulFriend: 1 },
+      } as PC);
+      fixture.componentRef.setInput('resourcesEditable', true);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const rows = Array.from(el.querySelectorAll('.feature')) as HTMLElement[];
+      expect(rows.length).toBe(1);
+      expect(rows[0].querySelector('.feature-name')!.textContent).toContain('Familiar Friend');
+      expect(rows[0].querySelectorAll('app-resource-counter').length).toBe(2);
+      expect(rows[0].textContent).toContain('Find Familiar (free cast)');
+      expect(rows[0].textContent).toContain('Helpful Friend');
+      expect(el.querySelector('[data-resource-feature]')).toBeNull();
+
+      const emitted: PC[] = [];
+      fixture.componentInstance.pcChange.subscribe(p => emitted.push(p));
+      const [cast] = fixture.componentInstance.resourcesFor(fixture.componentInstance.classFeatures[0]);
+      fixture.componentInstance.setResourceUsed(cast, 1);
+      expect(emitted[0].classResources).toEqual({ findFamiliarFreeCast: 1, helpfulFriend: 1 });
+    });
+
     it('emits the character with the new used amount when the viewer may edit', () => {
       const emitted: PC[] = [];
       component.pcChange.subscribe(p => emitted.push(p));

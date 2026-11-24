@@ -65,7 +65,7 @@
           <span class="feature-source">{{ f.source }}</span>
         </div>
         <div class="feature-desc">{{ descFor(f) }}</div>
-        @if (resourceFor(f); as r) {
+        @for (r of resourcesFor(f); track r.key) {
           <app-resource-counter [resource]="r" [editable]="resourcesEditable" [hideName]="r.name === f.name"
             (usedChange)="setResourceUsed(r, $event)"></app-resource-counter>
         }
@@ -76,7 +76,7 @@
       <div class="feature" data-resource-feature>
         <div class="feature-head">
           <span class="feature-name">{{ r.feature }}</span>
-          <span class="feature-source">{{ pc.clazz }}</span>
+          <span class="feature-source">{{ unlistedSource(r) }}</span>
         </div>
         <app-resource-counter [resource]="r" [editable]="resourcesEditable" [hideName]="r.name === r.feature"
           (usedChange)="setResourceUsed(r, $event)"></app-resource-counter>

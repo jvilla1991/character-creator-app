@@ -1,5 +1,7 @@
 import { PC } from '../models/pc';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
+import { SCHOOLS_OF_MAGIC, schoolMasteryFeat } from '../models/arcana-feats';
+import { featNamesOn } from '../models/character-feats';
 import { modFromScore } from './character-math';
 
 /**
@@ -13,6 +15,11 @@ import { modFromScore } from './character-math';
  * The two tables are pinned together by one shared list of cases:
  * class-resources.spec.ts here and ClassResourcesTest on the server carry the
  * same block of text.
+ *
+ * Feats add counters of their own (featResourcesFor): the free casts and
+ * limited uses of the Arcana Unleashed feats. They are the same kind of
+ * resource, stored in the same map, listed after the class's and named for the
+ * feat they belong to. A second shared block of cases pins those.
  */
 
 /** What a Short Rest gives back. A Long Rest always restores everything. */
@@ -32,6 +39,8 @@ export interface ClassResource {
   pool: boolean;
   /** What one of it is called ("uses", "points", "d8", "fragments"). */
   unit: string;
+  /** True for a counter a feat gives; `feature` is then the feat's name. */
+  fromFeat?: boolean;
 }
 
 /** A resource with how much of it the character has used and has left. */
@@ -40,7 +49,7 @@ export interface ClassResourceState extends ClassResource {
   remaining: number;
 }
 
-type ResourceSource = Pick<PC, 'clazz' | 'subclass' | 'level' | 'stats'>;
+type ResourceSource = Pick<PC, 'clazz' | 'subclass' | 'level' | 'stats'> & Partial<Pick<PC, 'feat' | 'features'>>;
 
 const uses = (key: string, name: string, feature: string, max: number, shortRest: ShortRestRecovery): ClassResource =>
   ({ key, name, feature, max, shortRest, pool: false, unit: 'uses' });
@@ -49,8 +58,101 @@ const pool = (
   key: string, name: string, feature: string, max: number, shortRest: ShortRestRecovery, unit: string,
 ): ClassResource => ({ key, name, feature, max, shortRest, pool: true, unit });
 
-/** The resources a character has, in display order; empty for a class with none. */
+/** How a feat counter's maximum is worked out. */
+type FeatMax =
+  /** One use. */
+  | 'one'
+  /** As many as the Proficiency Bonus. */
+  | 'proficiency'
+  /** The highest of the Intelligence, Wisdom and Charisma modifiers, at least one. */
+  | 'mental';
+
+interface FeatUse {
+  feat: string;
+  key: string;
+  name: string;
+  max: FeatMax;
+  shortRest: ShortRestRecovery;
+}
+
+const featUse = (feat: string, key: string, name: string, max: FeatMax, shortRest: ShortRestRecovery = 'NONE'): FeatUse =>
+  ({ feat, key, name, max, shortRest });
+
+/**
+ * The Arcana Unleashed feats with something to count, in the book's order
+ * (Origin, General, Epic Boon) — the server's ClassResources.FEAT_USES.
+ * Everything returns on a Long Rest; Spell Overload on a Short Rest too. Boon of
+ * Magic School Mastery is not listed: it has one counter per school taken.
+ */
+const FEAT_USES: readonly FeatUse[] = [
+  featUse('Arcane Artist', 'inspiringMagic', 'Inspiring Magic', 'one'),
+  featUse('Arcane Infiltrator', 'cunningDiversion', 'Cunning Diversion', 'proficiency'),
+  featUse('Arcane Omens', 'helpfulPremonition', 'Helpful Premonition', 'proficiency'),
+  featUse('Arcane Overload', 'powerSurge', 'Power Surge', 'one'),
+  featUse('Arcane Safeguard', 'bonusActionResistance', 'Bonus Action Resistance', 'proficiency'),
+  featUse('Arcane Undertaker', 'understandingOfDeath', 'Understanding of Death', 'one'),
+  featUse('Familiar Friend', 'findFamiliarFreeCast', 'Find Familiar (free cast)', 'one'),
+  featUse('Familiar Friend', 'helpfulFriend', 'Helpful Friend', 'proficiency'),
+  featUse('Portal Jumper', 'portalStep', 'Portal Step', 'proficiency'),
+  featUse('Transmuted Anatomy', 'resilientAnatomy', 'Resilient Anatomy', 'proficiency'),
+  featUse('Divination Adept', 'prescientIntervention', 'Prescient Intervention', 'one'),
+  featUse('Magic Connoisseur', 'connoisseurLevel1Spell', 'Level 1 spell (free cast)', 'one'),
+  featUse('Magic Connoisseur', 'connoisseurLevel2Spell', 'Level 2 spell (free cast)', 'one'),
+  featUse('Spell Resistant', 'magicResistant', 'Magic Resistant', 'proficiency'),
+  featUse('Spell Subterfuge', 'shroudingSpells', 'Shrouding Spells', 'mental'),
+  featUse('Warlike Familiar', 'battleFamiliarFreeCast', 'Battle Familiar (free cast)', 'one'),
+  featUse('Boon of Erupting Spellpower', 'spellOverload', 'Spell Overload', 'one', 'ALL'),
+];
+
+/**
+ * The counters a character's feats give it: for each feat it holds, in the
+ * order held, that feat's free casts and limited uses. The resource's `feature`
+ * is the feat's name, so the sheet puts the counter under the feat.
+ *
+ * "Proficiency Bonus" is the bonus for the character's level. Spell Subterfuge
+ * counts "the modifier of the ability this feat increased"; that increase is
+ * made by hand and not recorded, so the highest of the Intelligence, Wisdom
+ * and Charisma modifiers is used (at least 1). Boon of Magic School Mastery has
+ * one Signature Arcanum cast per school taken.
+ *
+ * @param feats names on the character that may be feats (featNamesOn); case and
+ *   surrounding spaces do not matter, and a name listed twice counts once
+ */
+export function featResourcesFor(
+  feats: readonly string[], level: number | null | undefined, stats?: Partial<NonNullable<PC['stats']>> | null,
+): ClassResource[] {
+  const out: ClassResource[] = [];
+  const lvl = Math.max(1, level ?? 1);
+  const proficiencyBonus = Math.floor((Math.min(lvl, 20) - 1) / 4) + 2;
+  const mental = Math.max(1, ...(['INT', 'WIS', 'CHA'] as const).map(ability => modFromScore(stats?.[ability] ?? 10)));
+  const held = [...new Set(feats.map(f => (f ?? '').trim().toLowerCase()).filter(f => !!f))];
+  for (const feat of held) {
+    for (const use of FEAT_USES) {
+      if (use.feat.toLowerCase() !== feat) continue;
+      const max = use.max === 'one' ? 1 : use.max === 'proficiency' ? proficiencyBonus : mental;
+      out.push({ ...uses(use.key, use.name, use.feat, max, use.shortRest), fromFeat: true });
+    }
+    for (const school of SCHOOLS_OF_MAGIC) {
+      const mastery = schoolMasteryFeat(school);
+      if (mastery.toLowerCase() !== feat) continue;
+      out.push({
+        ...uses(`signatureArcanum${school}`, `Signature Arcanum (${school})`, mastery, 1, 'NONE'), fromFeat: true,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * The resources a character has, in display order: the class's, then its
+ * feats'. Empty for a character with none.
+ */
 export function classResourcesFor(pc: ResourceSource | null | undefined): ClassResource[] {
+  return [...resourcesOfClass(pc), ...featResourcesFor(featNamesOn(pc), pc?.level, pc?.stats)];
+}
+
+/** The class's own resources; empty for a class with none. */
+function resourcesOfClass(pc: ResourceSource | null | undefined): ClassResource[] {
   const out: ClassResource[] = [];
   const clazz = (pc?.clazz ?? '').trim().toLowerCase();
   const subclass = (pc?.subclass ?? '').trim().toLowerCase();
