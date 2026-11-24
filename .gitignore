@@ -62,3 +62,6 @@ Thumbs.db
 !.impeccable/critique/
 .impeccable/**/*.png
 # impeccable-ignore-end
+
+# The Arcana Unleashed source book is a local reference only; it never goes into git.
+/Arcana Unleashed.pdf
