@@ -49,7 +49,7 @@ export interface DndBackground {
   ability_scores: DndResource[];
   proficiencies: DndResource[];
   feat?: DndResource;
-  /** Source book — Player's Handbook, Heroes of Faerun, Forge of the Artificer */
+  /** Source book — Player's Handbook, Heroes of Faerun, Forge of the Artificer, Arcana Unleashed */
   source?: string;
 }
 
