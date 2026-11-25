@@ -847,6 +847,47 @@ describe('CreateCharacterModalComponent — logic', () => {
         .toEqual({ 'Base Game': true, 'World of Warcraft': false, 'Arcana Unleashed': true });
     });
 
+    describe('background source books', () => {
+      const BOOKS = [
+        { source: "Player's Handbook", backgrounds: ['Sage'] },
+        { source: 'Heroes of Faerun', backgrounds: ['Harper'] },
+        { source: 'Forge of the Artificer', backgrounds: ['Archaeologist'] },
+        { source: 'Arcana Unleashed', backgrounds: ['Familiar Trainer'] },
+      ];
+
+      function openWizard(): CreateCharacterModalComponent {
+        dndResources.getBackgroundGroups.and.returnValue(of(BOOKS));
+        const wizard = TestBed.runInInjectionContext(
+          () => new CreateCharacterModalComponent(dndResources, auth, makeMockDestroyRef()));
+        wizard.ngOnInit();
+        return wizard;
+      }
+
+      it("starts with the Player's Handbook and Arcana Unleashed ticked and the other books off", () => {
+        const wizard = openWizard();
+        expect(wizard.enabledSources).toEqual({
+          "Player's Handbook": true, 'Heroes of Faerun': false, 'Forge of the Artificer': false, 'Arcana Unleashed': true,
+        });
+        expect(wizard.activeBackgroundGroups.map(g => g.source)).toEqual(["Player's Handbook", 'Arcana Unleashed']);
+      });
+
+      it('lets the player untick Arcana Unleashed', () => {
+        const wizard = openWizard();
+        wizard.toggleSource('Arcana Unleashed');
+        expect(wizard.activeBackgroundGroups.map(g => g.source)).toEqual(["Player's Handbook"]);
+      });
+
+      it("keeps a saved draft's book picks over the defaults", () => {
+        localStorage.setItem('tm_pc_draft:tester', JSON.stringify({
+          v: 1, enabledSources: { "Player's Handbook": true, 'Heroes of Faerun': true, 'Arcana Unleashed': false },
+        }));
+        const wizard = openWizard();
+        expect(wizard.enabledSources).toEqual({
+          "Player's Handbook": true, 'Heroes of Faerun': true, 'Forge of the Artificer': false, 'Arcana Unleashed': false,
+        });
+      });
+    });
+
     it('keeps a chosen class selected when the filter hides it, and flags it', () => {
       component.toggleClass('Death Knight (Paladin)');
       component.toggleContentSource('World of Warcraft');
