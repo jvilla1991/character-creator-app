@@ -119,6 +119,12 @@ interface OriginFeatSpells {
   grants: readonly SpellGrant[];
 }
 
+/**
+ * The background source books whose group is ticked when the wizard opens. The
+ * other books (Heroes of Faerun, Forge of the Artificer) start unticked.
+ */
+export const DEFAULT_BACKGROUND_SOURCES: readonly string[] = ["Player's Handbook", 'Arcana Unleashed'];
+
 @Component({
     selector: 'app-create-character-modal',
     templateUrl: './create-character-modal.component.html',
@@ -1058,9 +1064,9 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
 
     this.dndResources.getBackgroundGroups().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(groups => {
       this.backgroundGroups = groups;
-      // Enable Player's Handbook by default; a restored draft's source picks win.
+      // The Player's Handbook and Arcana Unleashed start enabled; a restored draft's source picks win.
       this.enabledSources = {
-        ...Object.fromEntries(groups.map(g => [g.source, g.source === "Player's Handbook"])),
+        ...Object.fromEntries(groups.map(g => [g.source, DEFAULT_BACKGROUND_SOURCES.includes(g.source)])),
         ...(this.restoredEnabledSources ?? {}),
       };
       // No default — the player must choose a background (gates Next).
