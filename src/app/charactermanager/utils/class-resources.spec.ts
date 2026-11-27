@@ -11,52 +11,97 @@ describe('class resources', () => {
    * own table. Change a rule and both blocks must change — keep them identical,
    * line for line.
    */
-  // class | subclass | level | CHA | WIS  =>  key:max:shortRest, ...   ("-" = none)
+  // class | subclass | level | CHA | WIS | INT  =>  key:max:shortRest, ...   ("-" = none)
   const CASES = `
-    Fighter||1|10|10 => secondWind:2:ONE
-    Fighter||2|10|10 => secondWind:2:ONE,actionSurge:1:ALL
-    Fighter||4|10|10 => secondWind:3:ONE,actionSurge:1:ALL
-    Fighter||10|10|10 => secondWind:4:ONE,actionSurge:1:ALL
-    Fighter||17|10|10 => secondWind:4:ONE,actionSurge:2:ALL
-    Fighter|Battle Master|7|10|10 => secondWind:3:ONE,actionSurge:1:ALL
-    Barbarian||1|10|10 => rage:2:ONE
-    Barbarian||3|10|10 => rage:3:ONE
-    Barbarian||6|10|10 => rage:4:ONE
-    Barbarian||12|10|10 => rage:5:ONE
-    Barbarian||17|10|10 => rage:6:ONE
-    Barbarian|Path of the Elements|10|10|10 => rage:4:ONE
-    Bard||1|16|10 => bardicInspiration:3:NONE
-    Bard||4|8|10 => bardicInspiration:1:NONE
-    Bard||5|18|10 => bardicInspiration:4:ALL
-    Cleric||1|10|10 => -
-    Cleric||2|10|10 => channelDivinity:2:ONE
-    Cleric||6|10|10 => channelDivinity:3:ONE
-    Cleric||18|10|10 => channelDivinity:4:ONE
-    Druid||1|10|10 => -
-    Druid||2|10|10 => wildShape:2:ONE
-    Druid||6|10|10 => wildShape:3:ONE
-    Druid||17|10|10 => wildShape:4:ONE
-    Monk||1|10|10 => -
-    Monk||2|10|10 => focusPoints:2:ALL
-    Monk||11|10|10 => focusPoints:11:ALL
-    Paladin||1|10|10 => layOnHands:5:NONE
-    Paladin||3|10|10 => layOnHands:15:NONE,channelDivinity:2:ONE
-    Paladin||11|10|10 => layOnHands:55:NONE,channelDivinity:3:ONE
-    Paladin|Oath of the Holy|7|16|10 => layOnHands:35:NONE,channelDivinity:2:ONE
-    Paladin|Oath of the Ebon Blade|1|16|10 => deathCoil:4:NONE
-    Paladin|Oath of the Ebon Blade|5|8|10 => deathCoil:1:NONE,channelDivinity:2:ONE
-    Paladin|oath of the ebon blade|11|20|10 => deathCoil:6:NONE,channelDivinity:3:ONE
-    Ranger||5|10|16 => -
-    Ranger|Demon Hunter|2|10|16 => -
-    Ranger|Demon Hunter|3|10|16 => soulFragments:3:NONE
-    Ranger|Demon Hunter|13|10|8 => soulFragments:2:NONE
-    Ranger|Demon Hunter|17|10|18 => soulFragments:6:NONE
-    Sorcerer||1|10|10 => -
-    Sorcerer||2|10|10 => sorceryPoints:2:NONE
-    Sorcerer||20|10|10 => sorceryPoints:20:NONE
-    Warlock||5|10|10 => -
-    Wizard||5|10|10 => -
-    Rogue||5|10|10 => -
+    Fighter||1|10|10|10 => secondWind:2:ONE
+    Fighter||2|10|10|10 => secondWind:2:ONE,actionSurge:1:ALL
+    Fighter||4|10|10|10 => secondWind:3:ONE,actionSurge:1:ALL
+    Fighter||10|10|10|10 => secondWind:4:ONE,actionSurge:1:ALL
+    Fighter||17|10|10|10 => secondWind:4:ONE,actionSurge:2:ALL
+    Fighter|Battle Master|7|10|10|10 => secondWind:3:ONE,actionSurge:1:ALL
+    Barbarian||1|10|10|10 => rage:2:ONE
+    Barbarian||3|10|10|10 => rage:3:ONE
+    Barbarian||6|10|10|10 => rage:4:ONE
+    Barbarian||12|10|10|10 => rage:5:ONE
+    Barbarian||17|10|10|10 => rage:6:ONE
+    Barbarian|Path of the Elements|10|10|10|10 => rage:4:ONE
+    Bard||1|16|10|10 => bardicInspiration:3:NONE
+    Bard||4|8|10|10 => bardicInspiration:1:NONE
+    Bard||5|18|10|10 => bardicInspiration:4:ALL
+    Cleric||1|10|10|10 => -
+    Cleric||2|10|10|10 => channelDivinity:2:ONE
+    Cleric||6|10|10|10 => channelDivinity:3:ONE
+    Cleric||18|10|10|10 => channelDivinity:4:ONE
+    Druid||1|10|10|10 => -
+    Druid||2|10|10|10 => wildShape:2:ONE
+    Druid||6|10|10|10 => wildShape:3:ONE
+    Druid||17|10|10|10 => wildShape:4:ONE
+    Monk||1|10|10|10 => -
+    Monk||2|10|10|10 => focusPoints:2:ALL
+    Monk||11|10|10|10 => focusPoints:11:ALL
+    Paladin||1|10|10|10 => layOnHands:5:NONE
+    Paladin||3|10|10|10 => layOnHands:15:NONE,channelDivinity:2:ONE
+    Paladin||11|10|10|10 => layOnHands:55:NONE,channelDivinity:3:ONE
+    Paladin|Oath of the Holy|7|16|10|10 => layOnHands:35:NONE,channelDivinity:2:ONE
+    Paladin|Oath of the Ebon Blade|1|16|10|10 => deathCoil:4:NONE
+    Paladin|Oath of the Ebon Blade|5|8|10|10 => deathCoil:1:NONE,channelDivinity:2:ONE
+    Paladin|oath of the ebon blade|11|20|10|10 => deathCoil:6:NONE,channelDivinity:3:ONE
+    Ranger||5|10|16|10 => -
+    Ranger|Demon Hunter|2|10|16|10 => -
+    Ranger|Demon Hunter|3|10|16|10 => soulFragments:3:NONE
+    Ranger|Demon Hunter|13|10|8|10 => soulFragments:2:NONE
+    Ranger|Demon Hunter|17|10|18|10 => soulFragments:6:NONE
+    Sorcerer||1|10|10|10 => -
+    Sorcerer||2|10|10|10 => sorceryPoints:2:NONE
+    Sorcerer||20|10|10|10 => sorceryPoints:20:NONE
+    Warlock||5|10|10|10 => -
+    Wizard||5|10|10|10 => -
+    Rogue||5|10|10|10 => -
+    Cleric|Arcana Domain|5|10|10|10 => channelDivinity:2:ONE
+    Cleric|Arcana Domain|6|10|10|10 => channelDivinity:3:ONE,dispellingRecovery:1:ALL
+    Cleric|arcana domain|18|10|10|10 => channelDivinity:4:ONE,dispellingRecovery:1:ALL
+    Fighter|Arcane Archer|2|10|10|16 => secondWind:2:ONE,actionSurge:1:ALL
+    Fighter|Arcane Archer|3|10|10|8 => secondWind:2:ONE,actionSurge:1:ALL,arcaneShot:1:ALL
+    Fighter|Arcane Archer|3|10|10|10 => secondWind:2:ONE,actionSurge:1:ALL,arcaneShot:1:ALL
+    Fighter|Arcane Archer|6|10|10|16 => secondWind:3:ONE,actionSurge:1:ALL,arcaneShot:3:ALL
+    Fighter|Arcane Archer|7|10|10|16 => secondWind:3:ONE,actionSurge:1:ALL,arcaneShot:3:ALL,magicalAmmunition:1:ALL
+    Monk|Warrior of the Mystic Arts|6|10|10|16 => focusPoints:6:ALL
+    Warlock|Vestige Patron|2|10|10|10 => -
+    Warlock|Vestige Patron|3|10|10|10 => divinePower:1:NONE
+    Warlock|Vestige Patron|5|10|10|10 => divinePower:1:NONE
+    Warlock|Vestige Patron|6|10|10|10 => divinePower:1:ALL
+    Warlock|Vestige Patron|9|10|10|10 => divinePower:1:ALL
+    Warlock|Vestige Patron|10|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE
+    Warlock|Vestige Patron|13|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE
+    Warlock|Vestige Patron|14|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE,semblanceOfLife:1:NONE
+    Wizard|Conjurer|2|10|10|16 => -
+    Wizard|Conjurer|3|10|10|8 => benignTransposition:1:NONE
+    Wizard|Conjurer|3|10|10|10 => benignTransposition:1:NONE
+    Wizard|Conjurer|13|10|10|16 => benignTransposition:3:NONE
+    Wizard|Conjurer|14|10|10|16 => benignTransposition:3:NONE,splinteredSummons:1:NONE
+    Wizard|Enchanter|2|10|10|16 => -
+    Wizard|Enchanter|3|10|10|8 => hypnoticPresence:1:NONE
+    Wizard|Enchanter|5|10|10|16 => hypnoticPresence:3:NONE
+    Wizard|Enchanter|6|10|10|8 => hypnoticPresence:1:NONE
+    Wizard|Enchanter|6|10|10|10 => hypnoticPresence:1:NONE
+    Wizard|Enchanter|6|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE
+    Wizard|Enchanter|9|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE
+    Wizard|Enchanter|10|10|10|10 => hypnoticPresence:1:NONE,instinctiveCharm:1:NONE
+    Wizard|Enchanter|10|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE,instinctiveCharm:1:NONE
+    Wizard|Necromancer|5|10|10|16 => -
+    Wizard|Necromancer|6|10|10|16 => undeadThralls:1:NONE
+    Wizard|Necromancer|13|10|10|16 => undeadThralls:1:NONE
+    Wizard|Necromancer|14|10|10|16 => undeadThralls:1:NONE,bolsterUndead:1:NONE
+    Wizard|Transmuter|2|10|10|16 => -
+    Wizard|Transmuter|3|10|10|16 => wondrousAlteration:1:NONE
+    Wizard|Transmuter|5|10|10|16 => wondrousAlteration:1:NONE
+    Wizard|Transmuter|6|10|10|8 => wondrousAlteration:1:NONE,empoweredTransmutation:1:NONE
+    Wizard|Transmuter|6|10|10|10 => wondrousAlteration:1:NONE,empoweredTransmutation:1:NONE
+    Wizard|Transmuter|6|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE
+    Wizard|Transmuter|9|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE
+    Wizard|Transmuter|10|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE
+    Wizard|Transmuter|13|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE
+    Wizard|Transmuter|14|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE,masterTransmuter:1:NONE
   `;
 
   /**
@@ -107,13 +152,13 @@ describe('class resources', () => {
 
   it('every case gives exactly the resources the rules say', () => {
     const lines = CASES.trim().split('\n').map(l => l.trim());
-    expect(lines.length).toBe(44);
+    expect(lines.length).toBe(89);
     for (const line of lines) {
       const [input, expected] = line.split(' => ');
-      const [clazz, subclass, level, cha, wis] = input.split('|');
+      const [clazz, subclass, level, cha, wis, int] = input.split('|');
       const actual = classResourcesFor({
         clazz, subclass: subclass || undefined, level: Number(level),
-        stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: Number(wis), CHA: Number(cha) },
+        stats: { STR: 10, DEX: 10, CON: 10, INT: Number(int), WIS: Number(wis), CHA: Number(cha) },
       });
       expect(describeResources(actual)).withContext(input).toBe(expected);
     }
@@ -166,6 +211,51 @@ describe('class resources', () => {
     expect(classResourcesFor(pc({ clazz: 'Sorcerer', level: 3 }))[0].feature).toBe('Font of Magic');
     expect(classResourcesFor(pc({ clazz: 'Monk', level: 3 }))[0].feature).toBe("Monk's Focus");
     expect(classResourcesFor(pc({ clazz: 'Paladin', subclass: 'Oath of the Ebon Blade' }))[0].unit).toBe('d8');
+  });
+
+  it('names the Arcana Unleashed subclass counters for the feature each belongs to', () => {
+    const stats = { STR: 10, DEX: 10, CON: 10, INT: 18, WIS: 10, CHA: 10 };
+    const of = (clazz: string, subclass: string, level = 20) =>
+      classResourcesFor({ clazz, subclass, level, stats }).map(r => [r.key, r.name, r.feature]);
+    expect(of('Cleric', 'Arcana Domain').at(-1)).toEqual(['dispellingRecovery', 'Dispelling Recovery', 'Dispelling Recovery']);
+    expect(of('Fighter', 'Arcane Archer').slice(2)).toEqual([
+      ['arcaneShot', 'Arcane Shot', 'Arcane Shot'], ['magicalAmmunition', 'Magical Ammunition', 'Magical Ammunition'],
+    ]);
+    expect(of('Warlock', 'Vestige Patron')).toEqual([
+      ['divinePower', 'Divine Power', 'Vestige Companion'], ['vestigeRecovery', 'Vestige Recovery', 'Vestige Recovery'],
+      ['semblanceOfLife', 'Semblance of Life', 'Semblance of Life'],
+    ]);
+    expect(of('Wizard', 'Conjurer')).toEqual([
+      ['benignTransposition', 'Benign Transposition', 'Benign Transposition'],
+      ['splinteredSummons', 'Splintered Summons', 'Splintered Summons'],
+    ]);
+    expect(of('Wizard', 'Enchanter')).toEqual([
+      ['hypnoticPresence', 'Hypnotic Presence', 'Hypnotic Presence'], ['splitEnchantment', 'Split Enchantment', 'Split Enchantment'],
+      ['instinctiveCharm', 'Instinctive Charm', 'Instinctive Charm'],
+    ]);
+    expect(of('Wizard', 'Necromancer')).toEqual([
+      ['undeadThralls', 'Animate Dead (free cast)', 'Undead Thralls'], ['bolsterUndead', 'Bolster Undead', "Death's Master"],
+    ]);
+    expect(of('Wizard', 'Transmuter')).toEqual([
+      ['wondrousAlteration', 'Alter Self (free cast)', 'Wondrous Alteration'],
+      ['empoweredTransmutation', 'Empowered Transmutation', 'Empowered Transmutation'],
+      ['shapeShifterCast', 'Polymorph (free cast)', 'Shape-Shifter'], ['shapeShifterSelf', 'Shape-Shifter (self)', 'Shape-Shifter'],
+      ['masterTransmuter', 'Master Transmuter', 'Master Transmuter'],
+    ]);
+    // Every one is a handful of uses, never a pool; a subclass counts only on its own class.
+    const all = ['Arcana Domain', 'Arcane Archer', 'Vestige Patron', 'Conjurer', 'Enchanter', 'Necromancer', 'Transmuter'];
+    const classOf: Record<string, string> = { 'Arcana Domain': 'Cleric', 'Arcane Archer': 'Fighter', 'Vestige Patron': 'Warlock' };
+    for (const subclass of all) {
+      const own = classResourcesFor({ clazz: classOf[subclass] ?? 'Wizard', subclass, level: 20, stats });
+      expect(own.every(r => !r.pool && r.unit === 'uses' && !r.fromFeat)).withContext(subclass).toBeTrue();
+      expect(describeResources(classResourcesFor({ clazz: 'Rogue', subclass, level: 20, stats }))).withContext(subclass).toBe('-');
+    }
+    // A Short Rest gives an archer's shots back, a Vestige Patron's Divine Power only from Warlock 6.
+    const patron = (level: number) => applyShortRestToPc(pc({
+      clazz: 'Warlock', subclass: 'Vestige Patron', level, classResources: { divinePower: 1, vestigeRecovery: 1 },
+    })).classResources;
+    expect(patron(5)).toEqual({ divinePower: 1 });
+    expect(patron(10)).toEqual({ vestigeRecovery: 1 });
   });
 
   it('handles missing values', () => {
