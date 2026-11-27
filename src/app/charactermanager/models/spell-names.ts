@@ -9,16 +9,20 @@
  * Mordenkainen's Sword → "Arcane Sword" and Otiluke's Resilient Sphere →
  * "Resilient Sphere"). The 2024 subclass spell lists the server grants from use
  * three more proper names (Leomund's Tiny Hut, Rary's Telepathic Bond, Tasha's
- * Hideous Laughter). Every by-name lookup goes through {@link spellKey}, so a
- * table can keep the module's wording and still find the spell's text.
+ * Hideous Laughter), and the Arcana Unleashed book's Arcana Domain Spells two
+ * (Leomund's Secret Chest, and Nystul's Magic Aura, which the SRD calls
+ * "Arcanist's Magic Aura"). Every by-name lookup goes through {@link spellKey},
+ * so a table can keep the module's wording and still find the spell's text.
  *
  * Keys and values are lower-cased: alias → the name the spell data uses.
  */
 export const SPELL_NAME_ALIASES: Readonly<Record<string, string>> = {
   "bigby's hand": 'arcane hand',
   "evard's black tentacles": 'black tentacles',
+  "leomund's secret chest": 'secret chest',
   "leomund's tiny hut": 'tiny hut',
   "mordenkainen's sword": 'arcane sword',
+  "nystul's magic aura": "arcanist's magic aura",
   "otiluke's freezing sphere": 'freezing sphere',
   "otiluke's resilient sphere": 'resilient sphere',
   "rary's telepathic bond": 'telepathic bond',
