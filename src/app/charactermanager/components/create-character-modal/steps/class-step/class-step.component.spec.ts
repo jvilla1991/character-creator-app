@@ -786,3 +786,41 @@ describe('ClassStepComponent — World of Warcraft Monk', () => {
       .map(f => f.textContent!.replace('✦', '').trim())).toEqual(['Fists of Fury']);
   });
 });
+
+describe('ClassStepComponent — level-1 subclass from another book', () => {
+  const detail = { hit_die: 8, saving_throws: [{ name: 'WIS' }, { name: 'CHA' }] } as unknown as DndClass;
+
+  function render(subclasses: { name: string; desc: string; source?: 'Arcana Unleashed' }[], selectedSubclass = ''): HTMLElement {
+    const fixture = TestBed.createComponent(ClassStepComponent);
+    fixture.componentRef.setInput('classOptions', buildClassOptions(['Warlock']));
+    fixture.componentRef.setInput('selectedKey', 'Warlock');
+    fixture.componentRef.setInput('selectedLabel', 'Warlock');
+    fixture.componentRef.setInput('clazz', 'Warlock');
+    fixture.componentRef.setInput('classDetail', detail);
+    fixture.componentRef.setInput('requiresLevel1Subclass', true);
+    fixture.componentRef.setInput('availableSubclasses', subclasses);
+    fixture.componentRef.setInput('selectedSubclass', selectedSubclass);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+  const cards = (el: HTMLElement) => Array.from(el.querySelectorAll('.subclass-list .subclass-card')) as HTMLElement[];
+
+  it('tags the Vestige Patron card Arcana Unleashed and leaves the handbook patrons untagged', () => {
+    const el = render([
+      { name: 'Fiend Patron', desc: 'Fiend.' },
+      { name: 'Vestige Patron', desc: 'A dying god.', source: 'Arcana Unleashed' },
+    ], 'Vestige Patron');
+    const [fiend, vestige] = cards(el);
+    expect(fiend.querySelector('.source-tag')).toBeNull();
+    expect(vestige.querySelector('.subclass-name .source-tag')!.textContent!.trim()).toBe('Arcana Unleashed');
+    expect(vestige.querySelector('.subclass-desc')!.textContent).toContain('A dying god.');
+    expect(vestige.classList).toContain('active');
+    expect(el.querySelector('.subclass-list + .loading')).toBeNull();
+  });
+
+  it('says so when the content-source filter leaves no subclass to show', () => {
+    const el = render([]);
+    expect(cards(el).length).toBe(0);
+    expect(el.querySelector('.subclass-list + .loading')!.textContent).toContain('No subclasses to show. Turn on a content source above.');
+  });
+});

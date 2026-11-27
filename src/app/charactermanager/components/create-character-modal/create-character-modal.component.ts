@@ -34,6 +34,7 @@ import {
   recommendedStartingSpells, recommendedSubclassFor,
 } from '../../models/hero-class';
 import { handbookClassPicks, handbookStartingSpells } from '../../models/recommended-spells';
+import { arcanaLevel1Subclasses } from '../../models/arcana-subclasses';
 import {
   CatalogSpecies, SPECIES_ABILITY_NAMES, SpeciesOption, SpeciesSelections, buildSpeciesOptions, catalogSpeciesByKey,
   chosenLineage, emptySpeciesSelections, grantedSpeciesSkills, needsAbilityChoice, speciesChoicesComplete,
@@ -108,6 +109,13 @@ const NO_SPELLS: DndSpell[] = [];
 
 /** Stable empty list for species without an Origin feat choice. */
 const NO_FEATS: readonly OriginFeatOption[] = [];
+
+/** A card of the class step's level-1 subclass picker; `source` is set for a subclass from another book. */
+export interface Level1SubclassOption {
+  name: string;
+  desc: string;
+  source?: ContentSource;
+}
 
 /** Stable empty list for a character whose Origin feats name no spell. */
 const NO_GRANTS: readonly SpellGrant[] = [];
@@ -481,9 +489,28 @@ export class CreateCharacterModalComponent implements OnInit, OnDestroy {
     return ['sorcerer', 'warlock'].includes(this.clazz.toLowerCase()) && !this.heroClass?.subclass;
   }
 
-  get availableSubclasses(): { name: string; desc: string }[] {
-    return this.dndResources.getSubclassesForClass(this.clazz);
+  /**
+   * The level-1 subclasses of the chosen class allowed by the content-source
+   * filter: the Player's Handbook ones, then the Arcana Unleashed ones (a
+   * Warlock's Vestige Patron), which carry their book as `source`. The one
+   * already chosen stays listed when its book is switched off: the filter never
+   * discards a choice. Memoized so the class step sees a stable array.
+   */
+  get availableSubclasses(): Level1SubclassOption[] {
+    const base = this.dndResources.getSubclassesForClass(this.clazz);
+    const key = [
+      this.clazz, JSON.stringify(this.contentSources), this.selectedSubclass, ...base.map(s => s.name),
+    ].join('|');
+    if (key !== this.level1SubclassesKey) {
+      this.level1SubclassesKey = key;
+      const all: Level1SubclassOption[] = [...base, ...arcanaLevel1Subclasses(this.clazz)];
+      this.level1SubclassesCache = all.filter(s =>
+        s.name === this.selectedSubclass || isSourceEnabled(this.contentSources, s.source));
+    }
+    return this.level1SubclassesCache;
   }
+  private level1SubclassesKey = '';
+  private level1SubclassesCache: Level1SubclassOption[] = [];
 
   /** The chosen hero class, or undefined for a base class. */
   get heroClass(): HeroClassOption | undefined {

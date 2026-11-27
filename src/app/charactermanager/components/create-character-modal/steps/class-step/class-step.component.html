@@ -203,6 +203,9 @@
                   (click)="selectedSubclassChange.emit(sub.name)">
                   <span class="subclass-name">
                     {{ sub.name }}
+                    @if (sub.source; as source) {
+                      <span class="source-tag">{{ source }}</span>
+                    }
                     @if (recommended) {
                       <span class="subclass-recommended-badge">Recommended for {{ specialization() }}</span>
                     }
@@ -211,6 +214,9 @@
                 </button>
               }
             </div>
+            @if (availableSubclasses().length === 0) {
+              <div class="loading">No subclasses to show. Turn on a content source above.</div>
+            }
           }
         </div>
       }
