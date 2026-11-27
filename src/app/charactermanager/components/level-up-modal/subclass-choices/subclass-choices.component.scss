@@ -1,0 +1,22 @@
+// The sections sit in the level-up dialog between its own, so they use the
+// dialog's rows, headings and select as they are.
+@use '../level-up-shared' as *;
+
+:host {
+  display: block;
+}
+
+// Skills a feature gives outright, listed above the ones to choose.
+.features-gained {
+  margin: 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// A skill heading carries its pick count at the right-hand end, like a spell heading.
+.skill-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}

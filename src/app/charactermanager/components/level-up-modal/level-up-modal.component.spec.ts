@@ -7,6 +7,8 @@ import { DndResourcesService } from '../../services/dnd-resources.service';
 import { PC } from '../../models/pc';
 import { LevelUpPreview } from '../../models/level-up';
 import { WOW_PRIEST_EXTRA_SPELLS } from '../../models/wow-class-variants';
+import { SubclassChoiceResult } from './subclass-choices/subclass-choices.component';
+import { DndSpell } from '../../models/dnd-api.types';
 
 /** A SpyObj PCService — the modal only touches the preview/commit pairs (owner + as-dm). */
 function makePcServiceSpy(): jasmine.SpyObj<PCService> {
@@ -1809,6 +1811,412 @@ describe('LevelUpModalComponent', () => {
       takeFeat('Spell Resistant');
       expect(component.featChoices).toEqual([]);
       expect(component.canConfirm).toBeTrue();
+    });
+  });
+
+  describe('Arcana Unleashed subclasses', () => {
+    const CLERIC = ['Arcana Domain', 'Discipline Domain', 'Life Domain', 'Light Domain', 'Shadow Domain', 'War Domain'];
+    const WIZARD = ['Abjurer', 'Conjurer', 'Diviner', 'Enchanter', 'Evoker', 'Illusionist', 'Necromancer', 'Transmuter'];
+    const spell = (name: string, level: number, classes: string[] = ['wizard']): DndSpell => ({
+      name, level, school: 'evocation', classes, actionType: 'action', concentration: false, ritual: false,
+      range: '60 feet', components: ['v', 's'], duration: 'Instantaneous', description: '',
+    });
+    const SPELLS = [
+      spell('Light', 0, ['cleric', 'wizard']), spell('Mage Hand', 0), spell('Fire Bolt', 0), spell('Guidance', 0, ['cleric']),
+      spell('Bless', 1, ['cleric']),
+      spell('Disintegrate', 6), spell('Teleport', 7), spell('Maze', 8), spell('Wish', 9),
+    ];
+    const granted = (name: string, lvl: number, grantedBy: string) =>
+      ({ name, lvl, school: 'evocation', time: 'action', prepared: true, grantedBy, ...(lvl > 0 ? { alwaysPrepared: true } : {}) });
+    const result = (over: Partial<SubclassChoiceResult> = {}): SubclassChoiceResult =>
+      ({ subclassChoices: {}, newSpells: [], forgetSpells: [], valid: true, ...over });
+
+    function open(pc: Partial<PC>, preview: Partial<LevelUpPreview> = {}): void {
+      component.pc = makePC({ clazz: 'Cleric', level: 2, ...pc });
+      component.selectedSubclass = null;
+      component.submitting = false;
+      const level = component.pc.level ?? 1;
+      pcService.levelUpPreview.and.returnValue(of(makePreview({ currentLevel: level, newLevel: level + 1, ...preview })));
+      pcService.levelUp.and.returnValue(of(makePC({ level: level + 1 })));
+      dndResources.getSpells.and.returnValue(of(SPELLS));
+      component.ngOnInit();
+    }
+
+    /** Render the real template (and the subclass-choices child) against the same spies. */
+    function renderModal() {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: PCService, useValue: pcService },
+          { provide: DndResourcesService, useValue: dndResources },
+        ],
+      });
+      const fixture = TestBed.createComponent(LevelUpModalComponent);
+      fixture.componentInstance.pc = component.pc;
+      const refresh = () => { fixture.detectChanges(); fixture.detectChanges(); };
+      refresh();
+      const el = fixture.nativeElement as HTMLElement;
+      const rows = () => (Array.from(el.querySelectorAll('.subclass-option')) as HTMLElement[])
+        .filter(row => !!row.querySelector('input[name="subclass"]'));
+      const click = (root: ParentNode, selector: string, text: string) => {
+        const row = (Array.from(root.querySelectorAll(selector)) as HTMLElement[])
+          .find(n => n.textContent!.replace(/\s+/g, ' ').trim().startsWith(text))!;
+        (row.querySelector('input') as HTMLInputElement).click();
+        refresh();
+      };
+      return { fixture, modal: fixture.componentInstance, el, rows, click, refresh };
+    }
+
+    describe('source tag and filter', () => {
+      it('tags the eight Arcana Unleashed, beside the World of Warcraft and untagged base-game ones', () => {
+        expect(component.subclassSourceTag('Arcana Domain')).toBe('Arcana Unleashed');
+        for (const name of ['Arcane Archer', 'Warrior of the Mystic Arts', 'Vestige Patron', 'Conjurer', 'Enchanter',
+          'Necromancer', 'Transmuter']) {
+          expect(component.subclassSourceTag(name)).withContext(name).toBe('Arcana Unleashed');
+        }
+        expect(component.subclassSourceTag('Shadow Domain')).toBe('World of Warcraft');
+        expect(component.subclassSourceTag('Life Domain')).toBeUndefined();
+      });
+
+      it('lists every option by default and hides a book\'s subclasses when it is switched off', () => {
+        open({ specialization: 'Shadow' }, { subclassDue: true, subclassOptions: CLERIC });
+        expect(component.visibleSubclassOptions).toEqual(CLERIC);
+        expect(component.visibleSubclassOptions).toBe(component.visibleSubclassOptions);   // stable for the template
+
+        component.toggleSubclassSource('Arcana Unleashed');
+        expect(component.visibleSubclassOptions).toEqual(['Discipline Domain', 'Life Domain', 'Light Domain', 'Shadow Domain', 'War Domain']);
+        component.toggleSubclassSource('World of Warcraft');
+        expect(component.visibleSubclassOptions).toEqual(['Life Domain', 'Light Domain', 'War Domain']);
+        component.toggleSubclassSource('Base Game');
+        expect(component.visibleSubclassOptions).toEqual([]);
+        component.toggleSubclassSource('Arcana Unleashed');
+        expect(component.visibleSubclassOptions).toEqual(['Arcana Domain']);
+      });
+
+      it('hides all four Wizard schools at once, and nothing else', () => {
+        open({ clazz: 'Wizard' }, { subclassDue: true, subclassOptions: WIZARD });
+        component.toggleSubclassSource('Arcana Unleashed');
+        expect(component.visibleSubclassOptions).toEqual(['Abjurer', 'Diviner', 'Evoker', 'Illusionist']);
+      });
+
+      it('keeps the subclass already picked in the list when its book is switched off', () => {
+        open({}, { subclassDue: true, subclassOptions: CLERIC });
+        component.selectedSubclass = 'Arcana Domain';
+        component.toggleSubclassSource('Arcana Unleashed');
+        expect(component.visibleSubclassOptions).toContain('Arcana Domain');
+        expect(component.selectedSubclass).toBe('Arcana Domain');
+        component.selectedSubclass = 'Life Domain';
+        expect(component.visibleSubclassOptions).not.toContain('Arcana Domain');
+      });
+
+      it('renders the three checkboxes over the picker, the tag on the row, and hides the row when unticked', () => {
+        open({ specialization: 'Shadow' }, { subclassDue: true, subclassOptions: CLERIC });
+        const { el, rows, refresh } = renderModal();
+        const boxes = Array.from(el.querySelectorAll('.subclass-pick .source-filter-option')) as HTMLElement[];
+        expect(boxes.map(b => b.textContent!.trim())).toEqual(['Base Game', 'World of Warcraft', 'Arcana Unleashed']);
+        expect(boxes.every(b => (b.querySelector('input') as HTMLInputElement).checked)).toBeTrue();
+        const tags = () => rows().map(r => [r.querySelector('span')!.textContent!.trim(), r.querySelector('.source-tag')?.textContent?.trim() ?? '']);
+        expect(tags()).toEqual([
+          ['Arcana Domain', 'Arcana Unleashed'], ['Discipline Domain', 'World of Warcraft'], ['Life Domain', ''],
+          ['Light Domain', ''], ['Shadow Domain', 'World of Warcraft'], ['War Domain', ''],
+        ]);
+
+        (boxes[2].querySelector('input') as HTMLInputElement).click();
+        refresh();
+        expect(tags().map(t => t[0])).toEqual(['Discipline Domain', 'Life Domain', 'Light Domain', 'Shadow Domain', 'War Domain']);
+        expect(el.querySelector('.subclass-pick [role="status"]')).toBeNull();
+        (boxes[0].querySelector('input') as HTMLInputElement).click();
+        (boxes[1].querySelector('input') as HTMLInputElement).click();
+        refresh();
+        expect(rows().length).toBe(0);
+        expect(el.querySelector('.subclass-pick [role="status"]')!.textContent)
+          .toContain('No subclasses to show. Turn on a content source above.');
+        (boxes[2].querySelector('input') as HTMLInputElement).click();
+        refresh();
+        expect(tags()).toEqual([['Arcana Domain', 'Arcana Unleashed']]);
+      });
+
+      it('offers a World of Warcraft Mage the four schools under their own names, Evoker still relabelled', () => {
+        open({ clazz: 'Wizard', specialization: 'Frost' }, { subclassDue: true, subclassOptions: WIZARD, recommendedSubclass: 'Evoker' });
+        expect(component.heroClass?.name).toBe('Mage');
+        expect(component.visibleSubclassOptions).toEqual(WIZARD);
+        expect(WIZARD.map(name => component.subclassOptionLabel(name))).toEqual([
+          'Abjurer', 'Conjurer', 'Diviner', 'Enchanter', 'Evoker (school of evocation)', 'Illusionist', 'Necromancer',
+          'Transmuter',
+        ]);
+        expect(component.recommendedSubclass).toBe('Evoker');
+        component.selectedSubclass = 'Necromancer';
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Necromancer' });
+      });
+    });
+
+    describe('picking a subclass with nothing more to choose', () => {
+      it('confirms an Arcane Archer who had neither Arcana nor Nature with the subclass alone', () => {
+        open({ clazz: 'Fighter', skills: { Athletics: 'prof' } },
+          { subclassDue: true, subclassOptions: ['Arcane Archer', 'Battle Master', 'Champion'] });
+        component.selectedSubclass = 'Arcane Archer';
+        expect(component.effectiveSubclass).toBe('Arcane Archer');
+        expect(component.subclassChoicesSatisfied).toBeTrue();
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Arcane Archer' });
+      });
+
+      it('confirms a Warrior of the Mystic Arts, a Conjurer and a Vestige Patron the same way', () => {
+        for (const [clazz, subclass] of [['Monk', 'Warrior of the Mystic Arts'], ['Wizard', 'Conjurer'], ['Warlock', 'Vestige Patron']]) {
+          pcService.levelUp.calls.reset();
+          open({ clazz }, { subclassDue: true, subclassOptions: [subclass, 'Other'] });
+          expect(component.canConfirm).withContext(subclass).toBeFalse();   // a subclass is due
+          component.selectedSubclass = subclass;
+          expect(component.canConfirm).withContext(subclass).toBeTrue();
+          component.confirm();
+          expect(pcService.levelUp).withContext(subclass).toHaveBeenCalledWith(7, { subclass });
+        }
+      });
+
+      it('levels a Vestige Patron, an Arcane Archer and a Transmuter on with no extra fields', () => {
+        for (const pc of [
+          { clazz: 'Warlock', subclass: 'Vestige Patron', level: 5 },
+          { clazz: 'Fighter', subclass: 'Arcane Archer', level: 6, subclassChoices: { skills: [] } },
+          { clazz: 'Wizard', subclass: 'Transmuter', level: 9 },
+        ]) {
+          pcService.levelUp.calls.reset();
+          open(pc);
+          expect(component.effectiveSubclass).toBe(pc.subclass);
+          expect(component.canConfirm).withContext(pc.subclass).toBeTrue();
+          component.confirm();
+          expect(pcService.levelUp).withContext(pc.subclass).toHaveBeenCalledWith(7, {});
+        }
+      });
+    });
+
+    describe('Arcane Archer replacement skills', () => {
+      it('blocks Confirm until the one replacement is chosen, then sends it', () => {
+        open({ clazz: 'Fighter', skills: { Nature: 'prof' } }, { subclassDue: true, subclassOptions: ['Arcane Archer', 'Champion'] });
+        component.selectedSubclass = 'Arcane Archer';
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        component.confirm();
+        expect(pcService.levelUp).not.toHaveBeenCalled();
+
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Insight'] } }));
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight'] } });
+      });
+
+      it('asks for two when the fighter had both, and stays blocked on an incomplete answer', () => {
+        open({ clazz: 'Fighter', skills: { Nature: 'prof', Arcana: 'expert' } },
+          { subclassDue: true, subclassOptions: ['Arcane Archer', 'Champion'] });
+        component.selectedSubclass = 'Arcane Archer';
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Insight'] }, valid: false }));
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Insight', 'Survival'] } }));
+        expect(component.canConfirm).toBeTrue();
+      });
+
+      it('forgets the answer when another subclass is picked instead', () => {
+        open({ clazz: 'Fighter', skills: { Nature: 'prof' } }, { subclassDue: true, subclassOptions: ['Arcane Archer', 'Champion'] });
+        component.selectedSubclass = 'Arcane Archer';
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Insight'] } }));
+        component.selectedSubclass = 'Champion';
+        expect(component.subclassChoiceResult).toBeNull();
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Champion' });
+      });
+
+      it('works through the rendered dialog: the granted skills, the pick, then Confirm', () => {
+        open({ clazz: 'Fighter', skills: { Nature: 'prof' } }, { subclassDue: true, subclassOptions: ['Arcane Archer', 'Champion'] });
+        const { el, modal, click } = renderModal();
+        const confirmButton = () => el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement;
+        expect(el.querySelector('app-subclass-choices')!.children.length).toBe(0);
+        click(el, '.subclass-option', 'Arcane Archer');
+        expect(Array.from(el.querySelectorAll('app-subclass-choices .granted-skills .feature-item')).map(n => n.textContent!.trim()))
+          .toEqual(['ArcanaGained', 'NatureAlready proficient']);
+        expect(confirmButton().disabled).toBeTrue();
+        click(el, 'app-subclass-choices .skill-pick .subclass-option', 'Survival');
+        expect(confirmButton().disabled).toBeFalse();
+        modal.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Survival'] } });
+        expect(dndResources.getSpells).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Arcana Domain at Cleric 3', () => {
+      const cantrips = [granted('Light', 0, 'Student of Arcana'), granted('Mage Hand', 0, 'Student of Arcana')];
+
+      it('blocks Confirm until the skill and the two cantrips are chosen', () => {
+        open({}, { subclassDue: true, subclassOptions: CLERIC });
+        expect(component.canConfirm).toBeFalse();
+        component.selectedSubclass = 'Life Domain';
+        expect(component.canConfirm).toBeTrue();
+        component.selectedSubclass = 'Arcana Domain';
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Arcana'] }, valid: false }));
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Arcana'] }, newSpells: cantrips }));
+        expect(component.canConfirm).toBeTrue();
+      });
+
+      it('sends the skill and the cantrips, each cantrip carrying Student of Arcana', () => {
+        open({}, { subclassDue: true, subclassOptions: CLERIC });
+        component.selectedSubclass = 'Arcana Domain';
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['Arcana'] }, newSpells: cantrips }));
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+          subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] }, newSpells: cantrips,
+        });
+      });
+
+      it('sends them after the class picks and the always-prepared spells, never the same spell twice', () => {
+        const bless = spell('Bless', 1, ['cleric']);
+        const light = SPELLS[0];
+        open({}, {
+          subclassDue: true, subclassOptions: CLERIC, currentSpellsKnown: 5, newSpellsKnown: 6, newSpellSlots: { 1: 4, 2: 2 },
+          alwaysPreparedSpellsBySubclass: { 'Arcana Domain': [{ name: 'Disintegrate', grantedBy: 'Arcana Domain Spells' }] },
+        });
+        component.spellList = [bless, light];
+        component.selectedSubclass = 'Arcana Domain';
+        component.selectedSpells = [bless, light];   // Light was picked for the class before the subclass picker took it
+        // The child is told what the dialog has spoken for.
+        expect(component.subclassChoiceExclusions).toEqual(['disintegrate', 'bless', 'light']);
+        expect(component.subclassChoiceExclusions).toBe(component.subclassChoiceExclusions);
+
+        component.onSubclassChoices(result({ subclassChoices: { skills: ['History'] }, newSpells: cantrips }));
+        // A spell picked for the subclass is no longer offered as a class pick.
+        expect(component.pickableSpells.map(s => s.name)).toEqual(['Bless']);
+        component.confirm();
+        const [, choices] = pcService.levelUp.calls.mostRecent().args;
+        expect(choices!.newSpells!.map(s => [s.name, s.grantedBy ?? ''])).toEqual([
+          ['Bless', ''], ['Disintegrate', 'Arcana Domain Spells'], ['Light', 'Student of Arcana'], ['Mage Hand', 'Student of Arcana'],
+        ]);
+        expect(choices!.subclassChoices).toEqual({ skills: ['History'] });
+        expect(choices!.forgetSpells).toBeUndefined();
+      });
+
+      it('works through the rendered dialog and commits as the DM too', () => {
+        open({ skills: { Insight: 'prof' }, spells: [] }, { subclassDue: true, subclassOptions: CLERIC });
+        pcService.levelUpPreviewAsDm.and.returnValue(of(makePreview({ currentLevel: 2, newLevel: 3, subclassDue: true, subclassOptions: CLERIC })));
+        pcService.levelUpAsDm.and.returnValue(of(makePC({ level: 3 })));
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [{ provide: PCService, useValue: pcService }, { provide: DndResourcesService, useValue: dndResources }],
+        });
+        const fixture = TestBed.createComponent(LevelUpModalComponent);
+        fixture.componentInstance.pc = component.pc;
+        fixture.componentInstance.asDm = true;
+        const refresh = () => { fixture.detectChanges(); fixture.detectChanges(); };
+        refresh();
+        const el = fixture.nativeElement as HTMLElement;
+        const click = (selector: string, text: string) => {
+          const row = (Array.from(el.querySelectorAll(selector)) as HTMLElement[])
+            .find(n => n.textContent!.replace(/\s+/g, ' ').trim().startsWith(text))!;
+          (row.querySelector('input') as HTMLInputElement).click();
+          refresh();
+        };
+        const confirmButton = () => el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement;
+
+        click('.subclass-option', 'Arcana Domain');
+        expect(dndResources.getSpells).toHaveBeenCalled();
+        const skills = Array.from(el.querySelectorAll('app-subclass-choices .skill-pick .subclass-option')).map(n => n.textContent!.trim());
+        expect(skills).toEqual(['Arcana', 'History', 'Medicine', 'Persuasion', 'Religion']);
+        expect(Array.from(el.querySelectorAll('app-subclass-choices .spell-name')).map(n => n.textContent!.trim()))
+          .toEqual(['Light', 'Mage Hand', 'Fire Bolt']);
+        expect(confirmButton().disabled).toBeTrue();
+        click('app-subclass-choices .skill-pick .subclass-option', 'Religion');
+        click('app-subclass-choices .spell-option', 'Mage Hand');
+        expect(confirmButton().disabled).toBeTrue();
+        click('app-subclass-choices .spell-option', 'Fire Bolt');
+        expect(confirmButton().disabled).toBeFalse();
+
+        confirmButton().click();
+        const [id, choices] = pcService.levelUpAsDm.calls.mostRecent().args;
+        expect(id).toBe(7);
+        expect(choices!.subclass).toBe('Arcana Domain');
+        expect(choices!.subclassChoices).toEqual({ skills: ['Religion'] });
+        expect(choices!.newSpells!.map(s => [s.name, s.lvl, s.grantedBy, s.prepared])).toEqual([
+          ['Mage Hand', 0, 'Student of Arcana', true], ['Fire Bolt', 0, 'Student of Arcana', true],
+        ]);
+        expect(choices!.forgetSpells).toBeUndefined();
+      });
+    });
+
+    describe('Arcana Domain at later levels', () => {
+      const held = [granted('Light', 0, 'Student of Arcana'), granted('Mage Hand', 0, 'Student of Arcana')];
+      const settled = { subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] }, spells: held };
+
+      it('asks nothing of a cleric whose choices are made, and sends nothing extra', () => {
+        open({ ...settled, level: 3 });
+        expect(component.effectiveSubclass).toBe('Arcana Domain');
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+      });
+
+      it('replaces one cantrip: the forgotten name and its replacement go together', () => {
+        open({ ...settled, level: 3 });
+        component.onSubclassChoices(result({ forgetSpells: ['Light'], valid: false }));
+        expect(component.canConfirm).toBeFalse();   // no replacement yet
+        const fireBolt = granted('Fire Bolt', 0, 'Student of Arcana');
+        component.onSubclassChoices(result({ forgetSpells: ['Light'], newSpells: [fireBolt] }));
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { newSpells: [fireBolt], forgetSpells: ['Light'] });
+      });
+
+      it('goes back to an ordinary level-up when the swap is dropped', () => {
+        open({ ...settled, level: 3 });
+        component.onSubclassChoices(result({ forgetSpells: ['Light'], valid: false }));
+        component.onSubclassChoices(result());
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {});
+      });
+
+      it('blocks Confirm at Cleric 17 until the four Magical Mastery spells are picked, then sends them', () => {
+        open({ ...settled, level: 16 });
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        const mastery = [granted('Disintegrate', 6, 'Magical Mastery'), granted('Teleport', 7, 'Magical Mastery'),
+          granted('Maze', 8, 'Magical Mastery'), granted('Wish', 9, 'Magical Mastery')];
+        component.onSubclassChoices(result({ newSpells: mastery.slice(0, 3), valid: false }));
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ newSpells: mastery }));
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        const [, choices] = pcService.levelUp.calls.mostRecent().args;
+        expect(choices).toEqual({ newSpells: mastery });
+        expect(choices!.newSpells!.every(s => s.alwaysPrepared && s.grantedBy === 'Magical Mastery')).toBeTrue();
+      });
+
+      it('replaces a Magical Mastery spell and a cantrip in the same level-up', () => {
+        const mastery = [granted('Disintegrate', 6, 'Magical Mastery'), granted('Teleport', 7, 'Magical Mastery'),
+          granted('Maze', 8, 'Magical Mastery'), granted('Wish', 9, 'Magical Mastery')];
+        open({ ...settled, level: 17, spells: [...held, ...mastery] });
+        expect(component.canConfirm).toBeTrue();
+        const picks = [granted('Fire Bolt', 0, 'Student of Arcana'), granted('Mind Blank', 8, 'Magical Mastery')];
+        component.onSubclassChoices(result({ forgetSpells: ['Light', 'Maze'], newSpells: picks }));
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { newSpells: picks, forgetSpells: ['Light', 'Maze'] });
+      });
+
+      it('renders the swap select and the four pickers through the child', () => {
+        open({ ...settled, level: 16 });
+        const { el } = renderModal();
+        expect(Array.from(el.querySelectorAll('app-subclass-choices .replace-pick .subclass-label')).map(n => n.textContent!.trim()))
+          .toEqual(['Replace a Student of Arcana cantrip (optional)']);
+        const labels = Array.from(el.querySelectorAll('app-subclass-choices .subclass-spell-pick .spell-label'))
+          .map(n => n.textContent!.replace(/\s+/g, ' ').trim());
+        expect(labels.length).toBe(4);
+        expect(labels[0]).toContain('Magical Mastery, level 6 spell');
+        expect(labels[3]).toContain('Magical Mastery, level 9 spell');
+        expect((el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement).disabled).toBeTrue();
+      });
     });
   });
 });
