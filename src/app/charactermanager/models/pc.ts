@@ -1,5 +1,6 @@
 
 import { StatAdjustments } from './stat-adjustment';
+import type { SubclassChoices } from './arcana-subclasses';
 
 /** A spell as stored on a character — lean subset of DndSpell plus enrichment fields */
 export interface PcSpell {
@@ -123,6 +124,13 @@ export interface PC {
   // computed (utils/class-resources.ts), never stored; read it through
   // classResourceStates(). The server cleans the map on every save.
   classResources?: Record<string, number> | null;
+  // What the character chose for its subclass (an Arcana Domain cleric's skill,
+  // an Arcane Archer's replacement skills and Arcane Shot options, a Vestige
+  // Patron's vestige type and domain); null for everyone else. Server-owned:
+  // only a level-up and PCService.setSubclassChoices write it, and a generic
+  // save never changes it. The spells picked for a subclass feature are not
+  // here: they sit in `spells` with the feature as their `grantedBy`.
+  subclassChoices?: SubclassChoices | null;
   background?: string;
   alignment?: string;
   portraitInitials?: string;
