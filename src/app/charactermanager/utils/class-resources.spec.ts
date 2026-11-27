@@ -60,12 +60,15 @@ describe('class resources', () => {
     Cleric|Arcana Domain|5|10|10|10 => channelDivinity:2:ONE
     Cleric|Arcana Domain|6|10|10|10 => channelDivinity:3:ONE,dispellingRecovery:1:ALL
     Cleric|arcana domain|18|10|10|10 => channelDivinity:4:ONE,dispellingRecovery:1:ALL
+    Cleric|Life Domain|6|10|10|10 => channelDivinity:3:ONE
     Fighter|Arcane Archer|2|10|10|16 => secondWind:2:ONE,actionSurge:1:ALL
     Fighter|Arcane Archer|3|10|10|8 => secondWind:2:ONE,actionSurge:1:ALL,arcaneShot:1:ALL
     Fighter|Arcane Archer|3|10|10|10 => secondWind:2:ONE,actionSurge:1:ALL,arcaneShot:1:ALL
     Fighter|Arcane Archer|6|10|10|16 => secondWind:3:ONE,actionSurge:1:ALL,arcaneShot:3:ALL
     Fighter|Arcane Archer|7|10|10|16 => secondWind:3:ONE,actionSurge:1:ALL,arcaneShot:3:ALL,magicalAmmunition:1:ALL
-    Monk|Warrior of the Mystic Arts|6|10|10|16 => focusPoints:6:ALL
+    Fighter|Arcane Archer|18|10|10|20 => secondWind:4:ONE,actionSurge:2:ALL,arcaneShot:5:ALL,magicalAmmunition:1:ALL
+    Fighter|Champion|7|10|10|16 => secondWind:3:ONE,actionSurge:1:ALL
+    Monk|Warrior of the Mystic Arts|6|10|16|16 => focusPoints:6:ALL
     Warlock|Vestige Patron|2|10|10|10 => -
     Warlock|Vestige Patron|3|10|10|10 => divinePower:1:NONE
     Warlock|Vestige Patron|5|10|10|10 => divinePower:1:NONE
@@ -73,7 +76,8 @@ describe('class resources', () => {
     Warlock|Vestige Patron|9|10|10|10 => divinePower:1:ALL
     Warlock|Vestige Patron|10|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE
     Warlock|Vestige Patron|13|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE
-    Warlock|Vestige Patron|14|10|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE,semblanceOfLife:1:NONE
+    Warlock|Vestige Patron|14|18|10|10 => divinePower:1:ALL,vestigeRecovery:1:NONE,semblanceOfLife:1:NONE
+    Warlock|Fiend Patron|14|10|10|10 => -
     Wizard|Conjurer|2|10|10|16 => -
     Wizard|Conjurer|3|10|10|8 => benignTransposition:1:NONE
     Wizard|Conjurer|3|10|10|10 => benignTransposition:1:NONE
@@ -81,12 +85,13 @@ describe('class resources', () => {
     Wizard|Conjurer|14|10|10|16 => benignTransposition:3:NONE,splinteredSummons:1:NONE
     Wizard|Enchanter|2|10|10|16 => -
     Wizard|Enchanter|3|10|10|8 => hypnoticPresence:1:NONE
+    Wizard|Enchanter|3|10|10|16 => hypnoticPresence:3:NONE
     Wizard|Enchanter|5|10|10|16 => hypnoticPresence:3:NONE
     Wizard|Enchanter|6|10|10|8 => hypnoticPresence:1:NONE
     Wizard|Enchanter|6|10|10|10 => hypnoticPresence:1:NONE
     Wizard|Enchanter|6|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE
-    Wizard|Enchanter|9|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE
-    Wizard|Enchanter|10|10|10|10 => hypnoticPresence:1:NONE,instinctiveCharm:1:NONE
+    Wizard|Enchanter|9|10|10|12 => hypnoticPresence:1:NONE,splitEnchantment:1:NONE
+    Wizard|Enchanter|10|10|10|8 => hypnoticPresence:1:NONE,instinctiveCharm:1:NONE
     Wizard|Enchanter|10|10|10|16 => hypnoticPresence:3:NONE,splitEnchantment:3:NONE,instinctiveCharm:1:NONE
     Wizard|Necromancer|5|10|10|16 => -
     Wizard|Necromancer|6|10|10|16 => undeadThralls:1:NONE
@@ -101,7 +106,8 @@ describe('class resources', () => {
     Wizard|Transmuter|9|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE
     Wizard|Transmuter|10|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE
     Wizard|Transmuter|13|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE
-    Wizard|Transmuter|14|10|10|16 => wondrousAlteration:1:NONE,empoweredTransmutation:3:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE,masterTransmuter:1:NONE
+    Wizard|Transmuter|14|10|10|20 => wondrousAlteration:1:NONE,empoweredTransmutation:5:NONE,shapeShifterCast:1:NONE,shapeShifterSelf:1:NONE,masterTransmuter:1:NONE
+    Wizard|Evoker|14|10|10|16 => -
   `;
 
   /**
@@ -152,7 +158,7 @@ describe('class resources', () => {
 
   it('every case gives exactly the resources the rules say', () => {
     const lines = CASES.trim().split('\n').map(l => l.trim());
-    expect(lines.length).toBe(89);
+    expect(lines.length).toBe(95);
     for (const line of lines) {
       const [input, expected] = line.split(' => ');
       const [clazz, subclass, level, cha, wis, int] = input.split('|');
