@@ -3,8 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { PC } from '../../../../models/pc';
 import {
-  Follower, FollowerKind, STAT_BLOCK_EXAMPLE, followerKind, parseStatBlock, playerMayDismiss,
+  Follower, FollowerKind, STAT_BLOCK_EXAMPLE, followerKind, mayDismiss, parseStatBlock,
 } from '../../../../models/follower';
+import { VESTIGE_FROM_LEVEL, isVestigePatron } from '../../../../models/vestige-companion';
+import { VestigePanelComponent } from '../vestige-panel/vestige-panel.component';
 import { FollowerService } from '../../../../services/follower.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { tintFor } from '../../../../utils/character-math';
@@ -21,8 +23,11 @@ const KIND_LABELS: Record<FollowerKind, string> = {
  * The Followers tab: the companions a DM has granted this character and the
  * creatures its own spells made. Everyone who can see the sheet sees the list
  * and can open a follower's own sheet. The DM's cross-link view (`canGrant`)
- * gets the grant form and may dismiss any follower; the owner (`ownSheet`) may
- * dismiss their own summons and familiar — the server enforces the same rules.
+ * gets the grant form and may dismiss any follower but a companion; the owner
+ * (`ownSheet`) may dismiss their own summons and familiar — the server enforces
+ * the same rules. A companion (a Vestige Patron's vestige) is the server's own
+ * and has no Dismiss for anyone; a Vestige Patron's type and domain sit above
+ * the list (app-vestige-panel).
  * Self-serviced via FollowerService, like the notes panel; opening a follower
  * is bubbled to the sheet, which swaps itself for the follower's sheet.
  */
@@ -31,7 +36,7 @@ const KIND_LABELS: Record<FollowerKind, string> = {
     templateUrl: './followers-panel.component.html',
     styleUrls: ['./followers-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule]
+    imports: [FormsModule, VestigePanelComponent]
 })
 export class FollowersPanelComponent implements OnChanges {
   @Input() pc!: PC;
@@ -80,9 +85,14 @@ export class FollowersPanelComponent implements OnChanges {
   /** "Granted", "Summon", "Familiar" or "Companion": what the follower is. */
   kindLabel(follower: Follower): string { return KIND_LABELS[followerKind(follower)]; }
 
-  /** Whether this viewer may dismiss the follower: the DM any, the owner their own summon or familiar. */
+  /** Whether this viewer may dismiss the follower: the DM any but a companion, the owner their own summon or familiar. */
   canDismiss(follower: Follower): boolean {
-    return this.canGrant || (this.ownSheet && playerMayDismiss(follower));
+    return (this.canGrant || this.ownSheet) && mayDismiss(follower, this.canGrant);
+  }
+
+  /** A Vestige Patron of Warlock 3 or higher: its type and domain are shown above the list. */
+  get vestigePatron(): boolean {
+    return isVestigePatron(this.pc) && (this.pc?.level ?? 1) >= VESTIGE_FROM_LEVEL;
   }
 
   initialsFor(follower: Follower): string {

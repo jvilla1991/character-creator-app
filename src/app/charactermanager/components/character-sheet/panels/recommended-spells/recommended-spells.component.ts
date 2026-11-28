@@ -172,7 +172,8 @@ export class RecommendedSpellsComponent {
 
 /** Where a set of starting picks comes from, as one line under its heading. */
 function picksNote(picks: StartingSpellPicks): string {
-  const book = picks.source === 'World of Warcraft' ? 'The World of Warcraft book' : "The Player's Handbook";
+  const book = picks.source === 'World of Warcraft' ? 'The World of Warcraft book'
+    : picks.source === 'Arcana Unleashed' ? 'Arcana Unleashed' : "The Player's Handbook";
   const when = picks.classLevel === 1 ? '' : `, at ${picks.baseClass} level ${picks.classLevel}`;
   return `${book} recommends these for a new ${picks.for}${when}. They are suggestions only.`;
 }

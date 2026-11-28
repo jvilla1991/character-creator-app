@@ -92,6 +92,27 @@ describe('FeaturesListComponent', () => {
       expect(component.unlistedResources.map(r => r.key)).toEqual(['channelDivinity']); // no deathCoil here
     });
 
+    it('leaves Arcane Shot to the Arcane Shot panel, and keeps Magical Ammunition as an ordinary counter', () => {
+      const shot = { name: 'Arcane Shot', source: 'Fighter 3', desc: 'Shots.' };
+      const ammunition = { name: 'Magical Ammunition', source: 'Fighter 7', desc: 'Imbue.' };
+      const surge = { name: 'Action Surge', source: 'Fighter 2', desc: 'Act again.' };
+      component.pc = {
+        ...component.pc, subclass: 'Arcane Archer', level: 7, stats: { STR: 10, DEX: 16, CON: 12, INT: 16, WIS: 10, CHA: 8 },
+        features: [surge, shot, ammunition], classResources: { arcaneShot: 1, magicalAmmunition: 1 },
+      };
+
+      // The feature row stays, without a counter: the uses are shown once, on the panel.
+      expect(component.classFeatures).toContain(shot);
+      expect(component.resourcesFor(shot)).toEqual([]);
+      expect(component.resourceFor(ammunition)).toEqual(jasmine.objectContaining({ key: 'magicalAmmunition', used: 1, remaining: 0 }));
+      expect(component.resourceFor(surge)?.key).toBe('actionSurge');
+      expect(component.unlistedResources.map(r => r.key)).toEqual(['secondWind']);
+
+      // Not listed as a feature either (an older character): still no stray Arcane Shot row.
+      component.pc = { ...component.pc, features: [surge] };
+      expect(component.unlistedResources.map(r => r.key)).toEqual(['secondWind', 'magicalAmmunition']);
+    });
+
     it('shows nothing for a class with no tracked resource', () => {
       component.pc = { id: 5, name: 'W', clazz: 'Wizard', level: 5, playerName: 'P', features: [] } as PC;
       expect(component.unlistedResources).toEqual([]);

@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, inject, output } from '@angular/core';
 import { PC } from '../../models/pc';
-import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
+import { LevelUpPreview, LevelUpChoices, HpMode, previewWithSubclass } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
@@ -24,10 +24,19 @@ import {
 } from '../../models/hero-class';
 import { CantripFightingStyle, cantripFightingStyle } from '../../models/cantrip-fighting-styles';
 import { featPrerequisite, featSourceTag } from '../../models/wow-feats';
+import {
+  ContentSource, ContentSourceSelection, allContentSources, isSourceEnabled,
+} from '../../models/content-source';
+import { subclassChoicesDue } from '../../models/arcana-subclasses';
+import { spellListClass } from '../../utils/spellcasting';
+import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
+import { SubclassChoiceResult, SubclassChoicesComponent } from './subclass-choices/subclass-choices.component';
 
 const NO_GRANTS: readonly SpellGrant[] = [];
 const NO_CHOICES: readonly FeatSpellChoice[] = [];
 const NO_SPELLS: DndSpell[] = [];
+const NO_OPTIONS: string[] = [];
+const NO_KEYS: readonly string[] = [];
 
 /** Where the picks made for one of a feat's choices are kept; a different class list is a different pick. */
 const pickKey = (choice: FeatSpellChoice): string => `${choice.feat}|${choice.key}|${choice.spellLists.join(',')}`;
@@ -46,7 +55,10 @@ const pickKey = (choice: FeatSpellChoice): string => `${choice.feat}|${choice.ke
     selector: 'app-level-up-modal',
     templateUrl: './level-up-modal.component.html',
     styleUrls: ['./level-up-modal.component.scss'],
-    imports: [ModalComponent, FormsModule, SpellPickerComponent, ModifierPipe, Eli5ToggleComponent]
+    imports: [
+      ModalComponent, FormsModule, SpellPickerComponent, ModifierPipe, Eli5ToggleComponent, ContentSourceFilterComponent,
+      SubclassChoicesComponent,
+    ]
 })
 export class LevelUpModalComponent implements OnInit {
   @Input() pc!: PC;
@@ -62,7 +74,37 @@ export class LevelUpModalComponent implements OnInit {
   loading = true;
   submitting = false;
   error: string | null = null;
-  selectedSubclass: string | null = null;
+
+  /** The subclass picked this level; picking another one starts its choices over. */
+  get selectedSubclass(): string | null {
+    return this.pickedSubclass;
+  }
+  set selectedSubclass(value: string | null) {
+    if (value === this.pickedSubclass) return;
+    this.pickedSubclass = value;
+    this.subclassChoiceResult = null;
+    this.applySubclassSpellcasting();
+  }
+  private pickedSubclass: string | null = null;
+
+  /** The preview as the server sent it; `preview` is this with the picked subclass's spellcasting. */
+  private serverPreview: LevelUpPreview | null = null;
+
+  /**
+   * A subclass that brings Spellcasting of its own (a Monk's Warrior of the
+   * Mystic Arts) changes this level's slots, cantrips and prepared spells: the
+   * preview then reads with that option's numbers, and the spells to learn are
+   * offered from its list. Picks made under other numbers are dropped.
+   */
+  private applySubclassSpellcasting(): void {
+    if (!this.serverPreview) return;
+    const next = previewWithSubclass(this.serverPreview, this.pickedSubclass);
+    if (next === this.preview) return;
+    this.preview = next;
+    this.selectedSpells = [];
+    this.spellList = [];
+    if (this.showSpellPicker) this.loadSpells();
+  }
 
   /** The specialization picked in the optional "Change …" select (hero classes that respec). */
   selectedSpecialization: string | null = null;
@@ -128,6 +170,7 @@ export class LevelUpModalComponent implements OnInit {
     preview$.subscribe({
       next: preview => {
         this.preview = preview;
+        this.serverPreview = preview;
         this.loading = false;
         this.grantSpellIndex = null;
         this.allSpells = null;
@@ -153,6 +196,25 @@ export class LevelUpModalComponent implements OnInit {
    * server's list for that feat is added.
    */
   get alwaysPreparedGrants(): readonly SpellGrant[] {
+    const base = this.classAndFeatGrants;
+    // A Vestige Patron choosing its domain in this dialog: that domain's Vestige Spells ride along.
+    const domain = this.subclassChoiceResult?.subclassChoices.vestigeDomain;
+    const forDomain = domain ? this.preview?.alwaysPreparedSpellsByVestigeDomain?.[domain] : undefined;
+    if (!forDomain?.length) return base;
+    if (this.vestigeGrantsBase !== base || this.vestigeGrantsFor !== forDomain) {
+      this.vestigeGrantsBase = base;
+      this.vestigeGrantsFor = forDomain;
+      const named = base.map(g => spellKey(g.name));
+      this.vestigeGrantsCache = [...base, ...forDomain.filter(g => !named.includes(spellKey(g.name)))];
+    }
+    return this.vestigeGrantsCache;
+  }
+  private vestigeGrantsBase: readonly SpellGrant[] | null = null;
+  private vestigeGrantsFor: readonly SpellGrant[] | null = null;
+  private vestigeGrantsCache: readonly SpellGrant[] = NO_GRANTS;
+
+  /** The grants of the class, the subclass picked this level and the feat picked this level. */
+  private get classAndFeatGrants(): readonly SpellGrant[] {
     const bySubclass = this.preview?.alwaysPreparedSpellsBySubclass;
     const forChoice = this.selectedSubclass ? bySubclass?.[this.selectedSubclass] : undefined;
     const base = forChoice ?? this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
@@ -175,7 +237,8 @@ export class LevelUpModalComponent implements OnInit {
   private get anyGrantsOnOffer(): boolean {
     return (this.preview?.alwaysPreparedSpells?.length ?? 0) > 0
       || Object.keys(this.preview?.alwaysPreparedSpellsBySubclass ?? {}).length > 0
-      || Object.keys(this.preview?.alwaysPreparedSpellsByFeat ?? {}).length > 0;
+      || Object.keys(this.preview?.alwaysPreparedSpellsByFeat ?? {}).length > 0
+      || Object.keys(this.preview?.alwaysPreparedSpellsByVestigeDomain ?? {}).length > 0;
   }
 
   /**
@@ -221,7 +284,7 @@ export class LevelUpModalComponent implements OnInit {
    * inputs so the picker sees a stable array.
    */
   get pickableSpells(): DndSpell[] {
-    const granted = this.alwaysPreparedGrants.map(g => spellKey(g.name));
+    const granted = [...this.alwaysPreparedGrants.map(g => spellKey(g.name)), ...this.subclassPickKeys];
     const key = granted.join('|');
     if (this.pickableSource !== this.spellList || this.pickableKey !== key) {
       this.pickableSource = this.spellList;
@@ -242,11 +305,16 @@ export class LevelUpModalComponent implements OnInit {
     const maxLevel = this.maxLearnableSpellLevel;
     // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = this.heroClass?.extraSpellList;
+    // The class's own list, or the Sorcerer list for a Warrior of the Mystic Arts monk.
+    const listClass = spellListClass({ clazz: this.pc.clazz, subclass: this.effectiveSubclass ?? undefined });
     const spells$ = extras?.length
-      ? this.dndResources.getSpellsForClass(this.pc.clazz, extras)
-      : this.dndResources.getSpellsForClass(this.pc.clazz);
+      ? this.dndResources.getSpellsForClass(listClass, extras)
+      : this.dndResources.getSpellsForClass(listClass);
+    const loadedFor = this.preview;
     spells$.subscribe({
       next: spells => {
+        // The player picked another subclass while this list was loading: it is no longer the one to show.
+        if (this.preview !== loadedFor) return;
         this.spellList = spells.filter(s =>
           !known.has(s.name.toLowerCase()) && (s.level === 0 || s.level <= maxLevel));
         this.loadingSpells = false;
@@ -410,10 +478,93 @@ export class LevelUpModalComponent implements OnInit {
     return this.recommendedFightingStyles.includes(name);
   }
 
-  /** 'World of Warcraft' for a WoW-only subclass on offer (Oath of the Holy); undefined otherwise. */
+  /**
+   * The book a subclass on offer comes from: 'World of Warcraft' for a WoW-only
+   * one (Oath of the Holy), 'Arcana Unleashed' for one of that book's eight;
+   * undefined for a base-game subclass.
+   */
   subclassSourceTag(name: string): string | undefined {
     return subclassSource(name);
   }
+
+  // ── Subclass picker: content-source filter ─────────────────────────────────
+
+  /** Which books' subclasses the picker lists; all on by default, like the spell pickers. */
+  subclassSources: ContentSourceSelection = allContentSources();
+
+  toggleSubclassSource(source: ContentSource): void {
+    this.subclassSources = { ...this.subclassSources, [source]: !this.subclassSources[source] };
+  }
+
+  /**
+   * The subclass options allowed by the content-source filter. The one already
+   * picked stays listed when its book is switched off: the filter narrows what
+   * is offered, it never discards a choice. Memoized so the template sees a
+   * stable array.
+   */
+  get visibleSubclassOptions(): string[] {
+    const options = this.preview?.subclassOptions ?? NO_OPTIONS;
+    const key = `${JSON.stringify(this.subclassSources)}|${this.selectedSubclass ?? ''}`;
+    if (options !== this.subclassOptionsSource || key !== this.subclassOptionsKey) {
+      this.subclassOptionsSource = options;
+      this.subclassOptionsKey = key;
+      this.subclassOptionsCache = options.filter(option =>
+        option === this.selectedSubclass || isSourceEnabled(this.subclassSources, subclassSource(option)));
+    }
+    return this.subclassOptionsCache;
+  }
+  private subclassOptionsSource: string[] | null = null;
+  private subclassOptionsKey = '';
+  private subclassOptionsCache: string[] = NO_OPTIONS;
+
+  // ── Choices the subclass comes with (hosted in app-subclass-choices) ────────
+
+  /** The subclass the choices are for: the one being picked this level, else the character's own. */
+  get effectiveSubclass(): string | null {
+    return this.selectedSubclass ?? this.pc.subclass ?? null;
+  }
+
+  /** What the player has chosen for the subclass; null until they change something. */
+  subclassChoiceResult: SubclassChoiceResult | null = null;
+
+  onSubclassChoices(result: SubclassChoiceResult): void {
+    this.subclassChoiceResult = result;
+  }
+
+  /**
+   * True when the subclass asks nothing more of the player: what they have
+   * chosen is complete or, before they touch anything, nothing is owed.
+   */
+  get subclassChoicesSatisfied(): boolean {
+    if (this.subclassChoiceResult) return this.subclassChoiceResult.valid;
+    return !this.preview || !subclassChoicesDue(this.pc, this.effectiveSubclass, this.preview.newLevel);
+  }
+
+  /** Lookup keys of the spells picked for subclass features. */
+  private get subclassPickKeys(): string[] {
+    return (this.subclassChoiceResult?.newSpells ?? []).map(s => spellKey(s.name));
+  }
+
+  /**
+   * Spells this level already has spoken for, as lookup keys: the subclass
+   * pickers leave them out. Memoized so the child sees a stable array.
+   */
+  get subclassChoiceExclusions(): readonly string[] {
+    const keys = [
+      ...this.alwaysPreparedGrants.map(g => g.name),
+      ...this.featChoices.flatMap(choice => this.featPicksFor(choice)).map(s => s.name),
+      ...this.selectedSpells.map(s => s.name),
+      ...(this.cantripStyle ? this.styleCantrips : []).map(s => s.name),
+    ].map(spellKey);
+    const key = keys.join('|');
+    if (key !== this.exclusionsKey) {
+      this.exclusionsKey = key;
+      this.exclusionsCache = keys.length ? keys : NO_KEYS;
+    }
+    return this.exclusionsCache;
+  }
+  private exclusionsKey = '';
+  private exclusionsCache: readonly string[] = NO_KEYS;
 
   /** How a subclass option reads — a WoW Mage's 'Evoker' shows as 'Evoker (school of evocation)'. */
   subclassOptionLabel(name: string): string {
@@ -594,6 +745,7 @@ export class LevelUpModalComponent implements OnInit {
     const taken = [
       ...this.featChoices.filter(c => c !== choice).flatMap(c => this.featPicksFor(c)).map(s => spellKey(s.name)),
       ...this.alwaysPreparedGrants.map(g => spellKey(g.name)),
+      ...this.subclassPickKeys,
     ];
     const key = taken.join('|');
     const id = pickKey(choice);
@@ -629,11 +781,12 @@ export class LevelUpModalComponent implements OnInit {
 
   /**
    * Confirm is blocked until any required subclass and milestone (ASI/feat) choices are made,
-   * and — when a cantrip-teaching style or a feat with spells to pick is chosen — exactly its picks.
+   * and — when a cantrip-teaching style or a feat with spells to pick is chosen — exactly its picks,
+   * and until the subclass has every choice it asks for at this level.
    */
   get canConfirm(): boolean {
     return (!this.needsSubclass || !!this.selectedSubclass) && this.milestoneSatisfied
-      && this.styleCantripsSatisfied && this.featChoicesSatisfied;
+      && this.styleCantripsSatisfied && this.featChoicesSatisfied && this.subclassChoicesSatisfied;
   }
 
   confirm(): void {
@@ -662,24 +815,35 @@ export class LevelUpModalComponent implements OnInit {
     // A pick made before the subclass that grants the same spell was chosen is not sent twice.
     // The spells picked for the feat being taken go with the feat's name as their `grantedBy`:
     // that is how the server tells them from the class's own picks. A spell picked both ways is the feat's.
+    // The subclass's own choices (an Arcana Domain cleric's skill) and the spells picked for its
+    // features go the same way: each pick carries its feature as `grantedBy`, and a held pick
+    // being swapped out is named in `forgetSpells`.
+    const subclassChoice = this.subclassChoiceResult;
+    const subclassPicks = subclassChoice?.newSpells ?? [];
+    const subclassPickKeys = this.subclassPickKeys;
     const featPicks = this.featChoices.flatMap(choice => this.featPicksFor(choice));
     const featPickKeys = featPicks.map(s => spellKey(s.name));
     const grantedKeys = this.grantedSpells.map(g => spellKey(g.spell.name));
     const learned = [
       ...this.selectedSpells.filter(s => !grantedKeys.includes(spellKey(s.name))
-        && !featPickKeys.includes(spellKey(s.name))),
+        && !featPickKeys.includes(spellKey(s.name)) && !subclassPickKeys.includes(spellKey(s.name))),
       ...(this.cantripStyle ? this.styleCantrips : []),
     ];
     const granted = this.grantedSpells
-      .filter(g => !featPickKeys.includes(spellKey(g.spell.name)))
+      .filter(g => !featPickKeys.includes(spellKey(g.spell.name)) && !subclassPickKeys.includes(spellKey(g.spell.name)))
       .map(g => toGrantedSpell(g.spell, g.grantedBy));
-    if (learned.length || featPicks.length || granted.length) {
+    if (learned.length || featPicks.length || granted.length || subclassPicks.length) {
       choices.newSpells = [
         ...learned.map(toPcSpell),
         ...featPicks.map(s => toGrantedSpell(s, this.selectedFeat!)),
         ...granted,
+        ...subclassPicks,
       ];
     }
+    if (subclassChoice && Object.keys(subclassChoice.subclassChoices).length) {
+      choices.subclassChoices = subclassChoice.subclassChoices;
+    }
+    if (subclassChoice?.forgetSpells.length) choices.forgetSpells = subclassChoice.forgetSpells;
 
     const commit$ = this.asDm
       ? this.pcService.levelUpAsDm(this.pc.id, choices)

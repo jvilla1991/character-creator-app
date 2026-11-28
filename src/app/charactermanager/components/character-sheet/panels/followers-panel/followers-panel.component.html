@@ -6,6 +6,11 @@
     }
   </div>
 
+  <!-- A Vestige Patron's companion type and Vestige Spells domain. -->
+  @if (vestigePatron) {
+    <app-vestige-panel [pc]="pc" [ownSheet]="ownSheet" [asDm]="canGrant"></app-vestige-panel>
+  }
+
   <!-- DM grant form: a name plus the follower's stat block as JSON. -->
   @if (grantFormOpen) {
     <div class="grant-form">

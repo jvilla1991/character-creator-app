@@ -1,4 +1,5 @@
 import { PcSpell } from './pc';
+import { SubclassChoices } from './arcana-subclasses';
 
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
@@ -78,6 +79,40 @@ export interface LevelUpPreview {
    * the character already has are part of `alwaysPreparedSpells` itself.
    */
   alwaysPreparedSpellsByFeat?: { [feat: string]: { name: string; grantedBy: string }[] };
+  /**
+   * When a subclass choice is due: for each option that brings Spellcasting of
+   * its own (a Monk's Warrior of the Mystic Arts), the new level's slots,
+   * cantrips known and prepared spells with that option chosen, keyed by option
+   * name. The modal uses the entry for the subclass the player picks in place
+   * of the three fields of the same names above. Absent or empty otherwise.
+   */
+  spellcastingBySubclass?: { [subclass: string]: SubclassSpellcasting };
+  /**
+   * A Vestige Patron that has not chosen the Cleric domain of its Vestige Spells
+   * yet: what each domain (Life, Light, Trickery, War) would hand over at the
+   * new level, keyed by domain. The modal adds the entry for the domain the
+   * player picks. Empty or absent for everyone else and once the domain is
+   * stored: its spells are then part of `alwaysPreparedSpells`.
+   */
+  alwaysPreparedSpellsByVestigeDomain?: { [domain: string]: { name: string; grantedBy: string }[] };
+}
+
+/** A level-up preview's spellcasting numbers with one subclass option chosen. */
+export interface SubclassSpellcasting {
+  newSpellSlots: { [spellLevel: number]: number };
+  newCantripsKnown: number;
+  newSpellsKnown: number;
+}
+
+/**
+ * The level-up preview as it reads with a subclass picked: when the server
+ * sent that option's spellcasting (`spellcastingBySubclass`: a Monk picking the
+ * Warrior of the Mystic Arts), its slots, cantrips known and prepared spells
+ * replace the preview's own. The preview itself when the option changes nothing.
+ */
+export function previewWithSubclass(preview: LevelUpPreview, subclass: string | null | undefined): LevelUpPreview {
+  const casting = subclass ? preview.spellcastingBySubclass?.[subclass] : undefined;
+  return casting ? { ...preview, ...casting } : preview;
 }
 
 /**
@@ -98,9 +133,24 @@ export interface LevelUpChoices {
    * Spells learned this level. A spell picked for the feat taken in the same
    * request (Arcane Warrior's cantrips, Magic Connoisseur's and Boon of Magic
    * School Mastery's spells) carries that feat's name as its `grantedBy`: that is
-   * how the server tells it from the class's own picks.
+   * how the server tells it from the class's own picks. A spell picked for a
+   * subclass feature carries the feature's name the same way ('Student of
+   * Arcana', 'Magical Mastery', 'Arcane Archer Lore').
    */
   newSpells?: PcSpell[];
+  /**
+   * What the player chose for the subclass at this level (an Arcana Domain
+   * cleric's skill, an Arcane Archer's replacement skills): the keys present
+   * replace the stored ones. Checked against the character as it will be at the
+   * new level, with the subclass chosen in this same request.
+   */
+  subclassChoices?: SubclassChoices;
+  /**
+   * Subclass picks being swapped out, by spell name: at most one per feature
+   * (Student of Arcana, Magical Mastery), each with its replacement in
+   * `newSpells` under the same `grantedBy`.
+   */
+  forgetSpells?: string[];
   hpMode?: HpMode;
   /**
    * The level-2 Fighting Style, only when `fightingStyleDue`. 'Blessed Warrior', 'Druidic

@@ -1,0 +1,66 @@
+@if (active()) {
+  <div class="panel" data-arcane-shot-panel>
+    <div class="panel-header">
+      <span class="panel-title">Arcane Shot</span>
+      @if (chooseMode() !== 'none' && !choosing()) {
+        <button type="button" class="btn sm" data-choose (click)="openChooser()">
+          {{ short() ? 'Choose options' : 'Change options' }}
+        </button>
+      }
+    </div>
+
+    <!-- The two numbers every option reads from; both move with level and Intelligence. -->
+    <dl class="shot-stats">
+      <div class="shot-stat">
+        <dt>Arcane Shot Die</dt>
+        <dd class="numeric" data-die>d{{ die() }}</dd>
+      </div>
+      <div class="shot-stat">
+        <dt>Save DC</dt>
+        <dd class="numeric" data-dc>{{ saveDc() }}</dd>
+      </div>
+    </dl>
+
+    <!-- The uses: the same class resource the feature list would show. -->
+    @if (counter(); as r) {
+      <app-resource-counter [resource]="r" [editable]="canEdit()" [hideName]="true"
+        (usedChange)="setUsed($event)"></app-resource-counter>
+    }
+
+    @if (chooserRule(); as r) {
+      <div class="shot-chooser" role="group" aria-label="Arcane Shot options">
+        <div class="shot-chooser-head">
+          <span class="shot-chooser-title">Options</span>
+          <span class="numeric shot-chooser-count">{{ selection().length }}/{{ r.count }}</span>
+        </div>
+        <app-arcane-shot-picker [rule]="r" [selected]="selection()" [level]="level()"
+          (selectedChange)="selection.set($event)"></app-arcane-shot-picker>
+        <div class="shot-chooser-actions">
+          <button type="button" class="btn primary sm" data-save [disabled]="!complete() || saving()"
+            (click)="saveChooser()">Save</button>
+          <button type="button" class="btn sm" data-cancel [disabled]="saving()" (click)="cancelChooser()">Cancel</button>
+        </div>
+      </div>
+    } @else {
+      @if (short()) {
+        <p class="shot-missing" role="status">{{ cards().length }} of {{ shotCount() }} options chosen.</p>
+      }
+      @if (cards().length) {
+        <ul class="shot-cards">
+          @for (card of cards(); track card.name) {
+            <li class="shot-card">
+              <div class="shot-card-head">
+                <span class="shot-card-name">{{ card.name }}</span>
+                <span class="shot-card-damage numeric">{{ card.damage }}</span>
+              </div>
+              @if (card.save) {
+                <div class="shot-card-save">{{ card.save }}</div>
+              }
+              <div class="shot-card-desc">{{ card.summary }}</div>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+}

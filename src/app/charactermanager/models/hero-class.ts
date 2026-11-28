@@ -1,6 +1,7 @@
 import { ContentSource } from './content-source';
 import { modFromScore } from '../utils/character-math';
 import { WOW_CLASS_VARIANTS } from './wow-class-variants';
+import { arcanaSubclass } from './arcana-subclasses';
 
 /**
  * Hero classes from the World of Warcraft tabletop module. Most are a themed
@@ -478,11 +479,12 @@ function variantForSubclass(subclass: string | null | undefined): HeroClassOptio
 }
 
 /**
- * The content source of a subclass name when it comes from the WoW module (a
- * hero subclass or a variant's WoW-only subclass); undefined for base-game ones.
+ * The content source of a subclass name when it comes from another book: the
+ * WoW module (a hero subclass or a variant's WoW-only subclass) or Arcana
+ * Unleashed (its eight subclasses); undefined for base-game ones.
  */
 export function subclassSource(subclass: string | null | undefined): ContentSource | undefined {
-  return (heroClassForSubclass(subclass) ?? variantForSubclass(subclass))?.source;
+  return (heroClassForSubclass(subclass) ?? variantForSubclass(subclass) ?? arcanaSubclass(subclass))?.source;
 }
 
 /** The subclass a specialization's guidance recommends (e.g. Guardian → Circle of the Moon). */

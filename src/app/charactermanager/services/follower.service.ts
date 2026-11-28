@@ -4,8 +4,11 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { delay, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
-  Follower, FollowerKind, FollowerStatBlock, MAX_FOLLOWERS, followerKind, playerMayDismiss,
+  COMPANION_NOT_DISMISSED, Follower, FollowerKind, FollowerStatBlock, MAX_FOLLOWERS, followerKind, mayDismiss,
 } from '../models/follower';
+import { companionEdit, isCompanion } from '../models/companion';
+import { PC } from '../models/pc';
+import { syncVestigeCompanion } from '../models/vestige-companion';
 
 /** A demo-mode refusal shaped like the server's, so callers read one error shape. */
 const refuse = (status: number, message: string) =>
@@ -21,8 +24,11 @@ const refuse = (status: number, message: string) =>
  * Authority is enforced server-side and depends on the follower's kind: only
  * the campaign's DM grants or dismisses a DM grant; the owning player (or that
  * DM) adds and dismisses a summon or a familiar; the owning player and the DM
- * read the list and update any follower. Demo mode keeps an in-memory list per
- * character and applies the same rules.
+ * read the list and update any follower. A companion (a Vestige Patron's
+ * vestige) is the server's own: nothing here creates one, nobody dismisses
+ * one, and an update changes only its name, its Hit Points and its
+ * conditions. Demo mode keeps an in-memory list per character and applies the
+ * same rules.
  *
  * Every view that lists followers (the Followers tab, an open follower sheet,
  * the Party Vitals Board) keeps its own copy, so `changes$` says when a
@@ -108,7 +114,10 @@ export class FollowerService {
     if (environment.demoMode) {
       const existing = (this.demoFollowers[pcId] ?? []).find(f => f.id === followerId);
       if (!existing) return throwError(() => new Error('Follower not found'));
-      const updated: Follower = { ...existing, name, statBlock };
+      // Of a companion only the Hit Points and the conditions are taken, as on the server.
+      const updated: Follower = {
+        ...existing, name, statBlock: isCompanion(existing) ? companionEdit(existing.statBlock, statBlock) : statBlock,
+      };
       this.demoFollowers[pcId] = this.demoFollowers[pcId].map(f => f.id === followerId ? updated : f);
       return of(updated).pipe(delay(50), tap(() => this.notifyChanged(pcId)));
     }
@@ -117,19 +126,39 @@ export class FollowerService {
   }
 
   /**
-   * Permanently remove a follower. The campaign's DM may dismiss any of them;
-   * the owning player only their own summon or familiar. The server decides
-   * who the caller is; `asDm` tells demo mode, which has no server to ask.
+   * Permanently remove a follower. The campaign's DM may dismiss any of them
+   * but a companion; the owning player only their own summon or familiar. The
+   * server decides who the caller is; `asDm` tells demo mode, which has no
+   * server to ask.
    */
   dismiss(pcId: number, followerId: number, asDm = false): Observable<void> {
     if (environment.demoMode) {
       const follower = (this.demoFollowers[pcId] ?? []).find(f => f.id === followerId);
       if (!follower) return refuse(404, 'Follower not found');
-      if (!asDm && !playerMayDismiss(follower)) return refuse(403, 'Access denied');
+      if (isCompanion(follower)) return refuse(403, COMPANION_NOT_DISMISSED);
+      if (!mayDismiss(follower, asDm)) return refuse(403, 'Access denied');
       this.demoFollowers[pcId] = (this.demoFollowers[pcId] ?? []).filter(f => f.id !== followerId);
       return of(undefined).pipe(delay(50), tap(() => this.notifyChanged(pcId)));
     }
     return this.http.delete<void>(`${this.url(pcId)}/${followerId}`)
       .pipe(tap(() => this.notifyChanged(pcId)));
+  }
+
+  /**
+   * Demo mode only: the server's companion step. After a character changed
+   * (a level-up, a sheet save, a change of its Vestige type) its vestige is
+   * created, rebuilt or removed to match, and listeners are told when it was.
+   * Every other follower, and every other character, is left as it is.
+   */
+  demoSyncVestige(pc: PC): void {
+    if (!environment.demoMode) return;
+    const current = this.demoFollowers[pc.id] ?? [];
+    const next = syncVestigeCompanion(current, pc, () => {
+      this.lastDemoId = Math.max(Date.now(), this.lastDemoId + 1);
+      return this.lastDemoId;
+    });
+    if (next === current) return;
+    this.demoFollowers[pc.id] = [...next];
+    this.notifyChanged(pc.id);
   }
 }

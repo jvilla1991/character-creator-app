@@ -1,0 +1,58 @@
+@if (view(); as v) {
+  <section class="mf" [attr.aria-labelledby]="headingId">
+    <div class="mf-head">
+      <h2 class="mf-title" [id]="headingId">Mystic Focus</h2>
+      <span class="mf-points"><span class="numeric">{{ v.focusLeft }} / {{ v.focusMax }}</span> Focus Points left</span>
+    </div>
+
+    <!-- One button per spell level, each way. A trade the rule refuses right
+    now stays in its place, disabled; its tooltip says why. -->
+    <div class="mf-row" role="group" aria-label="Spell slot to Focus Points">
+      <span class="mf-label">Slot to Focus Points</span>
+      <div class="mf-options">
+        @for (option of v.slotToFocus; track option.slotLevel) {
+          <button type="button" class="btn sm mf-btn" data-slot-to-focus
+            [class.on]="isPending(option)"
+            [disabled]="!option.possible || busy()"
+            [attr.aria-label]="ariaLabel(option)"
+            [attr.aria-expanded]="option.possible ? isPending(option) : null"
+            [attr.title]="option.reason || null"
+            (click)="ask(option)">
+            <span class="mf-btn-level">{{ option.label }}</span>
+            <span class="mf-btn-amount numeric">+{{ option.amount }}</span>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="mf-row" role="group" aria-label="Focus Points to spell slot">
+      <span class="mf-label">Focus Points to slot</span>
+      <div class="mf-options">
+        @for (option of v.focusToSlot; track option.slotLevel) {
+          <button type="button" class="btn sm mf-btn" data-focus-to-slot
+            [class.on]="isPending(option)"
+            [disabled]="!option.possible || busy()"
+            [attr.aria-label]="ariaLabel(option)"
+            [attr.aria-expanded]="option.possible ? isPending(option) : null"
+            [attr.title]="option.reason || null"
+            (click)="ask(option)">
+            <span class="mf-btn-level">{{ option.label }}</span>
+            <span class="mf-btn-amount numeric">−{{ option.amount }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div aria-live="polite" [attr.aria-busy]="busy()">
+      @if (pending(); as option) {
+        <div class="mf-confirm" role="group" aria-label="Confirm the conversion">
+          <span class="mf-confirm-text">{{ option.confirm }}</span>
+          <span class="mf-confirm-actions">
+            <button type="button" class="btn primary sm mf-btn" data-confirm [disabled]="busy()"
+              (click)="confirm()">Convert</button>
+            <button type="button" class="btn sm mf-btn" data-cancel (click)="cancel()">Cancel</button>
+          </span>
+        </div>
+      }
+    </div>
+  </section>
+}

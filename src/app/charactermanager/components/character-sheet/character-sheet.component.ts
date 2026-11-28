@@ -1,9 +1,12 @@
 import { RenownPanelComponent } from './panels/renown-panel/renown-panel.component';
 import { ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, computed, effect, inject, output, signal, untracked } from '@angular/core';
 import { PC, PcSpell, PcItem } from '../../models/pc';
+import { MysticFocusRequest, mysticFocusNotice } from '../../models/mystic-focus';
 import { SellRequest } from '../../models/shop';
 import { CampaignLocation } from '../../models/campaign';
 import { Follower, followerToPc, pcToStatBlock } from '../../models/follower';
+import { companionEdit, isCompanion } from '../../models/companion';
+import { CompanionVitalsComponent } from './panels/companion-vitals/companion-vitals.component';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
@@ -45,6 +48,8 @@ import { SpeciesDisplayPipe } from '../../pipes/species-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
 import { RecommendedSpellsComponent } from './panels/recommended-spells/recommended-spells.component';
 import { SpeciesSpellsComponent } from './panels/species-spells/species-spells.component';
+import { ArcaneShotPanelComponent } from './panels/arcane-shot-panel/arcane-shot-panel.component';
+import { hasArcaneShots } from '../../models/arcana-subclasses';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
 import { AdjustableStat, slotStat } from '../../models/stat-adjustment';
@@ -68,7 +73,7 @@ let nextSheetId = 0;
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent, ArcaneShotPanelComponent, CompanionVitalsComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -134,6 +139,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** Follower mode only: whether that character is in a campaign, and so has a DM
    *  (a follower's own stat block carries no campaign). */
   @Input() followerOwnerInCampaign = false;
+  /** Follower mode only: this follower is a server-owned companion. Its sheet is
+   *  read-only but for the name and the companion panel (Hit Points, temporary
+   *  Hit Points, conditions), which the owning player and the DM may 'edit'. */
+  @Input() followerCompanion: 'view' | 'edit' | null = null;
   readonly deleteRequested = output<void>();
   readonly rollRequested = output<void>();
   readonly levelUpRequested = output<void>();
@@ -368,6 +377,12 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return follower && this.uiState.openFollowerId() === follower.id ? follower : null;
   });
 
+  /** True while the open follower is a companion: the server owns all of its sheet but the name and the vitals. */
+  readonly openCompanion = computed(() => {
+    const follower = this.openFollower();
+    return !!follower && isCompanion(follower);
+  });
+
   /** The open follower as a PC, for the nested follower-mode sheet. */
   readonly openFollowerPc = computed(() => {
     const follower = this.openFollower();
@@ -395,7 +410,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onFollowerChanged(updated: PC): void {
     const before = this.openedFollower();
     if (!before) return;
-    const optimistic: Follower = { ...before, name: updated.name, statBlock: pcToStatBlock(updated) };
+    // Of a companion the server takes the name, the Hit Points and the conditions:
+    // show the save as it will be stored, and send nothing when none of those changed.
+    const statBlock = isCompanion(before)
+      ? companionEdit(before.statBlock, pcToStatBlock(updated))
+      : pcToStatBlock(updated);
+    if (isCompanion(before) && updated.name === before.name
+        && JSON.stringify(statBlock) === JSON.stringify(before.statBlock)) return;
+    const optimistic: Follower = { ...before, name: updated.name, statBlock };
     this.openedFollower.set(optimistic);
     this.followerEdits++;
     this.followerSavesInFlight++;
@@ -624,6 +646,42 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     this.slotNotice.set(notice);
   }
 
+  // ── Mystic Focus (Warrior of the Mystic Arts, Monk 6) ────────────────────
+  // Under the slot strip: a spell slot for Focus Points, or Focus Points for a
+  // slot. The server owns the rule and answers with the saved character.
+
+  /** A conversion is on its way to the server. */
+  readonly mysticFocusBusy = signal(false);
+
+  /**
+   * Who gets the Mystic Focus block: the owner, in a campaign or not (it is the
+   * player's own feature), and the DM. Not a follower, which is not a character.
+   */
+  get canUseMysticFocus(): boolean {
+    return !this.followerMode && (this.ownSheet || this.editable);
+  }
+
+  onMysticFocus(request: MysticFocusRequest): void {
+    if (!this.canUseMysticFocus || this.mysticFocusBusy()) return;
+    const pcId = this.pc.id;
+    const asDm = this.editable;
+    this.mysticFocusBusy.set(true);
+    this.pcService.mysticFocus(pcId, request.action, request.slotLevel, asDm).subscribe({
+      next: saved => {
+        this.mysticFocusBusy.set(false);
+        // The sheet embedded in a session reads its slots from the session's snapshot.
+        this.sessionService.applySpellSlots(pcId, saved.spellSlots);
+        if (this.pc?.id === pcId) this.slotNotice.set(mysticFocusNotice(request));
+      },
+      error: err => {
+        this.mysticFocusBusy.set(false);
+        this.notifications.error('Could not use Mystic Focus. Try again.', err);
+        this.pcService.refreshSpellSlots(pcId, asDm);
+        this.refreshSessionIfLive();
+      },
+    });
+  }
+
   /** "Slot maximum" was pressed for a spell level in the strip. */
   onSlotMaximumRequested(level: number): void {
     if (!this.followerMode) {
@@ -648,6 +706,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /** Hero classes (Death Knight, Demon Hunter, …) — show the hero-class panel on the sheet tab. */
   get heroClass(): boolean { return isHeroClass(this.pc); }
+
+  /** An Arcane Archer of Fighter 3 or higher: the sheet shows its Arcane Shot panel. */
+  get arcaneShots(): boolean {
+    return !!this.pc && hasArcaneShots(this.pc, this.pc.subclass, this.pc.level ?? 1);
+  }
 
   /** Header suffix for a hero-class specialization ("Frost Rune", "Havoc", "Balance"); '' otherwise. */
   get specializationTitle(): string {

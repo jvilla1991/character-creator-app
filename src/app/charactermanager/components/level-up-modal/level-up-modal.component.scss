@@ -2,17 +2,10 @@
 // / .btn classes are global (shared with the other modals); only the delta rows are
 // styled here.
 
-// The system's Label style (DESIGN.md): Cinzel caps at the 11px floor with the
-// label tracking. Every section heading and tab in this dialog uses it, so
-// level-up reads as the same app as the other dialogs.
-@mixin section-label {
-  font-family: 'Cinzel', serif;
-  font-weight: 500;
-  font-size: var(--text-2xs);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
+// The Label mixin and the choice-row, gained-feature, spell-pick and select
+// styles live in the shared partial: the subclass-choices component hosted in
+// this dialog uses the same ones.
+@use './level-up-shared' as *;
 
 // The gain list grows with class features / spell picks and can exceed the
 // viewport (the global .modal has no height cap) — cap it and scroll inside,
@@ -121,40 +114,7 @@
   font-weight: 600;
 }
 
-// ── Subclass picker ───────────────────────────────────────────────────────────
-
-.subclass-pick {
-  margin: 16px 0 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.subclass-label {
-  @include section-label;
-}
-
-.subclass-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-panel);
-  background: var(--surface-2);
-  cursor: pointer;
-  color: var(--text, #fff);
-
-  &.is-selected {
-    border-color: var(--celestial);
-    color: var(--celestial);
-  }
-
-  &.is-recommended {
-    border-style: dashed;
-    border-color: color-mix(in oklch, var(--celestial) 70%, var(--surface-3));
-  }
-}
+// ── Subclass picker (rows: see the shared partial) ────────────────────────────
 
 // WoW Druid: the circle the specialization recommends (a highlight, never enforced).
 .recommended-badge {
@@ -320,81 +280,6 @@
 
 .features-label {
   @include section-label;
-}
-
-.feature-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
-  // A celestial-tinted hairline marks a gained feature, the way .lvl-gain.is-bump
-  // marks a raised number (it was a 2px side stripe).
-  border: 1px solid color-mix(in oklch, var(--celestial) 45%, var(--surface-3));
-  border-radius: var(--radius-panel);
-  background: var(--surface-2);
-}
-
-.feature-name {
-  font-weight: 600;
-  color: var(--text, #fff);
-}
-
-.feature-desc {
-  font-size: 0.76rem;
-  color: var(--text-dim);
-}
-
-// ── Spell picker ──────────────────────────────────────────────────────────────
-
-.spell-pick {
-  margin: 16px 0 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.spell-label {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  @include section-label;
-}
-
-.spell-counts {
-  font-size: 0.72rem;
-  color: var(--celestial);
-}
-
-// Right-hand end of a spell label row: the pick counts, then the ELI5 switch.
-.spell-label-end {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-
-// Search input + list styles now live in app-spell-picker's own stylesheet
-// (components/spell-picker/spell-picker.component.scss) since the markup moved there.
-
-// Hero-class specialization change — colors/border come from the global themed-input baseline.
-.specialization-select {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sharp);
-  font-size: 0.9rem;
-}
-
-// Level-2 Fighting Style: "(optional)" tag and the cantrip-style hint.
-.optional-note {
-  font-size: 0.72rem;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-dim);
-}
-
-.style-cantrip-hint {
-  margin: 2px 0 6px;
-  font-size: 0.74rem;
-  color: var(--text-dim);
 }
 
 // A feat's prerequisite beyond level 4 (World of Warcraft monk feats).

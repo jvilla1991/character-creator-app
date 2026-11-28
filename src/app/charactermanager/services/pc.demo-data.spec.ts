@@ -135,8 +135,10 @@ describe('pc.demo-data (WoW mirrors)', () => {
     const stat = (label: string) => cards[0].stats!.find(s => s.label === label)?.value;
     expect([stat('Superiority Dice'), stat('Die'), stat('Maneuver DC')]).toEqual(['5', 'd8', '14']);
     expect(pc.spells).toEqual([]);
-    // The fighter's only WoW guidance is text: no WoW-only subclass joins the demo list.
-    expect(demoSubclassOptions('Fighter', 'Protection')).toEqual(['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior']);
+    // The fighter's only WoW guidance is text: no WoW-only subclass joins the demo list
+    // (Arcane Archer is Arcana Unleashed's, offered to every fighter).
+    expect(demoSubclassOptions('Fighter', 'Protection'))
+      .toEqual(['Arcane Archer', 'Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior']);
     // A fighter's Fighting Style is a level-1 choice — never due on level-up.
     expect(demoFightingStyleOptions('Fighter', undefined, 2)).toEqual([]);
     expect(new Set(DEMO_PCS.map(p => p.id)).size).toBe(DEMO_PCS.length);
@@ -322,6 +324,50 @@ describe('pc.demo-data (Arcana Unleashed feats)', () => {
     const options = demoFeatOptions('Wizard', 8, undefined, ['Evocation Adept', 'War Caster']);
     expect(options).not.toContain('Evocation Adept');
     expect(options).toContain('War Caster');   // the other books' feats are as they were
+  });
+});
+
+describe('pc.demo-data (Arcana Unleashed subclasses)', () => {
+  it('offers them to every member of the class at its level-up subclass choice, in name order', () => {
+    expect(demoSubclassOptions('Cleric', null))
+      .toEqual(['Arcana Domain', 'Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain']);
+    expect(demoSubclassOptions('Fighter', null))
+      .toEqual(['Arcane Archer', 'Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior']);
+    expect(demoSubclassOptions('Monk', null)).toEqual([
+      'Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Mystic Arts',
+      'Warrior of the Open Hand',
+    ]);
+    expect(demoSubclassOptions('Wizard', null))
+      .toEqual(['Abjurer', 'Conjurer', 'Diviner', 'Enchanter', 'Evoker', 'Illusionist', 'Necromancer', 'Transmuter']);
+    for (const clazz of ['Cleric', 'Fighter', 'Monk', 'Wizard']) {
+      const options = demoSubclassOptions(clazz, null);
+      expect(options).withContext(clazz).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    }
+  });
+
+  it('offers them to the World of Warcraft variant of the class too, beside its own', () => {
+    expect(demoSubclassOptions('Cleric', 'Shadow'))
+      .toEqual(jasmine.arrayContaining(['Arcana Domain', 'Discipline Domain', 'Shadow Domain', 'Life Domain']));
+    expect(demoSubclassOptions('Fighter', 'Arms')).toContain('Arcane Archer');
+    expect(demoSubclassOptions('Monk', 'Brewmaster'))
+      .toEqual(jasmine.arrayContaining(['Warrior of the Mystic Arts', 'Warrior of Mystic Brews']));
+    expect(demoSubclassOptions('Wizard', 'Frost'))
+      .toEqual(jasmine.arrayContaining(['Conjurer', 'Enchanter', 'Necromancer', 'Transmuter', 'Evoker']));
+    for (const [clazz, spec] of [['Cleric', 'Shadow'], ['Monk', 'Brewmaster']]) {
+      const options = demoSubclassOptions(clazz, spec);
+      expect(options).withContext(clazz).toEqual([...options].sort((a, b) => a.localeCompare(b)));
+    }
+  });
+
+  it('offers them to nobody else', () => {
+    for (const clazz of ['Barbarian', 'Bard', 'Druid', 'Paladin', 'Ranger', 'Rogue']) {
+      const options = demoSubclassOptions(clazz, null);
+      for (const name of ['Arcana Domain', 'Arcane Archer', 'Warrior of the Mystic Arts', 'Vestige Patron', 'Conjurer']) {
+        expect(options).withContext(clazz).not.toContain(name);
+      }
+    }
+    // A Warlock picks its patron in the create wizard: nothing is offered at a level-up.
+    expect(demoSubclassOptions('Warlock', null)).toEqual([]);
   });
 });
 

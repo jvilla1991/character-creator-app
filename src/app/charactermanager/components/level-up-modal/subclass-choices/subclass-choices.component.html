@@ -1,0 +1,79 @@
+<!-- Skill proficiencies a subclass feature gives: the ones given outright, then the ones to choose -->
+@if (skillChoice(); as rule) {
+  @if (rule.granted.length) {
+    <div class="features-gained granted-skills">
+      <div class="subclass-label">{{ rule.feature }} skills</div>
+      @for (g of rule.granted; track g.name) {
+        <div class="feature-item">
+          <span class="feature-name">{{ g.name }}</span>
+          <span class="feature-desc">{{ g.alreadyProficient ? 'Already proficient' : 'Gained' }}</span>
+        </div>
+      }
+    </div>
+  }
+  @if (rule.count > 0) {
+    <div class="subclass-pick skill-pick" role="group" [attr.aria-label]="rule.feature + ' skill choice'">
+      <div class="subclass-label skill-label">
+        {{ rule.granted.length ? 'Replacement' : rule.feature }} {{ rule.count === 1 ? 'skill' : 'skills' }}
+        <span class="spell-counts">{{ pickedSkills().length }}/{{ rule.count }}</span>
+      </div>
+      @for (skill of rule.options; track skill) {
+        <label class="subclass-option" [class.is-selected]="isSkillPicked(skill)">
+          <input [type]="rule.count === 1 ? 'radio' : 'checkbox'" name="subclass-skill"
+            [checked]="isSkillPicked(skill)"
+            [disabled]="skillBlocked(skill)"
+            (change)="toggleSkill(skill)">
+          <span>{{ skill }}</span>
+        </label>
+      }
+    </div>
+  }
+}
+<!-- A Vestige Patron's companion type and the domain of its Vestige Spells, while either is unset -->
+@if (vestigeOwed(); as owed) {
+  <app-vestige-choices [owed]="owed" [picks]="vestigePicks()" (picksChange)="setVestigePicks($event)">
+  </app-vestige-choices>
+}
+<!-- Spells a subclass feature lets the player pick, and at a later level the swap of one held pick -->
+@for (view of features(); track view.feature) {
+  @if (view.replaceable.length) {
+    <div class="subclass-pick replace-pick">
+      <label class="subclass-label" [for]="view.selectId">{{ view.replaceLabel }}</label>
+      <select [id]="view.selectId" class="specialization-select"
+        [ngModel]="view.forget" (ngModelChange)="setForget(view.feature, $event)">
+        <option [ngValue]="''">No change</option>
+        @for (held of view.replaceable; track held.name) {
+          <option [ngValue]="held.name">{{ held.name }}{{ held.lvl > 0 ? ' (level ' + held.lvl + ')' : '' }}</option>
+        }
+      </select>
+    </div>
+  }
+  @for (group of view.groups; track group.id) {
+    <div class="spell-pick subclass-spell-pick">
+      <div class="spell-label">
+        {{ group.label }}
+        <span class="spell-label-end">
+          <span class="spell-counts">{{ group.counts }}</span>
+          <app-eli5-toggle></app-eli5-toggle>
+        </span>
+      </div>
+      @if (spellsFailed()) {
+        <div class="style-cantrip-hint" role="status">The spell list did not load. Close this and try again.</div>
+      }
+      <app-spell-picker
+        [spells]="group.options"
+        [selected]="group.picked"
+        [cantripLimit]="group.level === 0 ? group.count : 0"
+        [spellLimit]="group.level > 0 ? group.count : 0"
+        [loading]="loadingSpells()"
+        [showEli5]="eli5.active()"
+        (selectedChange)="setPicks(group, $event)">
+      </app-spell-picker>
+    </div>
+  }
+}
+<!-- The Arcane Shot options an Arcane Archer learns at this level -->
+@if (shotRule(); as shots) {
+  <app-arcane-shot-choice [rule]="shots" [level]="newLevel()" [value]="shotDraft()"
+    (valueChange)="setShots($event)"></app-arcane-shot-choice>
+}

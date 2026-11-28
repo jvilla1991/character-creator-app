@@ -1,0 +1,38 @@
+@if (shown()) {
+  <div class="vestige-panel">
+    <div class="vestige-choice" role="group" aria-label="Vestige type">
+      <span class="eyebrow">Vestige type</span>
+      @if (canEdit()) {
+        <span class="vestige-types">
+          @for (option of types; track option) {
+            <button type="button" class="btn sm vestige-type"
+              [class.primary]="option === type()"
+              [attr.aria-pressed]="option === type()"
+              [disabled]="saving()"
+              (click)="setType(option)">{{ option }}</button>
+          }
+        </span>
+      } @else {
+        <span class="vestige-value">{{ type() ?? 'Not chosen' }}</span>
+      }
+    </div>
+    <div class="vestige-choice">
+      @if (!domain() && canEdit()) {
+        <label class="eyebrow" [for]="domainSelectId">Vestige Spells domain</label>
+        <span class="vestige-domain-pick field">
+          <select [id]="domainSelectId" [(ngModel)]="domainDraft" [disabled]="saving()">
+            <option [ngValue]="null" disabled>Choose a domain…</option>
+            @for (option of domains; track option) {
+              <option [ngValue]="option">{{ option }}</option>
+            }
+          </select>
+          <button type="button" class="btn primary sm vestige-domain-set" [disabled]="!domainDraft || saving()"
+            (click)="setDomain()">Set domain</button>
+        </span>
+      } @else {
+        <span class="eyebrow">Vestige Spells domain</span>
+        <span class="vestige-value">{{ domain() ?? 'Not chosen' }}</span>
+      }
+    </div>
+  </div>
+}

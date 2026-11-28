@@ -1965,6 +1965,88 @@ describe('CreateCharacterModalComponent — logic', () => {
     });
   });
 
+  describe('Arcana Unleashed level-1 subclass (Vestige Patron)', () => {
+    const WOW_WARLOCK_KEY = 'Warlock (World of Warcraft)';
+    const PHB_PATRONS = ['Fiend Patron', 'Great Old One Patron', 'Archfey Patron', 'Celestial Patron'];
+    const names = () => component.availableSubclasses.map(s => s.name);
+
+    beforeEach(() => {
+      component.classList = ['Sorcerer', 'Warlock', 'Wizard'];
+      dndResources.getSubclassesForClass.and.callFake((c: string) => LEVEL1_SUBCLASSES[c.toLowerCase()] ?? []);
+    });
+
+    it('offers a Warlock the Vestige Patron after the handbook patrons, tagged with its book', () => {
+      component.toggleClass('Warlock');
+      expect(names()).toEqual([...PHB_PATRONS, 'Vestige Patron']);
+      expect(component.availableSubclasses.map(s => s.source)).toEqual([undefined, undefined, undefined, undefined, 'Arcana Unleashed']);
+      expect(component.availableSubclasses[4].desc.length).toBeGreaterThan(40);
+      // The class step is handed the same array until something changes.
+      expect(component.availableSubclasses).toBe(component.availableSubclasses);
+    });
+
+    it('offers it to a World of Warcraft Warlock too, and leaves that spec\'s recommendation alone', () => {
+      component.toggleClass(WOW_WARLOCK_KEY);
+      component.selectSpecialization('Demonology');
+      expect(names()).toEqual([...PHB_PATRONS, 'Vestige Patron']);
+      expect(component.recommendedLevel1Subclass).toBe('Fiend Patron');
+    });
+
+    it('offers a Sorcerer nothing new', () => {
+      component.toggleClass('Sorcerer');
+      expect(names()).toEqual(['Draconic Sorcery', 'Wild Magic Sorcery', 'Clockwork Sorcery', 'Aberrant Sorcery']);
+      expect(component.availableSubclasses.every(s => !s.source)).toBeTrue();
+    });
+
+    it('hides it when Arcana Unleashed is switched off, and the handbook patrons when Base Game is', () => {
+      component.toggleClass('Warlock');
+      component.toggleContentSource('Arcana Unleashed');
+      expect(names()).toEqual(PHB_PATRONS);
+      component.toggleContentSource('Arcana Unleashed');
+      expect(names()).toEqual([...PHB_PATRONS, 'Vestige Patron']);
+      component.toggleContentSource('Base Game');
+      expect(names()).toEqual(['Vestige Patron']);
+      component.toggleContentSource('Arcana Unleashed');
+      expect(names()).toEqual([]);
+      expect(component.noContentSourcesEnabled).toBeFalse();   // World of Warcraft is still on
+    });
+
+    it('keeps the patron already chosen in the list when its book is switched off', () => {
+      component.toggleClass('Warlock');
+      component.selectedSubclass = 'Vestige Patron';
+      component.toggleContentSource('Arcana Unleashed');
+      expect(names()).toEqual([...PHB_PATRONS, 'Vestige Patron']);
+      expect(component.selectedSubclass).toBe('Vestige Patron');
+      // Another choice lets the filter hide it again.
+      component.selectedSubclass = 'Fiend Patron';
+      expect(names()).toEqual(PHB_PATRONS);
+      component.toggleContentSource('Base Game');
+      expect(names()).toEqual(['Fiend Patron']);
+    });
+
+    it('needs a patron before the class step can advance, and the Vestige Patron is one', () => {
+      component.toggleClass('Warlock');
+      component.step = 3;
+      expect(component.requiresLevel1Subclass).toBeTrue();
+      expect(component.canAdvance).toBeFalse();
+      component.selectedSubclass = 'Vestige Patron';
+      expect(component.canAdvance).toBeTrue();
+    });
+
+    it('creates the character with the Vestige Patron as its subclass', (done) => {
+      component.toggleClass('Warlock');
+      component.selectedSubclass = 'Vestige Patron';
+      component.name = 'Orla';
+      component.step = component.reviewStep;
+      component.confirm.subscribe((draft: any) => {
+        expect(draft.clazz).toBe('Warlock');
+        expect(draft.subclass).toBe('Vestige Patron');
+        expect('subclassChoices' in draft).toBeFalse();   // the server owns those
+        done();
+      });
+      component.submit();
+    });
+  });
+
   describe('World of Warcraft Evoker (Sorcerer)', () => {
     const EVOKER_KEY = 'Sorcerer (World of Warcraft)';
 

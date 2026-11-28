@@ -15,6 +15,7 @@ import { PC } from '../models/pc';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { hitDieFor, modFromScore } from '../utils/character-math';
 import { classSlotTable } from '../utils/spell-slots';
+import { isMysticArtsMonk, mysticArtsCantripsKnown, mysticArtsPreparedSpells } from '../utils/mystic-arts';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS, wowOnlySubclasses } from '../models/hero-class';
 import {
   CIRCLE_OF_THE_MOON, DRACONIC_SORCERY, EVOKER_SCHOOL, FIEND_PATRON, OATH_OF_THE_HOLY, SWASHBUCKLER,
@@ -22,6 +23,9 @@ import {
 } from '../models/wow-class-variants';
 import { WOW_MAGE_FEATS, WOW_MONK_FEATS } from '../models/wow-feats';
 import { arcanaFeatOptions } from '../models/arcana-feats';
+import {
+  ARCANA_DOMAIN, ARCANE_ARCHER, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER, WARRIOR_OF_THE_MYSTIC_ARTS,
+} from '../models/arcana-subclasses';
 import { WARRIOR_OF_MYSTIC_BREWS } from '../models/wow-monk';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
@@ -1044,8 +1048,8 @@ export function demoLevelUpFields(pc: PC) {
 // The class slot tables (full casters, the half casters Paladin and Ranger, Warlock pact
 // magic) live in utils/spell-slots.ts, the app's one copy of the server's ClassProgression
 // tables. The demo level-up reads them through this name.
-export function demoSlotsFor(clazz: string, level: number): { [lvl: number]: number } {
-  return classSlotTable(clazz, level);
+export function demoSlotsFor(clazz: string, level: number, subclass?: string | null): { [lvl: number]: number } {
+  return classSlotTable(clazz, level, subclass);
 }
 
 export function demoCurrentMaxSlots(pc: PC): { [lvl: number]: number } {
@@ -1062,18 +1066,25 @@ export function demoSubclassLevel(clazz: string): number {
 }
 
 // DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names,
-// plus Twilight Domain from Tasha's Cauldron of Everything).
+// plus Twilight Domain from Tasha's Cauldron of Everything, and the Arcana
+// Unleashed subclasses picked at a level-up: every member of the class is
+// offered those, a World of Warcraft variant included). A Warlock picks its
+// patron in the create wizard, so Vestige Patron is offered there instead
+// (arcanaLevel1Subclasses).
 const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
   bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
-  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
+  cleric: [ARCANA_DOMAIN, 'Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
   druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
-  fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
-  monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
+  fighter: [ARCANE_ARCHER, 'Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
+  monk: [
+    'Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', WARRIOR_OF_THE_MYSTIC_ARTS,
+    'Warrior of the Open Hand',
+  ],
   paladin: ['Oath of Devotion', 'Oath of Glory', 'Oath of the Ancients', 'Oath of Vengeance'],
   ranger: ['Beast Master', 'Fey Wanderer', 'Gloom Stalker', 'Hunter'],
   rogue: ['Arcane Trickster', 'Assassin', 'Soulknife', 'Thief'],
-  wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
+  wizard: ['Abjurer', CONJURER, 'Diviner', ENCHANTER, 'Evoker', 'Illusionist', NECROMANCER, TRANSMUTER],
 };
 
 // Plus each WoW variant's WoW-only subclasses (Oath of the Holy, Swashbuckler, the two
@@ -1154,10 +1165,12 @@ export const DEMO_EPIC_BOONS = [
 // (featNamesOn), which three of their prerequisites read.
 export function demoFeatOptions(
   clazz: string, newLevel: number, stats?: Partial<NonNullable<PC['stats']>>, feats: readonly string[] = [],
+  subclass?: string | null,
 ): string[] {
   const key = (clazz ?? '').trim().toLowerCase();
   const options = [
-    ...DEMO_GENERAL_FEATS, ...WOW_MAGE_FEATS.map(f => f.name), ...arcanaFeatOptions({ clazz, newLevel, feats }),
+    ...DEMO_GENERAL_FEATS, ...WOW_MAGE_FEATS.map(f => f.name),
+    ...arcanaFeatOptions({ clazz, subclass, newLevel, feats }),
   ];
   if ((stats?.DEX ?? 0) >= 13 && (stats?.WIS ?? 0) >= 13) {
     options.push(...WOW_MONK_FEATS.map(f => f.name));
@@ -1171,8 +1184,10 @@ export function demoFeatOptions(
   return options.sort((a, b) => a.localeCompare(b));
 }
 
-// DEMO-ONLY mirror of the server cantrips-known formula (base +1 at L4 +1 at L10).
-export function demoCantripsKnown(clazz: string, level: number): number {
+// DEMO-ONLY mirror of the server cantrips-known formula (base +1 at L4 +1 at L10); a Warrior
+// of the Mystic Arts monk has its own count (two from Monk 3, three from Monk 10).
+export function demoCantripsKnown(clazz: string, level: number, subclass?: string | null): number {
+  if (isMysticArtsMonk({ clazz, subclass })) return mysticArtsCantripsKnown(level);
   const base: { [k: string]: number } = {
     bard: 2, cleric: 3, druid: 2, sorcerer: 4, warlock: 2, wizard: 3,
   };
@@ -1189,9 +1204,11 @@ const DEMO_PACT_PREPARED =
 const DEMO_HALF_PREPARED =
   [2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12, 12, 14, 14, 15, 15];
 
-export function demoPreparedSpells(clazz: string, level: number): number {
+export function demoPreparedSpells(clazz: string, level: number, subclass?: string | null): number {
   const key = (clazz ?? '').trim().toLowerCase();
   if (level < 1) return 0;
+  // A Warrior of the Mystic Arts monk has a Prepared Spells column of its own.
+  if (isMysticArtsMonk({ clazz, subclass })) return mysticArtsPreparedSpells(level);
   const idx = Math.min(level, 20) - 1;
   if (['bard', 'cleric', 'druid', 'sorcerer', 'wizard'].includes(key)) return DEMO_FULL_PREPARED[idx];
   if (key === 'warlock') return DEMO_PACT_PREPARED[idx];
