@@ -79,6 +79,32 @@ export interface LevelUpPreview {
    * the character already has are part of `alwaysPreparedSpells` itself.
    */
   alwaysPreparedSpellsByFeat?: { [feat: string]: { name: string; grantedBy: string }[] };
+  /**
+   * When a subclass choice is due: for each option that brings Spellcasting of
+   * its own (a Monk's Warrior of the Mystic Arts), the new level's slots,
+   * cantrips known and prepared spells with that option chosen, keyed by option
+   * name. The modal uses the entry for the subclass the player picks in place
+   * of the three fields of the same names above. Absent or empty otherwise.
+   */
+  spellcastingBySubclass?: { [subclass: string]: SubclassSpellcasting };
+}
+
+/** A level-up preview's spellcasting numbers with one subclass option chosen. */
+export interface SubclassSpellcasting {
+  newSpellSlots: { [spellLevel: number]: number };
+  newCantripsKnown: number;
+  newSpellsKnown: number;
+}
+
+/**
+ * The level-up preview as it reads with a subclass picked: when the server
+ * sent that option's spellcasting (`spellcastingBySubclass`: a Monk picking the
+ * Warrior of the Mystic Arts), its slots, cantrips known and prepared spells
+ * replace the preview's own. The preview itself when the option changes nothing.
+ */
+export function previewWithSubclass(preview: LevelUpPreview, subclass: string | null | undefined): LevelUpPreview {
+  const casting = subclass ? preview.spellcastingBySubclass?.[subclass] : undefined;
+  return casting ? { ...preview, ...casting } : preview;
 }
 
 /**

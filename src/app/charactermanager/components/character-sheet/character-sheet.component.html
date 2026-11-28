@@ -349,6 +349,9 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           (slotRestore)="onSlotRestore($event)"
           (slotsRestoreAll)="onSlotsRestoreAll()"
           (slotMaximumRequested)="onSlotMaximumRequested($event)"
+          [mysticFocusUsable]="canUseMysticFocus"
+          [mysticFocusBusy]="mysticFocusBusy()"
+          (mysticFocus)="onMysticFocus($event)"
           (castRequested)="onCastRequested($event)"
           (pcChange)="onPcChange($event)"
           (spellsGranted)="onSpellsGrant($event)">

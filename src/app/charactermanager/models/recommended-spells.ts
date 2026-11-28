@@ -6,7 +6,8 @@ import { SubclassSpellRow, heroClassFor, subclassSpellsFor } from './hero-class'
  *
  * - **Starting spells** — the cantrips and level-1 spells the 2024 Player's
  *   Handbook names as "recommended" in each class's Spellcasting feature (and in
- *   the Eldritch Knight's and Arcane Trickster's, who learn spells at level 3).
+ *   the Eldritch Knight's and Arcane Trickster's, who learn spells at level 3),
+ *   and the ones Arcana Unleashed names for its Warrior of the Mystic Arts.
  *   A World of Warcraft specialization that has its own starting picks in the
  *   World of Warcraft book shows those instead.
  * - **Subclass spells** — the always-prepared list of a base-game subclass
@@ -27,7 +28,7 @@ export interface StartingSpellPicks {
   /** The class level the spells are picked at (1; 3 for the two level-3 casters). */
   classLevel: number;
   /** Where the recommendation is written. */
-  source: 'Player\'s Handbook' | 'World of Warcraft';
+  source: 'Player\'s Handbook' | 'World of Warcraft' | 'Arcana Unleashed';
   cantrips: readonly string[];
   level1Spells: readonly string[];
   /** What the level-1 row is called; absent reads 'Level 1'. A wizard keeps them in a 'Spellbook'. */
@@ -88,6 +89,18 @@ export const HANDBOOK_SUBCLASS_PICKS: readonly StartingSpellPicks[] = [
   },
 ];
 
+/**
+ * Arcana Unleashed's recommended starting spells for its Monk subclass, which
+ * learns spells at Monk level 3 from the Sorcerer list.
+ */
+export const ARCANA_SUBCLASS_PICKS: readonly StartingSpellPicks[] = [
+  {
+    for: 'Warrior of the Mystic Arts', baseClass: 'Monk', classLevel: 3, source: 'Arcana Unleashed',
+    cantrips: ['Blade Ward', 'Thunderclap'],
+    level1Spells: ['Jump', 'Magic Missile', 'Shield'],
+  },
+];
+
 /** The Player's Handbook's starting spells for a class; undefined for a class that casts no spells. */
 export function handbookClassPicks(clazz: string | null | undefined): StartingSpellPicks | undefined {
   return HANDBOOK_CLASS_PICKS[(clazz ?? '').trim().toLowerCase()];
@@ -127,7 +140,8 @@ export interface SpellcasterIdentity {
  *   (a Holy paladin, a Balance druid) gets the World of Warcraft book's picks.
  * - Every other member of a spellcasting class gets the Player's Handbook's —
  *   a Death Knight is a Paladin and a Demon Hunter a Ranger, so they get those.
- * - An Eldritch Knight or Arcane Trickster gets its subclass's picks.
+ * - An Eldritch Knight, an Arcane Trickster or a Warrior of the Mystic Arts
+ *   gets its subclass's picks.
  */
 export function startingSpellPicksFor(pc: SpellcasterIdentity | null | undefined): readonly StartingSpellPicks[] {
   if (!pc?.clazz) return [];
@@ -150,7 +164,7 @@ export function startingSpellPicksFor(pc: SpellcasterIdentity | null | undefined
   }
   const clazz = pc.clazz.trim().toLowerCase();
   const subclass = (pc.subclass ?? '').trim().toLowerCase();
-  const bySubclass = HANDBOOK_SUBCLASS_PICKS.find(
+  const bySubclass = [...HANDBOOK_SUBCLASS_PICKS, ...ARCANA_SUBCLASS_PICKS].find(
     p => p.baseClass.toLowerCase() === clazz && p.for.toLowerCase() === subclass);
   if (bySubclass) picks.push(bySubclass);
   return picks;

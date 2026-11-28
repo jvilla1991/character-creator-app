@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, inject, output } from '@angular/core';
 import { PC } from '../../models/pc';
-import { LevelUpPreview, LevelUpChoices, HpMode } from '../../models/level-up';
+import { LevelUpPreview, LevelUpChoices, HpMode, previewWithSubclass } from '../../models/level-up';
 import { DndSpell } from '../../models/dnd-api.types';
 import { PCService } from '../../services/pc.service';
 import { DndResourcesService } from '../../services/dnd-resources.service';
@@ -28,6 +28,7 @@ import {
   ContentSource, ContentSourceSelection, allContentSources, isSourceEnabled,
 } from '../../models/content-source';
 import { subclassChoicesDue } from '../../models/arcana-subclasses';
+import { spellListClass } from '../../utils/spellcasting';
 import { ContentSourceFilterComponent } from '../content-source-filter/content-source-filter.component';
 import { SubclassChoiceResult, SubclassChoicesComponent } from './subclass-choices/subclass-choices.component';
 
@@ -82,8 +83,28 @@ export class LevelUpModalComponent implements OnInit {
     if (value === this.pickedSubclass) return;
     this.pickedSubclass = value;
     this.subclassChoiceResult = null;
+    this.applySubclassSpellcasting();
   }
   private pickedSubclass: string | null = null;
+
+  /** The preview as the server sent it; `preview` is this with the picked subclass's spellcasting. */
+  private serverPreview: LevelUpPreview | null = null;
+
+  /**
+   * A subclass that brings Spellcasting of its own (a Monk's Warrior of the
+   * Mystic Arts) changes this level's slots, cantrips and prepared spells: the
+   * preview then reads with that option's numbers, and the spells to learn are
+   * offered from its list. Picks made under other numbers are dropped.
+   */
+  private applySubclassSpellcasting(): void {
+    if (!this.serverPreview) return;
+    const next = previewWithSubclass(this.serverPreview, this.pickedSubclass);
+    if (next === this.preview) return;
+    this.preview = next;
+    this.selectedSpells = [];
+    this.spellList = [];
+    if (this.showSpellPicker) this.loadSpells();
+  }
 
   /** The specialization picked in the optional "Change …" select (hero classes that respec). */
   selectedSpecialization: string | null = null;
@@ -149,6 +170,7 @@ export class LevelUpModalComponent implements OnInit {
     preview$.subscribe({
       next: preview => {
         this.preview = preview;
+        this.serverPreview = preview;
         this.loading = false;
         this.grantSpellIndex = null;
         this.allSpells = null;
@@ -263,11 +285,16 @@ export class LevelUpModalComponent implements OnInit {
     const maxLevel = this.maxLearnableSpellLevel;
     // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = this.heroClass?.extraSpellList;
+    // The class's own list, or the Sorcerer list for a Warrior of the Mystic Arts monk.
+    const listClass = spellListClass({ clazz: this.pc.clazz, subclass: this.effectiveSubclass ?? undefined });
     const spells$ = extras?.length
-      ? this.dndResources.getSpellsForClass(this.pc.clazz, extras)
-      : this.dndResources.getSpellsForClass(this.pc.clazz);
+      ? this.dndResources.getSpellsForClass(listClass, extras)
+      : this.dndResources.getSpellsForClass(listClass);
+    const loadedFor = this.preview;
     spells$.subscribe({
       next: spells => {
+        // The player picked another subclass while this list was loading: it is no longer the one to show.
+        if (this.preview !== loadedFor) return;
         this.spellList = spells.filter(s =>
           !known.has(s.name.toLowerCase()) && (s.level === 0 || s.level <= maxLevel));
         this.loadingSpells = false;

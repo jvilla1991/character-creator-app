@@ -1,0 +1,128 @@
+:host {
+  display: block;
+}
+
+// The same inset block as the slot strip it sits under: hairline border, the
+// input ground behind it.
+.mf {
+  margin-bottom: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.mf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.mf-title {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.mf-points {
+  font-size: var(--text-xs);
+  color: var(--text-2);
+
+  .numeric {
+    color: var(--text);
+  }
+}
+
+// One row each way: what the row trades on the left, its buttons on the right.
+.mf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 12px;
+
+  & + & {
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+.mf-label {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.mf-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// On top of the app's .btn.sm (hairline, Cinzel label, dashed when disabled).
+.btn.mf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  white-space: nowrap;
+
+  // The button whose confirm is open.
+  &.on {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+}
+
+// The amount is a number, not a label: no tracking, no capitals.
+.mf-btn-amount {
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.btn.mf-btn:disabled .mf-btn-amount {
+  color: inherit;
+}
+
+.mf-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.mf-confirm-text {
+  flex: 1 1 240px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.mf-confirm-actions {
+  display: flex;
+  gap: 8px;
+
+  // The app's primary button grows to fill its row; here it keeps its own width.
+  .btn.primary {
+    flex: 0 0 auto;
+  }
+}
+
+// Finger-sized on a touch screen. (The min-height above would otherwise
+// out-rank the app-wide 44px rule for buttons.)
+@media (max-width: 820px) {
+  .btn.mf-btn {
+    min-height: 44px;
+  }
+}

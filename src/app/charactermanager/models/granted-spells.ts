@@ -156,7 +156,7 @@ export function featSpellGrantsThrough(feats: readonly string[], highestSlotLeve
   return [...byName.values()];
 }
 
-type FeatSpellOwner = Pick<PC, 'clazz' | 'feat' | 'features' | 'spells'>;
+type FeatSpellOwner = Pick<PC, 'clazz' | 'feat' | 'features' | 'spells'> & Partial<Pick<PC, 'subclass'>>;
 
 /** True when the character already has a feat's spell: marked always prepared, or a cantrip it knows. */
 function holdsFeatSpell(pc: FeatSpellOwner, grant: SpellGrant): boolean {
@@ -170,7 +170,7 @@ function holdsFeatSpell(pc: FeatSpellOwner, grant: SpellGrant): boolean {
  * demo mode.
  */
 export function featSpellsOwed(pc: FeatSpellOwner, level: number): SpellGrant[] {
-  return featSpellGrantsThrough(featNamesOn(pc), highestSpellSlotLevel(pc.clazz, level))
+  return featSpellGrantsThrough(featNamesOn(pc), highestSpellSlotLevel(pc.clazz, level, pc.subclass))
     .filter(grant => !holdsFeatSpell(pc, grant));
 }
 
@@ -184,7 +184,7 @@ export function featSpellsOwedByFeat(
 ): { [feat: string]: SpellGrant[] } {
   const byFeat: { [feat: string]: SpellGrant[] } = {};
   const base = featSpellsOwed(pc, level).map(g => spellKey(g.name));
-  const highest = highestSpellSlotLevel(pc.clazz, level);
+  const highest = highestSpellSlotLevel(pc.clazz, level, pc.subclass);
   for (const option of featOptions) {
     const owed = featSpellGrants(option, highest)
       .filter(grant => !holdsFeatSpell(pc, grant) && !base.includes(spellKey(grant.name)));
