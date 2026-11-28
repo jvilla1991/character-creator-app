@@ -66,6 +66,22 @@ describe('CharacterSheetComponent', () => {
     expect(component.inCampaign).toBeFalse();
   });
 
+  // --- Arcane Shot panel ---
+
+  it('shows the Arcane Shot panel for an Arcane Archer of Fighter 3 or higher, and for nobody else', () => {
+    expect(component.arcaneShots).toBeFalse();   // a Barbarian
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 3 });
+    expect(component.arcaneShots).toBeTrue();
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 2 });
+    expect(component.arcaneShots).toBeFalse();
+    component.pc = makePC({ clazz: 'Fighter', subclass: 'Champion', level: 10 });
+    expect(component.arcaneShots).toBeFalse();
+    component.pc = makePC({ clazz: 'Fighter', level: 10 });
+    expect(component.arcaneShots).toBeFalse();
+    component.pc = makePC({ clazz: 'Ranger', subclass: 'Arcane Archer', level: 10 });
+    expect(component.arcaneShots).toBeFalse();
+  });
+
   // --- "Add as follower" on a spell that makes a creature ---
 
   describe('canAddSpellFollowers', () => {

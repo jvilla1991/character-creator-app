@@ -46,6 +46,8 @@ import { SpeciesDisplayPipe } from '../../pipes/species-display.pipe';
 import { HeroClassPanelComponent, isHeroClass } from './panels/hero-class-panel/hero-class-panel.component';
 import { RecommendedSpellsComponent } from './panels/recommended-spells/recommended-spells.component';
 import { SpeciesSpellsComponent } from './panels/species-spells/species-spells.component';
+import { ArcaneShotPanelComponent } from './panels/arcane-shot-panel/arcane-shot-panel.component';
+import { hasArcaneShots } from '../../models/arcana-subclasses';
 import { heroClassFor, specializationTitle } from '../../models/hero-class';
 import { NotificationService } from '../../services/notification.service';
 import { AdjustableStat, slotStat } from '../../models/stat-adjustment';
@@ -69,7 +71,7 @@ let nextSheetId = 0;
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent, ArcaneShotPanelComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -685,6 +687,11 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
 
   /** Hero classes (Death Knight, Demon Hunter, …) — show the hero-class panel on the sheet tab. */
   get heroClass(): boolean { return isHeroClass(this.pc); }
+
+  /** An Arcane Archer of Fighter 3 or higher: the sheet shows its Arcane Shot panel. */
+  get arcaneShots(): boolean {
+    return !!this.pc && hasArcaneShots(this.pc, this.pc.subclass, this.pc.level ?? 1);
+  }
 
   /** Header suffix for a hero-class specialization ("Frost Rune", "Havoc", "Balance"); '' otherwise. */
   get specializationTitle(): string {
