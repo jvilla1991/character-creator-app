@@ -1522,36 +1522,138 @@ describe('PCService subclass choices (demo mode)', () => {
         .toEqual(['Disintegrate', 'Teleport', 'Wish', 'Mind Blank']);
     });
 
+    /** What an Arcane Archer's level-up to Fighter 3 carries besides its skills: two options and the Lore cantrip. */
+    const TWO_SHOTS = ['Seeking Shot', 'Shadow Shot'];
+    const LORE = [pick('Druidcraft', 0, 'Arcane Archer Lore')];
+
     it('gives an Arcane Archer Arcana and Nature, and asks for a replacement for each one it had', async () => {
       seed({ clazz: 'Fighter', level: 2, skills: { Athletics: 'prof' } });
-      const plain = await firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer' }));
-      expect(plain.subclassChoices).toEqual({ skills: [] });
+      const plain = await firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS }, newSpells: LORE }));
+      expect(plain.subclassChoices).toEqual({ skills: [], arcaneShots: TWO_SHOTS });
       expect(plain.skills).toEqual({ Athletics: 'prof', Arcana: 'prof', Nature: 'prof' });
 
       seed({ clazz: 'Fighter', level: 2, skills: { Nature: 'prof' } });
-      const owed = await refusal(firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer' })));
+      const owed = await refusal(firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS }, newSpells: LORE })));
       expect(owed.error.message).toBe('Choose 1 skill for Arcane Archer Lore.');
-      const one = await firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight'] } }));
-      expect(one.subclassChoices).toEqual({ skills: ['Insight'] });
+      const one = await firstValueFrom(service.levelUp(ID, {
+        subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight'], arcaneShots: TWO_SHOTS }, newSpells: LORE,
+      }));
+      expect(one.subclassChoices).toEqual({ skills: ['Insight'], arcaneShots: TWO_SHOTS });
       expect(one.skills).toEqual({ Nature: 'prof', Arcana: 'prof', Insight: 'prof' });
 
       seed({ clazz: 'Fighter', level: 2, skills: { Nature: 'expert', Arcana: 'prof' } });
-      const two = await firstValueFrom(
-        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight', 'Survival'] } }));
-      expect(two.subclassChoices).toEqual({ skills: ['Insight', 'Survival'] });
+      const two = await firstValueFrom(service.levelUp(ID, {
+        subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight', 'Survival'], arcaneShots: TWO_SHOTS }, newSpells: LORE,
+      }));
+      expect(two.subclassChoices).toEqual({ skills: ['Insight', 'Survival'], arcaneShots: TWO_SHOTS });
       expect(two.skills).toEqual({ Nature: 'expert', Arcana: 'prof', Insight: 'prof', Survival: 'prof' });
     });
 
-    it('accepts an Arcane Archer with or without its Arcane Shot options and cantrip for now', async () => {
+    it('refuses an Arcane Archer reaching Fighter 3 without its two options or without its Lore cantrip', async () => {
+      seed({ clazz: 'Fighter', level: 2 });
+      for (const subclassChoices of [undefined, {}, { arcaneShots: [] }, { arcaneShots: ['Seeking Shot'] }]) {
+        const noShots = await refusal(firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices, newSpells: LORE })));
+        expect([noShots.status, noShots.error.message]).toEqual([400, 'Choose 2 Arcane Shot options.']);
+      }
+      const noCantrip = await refusal(firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS } })));
+      expect([noCantrip.status, noCantrip.error.message]).toEqual([400, 'Arcane Archer Lore needs one cantrip.']);
+      const wrongCantrip = await refusal(firstValueFrom(service.levelUp(ID, {
+        subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS }, newSpells: [pick('Light', 0, 'Arcane Archer Lore')],
+      })));
+      expect(wrongCantrip.error.message).toBe('Light cannot be picked for Arcane Archer Lore.');
+      // Nothing was saved by any of them.
+      expect(stored().level).toBe(2);
+      expect(stored().subclass).toBeUndefined();
+      expect(stored().subclassChoices).toBeUndefined();
+      expect(stored().spells).toEqual([]);
+    });
+
+    it('takes the two options and the cantrip at Fighter 3, then asks for nothing until Fighter 7', async () => {
       seed({ clazz: 'Fighter', level: 2 });
       const updated = await firstValueFrom(service.levelUp(ID, {
-        subclass: 'Arcane Archer', subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
-        newSpells: [pick('Druidcraft', 0, 'Arcane Archer Lore')],
+        subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS }, newSpells: LORE,
       }));
-      expect(updated.subclassChoices).toEqual({ skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] });
+      expect(updated.level).toBe(3);
+      expect(updated.subclassChoices).toEqual({ skills: [], arcaneShots: TWO_SHOTS });
       expect(updated.spells!.map(s => [s.name, s.grantedBy, s.prepared])).toEqual([['Druidcraft', 'Arcane Archer Lore', true]]);
+
       const bad = await refusal(firstValueFrom(service.levelUp(ID, { subclassChoices: { arcaneShots: ['Seeking Shot'] } })));
       expect(bad.error.message).toBe('Choose 2 Arcane Shot options.');
+      const swap = await refusal(firstValueFrom(service.levelUp(ID, { subclassChoices: { arcaneShots: ['Seeking Shot', 'Bursting Shot'] } })));
+      expect(swap.error.message).toBe('Known Arcane Shot options cannot be replaced at this level.');
+      // 3 -> 4 -> 5 -> 6 with nothing sent: the options and the cantrip are left alone.
+      for (const level of [4, 5, 6]) {
+        const next = await firstValueFrom(service.levelUp(ID));
+        expect(next.level).toBe(level);
+        expect(next.subclassChoices).toEqual({ skills: [], arcaneShots: TWO_SHOTS });
+        expect(next.spells!.map(s => s.name)).toEqual(['Druidcraft']);
+      }
+    });
+
+    it('asks for one more option at Fighter 7, where one known option may be swapped and two may not', async () => {
+      const six = (): PC => seed({
+        clazz: 'Fighter', subclass: 'Arcane Archer', level: 6, skills: { Arcana: 'prof', Nature: 'prof' },
+        subclassChoices: { skills: [], arcaneShots: TWO_SHOTS }, spells: [...LORE],
+      });
+      six();
+      const none = await refusal(firstValueFrom(service.levelUp(ID)));
+      expect(none.error.message).toBe('Choose 3 Arcane Shot options.');
+      const same = await refusal(firstValueFrom(service.levelUp(ID, { subclassChoices: { arcaneShots: TWO_SHOTS } })));
+      expect(same.error.message).toBe('Choose 3 Arcane Shot options.');
+      const twoSwapped = await refusal(firstValueFrom(
+        service.levelUp(ID, { subclassChoices: { arcaneShots: ['Grasping Shot', 'Bursting Shot', 'Piercing Shot'] } })));
+      expect(twoSwapped.error.message).toBe('Only one known Arcane Shot option can be replaced.');
+      expect(stored().level).toBe(6);
+
+      const kept = await firstValueFrom(
+        service.levelUp(ID, { subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] } }));
+      expect(kept.level).toBe(7);
+      expect(kept.subclassChoices).toEqual({ skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] });
+      expect(kept.spells!.map(s => s.name)).toEqual(['Druidcraft']);   // the cantrip is not asked for again
+
+      six();
+      const swapped = await firstValueFrom(
+        service.levelUp(ID, { subclassChoices: { arcaneShots: ['Shadow Shot', 'Bursting Shot', 'Piercing Shot'] } }));
+      expect(swapped.subclassChoices).toEqual({ skills: [], arcaneShots: ['Shadow Shot', 'Bursting Shot', 'Piercing Shot'] });
+    });
+
+    it('catches up an Arcane Archer made by hand at its next level-up: the options and the cantrip', async () => {
+      // The DM set the subclass on the sheet at Fighter 8: nothing chosen, no cantrip.
+      seed({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 8, skills: { Athletics: 'prof' } });
+      expect((await refusal(firstValueFrom(service.levelUp(ID)))).error.message).toBe('Choose 3 Arcane Shot options.');
+      const noCantrip = await refusal(firstValueFrom(
+        service.levelUp(ID, { subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] } })));
+      expect(noCantrip.error.message).toBe('Arcane Archer Lore needs one cantrip.');
+
+      const caught = await firstValueFrom(service.levelUp(ID, {
+        subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] },
+        newSpells: [pick('Prestidigitation', 0, 'Arcane Archer Lore')],
+      }));
+      expect(caught.level).toBe(9);
+      expect(caught.subclassChoices).toEqual({ skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] });
+      expect(caught.skills).toEqual({ Athletics: 'prof', Arcana: 'prof', Nature: 'prof' });
+      expect(caught.spells!.map(s => [s.name, s.grantedBy])).toEqual([['Prestidigitation', 'Arcane Archer Lore']]);
+    });
+
+    it('does not hold up an Arcane Archer who already knows both Lore cantrips', async () => {
+      seed({ clazz: 'Fighter', level: 2, spells: [pick('Druidcraft', 0, 'Magic Initiate (Druid)'), pick('Prestidigitation', 0, '')] });
+      const updated = await firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO_SHOTS } }));
+      expect(updated.level).toBe(3);
+      expect(updated.spells!.map(s => [s.name, s.grantedBy])).toEqual([['Druidcraft', 'Magic Initiate (Druid)'], ['Prestidigitation', '']]);
+    });
+
+    it('leaves every other fighter exactly as before', async () => {
+      seed({ clazz: 'Fighter', level: 2, skills: { Athletics: 'prof' } });
+      const champion = await firstValueFrom(service.levelUp(ID, { subclass: 'Champion' }));
+      expect(champion.level).toBe(3);
+      expect(champion.skills).toEqual({ Athletics: 'prof' });
+      expect('subclassChoices' in champion).toBeFalse();
+      expect(champion.spells).toEqual([]);
+      for (const level of [4, 5, 6, 7]) expect((await firstValueFrom(service.levelUp(ID))).level).toBe(level);
     });
 
     it('lets the other Arcana Unleashed subclasses be picked with nothing more to choose', async () => {

@@ -67,3 +67,8 @@
     </div>
   }
 }
+<!-- The Arcane Shot options an Arcane Archer learns at this level -->
+@if (shotRule(); as shots) {
+  <app-arcane-shot-choice [rule]="shots" [level]="newLevel()" [value]="shotDraft()"
+    (valueChange)="setShots($event)"></app-arcane-shot-choice>
+}

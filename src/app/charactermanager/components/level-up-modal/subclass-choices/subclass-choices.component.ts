@@ -14,6 +14,10 @@ import { SpellEli5Service } from '../../../services/spell-eli5.service';
 import { toGrantedSpell } from '../../../utils/spell-mapping';
 import { SpellPickerComponent } from '../../spell-picker/spell-picker.component';
 import { Eli5ToggleComponent } from '../../eli5-toggle/eli5-toggle.component';
+import {
+  ArcaneShotDraft, arcaneShotDraftStart, arcaneShotLevelUpRule, arcaneShotsComplete,
+} from '../../../models/arcane-shots';
+import { ArcaneShotChoiceComponent } from './arcane-shot-choice/arcane-shot-choice.component';
 
 /**
  * What the player has chosen for the subclass so far, as the level-up request
@@ -67,13 +71,15 @@ interface Draft {
   picks: Readonly<Record<string, DndSpell[]>>;
   /** The held pick being swapped out, by feature. */
   forget: Readonly<Record<string, string>>;
+  /** An Arcane Archer's Arcane Shot options; null until the player changes them. */
+  shots: ArcaneShotDraft | null;
 }
 
 const NO_KEYS: readonly string[] = [];
 const NO_SPELLS: DndSpell[] = [];
 
 const subclassKey = (name: string | null | undefined): string => (name ?? '').trim().toLowerCase();
-const emptyDraft = (subclass: string): Draft => ({ subclass, skills: [], picks: {}, forget: {} });
+const emptyDraft = (subclass: string): Draft => ({ subclass, skills: [], picks: {}, forget: {}, shots: null });
 const capitalized = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
 
 /**
@@ -88,7 +94,11 @@ const capitalized = (word: string): string => word.charAt(0).toUpperCase() + wor
  * - **Spell picks** — the spells a feature lets the player pick (Student of
  *   Arcana's two Wizard cantrips, Magical Mastery's four Wizard spells), one
  *   picker per spell level, and at a later level-up the option to swap one
- *   held pick for another of the same level.
+ *   held pick for another of the same level. An Arcane Archer's cantrip
+ *   (Arcane Archer Lore: Druidcraft or Prestidigitation) is one of these.
+ * - **Arcane Shot options** — the options an Arcane Archer learns
+ *   (app-arcane-shot-choice): two at Fighter 3 and one more at 7, 10, 15 and
+ *   18, where one known option may also be replaced.
  *
  * It renders nothing for a subclass, class or level with no choice to make. It
  * owns no rules: what is owed comes from the model, and the server checks the
@@ -104,7 +114,7 @@ const capitalized = (word: string): string => word.charAt(0).toUpperCase() + wor
   templateUrl: './subclass-choices.component.html',
   styleUrls: ['./subclass-choices.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SpellPickerComponent, Eli5ToggleComponent],
+  imports: [FormsModule, SpellPickerComponent, Eli5ToggleComponent, ArcaneShotChoiceComponent],
 })
 export class SubclassChoicesComponent {
   /** The character as it is before the level-up. */
@@ -272,6 +282,16 @@ export class SubclassChoicesComponent {
     this.update({ ...draft, picks, forget: { ...draft.forget, [feature]: name } });
   }
 
+  // ── Arcane Shot options ──────────────────────────────────────────────────
+
+  /** What this level-up lets an Arcane Archer choose; null for anyone else, or when nothing is owed. */
+  readonly shotRule = computed(() => arcaneShotLevelUpRule(this.pc(), this.subclass(), this.newLevel()));
+  readonly shotDraft = computed(() => this.draft().shots);
+
+  setShots(shots: ArcaneShotDraft): void {
+    this.update({ ...this.draft(), shots });
+  }
+
   // ── Result ───────────────────────────────────────────────────────────────
 
   private update(draft: Draft): void {
@@ -285,13 +305,19 @@ export class SubclassChoicesComponent {
     const skills = this.pickedSkills();
     const features = this.features();
     const groups = features.flatMap(view => view.groups);
+    const shotRule = this.shotRule();
+    const shots = shotRule ? (this.shotDraft() ?? arcaneShotDraftStart(shotRule)).selected : null;
     return {
       // An Arcane Archer who owes no skill sends no key: the server stores an empty list itself.
-      subclassChoices: rule && rule.count > 0 ? { skills: [...skills] } : {},
+      subclassChoices: {
+        ...(rule && rule.count > 0 ? { skills: [...skills] } : {}),
+        ...(shots ? { arcaneShots: [...shots] } : {}),
+      },
       newSpells: features.flatMap(view =>
         view.groups.flatMap(group => group.picked.map(spell => toGrantedSpell(spell, view.feature)))),
       forgetSpells: features.map(view => view.forget).filter(name => !!name),
-      valid: (!rule || skills.length === rule.count) && groups.every(group => group.picked.length === group.count),
+      valid: (!rule || skills.length === rule.count) && groups.every(group => group.picked.length === group.count)
+        && (!shotRule || arcaneShotsComplete(shotRule, shots ?? [])),
     };
   }
 }

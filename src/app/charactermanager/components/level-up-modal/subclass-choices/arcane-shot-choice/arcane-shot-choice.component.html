@@ -1,0 +1,22 @@
+@let r = rule();
+@let d = draft();
+<!-- A level that adds an option also lets one known option go -->
+@if (r.swaps > 0) {
+  <div class="subclass-pick shot-replace">
+    <label class="subclass-label" [for]="selectId">Replace an Arcane Shot option (optional)</label>
+    <select [id]="selectId" class="specialization-select" [ngModel]="d.swap" (ngModelChange)="onSwap($event)">
+      <option [ngValue]="''">No change</option>
+      @for (name of r.known; track name) {
+        <option [ngValue]="name">{{ name }}</option>
+      }
+    </select>
+  </div>
+}
+<div class="subclass-pick shot-pick" role="group" aria-label="Arcane Shot options">
+  <div class="subclass-label shot-label">
+    Arcane Shot options
+    <span class="spell-counts">{{ d.selected.length }}/{{ r.count }}</span>
+  </div>
+  <app-arcane-shot-picker [rule]="listRule()" [selected]="d.selected" [level]="level()"
+    (selectedChange)="onPicks($event)"></app-arcane-shot-picker>
+</div>

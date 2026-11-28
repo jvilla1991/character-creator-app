@@ -1,0 +1,14 @@
+// A section of the level-up dialog: its heading, select and spacing are the
+// dialog's own.
+@use '../../level-up-shared' as *;
+
+:host {
+  display: block;
+}
+
+// The heading carries the pick count at its right-hand end, like a spell heading.
+.shot-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}

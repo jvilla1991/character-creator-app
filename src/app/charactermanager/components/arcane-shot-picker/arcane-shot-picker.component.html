@@ -1,0 +1,16 @@
+@for (row of rows(); track row.name) {
+  <label class="shot-option" [class.is-selected]="row.selected" [class.is-blocked]="row.blocked">
+    <input type="checkbox" [name]="groupName" [checked]="row.selected" [disabled]="row.blocked"
+      (change)="toggle(row.name)">
+    <span class="shot-text">
+      <span class="shot-head">
+        <span class="shot-name">{{ row.name }}</span>
+        @if (row.known) {
+          <span class="shot-known">Known</span>
+        }
+        <span class="shot-meta">{{ row.meta }}</span>
+      </span>
+      <span class="shot-summary">{{ row.summary }}</span>
+    </span>
+  </label>
+}
