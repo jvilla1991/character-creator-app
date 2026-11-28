@@ -1,0 +1,132 @@
+/* .panel, .panel-header, .panel-title and .btn live in global styles.css. */
+
+:host {
+  display: block;
+}
+
+// The die and the DC: two label/number pairs on one line.
+.shot-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-3xl);
+  margin: 0;
+}
+
+.shot-stat {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+
+  dt {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--text-lg);
+    color: var(--text);
+  }
+}
+
+// ── Known options ──────────────────────────────────────────────────────────
+
+.shot-missing {
+  margin: var(--space-xl) 0 0;
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.shot-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: var(--space-xl) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+// An inset strip, one tone step down, like the counter above it.
+.shot-card {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sharp);
+}
+
+.shot-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-xl);
+}
+
+.shot-card-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.shot-card-damage {
+  font-size: var(--text-sm);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.shot-card-save {
+  margin-top: var(--space-2xs);
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.shot-card-desc {
+  margin-top: var(--space-xs);
+  font-family: 'Newsreader', serif;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+// ── Choosing options ───────────────────────────────────────────────────────
+
+.shot-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.shot-chooser-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.shot-chooser-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.shot-chooser-count {
+  font-size: var(--text-xs);
+  color: var(--celestial);
+}
+
+.shot-chooser-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+}

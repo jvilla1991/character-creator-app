@@ -202,7 +202,7 @@ describe('arcana-subclasses', () => {
         .toEqual([
           ['Arcana Domain', 3, [0, 0], 'wizard', true, true],
           ['Arcana Domain', 17, [6, 7, 8, 9], 'wizard', true, true],
-          ['Arcane Archer', 3, [0], ['Druidcraft', 'Prestidigitation'], false, false],
+          ['Arcane Archer', 3, [0], ['Druidcraft', 'Prestidigitation'], false, true],
         ]);
       expect(subclassSpellPickRule('student of arcana')?.feature).toBe(STUDENT_OF_ARCANA);
       expect(subclassSpellPickRule('Arcane Warrior')).toBeUndefined();
@@ -255,10 +255,29 @@ describe('arcana-subclasses', () => {
       expect(partial[1].owed).toEqual([6, 7, 8]);
     });
 
-    it('leaves out a rule the server does not require yet unless asked for it', () => {
-      expect(subclassSpellPickNeeds(fighter(), ARCANE_ARCHER, 3)).toEqual([]);
+    it('owes an Arcane Archer its Lore cantrip from Fighter 3 until it is held, and never lets it be swapped', () => {
+      expect(subclassSpellPickNeeds(fighter(), ARCANE_ARCHER, 3).map(n => [n.rule.feature, n.owed]))
+        .toEqual([[ARCANE_ARCHER_LORE, [0]]]);
+      // The same with or without the optional rules: every rule is required now.
       expect(subclassSpellPickNeeds(fighter(), ARCANE_ARCHER, 3, true).map(n => [n.rule.feature, n.owed]))
         .toEqual([[ARCANE_ARCHER_LORE, [0]]]);
+      expect(subclassSpellPickNeeds(fighter(), ARCANE_ARCHER, 2)).toEqual([]);
+      // A character made an Arcane Archer by hand still owes it at a later level.
+      expect(subclassSpellPickNeeds(fighter(), ARCANE_ARCHER, 9)[0].owed).toEqual([0]);
+
+      const [held] = subclassSpellPickNeeds(fighter({ spells: [spell('Druidcraft', 0, ARCANE_ARCHER_LORE)] }), ARCANE_ARCHER, 4);
+      expect(held.owed).toEqual([]);
+      expect(held.replaceable).toEqual([]);
+    });
+
+    it('owes no Lore cantrip to an archer who already knows both, and one to an archer who knows only one', () => {
+      const both = fighter({ spells: [spell('Druidcraft', 0, 'Magic Initiate (Druid)'), spell('prestidigitation', 0)] });
+      expect(subclassSpellPickNeeds(both, ARCANE_ARCHER, 3)[0].owed).toEqual([]);
+      const one = fighter({ spells: [spell('Druidcraft', 0, 'Magic Initiate (Druid)')] });
+      expect(subclassSpellPickNeeds(one, ARCANE_ARCHER, 3)[0].owed).toEqual([0]);
+      // A feature that takes any spell of a list always has one left to pick.
+      const cantrips = cleric({ spells: [spell('Druidcraft', 0), spell('Prestidigitation', 0)] });
+      expect(subclassSpellPickNeeds(cantrips, ARCANA_DOMAIN, 3)[0].owed).toEqual([0, 0]);
     });
 
     it('turns a need into one picker per spell level, plus the level of the pick being swapped', () => {
@@ -289,8 +308,24 @@ describe('arcana-subclasses', () => {
       expect(subclassChoicesDue(settled, ARCANA_DOMAIN, 4)).toBeFalse();
       expect(subclassChoicesDue(settled, ARCANA_DOMAIN, 17)).toBeTrue();   // Magical Mastery
       expect(subclassChoicesDue(cleric({ subclassChoices: { skills: ['Arcana'] } }), ARCANA_DOMAIN, 4)).toBeTrue();
-      expect(subclassChoicesDue(fighter(), ARCANE_ARCHER, 3)).toBeFalse();
+      // An Arcane Archer reaching Fighter 3 owes two options and its cantrip, whatever its skills.
+      expect(subclassChoicesDue(fighter(), ARCANE_ARCHER, 3)).toBeTrue();
       expect(subclassChoicesDue(fighter({ skills: { Arcana: 'prof' } }), ARCANE_ARCHER, 3)).toBeTrue();
+      expect(subclassChoicesDue(fighter(), ARCANE_ARCHER, 2)).toBeFalse();
+      const archer = fighter({
+        subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
+        spells: [spell('Druidcraft', 0, ARCANE_ARCHER_LORE)],
+      });
+      expect([4, 5, 6].map(level => subclassChoicesDue(archer, ARCANE_ARCHER, level))).toEqual([false, false, false]);
+      expect(subclassChoicesDue(archer, ARCANE_ARCHER, 7)).toBeTrue();   // the third option
+      const three = { ...archer, subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] } };
+      expect([7, 8, 9].map(level => subclassChoicesDue(three, ARCANE_ARCHER, level))).toEqual([false, false, false]);
+      expect(subclassChoicesDue(three, ARCANE_ARCHER, 10)).toBeTrue();   // the fourth
+      // Each of the three on its own keeps the level-up waiting.
+      expect(subclassChoicesDue({ ...archer, spells: [] }, ARCANE_ARCHER, 4)).toBeTrue();
+      expect(subclassChoicesDue({ ...archer, subclassChoices: { skills: [] } }, ARCANE_ARCHER, 4)).toBeTrue();
+      expect(subclassChoicesDue({ ...archer, subclassChoices: { skills: [], arcaneShots: ['Seeking Shot'] } }, ARCANE_ARCHER, 4))
+        .toBeTrue();
       for (const other of [WARRIOR_OF_THE_MYSTIC_ARTS, VESTIGE_PATRON, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER]) {
         expect(subclassChoicesDue({ clazz: arcanaSubclass(other)!.baseClass }, other, 3)).withContext(other).toBeFalse();
       }
@@ -322,20 +357,56 @@ describe('arcana-subclasses', () => {
       // Once stored, a level-up neither asks again nor reads what is sent.
       expect(problem(cleric({ subclassChoices: { skills: ['Arcana'] } }), ARCANA_DOMAIN)).toBeNull();
 
-      expect(problem(fighter(), ARCANE_ARCHER)).toBeNull();
-      expect(problem(fighter(), ARCANE_ARCHER, { skills: ['Insight'] })).toContain('no skill to choose');
+      const arcaneShots = ['Seeking Shot', 'Shadow Shot'];
+      expect(problem(fighter(), ARCANE_ARCHER, { arcaneShots })).toBeNull();
+      expect(problem(fighter(), ARCANE_ARCHER, { skills: ['Insight'], arcaneShots })).toContain('no skill to choose');
       const both = fighter({ skills: { Arcana: 'prof', Nature: 'prof' } });
-      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight'] })).toContain('Choose 2 skills');
-      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight', 'Insight'] })).toContain('different skills');
-      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight', 'Survival'] })).toBeNull();
+      expect(problem(both, ARCANE_ARCHER, { arcaneShots })).toContain('Choose 2 skills');
+      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight'], arcaneShots })).toContain('Choose 2 skills');
+      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight', 'Insight'], arcaneShots })).toContain('different skills');
+      expect(problem(both, ARCANE_ARCHER, { skills: ['Insight', 'Survival'], arcaneShots })).toBeNull();
       expect(problem(cleric(), 'Life Domain')).toBeNull();
+    });
+
+    it('requires an Arcane Archer to leave a level-up with every option its new level gives', () => {
+      const levelUp = (owner: ChoiceOwner, level: number, partial?: SubclassChoices) =>
+        subclassChoicesProblem(owner, ARCANE_ARCHER, level, partial, { levelUp: true });
+      // Reaching Fighter 3: two, whether the key is missing, empty or short.
+      expect(levelUp(fighter(), 3)).toBe('Choose 2 Arcane Shot options.');
+      expect(levelUp(fighter(), 3, {})).toBe('Choose 2 Arcane Shot options.');
+      expect(levelUp(fighter(), 3, { skills: [] })).toBe('Choose 2 Arcane Shot options.');
+      expect(levelUp(fighter(), 3, { arcaneShots: [] })).toBe('Choose 2 Arcane Shot options.');
+      expect(levelUp(fighter(), 3, { arcaneShots: ['Seeking Shot'] })).toBe('Choose 2 Arcane Shot options.');
+      expect(levelUp(fighter(), 3, { arcaneShots: ['Seeking Shot', 'Shadow Shot'] })).toBeNull();
+
+      // One more at 7, 10, 15 and 18; nothing at the levels between.
+      const two = fighter({ subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] } });
+      expect([4, 5, 6].map(level => levelUp(two, level))).toEqual([null, null, null]);
+      expect(levelUp(two, 7)).toBe('Choose 3 Arcane Shot options.');
+      for (const [level, count] of [[10, 4], [15, 5], [18, 6]]) {
+        const known = fighter({ subclassChoices: { skills: [], arcaneShots: ARCANE_SHOT_OPTIONS.slice(0, count - 1) } });
+        expect(levelUp(known, level - 1)).withContext(`level ${level - 1}`).toBeNull();
+        expect(levelUp(known, level)).withContext(`level ${level}`).toBe(`Choose ${count} Arcane Shot options.`);
+        expect(levelUp(known, level, { arcaneShots: ARCANE_SHOT_OPTIONS.slice(0, count) })).withContext(`level ${level}`).toBeNull();
+      }
+      // A character made an Arcane Archer by hand catches up at its next level-up, keeping what it knows.
+      expect(levelUp(fighter({ subclassChoices: { skills: [] } }), 9)).toBe('Choose 3 Arcane Shot options.');
+      expect(levelUp(two, 9)).toBe('Choose 3 Arcane Shot options.');
+      expect(levelUp(two, 9, { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] })).toBeNull();
+      expect(levelUp(two, 9, { arcaneShots: ['Seeking Shot', 'Bursting Shot', 'Piercing Shot'] })).toContain('cannot be replaced');
+      // The endpoint asks for nothing that is not sent.
+      expect(subclassChoicesProblem(fighter(), ARCANE_ARCHER, 3, { skills: [] })).toBeNull();
+      // Nobody else is asked.
+      expect(subclassChoicesProblem(fighter(), 'Champion', 3, undefined, { levelUp: true })).toBeNull();
+      expect(subclassChoicesProblem({ clazz: 'Wizard' }, ARCANE_ARCHER, 3, undefined, { levelUp: true })).toBeNull();
+      expect(levelUp(fighter(), 2)).toBeNull();
     });
 
     it('checks the other keys only when they are sent', () => {
       const archer = fighter({ subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] } });
       const problem = (level: number, arcaneShots: string[]) =>
         subclassChoicesProblem(archer, ARCANE_ARCHER, level, { arcaneShots }, { levelUp: true });
-      expect(subclassChoicesProblem(archer, ARCANE_ARCHER, 7, {}, { levelUp: true })).toBeNull();
+      expect(subclassChoicesProblem(archer, ARCANE_ARCHER, 6, {}, { levelUp: true })).toBeNull();
       expect(problem(7, ['Seeking Shot', 'Shadow Shot'])).toContain('Choose 3');
       expect(problem(7, ['Seeking Shot', 'Shadow Shot', 'Fire Shot'])).toContain('not an Arcane Shot option');
       expect(problem(7, ['Seeking Shot', 'Seeking Shot', 'Shadow Shot'])).toContain('once');
@@ -363,7 +434,6 @@ describe('arcana-subclasses', () => {
       expect(mergeSubclassChoices(stored, ARCANA_DOMAIN, 4, { skills: ['History'] })).toEqual({ skills: ['History'] });
       expect(mergeSubclassChoices(stored, ARCANA_DOMAIN, 4, undefined, { levelUp: true })).toEqual({ skills: ['Arcana'] });
       // An archer who owes no skill gets an empty list, so the choice counts as made.
-      expect(mergeSubclassChoices(fighter(), ARCANE_ARCHER, 3, undefined, { levelUp: true })).toEqual({ skills: [] });
       expect(mergeSubclassChoices(fighter(), ARCANE_ARCHER, 3, { arcaneShots: ['Seeking Shot', 'Shadow Shot'] }, { levelUp: true }))
         .toEqual({ skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] });
       expect(mergeSubclassChoices({ clazz: 'Warlock', subclassChoices: { vestigeType: 'Fiend' } }, VESTIGE_PATRON, 3, { vestigeDomain: 'War' }))
@@ -415,15 +485,33 @@ describe('arcana-subclasses', () => {
       expect(problem(master, 18, [pick('Maze', 8, MAGICAL_MASTERY), pick('Fire Bolt', 0, STUDENT_OF_ARCANA)], ['Spell 8', 'Light'])).toBeNull();
     });
 
-    it("accepts an Arcane Archer without its cantrip for now, but not a cantrip the feature doesn't name", () => {
-      const problem = (picks: { name: string; lvl: number; grantedBy: string }[]) =>
-        subclassSpellPicksProblem(fighter(), ARCANE_ARCHER, 3, picks, []);
-      expect(problem([])).toBeNull();
-      expect(problem([{ name: 'Druidcraft', lvl: 0, grantedBy: ARCANE_ARCHER_LORE }])).toBeNull();
-      expect(problem([{ name: 'Light', lvl: 0, grantedBy: ARCANE_ARCHER_LORE }])).toContain('cannot be picked');
-      expect(problem([
-        { name: 'Druidcraft', lvl: 0, grantedBy: ARCANE_ARCHER_LORE }, { name: 'Prestidigitation', lvl: 0, grantedBy: ARCANE_ARCHER_LORE },
-      ])).toBe('Arcane Archer Lore needs one cantrip.');
+    it("requires an Arcane Archer's Lore cantrip: exactly one, and one of the two the feature names", () => {
+      type Pick = { name: string; lvl: number; grantedBy?: string };
+      const lore = (name: string): Pick => ({ name, lvl: 0, grantedBy: ARCANE_ARCHER_LORE });
+      const problem = (picks: Pick[], owner: ChoiceOwner = fighter(), level = 3, forget: string[] = []) =>
+        subclassSpellPicksProblem(owner, ARCANE_ARCHER, level, picks, forget);
+      expect(problem([])).toBe('Arcane Archer Lore needs one cantrip.');
+      expect(problem([lore('Druidcraft')])).toBeNull();
+      expect(problem([lore('prestidigitation')])).toBeNull();
+      expect(problem([lore('Light')])).toContain('cannot be picked');
+      expect(problem([lore('Druidcraft'), lore('Prestidigitation')])).toBe('Arcane Archer Lore needs one cantrip.');
+      // Unmarked, the cantrip is not the feature's pick.
+      expect(problem([{ name: 'Druidcraft', lvl: 0 }])).toBe('Arcane Archer Lore needs one cantrip.');
+      // Skipped before it was required: owed at the next level-up, whatever the level.
+      expect(problem([], fighter(), 8)).toBe('Arcane Archer Lore needs one cantrip.');
+      expect(problem([lore('Druidcraft')], fighter(), 8)).toBeNull();
+
+      // Once held it is never asked for again, a second one is refused, and it cannot be given up.
+      const held = fighter({ spells: [spell('Druidcraft', 0, ARCANE_ARCHER_LORE)] });
+      expect(problem([], held, 4)).toBeNull();
+      expect(problem([lore('Prestidigitation')], held, 4)).toBe('Arcane Archer Lore needs one cantrip.');
+      expect(problem([lore('Prestidigitation')], held, 4, ['Druidcraft'])).toContain('not a spell a subclass feature lets you replace');
+
+      // An archer who already knows both has nothing to pick, and is not held up for it.
+      const both = fighter({ spells: [spell('Druidcraft', 0, 'Magic Initiate (Druid)'), spell('Prestidigitation', 0)] });
+      expect(problem([], both)).toBeNull();
+      // Knowing one of the two leaves the other owed.
+      expect(problem([], fighter({ spells: [spell('Druidcraft', 0)] }))).toBe('Arcane Archer Lore needs one cantrip.');
     });
   });
 });

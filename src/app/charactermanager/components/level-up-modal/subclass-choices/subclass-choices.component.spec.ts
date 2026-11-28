@@ -268,9 +268,35 @@ describe('SubclassChoicesComponent', () => {
     expect(last().valid).toBeTrue();
   });
 
+  /** An Arcane Archer with its options and Lore cantrip settled, so a test can look at one choice alone. */
+  const TWO_SHOTS = ['Seeking Shot', 'Shadow Shot'];
+  const LORE = held('Druidcraft', 0, 'Arcane Archer Lore');
+  const archer = (over: Partial<PC> = {}): Partial<PC> => ({
+    clazz: 'Fighter', subclass: 'Arcane Archer', level: 4, skills: { Arcana: 'prof', Nature: 'prof' },
+    subclassChoices: { skills: [], arcaneShots: TWO_SHOTS }, spells: [LORE], ...over,
+  });
+  const shotRows = () => Array.from(el().querySelectorAll('app-arcane-shot-picker .shot-option')) as HTMLElement[];
+  const shotBox = (name: string) => shotRows()
+    .find(row => row.querySelector('.shot-name')!.textContent!.trim() === name)!.querySelector('input') as HTMLInputElement;
+  function clickShot(name: string): void {
+    shotBox(name).click();
+    refresh();
+  }
+  const tickedShots = () => shotRows().filter(row => (row.querySelector('input') as HTMLInputElement).checked)
+    .map(row => row.querySelector('.shot-name')!.textContent!.trim());
+  function replaceShot(index: number): void {
+    const select = el().querySelector('app-arcane-shot-choice .shot-replace select') as HTMLSelectElement;
+    select.selectedIndex = index;
+    select.dispatchEvent(new Event('change'));
+    refresh();
+  }
+
   describe('Arcane Archer skills', () => {
+    /** Made an Arcane Archer by hand: its options and cantrip are there, its skills were never settled. */
+    const unsettled = (skills: PC['skills']): Partial<PC> => archer({ skills, subclassChoices: { arcaneShots: TWO_SHOTS } });
+
     it('shows Arcana and Nature as gained and asks nothing of an archer who had neither', () => {
-      render({ clazz: 'Fighter', skills: { Athletics: 'prof' } }, 'Arcane Archer', 3);
+      render(unsettled({ Athletics: 'prof' }), 'Arcane Archer', 5);
       expect(texts('.granted-skills .subclass-label')).toEqual(['Arcane Archer Lore skills']);
       expect(texts('.granted-skills .feature-item')).toEqual(['ArcanaGained', 'NatureGained']);
       expect(el().querySelector('.skill-pick')).toBeNull();
@@ -280,7 +306,7 @@ describe('SubclassChoicesComponent', () => {
     });
 
     it('asks for one replacement when the archer already had one of the two', () => {
-      render({ clazz: 'Fighter', skills: { Nature: 'prof', Athletics: 'prof' } }, 'Arcane Archer', 3);
+      render(unsettled({ Nature: 'prof', Athletics: 'prof' }), 'Arcane Archer', 5);
       expect(texts('.granted-skills .feature-item')).toEqual(['ArcanaGained', 'NatureAlready proficient']);
       expect(texts('.skill-pick .subclass-label')).toEqual(['Replacement skill 0/1']);
       expect(texts('.skill-pick .subclass-option')).toEqual([
@@ -292,7 +318,7 @@ describe('SubclassChoicesComponent', () => {
     });
 
     it('asks for two when it had both, and stops at two', () => {
-      render({ clazz: 'Fighter', skills: { Nature: 'expert', Arcana: 'prof' } }, 'Arcane Archer', 3);
+      render(unsettled({ Nature: 'expert', Arcana: 'prof' }), 'Arcane Archer', 5);
       expect(texts('.granted-skills .feature-desc')).toEqual(['Already proficient', 'Already proficient']);
       expect(texts('.skill-pick .subclass-label')).toEqual(['Replacement skills 0/2']);
       expect(skillInputs().every(input => input.type === 'checkbox')).toBeTrue();
@@ -311,22 +337,225 @@ describe('SubclassChoicesComponent', () => {
       expect(skillInputs().some(input => input.disabled)).toBeFalse();
     });
 
-    it('has no cantrip picker yet, and never loads the spell data', () => {
-      render({ clazz: 'Fighter', skills: { Nature: 'prof' } }, 'Arcane Archer', 3);
-      expect(pickers().length).toBe(0);
+    it('asks nothing once every choice is stored, and never loads the spell data', () => {
+      render(archer(), 'Arcane Archer', 5);
+      expect(el().children.length).toBe(0);
+      expect(fixture.componentInstance.result()).toEqual({ subclassChoices: {}, newSpells: [], forgetSpells: [], valid: true });
       expect(dndResources.getSpells).not.toHaveBeenCalled();
     });
+  });
 
-    it('asks nothing once the choice is stored', () => {
-      render({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 3, skills: { Arcana: 'prof', Nature: 'prof' },
-        subclassChoices: { skills: [] } }, 'Arcane Archer', 4);
+  describe('Arcane Archer at Fighter 3', () => {
+    beforeEach(() => {
+      render({ clazz: 'Fighter', skills: { Athletics: 'prof' } }, 'Arcane Archer', 3);
+    });
+
+    it('asks for two of the eight options, each with its damage at this level, its save and its summary', () => {
+      expect(texts('app-arcane-shot-choice .shot-label')).toEqual(['Arcane Shot options 0/2']);
+      expect(el().querySelector('app-arcane-shot-choice [role="group"]')!.getAttribute('aria-label')).toBe('Arcane Shot options');
+      expect(texts('.shot-option .shot-name')).toEqual([
+        'Banishing Shot', 'Beguiling Shot', 'Bursting Shot', 'Enfeebling Shot', 'Grasping Shot', 'Piercing Shot',
+        'Seeking Shot', 'Shadow Shot',
+      ]);
+      expect(texts('.shot-option .shot-meta')).toEqual([
+        '1d6 Psychic · Charisma save', '2d6 Psychic · Wisdom save', '2d6 Force', '2d6 Necrotic · Constitution save',
+        '1d6 Slashing · Strength save', '2d6 Piercing · Dexterity save', '2d6 Force · Dexterity save',
+        '1d6 Psychic · Wisdom save',
+      ]);
+      expect(texts('.shot-option .shot-summary').every(text => text.length > 40)).toBeTrue();
+      // Nothing is known yet: no option is marked, and there is nothing to replace.
+      expect(el().querySelector('.shot-known')).toBeNull();
+      expect(el().querySelector('.shot-replace')).toBeNull();
+      expect(tickedShots()).toEqual([]);
+      expect(fixture.componentInstance.result()).toEqual({
+        subclassChoices: { arcaneShots: [] }, newSpells: [], forgetSpells: [], valid: false,
+      });
+      expect(results).toEqual([]);
+    });
+
+    it('takes exactly two: a third box cannot be ticked, and unticking frees the others again', () => {
+      clickShot('Shadow Shot');
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Shadow Shot'] });
+      expect(last().valid).toBeFalse();
+      expect(texts('app-arcane-shot-choice .spell-counts')).toEqual(['1/2']);
+      clickShot('Bursting Shot');
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Bursting Shot', 'Shadow Shot'] });
+      expect(texts('app-arcane-shot-choice .spell-counts')).toEqual(['2/2']);
+      expect(shotRows().filter(row => (row.querySelector('input') as HTMLInputElement).disabled).length).toBe(6);
+      expect(shotBox('Seeking Shot').disabled).toBeTrue();
+
+      clickShot('Shadow Shot');
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Bursting Shot'] });
+      expect(shotRows().some(row => (row.querySelector('input') as HTMLInputElement).disabled)).toBeFalse();
+    });
+
+    it('offers the Lore cantrip, Druidcraft or Prestidigitation, and nothing else', () => {
+      expect(dndResources.getSpells).toHaveBeenCalledTimes(1);
+      expect(pickers().length).toBe(1);
+      expect(texts('.spell-label', pickers()[0])[0]).toContain('Arcane Archer Lore cantrip');
+      expect(texts('.spell-counts', pickers()[0])).toEqual(['cantrips 0/1']);
+      expect(names(pickers()[0])).toEqual(['Druidcraft', 'Prestidigitation']);
+      expect(el().querySelector('.replace-pick')).toBeNull();   // the Lore cantrip is never swapped
+    });
+
+    it('is complete with two options and the cantrip, sent with its feature as grantedBy', () => {
+      clickShot('Seeking Shot');
+      clickShot('Banishing Shot');
+      expect(last().valid).toBeFalse();   // the cantrip is still owed
+      clickSpell(pickers()[0], 'Druidcraft');
+      clickSpell(pickers()[0], 'Prestidigitation');   // one only: ignored by the picker
+      expect(last()).toEqual({
+        subclassChoices: { arcaneShots: ['Banishing Shot', 'Seeking Shot'] },
+        newSpells: [jasmine.objectContaining({ name: 'Druidcraft', lvl: 0, grantedBy: 'Arcane Archer Lore', prepared: true })],
+        forgetSpells: [],
+        valid: true,
+      });
+      expect(last().newSpells.length).toBe(1);
+      expect(last().newSpells[0].alwaysPrepared).toBeUndefined();   // a cantrip needs no marker
+      clickSpell(pickers()[0], 'Druidcraft');
+      expect(last().valid).toBeFalse();
+    });
+  });
+
+  it('asks an archer who had Arcana for its replacement skill beside the options and the cantrip', () => {
+    render({ clazz: 'Fighter', skills: { Arcana: 'prof' } }, 'Arcane Archer', 3);
+    expect(texts('.skill-pick .subclass-label')).toEqual(['Replacement skill 0/1']);
+    clickSkill('Insight');
+    clickShot('Seeking Shot');
+    clickShot('Shadow Shot');
+    expect(last().valid).toBeFalse();
+    clickSpell(pickers()[0], 'Prestidigitation');
+    expect(last().subclassChoices).toEqual({ skills: ['Insight'], arcaneShots: ['Seeking Shot', 'Shadow Shot'] });
+    expect(last().newSpells.map(s => [s.name, s.grantedBy])).toEqual([['Prestidigitation', 'Arcane Archer Lore']]);
+    expect(last().valid).toBeTrue();
+  });
+
+  it('offers only the Lore cantrip the archer does not know, and asks for none when it knows both', () => {
+    render({ clazz: 'Fighter', spells: [held('Druidcraft', 0, 'Magic Initiate (Druid)')] }, 'Arcane Archer', 3);
+    expect(names(pickers()[0])).toEqual(['Prestidigitation']);
+
+    render({ clazz: 'Fighter', spells: [held('Druidcraft', 0), held('Prestidigitation', 0)] }, 'Arcane Archer', 3);
+    expect(pickers().length).toBe(0);
+    clickShot('Seeking Shot');
+    clickShot('Shadow Shot');
+    expect(last()).toEqual({ subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot'] }, newSpells: [], forgetSpells: [], valid: true });
+  });
+
+  describe('Arcane Archer at a level that adds an option', () => {
+    it('asks for exactly one more at 7, 10, 15 and 18, with the damage of the new level', () => {
+      const all = ['Banishing Shot', 'Beguiling Shot', 'Bursting Shot', 'Enfeebling Shot', 'Grasping Shot', 'Piercing Shot'];
+      for (const [level, count, damage] of [[7, 3, '1d6 Psychic'], [10, 4, '1d8 Psychic'], [15, 5, '1d10 Psychic'], [18, 6, '1d12 Psychic']] as [number, number, string][]) {
+        const known = all.slice(0, count - 1);
+        render(archer({ level: level - 1, subclassChoices: { skills: [], arcaneShots: known } }), 'Arcane Archer', level);
+        expect(texts('app-arcane-shot-choice .shot-label')).withContext(`level ${level}`).toEqual([`Arcane Shot options ${count - 1}/${count}`]);
+        expect(tickedShots()).withContext(`level ${level}`).toEqual(known);
+        expect(texts('.shot-option .shot-known').length).withContext(`level ${level}`).toBe(count - 1);
+        expect(texts('.shot-option .shot-meta')[7]).withContext(`level ${level}`).toBe(`${damage} · Wisdom save`);
+        expect(fixture.componentInstance.result().valid).withContext(`level ${level}`).toBeFalse();
+        expect(pickers().length).withContext(`level ${level}`).toBe(0);   // the cantrip was picked at 3
+
+        clickShot('Shadow Shot');
+        expect(last()).withContext(`level ${level}`).toEqual({
+          subclassChoices: { arcaneShots: [...known, 'Shadow Shot'] }, newSpells: [], forgetSpells: [], valid: true,
+        });
+        // Full: no further option can be ticked, and a known one cannot be unticked in the list.
+        expect(shotRows().filter(row => !(row.querySelector('input') as HTMLInputElement).disabled).map(row => row.querySelector('.shot-name')!.textContent!.trim()))
+          .withContext(`level ${level}`).toEqual(['Shadow Shot']);
+      }
+    });
+
+    it('lets one known option be replaced: named in the select, then two new ones are picked', () => {
+      render(archer({ level: 6 }), 'Arcane Archer', 7);
+      expect(texts('.shot-replace .subclass-label')).toEqual(['Replace an Arcane Shot option (optional)']);
+      expect(texts('.shot-replace option')).toEqual(['No change', 'Seeking Shot', 'Shadow Shot']);
+      expect(shotBox('Seeking Shot').disabled).toBeTrue();   // known options move only through the select
+
+      replaceShot(1);
+      expect(last()).toEqual({ subclassChoices: { arcaneShots: ['Shadow Shot'] }, newSpells: [], forgetSpells: [], valid: false });
+      expect(tickedShots()).toEqual(['Shadow Shot']);
+      expect(texts('app-arcane-shot-choice .spell-counts')).toEqual(['1/3']);
+      clickShot('Bursting Shot');
+      expect(last().valid).toBeFalse();
+      clickShot('Piercing Shot');
+      expect(last()).toEqual({
+        subclassChoices: { arcaneShots: ['Shadow Shot', 'Bursting Shot', 'Piercing Shot'] }, newSpells: [], forgetSpells: [],
+        valid: true,
+      });
+      // The other known option stays fixed: a second swap is not on offer.
+      expect(shotBox('Shadow Shot').disabled).toBeTrue();
+    });
+
+    it('takes the swap back: the option returns and the last new pick makes room for it', () => {
+      render(archer({ level: 6 }), 'Arcane Archer', 7);
+      replaceShot(2);   // Shadow Shot
+      clickShot('Bursting Shot');
+      clickShot('Piercing Shot');
+      replaceShot(0);
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Bursting Shot'] });
+      expect(last().valid).toBeTrue();
+      // Moving the swap to the other known option keeps both new picks.
+      replaceShot(2);
+      clickShot('Piercing Shot');
+      replaceShot(1);
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Shadow Shot', 'Bursting Shot', 'Piercing Shot'] });
+    });
+
+    it('cancels the swap when the replaced option is ticked back in the list', async () => {
+      render(archer({ level: 6 }), 'Arcane Archer', 7);
+      replaceShot(1);
+      expect(shotBox('Seeking Shot').disabled).toBeFalse();
+      clickShot('Seeking Shot');
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Seeking Shot', 'Shadow Shot'] });
+      await fixture.whenStable();   // the select takes its new value a tick later
+      refresh();
+      expect((el().querySelector('.shot-replace select') as HTMLSelectElement).selectedIndex).toBe(0);
+      expect(shotBox('Seeking Shot').disabled).toBeTrue();
+    });
+  });
+
+  describe('Arcane Archer at any other level', () => {
+    it('asks nothing while the stored options are all the level gives', () => {
+      for (const level of [4, 5, 6]) {
+        render(archer({ level: level - 1 }), 'Arcane Archer', level);
+        expect(el().children.length).withContext(`level ${level}`).toBe(0);
+      }
+      render(archer({ level: 8, subclassChoices: { skills: [], arcaneShots: [...TWO_SHOTS, 'Piercing Shot'] } }), 'Arcane Archer', 9);
       expect(el().children.length).toBe(0);
+      expect(results).toEqual([]);
+    });
+
+    it('catches a short list up without a swap: what is known stays, what is missing is picked', () => {
+      render(archer({ level: 8 }), 'Arcane Archer', 9);   // two stored, three known at 9
+      expect(texts('app-arcane-shot-choice .shot-label')).toEqual(['Arcane Shot options 2/3']);
+      expect(el().querySelector('.shot-replace')).toBeNull();
+      expect(shotBox('Seeking Shot').disabled).toBeTrue();
+      expect(shotBox('Shadow Shot').disabled).toBeTrue();
+      clickShot('Grasping Shot');
+      expect(last()).toEqual({
+        subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Grasping Shot'] }, newSpells: [], forgetSpells: [],
+        valid: true,
+      });
+    });
+
+    it('catches up an archer made by hand: every option its level gives, and the cantrip', () => {
+      render({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 11, skills: { Arcana: 'prof', Nature: 'prof' },
+        subclassChoices: { skills: [] } }, 'Arcane Archer', 12);
+      expect(texts('app-arcane-shot-choice .shot-label')).toEqual(['Arcane Shot options 0/4']);
+      expect(texts('.shot-option .shot-meta')[2]).toBe('2d8 Force');
+      expect(el().querySelector('.shot-replace')).toBeNull();
+      expect(names(pickers()[0])).toEqual(['Druidcraft', 'Prestidigitation']);
+      for (const name of ['Banishing Shot', 'Bursting Shot', 'Seeking Shot', 'Shadow Shot']) clickShot(name);
+      expect(last().valid).toBeFalse();
+      clickSpell(pickers()[0], 'Druidcraft');
+      expect(last().subclassChoices).toEqual({ arcaneShots: ['Banishing Shot', 'Bursting Shot', 'Seeking Shot', 'Shadow Shot'] });
+      expect(last().valid).toBeTrue();
     });
   });
 
   it('starts over when another subclass is picked', () => {
     render({ clazz: 'Fighter', skills: { Nature: 'prof' } }, 'Arcane Archer', 3);
     clickSkill('Insight');
+    clickShot('Seeking Shot');
     fixture.componentRef.setInput('subclass', 'Champion');
     refresh();
     expect(el().children.length).toBe(0);
@@ -335,8 +564,9 @@ describe('SubclassChoicesComponent', () => {
     fixture.componentRef.setInput('subclass', 'Arcane Archer');
     refresh();
     expect(texts('.skill-pick .subclass-label')).toEqual(['Replacement skill 0/1']);
+    expect(tickedShots()).toEqual([]);
     expect(fixture.componentInstance.result().valid).toBeFalse();
-    expect(results.length).toBe(1);
+    expect(results.length).toBe(2);
   });
 
   it('says so when the spell list does not load, and stays incomplete', () => {

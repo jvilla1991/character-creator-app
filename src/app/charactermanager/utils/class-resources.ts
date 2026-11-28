@@ -264,6 +264,9 @@ export function regainsSpellSlotsOnShortRest(clazz: string | null | undefined): 
 /** The resources shown on the hero-class panel (beside the hero feature) rather than in the class feature list. */
 export const HERO_PANEL_RESOURCES: readonly string[] = ['deathCoil', 'soulFragments'];
 
+/** The resource shown on the Arcane Shot panel, with the options it powers, rather than in the class feature list. */
+export const ARCANE_SHOT_RESOURCE = 'arcaneShot';
+
 const clamp = (value: unknown, max: number): number =>
   Math.max(0, Math.min(typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : 0, max));
 

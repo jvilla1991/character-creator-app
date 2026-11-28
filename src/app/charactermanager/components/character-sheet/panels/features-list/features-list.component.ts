@@ -10,7 +10,7 @@ import { featSourceNote } from '../../../../models/wow-feats';
 import { isFeatEntry } from '../../../../models/character-feats';
 import { ResourceCounterComponent } from '../../resource-counter/resource-counter.component';
 import {
-  ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
+  ARCANE_SHOT_RESOURCE, ClassResourceState, HERO_PANEL_RESOURCES, classResourceStates, withResourceUsed,
 } from '../../../../utils/class-resources';
 
 type Feature = { name: string; source: string; desc: string; category?: 'class' | 'other' };
@@ -146,14 +146,15 @@ export class FeaturesListComponent {
    * feat, two of them for Familiar Friend). One whose feature is not in the
    * list — the level 1 features, which the roadmap does not carry — gets a row
    * of its own, named after that feature. Death Coil and Soul Fragments are
-   * left to the hero-class panel, beside the hero feature.
+   * left to the hero-class panel, beside the hero feature, and Arcane Shot to
+   * the Arcane Shot panel, beside the options it powers.
    */
   private readonly resourcePlacement = computed(() => {
     const byFeature = new Map<Feature, ClassResourceState[]>();
     const unlisted: ClassResourceState[] = [];
     const features = this.unlocked();
     for (const resource of classResourceStates(this.pcSignal())) {
-      if (HERO_PANEL_RESOURCES.includes(resource.key)) continue;
+      if (HERO_PANEL_RESOURCES.includes(resource.key) || resource.key === ARCANE_SHOT_RESOURCE) continue;
       const home = features.find(f => nameKey(f.name) === nameKey(resource.feature));
       if (!home) unlisted.push(resource);
       else if (byFeature.has(home)) byFeature.get(home)!.push(resource);

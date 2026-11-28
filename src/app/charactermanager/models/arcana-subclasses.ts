@@ -160,6 +160,32 @@ export function arcaneShotCount(fighterLevel: number | null | undefined): number
 /** The class level every subclass choice below arrives at. */
 const CHOICE_LEVEL = 3;
 
+/** True for an Arcane Archer (a Fighter) at or past the level its Arcane Shots arrive. */
+export function hasArcaneShots(owner: Pick<PC, 'clazz'>, subclass: string | null | undefined, level: number): boolean {
+  return has(owner, subclass, level, ARCANE_ARCHER);
+}
+
+/**
+ * The Arcane Shot options stored on a character, as the server keeps them at
+ * `level`: real options only, each once, in the table's spelling, and no more
+ * than the level gives.
+ */
+export function knownArcaneShots(owner: Pick<ChoiceOwner, 'subclassChoices'>, level: number): string[] {
+  const known: string[] = [];
+  const most = arcaneShotCount(level);
+  for (const name of owner.subclassChoices?.arcaneShots ?? []) {
+    const option = ARCANE_SHOT_OPTIONS.find(o => lower(o) === lower(name));
+    if (option && !known.includes(option) && known.length < most) known.push(option);
+  }
+  return known;
+}
+
+/** How many Arcane Shot options `subclass` still owes this character at `level`; 0 for anyone else. */
+export function arcaneShotsOwed(owner: ChoiceOwner, subclass: string | null | undefined, level: number): number {
+  if (!hasArcaneShots(owner, subclass, level)) return 0;
+  return arcaneShotCount(level) - knownArcaneShots(owner, level).length;
+}
+
 /** The character a rule is read against: what it is and what it already has. */
 export type ChoiceOwner = Pick<PC, 'clazz'> & Partial<Pick<PC, 'skills' | 'spells' | 'subclassChoices'>>;
 
@@ -292,7 +318,7 @@ export const SUBCLASS_SPELL_PICKS: readonly SubclassSpellPickRule[] = [
   },
   {
     feature: ARCANE_ARCHER_LORE, subclass: ARCANE_ARCHER, fromLevel: 3, levels: [0],
-    names: ['Druidcraft', 'Prestidigitation'], replaceable: false, required: false,
+    names: ['Druidcraft', 'Prestidigitation'], replaceable: false, required: true,
   },
 ];
 
@@ -327,6 +353,17 @@ export function heldSubclassPicks(owner: ChoiceOwner, feature: string): PcSpell[
   return (owner.spells ?? []).filter(spell => lower(spell.grantedBy) === key);
 }
 
+/**
+ * True while a rule still has a spell this character could pick. A rule that
+ * names its spells (Arcane Archer Lore) has none left once the character knows
+ * them all from elsewhere; the server then asks for nothing.
+ */
+function hasPickLeft(owner: ChoiceOwner, rule: SubclassSpellPickRule): boolean {
+  if (!rule.names) return true;
+  const known = new Set((owner.spells ?? []).map(spell => lower(spell.name)));
+  return rule.names.some(name => !known.has(lower(name)));
+}
+
 /** One rule read against a character: what it holds and what it is still owed. */
 export interface SubclassSpellPickNeed {
   rule: SubclassSpellPickRule;
@@ -349,7 +386,7 @@ export function subclassSpellPickNeeds(
     .filter(rule => rule.required || includeOptional)
     .map(rule => {
       const held = heldSubclassPicks(owner, rule.feature);
-      const owed = [...rule.levels];
+      const owed = hasPickLeft(owner, rule) ? [...rule.levels] : [];
       for (const spell of held) {
         const at = owed.indexOf(spell.lvl);
         if (at >= 0) owed.splice(at, 1);
@@ -379,12 +416,13 @@ export function subclassSpellPickGroups(need: SubclassSpellPickNeed, forget?: st
 
 /**
  * True when a level-up to `level` with `subclass` cannot be confirmed before
- * the player chooses something: a skill is owed, or a required feature is
- * short of its picks.
+ * the player chooses something: a skill is owed, a required feature is short
+ * of its picks, or an Arcane Archer is short of its Arcane Shot options.
  */
 export function subclassChoicesDue(owner: ChoiceOwner, subclass: string | null | undefined, level: number): boolean {
   return (subclassSkillChoice(owner, subclass, level)?.count ?? 0) > 0
-    || subclassSpellPickNeeds(owner, subclass, level).some(need => need.owed.length > 0);
+    || subclassSpellPickNeeds(owner, subclass, level).some(need => need.owed.length > 0)
+    || arcaneShotsOwed(owner, subclass, level) > 0;
 }
 
 // ── Writing the stored choices (the server's rules, for demo mode) ────────────────────────
@@ -430,7 +468,9 @@ const duplicated = (names: readonly string[]): boolean => new Set(names.map(lowe
 /**
  * Why a partial choices object cannot be written for this character at
  * `level`; null when it can. `skills` is strict: while it is unset, a write
- * must carry exactly the skills owed. The other keys are checked when present.
+ * must carry exactly the skills owed. So is `arcaneShots` at a level-up: one
+ * that would leave an Arcane Archer short of its options must carry them. The
+ * other keys are checked when present.
  */
 export function subclassChoicesProblem(
   owner: ChoiceOwner, subclass: string | null | undefined, level: number, partial: SubclassChoices | null | undefined,
@@ -453,6 +493,9 @@ export function subclassChoicesProblem(
     if (duplicated(picked)) return `Choose different skills for ${rule.feature}.`;
     const wrong = picked.find(skill => !offered.includes(skill));
     if (wrong) return `${wrong} cannot be chosen for ${rule.feature}.`;
+  }
+  if (write.levelUp && partial?.arcaneShots == null && arcaneShotsOwed(owner, subclass, level) > 0) {
+    return `Choose ${arcaneShotCount(level)} Arcane Shot options.`;
   }
   if (partial?.arcaneShots != null && has(owner, subclass, level, ARCANE_ARCHER)) {
     const shots = partial.arcaneShots;
@@ -511,7 +554,7 @@ export function subclassSpellPicksProblem(
     const added = picks.filter(spell => lower(spell.grantedBy) === lower(rule.feature));
     const unlisted = added.find(spell => rule.names && !rule.names.some(name => lower(name) === lower(spell.name)));
     if (unlisted) return `${unlisted.name} cannot be picked for ${rule.feature}.`;
-    if (!rule.required && !added.length) continue;
+    if (!added.length && (!rule.required || !hasPickLeft(owner, rule))) continue;
     const kept = heldSubclassPicks(owner, rule.feature).filter(spell => forgotten.get(rule.feature) !== lower(spell.name));
     const levels = [...kept, ...added].map(spell => spell.lvl).sort((a, b) => a - b);
     if (levels.join() !== [...rule.levels].sort((a, b) => a - b).join()) {

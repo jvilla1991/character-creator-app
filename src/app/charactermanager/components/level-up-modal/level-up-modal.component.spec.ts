@@ -1825,6 +1825,7 @@ describe('LevelUpModalComponent', () => {
       spell('Light', 0, ['cleric', 'wizard']), spell('Mage Hand', 0), spell('Fire Bolt', 0), spell('Guidance', 0, ['cleric']),
       spell('Bless', 1, ['cleric']),
       spell('Disintegrate', 6), spell('Teleport', 7), spell('Maze', 8), spell('Wish', 9),
+      spell('Druidcraft', 0, ['druid']), spell('Prestidigitation', 0, ['bard']),
     ];
     const granted = (name: string, lvl: number, grantedBy: string) =>
       ({ name, lvl, school: 'evocation', time: 'action', prepared: true, grantedBy, ...(lvl > 0 ? { alwaysPrepared: true } : {}) });
@@ -1953,17 +1954,6 @@ describe('LevelUpModalComponent', () => {
     });
 
     describe('picking a subclass with nothing more to choose', () => {
-      it('confirms an Arcane Archer who had neither Arcana nor Nature with the subclass alone', () => {
-        open({ clazz: 'Fighter', skills: { Athletics: 'prof' } },
-          { subclassDue: true, subclassOptions: ['Arcane Archer', 'Battle Master', 'Champion'] });
-        component.selectedSubclass = 'Arcane Archer';
-        expect(component.effectiveSubclass).toBe('Arcane Archer');
-        expect(component.subclassChoicesSatisfied).toBeTrue();
-        expect(component.canConfirm).toBeTrue();
-        component.confirm();
-        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Arcane Archer' });
-      });
-
       it('confirms a Warrior of the Mystic Arts, a Conjurer and a Vestige Patron the same way', () => {
         for (const [clazz, subclass] of [['Monk', 'Warrior of the Mystic Arts'], ['Wizard', 'Conjurer'], ['Warlock', 'Vestige Patron']]) {
           pcService.levelUp.calls.reset();
@@ -1979,7 +1969,11 @@ describe('LevelUpModalComponent', () => {
       it('levels a Vestige Patron, an Arcane Archer and a Transmuter on with no extra fields', () => {
         for (const pc of [
           { clazz: 'Warlock', subclass: 'Vestige Patron', level: 5 },
-          { clazz: 'Fighter', subclass: 'Arcane Archer', level: 6, subclassChoices: { skills: [] } },
+          {
+            clazz: 'Fighter', subclass: 'Arcane Archer', level: 4,
+            subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
+            spells: [granted('Druidcraft', 0, 'Arcane Archer Lore')],
+          },
           { clazz: 'Wizard', subclass: 'Transmuter', level: 9 },
         ]) {
           pcService.levelUp.calls.reset();
@@ -2029,7 +2023,7 @@ describe('LevelUpModalComponent', () => {
         expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Champion' });
       });
 
-      it('works through the rendered dialog: the granted skills, the pick, then Confirm', () => {
+      it('works through the rendered dialog: the granted skills, the pick, and Confirm still waits for the rest', () => {
         open({ clazz: 'Fighter', skills: { Nature: 'prof' } }, { subclassDue: true, subclassOptions: ['Arcane Archer', 'Champion'] });
         const { el, modal, click } = renderModal();
         const confirmButton = () => el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement;
@@ -2039,10 +2033,137 @@ describe('LevelUpModalComponent', () => {
           .toEqual(['ArcanaGained', 'NatureAlready proficient']);
         expect(confirmButton().disabled).toBeTrue();
         click(el, 'app-subclass-choices .skill-pick .subclass-option', 'Survival');
-        expect(confirmButton().disabled).toBeFalse();
+        // The skill alone is not enough: two Arcane Shot options and the Lore cantrip are owed too.
+        expect(confirmButton().disabled).toBeTrue();
         modal.confirm();
-        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Survival'] } });
-        expect(dndResources.getSpells).not.toHaveBeenCalled();
+        expect(pcService.levelUp).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Arcane Archer options and Lore cantrip', () => {
+      const FIGHTER_OPTIONS = { subclassDue: true, subclassOptions: ['Arcane Archer', 'Battle Master', 'Champion'] };
+      const TWO = ['Seeking Shot', 'Shadow Shot'];
+      const lore = granted('Druidcraft', 0, 'Arcane Archer Lore');
+      const archer = (level: number, arcaneShots: string[]): Partial<PC> => ({
+        clazz: 'Fighter', subclass: 'Arcane Archer', level, skills: { Arcana: 'prof', Nature: 'prof' },
+        subclassChoices: { skills: [], arcaneShots }, spells: [lore],
+      });
+      const optionNames = (el: HTMLElement, selector = '.shot-option') =>
+        Array.from(el.querySelectorAll(`app-arcane-shot-picker ${selector} .shot-name`)).map(n => n.textContent!.trim());
+
+      it('blocks Confirm for an Arcane Archer reaching Fighter 3 until its options and cantrip are chosen', () => {
+        open({ clazz: 'Fighter', skills: { Athletics: 'prof' } }, FIGHTER_OPTIONS);
+        expect(component.canConfirm).toBeFalse();   // a subclass is due
+        component.selectedSubclass = 'Champion';
+        expect(component.canConfirm).toBeTrue();
+        component.selectedSubclass = 'Arcane Archer';
+        expect(component.effectiveSubclass).toBe('Arcane Archer');
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        component.confirm();
+        expect(pcService.levelUp).not.toHaveBeenCalled();
+
+        component.onSubclassChoices(result({ subclassChoices: { arcaneShots: ['Seeking Shot'] }, valid: false }));
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { arcaneShots: TWO }, newSpells: [lore] }));
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+          subclass: 'Arcane Archer', subclassChoices: { arcaneShots: TWO }, newSpells: [lore],
+        });
+      });
+
+      it('asks nothing at a level that adds no option, and waits for one more at Fighter 7', () => {
+        for (const level of [3, 4, 5]) {
+          open(archer(level, TWO));
+          expect(component.subclassChoicesSatisfied).withContext(`to ${level + 1}`).toBeTrue();
+          expect(component.canConfirm).withContext(`to ${level + 1}`).toBeTrue();
+        }
+        open(archer(6, TWO));
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { arcaneShots: [...TWO, 'Piercing Shot'] } }));
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, { subclassChoices: { arcaneShots: [...TWO, 'Piercing Shot'] } });
+      });
+
+      it('waits for an archer made by hand to catch up, at whatever level it is', () => {
+        open({ clazz: 'Fighter', subclass: 'Arcane Archer', level: 8, skills: { Arcana: 'prof', Nature: 'prof' } });
+        expect(component.canConfirm).toBeFalse();
+        // Complete options but no cantrip: the dialog trusts only what the section reports.
+        open({ ...archer(8, [...TWO, 'Piercing Shot']), spells: [] });
+        expect(component.canConfirm).toBeFalse();
+        open(archer(8, [...TWO, 'Piercing Shot']));
+        expect(component.canConfirm).toBeTrue();
+      });
+
+      it('works through the rendered dialog at Fighter 3: two options, the cantrip, then Confirm', () => {
+        open({ clazz: 'Fighter', skills: { Athletics: 'prof' } }, FIGHTER_OPTIONS);
+        const { el, modal, click } = renderModal();
+        const confirmButton = () => el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement;
+        expect(el.querySelector('app-arcane-shot-choice')).toBeNull();
+        click(el, '.subclass-option', 'Arcane Archer');
+
+        expect(el.querySelector('app-arcane-shot-choice .shot-label')!.textContent!.replace(/\s+/g, ' ').trim())
+          .toBe('Arcane Shot options 0/2');
+        expect(optionNames(el).length).toBe(8);
+        expect(el.querySelector('app-arcane-shot-choice .shot-replace')).toBeNull();   // nothing to replace yet
+        expect(confirmButton().disabled).toBeTrue();
+
+        click(el, 'app-arcane-shot-picker .shot-option', 'Seeking Shot');
+        click(el, 'app-arcane-shot-picker .shot-option', 'Shadow Shot');
+        expect(optionNames(el, '.shot-option.is-selected')).toEqual(['Seeking Shot', 'Shadow Shot']);
+        expect(confirmButton().disabled).toBeTrue();   // the cantrip is still owed
+
+        const picker = el.querySelector('app-subclass-choices .subclass-spell-pick') as HTMLElement;
+        expect(picker.querySelector('.spell-label')!.textContent).toContain('Arcane Archer Lore cantrip');
+        expect(Array.from(picker.querySelectorAll('.spell-name')).map(n => n.textContent!.trim()))
+          .toEqual(['Druidcraft', 'Prestidigitation']);
+        click(picker, '.spell-option', 'Prestidigitation');
+        expect(confirmButton().disabled).toBeFalse();
+
+        modal.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+          subclass: 'Arcane Archer',
+          subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
+          newSpells: [jasmine.objectContaining({ name: 'Prestidigitation', lvl: 0, grantedBy: 'Arcane Archer Lore', prepared: true })],
+        });
+        // Picking another subclass takes the whole answer back.
+        click(el, '.subclass-option', 'Champion');
+        expect(el.querySelector('app-arcane-shot-choice')).toBeNull();
+        expect(modal.subclassChoiceResult).toBeNull();
+      });
+
+      it('works through the rendered dialog at Fighter 7: one more option, with one known option replaced', () => {
+        open(archer(6, TWO));
+        const { el, modal, click, refresh } = renderModal();
+        const confirmButton = () => el.querySelector('.modal-actions .btn.primary') as HTMLButtonElement;
+        expect(el.querySelector('app-arcane-shot-choice .shot-label')!.textContent!.replace(/\s+/g, ' ').trim())
+          .toBe('Arcane Shot options 2/3');
+        expect(optionNames(el, '.shot-option.is-selected')).toEqual(['Seeking Shot', 'Shadow Shot']);
+        expect(Array.from(el.querySelectorAll('app-arcane-shot-picker .shot-known')).length).toBe(2);
+        expect(el.querySelector('app-subclass-choices .subclass-spell-pick')).toBeNull();   // the cantrip was picked at 3
+        expect(confirmButton().disabled).toBeTrue();
+
+        const select = el.querySelector('app-arcane-shot-choice .shot-replace select') as HTMLSelectElement;
+        expect(Array.from(select.options).map(o => o.textContent!.trim())).toEqual(['No change', 'Seeking Shot', 'Shadow Shot']);
+        select.selectedIndex = 1;
+        select.dispatchEvent(new Event('change'));
+        refresh();
+        expect(optionNames(el, '.shot-option.is-selected')).toEqual(['Shadow Shot']);
+
+        click(el, 'app-arcane-shot-picker .shot-option', 'Bursting Shot');
+        expect(confirmButton().disabled).toBeTrue();
+        click(el, 'app-arcane-shot-picker .shot-option', 'Piercing Shot');
+        expect(confirmButton().disabled).toBeFalse();
+        // The list is full: every other box is disabled, so no fourth option can be ticked.
+        const boxes = Array.from(el.querySelectorAll('app-arcane-shot-picker input')) as HTMLInputElement[];
+        expect(boxes.filter(b => !b.checked).every(b => b.disabled)).toBeTrue();
+
+        modal.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7, {
+          subclassChoices: { arcaneShots: ['Shadow Shot', 'Bursting Shot', 'Piercing Shot'] },
+        });
       });
     });
 
