@@ -1,4 +1,5 @@
 import { PC, PcItem, PcSpell } from '../models/pc';
+import { MYSTIC_ARTS_SPELL_LIST, isMysticArtsMonk } from './mystic-arts';
 
 // ── Casting from the sheet ───────────────────────────────────────────────────
 // Pure rules for spending spell slots and consuming material components.
@@ -11,6 +12,15 @@ import { PC, PcItem, PcSpell } from '../models/pc';
  * kind a table may require in inventory before the spell can be cast.
  */
 const COSTLY_GP_PATTERN = /\d+\+?\s*GP/i;
+
+/**
+ * The class whose spell list a character learns from: its own class, or
+ * Sorcerer for a Monk of the Warrior of the Mystic Arts. What the level-up and
+ * "Grant spells" pickers ask the spell data for.
+ */
+export function spellListClass(pc: Pick<PC, 'clazz' | 'subclass'>): string {
+  return isMysticArtsMonk(pc) ? MYSTIC_ARTS_SPELL_LIST : pc.clazz;
+}
 
 /** The spell as stored on the PC, or undefined — casting always starts here. */
 export function findSpell(pc: PC, spellName: string): PcSpell | undefined {

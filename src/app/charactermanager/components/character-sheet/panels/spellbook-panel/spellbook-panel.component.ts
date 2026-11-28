@@ -5,7 +5,7 @@ import { heroClassFor } from '../../../../models/hero-class';
 import { DndResourcesService } from '../../../../services/dnd-resources.service';
 import { isPlaceholderSpell, toGrantedSpell, toPcSpell } from '../../../../utils/spell-mapping';
 import { DM_GRANT_SOURCE } from '../../../../models/granted-spells';
-import { canCastAsRitual, castWarning, castableLevels } from '../../../../utils/spellcasting';
+import { canCastAsRitual, castWarning, castableLevels, spellListClass } from '../../../../utils/spellcasting';
 import { countPreparedSpells, isAlwaysPrepared, isSpellPrepared, preparedSpellCap } from '../../../../utils/spell-preparation';
 import { fmtMod, spellAttackBonus, spellSaveDc } from '../../../../utils/character-math';
 import { SpellPickerComponent } from '../../../spell-picker/spell-picker.component';
@@ -172,7 +172,7 @@ export class SpellbookPanelComponent implements OnChanges {
   readonly hasSpells = computed(() => (this.pc().spells ?? []).length > 0);
   /** Prepared leveled spells (cantrips excluded) vs the 2024 PHB class-table cap. */
   readonly preparedCount = computed(() => countPreparedSpells(this.pc().spells ?? []));
-  readonly preparedCap = computed(() => preparedSpellCap(this.pc().clazz, this.pc().level));
+  readonly preparedCap = computed(() => preparedSpellCap(this.pc().clazz, this.pc().level, this.pc().subclass));
   /** True when the hero has leveled spells to choose a prepared list from (always-prepared ones are not a choice). */
   readonly hasLeveledSpells = computed(() => (this.pc().spells ?? []).some(s => s.lvl > 0 && !isAlwaysPrepared(s)));
 
@@ -534,9 +534,11 @@ export class SpellbookPanelComponent implements OnChanges {
     const known = new Set((this.pc().spells ?? []).map(s => s.name.toLowerCase()));
     // A WoW variant may add spells to its class list (e.g. the Priest's Blur and Levitate).
     const extras = heroClassFor(this.pc())?.extraSpellList;
+    // The character's own list: its class's, or the Sorcerer list for a Warrior of the Mystic Arts monk.
+    const listClass = spellListClass(this.pc());
     const spells$ = this.allClasses ? this.dndResources.getSpells()
-      : extras?.length ? this.dndResources.getSpellsForClass(this.pc().clazz, extras)
-      : this.dndResources.getSpellsForClass(this.pc().clazz);
+      : extras?.length ? this.dndResources.getSpellsForClass(listClass, extras)
+      : this.dndResources.getSpellsForClass(listClass);
     spells$.subscribe({
       next: spells => {
         this.grantCandidates = spells.filter(s => !known.has(s.name.toLowerCase()));

@@ -1,5 +1,6 @@
 import { PC } from '../models/pc';
 import { BreakdownLine, adjustmentSum, adjustmentsFor, countedSum, skillStat } from '../models/stat-adjustment';
+import { MYSTIC_ARTS_CASTING_ABILITY, MYSTIC_ARTS_SPELLCASTING_LEVEL, isMysticArtsMonk } from './mystic-arts';
 
 // ── Ability score math ──────────────────────────────────────────────────────
 
@@ -43,7 +44,8 @@ export function hitDieFor(clazz: string): number {
 
 // ── Spellcasting (2024 PHB) ─────────────────────────────────────────────────
 // Casting ability per class: the full casters, the Warlock, and the half
-// casters Paladin (CHA) and Ranger (WIS).
+// casters Paladin (CHA) and Ranger (WIS). One subclass casts on its own:
+// see castingAbilityOf.
 
 export const CASTING_ABILITY: Record<string, 'INT' | 'WIS' | 'CHA'> = {
   Bard: 'CHA', Paladin: 'CHA', Sorcerer: 'CHA', Warlock: 'CHA',
@@ -63,17 +65,31 @@ export function proficiencyBonus(pc: Pick<PC, 'prof' | 'level'>): number {
   return pc.prof ?? proficiencyForLevel(pc.level ?? 1);
 }
 
+/**
+ * The ability a character casts its spells with: its class's, or Wisdom for a
+ * Monk of the Warrior of the Mystic Arts from Monk level 3 (the one subclass
+ * here that brings Spellcasting of its own). Undefined for a character with no
+ * casting ability.
+ */
+export function castingAbilityOf(
+  pc: Pick<PC, 'clazz' | 'subclass' | 'level'> | null | undefined,
+): 'INT' | 'WIS' | 'CHA' | undefined {
+  if (!pc) return undefined;
+  if (isMysticArtsMonk(pc) && (pc.level ?? 1) >= MYSTIC_ARTS_SPELLCASTING_LEVEL) return MYSTIC_ARTS_CASTING_ABILITY;
+  return CASTING_ABILITY[pc.clazz];
+}
+
 /** Spell save DC = 8 + proficiency + casting-ability modifier; null for a
- *  class with no casting ability (Fighter, unknown classes, …). */
+ *  character with no casting ability (Fighter, unknown classes, …). */
 export function spellSaveDc(pc: PC): number | null {
-  const ability = CASTING_ABILITY[pc.clazz];
+  const ability = castingAbilityOf(pc);
   if (!ability) return null;
   return 8 + proficiencyBonus(pc) + modFromScore(pc.stats?.[ability] ?? 10);
 }
 
 /** Spell attack bonus = proficiency + casting-ability modifier; null for non-casters. */
 export function spellAttackBonus(pc: PC): number | null {
-  const ability = CASTING_ABILITY[pc.clazz];
+  const ability = castingAbilityOf(pc);
   if (!ability) return null;
   return proficiencyBonus(pc) + modFromScore(pc.stats?.[ability] ?? 10);
 }

@@ -1,4 +1,5 @@
 import { PC } from '../models/pc';
+import { isMysticArtsMonk, mysticArtsSlotTable } from './mystic-arts';
 
 // ── Spell slots ──────────────────────────────────────────────────────────────
 // How a character's slots are read for the sheet, and the app's one copy of the
@@ -178,8 +179,15 @@ const PACT_SLOTS: [number, number][] = [
  * clamp into 1-20): full casters, the half casters Paladin and Ranger, or the
  * Warlock's pact slots. Empty for a class with no slots. DM bonus lines are
  * not part of the table.
+ *
+ * `subclass` matters for one character: a Monk of the Warrior of the Mystic
+ * Arts has a table of its own from Monk level 3 (the server's
+ * spellSlotsFor(clazz, subclass, level)). Leaving it out reads the class alone.
  */
-export function classSlotTable(clazz: string | undefined, level: number): { [spellLevel: number]: number } {
+export function classSlotTable(
+  clazz: string | undefined, level: number, subclass?: string | null,
+): { [spellLevel: number]: number } {
+  if (isMysticArtsMonk({ clazz, subclass })) return mysticArtsSlotTable(level);
   const key = (clazz ?? '').trim().toLowerCase();
   const idx = Math.min(Math.max(level, 1), 20) - 1;
   const out: { [spellLevel: number]: number } = {};
@@ -194,9 +202,9 @@ export function classSlotTable(clazz: string | undefined, level: number): { [spe
 }
 
 /** A new character's slots: the class table at `level`, nothing spent. */
-export function startingSlots(clazz: string | undefined, level = 1): SpellSlots {
+export function startingSlots(clazz: string | undefined, level = 1, subclass?: string | null): SpellSlots {
   const slots: SpellSlots = {};
-  for (const [spellLevel, max] of Object.entries(classSlotTable(clazz, level))) {
+  for (const [spellLevel, max] of Object.entries(classSlotTable(clazz, level, subclass))) {
     slots[Number(spellLevel)] = { max, used: 0 };
   }
   return slots;

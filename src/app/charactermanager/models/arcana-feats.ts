@@ -116,21 +116,30 @@ export function arcanaFeatPrerequisite(name: string | null | undefined): string 
 /**
  * True when a character of this class has the Spellcasting or Pact Magic
  * feature at this level: the full casters, the Warlock, and the half casters
- * Paladin and Ranger from level 1 — every class with a slot table. Mirrors the
- * server's ClassProgression.hasSpellcastingOrPactMagic.
+ * Paladin and Ranger from level 1 — every class with a slot table — and a Monk
+ * of the Warrior of the Mystic Arts from Monk level 3, whose subclass brings
+ * the feature. Eldritch Knight and Arcane Trickster have no slot table here and
+ * do not count. Mirrors the server's ClassProgression.hasSpellcastingOrPactMagic.
  */
-export function hasSpellcastingOrPactMagic(clazz: string | null | undefined, level: number): boolean {
-  return Object.keys(classSlotTable(clazz ?? undefined, level)).length > 0;
+export function hasSpellcastingOrPactMagic(
+  clazz: string | null | undefined, level: number, subclass?: string | null,
+): boolean {
+  return Object.keys(classSlotTable(clazz ?? undefined, level, subclass)).length > 0;
 }
 
-/** The highest spell slot level the class table gives at this level (a Warlock's pact slot level); 0 for none. */
-export function highestSpellSlotLevel(clazz: string | null | undefined, level: number): number {
-  return Object.keys(classSlotTable(clazz ?? undefined, level)).reduce((max, k) => Math.max(max, Number(k)), 0);
+/** The highest spell slot level the table gives at this level (a Warlock's pact slot level); 0 for none. */
+export function highestSpellSlotLevel(
+  clazz: string | null | undefined, level: number, subclass?: string | null,
+): number {
+  return Object.keys(classSlotTable(clazz ?? undefined, level, subclass))
+    .reduce((max, k) => Math.max(max, Number(k)), 0);
 }
 
 /** The character an Arcana Unleashed feat is offered to. */
 export interface ArcanaFeatCandidate {
   clazz: string | null | undefined;
+  /** The subclass, for the one that brings Spellcasting of its own (Warrior of the Mystic Arts). */
+  subclass?: string | null;
   /** The level being reached. */
   newLevel: number;
   /** Names of the feats already on the character (see models/character-feats). */
@@ -141,7 +150,7 @@ const FIGHTING_STYLE_CLASSES = ['fighter', 'paladin', 'ranger'];
 
 function meets(requires: ArcanaFeatRequirement | undefined, c: ArcanaFeatCandidate, held: readonly string[]): boolean {
   switch (requires) {
-    case 'spellcasting': return hasSpellcastingOrPactMagic(c.clazz, c.newLevel);
+    case 'spellcasting': return hasSpellcastingOrPactMagic(c.clazz, c.newLevel, c.subclass);
     case 'familiar-friend': return held.includes(lower(FAMILIAR_FRIEND));
     case 'magic-initiate': return held.some(f => f.startsWith('magic initiate'));
     default: return true;

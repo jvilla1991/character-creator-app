@@ -1,4 +1,5 @@
 import { PC, PcSpell } from '../models/pc';
+import { isMysticArtsMonk, mysticArtsPreparedSpells } from './mystic-arts';
 
 /**
  * 2024 PHB "Prepared Spells" column from each class's Features table — the cap
@@ -26,8 +27,14 @@ export const PREPARED_SPELLS: Record<string, readonly number[]> = {
  * Prepared-spell cap for a class at a level, or null when the class has no
  * Prepared Spells table (non-caster or homebrew) — callers treat null as
  * "no cap enforced". Levels clamp into the 1–20 table range.
+ *
+ * `subclass` matters for a Monk of the Warrior of the Mystic Arts, who has a
+ * Prepared Spells column of its own from Monk level 3 (null below it).
  */
-export function preparedSpellCap(clazz: string | undefined, level: number | undefined): number | null {
+export function preparedSpellCap(
+  clazz: string | undefined, level: number | undefined, subclass?: string | null,
+): number | null {
+  if (isMysticArtsMonk({ clazz, subclass })) return mysticArtsPreparedSpells(level ?? 1) || null;
   const row = PREPARED_SPELLS[(clazz ?? '').trim().toLowerCase()];
   if (!row) return null;
   const idx = Math.min(Math.max(level ?? 1, 1), row.length) - 1;
