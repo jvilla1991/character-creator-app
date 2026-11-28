@@ -5,6 +5,7 @@ import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
 import { LevelUpPreview, LevelUpChoices, SubclassSpellcasting } from '../models/level-up';
+import { MysticFocusAction, applyMysticFocus } from '../models/mystic-focus';
 import { featNamesOn } from '../models/character-feats';
 import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
 import { spellKey } from '../models/spell-names';
@@ -465,6 +466,47 @@ export class PCService {
     const entry: PcActivityLogEntry = {
       id: 'demo-subclass-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), pcId,
       actionType: 'SUBCLASS_CHOICE', description: (asDm ? 'DM changed' : 'Changed') + ' subclass choices',
+      createdAt: new Date().toISOString(),
+    };
+    this.demoLog[pcId] = [entry, ...(this.demoLog[pcId] ?? [])].slice(0, 10);
+    const saved = this.pcs.find(p => p.id === pcId) ?? this.activePCSubject.getValue();
+    return of(saved as PC).pipe(delay(50));
+  }
+
+  // ── Mystic Focus (Warrior of the Mystic Arts, Monk 6) ──────────────────────
+
+  /**
+   * One Mystic Focus conversion: a spell slot into Focus Points
+   * (`SLOT_TO_FOCUS`) or Focus Points into a spell slot (`FOCUS_TO_SLOT`), for
+   * the slot of `slotLevel` (1-4). The owner, in a campaign or not, or the
+   * campaign's DM. The server answers with the saved character, which replaces
+   * the one on the sheet; 400 for a character without the feature or a slot
+   * level it cannot recover yet, 409 when there is nothing to spend or regain.
+   * `asDm` only matters in demo mode, which has no login to tell the DM's view
+   * from the player's.
+   */
+  mysticFocus(pcId: number, action: MysticFocusAction, slotLevel: number, asDm = false): Observable<PC> {
+    if (environment.demoMode) return this.demoMysticFocus(pcId, action, slotLevel, asDm);
+    return this.http.post<PC>(`${this.pcUrl}${pcId}/mystic-focus`, { action, slotLevel }).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /** Demo mirror of the Mystic Focus endpoint: the same rule, refusals and activity-log line. */
+  private demoMysticFocus(pcId: number, action: MysticFocusAction, slotLevel: number, asDm: boolean): Observable<PC> {
+    const refuse = (status: number, message: string) =>
+      throwError(() => new HttpErrorResponse({ status, error: { message } }));
+    const active = this.activePCSubject.getValue();
+    const pc = this.pcs.find(p => p.id === pcId) ?? (active?.id === pcId ? active : null);
+    if (!pc) return refuse(404, 'PC not found with id ' + pcId);
+    const outcome = applyMysticFocus(pc, action, slotLevel);
+    if (!outcome.ok) return refuse(outcome.status, outcome.message);
+
+    this.patchShownPC(pcId, { spellSlots: outcome.spellSlots, classResources: outcome.classResources });
+    const entry: PcActivityLogEntry = {
+      id: 'demo-mystic-focus-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), pcId,
+      actionType: 'SPELL_SLOT', description: (asDm ? 'DM used Mystic Focus: ' : 'Mystic Focus: ') + outcome.description,
       createdAt: new Date().toISOString(),
     };
     this.demoLog[pcId] = [entry, ...(this.demoLog[pcId] ?? [])].slice(0, 10);

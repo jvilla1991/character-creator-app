@@ -42,6 +42,12 @@
     (maximumRequested)="slotMaximumRequested.emit($event)">
   </app-spell-slot-tracker>
 
+  <!-- Mystic Focus: a Warrior of the Mystic Arts (Monk 6+) trades slots and
+  Focus Points. Renders nothing for any other character. -->
+  @if (mysticFocusUsable()) {
+    <app-mystic-focus [pc]="pc()" [busy]="mysticFocusBusy()" (convert)="mysticFocus.emit($event)"></app-mystic-focus>
+  }
+
   <!-- At the cap every Prepare button is disabled; say why where a phone can
   read it (the reason was only in each button's hover tooltip). -->
   @if (preparable() && hasLeveledSpells() && preparedCap() != null && preparedCount() >= preparedCap()!) {
