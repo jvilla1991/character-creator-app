@@ -1,13 +1,17 @@
 import { PC } from '../models/pc';
 import { DEMON_HUNTER_SUBCLASS, EBON_BLADE_SUBCLASS } from '../models/hero-class';
+import {
+  ARCANA_DOMAIN, ARCANE_ARCHER, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER, VESTIGE_PATRON,
+} from '../models/arcana-subclasses';
 import { SCHOOLS_OF_MAGIC, schoolMasteryFeat } from '../models/arcana-feats';
 import { featNamesOn } from '../models/character-feats';
 import { modFromScore } from './character-math';
 
 /**
  * Limited-use class features a character tracks between rests (D&D 2024, plus
- * the World of Warcraft module's Death Knight and Demon Hunter) — the client
- * mirror of the server's `progression/ClassResources`. The maximum is always
+ * the World of Warcraft module's Death Knight and Demon Hunter and the Arcana
+ * Unleashed subclasses) — the client mirror of the server's
+ * `progression/ClassResources`. The maximum is always
  * computed from class, subclass, level and ability scores; only the amount
  * USED is stored on the character (`pc.classResources`), and the server cleans
  * it on every save.
@@ -159,11 +163,19 @@ function resourcesOfClass(pc: ResourceSource | null | undefined): ClassResource[
   const lvl = Math.max(1, pc?.level ?? 1);
   const cha = modFromScore(pc?.stats?.CHA ?? 10);
   const wis = modFromScore(pc?.stats?.WIS ?? 10);
+  const int = modFromScore(pc?.stats?.INT ?? 10);
+  const is = (name: string): boolean => subclass === name.toLowerCase();
+  /** One use, back on a Long Rest: most of the Arcana Unleashed subclass counters. */
+  const once = (key: string, name: string, feature: string): ClassResource => uses(key, name, feature, 1, 'NONE');
 
   switch (clazz) {
     case 'fighter':
       out.push(uses('secondWind', 'Second Wind', 'Second Wind', lvl >= 10 ? 4 : lvl >= 4 ? 3 : 2, 'ONE'));
       if (lvl >= 2) out.push(uses('actionSurge', 'Action Surge', 'Action Surge', lvl >= 17 ? 2 : 1, 'ALL'));
+      if (is(ARCANE_ARCHER)) {
+        if (lvl >= 3) out.push(uses('arcaneShot', 'Arcane Shot', 'Arcane Shot', Math.max(1, int), 'ALL'));
+        if (lvl >= 7) out.push(uses('magicalAmmunition', 'Magical Ammunition', 'Magical Ammunition', 1, 'ALL'));
+      }
       break;
     case 'barbarian':
       out.push(uses('rage', 'Rage', 'Rage', lvl >= 17 ? 6 : lvl >= 12 ? 5 : lvl >= 6 ? 4 : lvl >= 3 ? 3 : 2, 'ONE'));
@@ -176,6 +188,9 @@ function resourcesOfClass(pc: ResourceSource | null | undefined): ClassResource[
     case 'cleric':
       if (lvl >= 2) {
         out.push(uses('channelDivinity', 'Channel Divinity', 'Channel Divinity', lvl >= 18 ? 4 : lvl >= 6 ? 3 : 2, 'ONE'));
+      }
+      if (is(ARCANA_DOMAIN) && lvl >= 6) {
+        out.push(uses('dispellingRecovery', 'Dispelling Recovery', 'Dispelling Recovery', 1, 'ALL'));
       }
       break;
     case 'druid':
@@ -202,6 +217,40 @@ function resourcesOfClass(pc: ResourceSource | null | undefined): ClassResource[
       break;
     case 'sorcerer':
       if (lvl >= 2) out.push(pool('sorceryPoints', 'Sorcery Points', 'Font of Magic', lvl, 'NONE', 'points'));
+      break;
+    case 'warlock':
+      if (is(VESTIGE_PATRON)) {
+        // Vestige Power (Warlock 6): the companion's Divine Power returns on a Short Rest too.
+        if (lvl >= 3) out.push(uses('divinePower', 'Divine Power', 'Vestige Companion', 1, lvl >= 6 ? 'ALL' : 'NONE'));
+        if (lvl >= 10) out.push(once('vestigeRecovery', 'Vestige Recovery', 'Vestige Recovery'));
+        if (lvl >= 14) out.push(once('semblanceOfLife', 'Semblance of Life', 'Semblance of Life'));
+      }
+      break;
+    case 'wizard':
+      if (is(CONJURER)) {
+        if (lvl >= 3) {
+          out.push(uses('benignTransposition', 'Benign Transposition', 'Benign Transposition', Math.max(1, int), 'NONE'));
+        }
+        if (lvl >= 14) out.push(once('splinteredSummons', 'Splintered Summons', 'Splintered Summons'));
+      } else if (is(ENCHANTER)) {
+        if (lvl >= 3) out.push(uses('hypnoticPresence', 'Hypnotic Presence', 'Hypnotic Presence', Math.max(1, int), 'NONE'));
+        // Split Enchantment has no minimum of one use: no counter without a positive modifier.
+        if (lvl >= 6 && int >= 1) out.push(uses('splitEnchantment', 'Split Enchantment', 'Split Enchantment', int, 'NONE'));
+        if (lvl >= 10) out.push(once('instinctiveCharm', 'Instinctive Charm', 'Instinctive Charm'));
+      } else if (is(NECROMANCER)) {
+        if (lvl >= 6) out.push(once('undeadThralls', 'Animate Dead (free cast)', 'Undead Thralls'));
+        if (lvl >= 14) out.push(once('bolsterUndead', 'Bolster Undead', "Death's Master"));
+      } else if (is(TRANSMUTER)) {
+        if (lvl >= 3) out.push(once('wondrousAlteration', 'Alter Self (free cast)', 'Wondrous Alteration'));
+        if (lvl >= 6) {
+          out.push(uses('empoweredTransmutation', 'Empowered Transmutation', 'Empowered Transmutation', Math.max(1, int), 'NONE'));
+        }
+        if (lvl >= 10) {
+          out.push(once('shapeShifterCast', 'Polymorph (free cast)', 'Shape-Shifter'));
+          out.push(once('shapeShifterSelf', 'Shape-Shifter (self)', 'Shape-Shifter'));
+        }
+        if (lvl >= 14) out.push(once('masterTransmuter', 'Master Transmuter', 'Master Transmuter'));
+      }
       break;
   }
   return out;

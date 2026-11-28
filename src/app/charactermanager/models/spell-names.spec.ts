@@ -1,3 +1,4 @@
+import { ARCANA_DOMAIN_SPELLS, ARCANA_FEATURE_SPELLS } from './arcana-subclasses';
 import { DndSpell } from './dnd-api.types';
 import { HERO_CLASSES, HeroClassOption, spellNames } from './hero-class';
 import { SPELL_NAME_ALIASES, spellKey } from './spell-names';
@@ -87,6 +88,35 @@ describe('spell-names', () => {
       const missing = HERO_CLASSES.flatMap(hero =>
         namedSpells(hero).filter(name => !index.has(spellKey(name))).map(name => `${hero.key}: ${name}`));
       expect([...new Set(missing)]).toEqual([]);
+    });
+
+    it('finds all ten Arcana Domain spells, three of them under their SRD names', () => {
+      const names = ARCANA_DOMAIN_SPELLS.flatMap(row => row.spells);
+      expect(names.length).toBe(10);
+      for (const name of names) expect(index.has(spellKey(name))).withContext(name).toBeTrue();
+      for (const [name, srd] of [
+        ["Nystul's Magic Aura", "Arcanist's Magic Aura"], ["Leomund's Secret Chest", 'Secret Chest'],
+        ["Bigby's Hand", 'Arcane Hand'],
+      ]) {
+        expect(names).withContext(name).toContain(name);
+        expect(index.get(spellKey(name))?.name).withContext(name).toBe(srd);
+      }
+      // Each row's spells can be cast with the slots a Cleric has at that level.
+      for (const row of ARCANA_DOMAIN_SPELLS) {
+        for (const name of row.spells) {
+          expect(index.get(spellKey(name))!.level).withContext(name).toBeLessThanOrEqual(Math.ceil(row.classLevel / 2));
+        }
+      }
+    });
+
+    it("finds the spells the Necromancer's and Transmuter's features always keep prepared", () => {
+      expect(ARCANA_FEATURE_SPELLS.map(grant => grant.spell))
+        .toEqual(['Find Familiar', 'Animate Dead', 'Alter Self', 'Polymorph']);
+      for (const grant of ARCANA_FEATURE_SPELLS) {
+        const spell = index.get(spellKey(grant.spell));
+        expect(spell?.name).withContext(grant.feature).toBe(grant.spell);
+        expect(spell?.classes).withContext(grant.spell).toContain('wizard');
+      }
     });
   });
 });

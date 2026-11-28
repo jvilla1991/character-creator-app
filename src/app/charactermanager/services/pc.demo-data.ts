@@ -22,6 +22,9 @@ import {
 } from '../models/wow-class-variants';
 import { WOW_MAGE_FEATS, WOW_MONK_FEATS } from '../models/wow-feats';
 import { arcanaFeatOptions } from '../models/arcana-feats';
+import {
+  ARCANA_DOMAIN, ARCANE_ARCHER, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER, WARRIOR_OF_THE_MYSTIC_ARTS,
+} from '../models/arcana-subclasses';
 import { WARRIOR_OF_MYSTIC_BREWS } from '../models/wow-monk';
 import { PATH_OF_THE_ELEMENTS } from '../models/wow-shaman';
 import { SHADOW_DOMAIN } from '../models/wow-priest';
@@ -1062,18 +1065,25 @@ export function demoSubclassLevel(clazz: string): number {
 }
 
 // DEMO-ONLY mirror of the server SUBCLASS_CATALOG (2024 PHB subclass names,
-// plus Twilight Domain from Tasha's Cauldron of Everything).
+// plus Twilight Domain from Tasha's Cauldron of Everything, and the Arcana
+// Unleashed subclasses picked at a level-up: every member of the class is
+// offered those, a World of Warcraft variant included). A Warlock picks its
+// patron in the create wizard, so Vestige Patron is offered there instead
+// (arcanaLevel1Subclasses).
 const DEMO_SUBCLASSES: { [clazz: string]: string[] } = {
   barbarian: ['Path of the Berserker', 'Path of the Wild Heart', 'Path of the World Tree', 'Path of the Zealot'],
   bard: ['College of Dance', 'College of Glamour', 'College of Lore', 'College of Valor'],
-  cleric: ['Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
+  cleric: [ARCANA_DOMAIN, 'Life Domain', 'Light Domain', 'Trickery Domain', 'Twilight Domain', 'War Domain'],
   druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of the Sea', 'Circle of the Stars'],
-  fighter: ['Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
-  monk: ['Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', 'Warrior of the Open Hand'],
+  fighter: [ARCANE_ARCHER, 'Battle Master', 'Champion', 'Eldritch Knight', 'Psi Warrior'],
+  monk: [
+    'Warrior of Mercy', 'Warrior of Shadow', 'Warrior of the Elements', WARRIOR_OF_THE_MYSTIC_ARTS,
+    'Warrior of the Open Hand',
+  ],
   paladin: ['Oath of Devotion', 'Oath of Glory', 'Oath of the Ancients', 'Oath of Vengeance'],
   ranger: ['Beast Master', 'Fey Wanderer', 'Gloom Stalker', 'Hunter'],
   rogue: ['Arcane Trickster', 'Assassin', 'Soulknife', 'Thief'],
-  wizard: ['Abjurer', 'Diviner', 'Evoker', 'Illusionist'],
+  wizard: ['Abjurer', CONJURER, 'Diviner', ENCHANTER, 'Evoker', 'Illusionist', NECROMANCER, TRANSMUTER],
 };
 
 // Plus each WoW variant's WoW-only subclasses (Oath of the Holy, Swashbuckler, the two

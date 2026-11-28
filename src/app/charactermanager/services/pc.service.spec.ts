@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
+import { firstValueFrom } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PCService } from './pc.service';
-import { PC } from '../models/pc';
+import { PC, PcSpell } from '../models/pc';
 import { DEMO_MODE_KEY } from 'src/environments/environment';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -317,6 +319,86 @@ describe('PCService', () => {
       const req = httpMock.expectOne(service.pcUrl + '42/pet');
       expect(req.request.body).toEqual({ family: null });
       req.flush({ ...makePC({ id: 42 }), petFamily: null });
+    });
+  });
+
+  // ── subclass choices: server-owned, written by a level-up or their own endpoint ──
+
+  describe('subclass choices', () => {
+    it('PUTs just the keys given to /{id}/subclass-choices and shows the saved character', (done) => {
+      service.setPCs([makePC({ id: 42, clazz: 'Cleric', subclass: 'Arcana Domain', level: 3 })]);
+      service.setActivePC(service.getPCById(42)!);
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+
+      service.setSubclassChoices(42, { skills: ['Insight'] }).subscribe(saved => {
+        expect(saved.subclassChoices).toEqual({ skills: ['Insight'] });
+        expect(saved.skills).toEqual({ Arcana: 'prof', History: 'prof', Insight: 'prof' });
+        expect(service.getPCById(42)!.subclassChoices).toEqual({ skills: ['Insight'] });
+        expect(active!.subclassChoices).toEqual({ skills: ['Insight'] });
+        done();
+      });
+      const req = httpMock.expectOne(service.pcUrl + '42/subclass-choices');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ skills: ['Insight'] });
+      // The column is JSON text, like classResources.
+      req.flush({
+        ...makePC({ id: 42, clazz: 'Cleric', subclass: 'Arcana Domain', level: 3 }),
+        subclassChoices: '{"skills":["Insight"]}', skills: '{"Arcana":"prof","History":"prof","Insight":"prof"}',
+      });
+    });
+
+    it('sends a vestige type and domain the same way, whoever is asking', () => {
+      service.setSubclassChoices(42, { vestigeType: 'Undead', vestigeDomain: 'War' }, true).subscribe();
+      const req = httpMock.expectOne(service.pcUrl + '42/subclass-choices');
+      expect(req.request.body).toEqual({ vestigeType: 'Undead', vestigeDomain: 'War' });
+      req.flush(makePC({ id: 42 }));
+    });
+
+    it('reads the choices from text or from an object, and null when the character has none', () => {
+      expect(service.deserialize({ id: 1, subclassChoices: '{"arcaneShots":["Seeking Shot"],"skills":[]}' }).subclassChoices)
+        .toEqual({ arcaneShots: ['Seeking Shot'], skills: [] });
+      expect(service.deserialize({ id: 1, subclassChoices: { vestigeType: 'Fiend' } }).subclassChoices)
+        .toEqual({ vestigeType: 'Fiend' });
+      expect(service.deserialize({ id: 1, subclassChoices: null }).subclassChoices).toBeNull();
+      expect(service.deserialize({ id: 1 }).subclassChoices).toBeNull();
+    });
+
+    it('never sends the choices with a generic save: null tells the server to keep what it has', () => {
+      const cleric = makePC({ id: 42, clazz: 'Cleric', subclass: 'Arcana Domain', level: 3, subclassChoices: { skills: ['Insight'] } });
+      service.updatePC(cleric).subscribe();
+      const own = httpMock.expectOne(service.pcUrl + '42');
+      expect('subclassChoices' in own.request.body).toBeTrue();
+      expect(own.request.body.subclassChoices).toBeNull();
+      own.flush({});
+
+      service.updatePCAsDm(cleric, 'Fixed a typo').subscribe();
+      const asDm = httpMock.expectOne(service.pcUrl + '42/as-dm');
+      expect(asDm.request.body.pc.subclassChoices).toBeNull();
+      asDm.flush({});
+
+      service.addPC(cleric).subscribe();
+      const added = httpMock.expectOne(service.pcUrl + 'add');
+      expect(added.request.body.subclassChoices).toBeNull();
+      added.flush({});
+    });
+
+    it('sends the choices and the swapped-out picks of a level-up, and leaves out empty ones', () => {
+      const newSpells: PcSpell[] = [
+        { lvl: 0, name: 'Light', school: 'evocation', time: 'action', prepared: true, grantedBy: 'Student of Arcana' },
+      ];
+      service.levelUp(42, { subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] }, forgetSpells: ['Mage Hand'], newSpells })
+        .subscribe();
+      const full = httpMock.expectOne(service.pcUrl + '42/level-up');
+      expect(full.request.body).toEqual({
+        subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] }, forgetSpells: ['Mage Hand'], newSpells,
+      });
+      full.flush(makePC({ id: 42 }));
+
+      service.levelUpAsDm(42, { subclass: 'Arcane Archer', subclassChoices: {}, forgetSpells: [] }).subscribe();
+      const bare = httpMock.expectOne(service.pcUrl + '42/level-up/as-dm');
+      expect(bare.request.body).toEqual({ subclass: 'Arcane Archer' });
+      bare.flush(makePC({ id: 42 }));
     });
   });
 
@@ -1323,6 +1405,261 @@ describe('PCService spell slots (demo mode)', () => {
           done();
         });
       });
+    });
+  });
+});
+
+// The demo mirror of the subclass choices: a level-up and the dedicated endpoint
+// apply them the way the server does. The characters are added to the demo store
+// by each test; demo PC 1 is a bard in a campaign and 17 a wizard in none.
+describe('PCService subclass choices (demo mode)', () => {
+  let service: PCService;
+  const ID = 900;
+
+  beforeEach(() => {
+    localStorage.setItem(DEMO_MODE_KEY, 'true');
+    TestBed.configureTestingModule({
+      imports: [],
+      providers: [PCService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(PCService);
+  });
+
+  afterEach(() => {
+    TestBed.inject(HttpTestingController).verify(); // demo mode never calls the server
+    localStorage.removeItem(DEMO_MODE_KEY);
+  });
+
+  /** Put a character in the demo store and return it. */
+  function seed(over: Partial<PC>): PC {
+    const pc = makePC({ id: ID, campaignId: null, spells: [], skills: {}, features: [], feat: undefined, ...over });
+    const store = service as unknown as { pcs: PC[] };
+    store.pcs = [...store.pcs.filter(p => p.id !== ID), pc];
+    return pc;
+  }
+  const stored = () => service.getPCById(ID)!;
+  const pick = (name: string, lvl: number, grantedBy: string): PcSpell =>
+    ({ lvl, name, school: 'evocation', time: 'action', prepared: false, grantedBy });
+  /** The refusal a call ends in. */
+  const refusal = (call: Promise<unknown>): Promise<HttpErrorResponse> =>
+    call.then(() => { throw new Error('expected a refusal'); }, (err: HttpErrorResponse) => err);
+
+  describe('level-up', () => {
+    const CANTRIPS = [pick('Light', 0, 'Student of Arcana'), pick('Mage Hand', 0, 'Student of Arcana')];
+
+    it('refuses an Arcana Domain cleric reaching level 3 without its skill or its two cantrips', async () => {
+      seed({ clazz: 'Cleric', level: 2 });
+      const noSkill = await refusal(firstValueFrom(service.levelUp(ID, { subclass: 'Arcana Domain', newSpells: CANTRIPS })));
+      expect(noSkill.status).toBe(400);
+      expect(noSkill.error.message).toContain('Choose 1 skill for Student of Arcana');
+      const noCantrips = await refusal(firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] } })));
+      expect(noCantrips.error.message).toBe('Student of Arcana needs two cantrips.');
+      expect(stored().level).toBe(2);
+      expect(stored().subclass).toBeUndefined();
+    });
+
+    it('stores the skill, marks it proficient and saves the cantrips under their feature', async () => {
+      seed({ clazz: 'Cleric', level: 2, skills: { Insight: 'expert' }, spells: [pick('Guidance', 0, '')] });
+      const updated = await firstValueFrom(service.levelUp(ID, {
+        subclass: 'Arcana Domain', subclassChoices: { skills: ['Arcana'] }, newSpells: CANTRIPS,
+      }));
+      expect(updated.level).toBe(3);
+      expect(updated.subclass).toBe('Arcana Domain');
+      expect(updated.subclassChoices).toEqual({ skills: ['Arcana'] });
+      expect(updated.skills).toEqual({ Insight: 'expert', Arcana: 'prof' });
+      expect(updated.spells!.map(s => [s.name, s.grantedBy || '', s.prepared, !!s.alwaysPrepared])).toEqual([
+        ['Guidance', '', false, false], ['Light', 'Student of Arcana', true, false],
+        ['Mage Hand', 'Student of Arcana', true, false],
+      ]);
+      expect(stored()).toBe(updated);
+    });
+
+    it('swaps one cantrip for another at a later level, and leaves the stored skill alone', async () => {
+      seed({
+        clazz: 'Cleric', subclass: 'Arcana Domain', level: 3, skills: { Arcana: 'prof' },
+        subclassChoices: { skills: ['Arcana'] }, spells: [...CANTRIPS],
+      });
+      const wrong = await refusal(firstValueFrom(service.levelUp(ID, { forgetSpells: ['Light'] })));
+      expect(wrong.error.message).toBe('Student of Arcana needs two cantrips.');
+
+      const updated = await firstValueFrom(service.levelUp(ID, {
+        forgetSpells: ['Light'], newSpells: [pick('Fire Bolt', 0, 'Student of Arcana')],
+        subclassChoices: { skills: ['History'] },
+      }));
+      expect(updated.level).toBe(4);
+      expect(updated.spells!.map(s => s.name)).toEqual(['Mage Hand', 'Fire Bolt']);
+      expect(updated.subclassChoices).toEqual({ skills: ['Arcana'] });
+      expect(updated.skills).toEqual({ Arcana: 'prof' });
+      // With nothing to choose, an ordinary level-up goes through untouched.
+      const next = await firstValueFrom(service.levelUp(ID));
+      expect(next.level).toBe(5);
+      expect(next.spells!.map(s => s.name)).toEqual(['Mage Hand', 'Fire Bolt']);
+    });
+
+    it('saves the four Magical Mastery spells always prepared at Cleric 17, and swaps one later', async () => {
+      seed({
+        clazz: 'Cleric', subclass: 'Arcana Domain', level: 16, subclassChoices: { skills: ['Arcana'] }, spells: [...CANTRIPS],
+      });
+      const short = await refusal(firstValueFrom(service.levelUp(ID)));
+      expect(short.error.message).toBe('Magical Mastery needs one spell each of level 6, 7, 8 and 9.');
+
+      const mastery = [pick('Disintegrate', 6, 'Magical Mastery'), pick('Teleport', 7, 'Magical Mastery'),
+        pick('Maze', 8, 'Magical Mastery'), pick('Wish', 9, 'Magical Mastery')];
+      const updated = await firstValueFrom(service.levelUp(ID, { newSpells: mastery }));
+      expect(updated.level).toBe(17);
+      const saved = updated.spells!.filter(s => s.grantedBy === 'Magical Mastery');
+      expect(saved.map(s => [s.name, s.lvl, s.prepared, s.alwaysPrepared])).toEqual([
+        ['Disintegrate', 6, true, true], ['Teleport', 7, true, true], ['Maze', 8, true, true], ['Wish', 9, true, true],
+      ]);
+
+      const wrongLevel = await refusal(firstValueFrom(
+        service.levelUp(ID, { forgetSpells: ['Maze'], newSpells: [pick('Time Stop', 9, 'Magical Mastery')] })));
+      expect(wrongLevel.error.message).toContain('Magical Mastery needs');
+      const swapped = await firstValueFrom(
+        service.levelUp(ID, { forgetSpells: ['Maze'], newSpells: [pick('Mind Blank', 8, 'Magical Mastery')] }));
+      expect(swapped.spells!.filter(s => s.grantedBy === 'Magical Mastery').map(s => s.name))
+        .toEqual(['Disintegrate', 'Teleport', 'Wish', 'Mind Blank']);
+    });
+
+    it('gives an Arcane Archer Arcana and Nature, and asks for a replacement for each one it had', async () => {
+      seed({ clazz: 'Fighter', level: 2, skills: { Athletics: 'prof' } });
+      const plain = await firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer' }));
+      expect(plain.subclassChoices).toEqual({ skills: [] });
+      expect(plain.skills).toEqual({ Athletics: 'prof', Arcana: 'prof', Nature: 'prof' });
+
+      seed({ clazz: 'Fighter', level: 2, skills: { Nature: 'prof' } });
+      const owed = await refusal(firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer' })));
+      expect(owed.error.message).toBe('Choose 1 skill for Arcane Archer Lore.');
+      const one = await firstValueFrom(service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight'] } }));
+      expect(one.subclassChoices).toEqual({ skills: ['Insight'] });
+      expect(one.skills).toEqual({ Nature: 'prof', Arcana: 'prof', Insight: 'prof' });
+
+      seed({ clazz: 'Fighter', level: 2, skills: { Nature: 'expert', Arcana: 'prof' } });
+      const two = await firstValueFrom(
+        service.levelUp(ID, { subclass: 'Arcane Archer', subclassChoices: { skills: ['Insight', 'Survival'] } }));
+      expect(two.subclassChoices).toEqual({ skills: ['Insight', 'Survival'] });
+      expect(two.skills).toEqual({ Nature: 'expert', Arcana: 'prof', Insight: 'prof', Survival: 'prof' });
+    });
+
+    it('accepts an Arcane Archer with or without its Arcane Shot options and cantrip for now', async () => {
+      seed({ clazz: 'Fighter', level: 2 });
+      const updated = await firstValueFrom(service.levelUp(ID, {
+        subclass: 'Arcane Archer', subclassChoices: { arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
+        newSpells: [pick('Druidcraft', 0, 'Arcane Archer Lore')],
+      }));
+      expect(updated.subclassChoices).toEqual({ skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] });
+      expect(updated.spells!.map(s => [s.name, s.grantedBy, s.prepared])).toEqual([['Druidcraft', 'Arcane Archer Lore', true]]);
+      const bad = await refusal(firstValueFrom(service.levelUp(ID, { subclassChoices: { arcaneShots: ['Seeking Shot'] } })));
+      expect(bad.error.message).toBe('Choose 2 Arcane Shot options.');
+    });
+
+    it('lets the other Arcana Unleashed subclasses be picked with nothing more to choose', async () => {
+      for (const [clazz, subclass] of [
+        ['Monk', 'Warrior of the Mystic Arts'], ['Wizard', 'Conjurer'], ['Wizard', 'Enchanter'], ['Wizard', 'Necromancer'],
+        ['Wizard', 'Transmuter'],
+      ]) {
+        seed({ clazz, level: 2 });
+        const updated = await firstValueFrom(service.levelUp(ID, { subclass }));
+        expect(updated.subclass).withContext(subclass).toBe(subclass);
+        expect('subclassChoices' in updated).withContext(subclass).toBeFalse();
+      }
+      // A Vestige Patron is picked in the create wizard; its level-ups carry nothing either.
+      seed({ clazz: 'Warlock', subclass: 'Vestige Patron', level: 2 });
+      const patron = await firstValueFrom(service.levelUp(ID, { subclassChoices: { vestigeType: 'Fiend', vestigeDomain: 'War' } }));
+      expect(patron.level).toBe(3);
+      expect(patron.subclassChoices).toEqual({ vestigeType: 'Fiend', vestigeDomain: 'War' });
+    });
+
+    it('offers the subclasses in the demo preview', async () => {
+      seed({ clazz: 'Wizard', level: 2 });
+      const preview = await firstValueFrom(service.levelUpPreview(ID));
+      expect(preview.subclassDue).toBeTrue();
+      expect(preview.subclassOptions).toEqual(jasmine.arrayContaining(['Conjurer', 'Enchanter', 'Necromancer', 'Transmuter']));
+    });
+  });
+
+  describe('a generic save', () => {
+    it('keeps the stored choices whatever the caller sends, and drops them when they no longer apply', async () => {
+      seed({ clazz: 'Cleric', subclass: 'Arcana Domain', level: 5, subclassChoices: { skills: ['Arcana'] } });
+      const edited = await firstValueFrom(service.updatePC({ ...stored(), name: 'Renamed', subclassChoices: { skills: ['History'] } }));
+      expect(edited.name).toBe('Renamed');
+      expect(edited.subclassChoices).toEqual({ skills: ['Arcana'] });
+      const cleared = await firstValueFrom(service.updatePC({ ...stored(), subclassChoices: null }));
+      expect(cleared.subclassChoices).toEqual({ skills: ['Arcana'] });
+
+      const changed = await firstValueFrom(service.updatePCAsDm({ ...stored(), subclass: 'Life Domain' }));
+      expect(changed.subclassChoices).toBeNull();
+    });
+
+    it('cannot give choices to a character that has none, and leaves everyone else as they were', async () => {
+      const plain = seed({ clazz: 'Cleric', subclass: 'Arcana Domain', level: 5 });
+      const edited = await firstValueFrom(service.updatePC({ ...plain, subclassChoices: { skills: ['History'] } }));
+      expect(edited.subclassChoices).toBeNull();
+      const untouched = { ...plain, name: 'Same' };
+      expect(await firstValueFrom(service.updatePC(untouched))).toBe(untouched);
+
+      const created = await firstValueFrom(service.addPC({ ...plain, subclassChoices: { skills: ['History'] } }));
+      expect('subclassChoices' in created).toBeFalse();
+    });
+  });
+
+  describe('the subclass-choices endpoint', () => {
+    it('lets the owner of a character in no campaign write any key, marking a chosen skill proficient', async () => {
+      seed({ clazz: 'Cleric', subclass: 'Arcana Domain', level: 5, skills: { Insight: 'prof' } });
+      service.setActivePC(stored());
+      let active: PC | null = null;
+      service.activePC$.subscribe(v => (active = v));
+
+      const saved = await firstValueFrom(service.setSubclassChoices(ID, { skills: ['Arcana'] }));
+      expect(saved.subclassChoices).toEqual({ skills: ['Arcana'] });
+      expect(saved.skills).toEqual({ Insight: 'prof', Arcana: 'prof' });
+      expect(active!.subclassChoices).toEqual({ skills: ['Arcana'] });
+      const again = await firstValueFrom(service.setSubclassChoices(ID, { skills: ['History'] }));
+      expect(again.subclassChoices).toEqual({ skills: ['History'] });
+
+      const log = await firstValueFrom(service.getLog(ID));
+      expect(log.map(e => [e.actionType, e.description]))
+        .toEqual([['SUBCLASS_CHOICE', 'Changed subclass choices'], ['SUBCLASS_CHOICE', 'Changed subclass choices']]);
+    });
+
+    it('refuses a choice that is not valid, and a character it cannot find', async () => {
+      seed({ clazz: 'Cleric', subclass: 'Arcana Domain', level: 5, skills: { Insight: 'prof' } });
+      const taken = await refusal(firstValueFrom(service.setSubclassChoices(ID, { skills: ['Insight'] })));
+      expect([taken.status, taken.error.message]).toEqual([400, 'Insight cannot be chosen for Student of Arcana.']);
+      expect(stored().subclassChoices).toBeUndefined();
+      expect((await refusal(firstValueFrom(service.setSubclassChoices(123456, { skills: ['Arcana'] })))).status).toBe(404);
+    });
+
+    it('lets a campaign player fill in what is missing, then only the vestige type', async () => {
+      seed({ clazz: 'Warlock', subclass: 'Vestige Patron', level: 5, campaignId: 'veiled' });
+      const first = await firstValueFrom(service.setSubclassChoices(ID, { vestigeType: 'Celestial', vestigeDomain: 'Life' }));
+      expect(first.subclassChoices).toEqual({ vestigeType: 'Celestial', vestigeDomain: 'Life' });
+
+      const locked = await refusal(firstValueFrom(service.setSubclassChoices(ID, { vestigeDomain: 'War' })));
+      expect(locked.status).toBe(403);
+      expect(stored().subclassChoices).toEqual({ vestigeType: 'Celestial', vestigeDomain: 'Life' });
+      const type = await firstValueFrom(service.setSubclassChoices(ID, { vestigeType: 'Undead' }));
+      expect(type.subclassChoices).toEqual({ vestigeType: 'Undead', vestigeDomain: 'Life' });
+
+      // The campaign's DM may change any of it.
+      const byDm = await firstValueFrom(service.setSubclassChoices(ID, { vestigeDomain: 'War' }, true));
+      expect(byDm.subclassChoices).toEqual({ vestigeType: 'Undead', vestigeDomain: 'War' });
+      expect((await firstValueFrom(service.getLog(ID)))[0].description).toBe('DM changed subclass choices');
+    });
+
+    it('lets a campaign archer catch up on Arcane Shot options it is short of, and no more', async () => {
+      seed({
+        clazz: 'Fighter', subclass: 'Arcane Archer', level: 7, campaignId: 'veiled',
+        subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] },
+      });
+      const caught = await firstValueFrom(
+        service.setSubclassChoices(ID, { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Bursting Shot'] }));
+      expect(caught.subclassChoices?.arcaneShots).toEqual(['Seeking Shot', 'Shadow Shot', 'Bursting Shot']);
+      const again = await refusal(firstValueFrom(
+        service.setSubclassChoices(ID, { arcaneShots: ['Seeking Shot', 'Shadow Shot', 'Piercing Shot'] })));
+      expect(again.status).toBe(403);
+      expect((await refusal(firstValueFrom(service.setSubclassChoices(ID, { skills: ['Insight'] })))).status).toBe(403);
     });
   });
 });

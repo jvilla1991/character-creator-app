@@ -6,10 +6,12 @@ import {
   weaponMasteryLead,
 } from '../../../../models/hero-class';
 import { featSourceNote, isWowFeat } from '../../../../models/wow-feats';
+import { ContentSource } from '../../../../models/content-source';
 
 /**
  * Step 3: pick a class (accordion) and, for Sorcerer/Warlock, its level-1
- * subclass. Hero classes (e.g. Death Knight (Paladin)) show their blurb, their
+ * subclass (one from another book, such as Arcana Unleashed's Vestige Patron,
+ * is tagged with it). Hero classes (e.g. Death Knight (Paladin)) show their blurb, their
  * locked subclass and the required specialization picker (a Death Knight's rune,
  * a Demon Hunter's specialization), all read from the hero-class table. A WoW
  * variant without a fixed subclass (WoW Druid, WoW Paladin) shows a
@@ -50,9 +52,11 @@ export class ClassStepComponent {
   readonly loadingClassDetail = input(false);
   readonly classSavingThrows = input('…');
   readonly requiresLevel1Subclass = input(false);
+  /** The level-1 subclass cards after the content-source filter; `source` tags one from another book. */
   readonly availableSubclasses = input<{
     name: string;
     desc: string;
+    source?: ContentSource;
 }[]>([]);
   readonly selectedSubclass = input('');
   /**

@@ -1,4 +1,5 @@
 import { PcSpell } from './pc';
+import { SubclassChoices } from './arcana-subclasses';
 
 /**
  * What advancing one level grants, computed server-side and rendered by the SPA.
@@ -98,9 +99,24 @@ export interface LevelUpChoices {
    * Spells learned this level. A spell picked for the feat taken in the same
    * request (Arcane Warrior's cantrips, Magic Connoisseur's and Boon of Magic
    * School Mastery's spells) carries that feat's name as its `grantedBy`: that is
-   * how the server tells it from the class's own picks.
+   * how the server tells it from the class's own picks. A spell picked for a
+   * subclass feature carries the feature's name the same way ('Student of
+   * Arcana', 'Magical Mastery', 'Arcane Archer Lore').
    */
   newSpells?: PcSpell[];
+  /**
+   * What the player chose for the subclass at this level (an Arcana Domain
+   * cleric's skill, an Arcane Archer's replacement skills): the keys present
+   * replace the stored ones. Checked against the character as it will be at the
+   * new level, with the subclass chosen in this same request.
+   */
+  subclassChoices?: SubclassChoices;
+  /**
+   * Subclass picks being swapped out, by spell name: at most one per feature
+   * (Student of Arcana, Magical Mastery), each with its replacement in
+   * `newSpells` under the same `grantedBy`.
+   */
+  forgetSpells?: string[];
   hpMode?: HpMode;
   /**
    * The level-2 Fighting Style, only when `fightingStyleDue`. 'Blessed Warrior', 'Druidic

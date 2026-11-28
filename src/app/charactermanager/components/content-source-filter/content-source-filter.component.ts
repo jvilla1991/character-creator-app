@@ -6,7 +6,8 @@ import { CONTENT_SOURCES, ContentSource, ContentSourceSelection, allContentSourc
  * World of Warcraft, Arcana Unleashed), in that order. Presentational: the parent
  * owns the selection and applies it to its own list; this only renders real
  * checkboxes inside a labelled fieldset and reports which source was toggled.
- * Shared by the create-character wizard and the spell picker.
+ * Shared by the create-character wizard, the spell picker and the level-up
+ * dialog's subclass picker.
  */
 @Component({
   selector: 'app-content-source-filter',

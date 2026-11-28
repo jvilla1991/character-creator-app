@@ -8,6 +8,10 @@ import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
 import { featNamesOn } from '../models/character-feats';
 import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
 import { spellKey } from '../models/spell-names';
+import {
+  SUBCLASS_CHOICE_KEYS, SubclassChoices, cleanSubclassChoices, mergeSubclassChoices, subclassChoiceShort,
+  subclassChoicesProblem, subclassSpellPickRule, subclassSpellPicksProblem, withSubclassSkills,
+} from '../models/arcana-subclasses';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -207,6 +211,7 @@ export class PCService {
    */
   updatePC(pc: PC): Observable<PC> {
     if (environment.demoMode) {
+      pc = this.demoKeepSubclassChoices(pc);
       this.pcs = this.pcs.map(p => p.id === pc.id ? pc : p);
       this.pcsSubject.next(this.pcs);
       // If this PC is currently active, refresh the active stream too
@@ -401,6 +406,70 @@ export class PCService {
       map(raw => this.deserializePC(raw)),
       tap(updated => this.mirrorPC(updated)),
     );
+  }
+
+  // ── Subclass choices ───────────────────────────────────────────────────────
+
+  /**
+   * Write some of a character's subclass choices (`pc.subclassChoices`): the
+   * keys present replace the stored ones, and choosing `skills` also marks
+   * those skills proficient. This and a level-up are the only ways to change
+   * them: the server's generic update ignores the field.
+   *
+   * The campaign's DM may write any key, and so may the owner of a character in
+   * no campaign. The owner of a character in a campaign may always change
+   * `vestigeType`, and any other key only while it is missing or short of what
+   * the level asks for; otherwise the server answers 403. `asDm` only matters in
+   * demo mode, which has no login to tell the DM's view from the player's.
+   */
+  setSubclassChoices(pcId: number, choices: SubclassChoices, asDm = false): Observable<PC> {
+    if (environment.demoMode) return this.demoSetSubclassChoices(pcId, choices, asDm);
+    return this.http.put<PC>(`${this.pcUrl}${pcId}/subclass-choices`, choices).pipe(
+      map(raw => this.deserializePC(raw)),
+      tap(updated => this.mirrorPC(updated)),
+    );
+  }
+
+  /**
+   * Demo mirror of the server's rule for a generic save: the stored subclass
+   * choices are kept whatever the caller sends, and cleaned against the class,
+   * subclass and level being saved. A character that has none is left as it is.
+   */
+  private demoKeepSubclassChoices(pc: PC): PC {
+    const stored = this.pcs.find(p => p.id === pc.id)?.subclassChoices ?? null;
+    if (stored == null && pc.subclassChoices == null) return pc;
+    return { ...pc, subclassChoices: cleanSubclassChoices(stored, pc, pc.subclass, pc.level ?? 1) };
+  }
+
+  /** Demo mirror of the subclass-choices endpoint: the same people, the same checks, the same refusals. */
+  private demoSetSubclassChoices(pcId: number, choices: SubclassChoices, asDm: boolean): Observable<PC> {
+    const refuse = (status: number, message: string) =>
+      throwError(() => new HttpErrorResponse({ status, error: { message } }));
+    const active = this.activePCSubject.getValue();
+    const pc = this.pcs.find(p => p.id === pcId) ?? (active?.id === pcId ? active : null);
+    if (!pc) return refuse(404, 'PC not found with id ' + pcId);
+    const level = pc.level ?? 1;
+    if (!asDm && pc.campaignId != null) {
+      const locked = SUBCLASS_CHOICE_KEYS
+        .some(key => choices?.[key] != null && key !== 'vestigeType' && !subclassChoiceShort(pc, level, key));
+      if (locked) return refuse(403, 'In a campaign, only your Dungeon Master can change this choice');
+    }
+    const problem = subclassChoicesProblem(pc, pc.subclass, level, choices);
+    if (problem) return refuse(400, problem);
+
+    const subclassChoices = mergeSubclassChoices(pc, pc.subclass, level, choices);
+    const skills = choices?.skills != null && subclassChoices?.skills
+      ? withSubclassSkills(pc, pc.subclass, level, subclassChoices.skills)
+      : pc.skills;
+    this.patchShownPC(pcId, skills === pc.skills ? { subclassChoices } : { subclassChoices, skills });
+    const entry: PcActivityLogEntry = {
+      id: 'demo-subclass-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), pcId,
+      actionType: 'SUBCLASS_CHOICE', description: (asDm ? 'DM changed' : 'Changed') + ' subclass choices',
+      createdAt: new Date().toISOString(),
+    };
+    this.demoLog[pcId] = [entry, ...(this.demoLog[pcId] ?? [])].slice(0, 10);
+    const saved = this.pcs.find(p => p.id === pcId) ?? this.activePCSubject.getValue();
+    return of(saved as PC).pipe(delay(50));
   }
 
   // ── Spell slots: spend by hand, restore ────────────────────────────────────
@@ -608,6 +677,12 @@ export class PCService {
     if (choices?.feat) body.feat = choices.feat;
     if (choices?.fightingStyle) body.fightingStyle = choices.fightingStyle;
     if (choices?.newSpells?.length) body.newSpells = choices.newSpells;
+    // Subclass choices made this level (an Arcana Domain cleric's skill) and the subclass picks
+    // swapped out; the replacements ride in newSpells with the feature as their `grantedBy`.
+    if (choices?.subclassChoices && Object.keys(choices.subclassChoices).length) {
+      body.subclassChoices = choices.subclassChoices;
+    }
+    if (choices?.forgetSpells?.length) body.forgetSpells = choices.forgetSpells;
     // Only forward ROLL — the server treats an absent mode as AVERAGE (and does the rolling).
     if (choices?.hpMode === 'ROLL') body.hpMode = 'ROLL';
     return this.http.post<PC>(url, body).pipe(
@@ -684,6 +759,13 @@ export class PCService {
     const newLevel = current + 1;
     const hitDie = hitDieFor(existing.clazz);
 
+    // Subclass choices and picks are checked against the character as it will be at the new
+    // level, with the subclass chosen in this same request (mirrors the server).
+    const subclass = choices?.subclass || existing.subclass;
+    const problem = subclassChoicesProblem(existing, subclass, newLevel, choices?.subclassChoices, { levelUp: true })
+      ?? subclassSpellPicksProblem(existing, subclass, newLevel, choices?.newSpells ?? [], choices?.forgetSpells ?? []);
+    if (problem) return throwError(() => new HttpErrorResponse({ status: 400, error: { message: problem } }));
+
     // Apply the ASI to a copy of the ability scores, then recompute HP with the new CON and
     // grant retroactive HP for prior levels when CON's modifier rises (mirrors the server).
     const stats: { [k: string]: number } = {
@@ -744,10 +826,25 @@ export class PCService {
     // Newly-learned spells are appended to the character's spell list. A spell a feature or
     // feat grants takes the place of an entry the character already had (the server marks
     // the entry it finds instead).
-    const granted = new Set((choices?.newSpells ?? []).filter(s => !!s.grantedBy).map(s => spellKey(s.name)));
-    const spells = choices?.newSpells?.length
-      ? [...(existing.spells ?? []).filter(s => !granted.has(spellKey(s.name))), ...choices.newSpells]
+    // A subclass pick being swapped out (Student of Arcana, Magical Mastery) is removed first; a
+    // subclass pick is saved prepared, a leveled one always prepared.
+    const forgotten = new Set((choices?.forgetSpells ?? []).map(spellKey));
+    const kept = forgotten.size
+      ? (existing.spells ?? []).filter(s => !(forgotten.has(spellKey(s.name)) && !!subclassSpellPickRule(s.grantedBy)))
       : existing.spells;
+    const learned = (choices?.newSpells ?? []).map(s => subclassSpellPickRule(s.grantedBy)
+      ? { ...s, prepared: true, ...(s.lvl > 0 ? { alwaysPrepared: true } : {}) }
+      : s);
+    const granted = new Set(learned.filter(s => !!s.grantedBy).map(s => spellKey(s.name)));
+    const spells = learned.length
+      ? [...(kept ?? []).filter(s => !granted.has(spellKey(s.name))), ...learned]
+      : kept;
+    // The choices this level-up carries replace the stored ones (a stored skill choice stays),
+    // and a skill choice made now marks its skills proficient.
+    const subclassChoices = mergeSubclassChoices(existing, subclass, newLevel, choices?.subclassChoices, { levelUp: true });
+    const skills = subclassChoices?.skills && !Array.isArray(existing.subclassChoices?.skills)
+      ? withSubclassSkills(existing, subclass, newLevel, subclassChoices.skills)
+      : existing.skills;
     const updated: PC = {
       ...existing,
       level: newLevel,
@@ -761,10 +858,12 @@ export class PCService {
         ? { ...existing.hp, max: existing.hp.max + hpDelta, cur: existing.hp.cur + hpDelta }
         : { max: hpDelta, cur: hpDelta, temp: 0 },
       spellSlots,
-      subclass: choices?.subclass || existing.subclass,
+      subclass,
       specialization: choices?.specialization ?? existing.specialization ?? null,
       features,
       spells,
+      ...(skills !== existing.skills ? { skills } : {}),
+      ...(subclassChoices || existing.subclassChoices ? { subclassChoices } : {}),
     };
     this.pcs = this.pcs.map(p => p.id === id ? updated : p);
     this.pcsSubject.next(this.pcs);
@@ -785,7 +884,9 @@ export class PCService {
 
   addPC(newPC: PC) {
     if (environment.demoMode) {
-      const mockPC: PC = { ...newPC, id: Date.now(), level: newPC.level ?? 1 };
+      // Subclass choices are never taken from a new character (mirrors the server).
+      const { subclassChoices: ignoredChoices, ...created } = newPC;
+      const mockPC: PC = { ...created, id: Date.now(), level: newPC.level ?? 1 };
       this.pcs = [...this.pcs, mockPC];
       this.pcsSubject.next(this.pcs);
       return of(mockPC).pipe(delay(300));
@@ -833,6 +934,9 @@ export class PCService {
       // Class resource uses: null (field never loaded) lets the backend keep the
       // stored amounts; an object — even an empty one — replaces them.
       classResources: pc.classResources == null ? null : JSON.stringify(pc.classResources),
+      // Subclass choices are server-owned: always null here, which the backend reads as "keep
+      // what is stored". They change only through a level-up and setSubclassChoices.
+      subclassChoices: null,
       // Campaign binding — backend expects a numeric FK (or null to unbind)
       campaignId: pc.campaignId != null && !isNaN(Number(pc.campaignId))
         ? Number(pc.campaignId)
@@ -913,6 +1017,7 @@ export class PCService {
       spells: this.parseJsonField(pc['spells'], []),
       spellSlots: this.parseJsonField(pc['spellSlots'], {}),
       classResources: this.parseJsonField(pc['classResources'], {}),
+      subclassChoices: this.parseJsonField<SubclassChoices | null>(pc['subclassChoices'], null),
       saves: this.parseJsonField(pc['saves'], []),
       skills: this.parseJsonField(pc['skills'], {}),
       conditions: this.parseJsonField(pc['conditions'], []),
