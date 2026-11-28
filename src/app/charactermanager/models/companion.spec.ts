@@ -1,4 +1,4 @@
-import { FollowerStatBlock } from './follower';
+import { FollowerStatBlock, mayDismiss } from './follower';
 import { companionCarriedOver, companionEdit, isCompanion } from './companion';
 
 const block = (max: number, cur: number, temp: number, conditions: string[] = []): FollowerStatBlock => ({
@@ -15,6 +15,20 @@ describe('companions (server-owned followers)', () => {
     expect(isCompanion({ kind: 'SUMMON' })).toBeFalse();
     expect(isCompanion({ kind: 'FAMILIAR' })).toBeFalse();
     expect(isCompanion({})).toBeFalse();
+  });
+
+  it('nobody may dismiss one: the DM dismisses any other follower, the owner their own summon or familiar', () => {
+    for (const asDm of [true, false]) {
+      expect(mayDismiss({ kind: 'COMPANION' }, asDm)).withContext(`asDm ${asDm}`).toBeFalse();
+    }
+    expect(mayDismiss({ kind: 'DM_GRANT' }, true)).toBeTrue();
+    expect(mayDismiss({}, true)).toBeTrue();
+    expect(mayDismiss({ kind: 'SUMMON' }, true)).toBeTrue();
+    expect(mayDismiss({ kind: 'FAMILIAR' }, true)).toBeTrue();
+    expect(mayDismiss({ kind: 'DM_GRANT' }, false)).toBeFalse();
+    expect(mayDismiss({}, false)).toBeFalse();
+    expect(mayDismiss({ kind: 'SUMMON' }, false)).toBeTrue();
+    expect(mayDismiss({ kind: 'FAMILIAR' }, false)).toBeTrue();
   });
 
   describe('an edit', () => {

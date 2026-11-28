@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { PC } from '../models/pc';
 import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
@@ -9,6 +9,8 @@ import { MysticFocusAction, applyMysticFocus } from '../models/mystic-focus';
 import { featNamesOn } from '../models/character-feats';
 import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
 import { vestigeSpellsOwed, vestigeSpellsOwedByDomain } from '../models/vestige-spells';
+import { isVestigePatron, vestigeInputsFor } from '../models/vestige-companion';
+import { FollowerService } from './follower.service';
 import { spellKey } from '../models/spell-names';
 import {
   SUBCLASS_CHOICE_KEYS, SubclassChoices, cleanSubclassChoices, mergeSubclassChoices, subclassChoiceShort,
@@ -56,7 +58,34 @@ export class PCService {
 
   constructor(private http: HttpClient) {}
 
+  private readonly followerService = inject(FollowerService);
+
   readonly pcUrl = `${environment.characterApiUrl}/api/v1/pc/`;
+
+  /** The copy of a character this service holds: from the roster, else the one on screen. */
+  private heldPC(id: number): PC | undefined {
+    const active = this.activePCSubject.getValue();
+    return this.pcs.find(p => p.id === id) ?? (active?.id === id ? active : undefined);
+  }
+
+  /**
+   * A Vestige Patron's companion follows its warlock: the server rebuilds it
+   * after a level-up, a sheet save and a change of the Vestige type, so the
+   * views that list followers are told to read them again. A sheet save only
+   * counts when it changed something the vestige is built from (Charisma, the
+   * level, the Proficiency Bonus lines, the languages, the subclass); `always`
+   * is for the writes that change it by their nature. Demo mode has no server
+   * and runs the same step itself. Every other character returns at once.
+   */
+  private vestigeMayHaveChanged(before: PC | undefined, after: PC, always = false): void {
+    if (!isVestigePatron(before) && !isVestigePatron(after)) return;
+    if (environment.demoMode) {
+      this.followerService.demoSyncVestige(after);
+      return;
+    }
+    const built = (pc: PC | undefined) => JSON.stringify(pc ? vestigeInputsFor(pc) : null);
+    if (always || !before || built(before) !== built(after)) this.followerService.notifyChanged(after.id);
+  }
 
   // Pushes a known list into the reactive stream (used by external loaders)
   setPCs(pcs: PC[]) {
@@ -214,8 +243,10 @@ export class PCService {
   updatePC(pc: PC): Observable<PC> {
     if (environment.demoMode) {
       pc = this.demoKeepSubclassChoices(pc);
+      const before = this.heldPC(pc.id);
       this.pcs = this.pcs.map(p => p.id === pc.id ? pc : p);
       this.pcsSubject.next(this.pcs);
+      this.vestigeMayHaveChanged(before, pc);
       // If this PC is currently active, refresh the active stream too
       const active = this.activePCSubject.getValue();
       if (active && active.id === pc.id) {
@@ -228,6 +259,7 @@ export class PCService {
     return this.http.put<PC>(this.pcUrl + pc.id, this.serializePC(pc)).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
+        this.vestigeMayHaveChanged(this.heldPC(updated.id), updated);
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
         this.pcsSubject.next(this.pcs);
         const active = this.activePCSubject.getValue();
@@ -322,6 +354,7 @@ export class PCService {
     ).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
+        this.vestigeMayHaveChanged(this.heldPC(updated.id), updated);
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
         this.pcsSubject.next(this.pcs);
         const active = this.activePCSubject.getValue();
@@ -429,6 +462,7 @@ export class PCService {
     return this.http.put<PC>(`${this.pcUrl}${pcId}/subclass-choices`, choices).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => this.mirrorPC(updated)),
+      tap(updated => this.vestigeMayHaveChanged(updated, updated, true)),
     );
   }
 
@@ -471,6 +505,7 @@ export class PCService {
     };
     this.demoLog[pcId] = [entry, ...(this.demoLog[pcId] ?? [])].slice(0, 10);
     const saved = this.pcs.find(p => p.id === pcId) ?? this.activePCSubject.getValue();
+    this.vestigeMayHaveChanged(pc, saved as PC, true);
     return of(saved as PC).pipe(delay(50));
   }
 
@@ -731,6 +766,7 @@ export class PCService {
     return this.http.post<PC>(url, body).pipe(
       map(raw => this.deserializePC(raw)),
       tap(updated => {
+        this.vestigeMayHaveChanged(updated, updated, true);
         this.pcs = this.pcs.map(p => p.id === updated.id ? updated : p);
         this.pcsSubject.next(this.pcs);
         const active = this.activePCSubject.getValue();
@@ -939,6 +975,8 @@ export class PCService {
     if (active && active.id === id) {
       this.activePCSubject.next(updated);
     }
+
+    this.vestigeMayHaveChanged(existing, updated, true);
 
     // Mirror the server's level-up log entry so the demo Log tab reflects it too.
     const entry: PcActivityLogEntry = {

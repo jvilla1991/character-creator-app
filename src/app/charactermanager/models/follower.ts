@@ -14,7 +14,9 @@ export type FollowerStatBlock = Partial<Omit<PC, 'id' | 'name'>>;
  * `DM_GRANT` a companion the campaign's DM grants (the DM alone);
  * `SUMMON` a creature the player's own spell conjures and `FAMILIAR` the
  * character's familiar, one per character (the owning player, or the DM);
- * `COMPANION` reserved for server-owned companions.
+ * `COMPANION` a companion the server owns (a Vestige Patron's vestige): the
+ * server creates, rebuilds and removes it, and nobody dismisses it. See
+ * models/companion.
  */
 export type FollowerKind = 'DM_GRANT' | 'SUMMON' | 'FAMILIAR' | 'COMPANION';
 
@@ -43,6 +45,21 @@ export function playerMayDismiss(follower: Pick<Follower, 'kind'>): boolean {
   const kind = followerKind(follower);
   return kind === 'SUMMON' || kind === 'FAMILIAR';
 }
+
+/**
+ * Whether the follower can be dismissed at all by this viewer: the campaign's
+ * DM any follower but a companion, the owning player their own summon or
+ * familiar. A companion is the server's: it goes when the feature that gives
+ * it does.
+ */
+export function mayDismiss(follower: Pick<Follower, 'kind'>, asDm: boolean): boolean {
+  if (followerKind(follower) === 'COMPANION') return false;
+  return asDm || playerMayDismiss(follower);
+}
+
+/** What the server answers a request to dismiss a companion with. */
+export const COMPANION_NOT_DISMISSED =
+  'A companion cannot be dismissed. It stays for as long as its character has the feature that gives it';
 
 type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 const ABILITIES: Ability[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
