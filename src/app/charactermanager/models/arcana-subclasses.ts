@@ -422,7 +422,33 @@ export function subclassSpellPickGroups(need: SubclassSpellPickNeed, forget?: st
 export function subclassChoicesDue(owner: ChoiceOwner, subclass: string | null | undefined, level: number): boolean {
   return (subclassSkillChoice(owner, subclass, level)?.count ?? 0) > 0
     || subclassSpellPickNeeds(owner, subclass, level).some(need => need.owed.length > 0)
-    || arcaneShotsOwed(owner, subclass, level) > 0;
+    || arcaneShotsOwed(owner, subclass, level) > 0
+    || !!vestigeChoicesOwed(owner, subclass, level);
+}
+
+// ── A Vestige Patron's type and domain ──────────────────────────────────────────────
+
+/** Which of a Vestige Patron's two choices are still to be made. */
+export interface VestigeChoicesOwed {
+  /** The companion's type is not chosen yet. */
+  type: boolean;
+  /** The Cleric domain behind Vestige Spells is not chosen yet. */
+  domain: boolean;
+}
+
+/**
+ * What a Vestige Patron still has to choose at `level`: its companion's type
+ * and the domain of its Vestige Spells, each until it is stored. Null when
+ * both are stored, below Warlock 3, and for every other subclass. The server
+ * refuses a level-up that leaves either one unset.
+ */
+export function vestigeChoicesOwed(
+  owner: ChoiceOwner, subclass: string | null | undefined, level: number,
+): VestigeChoicesOwed | null {
+  if (!has(owner, subclass, level, VESTIGE_PATRON)) return null;
+  const type = !owner.subclassChoices?.vestigeType;
+  const domain = !owner.subclassChoices?.vestigeDomain;
+  return type || domain ? { type, domain } : null;
 }
 
 // ── Writing the stored choices (the server's rules, for demo mode) ────────────────────────
@@ -516,6 +542,11 @@ export function subclassChoicesProblem(
   }
   if (partial?.vestigeType != null && !VESTIGE_TYPES.includes(partial.vestigeType)) {
     return `${partial.vestigeType} is not a vestige type.`;
+  }
+  // A level-up must leave a Vestige Patron with both of its choices made.
+  if (write.levelUp && has(owner, subclass, level, VESTIGE_PATRON)) {
+    if (!(partial?.vestigeType ?? stored.vestigeType)) return 'A Vestige Patron must choose a Vestige type';
+    if (!(partial?.vestigeDomain ?? stored.vestigeDomain)) return 'A Vestige Patron must choose a Vestige domain';
   }
   if (partial?.vestigeDomain != null) {
     if (!VESTIGE_DOMAINS.includes(partial.vestigeDomain)) return `${partial.vestigeDomain} is not a vestige domain.`;

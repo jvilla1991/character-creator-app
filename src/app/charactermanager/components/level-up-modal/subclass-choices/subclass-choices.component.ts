@@ -7,7 +7,7 @@ import { DndSpell } from '../../../models/dnd-api.types';
 import { spellKey } from '../../../models/spell-names';
 import {
   SubclassChoices, SubclassSpellPickNeed, subclassPickAllows, subclassSkillChoice, subclassSpellPickGroups,
-  subclassSpellPickNeeds,
+  subclassSpellPickNeeds, vestigeChoicesOwed,
 } from '../../../models/arcana-subclasses';
 import { DndResourcesService } from '../../../services/dnd-resources.service';
 import { SpellEli5Service } from '../../../services/spell-eli5.service';
@@ -18,6 +18,7 @@ import {
   ArcaneShotDraft, arcaneShotDraftStart, arcaneShotLevelUpRule, arcaneShotsComplete,
 } from '../../../models/arcane-shots';
 import { ArcaneShotChoiceComponent } from './arcane-shot-choice/arcane-shot-choice.component';
+import { VestigeChoicesComponent, VestigePicks } from './vestige-choices/vestige-choices.component';
 
 /**
  * What the player has chosen for the subclass so far, as the level-up request
@@ -99,6 +100,8 @@ const capitalized = (word: string): string => word.charAt(0).toUpperCase() + wor
  * - **Arcane Shot options** — the options an Arcane Archer learns
  *   (app-arcane-shot-choice): two at Fighter 3 and one more at 7, 10, 15 and
  *   18, where one known option may also be replaced.
+ * - **Vestige** — a Vestige Patron's companion type and the Cleric domain of
+ *   its Vestige Spells (app-vestige-choices), each until it is stored.
  *
  * It renders nothing for a subclass, class or level with no choice to make. It
  * owns no rules: what is owed comes from the model, and the server checks the
@@ -114,7 +117,9 @@ const capitalized = (word: string): string => word.charAt(0).toUpperCase() + wor
   templateUrl: './subclass-choices.component.html',
   styleUrls: ['./subclass-choices.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SpellPickerComponent, Eli5ToggleComponent, ArcaneShotChoiceComponent],
+  imports: [
+    FormsModule, SpellPickerComponent, Eli5ToggleComponent, ArcaneShotChoiceComponent, VestigeChoicesComponent,
+  ],
 })
 export class SubclassChoicesComponent {
   /** The character as it is before the level-up. */
@@ -149,6 +154,35 @@ export class SubclassChoicesComponent {
     source: () => subclassKey(this.subclass()),
     computation: key => emptyDraft(key),
   });
+
+  /** A Vestige Patron's type and domain, whichever is still to be chosen; null when neither is. */
+  readonly vestigeOwed = computed(() => vestigeChoicesOwed(this.pc(), this.subclass(), this.newLevel()));
+
+  /** The vestige picks so far. Like the draft, they start over when the subclass changes. */
+  readonly vestigePicks = linkedSignal<string, VestigePicks>({
+    source: () => subclassKey(this.subclass()),
+    computation: () => ({}),
+  });
+
+  setVestigePicks(picks: VestigePicks): void {
+    this.vestigePicks.set(picks);
+    this.choicesChange.emit(this.result());
+  }
+
+  /** The result with the vestige's type and domain added, and held back until both owed ones are picked. */
+  private withVestige(result: SubclassChoiceResult): SubclassChoiceResult {
+    const owed = this.vestigeOwed();
+    if (!owed) return result;
+    const picks = this.vestigePicks();
+    const chosen: VestigePicks = {};
+    if (owed.type && picks.vestigeType) chosen.vestigeType = picks.vestigeType;
+    if (owed.domain && picks.vestigeDomain) chosen.vestigeDomain = picks.vestigeDomain;
+    return {
+      ...result,
+      subclassChoices: { ...result.subclassChoices, ...chosen },
+      valid: result.valid && (!owed.type || !!chosen.vestigeType) && (!owed.domain || !!chosen.vestigeDomain),
+    };
+  }
 
   /** The skill choice owed, with the skills the feature gives outright; null when there is none. */
   readonly skillChoice = computed(() => subclassSkillChoice(this.pc(), this.subclass(), this.newLevel()));
@@ -307,7 +341,7 @@ export class SubclassChoicesComponent {
     const groups = features.flatMap(view => view.groups);
     const shotRule = this.shotRule();
     const shots = shotRule ? (this.shotDraft() ?? arcaneShotDraftStart(shotRule)).selected : null;
-    return {
+    return this.withVestige({
       // An Arcane Archer who owes no skill sends no key: the server stores an empty list itself.
       subclassChoices: {
         ...(rule && rule.count > 0 ? { skills: [...skills] } : {}),
@@ -318,6 +352,6 @@ export class SubclassChoicesComponent {
       forgetSpells: features.map(view => view.forget).filter(name => !!name),
       valid: (!rule || skills.length === rule.count) && groups.every(group => group.picked.length === group.count)
         && (!shotRule || arcaneShotsComplete(shotRule, shots ?? [])),
-    };
+    });
   }
 }

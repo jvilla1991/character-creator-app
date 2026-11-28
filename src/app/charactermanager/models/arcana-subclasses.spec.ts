@@ -6,7 +6,7 @@ import {
   arcanaLevel1Subclasses, arcanaLevelUpSubclasses, arcanaSubclass, arcanaSubclassesFor, cleanSubclassChoices,
   heldSubclassPicks, isArcanaSubclass, mergeSubclassChoices, subclassChoiceShort, subclassChoicesDue,
   subclassChoicesProblem, subclassPickAllows, subclassSkillChoice, subclassSpellPickGroups, subclassSpellPickNeeds,
-  subclassSpellPickRule, subclassSpellPickRules, subclassSpellPicksProblem, withSubclassSkills,
+  subclassSpellPickRule, subclassSpellPickRules, subclassSpellPicksProblem, vestigeChoicesOwed, withSubclassSkills,
 } from './arcana-subclasses';
 import { HERO_CLASSES, heroClassFor, subclassOptionLabel, subclassSource, wowOnlySubclasses } from './hero-class';
 import { WOW_MAGE, WOW_PRIEST, WOW_WARRIOR } from './wow-class-variants';
@@ -326,11 +326,60 @@ describe('arcana-subclasses', () => {
       expect(subclassChoicesDue({ ...archer, subclassChoices: { skills: [] } }, ARCANE_ARCHER, 4)).toBeTrue();
       expect(subclassChoicesDue({ ...archer, subclassChoices: { skills: [], arcaneShots: ['Seeking Shot'] } }, ARCANE_ARCHER, 4))
         .toBeTrue();
-      for (const other of [WARRIOR_OF_THE_MYSTIC_ARTS, VESTIGE_PATRON, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER]) {
+      for (const other of [WARRIOR_OF_THE_MYSTIC_ARTS, CONJURER, ENCHANTER, NECROMANCER, TRANSMUTER]) {
         expect(subclassChoicesDue({ clazz: arcanaSubclass(other)!.baseClass }, other, 3)).withContext(other).toBeFalse();
       }
       expect(subclassChoicesDue(cleric(), 'Life Domain', 3)).toBeFalse();
       expect(subclassChoicesDue(cleric(), null, 3)).toBeFalse();
+    });
+  });
+
+  describe("a Vestige Patron's type and domain", () => {
+    const patron = (subclassChoices?: SubclassChoices): ChoiceOwner => ({ clazz: 'Warlock', subclassChoices });
+
+    it('are owed from Warlock 3, each until it is stored', () => {
+      expect(vestigeChoicesOwed(patron(), VESTIGE_PATRON, 3)).toEqual({ type: true, domain: true });
+      expect(vestigeChoicesOwed(patron({ vestigeType: 'Fiend' }), VESTIGE_PATRON, 8)).toEqual({ type: false, domain: true });
+      expect(vestigeChoicesOwed(patron({ vestigeDomain: 'War' }), VESTIGE_PATRON, 8)).toEqual({ type: true, domain: false });
+      expect(vestigeChoicesOwed(patron({ vestigeType: 'Fiend', vestigeDomain: 'War' }), VESTIGE_PATRON, 8)).toBeNull();
+    });
+
+    it('are not asked for below Warlock 3, of another patron or of another class', () => {
+      expect(vestigeChoicesOwed(patron(), VESTIGE_PATRON, 1)).toBeNull();
+      expect(vestigeChoicesOwed(patron(), VESTIGE_PATRON, 2)).toBeNull();
+      expect(vestigeChoicesOwed(patron(), 'Fiend Patron', 3)).toBeNull();
+      expect(vestigeChoicesOwed(patron(), null, 3)).toBeNull();
+      expect(vestigeChoicesOwed({ clazz: 'Wizard' }, VESTIGE_PATRON, 3)).toBeNull();
+    });
+
+    it('hold the level-up until both are chosen', () => {
+      expect(subclassChoicesDue(patron(), VESTIGE_PATRON, 3)).toBeTrue();
+      expect(subclassChoicesDue(patron({ vestigeType: 'Fiend' }), VESTIGE_PATRON, 6)).toBeTrue();
+      expect(subclassChoicesDue(patron({ vestigeType: 'Fiend', vestigeDomain: 'War' }), VESTIGE_PATRON, 6)).toBeFalse();
+      expect(subclassChoicesDue(patron(), VESTIGE_PATRON, 2)).toBeFalse();
+      expect(subclassChoicesDue(patron(), 'Fiend Patron', 3)).toBeFalse();
+    });
+
+    it('are required by a level-up, as the server requires them, and never by the endpoint', () => {
+      const levelUp = { levelUp: true };
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 3, null, levelUp))
+        .toBe('A Vestige Patron must choose a Vestige type');
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 3, { vestigeType: 'Fiend' }, levelUp))
+        .toBe('A Vestige Patron must choose a Vestige domain');
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 3, { vestigeDomain: 'War' }, levelUp))
+        .toBe('A Vestige Patron must choose a Vestige type');
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 3, { vestigeType: 'Fiend', vestigeDomain: 'War' }, levelUp))
+        .toBeNull();
+      // What is stored counts; only the missing one is asked for.
+      expect(subclassChoicesProblem(patron({ vestigeType: 'Fiend' }), VESTIGE_PATRON, 6, { vestigeDomain: 'Life' }, levelUp))
+        .toBeNull();
+      expect(subclassChoicesProblem(patron({ vestigeType: 'Fiend', vestigeDomain: 'War' }), VESTIGE_PATRON, 6, null, levelUp))
+        .toBeNull();
+      // Below Warlock 3, and for everyone else, a level-up asks nothing.
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 2, null, levelUp)).toBeNull();
+      expect(subclassChoicesProblem(patron(), 'Fiend Patron', 3, null, levelUp)).toBeNull();
+      // The endpoint writes one key at a time.
+      expect(subclassChoicesProblem(patron(), VESTIGE_PATRON, 5, { vestigeType: 'Fiend' })).toBeNull();
     });
   });
 
@@ -419,7 +468,7 @@ describe('arcana-subclasses', () => {
       // The endpoint has no swap limit.
       expect(subclassChoicesProblem(archer, ARCANE_ARCHER, 6, { arcaneShots: ['Grasping Shot', 'Bursting Shot'] })).toBeNull();
 
-      const patron: ChoiceOwner = { clazz: 'Warlock', subclassChoices: { vestigeDomain: 'Life' } };
+      const patron: ChoiceOwner = { clazz: 'Warlock', subclassChoices: { vestigeType: 'Fiend', vestigeDomain: 'Life' } };
       expect(subclassChoicesProblem(patron, VESTIGE_PATRON, 4, { vestigeType: 'Dragon' as never })).toContain('not a vestige type');
       expect(subclassChoicesProblem(patron, VESTIGE_PATRON, 4, { vestigeDomain: 'Death' as never })).toContain('not a vestige domain');
       expect(subclassChoicesProblem(patron, VESTIGE_PATRON, 4, { vestigeType: 'Undead', vestigeDomain: 'War' })).toBeNull();

@@ -29,6 +29,11 @@
     </div>
   }
 }
+<!-- A Vestige Patron's companion type and the domain of its Vestige Spells, while either is unset -->
+@if (vestigeOwed(); as owed) {
+  <app-vestige-choices [owed]="owed" [picks]="vestigePicks()" (picksChange)="setVestigePicks($event)">
+  </app-vestige-choices>
+}
 <!-- Spells a subclass feature lets the player pick, and at a later level the swap of one held pick -->
 @for (view of features(); track view.feature) {
   @if (view.replaceable.length) {

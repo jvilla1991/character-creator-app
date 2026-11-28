@@ -8,6 +8,7 @@ import { LevelUpPreview, LevelUpChoices, SubclassSpellcasting } from '../models/
 import { MysticFocusAction, applyMysticFocus } from '../models/mystic-focus';
 import { featNamesOn } from '../models/character-feats';
 import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
+import { vestigeSpellsOwed, vestigeSpellsOwedByDomain } from '../models/vestige-spells';
 import { spellKey } from '../models/spell-names';
 import {
   SUBCLASS_CHOICE_KEYS, SubclassChoices, cleanSubclassChoices, mergeSubclassChoices, subclassChoiceShort,
@@ -766,9 +767,11 @@ export class PCService {
       subclassOptions: subclassDue ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
       featOptions,
-      // The class and subclass grants are server-owned; the demo shim mirrors the feats' only.
-      alwaysPreparedSpells: featSpellsOwed(pc, newLevel),
+      // The class and subclass grants are server-owned; the demo shim mirrors the feats' only,
+      // and a Vestige Patron's Vestige Spells (the domain it stored, or each one while none is).
+      alwaysPreparedSpells: [...featSpellsOwed(pc, newLevel), ...vestigeSpellsOwed(pc, newLevel)],
       alwaysPreparedSpellsByFeat: featSpellsOwedByFeat(pc, featOptions, newLevel),
+      alwaysPreparedSpellsByVestigeDomain: vestigeSpellsOwedByDomain(pc, newLevel),
       // Class-feature content is server-owned; the demo shim doesn't mirror it.
       featuresGained: [],
       fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),

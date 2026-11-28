@@ -1,0 +1,32 @@
+@if (owed().type) {
+  <div class="subclass-pick vestige-type-pick" role="radiogroup" aria-label="Vestige type">
+    <div class="subclass-label">Vestige type</div>
+    @for (type of types; track type.name) {
+      <label class="subclass-option" [class.is-selected]="picks().vestigeType === type.name">
+        <input type="radio" name="vestige-type" [value]="type.name"
+          [checked]="picks().vestigeType === type.name"
+          (change)="pickType(type.name)">
+        <span class="vestige-option-text">
+          <span class="vestige-option-name">{{ type.name }}</span>
+          <span class="vestige-option-desc">{{ type.desc }}</span>
+        </span>
+      </label>
+    }
+  </div>
+}
+@if (owed().domain) {
+  <div class="subclass-pick vestige-domain-pick" role="radiogroup" aria-label="Vestige Spells domain">
+    <div class="subclass-label">Vestige Spells domain</div>
+    @for (domain of domains; track domain.name) {
+      <label class="subclass-option" [class.is-selected]="picks().vestigeDomain === domain.name">
+        <input type="radio" name="vestige-domain" [value]="domain.name"
+          [checked]="picks().vestigeDomain === domain.name"
+          (change)="pickDomain(domain.name)">
+        <span class="vestige-option-text">
+          <span class="vestige-option-name">{{ domain.name }}</span>
+          <span class="vestige-option-desc">{{ domain.desc }}</span>
+        </span>
+      </label>
+    }
+  </div>
+}

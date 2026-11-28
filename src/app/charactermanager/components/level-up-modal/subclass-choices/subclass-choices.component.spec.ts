@@ -81,7 +81,7 @@ describe('SubclassChoicesComponent', () => {
 
   it('renders nothing, loads nothing and reports nothing for a subclass with no choice to make', () => {
     for (const [clazz, subclass] of [
-      ['Cleric', 'Life Domain'], ['Cleric', null], ['Monk', 'Warrior of the Mystic Arts'], ['Warlock', 'Vestige Patron'],
+      ['Cleric', 'Life Domain'], ['Cleric', null], ['Monk', 'Warrior of the Mystic Arts'], ['Warlock', 'Fiend Patron'],
       ['Wizard', 'Conjurer'], ['Wizard', 'Enchanter'], ['Wizard', 'Necromancer'], ['Wizard', 'Transmuter'],
       // The right subclass on the wrong class, and the right class a level early.
       ['Wizard', 'Arcana Domain'], ['Cleric', 'Arcane Archer'],

@@ -196,6 +196,25 @@ export class LevelUpModalComponent implements OnInit {
    * server's list for that feat is added.
    */
   get alwaysPreparedGrants(): readonly SpellGrant[] {
+    const base = this.classAndFeatGrants;
+    // A Vestige Patron choosing its domain in this dialog: that domain's Vestige Spells ride along.
+    const domain = this.subclassChoiceResult?.subclassChoices.vestigeDomain;
+    const forDomain = domain ? this.preview?.alwaysPreparedSpellsByVestigeDomain?.[domain] : undefined;
+    if (!forDomain?.length) return base;
+    if (this.vestigeGrantsBase !== base || this.vestigeGrantsFor !== forDomain) {
+      this.vestigeGrantsBase = base;
+      this.vestigeGrantsFor = forDomain;
+      const named = base.map(g => spellKey(g.name));
+      this.vestigeGrantsCache = [...base, ...forDomain.filter(g => !named.includes(spellKey(g.name)))];
+    }
+    return this.vestigeGrantsCache;
+  }
+  private vestigeGrantsBase: readonly SpellGrant[] | null = null;
+  private vestigeGrantsFor: readonly SpellGrant[] | null = null;
+  private vestigeGrantsCache: readonly SpellGrant[] = NO_GRANTS;
+
+  /** The grants of the class, the subclass picked this level and the feat picked this level. */
+  private get classAndFeatGrants(): readonly SpellGrant[] {
     const bySubclass = this.preview?.alwaysPreparedSpellsBySubclass;
     const forChoice = this.selectedSubclass ? bySubclass?.[this.selectedSubclass] : undefined;
     const base = forChoice ?? this.preview?.alwaysPreparedSpells ?? NO_GRANTS;
@@ -218,7 +237,8 @@ export class LevelUpModalComponent implements OnInit {
   private get anyGrantsOnOffer(): boolean {
     return (this.preview?.alwaysPreparedSpells?.length ?? 0) > 0
       || Object.keys(this.preview?.alwaysPreparedSpellsBySubclass ?? {}).length > 0
-      || Object.keys(this.preview?.alwaysPreparedSpellsByFeat ?? {}).length > 0;
+      || Object.keys(this.preview?.alwaysPreparedSpellsByFeat ?? {}).length > 0
+      || Object.keys(this.preview?.alwaysPreparedSpellsByVestigeDomain ?? {}).length > 0;
   }
 
   /**
