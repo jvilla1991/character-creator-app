@@ -1,0 +1,22 @@
+// The two radio groups use the level-up dialog's own choice rows and headings.
+@use '../../level-up-shared' as *;
+
+:host {
+  display: block;
+}
+
+// An option's name over what it brings, like a Fighting Style row in the dialog.
+.vestige-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vestige-option-name {
+  font-weight: 600;
+}
+
+.vestige-option-desc {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}

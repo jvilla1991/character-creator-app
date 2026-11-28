@@ -87,6 +87,14 @@ export interface LevelUpPreview {
    * of the three fields of the same names above. Absent or empty otherwise.
    */
   spellcastingBySubclass?: { [subclass: string]: SubclassSpellcasting };
+  /**
+   * A Vestige Patron that has not chosen the Cleric domain of its Vestige Spells
+   * yet: what each domain (Life, Light, Trickery, War) would hand over at the
+   * new level, keyed by domain. The modal adds the entry for the domain the
+   * player picks. Empty or absent for everyone else and once the domain is
+   * stored: its spells are then part of `alwaysPreparedSpells`.
+   */
+  alwaysPreparedSpellsByVestigeDomain?: { [domain: string]: { name: string; grantedBy: string }[] };
 }
 
 /** A level-up preview's spellcasting numbers with one subclass option chosen. */

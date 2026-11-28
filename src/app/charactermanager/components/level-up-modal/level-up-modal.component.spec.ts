@@ -1954,8 +1954,8 @@ describe('LevelUpModalComponent', () => {
     });
 
     describe('picking a subclass with nothing more to choose', () => {
-      it('confirms a Warrior of the Mystic Arts, a Conjurer and a Vestige Patron the same way', () => {
-        for (const [clazz, subclass] of [['Monk', 'Warrior of the Mystic Arts'], ['Wizard', 'Conjurer'], ['Warlock', 'Vestige Patron']]) {
+      it('confirms a Warrior of the Mystic Arts and a Conjurer the same way', () => {
+        for (const [clazz, subclass] of [['Monk', 'Warrior of the Mystic Arts'], ['Wizard', 'Conjurer']]) {
           pcService.levelUp.calls.reset();
           open({ clazz }, { subclassDue: true, subclassOptions: [subclass, 'Other'] });
           expect(component.canConfirm).withContext(subclass).toBeFalse();   // a subclass is due
@@ -1966,9 +1966,24 @@ describe('LevelUpModalComponent', () => {
         }
       });
 
+      it('holds a Vestige Patron picked at level 3 until its type and domain are chosen', () => {
+        open({ clazz: 'Warlock' }, { subclassDue: true, subclassOptions: ['Vestige Patron', 'Other'] });
+        component.selectedSubclass = 'Vestige Patron';
+        expect(component.subclassChoicesSatisfied).toBeFalse();
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { vestigeType: 'Fiend' }, valid: false }));
+        expect(component.canConfirm).toBeFalse();
+        component.onSubclassChoices(result({ subclassChoices: { vestigeType: 'Fiend', vestigeDomain: 'War' } }));
+        expect(component.canConfirm).toBeTrue();
+        component.confirm();
+        expect(pcService.levelUp).toHaveBeenCalledWith(7,
+          { subclass: 'Vestige Patron', subclassChoices: { vestigeType: 'Fiend', vestigeDomain: 'War' } });
+      });
+
       it('levels a Vestige Patron, an Arcane Archer and a Transmuter on with no extra fields', () => {
         for (const pc of [
-          { clazz: 'Warlock', subclass: 'Vestige Patron', level: 5 },
+          { clazz: 'Warlock', subclass: 'Vestige Patron', level: 5,
+            subclassChoices: { vestigeType: 'Fiend' as const, vestigeDomain: 'War' as const } },
           {
             clazz: 'Fighter', subclass: 'Arcane Archer', level: 4,
             subclassChoices: { skills: [], arcaneShots: ['Seeking Shot', 'Shadow Shot'] },

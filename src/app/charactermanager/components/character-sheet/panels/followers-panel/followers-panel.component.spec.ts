@@ -186,11 +186,20 @@ describe('FollowersPanelComponent', () => {
       expect(component.kindLabel(ofKind(5, 'COMPANION'))).toBe('Companion');
     });
 
-    it('the DM may dismiss every kind', () => {
+    it('the DM may dismiss every kind but a companion, which is the server\'s own', () => {
       component.canGrant = true;
-      for (const kind of [undefined, 'DM_GRANT', 'SUMMON', 'FAMILIAR', 'COMPANION'] as const) {
+      for (const kind of [undefined, 'DM_GRANT', 'SUMMON', 'FAMILIAR'] as const) {
         expect(component.canDismiss(ofKind(1, kind))).withContext(String(kind)).toBeTrue();
       }
+      expect(component.canDismiss(ofKind(1, 'COMPANION'))).toBeFalse();
+    });
+
+    it('a companion is never dismissed, even if something asks', () => {
+      component.canGrant = true;
+      component.ownSheet = true;
+      bind(pc(7));
+      component.confirmDismiss(ofKind(8, 'COMPANION'));
+      expect(followerService.dismiss).not.toHaveBeenCalled();
     });
 
     it('the owner may dismiss only their own summon and familiar', () => {

@@ -1,0 +1,28 @@
+/* Panel chrome, .field, .conditions and .condition come from global styles.css. */
+
+:host {
+  display: block;
+}
+
+.companion-hp {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+// The current value with its maximum beside it, as the vitals strip reads them.
+.companion-hp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.companion-hp-max {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  font-size: 15px;
+}
+
+@media (max-width: 420px) {
+  .companion-hp { grid-template-columns: minmax(0, 1fr); }
+}

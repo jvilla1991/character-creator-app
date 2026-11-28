@@ -5,6 +5,8 @@ import { MysticFocusRequest, mysticFocusNotice } from '../../models/mystic-focus
 import { SellRequest } from '../../models/shop';
 import { CampaignLocation } from '../../models/campaign';
 import { Follower, followerToPc, pcToStatBlock } from '../../models/follower';
+import { companionEdit, isCompanion } from '../../models/companion';
+import { CompanionVitalsComponent } from './panels/companion-vitals/companion-vitals.component';
 import { PCService } from '../../services/pc.service';
 import { GrantService } from '../../services/grant.service';
 import { SessionService } from '../../services/session.service';
@@ -71,7 +73,7 @@ let nextSheetId = 0;
     templateUrl: './character-sheet.component.html',
     styleUrls: ['./character-sheet.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent, ArcaneShotPanelComponent]
+    imports: [RenownPanelComponent, FormsModule, EditableNumberComponent, VitalsStripComponent, AbilityScoresComponent, SkillsListComponent, ConditionsPanelComponent, SurvivalPanelComponent, FeaturesListComponent, OtherFeaturesComponent, CoinPurseComponent, BackgroundStoryComponent, SpellbookPanelComponent, SuppliesPanelComponent, InventoryPanelComponent, PcNotesComponent, PcLogComponent, FollowersPanelComponent, ProfessionsPanelComponent, DmEditModalComponent, StatBreakdownModalComponent, ClassDisplayPipe, SpeciesDisplayPipe, HeroClassPanelComponent, RecommendedSpellsComponent, SpeciesSpellsComponent, SheetActionsMenuComponent, PortraitDialogComponent, PcPortraitComponent, PortraitSilhouetteComponent, SpellFollowerDialogComponent, ArcaneShotPanelComponent, CompanionVitalsComponent]
 })
 export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onInventoryTransferred(result: { inventory: PcItem[]; ac?: number }): void {
@@ -137,6 +139,10 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   /** Follower mode only: whether that character is in a campaign, and so has a DM
    *  (a follower's own stat block carries no campaign). */
   @Input() followerOwnerInCampaign = false;
+  /** Follower mode only: this follower is a server-owned companion. Its sheet is
+   *  read-only but for the name and the companion panel (Hit Points, temporary
+   *  Hit Points, conditions), which the owning player and the DM may 'edit'. */
+  @Input() followerCompanion: 'view' | 'edit' | null = null;
   readonly deleteRequested = output<void>();
   readonly rollRequested = output<void>();
   readonly levelUpRequested = output<void>();
@@ -371,6 +377,12 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
     return follower && this.uiState.openFollowerId() === follower.id ? follower : null;
   });
 
+  /** True while the open follower is a companion: the server owns all of its sheet but the name and the vitals. */
+  readonly openCompanion = computed(() => {
+    const follower = this.openFollower();
+    return !!follower && isCompanion(follower);
+  });
+
   /** The open follower as a PC, for the nested follower-mode sheet. */
   readonly openFollowerPc = computed(() => {
     const follower = this.openFollower();
@@ -398,7 +410,14 @@ export class CharacterSheetComponent implements OnChanges, OnInit, OnDestroy {
   onFollowerChanged(updated: PC): void {
     const before = this.openedFollower();
     if (!before) return;
-    const optimistic: Follower = { ...before, name: updated.name, statBlock: pcToStatBlock(updated) };
+    // Of a companion the server takes the name, the Hit Points and the conditions:
+    // show the save as it will be stored, and send nothing when none of those changed.
+    const statBlock = isCompanion(before)
+      ? companionEdit(before.statBlock, pcToStatBlock(updated))
+      : pcToStatBlock(updated);
+    if (isCompanion(before) && updated.name === before.name
+        && JSON.stringify(statBlock) === JSON.stringify(before.statBlock)) return;
+    const optimistic: Follower = { ...before, name: updated.name, statBlock };
     this.openedFollower.set(optimistic);
     this.followerEdits++;
     this.followerSavesInFlight++;
