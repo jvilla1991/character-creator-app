@@ -6,9 +6,10 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
     [followerMode]="true"
     [followerOwnerName]="pc.name"
     [followerOwnerInCampaign]="inCampaign"
-    [editable]="editable"
+    [followerCompanion]="openCompanion() ? (ownSheet || editable ? 'edit' : 'view') : null"
+    [editable]="editable && !openCompanion()"
     [showActions]="false"
-    [inventoryEditable]="showActions || inventoryEditable"
+    [inventoryEditable]="(showActions || inventoryEditable) && !openCompanion()"
     [strictComponents]="strictComponents"
     (followerChanged)="onFollowerChanged($event)"
     (backRequested)="closeFollower()">
@@ -277,6 +278,11 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
         </app-skills-list>
       </div>
       <div class="col-right">
+        <!-- A companion's sheet is the server's: this panel is all of it that play changes. -->
+        @if (followerCompanion) {
+          <app-companion-vitals [pc]="pc" [canEdit]="followerCompanion === 'edit'" (pcChange)="onPcChange($event)">
+          </app-companion-vitals>
+        } @else {
         <app-conditions-panel
           [pc]="pc"
           [editable]="editable"
@@ -288,6 +294,7 @@ follower mode. Its saves bubble back here (followerChanged) to be persisted. -->
           (inspirationChanged)="onInspirationChange($event)"
           (inspirationUsed)="useInspiration()">
         </app-conditions-panel>
+        }
         <!-- Survival is visible to everyone in a survival campaign; only the DM's
         cross-link view (editable) gets the steppers to change it. -->
         @if (survivalConditions) {

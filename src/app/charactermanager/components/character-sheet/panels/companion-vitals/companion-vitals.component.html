@@ -1,0 +1,35 @@
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Hit Points and Conditions</span>
+  </div>
+  <div class="companion-hp">
+    <div class="field">
+      <label [for]="currentId">Hit Points</label>
+      <span class="companion-hp-row">
+        <input [id]="currentId" class="numeric" type="number" inputmode="numeric" min="0" [max]="max()"
+          [value]="current()" [disabled]="!canEdit()" (change)="setHp('cur', $event)">
+        <span class="companion-hp-max numeric">/ {{ max() }}</span>
+      </span>
+    </div>
+    <div class="field">
+      <label [for]="temporaryId">Temporary Hit Points</label>
+      <input [id]="temporaryId" class="numeric" type="number" inputmode="numeric" min="0"
+        [value]="temporary()" [disabled]="!canEdit()" (change)="setHp('temp', $event)">
+    </div>
+  </div>
+  <!-- Red = the companion has it, green = it is immune (the server's, never changed here). -->
+  <div class="conditions" role="group" aria-label="Conditions">
+    @for (c of conditions; track c) {
+      <button
+        type="button"
+        class="condition"
+        [class.active]="isActive(c) && !isImmune(c)"
+        [class.immune]="isImmune(c)"
+        [class.locked]="!canEdit() || isImmune(c)"
+        [attr.aria-pressed]="isImmune(c) ? null : isActive(c)"
+        [attr.aria-disabled]="!canEdit() || isImmune(c) ? 'true' : null"
+        (click)="toggle(c)"
+      >{{ c }}<span class="visually-hidden">{{ stateLabel(c) }}</span></button>
+    }
+  </div>
+</div>
