@@ -4,7 +4,7 @@ import { PC } from '../models/pc';
 import { ADJUSTMENT_LINES_MAX, AbilityStat } from '../models/stat-adjustment';
 import { PcNote } from '../models/pc-note';
 import { PcActivityLogEntry } from '../models/pc-activity-log';
-import { LevelUpPreview, LevelUpChoices } from '../models/level-up';
+import { LevelUpPreview, LevelUpChoices, SubclassSpellcasting } from '../models/level-up';
 import { featNamesOn } from '../models/character-feats';
 import { featSpellsOwed, featSpellsOwedByFeat } from '../models/granted-spells';
 import { spellKey } from '../models/spell-names';
@@ -707,7 +707,8 @@ export class PCService {
     const pc = this.pcs.find(p => p.id === id)!;
     const { current, newLevel, hitDie, conMod, hpGained } = demoLevelUpFields(pc);
     const featOptions = demoIsAsiLevel(pc.clazz, newLevel)
-      ? demoFeatOptions(pc.clazz, newLevel, pc.stats, featNamesOn(pc)) : [];
+      ? demoFeatOptions(pc.clazz, newLevel, pc.stats, featNamesOn(pc), pc.subclass) : [];
+    const subclassDue = newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass;
     return {
       currentLevel: current,
       newLevel,
@@ -719,9 +720,8 @@ export class PCService {
       newProfBonus: demoProfBonus(newLevel) + adjustmentSum(adjustmentsFor(pc, 'prof')),
       currentSpellSlots: demoCurrentMaxSlots(pc),
       newSpellSlots: this.demoSlotMaxes(pc, newLevel),
-      subclassDue: newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass,
-      subclassOptions: (newLevel === demoSubclassLevel(pc.clazz) && !pc.subclass)
-        ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
+      subclassDue,
+      subclassOptions: subclassDue ? demoSubclassOptions(pc.clazz, pc.specialization) : [],
       asiDue: demoIsAsiLevel(pc.clazz, newLevel),
       featOptions,
       // The class and subclass grants are server-owned; the demo shim mirrors the feats' only.
@@ -731,20 +731,42 @@ export class PCService {
       featuresGained: [],
       fightingStyleDue: demoFightingStyleDue(pc.clazz, newLevel),
       fightingStyleOptions: demoFightingStyleOptions(pc.clazz, pc.subclass, newLevel),
-      currentCantripsKnown: demoCantripsKnown(pc.clazz, current),
-      newCantripsKnown: demoCantripsKnown(pc.clazz, newLevel),
-      currentSpellsKnown: demoPreparedSpells(pc.clazz, current),
-      newSpellsKnown: demoPreparedSpells(pc.clazz, newLevel),
+      currentCantripsKnown: demoCantripsKnown(pc.clazz, current, pc.subclass),
+      newCantripsKnown: demoCantripsKnown(pc.clazz, newLevel, pc.subclass),
+      currentSpellsKnown: demoPreparedSpells(pc.clazz, current, pc.subclass),
+      newSpellsKnown: demoPreparedSpells(pc.clazz, newLevel, pc.subclass),
+      spellcastingBySubclass: subclassDue ? this.demoSpellcastingBySubclass(pc, newLevel) : {},
     };
+  }
+
+  /**
+   * Demo mirror of the preview's `spellcastingBySubclass`: for each subclass on
+   * offer whose slots, cantrips or prepared spells differ from the character's
+   * without it (a Monk's Warrior of the Mystic Arts), those three numbers.
+   */
+  private demoSpellcastingBySubclass(pc: PC, newLevel: number): { [subclass: string]: SubclassSpellcasting } {
+    const withSubclass = (subclass: string | undefined): SubclassSpellcasting => ({
+      newSpellSlots: this.demoSlotMaxes(pc, newLevel, subclass),
+      newCantripsKnown: demoCantripsKnown(pc.clazz, newLevel, subclass),
+      newSpellsKnown: demoPreparedSpells(pc.clazz, newLevel, subclass),
+    });
+    const base = JSON.stringify(withSubclass(pc.subclass));
+    const out: { [subclass: string]: SubclassSpellcasting } = {};
+    for (const option of demoSubclassOptions(pc.clazz, pc.specialization)) {
+      const casting = withSubclass(option);
+      if (JSON.stringify(casting) !== base) out[option] = casting;
+    }
+    return out;
   }
 
   /**
    * Demo mirror of the server's slot maximum at a level (SpellSlotState.maxFor): the
    * class table plus the DM's `slot1`..`slot9` bonus lines; a level that comes to
-   * zero or less is left out.
+   * zero or less is left out. `subclass` is the one the table is read for: the
+   * character's own, or the one being picked in a level-up.
    */
-  private demoSlotMaxes(pc: PC, level: number): { [lvl: number]: number } {
-    const table = demoSlotsFor(pc.clazz, level);
+  private demoSlotMaxes(pc: PC, level: number, subclass: string | null | undefined = pc.subclass): { [lvl: number]: number } {
+    const table = demoSlotsFor(pc.clazz, level, subclass);
     const out: { [lvl: number]: number } = {};
     SLOT_STATS.forEach((stat, i) => {
       const total = (table[i + 1] ?? 0) + adjustmentSum(adjustmentsFor(pc, stat));
@@ -802,7 +824,8 @@ export class PCService {
 
     // Rebuild slots from the class table plus the DM's bonus lines, preserving `used`
     // (clamped) like the server does.
-    const targetSlots = this.demoSlotMaxes(existing, newLevel);
+    // With the subclass chosen in this request: a Warrior of the Mystic Arts gets its slots at once.
+    const targetSlots = this.demoSlotMaxes(existing, newLevel, subclass);
     let spellSlots = existing.spellSlots;
     if (Object.keys(targetSlots).length > 0) {
       spellSlots = {};
